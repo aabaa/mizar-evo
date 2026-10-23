@@ -2763,6 +2763,116 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Generates whole native VCs after authenticating Core and Preparation parents.
+    pub fn native_theorem_vcs_with_core_preparation_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        generation_schema: &mizar_vc::vc_ir::GenerationSchemaVersion,
+        vc_schema: &mizar_vc::vc_ir::VcSchemaVersion,
+    ) -> Result<Option<mizar_vc::vc_ir::VcSet>, String> {
+        if input.parent_outputs().len() != 2 {
+            return Err("native theorem vc requires two parents".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem vc requires a module".to_owned());
+        };
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem vc requires one Core parent".to_owned())?;
+        let preparation_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("AlgorithmPreparation")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremPreparation")
+        }))
+        .ok_or_else(|| "native theorem vc requires one Preparation parent".to_owned())?;
+        let core_ref = core_parent.as_output_ref();
+        let preparation_ref = preparation_parent.as_output_ref();
+        let storage = publisher.storage();
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: input.identities().input_hash(),
+        }];
+        for parent in [core_ref, preparation_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+            if parent.snapshot() != input.snapshot
+                || parent.work_unit() != &work_unit
+                || parent.schema_version() != SchemaVersion::new(1)
+                || parent.lineage().named_input_hashes != named
+            {
+                return Err("native theorem vc parent binding mismatch".to_owned());
+            }
+        }
+        if preparation_ref.lineage().parents != vec![core_ref.output()] {
+            return Err("native theorem vc Preparation parent link mismatch".to_owned());
+        }
+        let sole_core = PhaseInput::new(
+            input.work_unit.clone(),
+            mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                input.identities().dependency_hashes().to_vec(),
+                vec![core_parent.clone()],
+            )
+            .map_err(|error| error.to_string())?,
+        );
+        let Some(actual_preparation) =
+            self.native_theorem_preparation_with_core_parent(&sole_core, publisher)?
+        else {
+            return Ok(None);
+        };
+        let preparation = storage
+            .typed_handle::<(
+                mizar_core::control_flow::ControlFlowOutput,
+                mizar_core::control_flow::ObligationSeedHandoff,
+            )>(
+                preparation_ref,
+                &OutputKind::new("SourceTheoremPreparation"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage
+            .get(&preparation)
+            .map_err(|error| error.to_string())?;
+        if *retained != actual_preparation {
+            return Err("native theorem vc complete Preparation mismatch".to_owned());
+        }
+        let core = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                core_ref,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&core).map_err(|error| error.to_string())?;
+        let vcs = mizar_vc::generator::generate_source_theorem_vcs(
+            &core,
+            input.snapshot,
+            generation_schema,
+            vc_schema,
+        )?;
+        for parent in [core_ref, preparation_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some(vcs))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

@@ -40731,3 +40731,599 @@ fn scheduled_theorem_algorithm_preparation_preserves_resource_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_vcs_core_preparation_caller_preserves_genuine_outputs() {
+    use mizar_core::core_ir::{CoreProofStatus, ObligationSeedStatus};
+    use mizar_vc::{
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, SeedOriginRef, SeedVcMapping, VcSchemaVersion, VcStatus},
+    };
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        let mut positions = std::collections::BTreeSet::new();
+        for variant in 0..64 {
+            let text = format!(
+                "theorem Placement{variant}: for X being set holds X = X proof let X be set; thus X = X; end;"
+            );
+            with_native_summary_parent(
+                &text,
+                open,
+                threshold,
+                |fixture, inputs, old, owner, _, (session, _, _)| {
+                    for (phase, kind) in [
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
+                        ("Elaboration", "SourceTheoremCore"),
+                        ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ] {
+                        owner.allow_work_unit(AllowedWorkUnit::new(
+                            IrPipelinePhase::new(phase),
+                            OutputKind::new(kind),
+                            IrWorkUnit::new("\"alpha\":\"main\""),
+                        ));
+                    }
+                    let child = |parents: Vec<AnyPhaseOutputRef>| {
+                        PhaseInput::new(
+                            old.work_unit.clone(),
+                            PhaseDispatchInputBundle::new(
+                                old.snapshot,
+                                old.identities().input_hash(),
+                                vec![],
+                                parents
+                                    .into_iter()
+                                    .map(|parent| {
+                                        SealedParentOutputHandle::from_published_output(
+                                            owner,
+                                            old.snapshot,
+                                            parent,
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect(),
+                            )
+                            .unwrap(),
+                        )
+                    };
+                    let signature = inputs
+                        .publish_native_theorem_module_summary(old, owner)
+                        .unwrap()
+                        .unwrap();
+                    let type_input = child(vec![signature.erase()]);
+                    let typed = inputs
+                        .publish_native_theorem_typed_ast(&type_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let reg_input = child(vec![typed.erase()]);
+                    let registration = inputs
+                        .publish_native_theorem_registration_closure(&reg_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let meta_input = child(vec![typed.erase(), registration.erase()]);
+                    let parent = inputs
+                        .publish_native_theorem_metadata(&meta_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let core_input = child(vec![parent.erase()]);
+                    let core = inputs
+                        .publish_native_theorem_core_with_metadata_parent(&core_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let sole_core = child(vec![core.erase()]);
+                    let preparation = inputs
+                        .publish_native_theorem_preparation(&sole_core, owner)
+                        .unwrap()
+                        .unwrap();
+                    let input = child(vec![preparation.erase(), core.erase()]);
+                    positions.insert(
+                        input
+                            .parent_outputs()
+                            .iter()
+                            .position(|parent| parent.output() == core.output())
+                            .unwrap(),
+                    );
+                    let retained_core = owner.storage().get(&core).unwrap();
+                    let retained_preparation = owner.storage().get(&preparation).unwrap();
+                    assert_eq!(core.placement() == &StoragePlacement::Resident, !open);
+                    assert_eq!(
+                        preparation.placement() == &StoragePlacement::Resident,
+                        !open
+                    );
+                    assert_eq!(
+                        retained_core.source_id(),
+                        inputs.snapshot.source_versions[0].source_id
+                    );
+                    assert_eq!(
+                        retained_core.module_id(),
+                        &ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"))
+                    );
+                    assert!(!retained_core.proofs().is_empty());
+                    assert!(
+                        retained_core.proofs().iter().all(
+                            |(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof
+                        )
+                    );
+                    assert_eq!(
+                        *retained_preparation,
+                        inputs
+                            .native_theorem_preparation_with_core_parent(&sole_core, owner)
+                            .unwrap()
+                            .unwrap()
+                    );
+                    let before = (
+                        input.clone(),
+                        (*retained_core).clone(),
+                        (*retained_preparation).clone(),
+                        session.captured().clone(),
+                    );
+                    for (generation, schema) in [(" \nraw generation\t", "\0vc"), ("", "")] {
+                        let generation = GenerationSchemaVersion::new(generation);
+                        let schema = VcSchemaVersion::new(schema);
+                        let schemas_before = (generation.clone(), schema.clone());
+                        let expected =
+                            generate(&retained_core, old.snapshot, &generation, &schema).unwrap();
+                        assert_eq!(expected.source(), retained_core.source_id());
+                        assert_eq!(expected.snapshot(), old.snapshot);
+                        assert_eq!(expected.module().as_str(), "package=5:alpha;module=4:main");
+                        assert_eq!(expected.schema_version(), &schema);
+                        assert!(!expected.vcs().is_empty());
+                        assert!(expected.vcs().iter().all(|vc| vc.status == VcStatus::Open
+                            && vc.anchor.generation_schema_version == generation));
+                        assert_eq!(
+                            expected.seed_accounting().len(),
+                            retained_preparation.1.entries.len()
+                        );
+                        for row in expected.seed_accounting() {
+                            let SeedOriginRef::ExistingCore { seed } = row.origin else {
+                                panic!("Core seed")
+                            };
+                            let entry = retained_preparation.1.entries.get(row.handoff).unwrap();
+                            assert_eq!(
+                                &entry.seed,
+                                retained_core.obligation_seeds().get(seed).unwrap()
+                            );
+                            assert_eq!(row.seed_status, ObligationSeedStatus::Active);
+                            assert_eq!(entry.seed.status, ObligationSeedStatus::Active);
+                            let SeedVcMapping::One { vc } = row.mapping else {
+                                panic!("one VC")
+                            };
+                            let vc = expected.vc(vc).unwrap();
+                            assert_eq!(vc.seed.handoff, row.handoff);
+                            assert_eq!(vc.source.primary, entry.seed.source);
+                        }
+                        for stage in 0..3 {
+                            if stage == 1 {
+                                fixture.write(if open {
+                                    &[0xff]
+                                } else {
+                                    b"open theorem Changed: 0 = 1;\n"
+                                });
+                            } else if stage == 2 {
+                                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                            }
+                            for _ in 0..2 {
+                                assert_eq!(
+                                    inputs
+                                        .native_theorem_vcs_with_core_preparation_parents(
+                                            &input,
+                                            owner,
+                                            &generation,
+                                            &schema
+                                        )
+                                        .unwrap(),
+                                    Some(expected.clone())
+                                );
+                            }
+                        }
+                        assert_eq!((generation, schema), schemas_before);
+                        fixture.write(&[0xff]);
+                    }
+                    assert_eq!(
+                        (
+                            input,
+                            (*owner.storage().get(&core).unwrap()).clone(),
+                            (*owner.storage().get(&preparation).unwrap()).clone(),
+                            session.captured().clone()
+                        ),
+                        before
+                    );
+                    let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                        snapshot: old.snapshot,
+                        protected_outputs: vec![],
+                    });
+                    assert_eq!(collected.outputs_dropped, 9);
+                    assert_eq!(collected.abandoned_slots_dropped, 0);
+                },
+            );
+            if positions.len() == 2 {
+                break;
+            }
+        }
+        assert_eq!(positions, [0, 1].into_iter().collect());
+    }
+}
+
+#[test]
+fn native_theorem_vcs_core_preparation_caller_preserves_refusals() {
+    use mizar_core::control_flow::{build_control_flow_ir, build_obligation_seed_handoff};
+    use mizar_driver::{
+        native_theorem_core_from_storage_bytes as decode_core,
+        native_theorem_core_storage_bytes as encode_core,
+        native_theorem_preparation_from_storage_bytes as decode,
+        native_theorem_preparation_storage_bytes as encode,
+    };
+    use mizar_ir::{
+        publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+        storage::{BlobDecodeError, BlobDecoder, CollectInput, IrSideTables, SchemaVersion},
+    };
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+    let generation = GenerationSchemaVersion::new(" \n\t");
+    let schema = VcSchemaVersion::new("");
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in [
+        "missing-core",
+        "missing-preparation",
+        "wrong-core",
+        "wrong-preparation",
+        "hash",
+        "dependencies",
+        "link",
+        "obsolete",
+        "collected-core",
+        "collected-preparation",
+        "pair-mismatch",
+        "source-priority",
+    ] {
+        with_native_summary_parent(
+            text,
+            false,
+            0,
+            |_, inputs, old, owner, outputs, (_, ids, snapshots)| {
+                for (phase, kind) in [
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let child = |parents: Vec<AnyPhaseOutputRef>| {
+                    PhaseInput::new(
+                        old.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            old.identities().input_hash(),
+                            vec![],
+                            parents
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        owner,
+                                        old.snapshot,
+                                        parent,
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        )
+                        .unwrap(),
+                    )
+                };
+                let signature = inputs
+                    .publish_native_theorem_module_summary(old, owner)
+                    .unwrap()
+                    .unwrap();
+                let type_input = child(vec![signature.erase()]);
+                let typed = inputs
+                    .publish_native_theorem_typed_ast(&type_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let reg_input = child(vec![typed.erase()]);
+                let registration = inputs
+                    .publish_native_theorem_registration_closure(&reg_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let meta_input = child(vec![typed.erase(), registration.erase()]);
+                let parent = inputs
+                    .publish_native_theorem_metadata(&meta_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let metadata_input = child(vec![parent.erase()]);
+                let actual_core = inputs
+                    .native_theorem_core_with_metadata_parent(&metadata_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let actual_flow = build_control_flow_ir(&actual_core);
+                let actual_pair = (
+                    actual_flow.clone(),
+                    build_obligation_seed_handoff(&actual_core, &actual_flow),
+                );
+                let foreign = if matches!(case, "pair-mismatch" | "source-priority") {
+                    let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
+                    let (_, other_submission, other_adapter, other_frontend, _) =
+                        native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
+                    let (other_inputs, other_old) =
+                        native_disk_lookup_context(&other_submission, ids);
+                    let other_owner = other_adapter.publisher();
+                    let other_input = PhaseInput::new(
+                        other_old.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            other_old.snapshot,
+                            other_old.identities().input_hash(),
+                            vec![],
+                            vec![
+                                SealedParentOutputHandle::from_published_output(
+                                    other_owner,
+                                    other_old.snapshot,
+                                    other_frontend.erase(),
+                                )
+                                .unwrap(),
+                            ],
+                        )
+                        .unwrap(),
+                    );
+                    let other_core = other_inputs
+                        .native_theorem_core_with_frontend_parent(&other_input, other_owner)
+                        .unwrap()
+                        .unwrap();
+                    let output = other_owner.storage().get(&other_frontend).unwrap();
+                    let ast = output.ast.as_ref().unwrap();
+                    assert_ne!(ast.source_id, actual_core.source_id());
+                    let module = actual_core.module_id();
+                    let bytes = encode_core(ast, module, &other_core).unwrap().unwrap();
+                    let core = decode_core(&bytes, actual_core.source_id(), module)
+                        .unwrap()
+                        .unwrap();
+                    let rebound = <MizarParserSeam as ParserSeam>::Ast::from_canonical_bytes(
+                        &ast.canonical_bytes().unwrap(),
+                        actual_core.source_id(),
+                    )
+                    .unwrap();
+                    let flow = build_control_flow_ir(&core);
+                    let pair = (flow.clone(), build_obligation_seed_handoff(&core, &flow));
+                    assert_eq!(core.source_id(), actual_core.source_id());
+                    assert_eq!(core.module_id(), actual_core.module_id());
+                    assert_ne!(core, actual_core);
+                    assert_ne!(pair, actual_pair);
+                    let preparation_bytes =
+                        encode(&rebound, module, &core, &pair).unwrap().unwrap();
+                    assert_eq!(
+                        decode(&preparation_bytes, actual_core.source_id(), module).unwrap(),
+                        Some(pair.clone())
+                    );
+                    Some((core, bytes, pair, preparation_bytes))
+                } else {
+                    None
+                };
+                let core = if case == "source-priority" {
+                    let (core, bytes, _, _) = foreign.as_ref().unwrap();
+                    let source_id = core.source_id();
+                    let module = core.module_id().clone();
+                    let phase = IrPipelinePhase::new("Elaboration");
+                    let kind = OutputKind::new("SourceTheoremCore");
+                    owner
+                        .publish(PublishOutputInput {
+                            slot: owner.allocate(
+                                old.snapshot,
+                                phase.clone(),
+                                parent.work_unit().clone(),
+                                kind.clone(),
+                                SchemaVersion::new(1),
+                            ),
+                            snapshot: old.snapshot,
+                            phase,
+                            work_unit: parent.work_unit().clone(),
+                            output_kind: kind,
+                            schema_version: SchemaVersion::new(1),
+                            payload: core.clone(),
+                            canonical_payload: Some(bytes.clone()),
+                            storage_payload: Some(bytes.clone()),
+                            decode: BlobDecoder::new(move |bytes| {
+                                decode_core(bytes, source_id, &module)
+                                    .map_err(BlobDecodeError::new)?
+                                    .ok_or_else(|| BlobDecodeError::new("negative Core replay"))
+                            }),
+                            parents: vec![parent.erase()],
+                            named_input_hashes: parent.lineage().named_input_hashes.clone(),
+                            side_tables: IrSideTables::default(),
+                            origin: OutputOrigin::PackageSource,
+                            target: PublicationTarget::CurrentPackage,
+                        })
+                        .unwrap()
+                } else {
+                    inputs
+                        .publish_native_theorem_core_with_metadata_parent(&metadata_input, owner)
+                        .unwrap()
+                        .unwrap()
+                };
+                let sole_core = child(vec![core.erase()]);
+                let preparation = if matches!(case, "link" | "pair-mismatch" | "source-priority") {
+                    let frontend = outputs
+                        .iter()
+                        .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
+                        .unwrap();
+                    let handle = owner
+                        .storage()
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            frontend,
+                            frontend.output_kind(),
+                        )
+                        .unwrap();
+                    let output = owner.storage().get(&handle).unwrap();
+                    let (pair, bytes) = if let Some((_, _, pair, bytes)) = &foreign {
+                        (pair.clone(), bytes.clone())
+                    } else {
+                        (
+                            actual_pair.clone(),
+                            encode(
+                                output.ast.as_ref().unwrap(),
+                                actual_core.module_id(),
+                                &actual_core,
+                                &actual_pair,
+                            )
+                            .unwrap()
+                            .unwrap(),
+                        )
+                    };
+                    if case == "pair-mismatch" {
+                        assert_eq!(
+                            inputs
+                                .native_theorem_preparation_with_core_parent(&sole_core, owner)
+                                .unwrap(),
+                            Some(actual_pair.clone())
+                        );
+                    } else if case == "source-priority" {
+                        assert_eq!(
+                            inputs
+                                .native_theorem_preparation_with_core_parent(&sole_core, owner)
+                                .unwrap(),
+                            None
+                        );
+                    }
+                    let source_id = actual_core.source_id();
+                    let module = actual_core.module_id().clone();
+                    let phase = IrPipelinePhase::new("AlgorithmPreparation");
+                    let kind = OutputKind::new("SourceTheoremPreparation");
+                    let negative = owner
+                        .publish(PublishOutputInput {
+                            slot: owner.allocate(
+                                old.snapshot,
+                                phase.clone(),
+                                parent.work_unit().clone(),
+                                kind.clone(),
+                                SchemaVersion::new(1),
+                            ),
+                            snapshot: old.snapshot,
+                            phase,
+                            work_unit: parent.work_unit().clone(),
+                            output_kind: kind,
+                            schema_version: SchemaVersion::new(1),
+                            payload: pair.clone(),
+                            canonical_payload: Some(bytes.clone()),
+                            storage_payload: Some(bytes),
+                            decode: BlobDecoder::new(move |bytes| {
+                                decode(bytes, source_id, &module)
+                                    .map_err(BlobDecodeError::new)?
+                                    .ok_or_else(|| {
+                                        BlobDecodeError::new("negative Preparation replay")
+                                    })
+                            }),
+                            parents: vec![if case == "link" {
+                                parent.erase()
+                            } else {
+                                core.erase()
+                            }],
+                            named_input_hashes: parent.lineage().named_input_hashes.clone(),
+                            side_tables: IrSideTables::default(),
+                            origin: OutputOrigin::PackageSource,
+                            target: PublicationTarget::CurrentPackage,
+                        })
+                        .unwrap();
+                    assert_eq!(*owner.storage().get(&negative).unwrap(), pair);
+                    negative
+                } else {
+                    inputs
+                        .publish_native_theorem_preparation(&sole_core, owner)
+                        .unwrap()
+                        .unwrap()
+                };
+                let parents = match case {
+                    "missing-core" => vec![preparation.erase()],
+                    "missing-preparation" => vec![core.erase()],
+                    "wrong-core" => vec![parent.erase(), preparation.erase()],
+                    "wrong-preparation" => vec![core.erase(), parent.erase()],
+                    _ => vec![core.erase(), preparation.erase()],
+                };
+                let mut input = child(parents);
+                if case == "hash" {
+                    input = PhaseInput::new(
+                        old.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            hash(0xe7),
+                            vec![],
+                            input.parent_outputs().to_vec(),
+                        )
+                        .unwrap(),
+                    );
+                }
+                let upstream = if case == "dependencies" {
+                    let [dual, sole] = [input.clone(), sole_core].map(|prior| {
+                        PhaseInput::new(
+                            prior.work_unit.clone(),
+                            PhaseDispatchInputBundle::new(
+                                prior.snapshot,
+                                prior.identities().input_hash(),
+                                vec![hash(0xe8)],
+                                prior.parent_outputs().to_vec(),
+                            )
+                            .unwrap(),
+                        )
+                    });
+                    input = dual;
+                    Some(
+                        inputs
+                            .native_theorem_preparation_with_core_parent(&sole, owner)
+                            .unwrap_err(),
+                    )
+                } else {
+                    None
+                };
+                if case == "obsolete" {
+                    owner.mark_obsolete(old.snapshot).unwrap();
+                } else if matches!(case, "collected-core" | "collected-preparation") {
+                    let protected = if case == "collected-core" {
+                        preparation.output()
+                    } else {
+                        core.output()
+                    };
+                    assert_eq!(
+                        owner
+                            .storage()
+                            .collect(CollectInput {
+                                snapshot: old.snapshot,
+                                protected_outputs: vec![protected]
+                            })
+                            .outputs_dropped,
+                        8
+                    );
+                }
+                let result = inputs.native_theorem_vcs_with_core_preparation_parents(
+                    &input,
+                    owner,
+                    &generation,
+                    &schema,
+                );
+                match case {
+                    "source-priority" => assert_eq!(result.unwrap(), None),
+                    "dependencies" => assert_eq!(result.unwrap_err(), upstream.unwrap()),
+                    "pair-mismatch" => assert_eq!(
+                        result.unwrap_err(),
+                        "native theorem vc complete Preparation mismatch"
+                    ),
+                    "link" => assert_eq!(
+                        result.unwrap_err(),
+                        "native theorem vc Preparation parent link mismatch"
+                    ),
+                    _ => assert!(result.is_err(), "{case}"),
+                }
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case.starts_with("collected-") { 1 } else { 9 }
+                );
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            },
+        );
+    }
+}
