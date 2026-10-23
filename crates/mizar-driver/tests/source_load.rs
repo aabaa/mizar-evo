@@ -29757,6 +29757,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
     );
     let renamed = lemma.replace("Lem1", "Lem2");
+    let theorem = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let renamed_theorem = theorem.replace("theorem T:", "theorem U:");
     let fixture = Fixture::new(private.as_bytes());
     fs::write(fixture.root.join("alpha/src/leaf.miz"), private).unwrap();
     let ids = InMemorySessionIdAllocator::new();
@@ -29769,7 +29771,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_signature_collection()
         .register_source_theorem_type_checking()
         .register_source_theorem_registration_resolution()
-        .register_source_theorem_overload_resolution();
+        .register_source_theorem_overload_resolution()
+        .register_source_theorem_elaboration();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29777,7 +29780,16 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         mizar_driver::request::BuildSession,
         [Hash; 2],
     )> = None;
-    for (stage, main) in [private, lemma, renamed.as_str()].into_iter().enumerate() {
+    for (stage, main) in [
+        private,
+        lemma,
+        renamed.as_str(),
+        theorem,
+        renamed_theorem.as_str(),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         fixture.write(main.as_bytes());
         let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
         draft.source_inputs.versions.clear();
@@ -29835,6 +29847,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("TypeChecking", "SourceTheoremTypedAst"),
                     ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
                     ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29853,7 +29866,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_source_theorem_signature_collection()
             .register_source_theorem_type_checking()
             .register_source_theorem_registration_resolution()
-            .register_source_theorem_overload_resolution();
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29883,7 +29897,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::Elaboration)
+                    .any(|gap| gap.phase == PipelinePhase::AlgorithmPreparation)
             );
             assert!(!submission.missing_services.iter().any(|gap| matches!(
                 gap.phase,
@@ -29892,6 +29906,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     | PipelinePhase::TypeChecking
                     | PipelinePhase::RegistrationResolution
                     | PipelinePhase::OverloadResolution
+                    | PipelinePhase::Elaboration
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -29939,6 +29954,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::TypeChecking,
                 PipelinePhase::RegistrationResolution,
                 PipelinePhase::OverloadResolution,
+                PipelinePhase::Elaboration,
             ] {
                 let task = graph.tasks().iter().find(|task| {
                     task.phases.contains(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
@@ -29955,6 +29971,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             | PipelinePhase::TypeChecking
                             | PipelinePhase::RegistrationResolution
                             | PipelinePhase::OverloadResolution
+                            | PipelinePhase::Elaboration
                     ) {
                         TaskState::Blocked
                     } else {
@@ -29970,8 +29987,9 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             | PipelinePhase::TypeChecking
                             | PipelinePhase::RegistrationResolution
                             | PipelinePhase::OverloadResolution
+                            | PipelinePhase::Elaboration
                     ) {
-                        if module == "main" && stage > 0 { 4 } else { 2 }
+                        if module == "main" && stage > 0 { 5 } else { 2 }
                     } else {
                         1
                     }
@@ -29980,14 +29998,17 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     PipelinePhase::TypeChecking => 1,
                     PipelinePhase::RegistrationResolution => 2,
                     PipelinePhase::OverloadResolution => 3,
+                    PipelinePhase::Elaboration => 4,
                     _ => 0,
                 };
                 let result = &results[result_index];
                 let type_refusal =
                     phase == PipelinePhase::TypeChecking && (module == "leaf" || stage == 0);
+                let elaboration_refusal =
+                    phase == PipelinePhase::Elaboration && module == "main" && stage < 3;
                 assert_eq!(
                     result.status,
-                    if type_refusal {
+                    if type_refusal || elaboration_refusal {
                         PhaseStatus::Blocking
                     } else {
                         PhaseStatus::Complete
@@ -30000,6 +30021,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         results[1].output_refs[0].clone(),
                         results[2].output_refs[0].clone(),
                     ]
+                } else if phase == PipelinePhase::Elaboration {
+                    vec![results[3].output_refs[0].clone()]
                 } else {
                     parent.iter().cloned().collect()
                 };
@@ -30062,12 +30085,23 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         query_input.identities().parent_output_hashes(),
                         expected_parent_hashes
                     );
+                } else if phase == PipelinePhase::Elaboration {
+                    assert_eq!(
+                        query_input.parent_outputs()[0].as_output_ref(),
+                        &results[3].output_refs[0]
+                    );
+                    assert_eq!(query_input.parent_outputs().len(), 1);
+                    assert_eq!(
+                        query_input.identities().parent_output_hashes(),
+                        expected_parent_hashes
+                    );
                 }
                 if matches!(
                     phase,
                     PipelinePhase::TypeChecking
                         | PipelinePhase::RegistrationResolution
                         | PipelinePhase::OverloadResolution
+                        | PipelinePhase::Elaboration
                 ) {
                     let probe = driver
                         .registry()
@@ -30079,7 +30113,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .unwrap();
                     assert_eq!(result.cache_observation, Some(probe.observation));
                 }
-                if type_refusal {
+                if type_refusal || elaboration_refusal {
                     assert!(result.output_refs.is_empty());
                     break;
                 }
@@ -30274,6 +30308,37 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(metadata.3.source_atomic_formula(), Some(atomic));
                     assert!(metadata.3.collection_candidates().is_empty());
                     assert!(metadata.3.resolved_overloads().is_empty());
+                } else if phase == PipelinePhase::Elaboration {
+                    assert_eq!(output.phase(), &IrPipelinePhase::new("Elaboration"));
+                    assert_eq!(output.output_kind(), &OutputKind::new("SourceTheoremCore"));
+                    let [core, clean_core] =
+                        [(&owner, output), (&clean_owner, expected)].map(|(current, output)| {
+                            let handle = current
+                                .storage()
+                                .typed_handle::<mizar_core::core_ir::CoreIr>(
+                                    output,
+                                    &OutputKind::new("SourceTheoremCore"),
+                                )
+                                .unwrap();
+                            current.storage().get(&handle).unwrap()
+                        });
+                    assert_eq!(core, clean_core);
+                    assert_eq!(core.source_id(), version.source_id);
+                    assert_eq!(
+                        core.module_id(),
+                        &ResolverModuleId::new(
+                            version.package_id.clone(),
+                            version.module_path.clone()
+                        )
+                    );
+                    assert!(!core.proofs().is_empty());
+                    assert!(core.proofs().iter().all(|(_, proof)| {
+                        proof.status == mizar_core::core_ir::CoreProofStatus::PendingAutomaticProof
+                    }));
+                    assert!(!core.obligation_seeds().is_empty());
+                    assert!(core.obligation_seeds().iter().all(|(_, seed)| {
+                        seed.status == mizar_core::core_ir::ObligationSeedStatus::Active
+                    }));
                 } else {
                     let [typed, expected] = [&owner, &clean_owner].map(|current| {
                         let handle = current
