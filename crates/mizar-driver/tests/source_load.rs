@@ -39235,7 +39235,15 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
                 );
                 assert_eq!(encode_core(ast, &module, &relocated_core).unwrap(), None);
                 assert_eq!(encode(ast, &module, &core, &relocated_pair).unwrap(), None);
-                assert_eq!(encode(ast, &module, &relocated_core, &pair).unwrap(), None);
+                assert!(
+                    encode(relocated_ast, &module, &relocated_core, &relocated_pair)
+                        .unwrap()
+                        .is_some()
+                );
+                assert_eq!(
+                    encode(ast, &module, &relocated_core, &relocated_pair).unwrap(),
+                    None
+                );
                 let before = (ast.clone(), module.clone(), core.clone(), pair.clone());
                 for stage in 0..3 {
                     if stage == 1 {
