@@ -598,6 +598,8 @@ the owning producers when the paired tasks land.
 
 70. **[Native theorem TypedAst publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-TYPED-AST-PUBLICATION.md).** [x]
 
+71. **[Scheduled source theorem type checking](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-TYPE-CHECKING.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

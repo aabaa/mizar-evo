@@ -150,6 +150,7 @@ fn dispatch_registry_phase(
         return SchedulerDispatchOutcome::complete();
     }
 
+    let mut type_prefix = false;
     let dispatch_input = match phase_inputs {
         Some(provider) => {
             match provider
@@ -183,9 +184,13 @@ fn dispatch_registry_phase(
         }
         None => {
             use crate::{
-                frontend_adapter::SourceTheoremSignatureCollectionService, registry::PhaseService,
+                frontend_adapter::{
+                    FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                    SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
+                },
+                registry::PhaseService,
             };
-            let signature_prefix = task.task.kind
+            let check_and_elaborate = task.task.kind
                 == mizar_build::task_graph::TaskKind::CheckAndElaborate
                 && task.task.phases
                     == [
@@ -195,7 +200,8 @@ fn dispatch_registry_phase(
                         PipelinePhase::OverloadResolution,
                         PipelinePhase::Elaboration,
                         PipelinePhase::AlgorithmPreparation,
-                    ]
+                    ];
+            let signature_prefix = check_and_elaborate
                 && registry
                     .descriptor_for_phase(PipelinePhase::SignatureCollection)
                     .ok()
@@ -210,7 +216,49 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
+            type_prefix = check_and_elaborate
+                && registry.descriptors().len() == 5
+                && registry
+                    .descriptor_for_phase(PipelinePhase::SourceLoad)
+                    .ok()
+                    == Some(&SourceLoadService.phase())
+                && registry.descriptor_for_phase(PipelinePhase::Frontend).ok()
+                    == Some(
+                        &FrontendService {
+                            artifact_roots: Vec::new(),
+                        }
+                        .phase(),
+                    )
+                && [
+                    (
+                        PipelinePhase::ModuleResolve,
+                        SourceTheoremModuleResolverService.phase(),
+                        std::any::TypeId::of::<SourceTheoremModuleResolverService>(),
+                    ),
+                    (
+                        PipelinePhase::SignatureCollection,
+                        SourceTheoremSignatureCollectionService.phase(),
+                        std::any::TypeId::of::<SourceTheoremSignatureCollectionService>(),
+                    ),
+                    (
+                        PipelinePhase::TypeChecking,
+                        SourceTheoremTypeCheckingService.phase(),
+                        std::any::TypeId::of::<SourceTheoremTypeCheckingService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, descriptor, concrete)| {
+                    registry.descriptor_for_phase(phase).ok() == Some(&descriptor)
+                        && registry
+                            .service_for_phase(phase)
+                            .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                })
+                && matches!(
+                    registry.descriptor_for_phase(PipelinePhase::RegistrationResolution),
+                    Err(PhaseRegistryError::MissingPhaseService { .. })
+                );
             if !signature_prefix
+                && !type_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -252,7 +300,9 @@ fn dispatch_registry_phase(
                         }
                         SourceTheoremModuleResolverService.phase()
                     }
-                    _ if signature_prefix => SourceTheoremSignatureCollectionService.phase(),
+                    _ if signature_prefix || type_prefix => {
+                        SourceTheoremSignatureCollectionService.phase()
+                    }
                     _ => return None,
                 };
                 if registry.descriptor_for_phase(task.task.phases[0]).ok()? != &expected {
@@ -289,8 +339,9 @@ fn dispatch_registry_phase(
                 ));
                 let parents = if task.task.phases == [PipelinePhase::ModuleResolve]
                     || signature_prefix
+                    || type_prefix
                 {
-                    let (parent_phase, parent_kind) = if signature_prefix {
+                    let (parent_phase, parent_kind) = if signature_prefix || type_prefix {
                         (
                             IrPhase::new("ModuleResolve"),
                             OutputKind::new("SourceTheoremModuleCandidates"),
@@ -417,7 +468,75 @@ fn dispatch_registry_phase(
         if !dispatched_descriptors.insert(descriptor_key) {
             continue;
         }
-        let input = PhaseInput::new(task.task.unit.clone(), dispatch_input.clone());
+        let input = if type_prefix && *phase == PipelinePhase::TypeChecking {
+            let bundle = (|| {
+                use mizar_ir::{
+                    dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+                    identity::{OutputKind, PipelinePhase as IrPhase, WorkUnit as IrWorkUnit},
+                    storage::SchemaVersion,
+                };
+                let [result] = phase_results.get(&task.task.id)?.as_slice() else {
+                    return None;
+                };
+                let [parent] = result.output_refs.as_slice() else {
+                    return None;
+                };
+                let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
+                    return None;
+                };
+                let unit = IrWorkUnit::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                ));
+                if result.status != PhaseStatus::Complete
+                    || !result.diagnostics.is_empty()
+                    || parent.snapshot() != task.snapshot
+                    || parent.work_unit() != &unit
+                    || parent.phase() != &IrPhase::new("SignatureCollection")
+                    || parent.output_kind() != &OutputKind::new("SourceTheoremModuleSummary")
+                    || parent.schema_version() != SchemaVersion::new(1)
+                {
+                    return None;
+                }
+                let publisher = publisher?;
+                let parent = if source_load.is_some_and(|inputs| {
+                    inputs
+                        .captured
+                        .is_some_and(|capture| capture.native_sources().is_some())
+                }) {
+                    SealedParentOutputHandle::from_published_output(
+                        publisher,
+                        task.snapshot,
+                        parent.clone(),
+                    )
+                } else {
+                    SealedParentOutputHandle::from_current_output(
+                        publisher,
+                        task.snapshot,
+                        parent.clone(),
+                    )
+                }
+                .ok()?;
+                PhaseDispatchInputBundle::new(
+                    dispatch_input.snapshot(),
+                    dispatch_input.identities().input_hash(),
+                    dispatch_input.identities().dependency_hashes().to_vec(),
+                    vec![parent],
+                )
+                .ok()
+            })();
+            let Some(bundle) = bundle else {
+                return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
+                    task.task,
+                    "missing_phase_input_identities",
+                    "owner-provided phase input bundle is unavailable",
+                )]);
+            };
+            PhaseInput::new(task.task.unit.clone(), bundle)
+        } else {
+            PhaseInput::new(task.task.unit.clone(), dispatch_input.clone())
+        };
         match registry.execute_phase_with_resources(
             *phase,
             input,

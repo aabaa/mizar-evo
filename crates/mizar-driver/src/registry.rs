@@ -406,6 +406,10 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::SourceTheoremSignatureCollectionService)
     }
 
+    pub fn register_source_theorem_type_checking(&mut self) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremTypeCheckingService)
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

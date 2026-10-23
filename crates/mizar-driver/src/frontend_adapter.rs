@@ -3267,6 +3267,62 @@ impl PhaseService for SourceTheoremSignatureCollectionService {
     }
 }
 
+pub(crate) struct SourceTheoremTypeCheckingService;
+
+impl PhaseService for SourceTheoremTypeCheckingService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceTheoremTypeChecking",
+            PhaseOwner::MizarChecker,
+            vec![PipelinePhase::TypeChecking],
+            "mizar-checker/source-theorem-typed-ast-publication/v1",
+            "SourceTheoremTypedAst",
+        )
+        .expect("source theorem type checking descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem type checking has no complete dependency footprint".to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        match inputs.publish_native_theorem_typed_ast(&input, &publisher) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {
