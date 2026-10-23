@@ -223,6 +223,7 @@ Public entry functions:
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
 - `encode_local_variable_reflexivity_names`
+- `encode_local_variable_transitivity_names`
 - `build_source_registration_candidate_inputs`
 - `source_registration_ground_term_correspondence`
 - `screen_source_registration_candidate`

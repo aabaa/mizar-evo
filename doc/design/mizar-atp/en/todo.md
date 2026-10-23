@@ -714,6 +714,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 43. **[Local-variable reflexivity names](../../task_contracts/en/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md).** [x] — Bounded untrusted names prerequisite; source Proof consumption and full finder remain open.
 
+44. **[Explicit local-variable transitivity names](../../task_contracts/en/ATP-LOCAL-VARIABLE-TRANSITIVITY-NAMES.md).** [x] — Explicit actual-chain names only; source Proof consumption and full finder remain open.
+
 ## Recommended Verification
 
 Run after each task:

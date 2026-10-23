@@ -659,6 +659,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 43. **[Local-variable reflexivity names](../../task_contracts/ja/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md).** [x] — 限定した untrusted names の前提。source Proof consumer と汎用 finder は未完了。
 
+44. **[Explicit local-variable transitivity names](../../task_contracts/ja/ATP-LOCAL-VARIABLE-TRANSITIVITY-NAMES.md).** [x] — 明示した実 chain の names のみ。source Proof consumer と汎用 finder は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -722,6 +722,58 @@ pub fn encode_local_variable_reflexivity_names(
     Ok(vec![name])
 }
 
+/// Encodes one untrusted transitivity name for an explicit actual variable chain.
+pub fn encode_local_variable_transitivity_names(
+    parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
+    middle: mizar_kernel::clause::VariableId,
+) -> Result<Vec<Vec<u8>>, String> {
+    let invalid = || "unsupported local-variable transitivity input".to_owned();
+    if parsed.schema_version() != 1
+        || !parsed.substitutions().is_empty()
+        || parsed.final_goal().polarity
+            != mizar_kernel::formula_evidence::GoalPolarity::AssertFalseForRefutation
+    {
+        return Err(invalid());
+    }
+    let mizar_kernel::formula_evidence::Formula::Atom(goal) = &parsed.final_goal().formula else {
+        return Err(invalid());
+    };
+    if goal.symbol.kind != mizar_kernel::clause::SymbolKind::Equality {
+        return Err(invalid());
+    }
+    let [
+        mizar_kernel::clause::Term::Variable(left),
+        mizar_kernel::clause::Term::Variable(right),
+    ] = goal.arguments.as_slice()
+    else {
+        return Err(invalid());
+    };
+    for (from, to) in [(left, &middle), (&middle, right)] {
+        if !parsed.formulas().iter().any(|entry| {
+            let mizar_kernel::formula_evidence::Formula::Atom(atom) = &entry.formula else {
+                return false;
+            };
+            atom.symbol == goal.symbol
+                && matches!(
+                    atom.arguments.as_slice(),
+                    [mizar_kernel::clause::Term::Variable(actual_from),
+                     mizar_kernel::clause::Term::Variable(actual_to)]
+                    if actual_from == from && actual_to == to
+                )
+        }) {
+            return Err(invalid());
+        }
+    }
+    let mut name = 1u32.to_be_bytes().to_vec();
+    name.push(3);
+    name.extend(goal.symbol.id.0.to_be_bytes());
+    for variable in [left, &middle, right] {
+        name.push(1);
+        name.extend(variable.0.to_be_bytes());
+    }
+    Ok(vec![name])
+}
+
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt};
 

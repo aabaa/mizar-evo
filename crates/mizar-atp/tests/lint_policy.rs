@@ -545,6 +545,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "classify_backend_observation",
             "encode_closed_choice_reflexivity_names",
             "encode_local_variable_reflexivity_names",
+            "encode_local_variable_transitivity_names",
             "run_backend",
             "screen_source_registration_candidate",
             "source_registration_ground_term_correspondence",
