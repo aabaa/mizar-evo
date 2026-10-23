@@ -4713,6 +4713,63 @@ impl PhaseService for SourceTheoremElaborationService {
     }
 }
 
+pub(crate) struct SourceTheoremAlgorithmPreparationService;
+
+impl PhaseService for SourceTheoremAlgorithmPreparationService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceTheoremAlgorithmPreparation",
+            PhaseOwner::MizarCore,
+            vec![PipelinePhase::AlgorithmPreparation],
+            "mizar-core/source-theorem-preparation-publication/v1",
+            "SourceTheoremPreparation",
+        )
+        .expect("source theorem algorithm preparation descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem algorithm preparation has no complete dependency footprint"
+                .to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        match inputs.publish_native_theorem_preparation(&input, &publisher) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {

@@ -946,20 +946,35 @@ impl CompilerDriver {
         let built_in_prefix = {
             use crate::{
                 frontend_adapter::{
-                    FrontendService, SourceLoadService, SourceTheoremElaborationService,
-                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
+                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
+                    SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                 },
                 registry::PhaseService,
             };
+            let preparation_profile = self.registry.descriptors().len() == 9
+                && self
+                    .registry
+                    .descriptor_for_phase(PipelinePhase::AlgorithmPreparation)
+                    .ok()
+                    == Some(&SourceTheoremAlgorithmPreparationService.phase())
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::AlgorithmPreparation)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremAlgorithmPreparationService>()
+                    });
             (self.registry.descriptors().len() == 2
                 || ((self.registry.descriptors().len() == 3
                         || ((self.registry.descriptors().len() == 4
                             || ((self.registry.descriptors().len() == 5
                                 || ((self.registry.descriptors().len() == 6
                                     || ((self.registry.descriptors().len() == 7
-                                        || (self.registry.descriptors().len() == 8
+                                        || ((self.registry.descriptors().len() == 8
+                                            || preparation_profile)
                                             && self.registry.descriptor_for_phase(PipelinePhase::Elaboration).ok()
                                                 == Some(&SourceTheoremElaborationService.phase())
                                             && self.registry.service_for_phase(PipelinePhase::Elaboration).is_ok_and(|service| {

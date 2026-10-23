@@ -422,6 +422,10 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::SourceTheoremElaborationService)
     }
 
+    pub fn register_source_theorem_algorithm_preparation(&mut self) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremAlgorithmPreparationService)
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

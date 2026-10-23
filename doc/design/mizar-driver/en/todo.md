@@ -628,6 +628,8 @@ the owning producers when the paired tasks land.
 
 85. **[Native theorem preparation publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-PREPARATION-PUBLICATION.md).** [x]
 
+86. **[Scheduled theorem algorithm preparation](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ALGORITHM-PREPARATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
