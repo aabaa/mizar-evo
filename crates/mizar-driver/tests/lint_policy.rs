@@ -331,6 +331,8 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "pub use frontend_adapter::native_theorem_core_from_storage_bytes;",
         "pub use frontend_adapter::native_theorem_core_semantic_payload;",
         "pub use frontend_adapter::native_theorem_core_storage_bytes;",
+        "pub use frontend_adapter::native_theorem_registration_closure_from_storage_bytes;",
+        "pub use frontend_adapter::native_theorem_registration_closure_storage_bytes;",
         "pub use frontend_adapter::native_theorem_typed_ast_from_storage_bytes;",
         "pub use frontend_adapter::native_theorem_typed_ast_storage_bytes;",
         "pub use frontend_adapter::native_theorem_vc_from_storage_bytes;",
@@ -673,6 +675,9 @@ fn lib_has_unexpected_code_line(line: &str) -> bool {
         && line != "pub use frontend_adapter::native_theorem_core_from_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_core_semantic_payload;"
         && line != "pub use frontend_adapter::native_theorem_core_storage_bytes;"
+        && line
+            != "pub use frontend_adapter::native_theorem_registration_closure_from_storage_bytes;"
+        && line != "pub use frontend_adapter::native_theorem_registration_closure_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_typed_ast_from_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_typed_ast_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_vc_from_storage_bytes;"

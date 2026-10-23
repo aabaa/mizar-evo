@@ -5475,6 +5475,123 @@ pub fn native_theorem_typed_ast_from_storage_bytes(
     Ok(Some(checked.2))
 }
 
+/// Stores lossless source syntax only when genuine checker replay reproduces the supplied closure.
+pub fn native_theorem_registration_closure_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    closure: &mizar_checker::cluster_trace::ClusterClosureOutput,
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(syntax) = ast.canonical_bytes() else {
+        return Ok(None);
+    };
+    let domain = b"mizar-driver/native-theorem-registration-closure-storage/v1\0";
+    let fields = [
+        module.package().as_str().as_bytes(),
+        module.path().as_str().as_bytes(),
+        syntax.as_slice(),
+        closure
+            .trace()
+            .traversal_profile()
+            .cache_key_material()
+            .as_str()
+            .as_bytes(),
+    ];
+    let mut size = domain.len();
+    for field in fields {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|_| size.checked_add(8))
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    let Some(replayed) =
+        native_theorem_registration_closure_from_storage_bytes(&bytes, ast.source_id, module)?
+    else {
+        return Ok(None);
+    };
+    Ok((replayed == *closure).then_some(bytes))
+}
+
+/// Rebinds stored syntax to an existing source id and replays the genuine Checker owners.
+pub fn native_theorem_registration_closure_from_storage_bytes(
+    bytes: &[u8],
+    source_id: mizar_session::SourceId,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+) -> Result<Option<mizar_checker::cluster_trace::ClusterClosureOutput>, String> {
+    let domain = b"mizar-driver/native-theorem-registration-closure-storage/v1\0";
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) = bytes.strip_prefix(domain) else {
+        return Ok(None);
+    };
+    let mut fields = [&[][..]; 4];
+    for field in &mut fields {
+        let Some(length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        remaining = &remaining[8..];
+        let Some(value) = remaining.get(..length) else {
+            return Ok(None);
+        };
+        *field = value;
+        remaining = &remaining[length..];
+    }
+    if !remaining.is_empty()
+        || fields[0] != module.package().as_str().as_bytes()
+        || fields[1] != module.path().as_str().as_bytes()
+    {
+        return Ok(None);
+    }
+    let Some(ast) =
+        <MizarParserSeam as ParserSeam>::Ast::from_canonical_bytes(fields[2], source_id)
+    else {
+        return Ok(None);
+    };
+    let Some((arena, env)) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, module)?
+    else {
+        return Ok(None);
+    };
+    if mizar_resolve::symbols::source_theorem_module_candidates(&ast, &arena, &env)?.is_none() {
+        return Ok(None);
+    }
+    let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        mizar_resolve::names::SourceVariableScopeInput::new(&ast, module, &env),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let checked = mizar_checker::type_checker::DeclarationChecker::
+        check_source_theorem_equalities_with_typed_declarations(&arena, &env, &scope)?;
+    let closure = mizar_checker::type_checker::check_source_theorem_registration_closure(
+        &arena, &env, &scope, &checked.2,
+    )?;
+    Ok((fields[3]
+        == closure
+            .trace()
+            .traversal_profile()
+            .cache_key_material()
+            .as_str()
+            .as_bytes())
+    .then_some(closure))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
