@@ -577,6 +577,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 75. **[Scheduled theorem registration resolution](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-REGISTRATION-RESOLUTION.md).** [x]
 
+76. **[Native theorem metadata storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-METADATA-STORAGE-REPLAY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

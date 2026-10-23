@@ -608,6 +608,8 @@ the owning producers when the paired tasks land.
 
 75. **[Scheduled theorem registration resolution](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-REGISTRATION-RESOLUTION.md).** [x]
 
+76. **[Native theorem metadata storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-METADATA-STORAGE-REPLAY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
