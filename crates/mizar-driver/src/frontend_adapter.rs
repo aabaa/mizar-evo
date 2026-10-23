@@ -3312,6 +3312,53 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some((result, decision)))
     }
 
+    /// Runs actual deterministic discharge after authenticating both original parents.
+    pub fn native_theorem_discharge_with_core_vc_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        policy: &mizar_vc::discharge::DischargePolicy,
+    ) -> Result<Option<mizar_vc::discharge::DischargeOutput>, String> {
+        if self
+            .native_theorem_kernel_handoff_with_core_vc_parents(input, publisher, vc_id)?
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem discharge requires one Core parent".to_owned())?;
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem discharge requires one VC parent".to_owned())?;
+        let core_ref = core_parent.as_output_ref();
+        let vc_ref = vc_parent.as_output_ref();
+        let storage = publisher.storage();
+        let vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        let output = mizar_vc::discharge::try_discharge(mizar_vc::discharge::DischargeInput {
+            vc_set: &vcs,
+            policy,
+        })
+        .map_err(|error| error.to_string())?;
+        for parent in [core_ref, vc_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some(output))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

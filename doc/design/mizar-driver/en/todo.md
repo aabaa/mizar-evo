@@ -640,6 +640,8 @@ the owning producers when the paired tasks land.
 
 91. **[Native theorem reflexivity Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-REFLEXIVITY-CORE-VC-CALLER.md).** [x]
 
+92. **[Native theorem discharge Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-CORE-VC-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
