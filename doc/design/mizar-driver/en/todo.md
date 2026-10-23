@@ -610,6 +610,8 @@ the owning producers when the paired tasks land.
 
 76. **[Native theorem metadata storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-METADATA-STORAGE-REPLAY.md).** [x]
 
+77. **[Native theorem metadata Type Registration caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-METADATA-TYPE-REGISTRATION-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

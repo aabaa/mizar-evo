@@ -1870,6 +1870,150 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Returns whole native metadata bound to actual Type and Registration parents.
+    pub fn native_theorem_metadata_with_type_registration_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<(
+            mizar_checker::binding_env::BindingEnv,
+            mizar_checker::type_checker::TermFormulaInferenceOutput,
+            mizar_checker::typed_ast::TypedAst,
+            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+        )>,
+        String,
+    > {
+        if input.parent_outputs().len() != 2 {
+            return Err("native theorem metadata requires two parents".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem metadata requires a module".to_owned());
+        };
+        let typed = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("TypeChecking")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremTypedAst")
+        }))
+        .ok_or_else(|| "native theorem metadata requires one Type parent".to_owned())?;
+        let registration = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("RegistrationResolution")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremRegistrationClosure")
+        }))
+        .ok_or_else(|| "native theorem metadata requires one Registration parent".to_owned())?;
+        let type_ref = typed.as_output_ref();
+        let registration_ref = registration.as_output_ref();
+        let storage = publisher.storage();
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: input.identities().input_hash(),
+        }];
+        for parent in [type_ref, registration_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+            if parent.snapshot() != input.snapshot
+                || parent.work_unit() != &work_unit
+                || parent.schema_version() != SchemaVersion::new(1)
+                || parent.lineage().named_input_hashes != named
+            {
+                return Err("native theorem metadata parent binding mismatch".to_owned());
+            }
+        }
+        if registration_ref.lineage().parents != vec![type_ref.output()] {
+            return Err("native theorem metadata Registration parent link mismatch".to_owned());
+        }
+        let sole_type = PhaseInput::new(
+            input.work_unit.clone(),
+            mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                input.identities().dependency_hashes().to_vec(),
+                vec![typed.clone()],
+            )
+            .map_err(|error| error.to_string())?,
+        );
+        let Some(closure) =
+            self.native_theorem_registration_closure_with_type_parent(&sole_type, publisher)?
+        else {
+            return Ok(None);
+        };
+        let registration = storage
+            .typed_handle::<mizar_checker::cluster_trace::ClusterClosureOutput>(
+                registration_ref,
+                &OutputKind::new("SourceTheoremRegistrationClosure"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage
+            .get(&registration)
+            .map_err(|error| error.to_string())?;
+        if *retained != closure {
+            return Err("native theorem metadata complete Registration mismatch".to_owned());
+        }
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem metadata requires one captured source".to_owned())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem metadata capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem metadata requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem metadata requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let metadata =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        for parent in [type_ref, registration_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some(metadata))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
