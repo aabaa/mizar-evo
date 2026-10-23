@@ -3064,6 +3064,126 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map(Some)
             .map_err(|error| error.to_string())
     }
+    /// Associates source-authenticated Core and VCs with an untrusted local handoff.
+    pub fn native_theorem_kernel_handoff_with_core_vc_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+    ) -> Result<Option<mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff>, String> {
+        if input.parent_outputs().len() != 2 {
+            return Err("native theorem kernel handoff requires two parents".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem kernel handoff requires a module".to_owned());
+        };
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem kernel handoff requires one Core parent".to_owned())?;
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem kernel handoff requires one VC parent".to_owned())?;
+        let core_ref = core_parent.as_output_ref();
+        let vc_ref = vc_parent.as_output_ref();
+        let storage = publisher.storage();
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: input.identities().input_hash(),
+        }];
+        for parent in [core_ref, vc_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+            if parent.snapshot() != input.snapshot
+                || parent.work_unit() != &work_unit
+                || parent.schema_version() != SchemaVersion::new(1)
+                || parent.lineage().named_input_hashes != named
+            {
+                return Err("native theorem kernel handoff parent binding mismatch".to_owned());
+            }
+        }
+        if vc_ref.lineage().parents.len() != 2
+            || !vc_ref.lineage().parents.contains(&core_ref.output())
+        {
+            return Err(
+                "native theorem kernel handoff requires Core and Preparation ancestry".to_owned(),
+            );
+        }
+        let preparation = vc_ref
+            .lineage()
+            .parents
+            .iter()
+            .find(|id| **id != core_ref.output())
+            .and_then(|id| publisher.registry().output_lineage(*id))
+            .ok_or_else(|| {
+                "native theorem kernel handoff requires registered Preparation ancestry".to_owned()
+            })?;
+        if preparation.phase != IrPipelinePhase::new("AlgorithmPreparation")
+            || preparation.output_kind != OutputKind::new("SourceTheoremPreparation")
+            || preparation.snapshot != input.snapshot
+            || preparation.work_unit != work_unit
+            || preparation.named_input_hashes != named
+            || preparation.parents != vec![core_ref.output()]
+        {
+            return Err("native theorem kernel handoff Preparation ancestry mismatch".to_owned());
+        }
+        let sole_core = PhaseInput::new(
+            input.work_unit.clone(),
+            mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                input.identities().dependency_hashes().to_vec(),
+                vec![core_parent.clone()],
+            )
+            .map_err(|error| error.to_string())?,
+        );
+        if self
+            .native_theorem_preparation_with_core_parent(&sole_core, publisher)?
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let core = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                core_ref,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&core).map_err(|error| error.to_string())?;
+        let vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        if vcs.snapshot() != input.snapshot {
+            return Err("native theorem kernel handoff VC snapshot mismatch".to_owned());
+        }
+        let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_kernel_handoff(
+            &core, &vcs, vc_id,
+        )?;
+        for parent in [core_ref, vc_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some(handoff))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

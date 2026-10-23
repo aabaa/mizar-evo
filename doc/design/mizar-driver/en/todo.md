@@ -636,6 +636,8 @@ the owning producers when the paired tasks land.
 
 89. **[Scheduled theorem VC generation](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-VC-GENERATION.md).** [x]
 
+90. **[Native theorem Kernel handoff Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-KERNEL-HANDOFF-CORE-VC-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
