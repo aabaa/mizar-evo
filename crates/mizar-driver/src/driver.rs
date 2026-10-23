@@ -951,10 +951,24 @@ impl CompilerDriver {
                     SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
+                    SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
-            let preparation_profile = self.registry.descriptors().len() == 9
+            let vc_profile = self.registry.descriptors().len() == 10
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::VcGenerate)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcGenerationService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::VcGenerate)
+                                .ok()
+                                == Some(&service.phase())
+                    });
+            let preparation_profile = (self.registry.descriptors().len() == 9 || vc_profile)
                 && self
                     .registry
                     .descriptor_for_phase(PipelinePhase::AlgorithmPreparation)

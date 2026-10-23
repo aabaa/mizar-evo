@@ -426,6 +426,17 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::SourceTheoremAlgorithmPreparationService)
     }
 
+    pub fn register_source_theorem_vc_generation(
+        &mut self,
+        generation_schema: mizar_vc::vc_ir::GenerationSchemaVersion,
+        vc_schema: mizar_vc::vc_ir::VcSchemaVersion,
+    ) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremVcGenerationService {
+            generation_schema,
+            vc_schema,
+        })
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

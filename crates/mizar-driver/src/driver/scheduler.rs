@@ -155,6 +155,7 @@ fn dispatch_registry_phase(
     let mut overload_prefix = false;
     let mut elaboration_prefix = false;
     let mut preparation_prefix = false;
+    let mut vc_group = false;
     let dispatch_input = match phase_inputs {
         Some(provider) => {
             match provider
@@ -194,6 +195,7 @@ fn dispatch_registry_phase(
                     SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
+                    SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
@@ -208,6 +210,8 @@ fn dispatch_registry_phase(
                         PipelinePhase::Elaboration,
                         PipelinePhase::AlgorithmPreparation,
                     ];
+            let vc_task = task.task.kind == mizar_build::task_graph::TaskKind::VcGenerate
+                && task.task.phases == [PipelinePhase::VcGenerate];
             let signature_prefix = check_and_elaborate
                 && registry
                     .descriptor_for_phase(PipelinePhase::SignatureCollection)
@@ -223,7 +227,7 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            let typed_profile = check_and_elaborate
+            let typed_profile = (check_and_elaborate || vc_task)
                 && registry
                     .descriptor_for_phase(PipelinePhase::SourceLoad)
                     .ok()
@@ -259,7 +263,8 @@ fn dispatch_registry_phase(
                             .service_for_phase(phase)
                             .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
                 });
-            type_prefix = typed_profile
+            type_prefix = check_and_elaborate
+                && typed_profile
                 && registry.descriptors().len() == 5
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::RegistrationResolution),
@@ -276,7 +281,8 @@ fn dispatch_registry_phase(
                         std::any::Any::type_id(service)
                             == std::any::TypeId::of::<SourceTheoremRegistrationResolutionService>()
                     });
-            registration_prefix = registration_profile
+            registration_prefix = check_and_elaborate
+                && registration_profile
                 && registry.descriptors().len() == 6
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::OverloadResolution),
@@ -293,7 +299,8 @@ fn dispatch_registry_phase(
                         std::any::Any::type_id(service)
                             == std::any::TypeId::of::<SourceTheoremOverloadResolutionService>()
                     });
-            overload_prefix = overload_profile
+            overload_prefix = check_and_elaborate
+                && overload_profile
                 && registry.descriptors().len() == 7
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::Elaboration),
@@ -310,14 +317,14 @@ fn dispatch_registry_phase(
                         std::any::Any::type_id(service)
                             == std::any::TypeId::of::<SourceTheoremElaborationService>()
                     });
-            elaboration_prefix = elaboration_profile
+            elaboration_prefix = check_and_elaborate
+                && elaboration_profile
                 && registry.descriptors().len() == 8
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::AlgorithmPreparation),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            preparation_prefix = elaboration_profile
-                && registry.descriptors().len() == 9
+            let preparation_profile = elaboration_profile
                 && registry
                     .descriptor_for_phase(PipelinePhase::AlgorithmPreparation)
                     .ok()
@@ -327,17 +334,38 @@ fn dispatch_registry_phase(
                     .is_ok_and(|service| {
                         std::any::Any::type_id(service)
                             == std::any::TypeId::of::<SourceTheoremAlgorithmPreparationService>()
-                    })
+                    });
+            preparation_prefix = check_and_elaborate
+                && preparation_profile
+                && registry.descriptors().len() == 9
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::VcGenerate),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
+            let vc_prefix = preparation_profile
+                && registry.descriptors().len() == 10
+                && registry
+                    .service_for_phase(PipelinePhase::VcGenerate)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcGenerationService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::VcGenerate)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && matches!(
+                    registry.descriptor_for_phase(PipelinePhase::ArtifactCommit),
+                    Err(PhaseRegistryError::MissingPhaseService { .. })
+                );
+            vc_group = vc_prefix && check_and_elaborate;
             if !signature_prefix
                 && !type_prefix
                 && !registration_prefix
                 && !overload_prefix
                 && !elaboration_prefix
                 && !preparation_prefix
+                && !vc_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -368,6 +396,10 @@ fn dispatch_registry_phase(
                         artifact_roots: Vec::new(),
                     }
                     .phase(),
+                    [PipelinePhase::VcGenerate] if vc_prefix => registry
+                        .descriptor_for_phase(PipelinePhase::VcGenerate)
+                        .ok()?
+                        .clone(),
                     [PipelinePhase::ModuleResolve] => {
                         if std::any::Any::type_id(
                             registry
@@ -384,7 +416,8 @@ fn dispatch_registry_phase(
                         || registration_prefix
                         || overload_prefix
                         || elaboration_prefix
-                        || preparation_prefix =>
+                        || preparation_prefix
+                        || vc_group =>
                     {
                         SourceTheoremSignatureCollectionService.phase()
                     }
@@ -422,13 +455,54 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let parents = if task.task.phases == [PipelinePhase::ModuleResolve]
+                let parents = if vc_task && vc_prefix {
+                    let mut dependencies = task.task.dependencies.iter().filter_map(|id| {
+                        let results = phase_results.get(id)?;
+                        let expected = [
+                            ("SignatureCollection", "SourceTheoremModuleSummary"),
+                            ("TypeChecking", "SourceTheoremTypedAst"),
+                            ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                            ("OverloadResolution", "SourceTheoremMetadata"),
+                            ("Elaboration", "SourceTheoremCore"),
+                            ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                        ];
+                        if results.len() != expected.len()
+                            || !results.iter().zip(expected).all(|(result, (phase, kind))| {
+                                let [output] = result.output_refs.as_slice() else {
+                                    return false;
+                                };
+                                result.status == PhaseStatus::Complete
+                                    && result.diagnostics.is_empty()
+                                    && output.phase() == &IrPhase::new(phase)
+                                    && output.output_kind() == &OutputKind::new(kind)
+                                    && output.snapshot() == task.snapshot
+                                    && output.work_unit() == &unit
+                                    && output.schema_version()
+                                        == mizar_ir::storage::SchemaVersion::new(1)
+                            })
+                        {
+                            return None;
+                        }
+                        let metadata = &results[3].output_refs[0];
+                        let core = &results[4].output_refs[0];
+                        let preparation = &results[5].output_refs[0];
+                        (core.lineage().parents == vec![metadata.output()]
+                            && preparation.lineage().parents == vec![core.output()])
+                        .then_some((core, preparation))
+                    });
+                    let (core, preparation) = dependencies.next()?;
+                    if dependencies.next().is_some() {
+                        return None;
+                    }
+                    vec![core, preparation]
+                } else if task.task.phases == [PipelinePhase::ModuleResolve]
                     || signature_prefix
                     || type_prefix
                     || registration_prefix
                     || overload_prefix
                     || elaboration_prefix
                     || preparation_prefix
+                    || vc_group
                 {
                     let (parent_phase, parent_kind) = if signature_prefix
                         || type_prefix
@@ -436,6 +510,7 @@ fn dispatch_registry_phase(
                         || overload_prefix
                         || elaboration_prefix
                         || preparation_prefix
+                        || vc_group
                     {
                         (
                             IrPhase::new("ModuleResolve"),
@@ -568,16 +643,19 @@ fn dispatch_registry_phase(
                 || registration_prefix
                 || overload_prefix
                 || elaboration_prefix
-                || preparation_prefix))
+                || preparation_prefix
+                || vc_group))
             || ((registration_prefix
                 || overload_prefix
                 || elaboration_prefix
-                || preparation_prefix)
+                || preparation_prefix
+                || vc_group)
                 && *phase == PipelinePhase::RegistrationResolution)
-            || ((overload_prefix || elaboration_prefix || preparation_prefix)
+            || ((overload_prefix || elaboration_prefix || preparation_prefix || vc_group)
                 && *phase == PipelinePhase::OverloadResolution)
-            || ((elaboration_prefix || preparation_prefix) && *phase == PipelinePhase::Elaboration)
-            || (preparation_prefix && *phase == PipelinePhase::AlgorithmPreparation)
+            || ((elaboration_prefix || preparation_prefix || vc_group)
+                && *phase == PipelinePhase::Elaboration)
+            || ((preparation_prefix || vc_group) && *phase == PipelinePhase::AlgorithmPreparation)
         {
             let bundle = (|| {
                 use mizar_ir::{

@@ -603,6 +603,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 88. **[Native theorem VC Core Preparation publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-VC-CORE-PREPARATION-PUBLICATION.md).** [x]
 
+89. **[Scheduled theorem VC generation](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-VC-GENERATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
