@@ -24838,3 +24838,394 @@ fn source_algorithm_state_transitivity_names_reject_untrusted_profiles() {
         }
     }
 }
+#[test]
+fn source_algorithm_state_syntax_payloads_preserve_exact_declarations() {
+    use mizar_resolve::{
+        declarations::{DeclarationShellCollector, DeclarationShellKind},
+        env::SymbolKind,
+        symbols::{
+            source_algorithm_state_syntax_payloads_from_arena as syntax,
+            source_algorithm_syntax_payloads_from_arena as old_syntax, validate_source_symbol_env,
+        },
+    };
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    assert_eq!(fixture.matches("    assert x = a;\n").count(), 1);
+    let original = fixture.replacen("    assert x = a;\n", "", 1);
+    let renamed = original
+        .replace("swapalgo", "copyalgo")
+        .replace("let a be", "let input be")
+        .replace("copyalgo(a)", "copyalgo(input)")
+        .replace("result = a", "result = input")
+        .replace("var x := a", "var local := input")
+        .replace("const c := a", "const saved := input")
+        .replace("x := c", "local := saved")
+        .replace("return x", "return local");
+    let independent = original.replacen("    x := c;\n", "    const d := a;\n    x := c;\n", 1);
+    let postcondition_hex = concat!(
+        "6d697a61722d7265736f6c76652f736f757263652d616c676f726974686d2d73796e7461782f76310000970000000900ab00",
+        "000001000200650000000b7465726d696e6174696e67000000000002006500000009616c676f726974686d00000000000200",
+        "640000000873776170616c676f00000000009800000003000200660000000128000000000002006400000001610000000000",
+        "02006600000001290000000000020066000000022d3e0000000000150000000100190000000100020065000000066f626a65",
+        "63740000000000ad000000020002006500000007656e737572657300000000002c00000001002d00000003001c0000000100",
+        "1d000000010002006400000006726573756c740000000000020066000000013d00000000001c00000001001d000000010002",
+        "00640000000161000000000099000000030002006500000002646f00000000009a00000004009b0000000300020065000000",
+        "0376617200000000009c000000030002006400000001780000000000020066000000023a3d00000000001c00000001001d00",
+        "0000010002006400000001610000000000020066000000013b00000000009b000000030002006500000005636f6e73740000",
+        "0000009c000000030002006400000001630000000000020066000000023a3d00000000001c00000001001d00000001000200",
+        "6400000001610000000000020066000000013b00000000009d00000004009e00000001000200640000000178000000000002",
+        "0066000000023a3d00000000001c00000001001d000000010002006400000001630000000000020066000000013b00000000",
+        "00a000000003000200650000000672657475726e00000000001c00000001001d000000010002006400000001780000000000",
+        "020066000000013b000000000002006500000003656e640000000000020066000000013b00000000",
+    );
+    let renamed_hex = concat!(
+        "6d697a61722d7265736f6c76652f736f757263652d616c676f726974686d2d73796e7461782f76310000970000000900ab00",
+        "000001000200650000000b7465726d696e6174696e67000000000002006500000009616c676f726974686d00000000000200",
+        "6400000008636f7079616c676f00000000009800000003000200660000000128000000000002006400000005696e70757400",
+        "0000000002006600000001290000000000020066000000022d3e000000000015000000010019000000010002006500000006",
+        "6f626a6563740000000000ad000000020002006500000007656e737572657300000000002c00000001002d00000003001c00",
+        "000001001d000000010002006400000006726573756c740000000000020066000000013d00000000001c00000001001d0000",
+        "00010002006400000005696e707574000000000099000000030002006500000002646f00000000009a00000004009b000000",
+        "03000200650000000376617200000000009c0000000300020064000000056c6f63616c0000000000020066000000023a3d00",
+        "000000001c00000001001d000000010002006400000005696e7075740000000000020066000000013b00000000009b000000",
+        "030002006500000005636f6e737400000000009c00000003000200640000000573617665640000000000020066000000023a",
+        "3d00000000001c00000001001d000000010002006400000005696e7075740000000000020066000000013b00000000009d00",
+        "000004009e0000000100020064000000056c6f63616c0000000000020066000000023a3d00000000001c00000001001d0000",
+        "0001000200640000000573617665640000000000020066000000013b0000000000a000000003000200650000000672657475",
+        "726e00000000001c00000001001d0000000100020064000000056c6f63616c0000000000020066000000013b000000000002",
+        "006500000003656e640000000000020066000000013b00000000",
+    );
+    let independent_hex = concat!(
+        "6d697a61722d7265736f6c76652f736f757263652d616c676f726974686d2d73796e7461782f76310000970000000900ab00",
+        "000001000200650000000b7465726d696e6174696e67000000000002006500000009616c676f726974686d00000000000200",
+        "640000000873776170616c676f00000000009800000003000200660000000128000000000002006400000001610000000000",
+        "02006600000001290000000000020066000000022d3e0000000000150000000100190000000100020065000000066f626a65",
+        "63740000000000ad000000020002006500000007656e737572657300000000002c00000001002d00000003001c0000000100",
+        "1d000000010002006400000006726573756c740000000000020066000000013d00000000001c00000001001d000000010002",
+        "00640000000161000000000099000000030002006500000002646f00000000009a00000005009b0000000300020065000000",
+        "0376617200000000009c000000030002006400000001780000000000020066000000023a3d00000000001c00000001001d00",
+        "0000010002006400000001610000000000020066000000013b00000000009b000000030002006500000005636f6e73740000",
+        "0000009c000000030002006400000001630000000000020066000000023a3d00000000001c00000001001d00000001000200",
+        "6400000001610000000000020066000000013b00000000009b000000030002006500000005636f6e737400000000009c0000",
+        "00030002006400000001640000000000020066000000023a3d00000000001c00000001001d00000001000200640000000161",
+        "0000000000020066000000013b00000000009d00000004009e00000001000200640000000178000000000002006600000002",
+        "3a3d00000000001c00000001001d000000010002006400000001630000000000020066000000013b0000000000a000000003",
+        "000200650000000672657475726e00000000001c00000001001d000000010002006400000001780000000000020066000000",
+        "013b000000000002006500000003656e640000000000020066000000013b00000000",
+    );
+    for (text, name, hex, length) in [
+        (&original, "swapalgo", postcondition_hex, 690),
+        (&renamed, "copyalgo", renamed_hex, 726),
+        (&independent, "swapalgo", independent_hex, 784),
+    ] {
+        let expected = hex
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(expected.len(), length);
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        let shells =
+            DeclarationShellCollector::new(frontend.ast.as_ref().unwrap(), source.module())
+                .collect();
+        let algorithms = shells
+            .declarations()
+            .iter()
+            .filter(|shell| shell.kind() == DeclarationShellKind::AlgorithmDefinition)
+            .collect::<Vec<_>>();
+        assert_eq!(algorithms.len(), 1);
+        let parent = shells.declaration(algorithms[0].parent().unwrap()).unwrap();
+        assert_eq!(parent.kind(), DeclarationShellKind::DefinitionBlock);
+        assert!(parent.parent().is_none());
+        let entries = collected
+            .env()
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+            .collect::<Vec<_>>();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].primary_spelling(), name);
+        let before = (source.clone(), collected.env().clone());
+        let values = syntax(&source, collected.env()).unwrap();
+        assert_eq!(values.len(), 1);
+        assert_eq!(values.get(entries[0].symbol()), Some(&expected));
+        assert_eq!(syntax(&source, collected.env()).unwrap(), values);
+        assert_eq!((source, collected.env().clone()), before);
+    }
+    let combined = format!("{original}\n{renamed}");
+    let (frontend, source, collected) =
+        source_registration_owner_inputs(&combined, "owner-test", "owners", 0);
+    assert!(frontend.diagnostics.is_empty());
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let entries = collected
+        .env()
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+        .collect::<Vec<_>>();
+    let before = (source.clone(), collected.env().clone());
+    let values = syntax(&source, collected.env()).unwrap();
+    assert_eq!(values.len(), 2);
+    assert_eq!(
+        values.keys().collect::<std::collections::BTreeSet<_>>(),
+        entries
+            .iter()
+            .map(|entry| entry.symbol())
+            .collect::<std::collections::BTreeSet<_>>()
+    );
+    for (name, hex) in [("swapalgo", postcondition_hex), ("copyalgo", renamed_hex)] {
+        let entry = entries
+            .iter()
+            .find(|entry| entry.primary_spelling() == name)
+            .unwrap();
+        let expected = hex
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(values.get(entry.symbol()), Some(&expected));
+    }
+    assert_eq!((source, collected.env().clone()), before);
+    for text in ["", "theorem T: for X being set holds X = X;"] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        assert!(syntax(&source, collected.env()).unwrap().is_empty());
+    }
+    let return_only = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz"
+    );
+    let (_, source, collected) =
+        source_registration_owner_inputs(return_only, "owner-test", "owners", 0);
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    assert_eq!(
+        syntax(&source, collected.env()).unwrap(),
+        old_syntax(&source, collected.env()).unwrap()
+    );
+}
+
+#[test]
+fn source_algorithm_state_syntax_payloads_preserve_source_associations_and_locality() {
+    use mizar_resolve::{
+        env::{SymbolKind, Visibility},
+        symbols::{
+            source_algorithm_state_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    let original = fixture.replacen("    assert x = a;\n", "", 1);
+    let second = original.replace("swapalgo", "otheralgo");
+    let text = format!("{original}\n{second}");
+    let (_, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let prior = syntax(&source, collected.env()).unwrap();
+    let baseline = collected
+        .env()
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+        .map(|entry| {
+            (
+                entry.primary_spelling().to_owned(),
+                prior[entry.symbol()].clone(),
+            )
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(baseline.len(), 2);
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    let trivia = format!(":: λ 日本語\n{}", text.replace(' ', "  "));
+    let reordered = format!("{second}\n{original}");
+    let private = format!(
+        "{}\n{second}",
+        original.replace("terminating algorithm", "private terminating algorithm")
+    );
+    let unterminated = format!(
+        "{}\n{second}",
+        original.replace("terminating algorithm", "algorithm")
+    );
+    let renamed = format!("{}\n{second}", original.replace("swapalgo", "newalgo"));
+    let binder = format!(
+        "{}\n{second}",
+        original
+            .replace("var x", "var local")
+            .replace("x := c", "local := c")
+            .replace("return x", "return local")
+    );
+    let assigned = format!("{}\n{second}", original.replace("x := c", "x := a"));
+    let returned = format!("{}\n{second}", original.replace("return x", "return c"));
+    let outer = format!(
+        "{}\n{second}",
+        original.replace("let a be object", "let z be object")
+    );
+    let header = format!(
+        "{}\n{second}",
+        original.replace("swapalgo(a)", "swapalgo(b)")
+    );
+    for (index, edited, package, module, skip) in [
+        (0, trivia, "owner-test", "owners", 0),
+        (1, text.clone(), "owner-test", "owners", 7),
+        (2, reordered, "owner-test", "owners", 0),
+        (3, text.clone(), "other-package", "owners", 0),
+        (4, text.clone(), "owner-test", "other_module", 0),
+        (5, private, "owner-test", "owners", 0),
+        (6, unterminated, "owner-test", "owners", 0),
+        (7, renamed, "owner-test", "owners", 0),
+        (8, binder, "owner-test", "owners", 0),
+        (9, assigned, "owner-test", "owners", 0),
+        (10, returned, "owner-test", "owners", 0),
+        (11, outer, "owner-test", "owners", 0),
+        (12, header, "owner-test", "owners", 0),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, package, module, skip);
+        assert!(frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(entries.diagnostics().is_empty(), "edit {index}");
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        let input_before = (current.clone(), entries.env().clone());
+        let values = syntax(&current, entries.env()).unwrap();
+        let actual = entries
+            .env()
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+            .collect::<Vec<_>>();
+        assert_eq!(actual.len(), 2);
+        assert_eq!(
+            values.keys().collect::<std::collections::BTreeSet<_>>(),
+            actual
+                .iter()
+                .map(|entry| entry.symbol())
+                .collect::<std::collections::BTreeSet<_>>()
+        );
+        for entry in actual {
+            let name = if entry.primary_spelling() == "newalgo" {
+                "swapalgo"
+            } else {
+                entry.primary_spelling()
+            };
+            if matches!(index, 6..=10 | 12) && name == "swapalgo" {
+                assert_ne!(&values[entry.symbol()], &baseline[name], "edit {index}");
+            } else {
+                assert_eq!(&values[entry.symbol()], &baseline[name], "edit {index}");
+            }
+            assert_eq!(entry.symbol().module(), current.module());
+            assert_eq!(
+                entry.visibility(),
+                if index == 5 && name == "swapalgo" {
+                    Visibility::Private
+                } else {
+                    Visibility::Public
+                }
+            );
+        }
+        if index == 1 {
+            assert_ne!(current.source_id(), source.source_id());
+        }
+        if matches!(index, 2..=4) {
+            assert_ne!(
+                values.keys().collect::<Vec<_>>(),
+                prior.keys().collect::<Vec<_>>()
+            );
+        }
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!((source, collected.env().clone(), prior), before);
+}
+
+#[test]
+fn source_algorithm_state_syntax_payloads_preserve_upstream_and_atomic_refusals() {
+    use mizar_resolve::{
+        env::SymbolKind,
+        symbols::{
+            source_algorithm_state_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    use mizar_syntax::{SurfaceNodeKind, SurfaceTokenKind};
+    let original = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    let supported = original.replacen("    assert x = a;\n", "", 1);
+    let (_, source, collected) =
+        source_registration_owner_inputs(&supported, "owner-test", "owners", 0);
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let prior = syntax(&source, collected.env()).unwrap();
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    for edited in [
+        supported.replace("swapalgo", "foreignalgo"),
+        format!(
+            "{supported}\n{}",
+            supported.replace("swapalgo", "otheralgo")
+        ),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        assert!(syntax(&current, entries.env()).is_ok());
+        let mismatch = validate_source_symbol_env(&source, entries.env()).unwrap_err();
+        assert_eq!(syntax(&source, entries.env()).unwrap_err(), mismatch);
+        let mismatch = validate_source_symbol_env(&current, collected.env()).unwrap_err();
+        assert_eq!(syntax(&current, collected.env()).unwrap_err(), mismatch);
+    }
+    let while_source = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz"
+    );
+    for (edited, ghost) in [
+        (original.to_owned(), false),
+        (while_source.to_owned(), false),
+        (format!("{supported}\n{while_source}"), false),
+        (
+            supported.replacen("    var x := a;", "    ghost var x := a;", 1),
+            true,
+        ),
+        (
+            supported.replacen("    const c := a;", "    ghost const c := a;", 1),
+            true,
+        ),
+        (
+            supported.replacen("    x := c;", "    ghost x := c;", 1),
+            true,
+        ),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.node_views().any(|node| match node.kind() {
+            SurfaceNodeKind::Token(token) if ghost =>
+                token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "ghost",
+            SurfaceNodeKind::AssertStatement | SurfaceNodeKind::WhileStatement => !ghost,
+            _ => false,
+        }));
+        assert!(
+            entries
+                .env()
+                .symbols()
+                .iter()
+                .any(|entry| entry.kind() == SymbolKind::Algorithm)
+        );
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        let input_before = (current.clone(), entries.env().clone());
+        assert_eq!(
+            syntax(&current, entries.env()).unwrap_err(),
+            "unsupported source algorithm state syntax payload"
+        );
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
+    assert_eq!((source, collected.env().clone(), prior), before);
+}

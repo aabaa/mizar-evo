@@ -407,6 +407,121 @@ pub fn source_registration_syntax_payloads_from_arena(
     Ok(payloads)
 }
 
+/// Derives declaration-local raw syntax for validated supported algorithm state.
+pub fn source_algorithm_state_syntax_payloads_from_arena(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<BTreeMap<SymbolId, Vec<u8>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let unsupported = || "unsupported source algorithm state syntax payload".to_owned();
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let mut payloads = BTreeMap::new();
+    let mut total = 0usize;
+    const LIMIT: usize = 32 * 1024 * 1024;
+    for shell in shells.declarations() {
+        if shell.kind() != DeclarationShellKind::AlgorithmDefinition {
+            continue;
+        }
+        let parent = shells
+            .declaration(shell.parent().ok_or_else(unsupported)?)
+            .ok_or_else(unsupported)?;
+        if parent.kind() != DeclarationShellKind::DefinitionBlock || parent.parent().is_some() {
+            return Err(unsupported());
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm && entry.origin() == &origin);
+        let entry = entries.next().ok_or_else(unsupported)?;
+        if entries.next().is_some() {
+            return Err(unsupported());
+        }
+        let mut payload = b"mizar-resolve/source-algorithm-syntax/v1\0".to_vec();
+        let mut pending = vec![shell.node_id()];
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).ok_or_else(unsupported)?;
+            match node.kind() {
+                SurfaceNodeKind::Token(token)
+                    if !(token.text.is_empty()
+                        || token.kind == SurfaceTokenKind::ReservedWord
+                            && token.text.as_ref() == "ghost")
+                        && matches!(
+                            token.kind,
+                            SurfaceTokenKind::Identifier
+                                | SurfaceTokenKind::ReservedWord
+                                | SurfaceTokenKind::ReservedSymbol
+                        ) => {}
+                SurfaceNodeKind::AlgorithmDefinition
+                | SurfaceNodeKind::AlgorithmTerminationClause
+                | SurfaceNodeKind::AlgorithmParameters
+                | SurfaceNodeKind::TypeExpression
+                | SurfaceNodeKind::TypeHead
+                | SurfaceNodeKind::AlgorithmEnsuresClause
+                | SurfaceNodeKind::FormulaExpression
+                | SurfaceNodeKind::BuiltinPredicateApplication
+                | SurfaceNodeKind::TermExpression
+                | SurfaceNodeKind::TermReference
+                | SurfaceNodeKind::AlgorithmBody
+                | SurfaceNodeKind::AlgorithmStatementList
+                | SurfaceNodeKind::VariableDeclaration
+                | SurfaceNodeKind::VariableBinding
+                | SurfaceNodeKind::AssignmentStatement
+                | SurfaceNodeKind::Lvalue
+                | SurfaceNodeKind::ReturnStatement => {}
+                _ => return Err(unsupported()),
+            }
+            let count = u32::try_from(node.children().len()).map_err(|_| unsupported())?;
+            let token_length = if let SurfaceNodeKind::Token(token) = node.kind() {
+                Some(u32::try_from(token.text.len()).map_err(|_| unsupported())?)
+            } else {
+                None
+            };
+            let record_length = 2usize
+                .checked_add(4)
+                .and_then(|size| {
+                    token_length
+                        .map(|length| size.checked_add(6)?.checked_add(length as usize))
+                        .unwrap_or(Some(size))
+                })
+                .ok_or_else(unsupported)?;
+            if payload
+                .len()
+                .checked_add(record_length)
+                .filter(|&size| size <= LIMIT)
+                .is_none()
+            {
+                return Err(unsupported());
+            }
+            payload.extend_from_slice(&(node.syntax_kind() as u16).to_be_bytes());
+            if let SurfaceNodeKind::Token(token) = node.kind() {
+                payload.extend_from_slice(&(token.kind.syntax_kind() as u16).to_be_bytes());
+                payload.extend_from_slice(&token_length.ok_or_else(unsupported)?.to_be_bytes());
+                payload.extend_from_slice(token.text.as_bytes());
+            }
+            payload.extend_from_slice(&count.to_be_bytes());
+            pending.extend(node.children().iter().rev().copied());
+        }
+        total = total
+            .checked_add(payload.len())
+            .filter(|&size| size <= LIMIT)
+            .ok_or_else(unsupported)?;
+        if payloads.insert(entry.symbol().clone(), payload).is_some() {
+            return Err(unsupported());
+        }
+    }
+    if symbols.symbols().iter().any(|entry| {
+        entry.kind() == SymbolKind::Algorithm && !payloads.contains_key(entry.symbol())
+    }) {
+        return Err(unsupported());
+    }
+    Ok(payloads)
+}
 /// Derives declaration-local raw syntax for validated supported algorithms.
 pub fn source_algorithm_syntax_payloads_from_arena(
     source: &SurfaceResolvedArena,

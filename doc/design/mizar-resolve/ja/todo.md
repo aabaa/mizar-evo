@@ -650,6 +650,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 51. **[Original source proof occurrences validation](../../task_contracts/ja/RESOLVE-SOURCE-PROOF-SCOPE-VALIDATION.md).** [x]
 52. **[Original source proof input acquisition](../../task_contracts/ja/RESOLVE-SOURCE-PROOF-INPUTS.md).** [x]
 53. **[Source algorithm syntax payloads](../../task_contracts/ja/RESOLVE-SOURCE-ALGORITHM-SYNTAX-PAYLOADS.md).** [x]
+54. **[Source algorithm state syntax payloads](../../task_contracts/ja/RESOLVE-SOURCE-ALGORITHM-STATE-SYNTAX-PAYLOADS.md).** [x]
 
 ## crate close-out
 
