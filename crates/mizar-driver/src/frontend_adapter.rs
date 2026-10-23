@@ -2092,6 +2092,178 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Seals a genuine native theorem summary bound to its resolved parent.
+    pub fn publish_native_theorem_module_summary(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<mizar_ir::storage::PhaseOutputRef<mizar_artifact::module_summary::ModuleSummary>>,
+        String,
+    > {
+        use mizar_artifact::{
+            module_summary::{ModuleSummaryReadOptions, read_module_summary, write_module_summary},
+            store::parse_canonical_json_bytes,
+        };
+
+        const STORAGE_CONTEXT: &str = "native theorem module summary storage";
+        if input.snapshot != self.snapshot.id {
+            return Err("native theorem summary publication snapshot mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem summary publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native theorem summary publication requires one captured source".to_owned()
+        })?;
+        let source_key = source_input_hash(version);
+        if input.identities().input_hash() != source_key
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || input.parent_outputs().len() != 1
+        {
+            return Err(
+                "native theorem summary publication requires the leaf input profile".to_owned(),
+            );
+        }
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named_input_hashes = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: source_key,
+        }];
+        if parent.snapshot() != input.snapshot
+            || parent.phase() != &IrPipelinePhase::new("ModuleResolve")
+            || parent.work_unit() != &work_unit
+            || parent.output_kind() != &OutputKind::new("SourceTheoremModuleCandidates")
+            || parent.schema_version() != SchemaVersion::new(1)
+            || parent.lineage().named_input_hashes != named_input_hashes
+        {
+            return Err("native theorem summary publication parent binding mismatch".to_owned());
+        }
+        let [ancestor] = parent.lineage().parents.as_slice() else {
+            return Err(
+                "native theorem summary publication requires one Frontend ancestor".to_owned(),
+            );
+        };
+        let ancestor = publisher
+            .registry()
+            .output_lineage(*ancestor)
+            .ok_or_else(|| {
+                "native theorem summary publication requires registered ancestry".to_owned()
+            })?;
+        if ancestor.snapshot != input.snapshot
+            || ancestor.phase != IrPipelinePhase::new("Frontend")
+            || ancestor.work_unit != work_unit
+            || ancestor.output_kind != OutputKind::new("FrontendOutput")
+        {
+            return Err("native theorem summary publication Frontend ancestry mismatch".to_owned());
+        }
+        let typed = storage
+            .typed_handle::<(
+                mizar_resolve::resolved_ast::ResolvedAst,
+                mizar_resolve::env::SymbolEnv,
+            )>(parent, &OutputKind::new("SourceTheoremModuleCandidates"))
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let Some(pair) = self.native_theorem_module_candidates(module)? else {
+            return Ok(None);
+        };
+        if *retained != pair {
+            return Err("native theorem summary publication resolved pair mismatch".to_owned());
+        }
+        let Some(summary) = self.native_theorem_module_summary_candidate(module)? else {
+            return Ok(None);
+        };
+        let bytes = write_module_summary(&summary).map_err(|error| error.to_string())?;
+        let value = parse_canonical_json_bytes(&bytes, STORAGE_CONTEXT)
+            .map_err(|error| error.to_string())?;
+        let decoded = read_module_summary(
+            &value,
+            ModuleSummaryReadOptions {
+                artifact_path: Some(STORAGE_CONTEXT),
+                expected_module: Some(&summary.module),
+                expected_interface_hash: Some(summary.interface_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if decoded != summary {
+            return Err("native theorem summary publication storage mismatch".to_owned());
+        }
+        let identity = summary.module.clone();
+        let interface_hash = summary.interface_hash;
+        let phase = IrPipelinePhase::new("SignatureCollection");
+        let output_kind = OutputKind::new("SourceTheoremModuleSummary");
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: summary,
+                canonical_payload: Some(bytes.clone()),
+                storage_payload: Some(bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    let value = parse_canonical_json_bytes(bytes, STORAGE_CONTEXT)
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    read_module_summary(
+                        &value,
+                        ModuleSummaryReadOptions {
+                            artifact_path: Some(STORAGE_CONTEXT),
+                            expected_module: Some(&identity),
+                            expected_interface_hash: Some(interface_hash),
+                        },
+                    )
+                    .map_err(|error| BlobDecodeError::new(error.to_string()))
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes,
+                side_tables: IrSideTables::default(),
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Seals the coherent bounded native theorem pair and its genuine streams.
     pub fn publish_native_theorem_module_candidates(
         self,
