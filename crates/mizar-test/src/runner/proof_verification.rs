@@ -27262,4 +27262,224 @@ mod term_proof_tests {
             );
         }
     }
+
+    #[test]
+    fn source_theorem_reflexivity_original_graph_matches_genuine_check() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_core::{
+            core_ir::{CoreProofStatus, ObligationSeedStatus},
+            elaborator::lower_source_theorem_skeletons as lower,
+        };
+        use mizar_kernel::checker::{KernelCheckStatus, KernelEvidenceCheckKind};
+        use mizar_proof::{
+            policy::{CandidatePolicyClass, VerifierPolicy},
+            status::{
+                check_source_theorem_reflexivity as compatibility,
+                check_source_theorem_reflexivity_with_original_graph as verify,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_theorem_vcs as generate,
+            vc_ir::{GenerationSchemaVersion, SeedOriginRef, VcId, VcSchemaVersion, VcStatus},
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let mut original_source = None;
+        for (text, module, skip) in [
+            (original.to_owned(), "owners", 0),
+            (original.replace("X", "Bound"), "owners", 0),
+            (format!(":: 日本語 λ\n{original}\n"), "owners", 0),
+            (original.to_owned(), "nested.owners", 7),
+        ] {
+            let (frontend, source, collected) = inputs(&text, "owner-test", module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            if skip == 7 {
+                assert_ne!(Some(source.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(source.source_id());
+            }
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (ordinal, policy) in [
+                    (777, VerifierPolicy::default()),
+                    (
+                        778,
+                        VerifierPolicy::release().with_require_kernel_certificates(true),
+                    ),
+                ] {
+                    let snapshot = snapshot_id(ordinal);
+                    let selected = VcId::new(0);
+                    let policy_before = policy.clone();
+                    let core = lower(check, None)?;
+                    let vcs = generate(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("source-theorem-local-v1"),
+                        &VcSchemaVersion::new("vc-v1"),
+                    )?;
+                    let (result, decision) =
+                        compatibility(&source, check, env, snapshot, selected, &policy)?;
+                    assert_eq!(core.source_id(), source.source_id());
+                    assert_eq!(core.module_id(), source.module());
+                    assert_eq!(core.module_id().package().as_str(), "owner-test");
+                    assert_eq!(core.module_id().path().as_str(), module);
+                    assert_eq!(vcs.source(), source.source_id());
+                    assert_eq!(vcs.snapshot(), snapshot_id(ordinal));
+                    assert_eq!(
+                        vcs.module().as_str(),
+                        format!("package=10:owner-test;module={}:{}", module.len(), module)
+                    );
+                    assert_eq!(vcs.schema_version().as_str(), "vc-v1");
+                    assert!(!core.proofs().is_empty() && !vcs.vcs().is_empty());
+                    assert!(core.proofs().iter().all(|(_, proof)| {
+                        proof.status == CoreProofStatus::PendingAutomaticProof
+                    }));
+                    assert!(!vcs.seed_accounting().is_empty());
+                    for accounting in vcs.seed_accounting() {
+                        assert_eq!(accounting.seed_status, ObligationSeedStatus::Active);
+                        let SeedOriginRef::ExistingCore { seed } = accounting.origin else {
+                            panic!("genuine theorem seed comes from original Core")
+                        };
+                        assert_eq!(
+                            core.obligation_seeds().get(seed).unwrap().status,
+                            ObligationSeedStatus::Active
+                        );
+                    }
+                    for vc in vcs.vcs() {
+                        assert_eq!(vc.status, VcStatus::Open);
+                        assert_eq!(
+                            vc.anchor.generation_schema_version.as_str(),
+                            "source-theorem-local-v1"
+                        );
+                        assert!(vcs.seed_accounting_for(vc.seed.handoff).is_some());
+                    }
+                    assert_eq!(vcs.vc(selected).unwrap().id, VcId::new(0));
+                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(
+                        result.evidence_check_kind(),
+                        Some(KernelEvidenceCheckKind::ProofObligation)
+                    );
+                    assert!(!result.policy_taint());
+                    assert_eq!(decision.class, CandidatePolicyClass::DischargedBuiltin);
+                    let expected = (core, vcs, result, decision);
+                    let actual = verify(&source, check, env, snapshot, selected, &policy)?;
+                    assert_eq!(actual, expected);
+                    assert_eq!(
+                        verify(&source, check, env, snapshot, selected, &policy)?,
+                        expected
+                    );
+                    assert_eq!((snapshot, selected), (snapshot_id(ordinal), VcId::new(0)));
+                    assert_eq!(policy, policy_before);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+    }
+
+    #[test]
+    fn source_theorem_reflexivity_original_graph_preserves_errors() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                check_source_theorem_reflexivity as compatibility,
+                check_source_theorem_reflexivity_with_original_graph as verify,
+            },
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snapshot = snapshot_id(777);
+        let selected = VcId::new(0);
+        let absent = VcId::new(usize::MAX);
+        let normal = VerifierPolicy::default();
+        let disabled = normal.clone().with_kernel_evidence_formats([]);
+        let policies_before = (normal.clone(), disabled.clone());
+        for (case, text) in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (id, policy) in [
+                    (selected, &normal),
+                    (absent, &normal),
+                    (selected, &disabled),
+                    (absent, &disabled),
+                ] {
+                    if case == 0 && id == selected && policy == &normal {
+                        continue;
+                    }
+                    let expected =
+                        compatibility(&source, check, env, snapshot, id, policy).unwrap_err();
+                    assert_eq!(
+                        verify(&source, check, env, snapshot, id, policy).unwrap_err(),
+                        expected
+                    );
+                }
+                if case == 0 {
+                    let prior = compatibility(&source, check, env, snapshot, selected, &normal)?;
+                    let (other_frontend, other_source, other) = inputs(
+                        &original.replace("T:", "Foreign:"),
+                        "owner-test",
+                        "owners",
+                        7,
+                    );
+                    assert!(other_frontend.diagnostics.is_empty());
+                    assert!(other.diagnostics().is_empty());
+                    assert_ne!(other_source.source_id(), source.source_id());
+                    let other_before = (other_source.clone(), other.env().clone());
+                    for (current, symbols) in [
+                        (&source, other.env()),
+                        (&other_source, env),
+                        (&other_source, other.env()),
+                    ] {
+                        let expected =
+                            compatibility(current, check, symbols, snapshot, selected, &normal)
+                                .unwrap_err();
+                        assert_eq!(
+                            verify(current, check, symbols, snapshot, selected, &normal)
+                                .unwrap_err(),
+                            expected
+                        );
+                        assert_eq!(
+                            compatibility(current, check, symbols, snapshot, absent, &disabled)
+                                .unwrap_err(),
+                            expected
+                        );
+                        assert_eq!(
+                            verify(current, check, symbols, snapshot, absent, &disabled)
+                                .unwrap_err(),
+                            expected
+                        );
+                    }
+                    assert_eq!((other_source, other.env().clone()), other_before);
+                    assert_eq!(
+                        compatibility(&source, check, env, snapshot, selected, &normal)?,
+                        prior
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+        assert_eq!((normal, disabled), policies_before);
+        assert_eq!((snapshot, selected), (snapshot_id(777), VcId::new(0)));
+    }
 }

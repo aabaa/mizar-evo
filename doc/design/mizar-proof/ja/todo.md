@@ -477,6 +477,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 59. **[Source algorithm state transitivity status](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-STATUS.md).** [x]
 60. **[Source algorithm state witness draft](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-DRAFT.md).** [x]
 
+61. **[Source theorem reflexivity original graph](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-ORIGINAL-GRAPH.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

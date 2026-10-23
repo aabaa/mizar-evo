@@ -856,6 +856,29 @@ pub fn check_source_algorithm_return_reflexivity(
     Ok((result, decision))
 }
 
+/// Returns the actual original graphs and result from one genuine theorem check.
+pub fn check_source_theorem_reflexivity_with_original_graph(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+    ),
+    String,
+> {
+    let (result, decision, _, _, _, core, vcs) = check_source_theorem_reflexivity_payload(
+        source, check, symbols, snapshot, vc_id, policy, false,
+    )?;
+    Ok((core, vcs, result, decision))
+}
+
 /// Checks genuine original theorem reflexivity and returns its normal policy classification.
 pub fn check_source_theorem_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
@@ -865,7 +888,7 @@ pub fn check_source_theorem_reflexivity(
     vc_id: VcId,
     policy: &VerifierPolicy,
 ) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
-    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+    let (result, decision, _, _, _, _, _) = check_source_theorem_reflexivity_payload(
         source, check, symbols, snapshot, vc_id, policy, false,
     )?;
     Ok((result, decision))
@@ -890,6 +913,8 @@ fn check_source_theorem_reflexivity_payload(
         mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
         Vec<u8>,
         Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
     ),
     String,
 > {
@@ -1032,7 +1057,7 @@ fn check_source_theorem_reflexivity_payload(
     } else {
         None
     };
-    Ok((result, decision, handoff, bytes, metadata))
+    Ok((result, decision, handoff, bytes, metadata, core, vcs))
 }
 
 /// Returns ordinary acceptance metadata and the exact wire from one genuine theorem check.
@@ -1053,7 +1078,7 @@ pub fn check_source_theorem_reflexivity_metadata(
     String,
 > {
     check_source_theorem_reflexivity_payload(source, check, symbols, snapshot, vc_id, policy, true)
-        .map(|(result, decision, _, bytes, metadata)| (result, decision, metadata, bytes))
+        .map(|(result, decision, _, bytes, metadata, _, _)| (result, decision, metadata, bytes))
 }
 
 /// Returns opaque trusted metadata and the exact wire from one fresh source theorem check.
@@ -1105,7 +1130,7 @@ pub fn select_source_theorem_reflexivity(
     policy: &VerifierPolicy,
 ) -> Result<crate::selection::ProofSelection, String> {
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+    let (result, decision, _, _, _, _, _) = check_source_theorem_reflexivity_payload(
         source, check, symbols, snapshot, vc_id, policy, false,
     )?;
     select_source_theorem_reflexivity_result(&result, decision, origin, policy)
@@ -1165,9 +1190,10 @@ pub fn project_source_theorem_reflexivity_witness(
     let (identity, _) =
         source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, handoff, bytes, metadata) = check_source_theorem_reflexivity_payload(
-        source, check, symbols, snapshot, vc_id, policy, true,
-    )?;
+    let (result, decision, handoff, bytes, metadata, _, _) =
+        check_source_theorem_reflexivity_payload(
+            source, check, symbols, snapshot, vc_id, policy, true,
+        )?;
     let invalid = || "theorem.proof.invalid_source_witness".to_owned();
     if decision.class != crate::policy::CandidatePolicyClass::DischargedBuiltin {
         return Err(invalid());
@@ -1627,7 +1653,7 @@ pub fn project_source_theorem_reflexivity_used_axioms_status(
     let (identity, slice) =
         source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+    let (result, decision, _, _, _, _, _) = check_source_theorem_reflexivity_payload(
         source, check, symbols, snapshot, vc_id, policy, false,
     )?;
     let invalid = || "theorem.proof.invalid_source_used_axioms_status".to_owned();

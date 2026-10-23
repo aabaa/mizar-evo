@@ -501,6 +501,8 @@ layer consumes both; one alignment task is owned here.
 59. **[Source algorithm state transitivity status](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-STATUS.md).** [x]
 60. **[Source algorithm state witness draft](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-DRAFT.md).** [x]
 
+61. **[Source theorem reflexivity original graph](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-ORIGINAL-GRAPH.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
