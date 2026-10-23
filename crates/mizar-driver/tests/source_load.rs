@@ -30988,3 +30988,317 @@ fn scheduled_theorem_signature_preserves_resource_refusals() {
         });
     }
 }
+
+#[test]
+fn native_theorem_typed_ast_storage_replay_preserves_genuine_outputs() {
+    use mizar_checker::type_checker::DeclarationChecker as Checker;
+    use mizar_driver::native_theorem_typed_ast_from_storage_bytes as decode;
+    use mizar_driver::native_theorem_typed_ast_storage_bytes as encode;
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use mizar_resolve::symbols::{
+        source_theorem_module_candidates as candidates,
+        source_theorem_module_original_inputs as original_inputs,
+    };
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let capture = |fixture: &Fixture,
+                   open: bool,
+                   threshold: usize,
+                   ids: &InMemorySessionIdAllocator,
+                   snapshots: &SnapshotRegistry<InMemorySessionIdAllocator>| {
+        if !open {
+            let (_, _, adapter, parent, _) =
+                native_disk_frontend_record_submission(fixture, ids, snapshots, threshold);
+            assert_eq!(
+                parent.placement() == &StoragePlacement::Resident,
+                threshold != 0
+            );
+            return (*adapter
+                .publisher()
+                .storage()
+                .get(&parent)
+                .unwrap()
+                .ast
+                .as_ref()
+                .unwrap())
+            .clone();
+        }
+        let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: SourceOriginInput::OpenBuffer {
+                uri: format!(
+                    "file://{}",
+                    fixture.root.join("alpha/src/main.miz").display()
+                ),
+                expected_version: 7,
+                actual_version: 7,
+                text: std::sync::Arc::from(std::str::from_utf8(&fixture.bytes).unwrap()),
+            },
+        };
+        fixture.write(&[0xff]);
+        let session = draft
+            .capture_sources(
+                ids,
+                snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor,
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let work_unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, threshold, &work_unit);
+        allow_frontend(&owner, &work_unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let submission = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(owner.clone())
+            .submit_captured(session, ids, snapshots, submit)
+            .unwrap();
+        let parent = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        assert_eq!(
+            parent.placement() == &StoragePlacement::Resident,
+            threshold != 0
+        );
+        let retained = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let output = owner.storage().get(&retained).unwrap();
+        (*output.ast.as_ref().unwrap()).clone()
+    };
+    let check = |ast: &<MizarParserSeam as ParserSeam>::Ast| {
+        let (arena, env) = original_inputs(ast, &module).unwrap().unwrap();
+        assert!(candidates(ast, &arena, &env).unwrap().is_some());
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(ast, &module, &env),
+        )
+        .unwrap();
+        Checker::check_source_theorem_equalities_with_typed_declarations(&arena, &env, &scope)
+            .unwrap()
+            .2
+    };
+    let texts = [
+        include_str!(
+            "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        ),
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "theorem T: for Y being set holds Y = Y\r\nproof\r\n  let Y be set;\r\n  thus Y = Y;\r\nend;\r\n",
+    ];
+    for text in texts {
+        for open in [false, true] {
+            for threshold in [usize::MAX, 0] {
+                let fixture = Fixture::new(text.as_bytes());
+                let ids = InMemorySessionIdAllocator::new();
+                let snapshots = SnapshotRegistry::new();
+                let asts = [
+                    capture(&fixture, open, threshold, &ids, &snapshots),
+                    capture(&fixture, open, threshold, &ids, &snapshots),
+                ];
+                assert_ne!(asts[0].source_id, asts[1].source_id);
+                let mut baselines = Vec::new();
+                for ast in asts {
+                    let typed = check(&ast);
+                    assert_eq!(typed.source_id(), ast.source_id);
+                    assert_eq!(typed.module_id(), &module);
+                    assert!(!typed.types().is_empty());
+                    let declarations = typed.source_context().unwrap().declarations();
+                    assert!(declarations.iter().next().is_some());
+                    for (_, declaration) in declarations.iter() {
+                        let node = typed.nodes().node(declaration.site.node()).unwrap();
+                        assert_eq!(
+                            node.typing,
+                            mizar_checker::typed_ast::TypingState::Successful
+                        );
+                        assert!(node.links.type_entry.is_some());
+                    }
+                    let syntax = ast.canonical_bytes().unwrap();
+                    let mut expected =
+                        b"mizar-driver/native-theorem-typed-ast-storage/v1\0".to_vec();
+                    for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+                        expected.extend(u64::try_from(field.len()).unwrap().to_le_bytes());
+                        expected.extend_from_slice(field);
+                    }
+                    baselines.push((ast, typed, expected));
+                }
+                let before = baselines.clone();
+                for stage in 0..3 {
+                    if stage == 1 {
+                        fixture.write(b"open theorem Changed: 0 = 1;\n");
+                    } else if stage == 2 {
+                        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                    }
+                    for (index, (ast, typed, bytes)) in baselines.iter().enumerate() {
+                        let other = &baselines[1 - index];
+                        assert_eq!(encode(ast, &module, typed).unwrap(), Some(bytes.clone()));
+                        assert_eq!(
+                            decode(bytes, other.0.source_id, &module).unwrap(),
+                            Some(other.1.clone())
+                        );
+                        assert_eq!(encode(ast, &module, &other.1).unwrap(), None);
+                    }
+                    assert_eq!(baselines, before);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn native_theorem_typed_ast_storage_replay_preserves_refusals() {
+    use mizar_checker::type_checker::DeclarationChecker as Checker;
+    use mizar_driver::native_theorem_typed_ast_from_storage_bytes as decode;
+    use mizar_driver::native_theorem_typed_ast_storage_bytes as encode;
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use mizar_resolve::symbols::{
+        source_theorem_module_candidates as candidates,
+        source_theorem_module_original_inputs as original_inputs,
+    };
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let lower = |ast: &<MizarParserSeam as ParserSeam>::Ast| {
+        let Some((arena, env)) = original_inputs(ast, &module)? else {
+            return Ok(None);
+        };
+        if candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(ast, &module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        Checker::check_source_theorem_equalities_with_typed_declarations(&arena, &env, &scope)
+            .map(|checked| Some(checked.2))
+    };
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let valid = Fixture::new(
+        include_str!(
+            "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        )
+        .as_bytes(),
+    );
+    let (_, _, adapter, parent, _) =
+        native_disk_frontend_record_submission(&valid, &ids, &snapshots, 0);
+    let owner = adapter.publisher();
+    let output = owner.storage().get(&parent).unwrap();
+    let valid_ast = output.ast.as_ref().unwrap();
+    let valid_typed = lower(valid_ast).unwrap().unwrap();
+    let valid_bytes = encode(valid_ast, &module, &valid_typed).unwrap().unwrap();
+    let domain = b"mizar-driver/native-theorem-typed-ast-storage/v1\0";
+    let frame = |syntax: &[u8]| {
+        let mut bytes = domain.to_vec();
+        for field in [b"alpha".as_slice(), b"main".as_slice(), syntax] {
+            bytes.extend(u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        bytes
+    };
+    let mut corruptions = vec![
+        Vec::new(),
+        valid_bytes[..domain.len() + 3].to_vec(),
+        valid_bytes[..valid_bytes.len() - 1].to_vec(),
+    ];
+    let mut bad_domain = valid_bytes.clone();
+    bad_domain[0] = b'x';
+    corruptions.push(bad_domain);
+    let mut bad_version = valid_bytes.clone();
+    bad_version[domain.len() - 2] = b'2';
+    corruptions.push(bad_version);
+    let mut bad_length = valid_bytes.clone();
+    bad_length[domain.len()..domain.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+    corruptions.push(bad_length);
+    let mut trailing = valid_bytes.clone();
+    trailing.push(0);
+    corruptions.push(trailing);
+    corruptions.push(frame(&[0xff]));
+    let mut oversized = valid_bytes.clone();
+    oversized.resize(32 * 1024 * 1024 + 1, 0);
+    corruptions.push(oversized);
+    for malformed in corruptions {
+        assert_eq!(decode(&malformed, valid_ast.source_id, &module), Ok(None));
+    }
+    for wrong_module in [
+        ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("main")),
+        ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("other")),
+    ] {
+        assert_eq!(
+            decode(&valid_bytes, valid_ast.source_id, &wrong_module),
+            Ok(None)
+        );
+        assert_eq!(encode(valid_ast, &wrong_module, &valid_typed), Ok(None));
+    }
+    let oversized_module = ResolverModuleId::new(
+        PackageId::new("x".repeat(32 * 1024 * 1024)),
+        ModulePath::new("main"),
+    );
+    assert_eq!(encode(valid_ast, &oversized_module, &valid_typed), Ok(None));
+    let changed = Fixture::new(b"theorem T: for X being set holds X = X proof end;");
+    let (_, _, changed_adapter, changed_parent, _) =
+        native_disk_frontend_record_submission(&changed, &ids, &snapshots, 0);
+    let changed_ast = changed_adapter
+        .publisher()
+        .storage()
+        .get(&changed_parent)
+        .unwrap();
+    let foreign_syntax = changed_ast.ast.as_ref().unwrap().canonical_bytes().unwrap();
+    let same_source_ast = <MizarParserSeam as ParserSeam>::Ast::from_canonical_bytes(
+        &foreign_syntax,
+        valid_ast.source_id,
+    )
+    .unwrap();
+    let same_source_typed = lower(&same_source_ast).unwrap().unwrap();
+    assert_eq!(same_source_typed.source_id(), valid_typed.source_id());
+    assert_ne!(same_source_typed, valid_typed);
+    assert_eq!(encode(valid_ast, &module, &same_source_typed), Ok(None));
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, case) in [
+        (format!("{private}\nreserve Y for set;\n"), "reserve"),
+        (private.replace("by PrivT1", "by Missing"), "citation"),
+        (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
+        (private.to_owned(), "private"),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (_, _, adapter, parent, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let retained = adapter.publisher().storage().get(&parent).unwrap();
+        let ast = retained.ast.as_ref().unwrap();
+        let syntax = ast.canonical_bytes().unwrap();
+        let bytes = frame(&syntax);
+        let expected = lower(ast);
+        assert!(matches!(
+            (&expected, case),
+            (Ok(None), "reserve" | "citation") | (Err(_), "unbound" | "private")
+        ));
+        assert_eq!(decode(&bytes, ast.source_id, &module), expected, "{case}");
+        assert_eq!(
+            encode(ast, &module, &valid_typed),
+            expected.map(|_| None::<Vec<u8>>),
+            "{case}"
+        );
+    }
+}

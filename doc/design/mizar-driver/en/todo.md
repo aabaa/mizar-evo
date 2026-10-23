@@ -592,6 +592,8 @@ the owning producers when the paired tasks land.
 66. **[Native theorem summary publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-SUMMARY-PUBLICATION.md).** [x]
 67. **[Scheduled source theorem signature collection](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md).** [x]
 
+68. **[Native theorem TypedAst storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-TYPED-AST-STORAGE-REPLAY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

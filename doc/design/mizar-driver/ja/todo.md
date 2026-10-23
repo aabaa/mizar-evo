@@ -561,6 +561,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 66. **[Native theorem summary publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-SUMMARY-PUBLICATION.md).** [x]
 67. **[Scheduled source theorem signature collection](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md).** [x]
 
+68. **[Native theorem TypedAst storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-TYPED-AST-STORAGE-REPLAY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
