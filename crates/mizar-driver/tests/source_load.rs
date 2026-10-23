@@ -44463,3 +44463,353 @@ fn native_theorem_reflexivity_core_vc_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn scheduled_theorem_vc_descriptors_bind_genuine_sets_and_preserve_missing_proof_services() {
+    use mizar_build::task_graph::{
+        BackendProfileId, DependencyCoverage, EvidenceCandidateId, VcOrderKey, VcTaskDescriptor,
+        VcTaskDescriptorId,
+    };
+    use mizar_core::{
+        control_flow::{ControlFlowOutput, ObligationSeedHandoff},
+        core_ir::{CoreIr, CoreProofStatus, ObligationSeedStatus},
+    };
+    use mizar_vc::vc_ir::{
+        GenerationSchemaVersion, SeedOriginRef, VcId, VcSchemaVersion, VcSet, VcStatus,
+    };
+
+    let generation = GenerationSchemaVersion::new("source-theorem-local-v1");
+    let schema = VcSchemaVersion::new("vc-v1");
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        with_native_summary_parent(
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            open,
+            threshold,
+            |fixture, inputs, old, _, _, (session, ids, snapshots)| {
+                let captured = session.captured().clone();
+                let source = &captured.snapshot().source_versions[0];
+                let WorkUnit::Module { module } = &old.work_unit else {
+                    panic!("module")
+                };
+                let mut baseline = None::<(_, _, _, VcId)>;
+
+                for configuration in 0..3 {
+                    let selected = baseline.as_ref().map(|value| value.3);
+                    let descriptor_id = VcTaskDescriptorId::new("caller-explicit-step6c11");
+                    let association = selected.map(|selected| (descriptor_id.clone(), selected));
+                    let backends = if configuration == 2 {
+                        vec![BackendProfileId::new("caller-backend-step6c11")]
+                    } else {
+                        Vec::new()
+                    };
+                    let evidence = if configuration == 2 {
+                        vec![EvidenceCandidateId::new("caller-evidence-step6c11")]
+                    } else {
+                        Vec::new()
+                    };
+                    let descriptors = if configuration == 0 {
+                        Vec::new()
+                    } else {
+                        let (id, selected) = association.as_ref().unwrap();
+                        let order = u64::try_from(selected.index()).unwrap();
+                        let descriptor = VcTaskDescriptor::new(
+                            id.clone(),
+                            module.clone(),
+                            VcOrderKey::new(format!("{order:020}")),
+                            backends.clone(),
+                            evidence.clone(),
+                        );
+                        vec![descriptor]
+                    };
+
+                    let owner = publisher(old.snapshot, threshold, &old.work_unit);
+                    allow_frontend(&owner, &old.work_unit);
+                    for (phase, kind) in [
+                        ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
+                        ("Elaboration", "SourceTheoremCore"),
+                        ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                        ("VcGenerate", "SourceTheoremVC"),
+                    ] {
+                        owner.allow_work_unit(AllowedWorkUnit::new(
+                            IrPipelinePhase::new(phase),
+                            OutputKind::new(kind),
+                            IrWorkUnit::new(format!(
+                                "{:?}:{:?}",
+                                module.package.as_str(),
+                                module.path.as_str()
+                            )),
+                        ));
+                    }
+                    let mut builder = PhaseRegistryBuilder::new();
+                    builder
+                        .register_source_load()
+                        .register_frontend(vec![])
+                        .register_source_theorem_module_resolver()
+                        .register_source_theorem_signature_collection()
+                        .register_source_theorem_type_checking()
+                        .register_source_theorem_registration_resolution()
+                        .register_source_theorem_overload_resolution()
+                        .register_source_theorem_elaboration()
+                        .register_source_theorem_algorithm_preparation()
+                        .register_source_theorem_vc_generation(generation.clone(), schema.clone());
+                    let mut driver = CompilerDriver::new(builder.build().unwrap())
+                        .with_output_publisher(owner.clone());
+                    let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                    submit.vc_descriptors = descriptors;
+                    submit.worker_count = if configuration == 1 { 4 } else { 1 };
+                    submit.completion_order = if configuration == 1 {
+                        CompletionOrder::Reverse
+                    } else {
+                        CompletionOrder::Canonical
+                    };
+                    let submission = driver
+                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .unwrap();
+                    assert_eq!(submission.session.captured(), &captured);
+                    assert_eq!(
+                        submission.status,
+                        DriverSubmissionStatus::BlockedByMissingPhaseServices
+                    );
+                    assert_eq!(
+                        submission.session.state(),
+                        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+                    );
+                    assert!(submission.dispatch_gap_phases.is_empty());
+                    let expected_missing: &[PipelinePhase] = match configuration {
+                        0 => &[PipelinePhase::ArtifactCommit],
+                        1 => &[PipelinePhase::VcDischarge, PipelinePhase::ArtifactCommit],
+                        _ => &[
+                            PipelinePhase::VcDischarge,
+                            PipelinePhase::AtpSolve,
+                            PipelinePhase::BackendRun,
+                            PipelinePhase::KernelCheck,
+                            PipelinePhase::ArtifactCommit,
+                        ],
+                    };
+                    assert!(
+                        submission
+                            .missing_services
+                            .iter()
+                            .map(|missing| missing.phase)
+                            .eq(expected_missing.iter().copied())
+                    );
+
+                    let graph = submission.task_graph.as_ref().unwrap();
+                    let run = submission.scheduler_run.as_ref().unwrap();
+                    let task = |kind, unit: &WorkUnit| {
+                        graph
+                            .tasks()
+                            .iter()
+                            .find(|task| task.kind == kind && &task.unit == unit)
+                            .unwrap()
+                    };
+                    let state = |task: &BuildTask| {
+                        run.task_states
+                            .iter()
+                            .find(|record| record.task_id == task.id)
+                            .unwrap()
+                            .state
+                    };
+                    let group = task(TaskKind::CheckAndElaborate, &old.work_unit);
+                    let vc_task = task(TaskKind::VcGenerate, &old.work_unit);
+                    let artifact = task(TaskKind::ArtifactCommit, &old.work_unit);
+                    for completed in [group, vc_task] {
+                        assert_eq!(state(completed), TaskState::Completed);
+                    }
+                    assert_eq!(state(artifact), TaskState::Blocked);
+                    assert!(!run.phase_results.contains_key(&artifact.id));
+                    let group_rows = &run.phase_results[&group.id];
+                    assert_eq!(group_rows.len(), 6);
+                    assert!(group_rows.iter().all(
+                        |row| row.status == PhaseStatus::Complete && row.output_refs.len() == 1
+                    ));
+                    let [vc_row] = run.phase_results[&vc_task.id].as_slice() else {
+                        panic!("one separate VC row")
+                    };
+                    assert_eq!(
+                        (vc_row.status, vc_row.output_refs.len()),
+                        (PhaseStatus::Complete, 1)
+                    );
+                    let core_ref = &group_rows[4].output_refs[0];
+                    let prep_ref = &group_rows[5].output_refs[0];
+                    let vc_ref = &vc_row.output_refs[0];
+                    let storage = owner.storage();
+                    let core_handle = storage
+                        .typed_handle::<CoreIr>(core_ref, &OutputKind::new("SourceTheoremCore"))
+                        .unwrap();
+                    let prep_handle = storage
+                        .typed_handle::<(ControlFlowOutput, ObligationSeedHandoff)>(
+                            prep_ref,
+                            &OutputKind::new("SourceTheoremPreparation"),
+                        )
+                        .unwrap();
+                    let vc_handle = storage
+                        .typed_handle::<VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+                        .unwrap();
+                    let core = storage.get(&core_handle).unwrap();
+                    let prep = storage.get(&prep_handle).unwrap();
+                    let vcs = storage.get(&vc_handle).unwrap();
+                    assert_eq!(core.source_id(), source.source_id);
+                    let resolved_module = ResolverModuleId::new(
+                        source.package_id.clone(),
+                        source.module_path.clone(),
+                    );
+                    assert_eq!(core.module_id(), &resolved_module);
+                    assert!(!core.proofs().is_empty());
+                    for (_, proof) in core.proofs().iter() {
+                        assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
+                    }
+                    assert_eq!(vcs.source(), source.source_id);
+                    assert_eq!(vcs.module().as_str(), "package=5:alpha;module=4:main");
+                    assert_eq!(vcs.snapshot(), old.snapshot);
+                    assert_eq!(vcs.schema_version(), &schema);
+                    assert_eq!(vcs.vcs().len(), 1);
+                    assert!(vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+                    assert!(!vcs.seed_accounting().is_empty());
+                    for row in vcs.seed_accounting() {
+                        let SeedOriginRef::ExistingCore { seed } = row.origin else {
+                            panic!("original Core seed")
+                        };
+                        let original = core.obligation_seeds().get(seed).unwrap();
+                        assert_eq!(row.seed_status, ObligationSeedStatus::Active);
+                        assert_eq!(original.status, ObligationSeedStatus::Active);
+                        assert_eq!(&prep.1.entries.get(row.handoff).unwrap().seed, original);
+                    }
+                    for output in [core_ref, prep_ref, vc_ref] {
+                        assert_eq!(output.placement() == &StoragePlacement::Resident, !open);
+                    }
+
+                    if configuration == 0 {
+                        let direct = mizar_vc::generator::generate_source_theorem_vcs(
+                            &core,
+                            old.snapshot,
+                            &generation,
+                            &schema,
+                        )
+                        .unwrap();
+                        assert_eq!(*vcs, direct);
+                        let selected = vcs.vcs()[0].id;
+                        let seal = |output: &AnyPhaseOutputRef| {
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                old.snapshot,
+                                output.clone(),
+                            )
+                            .unwrap()
+                        };
+                        let input = PhaseInput::new(
+                            old.work_unit.clone(),
+                            PhaseDispatchInputBundle::new(
+                                old.snapshot,
+                                old.identities().input_hash(),
+                                old.identities().dependency_hashes().to_vec(),
+                                vec![seal(core_ref), seal(vc_ref)],
+                            )
+                            .unwrap(),
+                        );
+                        let policy = mizar_proof::policy::VerifierPolicy::default();
+                        let checked = inputs
+                            .native_theorem_reflexivity_with_core_vc_parents(
+                                &input, &owner, selected, &policy,
+                            )
+                            .unwrap()
+                            .unwrap();
+                        assert_eq!(
+                            (checked.0.status(), checked.1.class),
+                            (
+                                mizar_kernel::checker::KernelCheckStatus::Accepted,
+                                mizar_proof::policy::CandidatePolicyClass::DischargedBuiltin
+                            )
+                        );
+                        baseline =
+                            Some(((*core).clone(), (*prep).clone(), (*vcs).clone(), selected));
+                    } else {
+                        let (expected_core, expected_prep, expected_vcs, _) =
+                            baseline.as_ref().unwrap();
+                        assert_eq!(&*core, expected_core);
+                        assert_eq!(&*prep, expected_prep);
+                        assert_eq!(&*vcs, expected_vcs);
+                    }
+
+                    let proof_count = graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| {
+                            matches!(
+                                task.kind,
+                                TaskKind::VcDischarge
+                                    | TaskKind::AtpSolve
+                                    | TaskKind::BackendRun
+                                    | TaskKind::KernelCheck
+                            )
+                        })
+                        .count();
+                    assert_eq!(proof_count, [0, 1, 4][configuration]);
+                    if configuration > 0 {
+                        let (id, _) = association.as_ref().unwrap();
+                        let discharge_unit = WorkUnit::Vc {
+                            module: module.clone(),
+                            descriptor: id.clone(),
+                        };
+                        let discharge = task(TaskKind::VcDischarge, &discharge_unit);
+                        assert_eq!(discharge.dependency_coverage, DependencyCoverage::Complete);
+                        assert_eq!(state(discharge), TaskState::Blocked);
+                        assert!(!run.phase_results.contains_key(&discharge.id));
+                        let root = graph
+                            .tasks()
+                            .iter()
+                            .find(|task| task.kind == TaskKind::PackageResolve)
+                            .unwrap();
+                        let nonroot = |dependent: &BuildTask| {
+                            dependent
+                                .dependencies
+                                .iter()
+                                .filter(|id| *id != &root.id)
+                                .cloned()
+                                .collect::<std::collections::BTreeSet<_>>()
+                        };
+                        assert_eq!(
+                            nonroot(discharge),
+                            [vc_task.id.clone()].into_iter().collect()
+                        );
+                        let mut expected_artifact = [vc_task.id.clone(), discharge.id.clone()]
+                            .into_iter()
+                            .collect::<std::collections::BTreeSet<_>>();
+                        if configuration == 2 {
+                            let atp = task(TaskKind::AtpSolve, &discharge_unit);
+                            let backend_unit = WorkUnit::BackendAttempt {
+                                module: module.clone(),
+                                descriptor: id.clone(),
+                                backend_profile: backends[0].clone(),
+                            };
+                            let backend = task(TaskKind::BackendRun, &backend_unit);
+                            let kernel_unit = WorkUnit::EvidenceCandidate {
+                                module: module.clone(),
+                                descriptor: id.clone(),
+                                evidence_candidate: evidence[0].clone(),
+                            };
+                            let kernel = task(TaskKind::KernelCheck, &kernel_unit);
+                            for proof_task in [atp, backend, kernel] {
+                                assert_eq!(
+                                    proof_task.dependency_coverage,
+                                    DependencyCoverage::Complete
+                                );
+                                assert_eq!(state(proof_task), TaskState::Blocked);
+                                assert!(!run.phase_results.contains_key(&proof_task.id));
+                                expected_artifact.insert(proof_task.id.clone());
+                            }
+                            assert_eq!(nonroot(atp), [discharge.id.clone()].into_iter().collect());
+                            assert_eq!(nonroot(backend), [atp.id.clone()].into_iter().collect());
+                            assert_eq!(nonroot(kernel), [backend.id.clone()].into_iter().collect());
+                        }
+                        assert_eq!(nonroot(artifact), expected_artifact);
+                    }
+                }
+            },
+        );
+    }
+}
