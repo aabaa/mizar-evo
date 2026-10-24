@@ -59259,6 +59259,172 @@ fn with_native_theorem_artifact_context(
         proof_status: None,
         documentation_ref: None,
     };
+    let theorem_nodes = ast
+        .node_views()
+        .filter(|node| {
+            node.as_theorem_item().is_some() && node.range() == source_owner.source_range
+        })
+        .collect::<Vec<_>>();
+    let [theorem] = theorem_nodes.as_slice() else {
+        panic!("one original checked theorem")
+    };
+    let proofs = theorem
+        .child_views()
+        .filter_map(|node| node.as_proof_block())
+        .collect::<Vec<_>>();
+    let [proof] = proofs.as_slice() else {
+        panic!("one original proof")
+    };
+    let lets = proof
+        .child_views()
+        .filter_map(|node| node.as_let_statement())
+        .collect::<Vec<_>>();
+    let [generalization] = lets.as_slice() else {
+        panic!("one actual universal introduction")
+    };
+    let declarations = generalization
+        .child_views()
+        .filter_map(|node| node.as_qualified_variable_segment())
+        .flat_map(|node| node.child_views())
+        .map(|node| node.id())
+        .collect::<std::collections::BTreeSet<_>>();
+    let locals = check
+        .scope()
+        .bindings()
+        .iter()
+        .filter(|binding| {
+            binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Let
+                && declarations.contains(&binding.node())
+        })
+        .collect::<Vec<_>>();
+    let [local] = locals.as_slice() else {
+        panic!("one genuine original let binding")
+    };
+    let quantified_bindings = check
+        .scope()
+        .bindings()
+        .iter()
+        .filter(|binding| {
+            binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Quantifier
+        })
+        .collect::<Vec<_>>();
+    let [bound] = quantified_bindings.as_slice() else {
+        panic!("one genuine theorem binder")
+    };
+    assert_ne!(bound.id(), local.id());
+    assert_eq!(bound.declared_type(), local.declared_type());
+    assert_eq!(ast.node_view(local.node()).unwrap().range(), local.range());
+    assert_eq!(
+        source_text.get(local.range().start..local.range().end),
+        Some(local.spelling())
+    );
+    let expected_thesis = format!("{} = {}", local.spelling(), local.spelling());
+    let conclusions = proof
+        .child_views()
+        .filter_map(|node| node.as_conclusion_statement())
+        .collect::<Vec<_>>();
+    let [conclusion] = conclusions.as_slice() else {
+        panic!("one actual proof conclusion")
+    };
+    let propositions = conclusion
+        .child_views()
+        .filter_map(|node| node.as_proposition())
+        .collect::<Vec<_>>();
+    let [proposition] = propositions.as_slice() else {
+        panic!("one conclusion proposition")
+    };
+    let written_goals = proposition
+        .child_views()
+        .filter_map(|node| node.as_formula_expression())
+        .collect::<Vec<_>>();
+    let [written_goal] = written_goals.as_slice() else {
+        panic!("one original conclusion formula")
+    };
+    let equalities = written_goal
+        .child_views()
+        .filter_map(|node| node.as_builtin_predicate_application())
+        .collect::<Vec<_>>();
+    let [equality] = equalities.as_slice() else {
+        panic!("one original equality")
+    };
+    assert_eq!(
+        equality
+            .child_views()
+            .filter(|node| node
+                .as_token()
+                .is_some_and(|token| token.text.as_ref() == "="))
+            .count(),
+        1
+    );
+    let operands = equality
+        .child_views()
+        .filter_map(|node| node.as_term_expression())
+        .collect::<Vec<_>>();
+    assert_eq!(operands.len(), 2);
+    let mut thesis_ids = std::collections::BTreeSet::new();
+    let primary = metadata.2.source_term().unwrap();
+    for operand in operands {
+        let references = operand
+            .child_views()
+            .filter_map(|node| node.as_term_reference())
+            .collect::<Vec<_>>();
+        let [original] = references.as_slice() else {
+            panic!("one actual operand reference")
+        };
+        let resolved = check
+            .scope()
+            .references()
+            .iter()
+            .filter(|row| row.node() == original.id())
+            .collect::<Vec<_>>();
+        let [reference] = resolved.as_slice() else {
+            panic!("one genuine resolved reference")
+        };
+        assert_eq!(
+            reference.kind(),
+            mizar_resolve::names::SourceVariableReferenceKind::Term
+        );
+        assert_eq!(reference.range(), original.range());
+        assert_eq!(reference.binding(), local.id());
+        assert_eq!(reference.spelling(), local.spelling());
+        let terms = primary
+            .terms()
+            .iter()
+            .map(|(_, row)| row)
+            .filter(|row| row.source_range() == original.range())
+            .collect::<Vec<_>>();
+        let [term] = terms.as_slice() else {
+            panic!("one actual primary handoff for original site")
+        };
+        assert_eq!(
+            term.kind(),
+            mizar_checker::source_term::SourcePrimaryTermKind::VariableReference
+        );
+        assert_eq!(term.spelling(), reference.spelling());
+        let row = metadata.3.expr_metadata().get_by_site(term.site()).unwrap();
+        assert_eq!(row.source_range, original.range());
+        assert!(thesis_ids.insert(row.expr.as_str().to_owned()));
+    }
+    let goals = metadata
+        .2
+        .source_atomic_formula()
+        .unwrap()
+        .formulas()
+        .iter()
+        .map(|(_, row)| row)
+        .filter(|row| row.source_range() == equality.range())
+        .collect::<Vec<_>>();
+    let [goal] = goals.as_slice() else {
+        panic!("one actual equality handoff for original site")
+    };
+    assert_eq!(
+        goal.kind(),
+        mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality
+    );
+    let row = metadata.3.expr_metadata().get_by_site(goal.site()).unwrap();
+    assert_eq!(row.source_range, equality.range());
+    assert!(thesis_ids.insert(row.expr.as_str().to_owned()));
+    assert_eq!(thesis_ids.len(), 3);
     let mut expressions = metadata
         .3
         .expr_metadata()
@@ -59295,7 +59461,9 @@ fn with_native_theorem_artifact_context(
                 inferred_type,
                 resolved_symbol: None,
                 inserted_coercions: vec![],
-                active_thesis: None,
+                active_thesis: thesis_ids
+                    .contains(row.expr.as_str())
+                    .then(|| expected_thesis.clone()),
                 overload_resolution: None,
             }
         })
@@ -60074,8 +60242,21 @@ fn native_theorem_artifact_draft_covers_real_expression_rows() {
                     assert!(
                         projected.resolved_symbol.is_none()
                             && projected.inserted_coercions.is_empty()
-                            && projected.active_thesis.is_none()
                             && projected.overload_resolution.is_none()
+                    );
+                    assert_eq!(
+                        projected.active_thesis,
+                        expected
+                            .as_ref()
+                            .unwrap()
+                            .as_ref()
+                            .unwrap()
+                            .artifact
+                            .expressions
+                            .iter()
+                            .find(|expected| expected.expression_id == row.expr.as_str())
+                            .unwrap()
+                            .active_thesis
                     );
                 }
                 assert!(typed_terms > 0 && untyped_formulas > 0);
@@ -62095,21 +62276,30 @@ fn native_theorem_artifact_statements_match_checked_formula() {
         discharge::{ComputationLimit, DischargePolicy},
         vc_ir::{PolicyKey, VcSet},
     };
-    for (text, formula, threshold) in [
+    for (text, formula, thesis, threshold) in [
         (
             "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
             "for X being set holds X = X",
+            "X = X",
             usize::MAX,
         ),
         (
             ":: 日本語 λ\ntheorem Renamed: for Bound being set holds Bound = Bound proof let Bound be set; thus Bound = Bound; end;\n",
             "for Bound being set holds Bound = Bound",
+            "Bound = Bound",
             0,
         ),
         (
             "theorem Spaced:\n  for X being set\n    holds X = X\nproof\n  let X be set;\n  thus X = X;\nend;",
             "for X being set\n    holds X = X",
+            "X = X",
             usize::MAX,
+        ),
+        (
+            "theorem LocalRename: for Bound being set holds Bound = Bound proof let Local be set; thus Local  =\n    Local; end;",
+            "for Bound being set holds Bound = Bound",
+            "Local = Local",
+            0,
         ),
     ] {
         with_native_theorem_artifact_context(
@@ -62189,6 +62379,33 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                         + 1,
                     "missing {quantified_id}"
                 );
+                let expected_theses = expected
+                    .artifact
+                    .expressions
+                    .iter()
+                    .filter_map(|row| {
+                        row.active_thesis
+                            .as_deref()
+                            .map(|goal| (row.expression_id.as_str(), goal))
+                    })
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                assert_eq!(expected_theses.len(), 3);
+                let actual_theses = actual
+                    .artifact
+                    .expressions
+                    .iter()
+                    .filter_map(|row| {
+                        row.active_thesis
+                            .as_deref()
+                            .map(|goal| (row.expression_id.as_str(), goal))
+                    })
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                assert_eq!(
+                    actual_theses.len(),
+                    3,
+                    "missing terminal thesis sites: {expected_theses:?}"
+                );
+                assert_eq!(actual_theses, expected_theses);
                 assert_eq!(&actual, expected);
                 let quantified = actual
                     .artifact
@@ -62294,13 +62511,11 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                         Gap::ArtifactPublicationToken
                     ]
                 );
-                assert!(
-                    actual
-                        .artifact
-                        .expressions
-                        .iter()
-                        .all(|row| row.active_thesis.is_none())
-                );
+                assert!(actual.artifact.expressions.iter().all(|row| {
+                    row.active_thesis
+                        .as_deref()
+                        .is_none_or(|goal| goal == thesis)
+                }));
                 assert_eq!(
                     actual.artifact.source_hash,
                     inputs.snapshot.source_versions[0].source_hash
@@ -62446,6 +62661,33 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                         + 1,
                     "missing {quantified_id}"
                 );
+                let expected_theses = expected
+                    .artifact
+                    .expressions
+                    .iter()
+                    .filter_map(|row| {
+                        row.active_thesis
+                            .as_deref()
+                            .map(|goal| (row.expression_id.as_str(), goal))
+                    })
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                assert_eq!(expected_theses.len(), 3);
+                let actual_theses = actual
+                    .artifact
+                    .expressions
+                    .iter()
+                    .filter_map(|row| {
+                        row.active_thesis
+                            .as_deref()
+                            .map(|goal| (row.expression_id.as_str(), goal))
+                    })
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                assert_eq!(
+                    actual_theses.len(),
+                    3,
+                    "missing terminal thesis sites: {expected_theses:?}"
+                );
+                assert_eq!(actual_theses, expected_theses);
                 assert_eq!(&actual, expected);
                 let json = verified_artifact_json(&expected.artifact).unwrap();
                 let domain = artifact_hash_domain(
@@ -62480,6 +62722,14 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                 )
                 .unwrap();
                 assert_eq!(artifact, expected.artifact);
+                assert_eq!(
+                    artifact
+                        .expressions
+                        .iter()
+                        .filter_map(|row| row.active_thesis.as_deref())
+                        .collect::<Vec<_>>(),
+                    ["X = X"; 3]
+                );
                 let quantified = artifact
                     .expressions
                     .iter()
@@ -62723,7 +62973,43 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                             + 1,
                         "missing {quantified_id}"
                     );
+                    let expected_theses = expected
+                        .artifact
+                        .expressions
+                        .iter()
+                        .filter_map(|row| {
+                            row.active_thesis
+                                .as_deref()
+                                .map(|goal| (row.expression_id.as_str(), goal))
+                        })
+                        .collect::<std::collections::BTreeMap<_, _>>();
+                    assert_eq!(expected_theses.len(), 3);
+                    let actual_theses = actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .filter_map(|row| {
+                            row.active_thesis
+                                .as_deref()
+                                .map(|goal| (row.expression_id.as_str(), goal))
+                        })
+                        .collect::<std::collections::BTreeMap<_, _>>();
+                    assert_eq!(
+                        actual_theses.len(),
+                        3,
+                        "missing terminal thesis sites: {expected_theses:?}"
+                    );
+                    assert_eq!(actual_theses, expected_theses);
                     assert_eq!(&actual, expected);
+                    assert_eq!(
+                        actual
+                            .artifact
+                            .expressions
+                            .iter()
+                            .filter_map(|row| row.active_thesis.as_deref())
+                            .collect::<Vec<_>>(),
+                        ["X = X"; 3]
+                    );
                     let quantified = actual
                         .artifact
                         .expressions

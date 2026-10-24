@@ -5847,6 +5847,186 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             lockfile_hash,
             verifier_config_hash,
         ] = raw_refs;
+        use mizar_core::core_ir::{
+            CoreFormulaKind, CoreIr, CoreItemKind, CoreItemStatus, CoreNodeRef, CoreProofNodeKind,
+            CoreProofStatus, CoreSourceAnchor, CoreTermKind, ObligationSeedKind,
+            ObligationSeedStatus,
+        };
+        let core = storage
+            .typed_handle::<CoreIr>(
+                core_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&core).map_err(|error| error.to_string())?;
+        let (Some((item_id, item)), Some((_, proof)), Some((seed_id, seed))) = (
+            unique(core.items().iter()),
+            unique(core.proofs().iter()),
+            unique(core.obligation_seeds().iter()),
+        ) else {
+            return Ok(None);
+        };
+        if core.source_id() != version.source_id
+            || core.module_id() != arena.module()
+            || item.symbol != owner.symbol
+            || item.kind != CoreItemKind::Theorem
+            || item.status != CoreItemStatus::Valid
+            || item.visibility.as_str() != "public"
+            || proof.item != item_id
+            || proof.status != CoreProofStatus::PendingAutomaticProof
+            || seed.owner != item_id
+            || seed.kind != ObligationSeedKind::TheoremProof
+            || seed.status != ObligationSeedStatus::Active
+            || core.proof_nodes().len() != 2
+            || item.source.anchor != CoreSourceAnchor::SourceRange(owner.source_range)
+            || proof.source.anchor != item.source.anchor
+            || core.source_map().item_sources.get(&item_id) != Some(&item.source)
+        {
+            return Ok(None);
+        }
+        let Some(root) = core.proof_nodes().get(proof.root) else {
+            return Ok(None);
+        };
+        let CoreProofNodeKind::IntroduceBinder {
+            binder: local,
+            child,
+        } = &root.kind
+        else {
+            return Ok(None);
+        };
+        let Some(terminal) = core.proof_nodes().get(*child) else {
+            return Ok(None);
+        };
+        let CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } = &terminal.kind
+        else {
+            return Ok(None);
+        };
+        let (Some(goal_id), Some(guard), Some(name)) =
+            (seed.goal, local.ty_guard, local.source_name.as_deref())
+        else {
+            return Ok(None);
+        };
+        if *obligation != seed_id
+            || !citations.is_empty()
+            || local.role.as_str() != "proof-let"
+            || name.is_empty()
+            || seed.context != [guard]
+            || !seed.core_refs.contains(&CoreNodeRef::Item(item_id))
+            || !seed.core_refs.contains(&CoreNodeRef::Formula(goal_id))
+            || !seed.core_refs.contains(&CoreNodeRef::ProofNode(*child))
+            || core.source_map().proof_sources.get(&proof.root) != Some(&root.source)
+            || core.source_map().proof_sources.get(child) != Some(&terminal.source)
+            || core.source_map().obligation_sources.get(&seed_id) != Some(&seed.source)
+            || terminal.source.anchor != seed.source.anchor
+            || root.source.anchor != local.source.anchor
+        {
+            return Ok(None);
+        }
+        let Some(goal) = core.formulas().get(goal_id) else {
+            return Ok(None);
+        };
+        let CoreFormulaKind::Equals { left, right } = goal.kind else {
+            return Ok(None);
+        };
+        let (Some(left_term), Some(right_term)) = (core.terms().get(left), core.terms().get(right))
+        else {
+            return Ok(None);
+        };
+        if left == right
+            || left_term.kind != CoreTermKind::Var(local.var)
+            || right_term.kind != CoreTermKind::Var(local.var)
+            || core.source_map().formula_sources.get(&goal_id) != Some(&goal.source)
+            || core.source_map().term_sources.get(&left) != Some(&left_term.source)
+            || core.source_map().term_sources.get(&right) != Some(&right_term.source)
+        {
+            return Ok(None);
+        }
+        let (
+            CoreSourceAnchor::SourceRange(terminal_range),
+            CoreSourceAnchor::SourceRange(goal_range),
+            CoreSourceAnchor::SourceRange(left_range),
+            CoreSourceAnchor::SourceRange(right_range),
+            CoreSourceAnchor::SourceRange(local_range),
+        ) = (
+            &terminal.source.anchor,
+            &goal.source.anchor,
+            &left_term.source.anchor,
+            &right_term.source.anchor,
+            &local.source.anchor,
+        )
+        else {
+            return Ok(None);
+        };
+        if [
+            terminal_range,
+            goal_range,
+            left_range,
+            right_range,
+            local_range,
+        ]
+        .iter()
+        .any(|range| {
+            range.source_id != version.source_id
+                || range.start >= range.end
+                || range.start < owner.source_range.start
+                || range.end > owner.source_range.end
+                || source.source_text.get(range.start..range.end).is_none()
+        }) || local_range.end > terminal_range.start
+            || goal_range.start < terminal_range.start
+            || goal_range.end > terminal_range.end
+            || left_range.start < goal_range.start
+            || right_range.end > goal_range.end
+            || left_range.end > right_range.start
+            || goal_range == left_range
+            || goal_range == right_range
+            || source.source_text.get(local_range.start..local_range.end) != Some(name)
+        {
+            return Ok(None);
+        }
+        let Some((_, equality)) = unique(
+            atomic
+                .formulas()
+                .iter()
+                .filter(|(_, row)| row.source_range() == *goal_range),
+        ) else {
+            return Ok(None);
+        };
+        let Some(equality_row) = metadata.expr_metadata().get_by_site(equality.site()) else {
+            return Ok(None);
+        };
+        let mut thesis_ids =
+            std::collections::BTreeSet::from([equality_row.expr.as_str().to_owned()]);
+        for range in [left_range, right_range] {
+            let Some((_, term)) = unique(
+                primary
+                    .terms()
+                    .iter()
+                    .filter(|(_, row)| row.source_range() == *range),
+            ) else {
+                return Ok(None);
+            };
+            let Some(row) = metadata.expr_metadata().get_by_site(term.site()) else {
+                return Ok(None);
+            };
+            if !thesis_ids.insert(row.expr.as_str().to_owned()) {
+                return Ok(None);
+            }
+        }
+        if thesis_ids.len() != 3 {
+            return Ok(None);
+        }
+        let thesis = format!("{name} = {name}");
+        for expression in &mut expressions {
+            if thesis_ids.remove(&expression.expression_id) {
+                expression.active_thesis = Some(thesis.clone());
+            }
+        }
+        if !thesis_ids.is_empty() {
+            return Ok(None);
+        }
         for parent in input.parent_outputs() {
             storage
                 .validate_handle(parent.as_output_ref())

@@ -678,6 +678,8 @@ the owning producers when the paired tasks land.
 
 110. **[Source artifact outer universal expression](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-QUANTIFIED-EXPRESSION.md).** [x]
 
+111. **[Source terminal-point thesis metadata](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-TERMINAL-THESIS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
