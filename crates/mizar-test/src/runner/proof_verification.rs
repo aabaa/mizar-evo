@@ -31749,4 +31749,785 @@ mod term_proof_tests {
             config_before
         );
     }
+
+    #[test]
+    fn source_theorem_candidate_witness_draft_matches_checked_inputs() {
+        use mizar_artifact::{
+            proof_witness::{
+                EvidenceKind, ProofStatus, ProofWitnessReadOptions, ProofWitnessRef,
+                proof_witness_ref_json, read_proof_witness_ref, write_proof_witness_ref,
+            },
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::{CanonicalJson, SchemaVersion, artifact_hash_domain, canonical_json_bytes},
+        };
+        use mizar_atp::{
+            backend::{BackendCandidatePayload, encode_local_variable_reflexivity_names},
+            problem::*,
+        };
+        use mizar_core::core_ir::{CoreProofStatus, ObligationSeedStatus};
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, source_unit_from_loaded},
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, VerifierPolicy},
+            selection::{
+                ProofWinnerClass, VcProofSelection, merge_artifact_proof_selections as merge,
+            },
+            status::{
+                ArtifactPublicationGap, ArtifactStatusPublication, ProofStatusProjectionInput,
+                TrustedUsedAxiomsRef, check_source_theorem_candidate_metadata as checked,
+                project_status, source_theorem_candidate_witness_draft as draft,
+                source_theorem_obligation_identity_with_schemas as identity,
+            },
+            witness_store::{ProofWitnessPayloadSchema, ProofWitnessProvenance, stage},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{
+            DependencyArtifactRef, DiskSourceLoader, Edition, InMemorySessionIdAllocator,
+            ModulePath, PackageId, SessionIdAllocator, SnapshotRegistry, SourceInput,
+            SourceOriginInput, ToolchainInfo, WorkspaceRoot, hash_text,
+        };
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargePolicy},
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy,
+                build_source_theorem_discharge_kernel_handoff as handoff,
+            },
+            vc_ir::{GenerationSchemaVersion, PolicyKey, VcId, VcSchemaVersion, VcStatus},
+        };
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/owners.miz");
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let registry = SnapshotRegistry::new();
+        let ids = InMemorySessionIdAllocator::new();
+        let mut prior = Vec::new();
+        for (case, text) in [
+            original.to_owned(),
+            original.replace(" X", " Local"),
+            format!(":: 日本語 λ\n{original}\n"),
+            original.replace("T:", "Renamed:"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            fs::write(&path, &text).unwrap();
+            let (package, module) = if case == 2 {
+                ("other-package", "nested.owners")
+            } else {
+                ("draft-test", "owners")
+            };
+            let input = SourceInput {
+                package_id: PackageId::new(package),
+                module_path: ModulePath::new(module),
+                normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2026"),
+                origin: if case % 2 == 0 {
+                    SourceOriginInput::Disk { path: path.clone() }
+                } else {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!("file://{}", path.display()),
+                        expected_version: 1,
+                        actual_version: 1,
+                        text: text.clone().into(),
+                    }
+                },
+            };
+            let policy = if case == 1 {
+                VerifierPolicy::default().with_profile_id("draft λ\0")
+            } else if case == 2 {
+                VerifierPolicy::default()
+                    .with_schema_version(2)
+                    .with_checker_schema_version(7)
+            } else {
+                VerifierPolicy::release()
+            };
+            let dependencies = if case == 3 {
+                vec![DependencyArtifactRef::new(
+                    "caller-recorded/source",
+                    hash_text(&text),
+                )]
+            } else {
+                vec![]
+            };
+            let (snapshot, lease, mut loaded) = registry
+                .load_snapshot(
+                    ids.next_request_id().unwrap(),
+                    (
+                        WorkspaceRoot::new(root.to_str().unwrap()),
+                        dependencies,
+                        hash_text("caller-lock"),
+                        ToolchainInfo::new("caller-supplied-draft-toolchain"),
+                        policy.policy_fingerprint().hash(),
+                    ),
+                    vec![(DiskSourceLoader::new(&root), input.clone())],
+                )
+                .unwrap();
+            let (loaded, captured) = loaded.pop().unwrap();
+            assert_eq!(captured, input);
+            assert_eq!(snapshot.source_versions[0].source_id, loaded.source_id);
+            let frontend = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                super::super::ParseOnlyImportProvider,
+                MizarParserSeam,
+            )
+            .run_loaded(source_unit_from_loaded(loaded, path.clone()))
+            .unwrap();
+            assert!(frontend.diagnostics.is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            assert_eq!(ast.source_id, snapshot.source_versions[0].source_id);
+            let module = ModuleId::new(input.package_id, input.module_path);
+            let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(ast, &module).collect();
+            let collected = SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let generation = GenerationSchemaVersion::new(if case == 3 { "" } else { "λ\n\0" });
+            let schema = VcSchemaVersion::new(if case == 3 { "vc\t\0" } else { "" });
+            let discharge = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new(if case == 3 { "unused" } else { "explicit" }),
+                    max_steps: if case == 3 { 0 } else { 64 },
+                },
+            };
+            let (fragment, format) = if case % 2 == 0 {
+                (LogicFragment::Fof, ConcreteFormat::Tptp)
+            } else {
+                (LogicFragment::SmtLibUninterpreted, ConcreteFormat::SmtLib)
+            };
+            let profile = LogicProfile::try_new(
+                "draft λ\0",
+                fragment,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            let witness_path = format!("proof-witnesses/caller-{case}/checked.bin");
+            let before = (source.clone(), env.clone(), snapshot.clone(), prior.clone());
+            let config_before = (
+                generation.clone(),
+                schema.clone(),
+                discharge.clone(),
+                profile.clone(),
+                policy.clone(),
+                witness_path.clone(),
+            );
+            with_source_theorem_check(ast, &source, env, |check| {
+                let check_before = format!("{check:?}");
+                let id = VcId::new(0);
+                let original =
+                    identity(&source, check, env, snapshot.id, id, (&generation, &schema))?;
+                let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+                let raw = checked(
+                    &source,
+                    check,
+                    env,
+                    snapshot.id,
+                    id,
+                    (&generation, &schema, profile.clone(), format),
+                    (&discharge, &policy),
+                )?;
+                let acceptance = raw.8.as_ref().unwrap();
+                let BackendCandidatePayload::FormulaSubstitutionBytes(wire) = raw.4.payload()
+                else {
+                    panic!()
+                };
+                let processed = handoff(&raw.0, &raw.1, id, &raw.2, &discharge)?;
+                let target = processed.canonical_evidence().target_vc();
+                let actual_profile = processed.canonical_evidence().kernel_profile();
+                let tautology = match actual_profile.clause_tautology_policy {
+                    KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+                    KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+                    _ => panic!(),
+                };
+                let mut parse_context = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(actual_profile.profile_id, tautology),
+                );
+                parse_context.accepted_schema_versions.insert(2);
+                let parsed = parse_formula_evidence(wire, &parse_context).unwrap();
+                assert_eq!(parsed.schema_version(), 2);
+                let v1 =
+                    parse_formula_evidence(&processed.encode_local_evidence(None)?, &parse_context)
+                        .unwrap();
+                let names = encode_local_variable_reflexivity_names(&v1)?;
+                assert!(!names.is_empty());
+                assert_eq!(parsed.equality_instances().len(), names.len());
+                assert_eq!(
+                    acceptance.target_binding_hash.digest,
+                    processed.canonical_hash()
+                );
+                assert!(acceptance.formula_context_hash.is_none());
+                assert!(!processed.context_identity().entries().is_empty());
+                let reference = TrustedUsedAxiomsRef::from_kernel_result(&raw.5, origin).unwrap();
+                let [selection] = <[_; 1]>::try_from(
+                    merge([VcProofSelection::new(id, raw.7.clone())], []).unwrap(),
+                )
+                .unwrap();
+                let projection = project_status(
+                    ProofStatusProjectionInput::new(selection, policy.clone(), original.0.clone())
+                        .with_trusted_used_axioms(reference.clone()),
+                )
+                .unwrap();
+                let provenance = ProofWitnessProvenance::new(
+                    snapshot.id.fingerprint(),
+                    "mizar-proof/source-theorem-candidate-witness-draft/v1",
+                    raw.7.selected_candidate_id().unwrap().clone(),
+                    origin,
+                    original.0.vc_fingerprint(),
+                    original.1.fingerprint().hash(),
+                    snapshot.dependency_artifact_fingerprint(),
+                    policy.policy_fingerprint().hash(),
+                    acceptance.checker_schema_version,
+                    acceptance.evidence_schema_version,
+                )
+                .unwrap()
+                .with_accepted_result_hash(acceptance.accepted_result_hash.digest)
+                .with_trusted_used_axioms_ref(&reference);
+                let payload_schema = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+                    "mizar-proof/source-theorem-candidate-checked-wire",
+                    acceptance.evidence_schema_version,
+                    true,
+                )
+                .unwrap();
+                let obligation = ArtifactHashRef::new(
+                    ArtifactHashClass::Interface,
+                    "mizar-proof/source-theorem-original-obligation",
+                    SchemaVersion::new(1, 0),
+                    original.0.obligation_fingerprint(),
+                );
+                let wire_hex = wire
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                for name in &names {
+                    assert!(wire.windows(name.len()).any(|bytes| bytes == name));
+                }
+                let hashes = [
+                    acceptance.accepted_result_hash.digest,
+                    policy.policy_fingerprint().hash(),
+                ]
+                .map(|hash| {
+                    hash.as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                });
+                let expected_value = CanonicalJson::object([
+                    (
+                        "hash_domain",
+                        CanonicalJson::string("mizar-proof/witness-payload/v1"),
+                    ),
+                    (
+                        "obligation_fingerprint",
+                        CanonicalJson::string(obligation.to_artifact_hash_string()),
+                    ),
+                    ("payload_bytes_hex", CanonicalJson::string(&wire_hex)),
+                    (
+                        "payload_schema_family",
+                        CanonicalJson::string("mizar-proof/source-theorem-candidate-checked-wire"),
+                    ),
+                    (
+                        "payload_schema_version",
+                        CanonicalJson::string(acceptance.evidence_schema_version.to_string()),
+                    ),
+                    ("selected_evidence_hash", CanonicalJson::string(&hashes[0])),
+                    (
+                        "verifier_policy_fingerprint",
+                        CanonicalJson::string(&hashes[1]),
+                    ),
+                ])
+                .unwrap();
+                let domain =
+                    artifact_hash_domain(payload_schema.family(), payload_schema.version());
+                let payload_hash = ArtifactHashRef::new(
+                    ArtifactHashClass::Artifact,
+                    payload_schema.family(),
+                    payload_schema.version(),
+                    domain.hash(&expected_value, &[]),
+                );
+                let expected_ref = ProofWitnessRef {
+                    schema_version: SchemaVersion::new(2, 0),
+                    obligation_id: original.0.obligation_id().into(),
+                    obligation_fingerprint: obligation.clone(),
+                    proof_status: ProofStatus::KernelVerified,
+                    evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+                    witness_path: witness_path.clone(),
+                    witness_artifact_hash: payload_hash.clone(),
+                    kernel_acceptance: acceptance.clone(),
+                };
+                let inputs_before = (
+                    original.clone(),
+                    raw.clone(),
+                    projection.clone(),
+                    provenance.clone(),
+                    payload_schema.clone(),
+                );
+                let actual = draft(
+                    &source,
+                    check,
+                    env,
+                    &snapshot,
+                    id,
+                    (&generation, &schema, profile.clone(), format),
+                    (&discharge, &policy),
+                    &witness_path,
+                )?;
+                assert_eq!((&actual.0, &actual.1), (&projection, &original.1));
+                let acquired = &actual.2;
+                assert_eq!(acquired.obligation_id(), original.0.obligation_id());
+                assert_eq!(acquired.obligation_anchor(), original.0.obligation_anchor());
+                assert_eq!(acquired.obligation_fingerprint(), &obligation);
+                assert_eq!(acquired.selected_class(), ProofWinnerClass::KernelVerified);
+                assert_eq!(
+                    acquired.selected_evidence_hash(),
+                    reference.accepted_evidence_hash()
+                );
+                assert_eq!(acquired.payload_schema(), &payload_schema);
+                assert_eq!(acquired.payload_bytes(), wire);
+                assert_eq!(acquired.payload_hash_value(), expected_value);
+                assert_eq!(acquired.witness_path(), witness_path);
+                assert_eq!(acquired.kernel_acceptance(), acceptance);
+                assert_eq!(acquired.provenance(), &provenance);
+                assert_eq!(
+                    acquired.provenance().trusted_used_axioms_ref(),
+                    Some(&reference)
+                );
+                assert_eq!(actual.0.trusted_used_axioms(), Some(&reference));
+                assert_eq!(reference.used_axiom_count(), raw.5.used_axioms().len());
+                assert!(raw.5.used_axioms().is_empty());
+                assert_eq!(
+                    actual.0.artifact_publication(),
+                    ArtifactStatusPublication::ExternalDependencyGap(
+                        ArtifactPublicationGap::MissingKernelVerifiedWitness
+                    )
+                );
+                assert_eq!(actual.0.accepted_witness_obligation_id(), None);
+                assert_eq!(
+                    actual.0.reuse_metadata().selected_proof_witness_hash(),
+                    None
+                );
+                assert!(!actual.0.reuse_metadata().cache_reuse_predicate_complete());
+                assert!(actual.1.requires_cache_miss() && !actual.1.is_complete());
+                assert!(
+                    raw.0
+                        .proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert!(
+                    raw.0
+                        .obligation_seeds()
+                        .iter()
+                        .all(|(_, seed)| seed.status == ObligationSeedStatus::Active)
+                );
+                assert!(raw.1.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+                assert!(
+                    raw.2
+                        .vc_set()
+                        .vcs()
+                        .iter()
+                        .all(|vc| vc.status == VcStatus::NeedsAtp)
+                );
+                let staged = stage(acquired.clone()).unwrap();
+                assert_eq!(staged.staged_payload_hash(), &payload_hash);
+                assert_eq!(staged.artifact_reference_candidate(), Some(&expected_ref));
+                assert_eq!(staged.provenance(), &provenance);
+                let json = proof_witness_ref_json(&expected_ref).unwrap();
+                assert_eq!(
+                    write_proof_witness_ref(staged.artifact_reference_candidate().unwrap())
+                        .unwrap(),
+                    canonical_json_bytes(&json)
+                );
+                assert_eq!(
+                    read_proof_witness_ref(&json, ProofWitnessReadOptions::default()).unwrap(),
+                    expected_ref
+                );
+                assert!(!root.join(&witness_path).exists());
+                assert_eq!(
+                    (
+                        original.clone(),
+                        raw.clone(),
+                        projection,
+                        provenance,
+                        payload_schema
+                    ),
+                    inputs_before
+                );
+                assert_eq!(format!("{check:?}"), check_before);
+                prior.push(actual);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&source, env, &snapshot), (&before.0, &before.1, &before.2));
+            assert_eq!(&prior[..before.3.len()], before.3);
+            assert_eq!(
+                (generation, schema, discharge, profile, policy, witness_path),
+                config_before
+            );
+            assert_eq!(registry.get(snapshot.id), Some(snapshot.clone()));
+            registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn source_theorem_candidate_witness_draft_preserves_errors() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_atp::problem::*;
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, source_unit_from_loaded},
+        };
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat, KernelEvidenceOrigin, VerifierPolicy},
+            selection::{VcProofSelection, merge_artifact_proof_selections as merge},
+            status::{
+                ProofStatusProjectionInput, TrustedUsedAxiomsRef,
+                check_source_theorem_candidate_metadata as checked, project_status,
+                source_theorem_candidate_witness_draft as draft,
+                source_theorem_obligation_identity_with_schemas as identity,
+            },
+            witness_store::ProofWitnessStoreError,
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SessionIdAllocator, SnapshotRegistry, SourceInput, SourceOriginInput, ToolchainInfo,
+            WorkspaceRoot, hash_text,
+        };
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargePolicy},
+            vc_ir::{GenerationSchemaVersion, PolicyKey, VcId, VcSchemaVersion},
+        };
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/owners.miz");
+        let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        fs::write(&path, text).unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        let registry = SnapshotRegistry::new();
+        let policy = VerifierPolicy::default();
+        let input = SourceInput {
+            package_id: PackageId::new("draft-errors"),
+            module_path: ModulePath::new("owners"),
+            normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+            edition: Edition::new("2026"),
+            origin: SourceOriginInput::Disk { path: path.clone() },
+        };
+        let (snapshot, lease, mut loaded) = registry
+            .load_snapshot(
+                ids.next_request_id().unwrap(),
+                (
+                    WorkspaceRoot::new(root.to_str().unwrap()),
+                    vec![],
+                    hash_text("caller-lock"),
+                    ToolchainInfo::new("caller-toolchain"),
+                    policy.policy_fingerprint().hash(),
+                ),
+                vec![(DiskSourceLoader::new(&root), input.clone())],
+            )
+            .unwrap();
+        let (loaded, _) = loaded.pop().unwrap();
+        assert_eq!(loaded.source_id, snapshot.source_versions[0].source_id);
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            super::super::ParseOnlyImportProvider,
+            MizarParserSeam,
+        )
+        .run_loaded(source_unit_from_loaded(loaded, path.clone()))
+        .unwrap();
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = ModuleId::new(input.package_id, input.module_path);
+        let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let env = collected.env();
+        let generation = GenerationSchemaVersion::new("λ\n\0");
+        let schema = VcSchemaVersion::new("");
+        let discharge = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("explicit"),
+                max_steps: 64,
+            },
+        };
+        let disabled = policy.clone().with_kernel_evidence_formats([]);
+        let builtin = policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]);
+        let profile = LogicProfile::try_new(
+            "explicit",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Unsupported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        let before = (
+            source.clone(),
+            env.clone(),
+            snapshot.clone(),
+            generation.clone(),
+            schema.clone(),
+            discharge.clone(),
+            policy.clone(),
+            profile.clone(),
+        );
+        with_source_theorem_check(ast, &source, env, |check| {
+            let check_before = format!("{check:?}");
+            let id = VcId::new(0);
+            let original = identity(&source, check, env, snapshot.id, id, (&generation, &schema))?;
+            let raw = checked(
+                &source,
+                check,
+                env,
+                snapshot.id,
+                id,
+                (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                (&discharge, &policy),
+            )?;
+            let reference = TrustedUsedAxiomsRef::from_kernel_result(
+                &raw.5,
+                KernelEvidenceOrigin::AtpFormulaSubstitution,
+            )
+            .unwrap();
+            let [selection] =
+                <[_; 1]>::try_from(merge([VcProofSelection::new(id, raw.7.clone())], []).unwrap())
+                    .unwrap();
+            let expected_projection = project_status(
+                ProofStatusProjectionInput::new(selection, policy.clone(), original.0.clone())
+                    .with_trusted_used_axioms(reference),
+            )
+            .unwrap();
+            let baseline = draft(
+                &source,
+                check,
+                env,
+                &snapshot,
+                id,
+                (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                (&discharge, &policy),
+                "proof-witnesses/checked.bin",
+            )?;
+            assert_eq!(
+                (&baseline.0, &baseline.1),
+                (&expected_projection, &original.1)
+            );
+            let baseline_before = (original.clone(), raw.clone(), baseline.clone());
+            for (path, reason) in [
+                ("", "path must start with proof-witnesses/"),
+                (
+                    "proof-witnesses/",
+                    "path must contain a child segment after proof-witnesses/",
+                ),
+                (
+                    "proof-witnesses/a\\b",
+                    "path must be artifact-root relative and use / separators",
+                ),
+                (
+                    "proof-witnesses/../checked.bin",
+                    "path must not contain empty, ., .., or drive-prefix segments",
+                ),
+            ] {
+                let expected = ProofWitnessStoreError::InvalidWitnessPath {
+                    reason: reason.into(),
+                }
+                .to_string();
+                assert_eq!(
+                    draft(
+                        &source,
+                        check,
+                        env,
+                        &snapshot,
+                        id,
+                        (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                        (&discharge, &policy),
+                        path
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+            }
+            let absent = identity(
+                &source,
+                check,
+                env,
+                snapshot.id,
+                VcId::new(usize::MAX),
+                (&generation, &schema),
+            )
+            .unwrap_err();
+            assert_eq!(
+                draft(
+                    &source,
+                    check,
+                    env,
+                    &snapshot,
+                    VcId::new(usize::MAX),
+                    (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                    (&discharge, &disabled),
+                    ""
+                )
+                .unwrap_err(),
+                absent
+            );
+            for (format, current) in [
+                (ConcreteFormat::SmtLib, &policy),
+                (ConcreteFormat::Tptp, &disabled),
+                (ConcreteFormat::Tptp, &builtin),
+            ] {
+                let expected = checked(
+                    &source,
+                    check,
+                    env,
+                    snapshot.id,
+                    id,
+                    (&generation, &schema, profile.clone(), format),
+                    (&discharge, current),
+                )
+                .unwrap_err();
+                assert_eq!(
+                    draft(
+                        &source,
+                        check,
+                        env,
+                        &snapshot,
+                        id,
+                        (&generation, &schema, profile.clone(), format),
+                        (&discharge, current),
+                        "proof-witnesses/checked.bin"
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+            }
+            let (_, other_source, other) =
+                inputs(&text.replace("T:", "Foreign:"), "draft-errors", "owners", 7);
+            let expected = identity(
+                &source,
+                check,
+                other.env(),
+                snapshot.id,
+                id,
+                (&generation, &schema),
+            )
+            .unwrap_err();
+            assert_eq!(
+                draft(
+                    &source,
+                    check,
+                    other.env(),
+                    &snapshot,
+                    id,
+                    (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                    (&discharge, &policy),
+                    "proof-witnesses/checked.bin"
+                )
+                .unwrap_err(),
+                expected
+            );
+            assert_ne!(source.source_id(), other_source.source_id());
+            let (unsupported_frontend, unsupported_source, unsupported_symbols) = inputs(
+                "open theorem O: for X being set holds X = X;",
+                "draft-errors",
+                "owners",
+                7,
+            );
+            with_source_theorem_check(
+                unsupported_frontend.ast.as_ref().unwrap(),
+                &unsupported_source,
+                unsupported_symbols.env(),
+                |unsupported_check| {
+                    let expected = identity(
+                        &unsupported_source,
+                        unsupported_check,
+                        unsupported_symbols.env(),
+                        snapshot.id,
+                        id,
+                        (&generation, &schema),
+                    )
+                    .unwrap_err();
+                    assert_eq!(
+                        draft(
+                            &unsupported_source,
+                            unsupported_check,
+                            unsupported_symbols.env(),
+                            &snapshot,
+                            id,
+                            (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                            (&discharge, &policy),
+                            "proof-witnesses/checked.bin"
+                        )
+                        .unwrap_err(),
+                        expected
+                    );
+                    Ok(())
+                },
+            )?;
+            assert_eq!((original, raw, baseline), baseline_before);
+            assert_eq!(format!("{check:?}"), check_before);
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(
+            (
+                source,
+                env.clone(),
+                snapshot.clone(),
+                generation,
+                schema,
+                discharge,
+                policy,
+                profile
+            ),
+            before
+        );
+        registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
 }

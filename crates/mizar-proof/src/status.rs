@@ -1819,6 +1819,131 @@ pub fn source_theorem_reflexivity_witness_file_candidate(
     Ok((original, file, reference))
 }
 
+/// Builds an internal witness draft from one fresh ATP theorem check.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "keeps source, snapshot, encoding, policies and path with their existing owners"
+)]
+pub fn source_theorem_candidate_witness_draft(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: &mizar_session::BuildSnapshot,
+    vc_id: VcId,
+    encoding: (
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policies: (&mizar_vc::discharge::DischargePolicy, &VerifierPolicy),
+    witness_path: &str,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+        crate::witness_store::ProofWitnessDraft,
+    ),
+    String,
+> {
+    use crate::{
+        selection::{VcProofSelection, merge_artifact_proof_selections},
+        witness_store::{
+            ProofWitnessDraft, ProofWitnessPayloadSchema, ProofWitnessProvenance,
+            TrustedKernelWitnessMetadata,
+        },
+    };
+    use mizar_artifact::registration_summary::{ArtifactHashClass, ArtifactHashRef};
+    use mizar_atp::backend::BackendCandidatePayload;
+
+    let (identity, slice) = source_theorem_obligation_identity_with_schemas(
+        source,
+        check,
+        symbols,
+        snapshot.id,
+        vc_id,
+        (encoding.0, encoding.1),
+    )?;
+    let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+    let (_, _, _, _, actual, result, decision, selection, metadata) =
+        check_source_theorem_candidate_metadata(
+            source,
+            check,
+            symbols,
+            snapshot.id,
+            vc_id,
+            encoding,
+            policies,
+        )?;
+    let invalid = || "theorem.candidate.proof.invalid_source_witness_draft".to_owned();
+    let metadata = match (decision.class, selection.selected_class(), metadata) {
+        (
+            crate::policy::CandidatePolicyClass::KernelVerified,
+            ProofWinnerClass::KernelVerified,
+            Some(metadata),
+        ) => metadata,
+        _ => return Err(invalid()),
+    };
+    let merged = merge_artifact_proof_selections([VcProofSelection::new(vc_id, selection)], [])
+        .map_err(|error| error.to_string())?;
+    let [selection] = <[_; 1]>::try_from(merged).map_err(|_| invalid())?;
+    let reference = TrustedUsedAxiomsRef::from_kernel_result(&result, origin)
+        .map_err(|error| error.to_string())?;
+    let projection = project_status(
+        ProofStatusProjectionInput::new(selection, policies.1.clone(), identity)
+            .with_trusted_used_axioms(reference.clone()),
+    )
+    .map_err(|error| error.to_string())?;
+    let reuse = projection.reuse_metadata();
+    let provenance = ProofWitnessProvenance::new(
+        snapshot.id.fingerprint(),
+        "mizar-proof/source-theorem-candidate-witness-draft/v1",
+        reuse.selected_candidate_id().cloned().ok_or_else(invalid)?,
+        origin,
+        reuse.vc_fingerprint(),
+        reuse.dependency_slice_fingerprint(),
+        snapshot.dependency_artifact_fingerprint(),
+        policies.1.policy_fingerprint().hash(),
+        metadata.checker_schema_version,
+        metadata.evidence_schema_version,
+    )
+    .map_err(|error| error.to_string())?
+    .with_accepted_result_hash(metadata.accepted_result_hash.digest)
+    .with_trusted_used_axioms_ref(&reference);
+    let payload_schema = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+        "mizar-proof/source-theorem-candidate-checked-wire",
+        metadata.evidence_schema_version,
+        true,
+    )
+    .map_err(|error| error.to_string())?;
+    let trusted = TrustedKernelWitnessMetadata::from_kernel_policy_input(
+        &KernelPolicyInput::from_kernel_result(&result, origin),
+        metadata,
+    )
+    .map_err(|error| error.to_string())?;
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = actual.payload() else {
+        return Err(invalid());
+    };
+    let draft = ProofWitnessDraft::new(
+        projection.obligation_id(),
+        reuse.obligation_anchor().clone(),
+        ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            "mizar-proof/source-theorem-original-obligation",
+            SchemaVersion::new(1, 0),
+            reuse.obligation_fingerprint(),
+        ),
+        &projection,
+        trusted,
+        payload_schema,
+        bytes.clone(),
+        witness_path,
+        provenance,
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((projection, slice, draft))
+}
+
 /// Builds an internal draft from one fresh theorem check and retained snapshot metadata.
 pub fn source_theorem_reflexivity_witness_draft(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

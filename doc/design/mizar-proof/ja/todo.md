@@ -488,6 +488,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 65. **[Fresh source theorem candidate internal status](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-STATUS.md).** [x]
 
 66. **[Source theorem candidate checked-wire metadata](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-METADATA.md).** [x]
+67. **[Source theorem candidate internal witness draft](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-WITNESS-DRAFT.md).** [x]
 
 ## 推奨検証
 
