@@ -155,3 +155,5 @@ proof acceptance または trusted `used_axioms` に昇格させない。
 `source_theorem_obligation_identity_with_schemas`: [sole API owner](./status.md#source-theorem-obligation-identity-with-explicit-schemas).
 
 `project_source_theorem_candidate_status`: [sole API owner](./status.md#source-theorem-candidate-internal-status).
+
+`check_source_theorem_candidate_metadata`: [sole API owner](./status.md#source-theorem-candidate-acceptance-metadata).

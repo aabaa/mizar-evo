@@ -1032,6 +1032,147 @@ pub fn select_source_theorem_candidate(
     ))
 }
 
+/// Derives current acceptance metadata from the actual checked ATP theorem wire.
+#[expect(
+    clippy::type_complexity,
+    reason = "Returns the actual pipeline and optional metadata without a new holder"
+)]
+pub fn check_source_theorem_candidate_metadata(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policies: (&mizar_vc::discharge::DischargePolicy, &VerifierPolicy),
+) -> Result<
+    (
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
+        mizar_vc::discharge::DischargeOutput,
+        mizar_atp::backend::EncodedBackendProblem,
+        mizar_atp::backend::BackendCandidateEvidence,
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+        crate::selection::ProofSelection,
+        Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
+    ),
+    String,
+> {
+    use mizar_artifact::{
+        proof_witness::KernelAcceptanceMetadata,
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+    };
+    use mizar_atp::backend::BackendCandidatePayload;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::kernel_evidence_handoff::{
+        KernelClauseTautologyPolicy, build_source_theorem_discharge_kernel_handoff,
+    };
+
+    let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+    let (core, vcs, discharge, encoded, candidate, result, decision, selection) =
+        select_source_theorem_candidate(
+            source, check, symbols, snapshot, vc_id, encoding, policies,
+        )?;
+    let input = KernelPolicyInput::from_kernel_result(&result, origin);
+    let accepted = input.accepted_evidence_hash();
+    let polarity = input.accepted_goal_polarity();
+    let metadata = if decision.class == crate::policy::CandidatePolicyClass::KernelVerified
+        && selection.selected_class() == ProofWinnerClass::KernelVerified
+        && result.status() == KernelCheckStatus::Accepted
+        && !result.policy_taint()
+        && result.evidence_check_kind()
+            == Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
+        && polarity == Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    {
+        let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+            return Err("theorem.candidate.proof.invalid_source_metadata".to_owned());
+        };
+        let handoff = build_source_theorem_discharge_kernel_handoff(
+            &core, &vcs, vc_id, &discharge, policies.0,
+        )?;
+        let envelope = handoff.canonical_evidence();
+        let profile = envelope.kernel_profile();
+        let target = envelope.target_vc();
+        let tautology = match profile.clause_tautology_policy {
+            KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+            KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+            _ => return Err("theorem.candidate.proof.invalid_source_metadata".to_owned()),
+        };
+        let mut context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+            KernelProfileRecord::v1(profile.profile_id, tautology),
+        );
+        context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(bytes, &context)
+            .map_err(|error| format!("theorem.candidate.metadata.parse:{error:?}"))?;
+        accepted
+            .zip(handoff.local_evidence_component_hashes().ok())
+            .map(|(accepted, components)| {
+                let [
+                    kernel_profile_fingerprint,
+                    formula_evidence_hash,
+                    substitution_evidence_hash,
+                    provenance_hash,
+                ] = [
+                    ("profile", components[0]),
+                    ("formula", components[1]),
+                    ("substitutions", components[2]),
+                    ("provenance", components[3]),
+                ]
+                .map(|(kind, digest)| ArtifactHashRef {
+                    class: ArtifactHashClass::Interface,
+                    schema_family: format!("mizar-vc/local-evidence-component/{kind}"),
+                    schema_version: SchemaVersion::new(1, 0),
+                    digest,
+                });
+                KernelAcceptanceMetadata {
+                    kernel_profile_fingerprint,
+                    verifier_policy_fingerprint: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-proof/verifier-policy".into(),
+                        schema_version: SchemaVersion::new(policies.1.schema_version(), 0),
+                        digest: policies.1.policy_fingerprint().hash(),
+                    },
+                    checker_schema_version: SchemaVersion::new(
+                        policies.1.checker_schema_version(),
+                        0,
+                    ),
+                    evidence_schema_version: SchemaVersion::new(parsed.schema_version(), 0),
+                    target_binding_hash: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-vc/kernel-evidence-handoff-canonical".into(),
+                        schema_version: SchemaVersion::new(1, 0),
+                        digest: handoff.canonical_hash(),
+                    },
+                    formula_evidence_hash,
+                    substitution_evidence_hash,
+                    provenance_hash,
+                    formula_context_hash: None,
+                    accepted_result_hash: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-proof/kernel-accepted-evidence".into(),
+                        schema_version: SchemaVersion::new(1, 0),
+                        digest: accepted,
+                    },
+                }
+            })
+    } else {
+        None
+    };
+    Ok((
+        core, vcs, discharge, encoded, candidate, result, decision, selection, metadata,
+    ))
+}
+
 /// Returns the actual original graphs and result from one genuine theorem check.
 pub fn check_source_theorem_reflexivity_with_original_graph(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
