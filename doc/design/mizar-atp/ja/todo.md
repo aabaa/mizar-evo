@@ -663,6 +663,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 45. **[Source theorem scoped sequent](../../task_contracts/ja/ATP-SOURCE-THEOREM-SCOPED-SEQUENT.md).** [x]
 
+46. **[Source theorem candidate inputs](../../task_contracts/ja/ATP-SOURCE-THEOREM-CANDIDATE-INPUTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

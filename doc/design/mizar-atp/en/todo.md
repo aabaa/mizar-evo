@@ -718,6 +718,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 45. **[Source theorem scoped sequent](../../task_contracts/en/ATP-SOURCE-THEOREM-SCOPED-SEQUENT.md).** [x]
 
+46. **[Source theorem candidate inputs](../../task_contracts/en/ATP-SOURCE-THEOREM-CANDIDATE-INPUTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

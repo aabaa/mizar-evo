@@ -199,6 +199,146 @@ pub fn source_registration_ground_term_correspondence(
     )]))
 }
 
+/// Builds unchecked theorem candidates from actual scoped problems and local evidence.
+pub fn build_source_theorem_candidate_inputs(
+    core: &mizar_core::core_ir::CoreIr,
+    original: &mizar_vc::vc_ir::VcSet,
+    vc_id: mizar_vc::vc_ir::VcId,
+    discharge: &mizar_vc::discharge::DischargeOutput,
+    policy: &mizar_vc::discharge::DischargePolicy,
+    logic_profile: crate::problem::LogicProfile,
+    concrete_format: ConcreteFormat,
+) -> Result<(EncodedBackendProblem, BackendCandidateEvidence), String> {
+    use crate::problem::{AtpFingerprint, AtpFormulaTree, AtpSymbolSource, AtpTargetBinding};
+    use mizar_core::core_ir::{CoreFormulaKind, CoreTermKind};
+    use mizar_vc::kernel_evidence_handoff::{KernelClauseTautologyPolicy, KernelFormulaSource};
+    let problem = crate::translator::translate_source_theorem_sequent(
+        core,
+        original,
+        vc_id,
+        discharge,
+        policy,
+        logic_profile,
+    )?;
+    let encoded = EncodedBackendProblem::encode(&problem, concrete_format)?;
+    let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(
+        core, original, vc_id, discharge, policy,
+    )?;
+    let invalid = || "theorem.candidate.invalid_projection".to_owned();
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let binding = AtpTargetBinding::new(
+        AtpFingerprint::new(target.algorithm_id, target.digest.clone())
+            .map_err(|error| error.to_string())?,
+        format!(
+            "mizar-vc-kernel-evidence-handoff:{}",
+            hex(handoff.canonical_hash().as_bytes())
+        ),
+    )
+    .map_err(|error| error.to_string())?;
+    if problem.target_binding() != &binding || encoded.target_binding() != &binding {
+        return Err(invalid());
+    }
+    let vc = discharge.vc_set().vc(vc_id).ok_or_else(invalid)?;
+    let [context] = vc.local_context.entries() else {
+        return Err(invalid());
+    };
+    let reference = context.formula.ok_or_else(invalid)?;
+    let mizar_vc::vc_ir::VcFormulaRef::Core(guard_id) = reference else {
+        return Err(invalid());
+    };
+    let CoreFormulaKind::TypePred { subject, .. } =
+        &core.formulas().get(guard_id).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    let CoreTermKind::Var(local) = &core.terms().get(*subject).ok_or_else(invalid)?.kind else {
+        return Err(invalid());
+    };
+    let Some(AtpFormulaTree::Forall { binders, .. }) = problem.conjecture().formula() else {
+        return Err(invalid());
+    };
+    let [binder] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    if !problem.symbol_map().iter().any(|row| row.backend_symbol() == binder.variable()
+        && matches!(row.source(), AtpSymbolSource::GeneratedBinder(source) if source.as_str() == format!("proof-let:{}", local.index()))) {
+        return Err(invalid());
+    }
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Reject
+        }
+        KernelClauseTautologyPolicy::Marker => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Marker
+        }
+        _ => return Err(invalid()),
+    };
+    let parse_context = mizar_kernel::formula_evidence::FormulaEvidenceParseContext::v1(
+        mizar_kernel::certificate_parser::Fingerprint::new(
+            target.algorithm_id,
+            target.digest.clone(),
+        ),
+        mizar_kernel::certificate_parser::KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = mizar_kernel::formula_evidence::parse_formula_evidence(
+        &handoff.encode_local_evidence(None)?,
+        &parse_context,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let [variable] = parsed.variable_manifest() else {
+        return Err(invalid());
+    };
+    let [guard] = envelope.formula_evidence() else {
+        return Err(invalid());
+    };
+    let [parsed_guard] = parsed.formulas() else {
+        return Err(invalid());
+    };
+    let context_id = u32::try_from(context.id.index().checked_add(1).ok_or_else(invalid)?)
+        .map_err(|_| invalid())?;
+    if guard.producer_formula_ref() != Some(reference)
+        || envelope.final_goal().producer_formula_ref != vc.goal
+        || !matches!(guard.source(), KernelFormulaSource::LocalHypothesis { local_context_id } if *local_context_id == context_id)
+        || !matches!(&parsed_guard.source, mizar_kernel::formula_evidence::FormulaSource::LocalHypothesis { local_context_id } if *local_context_id == context_id)
+        || parsed_guard.formula_id != guard.formula_id()
+    {
+        return Err(invalid());
+    }
+    let (
+        mizar_kernel::formula_evidence::Formula::Atom(guard_atom),
+        mizar_kernel::formula_evidence::Formula::Atom(goal_atom),
+    ) = (&parsed_guard.formula, &parsed.final_goal().formula)
+    else {
+        return Err(invalid());
+    };
+    let term = mizar_kernel::clause::Term::Variable(variable.variable_id);
+    if guard_atom.symbol.kind != mizar_kernel::clause::SymbolKind::BuiltinRelation
+        || guard_atom.arguments.as_slice() != std::slice::from_ref(&term)
+        || goal_atom.symbol.kind != mizar_kernel::clause::SymbolKind::Equality
+        || goal_atom.arguments != [term.clone(), term]
+    {
+        return Err(invalid());
+    }
+    let names = encode_local_variable_reflexivity_names(&parsed)?;
+    let wire = handoff.encode_local_evidence(Some(&names))?;
+    let candidate = BackendCandidateEvidence::new(
+        format!(
+            "source-theorem-candidate-v1:{}",
+            hex(encoded.metadata_hash().as_bytes())
+        ),
+        BackendCandidatePayload::FormulaSubstitutionBytes(wire),
+        encoded.target_binding().clone(),
+        encoded.input_hash(),
+        encoded.provenance_hash(),
+        encoded.formula_labels().to_vec(),
+        encoded.symbol_bindings().to_vec(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((encoded, candidate))
+}
+
 /// Builds bound, unchecked candidate transport from authentic source producers.
 pub fn build_source_registration_candidate_inputs(
     core: &mizar_core::core_ir::CoreIr,
