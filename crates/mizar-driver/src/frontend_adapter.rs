@@ -4653,69 +4653,15 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             )
             .map_err(|error| error.to_string())?;
         let discharge = storage.get(&discharge).map_err(|error| error.to_string())?;
-        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
-            version.package_id == module.package && version.module_path == module.path
-        }))
-        .ok_or_else(|| {
-            "native theorem candidate selection requires one captured source".to_owned()
-        })?;
-        let (source, _) = self.native_source(version).ok_or_else(|| {
-            "native theorem candidate selection capture binding failed".to_owned()
-        })?;
-        let package = self
-            .build_plan
-            .packages
-            .iter()
-            .find(|package| package.package_id == module.package)
-            .ok_or_else(|| {
-                "native theorem candidate selection requires a bound package".to_owned()
-            })?;
-        let PackagePlanSource::Workspace { root, .. } = &package.source else {
-            return Err(
-                "native theorem candidate selection requires a workspace package".to_owned(),
-            );
-        };
-        let output = Frontend::new(
-            FrontendSourceLoader::new(DiskSourceLoader::new(
-                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
-            )),
-            self.dependency_lexical_provider(&[]),
-            MizarParserSeam,
-        )
-        .run_loaded(source)
-        .map_err(|error| error.to_string())?;
-        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
-            return Ok(None);
-        }
-        let Some(ast) = output.ast.as_ref() else {
-            return Ok(None);
-        };
-        let resolver_module =
-            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
-        let Some((arena, env)) =
-            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        let Some((arena, env, _, typed, _)) =
+            self.native_theorem_source_metadata(module, "native theorem candidate selection")?
         else {
             return Ok(None);
         };
-        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
-            return Ok(None);
-        }
-        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
-            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
-        )
-        .map_err(|error| format!("{error:?}"))?;
-        let metadata =
-            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
         let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
         let check =
             mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &arena,
-                &metadata.2,
-                &scope,
-                &env,
-                &labels,
-                &resolved,
-                None,
+                &arena, &typed, &scope, &env, &labels, &resolved, None,
             )?;
         let generation = &vcs
             .vc(vc_id)
@@ -4783,173 +4729,15 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         )>,
         String,
     > {
-        use mizar_proof::{
-            policy::{KernelEvidenceOrigin, KernelPolicyInput},
-            selection::ProofWinnerClass,
-            status::TrustedUsedAxiomsRef,
-        };
-        let Some(selection) = self
-            .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
-                input,
-                publisher,
-                vc_id,
-                (encoding.0.clone(), encoding.1),
-                policies,
-            )?
-        else {
-            return Ok(None);
-        };
-        if selection.selected_class() != ProofWinnerClass::KernelVerified {
-            return Ok(None);
-        }
-        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
-                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
-        }))
-        .ok_or_else(|| "native theorem candidate witness file requires one VC parent".to_owned())?;
-        let kernel_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
-                && parent.as_output_ref().output_kind()
-                    == &OutputKind::new("SourceTheoremCandidateCheck")
-        }))
-        .ok_or_else(|| {
-            "native theorem candidate witness file requires one Kernel parent".to_owned()
-        })?;
-        let storage = publisher.storage();
-        let typed = storage
-            .typed_handle::<mizar_vc::vc_ir::VcSet>(
-                vc_parent.as_output_ref(),
-                &OutputKind::new("SourceTheoremVC"),
-            )
-            .map_err(|error| error.to_string())?;
-        let vcs = storage.get(&typed).map_err(|error| error.to_string())?;
-        let typed = storage
-            .typed_handle::<(
-                mizar_kernel::checker::KernelCheckResult,
-                mizar_proof::policy::PolicyDecision,
-            )>(
-                kernel_parent.as_output_ref(),
-                &OutputKind::new("SourceTheoremCandidateCheck"),
-            )
-            .map_err(|error| error.to_string())?;
-        let checked = storage.get(&typed).map_err(|error| error.to_string())?;
-        let WorkUnit::Module { module } = &input.work_unit else {
-            return Err("native theorem candidate witness file requires a module".to_owned());
-        };
-        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
-            version.package_id == module.package && version.module_path == module.path
-        }))
-        .ok_or_else(|| {
-            "native theorem candidate witness file requires one captured source".to_owned()
-        })?;
-        let (source, _) = self.native_source(version).ok_or_else(|| {
-            "native theorem candidate witness file capture binding failed".to_owned()
-        })?;
-        let package = self
-            .build_plan
-            .packages
-            .iter()
-            .find(|package| package.package_id == module.package)
-            .ok_or_else(|| {
-                "native theorem candidate witness file requires a bound package".to_owned()
-            })?;
-        let PackagePlanSource::Workspace { root, .. } = &package.source else {
-            return Err(
-                "native theorem candidate witness file requires a workspace package".to_owned(),
-            );
-        };
-        let output = Frontend::new(
-            FrontendSourceLoader::new(DiskSourceLoader::new(
-                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
-            )),
-            self.dependency_lexical_provider(&[]),
-            MizarParserSeam,
+        self.native_theorem_candidate_witness_payload(
+            input,
+            publisher,
+            vc_id,
+            encoding,
+            policies,
+            witness_path,
         )
-        .run_loaded(source)
-        .map_err(|error| error.to_string())?;
-        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
-            return Ok(None);
-        }
-        let Some(ast) = output.ast.as_ref() else {
-            return Ok(None);
-        };
-        let resolver_module =
-            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
-        let Some((arena, env)) =
-            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
-        else {
-            return Ok(None);
-        };
-        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
-            return Ok(None);
-        }
-        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
-            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
-        )
-        .map_err(|error| format!("{error:?}"))?;
-        let metadata =
-            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
-        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
-        let check =
-            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &arena,
-                &metadata.2,
-                &scope,
-                &env,
-                &labels,
-                &resolved,
-                None,
-            )?;
-        let generation = &vcs
-            .vc(vc_id)
-            .ok_or_else(|| {
-                "native theorem candidate witness file requires the selected VC".to_owned()
-            })?
-            .anchor
-            .generation_schema_version;
-        let ((projection, _, _), file, reference) =
-            mizar_proof::status::source_theorem_candidate_witness_file_candidate(
-                &arena,
-                &check,
-                &env,
-                self.snapshot,
-                vc_id,
-                (generation, vcs.schema_version(), encoding.0, encoding.1),
-                policies,
-                witness_path,
-            )?;
-        let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
-        let kernel = KernelPolicyInput::from_kernel_result(&checked.0, origin);
-        let trusted = TrustedUsedAxiomsRef::from_kernel_result(&checked.0, origin)
-            .map_err(|error| error.to_string())?;
-        let reuse = projection.reuse_metadata();
-        let selected = selection.reuse_metadata();
-        if projection.selected_class() != selection.selected_class()
-            || reuse.selected_candidate_id() != selection.selected_candidate_id()
-            || reuse.policy_fingerprint() != selected.policy_fingerprint()
-            || reuse.selected_evidence_hash() != selected.selected_evidence_hash()
-            || reuse.accepted_goal_polarity() != selected.accepted_goal_polarity()
-            || reuse.selected_candidate_provenance_hash()
-                != selected.selected_candidate_provenance_hash()
-            || reuse.selected_evidence_hash() != kernel.accepted_evidence_hash()
-            || reuse.accepted_goal_polarity() != kernel.accepted_goal_polarity()
-            || projection.trusted_used_axioms() != Some(&trusted)
-            || Some(reference.kernel_acceptance.accepted_result_hash.digest)
-                != kernel.accepted_evidence_hash()
-        {
-            return Err(
-                "native theorem candidate witness file checked evidence mismatch".to_owned(),
-            );
-        }
-        for parent in input.parent_outputs() {
-            storage
-                .validate_handle(parent.as_output_ref())
-                .map_err(|error| error.to_string())?;
-            publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
-                .map_err(|error| error.to_string())?;
-        }
-        Ok(Some((file, reference)))
+        .map(|value| value.map(|(_, (_, file, reference))| (file, reference)))
     }
 
     /// Publishes genuine witness file data as a child of the actual Kernel output.
@@ -4971,15 +4759,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Option<mizar_ir::storage::PhaseOutputRef<mizar_artifact::store::CanonicalJson>>,
         String,
     > {
-        let Some((file, reference)) = self
-            .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
-                input,
-                publisher,
-                vc_id,
-                encoding,
-                policies,
-                witness_path,
-            )?
+        let Some((_, (_, file, reference))) = self.native_theorem_candidate_witness_payload(
+            input,
+            publisher,
+            vc_id,
+            encoding,
+            policies,
+            witness_path,
+        )?
         else {
             return Ok(None);
         };
@@ -5071,6 +4858,878 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             })
             .map(Some)
             .map_err(|error| error.to_string())
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "keeps actual source and checker products together"
+    )]
+    fn native_theorem_source_metadata(
+        self,
+        module: &mizar_build::module_index::ModuleId,
+        prefix: &str,
+    ) -> Result<
+        Option<(
+            mizar_resolve::resolved_ast::SurfaceResolvedArena,
+            mizar_resolve::env::SymbolEnv,
+            mizar_checker::type_checker::TermFormulaInferenceOutput,
+            mizar_checker::typed_ast::TypedAst,
+            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+        )>,
+        String,
+    > {
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| format!("{prefix} requires one captured source"))?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| format!("{prefix} capture binding failed"))?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| format!("{prefix} requires a bound package"))?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(format!("{prefix} requires a workspace package"));
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let metadata =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        Ok(Some((arena, env, metadata.1, metadata.2, metadata.3)))
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "retains genuine selection and complete witness products"
+    )]
+    fn native_theorem_candidate_witness_payload(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        witness_path: &str,
+    ) -> Result<
+        Option<(
+            mizar_proof::selection::ProofSelection,
+            (
+                (
+                    mizar_proof::status::ProofStatusProjection,
+                    mizar_vc::dependency_slice::DependencySlice,
+                    mizar_proof::witness_store::ProofWitnessDraft,
+                ),
+                mizar_artifact::store::CanonicalJson,
+                mizar_artifact::proof_witness::ProofWitnessRef,
+            ),
+        )>,
+        String,
+    > {
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, KernelPolicyInput},
+            selection::ProofWinnerClass,
+            status::TrustedUsedAxiomsRef,
+        };
+        let Some(selection) = self
+            .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                input,
+                publisher,
+                vc_id,
+                (encoding.0.clone(), encoding.1),
+                policies,
+            )?
+        else {
+            return Ok(None);
+        };
+        if selection.selected_class() != ProofWinnerClass::KernelVerified {
+            return Ok(None);
+        }
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem candidate witness file requires one VC parent".to_owned())?;
+        let kernel_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremCandidateCheck")
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate witness file requires one Kernel parent".to_owned()
+        })?;
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                vc_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremVC"),
+            )
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&typed).map_err(|error| error.to_string())?;
+        let typed = storage
+            .typed_handle::<(
+                mizar_kernel::checker::KernelCheckResult,
+                mizar_proof::policy::PolicyDecision,
+            )>(
+                kernel_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremCandidateCheck"),
+            )
+            .map_err(|error| error.to_string())?;
+        let checked = storage.get(&typed).map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem candidate witness file requires a module".to_owned());
+        };
+        let Some((arena, env, _, typed, _)) =
+            self.native_theorem_source_metadata(module, "native theorem candidate witness file")?
+        else {
+            return Ok(None);
+        };
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &typed, &scope, &env, &labels, &resolved, None,
+            )?;
+        let generation = &vcs
+            .vc(vc_id)
+            .ok_or_else(|| {
+                "native theorem candidate witness file requires the selected VC".to_owned()
+            })?
+            .anchor
+            .generation_schema_version;
+        let (products, file, reference) =
+            mizar_proof::status::source_theorem_candidate_witness_file_candidate(
+                &arena,
+                &check,
+                &env,
+                self.snapshot,
+                vc_id,
+                (generation, vcs.schema_version(), encoding.0, encoding.1),
+                policies,
+                witness_path,
+            )?;
+        let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+        let kernel = KernelPolicyInput::from_kernel_result(&checked.0, origin);
+        let trusted = TrustedUsedAxiomsRef::from_kernel_result(&checked.0, origin)
+            .map_err(|error| error.to_string())?;
+        let projection = &products.0;
+        let reuse = projection.reuse_metadata();
+        let selected = selection.reuse_metadata();
+        if projection.selected_class() != selection.selected_class()
+            || reuse.selected_candidate_id() != selection.selected_candidate_id()
+            || reuse.policy_fingerprint() != selected.policy_fingerprint()
+            || reuse.selected_evidence_hash() != selected.selected_evidence_hash()
+            || reuse.accepted_goal_polarity() != selected.accepted_goal_polarity()
+            || reuse.selected_candidate_provenance_hash()
+                != selected.selected_candidate_provenance_hash()
+            || reuse.selected_evidence_hash() != kernel.accepted_evidence_hash()
+            || reuse.accepted_goal_polarity() != kernel.accepted_goal_polarity()
+            || projection.trusted_used_axioms() != Some(&trusted)
+            || Some(reference.kernel_acceptance.accepted_result_hash.digest)
+                != kernel.accepted_evidence_hash()
+        {
+            return Err(
+                "native theorem candidate witness file checked evidence mismatch".to_owned(),
+            );
+        }
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((selection, (products, file, reference))))
+    }
+
+    /// Projects real source rows and staged witness bytes into an unpublished module draft.
+    pub fn project_native_theorem_artifact_draft(
+        self,
+        input: &PhaseInput,
+        publisher: &Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        staging: (&str, &std::path::Path),
+    ) -> Result<Option<mizar_ir::projection::VerifiedArtifactDraft>, String> {
+        use mizar_artifact::{
+            module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummary, SourceRangeSummary},
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::{
+                CanonicalHashDomain, CanonicalJson, HashClass, PublishedArtifactPath,
+                PublishedArtifactReadOptions, artifact_hash_domain, read_published_artifact,
+                write_published_artifact,
+            },
+            verified_artifact::{
+                BuildProvenance, ExportVisibility, ExpressionMetadata, ObligationMetadata,
+                ObligationStatus, VerifiedExport,
+            },
+        };
+        use mizar_checker::{
+            source_atomic_formula::{SourceAtomicFormulaKind, SourceAtomicFormulaRecovery},
+            source_statement::{SourceStatementRecovery, SourceTheoremRole, SourceTheoremStatus},
+            source_term::{SourcePrimaryTermKind, SourcePrimaryTermRecovery},
+            type_checker::{NormalizedTypeStatus, TypeHeadRef},
+            typed_ast::NodeRecoveryState,
+        };
+        use mizar_ir::{
+            dispatch_input::PhaseDispatchInputBundle,
+            projection::{ArtifactProjectionService, ProjectVerifiedArtifactInput},
+        };
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, KernelPolicyInput},
+            selection::{
+                ProofEvidenceCandidate, ProofEvidenceSet, ProofWinnerClass, VcProofSelection,
+                merge_artifact_proof_selections, select_winner,
+            },
+            status::{
+                ArtifactStatusPublication, CurrentArtifactObligationStatus, ProjectedProofStatus,
+                ProofObligationIdentity, ProofStatusProjectionInput, TrustedUsedAxiomsRef,
+                project_status,
+            },
+        };
+        let fail = |suffix: &str| format!("native theorem artifact draft {suffix}");
+        if input.snapshot != self.snapshot.id {
+            return Err(fail("snapshot mismatch"));
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err(fail("requires a module"));
+        };
+        if input.parent_outputs().len() != 6 {
+            return Err(fail("requires six parents"));
+        }
+        let roles = [
+            ("SignatureCollection", "SourceTheoremModuleSummary"),
+            ("Elaboration", "SourceTheoremCore"),
+            ("VcGenerate", "SourceTheoremVC"),
+            ("VcDischarge", "SourceTheoremDischarge"),
+            ("KernelCheck", "SourceTheoremCandidateCheck"),
+            ("KernelCheck", "SourceTheoremCandidateWitnessFile"),
+        ];
+        let parents = roles.map(|(phase, kind)| {
+            unique(input.parent_outputs().iter().filter(|parent| {
+                parent.as_output_ref().phase() == &IrPipelinePhase::new(phase)
+                    && parent.as_output_ref().output_kind() == &OutputKind::new(kind)
+            }))
+        });
+        let [
+            Some(summary_parent),
+            Some(core_parent),
+            Some(vc_parent),
+            Some(discharge_parent),
+            Some(kernel_parent),
+            Some(file_parent),
+        ] = parents
+        else {
+            return Err(fail("requires unique source roles"));
+        };
+        let original = PhaseInput::new(
+            input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                input.identities().dependency_hashes().to_vec(),
+                vec![
+                    core_parent.clone(),
+                    vc_parent.clone(),
+                    discharge_parent.clone(),
+                    kernel_parent.clone(),
+                ],
+            )
+            .map_err(|error| error.to_string())?,
+        );
+        let Some((selection, ((projection, slice, witness_draft), file, reference))) = self
+            .native_theorem_candidate_witness_payload(
+                &original, publisher, vc_id, encoding, policies, staging.0,
+            )?
+        else {
+            return Ok(None);
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| fail("requires one captured source"))?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| fail("capture binding failed"))?;
+        if !matches!(version.origin, SourceOrigin::Disk) {
+            return Ok(None);
+        }
+        self.validate_native_lock_content()?;
+        self.validate_native_config_content()?;
+        if input.identities().input_hash() != source_input_hash(version)
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+        {
+            return Ok(None);
+        }
+        let storage = publisher.storage();
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: source_input_hash(version),
+        }];
+        publisher
+            .validate_current_snapshot(input.snapshot)
+            .map_err(|error| error.to_string())?;
+        for parent in input.parent_outputs() {
+            let parent = parent.as_output_ref();
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_current_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+            if parent.snapshot() != input.snapshot
+                || parent.work_unit() != &work_unit
+                || parent.schema_version() != SchemaVersion::new(1)
+                || parent.lineage().named_input_hashes != named
+            {
+                return Err(fail("parent binding mismatch"));
+            }
+        }
+        let file_ref = file_parent.as_output_ref();
+        if file_ref.lineage().parents != vec![kernel_parent.as_output_ref().output()] {
+            return Err(fail("FILE Kernel parent mismatch"));
+        }
+        let typed_file = storage
+            .typed_handle::<CanonicalJson>(
+                file_ref,
+                &OutputKind::new("SourceTheoremCandidateWitnessFile"),
+            )
+            .map_err(|error| error.to_string())?;
+        if *storage
+            .get(&typed_file)
+            .map_err(|error| error.to_string())?
+            != file
+        {
+            return Err(fail("complete witness file mismatch"));
+        }
+        let typed_summary = storage
+            .typed_handle::<ModuleSummary>(
+                summary_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremModuleSummary"),
+            )
+            .map_err(|error| error.to_string())?;
+        let stored_summary = storage
+            .get(&typed_summary)
+            .map_err(|error| error.to_string())?;
+        let Some(summary) = self.native_theorem_module_summary_candidate(module)? else {
+            return Ok(None);
+        };
+        if *stored_summary != summary {
+            return Err(fail("complete summary mismatch"));
+        }
+        if !summary.reexports.is_empty()
+            || !summary.dependency_interfaces.is_empty()
+            || summary.exported_symbols.len() != 1
+        {
+            return Ok(None);
+        }
+        let Some((arena, env, inference, typed, metadata)) =
+            self.native_theorem_source_metadata(module, "native theorem artifact draft")?
+        else {
+            return Ok(None);
+        };
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &typed, &scope, &env, &labels, &resolved, None,
+            )?;
+        let [(owner, _)] = check.owners() else {
+            return Ok(None);
+        };
+        if owner.role != SourceTheoremRole::Theorem
+            || owner.status != SourceTheoremStatus::Unmodified
+            || owner.recovery != SourceStatementRecovery::Normal
+            || !env.imports().is_empty()
+            || !env.exports().is_empty()
+            || !typed.diagnostics().is_empty()
+            || !inference.diagnostics().is_empty()
+            || !metadata.diagnostics().is_empty()
+        {
+            return Ok(None);
+        }
+        let symbol = env
+            .symbols()
+            .get(&owner.symbol)
+            .ok_or_else(|| fail("checked owner symbol missing"))?;
+        if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem
+            || symbol.visibility() != mizar_resolve::env::Visibility::Public
+            || symbol.export_status() != mizar_resolve::env::ExportStatus::Exported
+        {
+            return Ok(None);
+        }
+        let export = &summary.exported_symbols[0];
+        if owner.symbol.module() != arena.module()
+            || owner.source_range.source_id != version.source_id
+            || arena.source_id() != version.source_id
+            || symbol.origin().source_id() != version.source_id
+            || symbol.origin().module_id() != arena.module()
+            || symbol.origin().is_recovered()
+            || symbol.origin().import_edge().is_some()
+            || export.origin_id != owner.symbol.fqn().as_str()
+            || export.fully_qualified_name != owner.symbol.fqn().as_str()
+            || export.namespace_path
+                != symbol
+                    .namespace()
+                    .as_str()
+                    .split('.')
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>()
+            || export.visibility != "public"
+            || export.declaration_kind != "theorem"
+            || export.proof_status.is_some()
+            || export.rendered_signature.is_empty()
+            || export.source_range.start_byte != owner.source_range.start as u64
+            || export.source_range.end_byte != owner.source_range.end as u64
+            || summary.source_hash != version.source_hash
+        {
+            return Err(fail("checked owner export mismatch"));
+        }
+        let exports = vec![VerifiedExport {
+            origin_id: export.origin_id.clone(),
+            fully_qualified_name: export.fully_qualified_name.clone(),
+            namespace_path: export.namespace_path.clone(),
+            visibility: ExportVisibility::Public,
+            export_kind: export.declaration_kind.clone(),
+            source_range: export.source_range,
+            rendered_signature: export.rendered_signature.clone(),
+            interface_fingerprint: ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                summary.schema_version,
+                export.interface_fingerprint,
+            ),
+            proof_status: None,
+            documentation_ref: None,
+        }];
+        let Some(primary) = typed.source_term() else {
+            return Ok(None);
+        };
+        let Some(atomic) = typed.source_atomic_formula() else {
+            return Ok(None);
+        };
+        if metadata.expr_metadata().is_empty()
+            || metadata.expr_metadata().len() != primary.terms().len() + atomic.formulas().len()
+            || !metadata.collection_candidates().is_empty()
+            || !metadata.expanded_candidates().is_empty()
+            || !metadata.template_expansions().is_empty()
+            || !metadata.viable_candidates().is_empty()
+            || !metadata.viability_decisions().is_empty()
+            || !metadata.specificity_graphs().is_empty()
+            || !metadata.resolved_overloads().is_empty()
+            || !metadata.inserted_coercions().is_empty()
+            || !atomic.predicate_heads().is_empty()
+            || !atomic.candidates().is_empty()
+        {
+            return Ok(None);
+        }
+        let mut sites = std::collections::BTreeSet::new();
+        for (_, term) in primary.terms().iter() {
+            if term.kind() != SourcePrimaryTermKind::VariableReference
+                || term.recovery() != SourcePrimaryTermRecovery::Normal
+                || !sites.insert(term.site().clone())
+                || metadata
+                    .expr_metadata()
+                    .get_by_site(term.site())
+                    .is_none_or(|row| {
+                        row.source_range != term.source_range() || row.final_type.is_none()
+                    })
+            {
+                return Ok(None);
+            }
+        }
+        for (_, formula) in atomic.formulas().iter() {
+            if formula.kind() != SourceAtomicFormulaKind::Equality
+                || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+                || !sites.insert(formula.site().clone())
+                || metadata
+                    .expr_metadata()
+                    .get_by_site(formula.site())
+                    .is_none_or(|row| row.source_range != formula.source_range())
+            {
+                return Ok(None);
+            }
+        }
+        let mut expressions = Vec::with_capacity(sites.len());
+        for (_, row) in metadata.expr_metadata().canonical_iter() {
+            let range = row.source_range;
+            let Some(node) = typed.nodes().node(row.typed_site.node()) else {
+                return Ok(None);
+            };
+            if !sites.remove(&row.typed_site)
+                || range.source_id != version.source_id
+                || node.anchor != mizar_session::SourceAnchor::Range(range)
+                || node.recovery != NodeRecoveryState::Normal
+                || row.overload.is_some()
+                || !row.inserted_views.is_empty()
+                || !row.diagnostics.is_empty()
+                || range.start >= range.end
+            {
+                return Ok(None);
+            }
+            let Some(surface) = source.source_text.get(range.start..range.end) else {
+                return Ok(None);
+            };
+            let inferred_type = if let Some(id) = row.final_type {
+                let Some(ty) = inference.normalized_types().get(id) else {
+                    return Ok(None);
+                };
+                if ty.status != NormalizedTypeStatus::Known
+                    || ty.head != TypeHeadRef::BuiltinSet
+                    || !ty.args.is_empty()
+                    || !ty.attributes.positive().is_empty()
+                    || !ty.attributes.negative().is_empty()
+                {
+                    return Ok(None);
+                }
+                Some("set".to_owned())
+            } else {
+                None
+            };
+            expressions.push(ExpressionMetadata {
+                expression_id: row.expr.as_str().to_owned(),
+                source_range: SourceRangeSummary {
+                    start_byte: range.start as u64,
+                    end_byte: range.end as u64,
+                },
+                expression_kind: node.kind.as_str().to_owned(),
+                rendered_surface: surface.to_owned(),
+                inferred_type,
+                resolved_symbol: None,
+                inserted_coercions: Vec::new(),
+                active_thesis: None,
+                overload_resolution: None,
+            });
+        }
+        if !sites.is_empty() {
+            return Ok(None);
+        }
+        let vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                vc_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremVC"),
+            )
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        let [vc] = vcs.vcs() else {
+            return Ok(None);
+        };
+        if vc.id != vc_id
+            || vc.kind != mizar_vc::vc_ir::VcKind::TheoremProofStep
+            || slice.vc() != vc_id
+            || slice.kind() != &vc.kind
+            || slice.fingerprint().hash()
+                != projection.reuse_metadata().dependency_slice_fingerprint()
+        {
+            return Ok(None);
+        }
+        let range = vc
+            .anchor
+            .source_range
+            .ok_or_else(|| fail("requires original VC source range"))?;
+        if range.source_id != version.source_id
+            || range.start >= range.end
+            || range.start < owner.source_range.start
+            || range.end > owner.source_range.end
+        {
+            return Err(fail("original VC source range mismatch"));
+        }
+        let statement = source
+            .source_text
+            .get(range.start..range.end)
+            .ok_or_else(|| fail("original VC source range invalid"))?;
+        let reuse = projection.reuse_metadata();
+        let identity = ProofObligationIdentity::new(
+            projection.obligation_id(),
+            reuse.obligation_anchor().clone(),
+            reuse.obligation_fingerprint(),
+            reuse.vc_fingerprint(),
+            reuse.local_context_fingerprint(),
+            reuse.dependency_slice_fingerprint(),
+        )
+        .map_err(|error| error.to_string())?;
+        let kernel = storage
+            .typed_handle::<(
+                mizar_kernel::checker::KernelCheckResult,
+                mizar_proof::policy::PolicyDecision,
+            )>(
+                kernel_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremCandidateCheck"),
+            )
+            .map_err(|error| error.to_string())?;
+        let kernel = storage.get(&kernel).map_err(|error| error.to_string())?;
+        let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+        let kernel_input = KernelPolicyInput::from_kernel_result(&kernel.0, origin);
+        let trusted = TrustedUsedAxiomsRef::from_kernel_result(&kernel.0, origin)
+            .map_err(|error| error.to_string())?;
+        let selected = selection.reuse_metadata();
+        let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(
+            selection
+                .selected_candidate_id()
+                .cloned()
+                .ok_or_else(|| fail("requires selected candidate"))?,
+            &kernel_input,
+        )
+        .ok_or_else(|| fail("requires trusted candidate"))?
+        .with_provenance_hash(
+            selected
+                .selected_candidate_provenance_hash()
+                .ok_or_else(|| fail("requires candidate provenance"))?,
+        );
+        PublishedArtifactPath::new(version.normalized_path.as_str())
+            .map_err(|_| fail("source path mismatch"))?;
+        let path = PublishedArtifactPath::new(staging.0).map_err(|error| error.to_string())?;
+        if path.as_str() != reference.witness_path {
+            return Err(fail("witness path mismatch"));
+        }
+        let raw_refs = [
+            (
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+                "mizar-vc/source-theorem-canonical-vc/v1",
+                reuse.vc_fingerprint(),
+            ),
+            (
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+                "mizar-vc/source-theorem-canonical-context/v1",
+                reuse.local_context_fingerprint(),
+            ),
+            (
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+                mizar_vc::dependency_slice::DEPENDENCY_SLICE_SCHEMA_VERSION,
+                reuse.dependency_slice_fingerprint(),
+            ),
+            (
+                ArtifactHashClass::Artifact,
+                HashClass::Artifact,
+                if self.build_plan.lockfile.toolchain_version.is_some() {
+                    "mizar-build/parsed-lock-content/v2"
+                } else {
+                    "mizar-build/parsed-lock-content/v1"
+                },
+                self.snapshot.lockfile_hash,
+            ),
+            (
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+                "mizar-build/package-config-content/v1",
+                self.snapshot.verifier_config_hash,
+            ),
+        ]
+        .map(|(class, hash_class, producer, digest)| {
+            let value = CanonicalJson::Object(std::collections::BTreeMap::from([
+                ("producer".to_owned(), CanonicalJson::string(producer)),
+                (
+                    "digest".to_owned(),
+                    CanonicalJson::string(
+                        digest
+                            .as_bytes()
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>(),
+                    ),
+                ),
+            ]));
+            let family = "mizar-driver/source-artifact-owner-fingerprint";
+            let version = mizar_artifact::store::SchemaVersion::new(1, 0);
+            ArtifactHashRef::new(
+                class,
+                family,
+                version,
+                CanonicalHashDomain::new(hash_class, family, version).hash(&value, &[]),
+            )
+        });
+        let [
+            vc_fingerprint,
+            local_context_fingerprint,
+            dependency_slice_fingerprint,
+            lockfile_hash,
+            verifier_config_hash,
+        ] = raw_refs;
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        std::fs::create_dir(staging.1).map_err(|error| error.to_string())?;
+        let domain = artifact_hash_domain(
+            reference.witness_artifact_hash.schema_family.clone(),
+            reference.witness_artifact_hash.schema_version,
+        );
+        let written = write_published_artifact(staging.1, &path, &file, &domain, &[])
+            .map_err(|error| error.to_string())?;
+        if written.artifact_hash != reference.witness_artifact_hash.digest {
+            return Err(fail("witness file hash mismatch"));
+        }
+        let read = read_published_artifact(
+            staging.1,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &[],
+                expected_artifact_hash: Some(reference.witness_artifact_hash.digest),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        mizar_proof::witness_store::read_source_theorem_witness_file(&read, &reference)?;
+        let staged = witness_draft.stage_source_theorem_file(&read, &reference)?;
+        let evidence = ProofEvidenceSet::new(
+            kernel.0.target_vc_fingerprint().sort_bytes(),
+            selected.encoded_problem_hash(),
+            policies.1.clone(),
+        )
+        .with_candidates([
+            candidate.with_selected_proof_witness_hash(staged.staged_payload_hash().digest)
+        ]);
+        let merged = merge_artifact_proof_selections(
+            [VcProofSelection::new(vc_id, select_winner(&evidence))],
+            [],
+        )
+        .map_err(|error| error.to_string())?;
+        let [accepted] =
+            <[_; 1]>::try_from(merged).map_err(|_| fail("requires one accepted selection"))?;
+        let accepted = project_status(
+            ProofStatusProjectionInput::new(accepted, policies.1.clone(), identity)
+                .with_trusted_used_axioms(trusted),
+        )
+        .map_err(|error| error.to_string())?;
+        if accepted.selected_class() != ProofWinnerClass::KernelVerified
+            || accepted.projected_status() != ProjectedProofStatus::Accepted
+            || accepted.artifact_publication()
+                != ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Accepted)
+            || accepted.accepted_witness_obligation_id() != Some(reference.obligation_id.as_str())
+            || !accepted.diagnostic_refs().is_empty()
+            || accepted.explanation_ref().is_some()
+            || staged.artifact_reference_candidate() != Some(&reference)
+        {
+            return Err(fail("witness-bound accepted candidate mismatch"));
+        }
+        let obligations = vec![ObligationMetadata {
+            obligation_id: accepted.obligation_id().to_owned(),
+            obligation_anchor: Some(
+                accepted
+                    .reuse_metadata()
+                    .obligation_anchor()
+                    .as_str()
+                    .to_owned(),
+            ),
+            owner_origin_id: Some(export.origin_id.clone()),
+            source_range: SourceRangeSummary {
+                start_byte: range.start as u64,
+                end_byte: range.end as u64,
+            },
+            obligation_kind: "theorem-proof-step".to_owned(),
+            statement_summary: statement.to_owned(),
+            obligation_fingerprint: reference.obligation_fingerprint.clone(),
+            vc_fingerprint,
+            local_context_fingerprint,
+            dependency_slice_fingerprint,
+            verifier_policy_fingerprint: reference
+                .kernel_acceptance
+                .verifier_policy_fingerprint
+                .clone(),
+            status: match accepted.artifact_publication() {
+                ArtifactStatusPublication::Publishable(
+                    CurrentArtifactObligationStatus::Accepted,
+                ) => ObligationStatus::Accepted,
+                _ => return Err(fail("accepted status unavailable")),
+            },
+            accepted_witness_obligation_id: accepted
+                .accepted_witness_obligation_id()
+                .map(str::to_owned),
+            deterministic_discharge_hash: None,
+            diagnostic_ref: None,
+        }];
+        let draft = ArtifactProjectionService::new(Arc::clone(publisher))
+            .project_module(ProjectVerifiedArtifactInput {
+                snapshot: input.snapshot,
+                required_outputs: input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref().clone())
+                    .collect(),
+                module: summary.module,
+                source_file: version.normalized_path.as_str().to_owned(),
+                source_hash: version.source_hash,
+                verified_at: None,
+                exports,
+                expressions,
+                obligations,
+                proof_witnesses: vec![reference],
+                diagnostics: Vec::new(),
+                provenance: BuildProvenance {
+                    toolchain: self.snapshot.toolchain.identity().to_owned(),
+                    language_edition: version.edition.as_str().to_owned(),
+                    lockfile_hash,
+                    verifier_config_hash,
+                    dependency_artifact_hashes: Vec::new(),
+                    cache_key: None,
+                },
+            })
+            .map_err(|error| error.to_string())?;
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some(draft))
     }
 
     /// Lowers genuine algorithms after binding a published Frontend to captured source.

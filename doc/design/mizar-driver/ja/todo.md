@@ -637,6 +637,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 105. **[Registered theorem candidate witness file data](../../task_contracts/ja/DRIVER-THEOREM-CANDIDATE-WITNESS-DATA.md).** [x]
 
+106. **[Source-owned unpublished theorem module draft](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-DRAFT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

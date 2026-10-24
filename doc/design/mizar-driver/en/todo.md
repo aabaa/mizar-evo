@@ -668,6 +668,8 @@ the owning producers when the paired tasks land.
 
 105. **[Registered theorem candidate witness file data](../../task_contracts/en/DRIVER-THEOREM-CANDIDATE-WITNESS-DATA.md).** [x]
 
+106. **[Source-owned unpublished theorem module draft](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-DRAFT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
