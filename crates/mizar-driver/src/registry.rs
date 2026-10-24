@@ -444,6 +444,23 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::SourceTheoremVcDischargeService { policy })
     }
 
+    pub fn register_source_theorem_atp_solve(
+        &mut self,
+        policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+    ) -> Result<&mut Self, String> {
+        let service = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy,
+            logic_profile,
+            concrete_format,
+        };
+        if service.configuration_tags().is_none() {
+            return Err("unsupported source theorem ATP transport configuration".to_owned());
+        }
+        Ok(self.register(service))
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

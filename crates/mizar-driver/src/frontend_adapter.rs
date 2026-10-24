@@ -6134,6 +6134,192 @@ impl PhaseService for SourceTheoremVcDischargeService {
     }
 }
 
+pub(crate) struct SourceTheoremAtpSolveService {
+    pub(crate) policy: mizar_vc::discharge::DischargePolicy,
+    pub(crate) logic_profile: mizar_atp::problem::LogicProfile,
+    pub(crate) concrete_format: mizar_atp::problem::ConcreteFormat,
+}
+
+impl SourceTheoremAtpSolveService {
+    pub(crate) fn configuration_tags(&self) -> Option<[u8; 7]> {
+        use mizar_atp::problem::{
+            ConcreteFormat, EqualitySupport, LogicFragment, NativePropertySupport,
+            QuantifierPolicy, SoftTypeStrategy,
+        };
+        let mut formats = 0;
+        for format in self.logic_profile.concrete_formats() {
+            formats |= match format {
+                ConcreteFormat::Tptp => 1,
+                ConcreteFormat::SmtLib => 2,
+                _ => return None,
+            };
+        }
+        if formats == 0 {
+            return None;
+        }
+        Some([
+            match self.logic_profile.fragment() {
+                LogicFragment::Fof => 0,
+                LogicFragment::TffLike => 1,
+                LogicFragment::SmtLibUninterpreted => 2,
+                _ => return None,
+            },
+            match self.logic_profile.equality() {
+                EqualitySupport::Unsupported => 0,
+                EqualitySupport::Supported => 1,
+                _ => return None,
+            },
+            match self.logic_profile.quantifiers() {
+                QuantifierPolicy::PropositionalOnly => 0,
+                QuantifierPolicy::FirstOrder => 1,
+                _ => return None,
+            },
+            match self.logic_profile.soft_types() {
+                SoftTypeStrategy::BackendSorts => 0,
+                SoftTypeStrategy::GuardPredicates => 1,
+                SoftTypeStrategy::SortsAndGuards => 2,
+                SoftTypeStrategy::ScopedGuardPredicates => 3,
+                _ => return None,
+            },
+            match self.logic_profile.native_properties() {
+                NativePropertySupport::Unsupported => 0,
+                NativePropertySupport::Supported => 1,
+                _ => return None,
+            },
+            formats,
+            match self.concrete_format {
+                ConcreteFormat::Tptp => 0,
+                ConcreteFormat::SmtLib => 1,
+                _ => return None,
+            },
+        ])
+    }
+}
+
+impl PhaseService for SourceTheoremAtpSolveService {
+    fn phase(&self) -> PhaseDescriptor {
+        let schema = match self.configuration_tags() {
+            Some(
+                [
+                    fragment,
+                    equality,
+                    quantifiers,
+                    soft_types,
+                    native_properties,
+                    formats,
+                    format,
+                ],
+            ) => {
+                format!(
+                    "mizar-atp/source-theorem-candidate-publication/v1;computation_policy={}:{};max_steps={};profile={}:{};fragment={fragment};equality={equality};quantifiers={quantifiers};soft_types={soft_types};native_properties={native_properties};formats={formats};format={format}",
+                    self.policy.computation_limit.policy.as_str().len(),
+                    self.policy.computation_limit.policy.as_str(),
+                    self.policy.computation_limit.max_steps,
+                    self.logic_profile.name().as_str().len(),
+                    self.logic_profile.name().as_str(),
+                )
+            }
+            None => {
+                "mizar-atp/source-theorem-candidate-publication/unsupported-transport".to_owned()
+            }
+        };
+        PhaseDescriptor::new(
+            "SourceTheoremAtpSolve",
+            PhaseOwner::MizarAtp,
+            vec![PipelinePhase::AtpSolve],
+            schema,
+            "SourceTheoremCandidateInputs",
+        )
+        .expect("source theorem ATP solve descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem ATP solve has no complete dependency footprint".to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        if self.configuration_tags().is_none() {
+            return blocking();
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        let WorkUnit::Vc { module, .. } = &input.work_unit else {
+            return blocking();
+        };
+        let Some(parent) = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        })) else {
+            return blocking();
+        };
+        let Ok(handle) = publisher.storage().typed_handle::<mizar_vc::vc_ir::VcSet>(
+            parent.as_output_ref(),
+            &OutputKind::new("SourceTheoremVC"),
+        ) else {
+            return blocking();
+        };
+        let Ok(vcs) = publisher.storage().get(&handle) else {
+            return blocking();
+        };
+        let [vc] = vcs.vcs() else {
+            return blocking();
+        };
+        let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+            input.snapshot,
+            input.identities().input_hash(),
+            input.identities().dependency_hashes().to_vec(),
+            input.parent_outputs().to_vec(),
+        ) else {
+            return blocking();
+        };
+        let module_input = PhaseInput::new(
+            WorkUnit::Module {
+                module: module.clone(),
+            },
+            bundle,
+        );
+        match inputs.publish_native_theorem_candidate(
+            &module_input,
+            &publisher,
+            vc.id,
+            &self.policy,
+            self.logic_profile.clone(),
+            self.concrete_format,
+        ) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {

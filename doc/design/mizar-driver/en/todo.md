@@ -654,6 +654,8 @@ the owning producers when the paired tasks land.
 
 98. **[Native theorem candidate publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-PUBLICATION.md).** [x]
 
+99. **[Scheduled theorem ATP solve and same-gate extension](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ATP-SOLVE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

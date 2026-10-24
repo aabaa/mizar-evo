@@ -947,15 +947,28 @@ impl CompilerDriver {
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
-                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
-                    SourceTheoremOverloadResolutionService,
+                    SourceTheoremAtpSolveService, SourceTheoremElaborationService,
+                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
-            let discharge_profile = self.registry.descriptors().len() == 11
+            let atp_profile = self.registry.descriptors().len() == 12
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::AtpSolve)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremAtpSolveService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::AtpSolve)
+                                .ok()
+                                == Some(&service.phase())
+                    });
+            let discharge_profile = (self.registry.descriptors().len() == 11 || atp_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::VcDischarge)
