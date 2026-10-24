@@ -648,6 +648,8 @@ the owning producers when the paired tasks land.
 
 95. **[Scheduled theorem VC discharge](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-VC-DISCHARGE.md).** [x]
 
+96. **[Native theorem candidate Core VC Discharge caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-CORE-VC-DISCHARGE-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

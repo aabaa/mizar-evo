@@ -77,6 +77,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     let expected = BTreeSet::from([
         "blake3".to_owned(),
         "mizar-artifact".to_owned(),
+        "mizar-atp".to_owned(),
         "mizar-frontend".to_owned(),
         "mizar-build".to_owned(),
         "mizar-cache".to_owned(),
@@ -145,6 +146,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "../mizar-kernel",
     );
     assert_dependency_path(&dependencies, &manifest_path, "mizar-vc", "../mizar-vc");
+    assert_dependency_path(&dependencies, &manifest_path, "mizar-atp", "../mizar-atp");
     assert_dependency_path(
         &dependencies,
         &manifest_path,
