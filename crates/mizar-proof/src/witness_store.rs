@@ -101,8 +101,11 @@ pub fn read_source_theorem_witness_file(
     ) {
         return Err("source theorem witness file kernel_acceptance must be an object".to_owned());
     }
-    if fields["payload_schema_family"]
-        != CanonicalJson::string("mizar-proof/source-theorem-reflexivity-checked-wire")
+    let builtin = fields["payload_schema_family"]
+        == CanonicalJson::string("mizar-proof/source-theorem-reflexivity-checked-wire");
+    if (!builtin
+        && fields["payload_schema_family"]
+            != CanonicalJson::string("mizar-proof/source-theorem-candidate-checked-wire"))
         || fields["payload_schema_version"] != CanonicalJson::string("2.0")
     {
         return Err("invalid source theorem witness file payload profile".to_owned());
@@ -139,13 +142,23 @@ pub fn read_source_theorem_witness_file(
         hash,
     );
     let reference = CanonicalJson::object([
-        ("schema_version", CanonicalJson::string("3.0")),
+        (
+            "schema_version",
+            CanonicalJson::string(if builtin { "3.0" } else { "2.0" }),
+        ),
         ("obligation_id", fields["obligation_id"].clone()),
         (
             "obligation_fingerprint",
             fields["obligation_fingerprint"].clone(),
         ),
-        ("proof_status", CanonicalJson::string("discharged_builtin")),
+        (
+            "proof_status",
+            CanonicalJson::string(if builtin {
+                "discharged_builtin"
+            } else {
+                "kernel_verified"
+            }),
+        ),
         (
             "evidence_kind",
             CanonicalJson::string("formula_substitution_kernel_evidence"),
@@ -158,13 +171,15 @@ pub fn read_source_theorem_witness_file(
         ("kernel_acceptance", fields["kernel_acceptance"].clone()),
     ])
     .map_err(|error| error.to_string())?;
-    let reference = read_builtin_proof_witness_ref(
-        &reference,
-        ProofWitnessReadOptions {
-            artifact_path: Some(read.path.as_str()),
-            expected_witness_artifact_hash: Some(&expected.witness_artifact_hash),
-        },
-    )
+    let options = ProofWitnessReadOptions {
+        artifact_path: Some(read.path.as_str()),
+        expected_witness_artifact_hash: Some(&expected.witness_artifact_hash),
+    };
+    let reference = if builtin {
+        read_builtin_proof_witness_ref(&reference, options)
+    } else {
+        mizar_artifact::proof_witness::read_proof_witness_ref(&reference, options)
+    }
     .map_err(|error| error.to_string())?;
     if &reference != expected
         || reference.obligation_fingerprint.class != ArtifactHashClass::Interface
@@ -542,12 +557,25 @@ impl ProofWitnessDraft {
         expected: &ProofWitnessRef,
     ) -> Result<ProofWitnessStagedRef, String> {
         let bytes = read_source_theorem_witness_file(read, expected)?;
-        if self.selected_class != ProofWinnerClass::DischargedBuiltin
-            || self.obligation_id != expected.obligation_id
+        if !matches!(
+            (
+                self.selected_class,
+                self.payload_schema.family(),
+                expected.proof_status
+            ),
+            (
+                ProofWinnerClass::DischargedBuiltin,
+                "mizar-proof/source-theorem-reflexivity-checked-wire",
+                ArtifactProofStatus::DischargedBuiltin
+            ) | (
+                ProofWinnerClass::KernelVerified,
+                "mizar-proof/source-theorem-candidate-checked-wire",
+                ArtifactProofStatus::KernelVerified
+            )
+        ) || self.obligation_id != expected.obligation_id
             || self.obligation_fingerprint != expected.obligation_fingerprint
             || self.witness_path != expected.witness_path
             || self.kernel_acceptance != expected.kernel_acceptance
-            || self.payload_schema.family() != "mizar-proof/source-theorem-reflexivity-checked-wire"
             || self.payload_schema.version() != SchemaVersion::new(2, 0)
             || !self.payload_schema.canonical_bytes_required()
             || bytes != self.payload_bytes

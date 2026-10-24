@@ -159,3 +159,5 @@ proof acceptance または trusted `used_axioms` に昇格させない。
 `check_source_theorem_candidate_metadata`: [sole API owner](./status.md#source-theorem-candidate-acceptance-metadata).
 
 `source_theorem_candidate_witness_draft`: [sole API owner](./status.md#source-theorem-candidate-internal-witness-draft).
+
+`source_theorem_candidate_witness_file_candidate`: [sole API owner](./status.md#source-theorem-candidate-witness-file).
