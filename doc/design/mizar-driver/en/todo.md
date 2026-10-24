@@ -664,6 +664,8 @@ the owning producers when the paired tasks land.
 
 103. **[Scheduled backend-free theorem candidate check and same-gate extension](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-CANDIDATE-CHECK.md).** [x]
 
+104. **[Native theorem candidate selection four-parent caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-SELECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
