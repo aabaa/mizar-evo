@@ -509,6 +509,8 @@ layer consumes both; one alignment task is owned here.
 
 64. **[Explicit-schema original theorem obligation identity](../../task_contracts/en/PROOF-SOURCE-THEOREM-OBLIGATION-SCHEMAS.md).** [x]
 
+65. **[Fresh source theorem candidate internal status](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANDIDATE-STATUS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

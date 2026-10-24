@@ -1777,6 +1777,61 @@ pub fn source_theorem_reflexivity_witness_draft(
     Ok((projection, slice, draft))
 }
 
+/// Projects freshly checked ATP theorem status with same-result trusted used axioms.
+pub fn project_source_theorem_candidate_status(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policies: (&mizar_vc::discharge::DischargePolicy, &VerifierPolicy),
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::selection::{VcProofSelection, merge_artifact_proof_selections};
+
+    let (identity, slice) = source_theorem_obligation_identity_with_schemas(
+        source,
+        check,
+        symbols,
+        snapshot,
+        vc_id,
+        (encoding.0, encoding.1),
+    )?;
+    let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+    let (_, _, _, _, _, result, _, selection) = select_source_theorem_candidate(
+        source, check, symbols, snapshot, vc_id, encoding, policies,
+    )?;
+    let merged = merge_artifact_proof_selections([VcProofSelection::new(vc_id, selection)], [])
+        .map_err(|error| error.to_string())?;
+    let [selection] = <[_; 1]>::try_from(merged)
+        .map_err(|_| "theorem.candidate.proof.invalid_source_status".to_owned())?;
+    let reference = if selection.selected_class() == ProofWinnerClass::KernelVerified {
+        Some(
+            TrustedUsedAxiomsRef::from_kernel_result(&result, origin)
+                .map_err(|error| error.to_string())?,
+        )
+    } else {
+        None
+    };
+    let mut input = ProofStatusProjectionInput::new(selection, policies.1.clone(), identity);
+    if let Some(reference) = reference {
+        input = input.with_trusted_used_axioms(reference);
+    }
+    let projection = project_status(input).map_err(|error| error.to_string())?;
+    Ok((projection, slice))
+}
+
 /// Projects genuine source theorem reflexivity with its full original dependency slice.
 pub fn project_source_theorem_reflexivity_status(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
