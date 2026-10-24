@@ -482,6 +482,43 @@ impl PhaseRegistryBuilder {
             crate::frontend_adapter::SourceTheoremCandidateCheckService {
                 candidate,
                 verifier_policy,
+                witness_path_prefix: None,
+            },
+        ))
+    }
+
+    pub fn register_source_theorem_candidate_check_with_witness_files(
+        &mut self,
+        discharge_policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+        witness_path_prefix: String,
+    ) -> Result<&mut Self, String> {
+        let candidate = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy: discharge_policy,
+            logic_profile,
+            concrete_format,
+        };
+        if candidate.configuration_tags().is_none() {
+            return Err(
+                "unsupported source theorem candidate check transport configuration".to_owned(),
+            );
+        }
+        if (witness_path_prefix != "proof-witnesses"
+            && !witness_path_prefix.starts_with("proof-witnesses/"))
+            || mizar_artifact::store::PublishedArtifactPath::new(format!(
+                "{witness_path_prefix}/candidate.json"
+            ))
+            .is_err()
+        {
+            return Err("unsupported source theorem witness path prefix".to_owned());
+        }
+        Ok(self.register(
+            crate::frontend_adapter::SourceTheoremCandidateCheckService {
+                candidate,
+                verifier_policy,
+                witness_path_prefix: Some(witness_path_prefix),
             },
         ))
     }

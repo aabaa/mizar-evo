@@ -394,3 +394,5 @@ task 5 は focused test を追加しなければならない:
 register_source_theorem_atp_solve(policy,logic_profile,concrete_format)->Result<&mut Self,String>は[sole owner](frontend_adapter.md#scheduled-source-theorem-atp-solve)に従いcurrent transport可能configを登録し、未知future transportを登録前拒否する。実producer support errorとは別のadmissionである。
 
 明示fallible register_source_theorem_candidate_check builderは[単一service owner](frontend_adapter.md#scheduled-source-theorem-candidate-check)に従い、実設定descriptorと登録前未知transport拒否を維持する。
+
+明示的 opt-in `register_source_theorem_candidate_check_with_witness_files` は [service の単一所有者](frontend_adapter.md#scheduled-source-theorem-candidate-witness-data)に従い、旧登録は Kernel pair だけの出力を維持する。

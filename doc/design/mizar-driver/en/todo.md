@@ -666,6 +666,8 @@ the owning producers when the paired tasks land.
 
 104. **[Native theorem candidate selection four-parent caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-SELECTION.md).** [x]
 
+105. **[Registered theorem candidate witness file data](../../task_contracts/en/DRIVER-THEOREM-CANDIDATE-WITNESS-DATA.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

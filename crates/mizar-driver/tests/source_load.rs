@@ -29815,11 +29815,12 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_vc_discharge(policy.clone())
         .register_source_theorem_atp_solve(policy.clone(), profile.clone(), ConcreteFormat::Tptp)
         .unwrap()
-        .register_source_theorem_candidate_check(
+        .register_source_theorem_candidate_check_with_witness_files(
             policy.clone(),
             profile.clone(),
             ConcreteFormat::Tptp,
             verifier.clone(),
+            "proof-witnesses/scheduled".into(),
         )
         .unwrap();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
@@ -29922,6 +29923,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 }
             }
         }
+        for current in [&owner, &clean_owner] {
+            for module in ["main", "leaf"] {
+                current.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("KernelCheck"),
+                    OutputKind::new("SourceTheoremCandidateWitnessFile"),
+                    IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                ));
+            }
+        }
         driver = driver.with_output_publisher(owner.clone());
         let mut clean_builder = PhaseRegistryBuilder::new();
         clean_builder
@@ -29942,11 +29952,12 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 ConcreteFormat::Tptp,
             )
             .unwrap()
-            .register_source_theorem_candidate_check(
+            .register_source_theorem_candidate_check_with_witness_files(
                 policy.clone(),
                 profile.clone(),
                 ConcreteFormat::Tptp,
                 verifier.clone(),
+                "proof-witnesses/scheduled".into(),
             )
             .unwrap();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
@@ -31074,10 +31085,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     };
                     assert_eq!(kernel_row.status, PhaseStatus::Complete);
                     assert!(kernel_row.diagnostics.is_empty());
-                    let [kernel_output] = kernel_row.output_refs.as_slice() else {
-                        panic!("one genuine Kernel output")
+                    let [kernel_output, file_output] = kernel_row.output_refs.as_slice() else {
+                        panic!("one genuine Kernel and one file output")
                     };
-                    let clean_kernel = &clean_run.phase_results[&kernel.id][0].output_refs[0];
+                    let [clean_kernel, clean_file] = clean_run.phase_results[&kernel.id][0]
+                        .output_refs
+                        .as_slice()
+                    else {
+                        panic!()
+                    };
                     assert_eq!(kernel_output.phase(), &IrPipelinePhase::new("KernelCheck"));
                     assert_eq!(
                         kernel_output.output_kind(),
@@ -31333,6 +31349,82 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(probe.result.status, PhaseStatus::Blocking);
                     assert!(probe.result.output_refs.is_empty());
                     assert_eq!(kernel_row.cache_observation, Some(probe.observation));
+                    let kernel_hex = kernel_output
+                        .content_hash()
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    let witness_path = format!("proof-witnesses/scheduled/{kernel_hex}.json");
+                    let expected_file =
+                        mizar_proof::status::source_theorem_candidate_witness_file_candidate(
+                            &arena,
+                            &fresh_check,
+                            &env,
+                            captured.snapshot(),
+                            *selected,
+                            (
+                                &generation_schema,
+                                &vc_schema,
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                            ),
+                            (&policy, &verifier),
+                            &witness_path,
+                        )
+                        .unwrap();
+                    assert_eq!(expected_file.2.witness_path, witness_path);
+                    assert_eq!(
+                        expected_file.2.schema_version,
+                        mizar_artifact::store::SchemaVersion::new(2, 0)
+                    );
+                    assert_eq!(
+                        expected_file.2.witness_artifact_hash.digest,
+                        mizar_artifact::store::artifact_hash_domain(
+                            "mizar-proof/source-theorem-witness-file",
+                            mizar_artifact::store::SchemaVersion::new(1, 0)
+                        )
+                        .hash(&expected_file.1, &[])
+                    );
+                    assert_eq!(
+                        file_output.output_kind(),
+                        &OutputKind::new("SourceTheoremCandidateWitnessFile")
+                    );
+                    assert_eq!(file_output.phase(), &IrPipelinePhase::new("KernelCheck"));
+                    assert_eq!(
+                        file_output.schema_version(),
+                        mizar_ir::storage::SchemaVersion::new(1)
+                    );
+                    assert_eq!(file_output.snapshot(), snapshot);
+                    assert_eq!(file_output.work_unit(), kernel_output.work_unit());
+                    assert_eq!(file_output.lineage().parents, [kernel_output.output()]);
+                    assert_eq!(
+                        file_output.lineage().named_input_hashes,
+                        kernel_output.lineage().named_input_hashes
+                    );
+                    let [file, clean_value] = [(&owner, file_output), (&clean_owner, clean_file)]
+                        .map(|(current, output)| {
+                            let handle = current
+                                .storage()
+                                .typed_handle::<mizar_artifact::store::CanonicalJson>(
+                                    output,
+                                    output.output_kind(),
+                                )
+                                .unwrap();
+                            assert_eq!(
+                                *current.storage().side_tables(&handle).unwrap(),
+                                mizar_ir::storage::IrSideTables::default()
+                            );
+                            current.storage().get(&handle).unwrap()
+                        });
+                    assert_eq!(*file, expected_file.1);
+                    assert_eq!(file, clean_value);
+                    assert_eq!(file_output.lineage(), clean_file.lineage());
+                    assert_eq!(file_output.placement(), clean_file.placement());
+                    owner
+                        .validate_published_output(snapshot, file_output)
+                        .unwrap();
+                    stale_outputs.push(file_output.clone());
                     stale_outputs.push(kernel_output.clone());
                 } else {
                     let atp = graph
@@ -31502,6 +31594,14 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         assert!(!run.phase_results.contains_key(&task.id));
                         assert!(artifact.dependencies.contains(&task.id));
                     }
+                    assert!(
+                        run.phase_results
+                            .values()
+                            .flatten()
+                            .flat_map(|row| &row.output_refs)
+                            .all(|output| output.output_kind()
+                                != &OutputKind::new("SourceTheoremCandidateWitnessFile"))
+                    );
                     stale_outputs.push(atp_output.clone());
                 }
             } else {
@@ -57292,6 +57392,1339 @@ fn native_theorem_candidate_selection_preserves_refusals() {
                         .to_string()
                 );
             }
+        },
+    );
+}
+fn with_native_theorem_witness_kernel(
+    text: &str,
+    open: bool,
+    threshold: usize,
+    check: impl FnOnce(
+        &Fixture,
+        SourceLoadInputs<'_>,
+        &PhaseInput,
+        &std::sync::Arc<PhaseOutputPublisher>,
+        &[AnyPhaseOutputRef],
+        (
+            &mizar_driver::request::BuildSession,
+            &InMemorySessionIdAllocator,
+            &SnapshotRegistry<InMemorySessionIdAllocator>,
+        ),
+    ),
+) {
+    use mizar_atp::problem::*;
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    with_native_summary_parent(
+        text,
+        open,
+        threshold,
+        |fixture, _, old, _, _, (session, ids, snapshots)| {
+            let owner = publisher(old.snapshot, threshold, &old.work_unit);
+            allow_frontend(&owner, &old.work_unit);
+            for (phase, kind) in [
+                ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                ("OverloadResolution", "SourceTheoremMetadata"),
+                ("Elaboration", "SourceTheoremCore"),
+                ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                ("VcGenerate", "SourceTheoremVC"),
+                ("VcDischarge", "SourceTheoremDischarge"),
+                ("AtpSolve", "SourceTheoremCandidateInputs"),
+                ("KernelCheck", "SourceTheoremCandidateCheck"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+            }
+            let policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new("explicit"),
+                    max_steps: 64,
+                },
+            };
+            let profile = LogicProfile::try_new(
+                "witness-data",
+                if open {
+                    LogicFragment::SmtLibUninterpreted
+                } else {
+                    LogicFragment::Fof
+                },
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            let format = if open {
+                ConcreteFormat::SmtLib
+            } else {
+                ConcreteFormat::Tptp
+            };
+            let mut builder = PhaseRegistryBuilder::new();
+            builder
+                .register_source_load()
+                .register_frontend(vec![])
+                .register_source_theorem_module_resolver()
+                .register_source_theorem_signature_collection()
+                .register_source_theorem_type_checking()
+                .register_source_theorem_registration_resolution()
+                .register_source_theorem_overload_resolution()
+                .register_source_theorem_elaboration()
+                .register_source_theorem_algorithm_preparation()
+                .register_source_theorem_vc_generation(
+                    GenerationSchemaVersion::new("λ\n\0"),
+                    VcSchemaVersion::new(""),
+                )
+                .register_source_theorem_vc_discharge(policy.clone())
+                .register_source_theorem_atp_solve(policy.clone(), profile.clone(), format)
+                .unwrap()
+                .register_source_theorem_candidate_check(
+                    policy,
+                    profile,
+                    format,
+                    mizar_proof::policy::VerifierPolicy::default(),
+                )
+                .unwrap();
+            let WorkUnit::Module { module } = &old.work_unit else {
+                panic!()
+            };
+            let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+            submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                VcTaskDescriptorId::new("opaque-witness-data"),
+                module.clone(),
+                VcOrderKey::new("order"),
+                vec![],
+                vec![EvidenceCandidateId::new("opaque-evidence")],
+            )];
+            let submission = CompilerDriver::new(builder.build().unwrap())
+                .with_output_publisher(owner.clone())
+                .submit_captured(session.clone(), ids, snapshots, submit)
+                .unwrap();
+            let (inputs, original) = native_disk_lookup_context(&submission, ids);
+            let refs = submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|row| row.output_refs.iter().cloned())
+                .collect::<Vec<_>>();
+            assert_eq!(refs.len(), 12);
+            let parents = [
+                "SourceTheoremCore",
+                "SourceTheoremVC",
+                "SourceTheoremDischarge",
+                "SourceTheoremCandidateCheck",
+            ]
+            .map(|kind| {
+                refs.iter()
+                    .find(|row| row.output_kind() == &OutputKind::new(kind))
+                    .unwrap()
+            });
+            let four = PhaseInput::new(
+                original.work_unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    old.snapshot,
+                    original.identities().input_hash(),
+                    original.identities().dependency_hashes().to_vec(),
+                    parents
+                        .into_iter()
+                        .map(|row| {
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                old.snapshot,
+                                row.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+            );
+            check(
+                fixture,
+                inputs,
+                &four,
+                &owner,
+                &refs,
+                (session, ids, snapshots),
+            );
+        },
+    );
+}
+
+#[test]
+fn native_theorem_candidate_witness_file_matches_current_kernel() {
+    use mizar_artifact::store::{
+        CanonicalJson, SchemaVersion as ArtifactVersion, artifact_hash_domain,
+        canonical_json_bytes, parse_canonical_json_bytes,
+    };
+    use mizar_atp::problem::*;
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_ir::storage::{CollectInput, IrSideTables, StoragePlacement};
+    use mizar_proof::{
+        policy::{KernelEvidenceOrigin, KernelPolicyInput, PolicyDecision, VerifierPolicy},
+        status::{TrustedUsedAxiomsRef, source_theorem_candidate_witness_file_candidate as fresh},
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{source_proof_inputs, source_theorem_module_original_inputs},
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for open in [false, true] {
+        with_native_theorem_witness_kernel(
+            text,
+            open,
+            if open { 0 } else { usize::MAX },
+            |fixture, inputs, four, owner, refs, (session, _, _)| {
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new(if open { "unused-current" } else { "explicit" }),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = if open {
+                    VerifierPolicy::default().with_profile_id("current λ\0")
+                } else {
+                    VerifierPolicy::default()
+                };
+                let profile = LogicProfile::try_new(
+                    "witness-data",
+                    if open {
+                        LogicFragment::SmtLibUninterpreted
+                    } else {
+                        LogicFragment::Fof
+                    },
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let format = if open {
+                    ConcreteFormat::SmtLib
+                } else {
+                    ConcreteFormat::Tptp
+                };
+                let parent = |kind: &str| {
+                    four.parent_outputs()
+                        .iter()
+                        .find(|row| row.as_output_ref().output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                        .as_output_ref()
+                };
+                let vc_ref = parent("SourceTheoremVC");
+                let kernel = parent("SourceTheoremCandidateCheck");
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let id = vcs.vcs()[0].id;
+                let physical = owner.storage().get(&owner.storage().typed_handle::<(mizar_kernel::checker::KernelCheckResult, PolicyDecision)>(kernel, kernel.output_kind()).unwrap()).unwrap();
+                let selected = inputs
+                    .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                        four,
+                        owner,
+                        id,
+                        (profile.clone(), format),
+                        (&policy, &verifier),
+                    )
+                    .unwrap()
+                    .unwrap();
+                let physical_input = KernelPolicyInput::from_kernel_result(
+                    &physical.0,
+                    KernelEvidenceOrigin::AtpFormulaSubstitution,
+                );
+                let axioms = TrustedUsedAxiomsRef::from_kernel_result(
+                    &physical.0,
+                    KernelEvidenceOrigin::AtpFormulaSubstitution,
+                )
+                .unwrap();
+                let frontend_ref = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("FrontendOutput"))
+                    .unwrap();
+                let frontend = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend_ref,
+                                frontend_ref.output_kind(),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let ast = frontend.ast.as_ref().unwrap();
+                let WorkUnit::Module { module } = &four.work_unit else {
+                    panic!()
+                };
+                let resolver_module =
+                    ResolverModuleId::new(module.package.clone(), module.path.clone());
+                let (arena, env) = source_theorem_module_original_inputs(ast, &resolver_module)
+                    .unwrap()
+                    .unwrap();
+                let variable_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &resolver_module, &env),
+                )
+                .unwrap();
+                let metadata =
+                    check_source_theorem_metadata(&arena, &env, &variable_scope).unwrap();
+                let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+                let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena,
+                    &metadata.2,
+                    &scope,
+                    &env,
+                    &labels,
+                    &resolved,
+                    None,
+                )
+                .unwrap();
+                let path = "proof-witnesses/current λ/checked.json";
+                let expected = fresh(
+                    &arena,
+                    &check,
+                    &env,
+                    session.captured().snapshot(),
+                    id,
+                    (
+                        &vcs.vc(id).unwrap().anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        profile.clone(),
+                        format,
+                    ),
+                    (&policy, &verifier),
+                    path,
+                )
+                .unwrap();
+                assert_eq!(expected.0.0.trusted_used_axioms(), Some(&axioms));
+                assert_eq!(
+                    Some(expected.2.kernel_acceptance.accepted_result_hash.digest),
+                    physical_input.accepted_evidence_hash()
+                );
+                assert_eq!(
+                    expected.0.0.reuse_metadata().accepted_goal_polarity(),
+                    physical_input.accepted_goal_polarity()
+                );
+                assert_eq!(
+                    expected.0.0.reuse_metadata().selected_candidate_id(),
+                    selected.selected_candidate_id()
+                );
+                assert_eq!(expected.2.witness_path, path);
+                let bytes = canonical_json_bytes(&expected.1);
+                let domain = artifact_hash_domain(
+                    "mizar-proof/source-theorem-witness-file",
+                    ArtifactVersion::new(1, 0),
+                );
+                assert_eq!(
+                    domain.hash(&expected.1, &[]),
+                    expected.2.witness_artifact_hash.digest
+                );
+                assert_eq!(
+                    parse_canonical_json_bytes(&bytes, path).unwrap(),
+                    expected.1
+                );
+                assert!(parse_canonical_json_bytes(&[0xff], path).is_err());
+                assert_ne!(
+                    domain.hash(&CanonicalJson::Null, &[]),
+                    expected.2.witness_artifact_hash.digest
+                );
+                let before = (
+                    four.clone(),
+                    policy.clone(),
+                    profile.clone(),
+                    verifier.clone(),
+                    session.captured().clone(),
+                    (*physical).clone(),
+                );
+                fixture.write(&[0xff]);
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                let raw = inputs
+                    .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
+                        four,
+                        owner,
+                        id,
+                        (profile.clone(), format),
+                        (&policy, &verifier),
+                        path,
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(raw, (expected.1.clone(), expected.2.clone()));
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("KernelCheck"),
+                    OutputKind::new("SourceTheoremCandidateWitnessFile"),
+                    kernel.work_unit().clone(),
+                ));
+                let file = inputs
+                    .publish_native_theorem_candidate_witness_file(
+                        four,
+                        owner,
+                        id,
+                        (profile.clone(), format),
+                        (&policy, &verifier),
+                        path,
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(*owner.storage().get(&file).unwrap(), expected.1);
+                assert_eq!(file.phase(), &IrPipelinePhase::new("KernelCheck"));
+                assert_eq!(
+                    file.output_kind(),
+                    &OutputKind::new("SourceTheoremCandidateWitnessFile")
+                );
+                assert_eq!(
+                    file.schema_version(),
+                    mizar_ir::storage::SchemaVersion::new(1)
+                );
+                assert_eq!(file.work_unit(), kernel.work_unit());
+                assert_eq!(file.snapshot(), four.snapshot);
+                assert_eq!(file.lineage().parents, [kernel.output()]);
+                assert_eq!(
+                    file.lineage().named_input_hashes,
+                    kernel.lineage().named_input_hashes
+                );
+                assert_eq!(
+                    *owner.storage().side_tables(&file).unwrap(),
+                    IrSideTables::default()
+                );
+                let mut content = blake3::Hasher::new();
+                for value in [
+                    b"mizar-ir/publisher-content-hash/v1".as_slice(),
+                    bytes.as_slice(),
+                ] {
+                    content.update(&u64::try_from(value.len()).unwrap().to_le_bytes());
+                    content.update(value);
+                }
+                content.update(&1u64.to_le_bytes());
+                let value = b"parent_content";
+                content.update(&u64::try_from(value.len()).unwrap().to_le_bytes());
+                content.update(value);
+                content.update(kernel.content_hash().as_bytes());
+                content.update(&1u64.to_le_bytes());
+                for value in [
+                    "source",
+                    SOURCE_UNIT_CACHE_KEY_VERSION,
+                    "mizar-ir/publisher-named-input-hash/v1",
+                ] {
+                    content.update(&u64::try_from(value.len()).unwrap().to_le_bytes());
+                    content.update(value.as_bytes());
+                }
+                content.update(source_key(&inputs.snapshot.source_versions[0]).as_bytes());
+                assert_eq!(
+                    file.content_hash(),
+                    Hash::from_bytes(*content.finalize().as_bytes())
+                );
+                assert_ne!(file.content_hash(), expected.2.witness_artifact_hash.digest);
+                let generic = mizar_proof::witness_store::stage(expected.0.2.clone()).unwrap();
+                assert_ne!(
+                    generic.staged_payload_hash().digest,
+                    expected.2.witness_artifact_hash.digest
+                );
+                if let StoragePlacement::Blob { blob, len } = file.placement() {
+                    assert!(open);
+                    assert_eq!(*len, bytes.len());
+                    let mut hash = blake3::Hasher::new();
+                    let tag = b"mizar-ir/content-blob/v1";
+                    hash.update(&u64::try_from(tag.len()).unwrap().to_le_bytes());
+                    hash.update(tag);
+                    hash.update(&1u32.to_le_bytes());
+                    hash.update(&u64::try_from(bytes.len()).unwrap().to_le_bytes());
+                    hash.update(&bytes);
+                    assert_eq!(blob.hash(), Hash::from_bytes(*hash.finalize().as_bytes()));
+                } else {
+                    assert!(!open);
+                }
+                owner
+                    .validate_published_output(four.snapshot, file.any())
+                    .unwrap();
+                assert_eq!(
+                    owner
+                        .validate_current_output(four.snapshot, file.any())
+                        .is_ok(),
+                    !open
+                );
+                assert_eq!(
+                    (
+                        four.clone(),
+                        policy,
+                        profile,
+                        verifier,
+                        session.captured().clone(),
+                        (*physical).clone()
+                    ),
+                    before.clone()
+                );
+                let retained = four
+                    .parent_outputs()
+                    .iter()
+                    .map(SealedParentOutputHandle::output)
+                    .chain([file.output()])
+                    .collect();
+                let intermediate = owner.storage().collect(CollectInput {
+                    snapshot: four.snapshot,
+                    protected_outputs: retained,
+                });
+                assert_eq!(
+                    (
+                        intermediate.outputs_dropped,
+                        intermediate.abandoned_slots_dropped
+                    ),
+                    (9, 0)
+                );
+                assert_eq!(
+                    inputs
+                        .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
+                            four,
+                            owner,
+                            id,
+                            (before.2.clone(), format),
+                            (&before.1, &before.3),
+                            path,
+                        )
+                        .unwrap(),
+                    Some((expected.1.clone(), expected.2.clone()))
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: four.snapshot,
+                    protected_outputs: vec![file.output()],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (4, 0)
+                );
+                assert_eq!(*owner.storage().get(&file).unwrap(), expected.1);
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_candidate_witness_file_preserves_refusals() {
+    use mizar_atp::problem::*;
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_ir::{publisher::PublishError, storage::CollectInput};
+    use mizar_proof::{
+        policy::VerifierPolicy, status::source_theorem_candidate_witness_file_candidate as fresh,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{source_proof_inputs, source_theorem_module_original_inputs},
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in ["ordinary", "denied", "obsolete", "collected"] {
+        with_native_theorem_witness_kernel(
+            text,
+            false,
+            0,
+            |_, inputs, four, owner, refs, (session, _, _)| {
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = VerifierPolicy::default();
+                let disabled = verifier.clone().with_kernel_evidence_formats([]);
+                let profile = LogicProfile::try_new(
+                    "witness-data",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc_ref = four
+                    .parent_outputs()
+                    .iter()
+                    .find(|row| {
+                        row.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+                    })
+                    .unwrap()
+                    .as_output_ref();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let id = vcs.vcs()[0].id;
+                assert!(
+                    inputs
+                        .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                            four,
+                            owner,
+                            id,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &verifier)
+                        )
+                        .unwrap()
+                        .is_some()
+                );
+                let frontend_ref = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("FrontendOutput"))
+                    .unwrap();
+                let frontend = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend_ref,
+                                frontend_ref.output_kind(),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let ast = frontend.ast.as_ref().unwrap();
+                let module =
+                    ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+                let (arena, env) = source_theorem_module_original_inputs(ast, &module)
+                    .unwrap()
+                    .unwrap();
+                let variable_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, &env),
+                )
+                .unwrap();
+                let metadata =
+                    check_source_theorem_metadata(&arena, &env, &variable_scope).unwrap();
+                let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+                let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena,
+                    &metadata.2,
+                    &scope,
+                    &env,
+                    &labels,
+                    &resolved,
+                    None,
+                )
+                .unwrap();
+                let expected = fresh(
+                    &arena,
+                    &check,
+                    &env,
+                    session.captured().snapshot(),
+                    id,
+                    (
+                        &vcs.vc(id).unwrap().anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    ),
+                    (&policy, &verifier),
+                    "proof-witnesses/checked.json",
+                )
+                .unwrap();
+                let before = (
+                    four.clone(),
+                    policy.clone(),
+                    verifier.clone(),
+                    profile.clone(),
+                    session.captured().clone(),
+                );
+                if case == "ordinary" {
+                    let alien = publisher(four.snapshot, 0, &four.work_unit);
+                    for (shape, current) in [
+                        ("missing", owner.as_ref()),
+                        ("surplus", owner.as_ref()),
+                        ("module", owner.as_ref()),
+                        ("foreign", alien.as_ref()),
+                    ] {
+                        let mut parents = four.parent_outputs().to_vec();
+                        if shape == "missing" {
+                            parents.pop();
+                        }
+                        if shape == "surplus" {
+                            parents.push(
+                                SealedParentOutputHandle::from_published_output(
+                                    owner,
+                                    four.snapshot,
+                                    frontend_ref.clone(),
+                                )
+                                .unwrap(),
+                            );
+                        }
+                        let work_unit = if shape == "module" {
+                            WorkUnit::Module {
+                                module: mizar_build::module_index::ModuleId::new(
+                                    PackageId::new("alpha"),
+                                    ModulePath::new("other"),
+                                ),
+                            }
+                        } else {
+                            four.work_unit.clone()
+                        };
+                        let input = PhaseInput::new(
+                            work_unit,
+                            PhaseDispatchInputBundle::new(
+                                four.snapshot,
+                                four.identities().input_hash(),
+                                four.identities().dependency_hashes().to_vec(),
+                                parents,
+                            )
+                            .unwrap(),
+                        );
+                        let error = inputs.native_theorem_candidate_selection_with_core_vc_discharge_check_parents(&input, current, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier)).unwrap_err();
+                        assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(&input, current, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier), "proof-witnesses/checked.json").unwrap_err(), error);
+                        assert_eq!(
+                            inputs
+                                .publish_native_theorem_candidate_witness_file(
+                                    &input,
+                                    current,
+                                    id,
+                                    (profile.clone(), ConcreteFormat::Tptp),
+                                    (&policy, &verifier),
+                                    "proof-witnesses/checked.json"
+                                )
+                                .unwrap_err(),
+                            error
+                        );
+                    }
+                    let error = inputs
+                        .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                            four,
+                            owner,
+                            id,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &disabled),
+                        )
+                        .unwrap_err();
+                    assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(four, owner, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &disabled), "").unwrap_err(), error);
+                    let path_error = fresh(
+                        &arena,
+                        &check,
+                        &env,
+                        session.captured().snapshot(),
+                        id,
+                        (
+                            &vcs.vc(id).unwrap().anchor.generation_schema_version,
+                            vcs.schema_version(),
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                        ),
+                        (&policy, &verifier),
+                        "",
+                    )
+                    .unwrap_err();
+                    assert_eq!(
+                        inputs
+                            .publish_native_theorem_candidate_witness_file(
+                                four,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ""
+                            )
+                            .unwrap_err(),
+                        path_error
+                    );
+                } else if case == "denied" {
+                    assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(four, owner, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier), "proof-witnesses/checked.json").unwrap(), Some((expected.1, expected.2)));
+                    assert_eq!(
+                        inputs
+                            .publish_native_theorem_candidate_witness_file(
+                                four,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                "proof-witnesses/checked.json"
+                            )
+                            .unwrap_err(),
+                        PublishError::WorkUnitNotAllowed {
+                            phase: IrPipelinePhase::new("KernelCheck"),
+                            work_unit: IrWorkUnit::new("\"alpha\":\"main\""),
+                            output_kind: OutputKind::new("SourceTheoremCandidateWitnessFile")
+                        }
+                        .to_string()
+                    );
+                } else {
+                    if case == "obsolete" {
+                        owner.mark_obsolete(four.snapshot).unwrap();
+                    } else {
+                        let keep = four
+                            .parent_outputs()
+                            .iter()
+                            .filter(|row| {
+                                row.as_output_ref().output_kind()
+                                    != &OutputKind::new("SourceTheoremCandidateCheck")
+                            })
+                            .map(SealedParentOutputHandle::output)
+                            .collect();
+                        assert_eq!(
+                            owner
+                                .storage()
+                                .collect(CollectInput {
+                                    snapshot: four.snapshot,
+                                    protected_outputs: keep
+                                })
+                                .outputs_dropped,
+                            10
+                        );
+                    }
+                    let error = inputs
+                        .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                            four,
+                            owner,
+                            id,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &verifier),
+                        )
+                        .unwrap_err();
+                    assert_eq!(
+                        inputs
+                            .publish_native_theorem_candidate_witness_file(
+                                four,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                "proof-witnesses/checked.json"
+                            )
+                            .unwrap_err(),
+                        error
+                    );
+                }
+                assert_eq!(
+                    (
+                        four.clone(),
+                        policy,
+                        verifier,
+                        profile,
+                        session.captured().clone()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: four.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case == "collected" { 3 } else { 13 }
+                );
+                assert_eq!(
+                    collected.abandoned_slots_dropped,
+                    usize::from(case == "denied")
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn scheduled_theorem_candidate_witness_files_preserve_pair_and_rights() {
+    use mizar_atp::problem::*;
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_ir::storage::CollectInput;
+    use mizar_proof::{
+        policy::{PolicyDecision, VerifierPolicy},
+        status::source_theorem_candidate_witness_file_candidate as fresh,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{source_proof_inputs, source_theorem_module_original_inputs},
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    with_native_theorem_witness_kernel(
+        text,
+        false,
+        0,
+        |fixture, inputs, four, baseline_owner, baseline_refs, (session, ids, snapshots)| {
+            let policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new("explicit"),
+                    max_steps: 64,
+                },
+            };
+            let verifier = VerifierPolicy::default();
+            let profile = LogicProfile::try_new(
+                "witness-data",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            let kernel_ref = four
+                .parent_outputs()
+                .iter()
+                .find(|row| {
+                    row.as_output_ref().output_kind()
+                        == &OutputKind::new("SourceTheoremCandidateCheck")
+                })
+                .unwrap()
+                .as_output_ref();
+            let kernel = baseline_owner
+                .storage()
+                .get(
+                    &baseline_owner
+                        .storage()
+                        .typed_handle::<(mizar_kernel::checker::KernelCheckResult, PolicyDecision)>(
+                            kernel_ref,
+                            kernel_ref.output_kind(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let vc_ref = four
+                .parent_outputs()
+                .iter()
+                .find(|row| {
+                    row.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+                })
+                .unwrap()
+                .as_output_ref();
+            let vcs = baseline_owner
+                .storage()
+                .get(
+                    &baseline_owner
+                        .storage()
+                        .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                        .unwrap(),
+                )
+                .unwrap();
+            let id = vcs.vcs()[0].id;
+            assert!(
+                inputs
+                    .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                        four,
+                        baseline_owner,
+                        id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier)
+                    )
+                    .unwrap()
+                    .is_some()
+            );
+            let frontend_ref = baseline_refs
+                .iter()
+                .find(|row| row.output_kind() == &OutputKind::new("FrontendOutput"))
+                .unwrap();
+            let frontend = baseline_owner
+                .storage()
+                .get(
+                    &baseline_owner
+                        .storage()
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            frontend_ref,
+                            frontend_ref.output_kind(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let ast = frontend.ast.as_ref().unwrap();
+            let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let (arena, env) = source_theorem_module_original_inputs(ast, &module)
+                .unwrap()
+                .unwrap();
+            let variable_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, &module, &env),
+            )
+            .unwrap();
+            let metadata = check_source_theorem_metadata(&arena, &env, &variable_scope).unwrap();
+            let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+            let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )
+            .unwrap();
+            let prefix = "proof-witnesses/λ";
+            let kernel_hex = kernel_ref
+                .content_hash()
+                .as_bytes()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            let path = format!("{prefix}/{kernel_hex}.json");
+            let expected = fresh(
+                &arena,
+                &check,
+                &env,
+                session.captured().snapshot(),
+                id,
+                (
+                    &vcs.vc(id).unwrap().anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    profile.clone(),
+                    ConcreteFormat::Tptp,
+                ),
+                (&policy, &verifier),
+                &path,
+            )
+            .unwrap();
+            let mut old_builder = PhaseRegistryBuilder::new();
+            old_builder
+                .register_source_theorem_candidate_check(
+                    policy.clone(),
+                    profile.clone(),
+                    ConcreteFormat::Tptp,
+                    verifier.clone(),
+                )
+                .unwrap();
+            let old_registry = old_builder.build().unwrap();
+            let old_descriptor = old_registry
+                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                .unwrap();
+            for invalid in [
+                "",
+                "other",
+                "proof-witnesses/",
+                "proof-witnesses/..",
+                "proof-witnesses/a\\b",
+            ] {
+                let mut builder = PhaseRegistryBuilder::new();
+                assert_eq!(
+                    builder
+                        .register_source_theorem_candidate_check_with_witness_files(
+                            policy.clone(),
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                            verifier.clone(),
+                            invalid.into()
+                        )
+                        .err()
+                        .unwrap(),
+                    "unsupported source theorem witness path prefix"
+                );
+                assert!(
+                    builder
+                        .build()
+                        .unwrap()
+                        .descriptor_for_phase(PipelinePhase::KernelCheck)
+                        .is_err()
+                );
+            }
+            for valid in ["proof-witnesses", prefix] {
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_theorem_candidate_check_with_witness_files(
+                        policy.clone(),
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                        verifier.clone(),
+                        valid.into(),
+                    )
+                    .unwrap();
+                let registry = builder.build().unwrap();
+                let descriptor = registry
+                    .descriptor_for_phase(PipelinePhase::KernelCheck)
+                    .unwrap();
+                assert_eq!(
+                    descriptor.schema_version,
+                    format!(
+                        "{};witness_file_path_prefix={}:{}",
+                        old_descriptor.schema_version,
+                        valid.len(),
+                        valid
+                    )
+                );
+                assert_eq!(descriptor.service_name, old_descriptor.service_name);
+                assert_eq!(descriptor.owner, old_descriptor.owner);
+                assert_eq!(descriptor.phases, old_descriptor.phases);
+                assert_eq!(descriptor.output_kind, old_descriptor.output_kind);
+            }
+            for case in ["legacy", "allowed", "denied", "cancel", "foreign-token"] {
+                let owner = publisher(four.snapshot, 0, &four.work_unit);
+                allow_frontend(&owner, &four.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                    ("KernelCheck", "SourceTheoremCandidateCheck"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                if case == "allowed" {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("KernelCheck"),
+                        OutputKind::new("SourceTheoremCandidateWitnessFile"),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(
+                        GenerationSchemaVersion::new("λ\n\0"),
+                        VcSchemaVersion::new(""),
+                    )
+                    .register_source_theorem_vc_discharge(policy.clone());
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                let module = mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                );
+                submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                    VcTaskDescriptorId::new("prerequisite"),
+                    module.clone(),
+                    VcOrderKey::new("order"),
+                    vec![],
+                    vec![],
+                )];
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .unwrap();
+                let (source_inputs, original) = native_disk_lookup_context(&submission, ids);
+                let refs = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter().cloned())
+                    .collect::<Vec<_>>();
+                assert_eq!(refs.len(), 11);
+                let parents = [
+                    "SourceTheoremCore",
+                    "SourceTheoremVC",
+                    "SourceTheoremDischarge",
+                ]
+                .map(|kind| {
+                    refs.iter()
+                        .find(|row| row.output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                });
+                let query = PhaseInput::new(
+                    WorkUnit::EvidenceCandidate {
+                        module,
+                        descriptor: VcTaskDescriptorId::new("opaque-current"),
+                        evidence_candidate: EvidenceCandidateId::new("opaque-evidence"),
+                    },
+                    PhaseDispatchInputBundle::new(
+                        four.snapshot,
+                        original.identities().input_hash(),
+                        original.identities().dependency_hashes().to_vec(),
+                        parents
+                            .into_iter()
+                            .map(|row| {
+                                SealedParentOutputHandle::from_published_output(
+                                    &owner,
+                                    four.snapshot,
+                                    row.clone(),
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                );
+                let mut builder = PhaseRegistryBuilder::new();
+                if case == "legacy" {
+                    builder
+                        .register_source_theorem_candidate_check(
+                            policy.clone(),
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                            verifier.clone(),
+                        )
+                        .unwrap();
+                } else {
+                    builder
+                        .register_source_theorem_candidate_check_with_witness_files(
+                            policy.clone(),
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                            verifier.clone(),
+                            prefix.into(),
+                        )
+                        .unwrap();
+                }
+                let registry = builder.build().unwrap();
+                let cache = registry
+                    .cache_key_for_phase(PipelinePhase::KernelCheck, &query)
+                    .unwrap();
+                assert_eq!(
+                    cache.intent,
+                    PhaseCacheIntent::NoKey {
+                        reason:
+                            "source theorem candidate check has no complete dependency footprint"
+                                .into()
+                    }
+                );
+                assert_eq!(query.parent_outputs().len(), 3);
+                let result = registry
+                    .execute_phase_with_resources(
+                        PipelinePhase::KernelCheck,
+                        query.clone(),
+                        PhaseExecutionResources {
+                            output_publisher: Some(owner.clone()),
+                            source_load: Some(source_inputs),
+                            cancellation: matches!(case, "cancel" | "foreign-token").then_some(
+                                CancellationToken {
+                                    snapshot: if case == "cancel" {
+                                        four.snapshot
+                                    } else {
+                                        snapshot_id(0xd5)
+                                    },
+                                    generation: CancellationGeneration::new(1),
+                                    reason: CancellationReason::ExplicitRequest,
+                                },
+                            ),
+                            ..PhaseExecutionResources::default()
+                        },
+                    )
+                    .unwrap();
+                assert_eq!(
+                    result.result.status,
+                    match case {
+                        "legacy" | "allowed" => PhaseStatus::Complete,
+                        "cancel" => PhaseStatus::Cancelled,
+                        _ => PhaseStatus::Blocking,
+                    },
+                    "{case}"
+                );
+                assert!(result.result.diagnostics.is_empty());
+                assert_eq!(result.result.cache_observation, Some(result.observation));
+                let cancelled = matches!(case, "cancel" | "foreign-token");
+                assert_eq!(
+                    result.result.output_refs.len(),
+                    if cancelled {
+                        0
+                    } else if case == "allowed" {
+                        2
+                    } else {
+                        1
+                    }
+                );
+                if !cancelled {
+                    let actual_kernel = &result.result.output_refs[0];
+                    assert_eq!(
+                        actual_kernel.output_kind(),
+                        &OutputKind::new("SourceTheoremCandidateCheck")
+                    );
+                    assert_eq!(*owner.storage().get(&owner.storage().typed_handle::<(mizar_kernel::checker::KernelCheckResult, PolicyDecision)>(actual_kernel, actual_kernel.output_kind()).unwrap()).unwrap(), *kernel);
+                    assert_eq!(actual_kernel.content_hash(), kernel_ref.content_hash());
+                    if case == "allowed" {
+                        let file = &result.result.output_refs[1];
+                        assert_eq!(
+                            file.output_kind(),
+                            &OutputKind::new("SourceTheoremCandidateWitnessFile")
+                        );
+                        assert_eq!(file.lineage().parents, [actual_kernel.output()]);
+                        let handle = owner
+                            .storage()
+                            .typed_handle::<mizar_artifact::store::CanonicalJson>(
+                                file,
+                                file.output_kind(),
+                            )
+                            .unwrap();
+                        assert_eq!(*owner.storage().get(&handle).unwrap(), expected.1);
+                    }
+                }
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: four.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if cancelled {
+                        11
+                    } else if case == "allowed" {
+                        14
+                    } else {
+                        13
+                    },
+                    "{case}"
+                );
+                assert_eq!(
+                    collected.abandoned_slots_dropped,
+                    usize::from(case == "denied"),
+                    "{case}"
+                );
+            }
+            let collected = baseline_owner.storage().collect(CollectInput {
+                snapshot: four.snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(
+                (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                (13, 0)
+            );
         },
     );
 }

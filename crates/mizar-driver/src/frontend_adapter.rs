@@ -4761,6 +4761,318 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(selection))
     }
 
+    /// Associates a genuine witness file with current physical theorem inputs.
+    pub fn native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        witness_path: &str,
+    ) -> Result<
+        Option<(
+            mizar_artifact::store::CanonicalJson,
+            mizar_artifact::proof_witness::ProofWitnessRef,
+        )>,
+        String,
+    > {
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, KernelPolicyInput},
+            selection::ProofWinnerClass,
+            status::TrustedUsedAxiomsRef,
+        };
+        let Some(selection) = self
+            .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
+                input,
+                publisher,
+                vc_id,
+                (encoding.0.clone(), encoding.1),
+                policies,
+            )?
+        else {
+            return Ok(None);
+        };
+        if selection.selected_class() != ProofWinnerClass::KernelVerified {
+            return Ok(None);
+        }
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem candidate witness file requires one VC parent".to_owned())?;
+        let kernel_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremCandidateCheck")
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate witness file requires one Kernel parent".to_owned()
+        })?;
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                vc_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremVC"),
+            )
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&typed).map_err(|error| error.to_string())?;
+        let typed = storage
+            .typed_handle::<(
+                mizar_kernel::checker::KernelCheckResult,
+                mizar_proof::policy::PolicyDecision,
+            )>(
+                kernel_parent.as_output_ref(),
+                &OutputKind::new("SourceTheoremCandidateCheck"),
+            )
+            .map_err(|error| error.to_string())?;
+        let checked = storage.get(&typed).map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem candidate witness file requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate witness file requires one captured source".to_owned()
+        })?;
+        let (source, _) = self.native_source(version).ok_or_else(|| {
+            "native theorem candidate witness file capture binding failed".to_owned()
+        })?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| {
+                "native theorem candidate witness file requires a bound package".to_owned()
+            })?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(
+                "native theorem candidate witness file requires a workspace package".to_owned(),
+            );
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let metadata =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )?;
+        let generation = &vcs
+            .vc(vc_id)
+            .ok_or_else(|| {
+                "native theorem candidate witness file requires the selected VC".to_owned()
+            })?
+            .anchor
+            .generation_schema_version;
+        let ((projection, _, _), file, reference) =
+            mizar_proof::status::source_theorem_candidate_witness_file_candidate(
+                &arena,
+                &check,
+                &env,
+                self.snapshot,
+                vc_id,
+                (generation, vcs.schema_version(), encoding.0, encoding.1),
+                policies,
+                witness_path,
+            )?;
+        let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+        let kernel = KernelPolicyInput::from_kernel_result(&checked.0, origin);
+        let trusted = TrustedUsedAxiomsRef::from_kernel_result(&checked.0, origin)
+            .map_err(|error| error.to_string())?;
+        let reuse = projection.reuse_metadata();
+        let selected = selection.reuse_metadata();
+        if projection.selected_class() != selection.selected_class()
+            || reuse.selected_candidate_id() != selection.selected_candidate_id()
+            || reuse.policy_fingerprint() != selected.policy_fingerprint()
+            || reuse.selected_evidence_hash() != selected.selected_evidence_hash()
+            || reuse.accepted_goal_polarity() != selected.accepted_goal_polarity()
+            || reuse.selected_candidate_provenance_hash()
+                != selected.selected_candidate_provenance_hash()
+            || reuse.selected_evidence_hash() != kernel.accepted_evidence_hash()
+            || reuse.accepted_goal_polarity() != kernel.accepted_goal_polarity()
+            || projection.trusted_used_axioms() != Some(&trusted)
+            || Some(reference.kernel_acceptance.accepted_result_hash.digest)
+                != kernel.accepted_evidence_hash()
+        {
+            return Err(
+                "native theorem candidate witness file checked evidence mismatch".to_owned(),
+            );
+        }
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((file, reference)))
+    }
+
+    /// Publishes genuine witness file data as a child of the actual Kernel output.
+    pub fn publish_native_theorem_candidate_witness_file(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        witness_path: &str,
+    ) -> Result<
+        Option<mizar_ir::storage::PhaseOutputRef<mizar_artifact::store::CanonicalJson>>,
+        String,
+    > {
+        let Some((file, reference)) = self
+            .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
+                input,
+                publisher,
+                vc_id,
+                encoding,
+                policies,
+                witness_path,
+            )?
+        else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem candidate witness file requires a module".to_owned());
+        };
+        let kernel = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremCandidateCheck")
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate witness file requires one Kernel parent".to_owned()
+        })?;
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate witness file requires one captured source".to_owned()
+        })?;
+        let bytes = mizar_artifact::store::canonical_json_bytes(&file);
+        let expected = reference.witness_artifact_hash;
+        let domain = mizar_artifact::store::artifact_hash_domain(
+            expected.schema_family,
+            expected.schema_version,
+        );
+        let expected = expected.digest;
+        let path = witness_path.to_owned();
+        let phase = IrPipelinePhase::new("KernelCheck");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let kind = OutputKind::new("SourceTheoremCandidateWitnessFile");
+        for parent in input.parent_outputs() {
+            publisher
+                .storage()
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind: kind,
+                schema_version: SchemaVersion::new(1),
+                payload: file,
+                canonical_payload: Some(bytes.clone()),
+                storage_payload: Some(bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    let value = mizar_artifact::store::parse_canonical_json_bytes(bytes, &path)
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    if domain.hash(&value, &[]) != expected {
+                        return Err(BlobDecodeError::new(
+                            "invalid native theorem candidate witness file storage",
+                        ));
+                    }
+                    Ok(value)
+                }),
+                parents: vec![kernel.as_output_ref().clone()],
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables::default(),
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
@@ -7130,18 +7442,27 @@ impl PhaseService for SourceTheoremAtpSolveService {
 pub(crate) struct SourceTheoremCandidateCheckService {
     pub(crate) candidate: SourceTheoremAtpSolveService,
     pub(crate) verifier_policy: mizar_proof::policy::VerifierPolicy,
+    pub(crate) witness_path_prefix: Option<String>,
 }
 
 impl PhaseService for SourceTheoremCandidateCheckService {
     fn phase(&self) -> PhaseDescriptor {
         let schema = if self.candidate.configuration_tags().is_some() {
             let candidate = self.candidate.phase().schema_version;
-            format!(
+            let mut schema = format!(
                 "mizar-proof/source-theorem-candidate-check-publication/v1;candidate={}:{};verifier_policy={}",
                 candidate.len(),
                 candidate,
                 self.verifier_policy.policy_fingerprint().to_lower_hex(),
-            )
+            );
+            if let Some(prefix) = &self.witness_path_prefix {
+                schema.push_str(&format!(
+                    ";witness_file_path_prefix={}:{}",
+                    prefix.len(),
+                    prefix,
+                ));
+            }
+            schema
         } else {
             "mizar-proof/source-theorem-candidate-check-publication/unsupported-transport"
                 .to_owned()
@@ -7283,10 +7604,58 @@ impl PhaseService for SourceTheoremCandidateCheckService {
             ),
             (&self.candidate.policy, &self.verifier_policy),
         ) {
-            Ok(Some(handle)) => PhaseResult {
-                output_refs: vec![handle.erase()],
-                ..PhaseResult::complete()
-            },
+            Ok(Some(handle)) => {
+                let mut result = PhaseResult {
+                    output_refs: vec![handle.erase()],
+                    ..PhaseResult::complete()
+                };
+                let Some(prefix) = &self.witness_path_prefix else {
+                    return result;
+                };
+                let Ok(kernel) =
+                    mizar_ir::dispatch_input::SealedParentOutputHandle::from_published_output(
+                        &publisher,
+                        input.snapshot,
+                        result.output_refs[0].clone(),
+                    )
+                else {
+                    result.status = PhaseStatus::Blocking;
+                    return result;
+                };
+                let mut parents = input.parent_outputs().to_vec();
+                parents.push(kernel);
+                let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                    input.snapshot,
+                    input.identities().input_hash(),
+                    input.identities().dependency_hashes().to_vec(),
+                    parents,
+                ) else {
+                    result.status = PhaseStatus::Blocking;
+                    return result;
+                };
+                let mut path = format!("{prefix}/");
+                for byte in result.output_refs[0].content_hash().as_bytes() {
+                    use std::fmt::Write as _;
+                    write!(path, "{byte:02x}").expect("writing to string cannot fail");
+                }
+                path.push_str(".json");
+                match inputs.publish_native_theorem_candidate_witness_file(
+                    &PhaseInput::new(module_input.work_unit, bundle),
+                    &publisher,
+                    vc.id,
+                    (
+                        self.candidate.logic_profile.clone(),
+                        self.candidate.concrete_format,
+                    ),
+                    (&self.candidate.policy, &self.verifier_policy),
+                    &path,
+                ) {
+                    Ok(Some(file)) => result.output_refs.push(file.erase()),
+                    Ok(None) => {}
+                    Err(_) => result.status = PhaseStatus::Blocking,
+                }
+                result
+            }
             Ok(None) | Err(_) => blocking(),
         }
     }

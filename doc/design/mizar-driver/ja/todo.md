@@ -635,6 +635,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 104. **[Native theorem candidate selection four-parent caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-SELECTION.md).** [x]
 
+105. **[Registered theorem candidate witness file data](../../task_contracts/ja/DRIVER-THEOREM-CANDIDATE-WITNESS-DATA.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
