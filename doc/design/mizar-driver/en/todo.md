@@ -680,6 +680,8 @@ the owning producers when the paired tasks land.
 
 111. **[Source terminal-point thesis metadata](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-TERMINAL-THESIS.md).** [x]
 
+112. **[Private theorem artifact metadata](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-PRIVATE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

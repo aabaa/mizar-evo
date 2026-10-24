@@ -5270,7 +5270,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         if !summary.reexports.is_empty()
             || !summary.dependency_interfaces.is_empty()
-            || summary.exported_symbols.len() != 1
+            || summary.exported_symbols.len() > 1
         {
             return Ok(None);
         }
@@ -5284,7 +5284,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
                 &arena, &typed, &scope, &env, &labels, &resolved, None,
             )?;
-        let [(owner, _)] = check.owners() else {
+        let [(owner, owner_visibility)] = check.owners() else {
             return Ok(None);
         };
         if owner.role != SourceTheoremRole::Theorem
@@ -5302,13 +5302,29 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .symbols()
             .get(&owner.symbol)
             .ok_or_else(|| fail("checked owner symbol missing"))?;
-        if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem
-            || symbol.visibility() != mizar_resolve::env::Visibility::Public
-            || symbol.export_status() != mizar_resolve::env::ExportStatus::Exported
-        {
+        if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem {
             return Ok(None);
         }
-        let export = &summary.exported_symbols[0];
+        let (visibility, export) = match (
+            symbol.visibility(),
+            symbol.export_status(),
+            summary.exported_symbols.as_slice(),
+        ) {
+            (
+                mizar_resolve::env::Visibility::Public,
+                mizar_resolve::env::ExportStatus::Exported,
+                [export],
+            ) => ("public", Some(export)),
+            (
+                mizar_resolve::env::Visibility::Private,
+                mizar_resolve::env::ExportStatus::LocalOnly,
+                [],
+            ) => ("private", None),
+            _ => return Ok(None),
+        };
+        if *owner_visibility != visibility {
+            return Ok(None);
+        }
         if owner.symbol.module() != arena.module()
             || owner.source_range.source_id != version.source_id
             || arena.source_id() != version.source_id
@@ -5316,22 +5332,24 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || symbol.origin().module_id() != arena.module()
             || symbol.origin().is_recovered()
             || symbol.origin().import_edge().is_some()
-            || export.origin_id != owner.symbol.fqn().as_str()
-            || export.fully_qualified_name != owner.symbol.fqn().as_str()
-            || export.namespace_path
-                != symbol
-                    .namespace()
-                    .as_str()
-                    .split('.')
-                    .map(str::to_owned)
-                    .collect::<Vec<_>>()
-            || export.visibility != "public"
-            || export.declaration_kind != "theorem"
-            || export.proof_status.is_some()
-            || export.rendered_signature.is_empty()
-            || export.source_range.start_byte != owner.source_range.start as u64
-            || export.source_range.end_byte != owner.source_range.end as u64
             || summary.source_hash != version.source_hash
+            || export.is_some_and(|export| {
+                export.origin_id != owner.symbol.fqn().as_str()
+                    || export.fully_qualified_name != owner.symbol.fqn().as_str()
+                    || export.namespace_path
+                        != symbol
+                            .namespace()
+                            .as_str()
+                            .split('.')
+                            .map(str::to_owned)
+                            .collect::<Vec<_>>()
+                    || export.visibility != "public"
+                    || export.declaration_kind != "theorem"
+                    || export.proof_status.is_some()
+                    || export.rendered_signature.is_empty()
+                    || export.source_range.start_byte != owner.source_range.start as u64
+                    || export.source_range.end_byte != owner.source_range.end as u64
+            })
         {
             return Err(fail("checked owner export mismatch"));
         }
@@ -5416,23 +5434,26 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             reserve_binders: Vec::new(),
             resolved_symbols: std::collections::BTreeMap::new(),
         }];
-        let exports = vec![VerifiedExport {
-            origin_id: export.origin_id.clone(),
-            fully_qualified_name: export.fully_qualified_name.clone(),
-            namespace_path: export.namespace_path.clone(),
-            visibility: ExportVisibility::Public,
-            export_kind: export.declaration_kind.clone(),
-            source_range: export.source_range,
-            rendered_signature: export.rendered_signature.clone(),
-            interface_fingerprint: ArtifactHashRef::new(
-                ArtifactHashClass::Interface,
-                MODULE_SUMMARY_SCHEMA_FAMILY,
-                summary.schema_version,
-                export.interface_fingerprint,
-            ),
-            proof_status: None,
-            documentation_ref: None,
-        }];
+        let exports = export
+            .into_iter()
+            .map(|export| VerifiedExport {
+                origin_id: export.origin_id.clone(),
+                fully_qualified_name: export.fully_qualified_name.clone(),
+                namespace_path: export.namespace_path.clone(),
+                visibility: ExportVisibility::Public,
+                export_kind: export.declaration_kind.clone(),
+                source_range: export.source_range,
+                rendered_signature: export.rendered_signature.clone(),
+                interface_fingerprint: ArtifactHashRef::new(
+                    ArtifactHashClass::Interface,
+                    MODULE_SUMMARY_SCHEMA_FAMILY,
+                    summary.schema_version,
+                    export.interface_fingerprint,
+                ),
+                proof_status: None,
+                documentation_ref: None,
+            })
+            .collect();
         let Some(primary) = typed.source_term() else {
             return Ok(None);
         };
@@ -5871,7 +5892,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || item.symbol != owner.symbol
             || item.kind != CoreItemKind::Theorem
             || item.status != CoreItemStatus::Valid
-            || item.visibility.as_str() != "public"
+            || item.visibility.as_str() != visibility
             || proof.item != item_id
             || proof.status != CoreProofStatus::PendingAutomaticProof
             || seed.owner != item_id
@@ -6097,7 +6118,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     .as_str()
                     .to_owned(),
             ),
-            owner_origin_id: Some(export.origin_id.clone()),
+            owner_origin_id: export.map(|export| export.origin_id.clone()),
             source_range: SourceRangeSummary {
                 start_byte: range.start as u64,
                 end_byte: range.end as u64,

@@ -59199,25 +59199,76 @@ fn with_native_theorem_artifact_context(
     let [(source_owner, visibility)] = check.owners() else {
         panic!()
     };
-    let [export] = summary.exported_symbols.as_slice() else {
-        panic!()
+    let symbol = env.symbols().get(&source_owner.symbol).unwrap();
+    let public = match (symbol.visibility(), symbol.export_status()) {
+        (mizar_resolve::env::Visibility::Public, mizar_resolve::env::ExportStatus::Exported) => {
+            true
+        }
+        (mizar_resolve::env::Visibility::Private, mizar_resolve::env::ExportStatus::LocalOnly) => {
+            false
+        }
+        other => panic!("unsupported authentic owner {other:?}"),
     };
-    assert_eq!(*visibility, "public");
-    assert_eq!(export.origin_id, source_owner.symbol.fqn().as_str());
-    assert_eq!(
-        export.fully_qualified_name,
-        source_owner.symbol.fqn().as_str()
-    );
-    assert_eq!(export.proof_status, None);
+    assert_eq!(*visibility, if public { "public" } else { "private" });
+    assert_eq!(summary.exported_symbols.len(), usize::from(public));
+    let export = summary.exported_symbols.first();
+    if let Some(export) = export {
+        assert_eq!(export.origin_id, source_owner.symbol.fqn().as_str());
+        assert_eq!(
+            export.fully_qualified_name,
+            source_owner.symbol.fqn().as_str()
+        );
+        assert_eq!(export.proof_status, None);
+    }
+    let core = owner
+        .storage()
+        .get(
+            &owner
+                .storage()
+                .typed_handle::<mizar_core::core_ir::CoreIr>(&roles[1], roles[1].output_kind())
+                .unwrap(),
+        )
+        .unwrap();
+    let core_items = core.items().iter().collect::<Vec<_>>();
+    let [(_, item)] = core_items.as_slice() else {
+        panic!("one genuine Core owner")
+    };
+    assert_eq!(item.symbol, source_owner.symbol);
+    assert_eq!(item.visibility.as_str(), *visibility);
     let owner_range = source_owner.source_range;
+    let theorem_nodes = ast
+        .node_views()
+        .filter(|node| {
+            node.as_theorem_item().is_some() && node.range() == source_owner.source_range
+        })
+        .collect::<Vec<_>>();
+    let [theorem] = theorem_nodes.as_slice() else {
+        panic!("one original checked theorem")
+    };
+    let owner_node = metadata.2.nodes().node(source_owner.site.node()).unwrap();
+    assert_eq!(
+        owner_node.resolved_node,
+        arena.resolved_node_for(theorem.id())
+    );
+    assert_eq!(
+        owner_node.anchor,
+        mizar_session::SourceAnchor::Range(theorem.range())
+    );
+    let original_formulas = theorem
+        .child_views()
+        .filter(|node| node.as_formula_expression().is_some())
+        .collect::<Vec<_>>();
+    let [formula] = original_formulas.as_slice() else {
+        panic!("one original owner formula")
+    };
     let formulas =
         mizar_resolve::labels::source_public_theorem_formula_candidates(ast, &arena, &env)
             .unwrap()
             .unwrap();
-    assert_eq!(formulas.len(), 1);
-    let formula = ast
-        .node_view(*formulas.get(&source_owner.symbol).unwrap())
-        .unwrap();
+    assert_eq!(formulas.len(), usize::from(public));
+    if public {
+        assert_eq!(formulas.get(&source_owner.symbol), Some(&formula.id()));
+    }
     assert!(formula.as_formula_expression().is_some());
     let formula_children = formula.child_views().collect::<Vec<_>>();
     let [quantified] = formula_children.as_slice() else {
@@ -59266,41 +59317,37 @@ fn with_native_theorem_artifact_context(
         reserve_binders: vec![],
         resolved_symbols: std::collections::BTreeMap::new(),
     };
-    assert_eq!(
-        (export.source_range.start_byte, export.source_range.end_byte),
-        (
-            u64::try_from(owner_range.start).unwrap(),
-            u64::try_from(owner_range.end).unwrap()
-        )
-    );
-    let verified_export = VerifiedExport {
-        origin_id: export.origin_id.clone(),
-        fully_qualified_name: export.fully_qualified_name.clone(),
-        namespace_path: export.namespace_path.clone(),
-        visibility: ExportVisibility::Public,
-        export_kind: export.declaration_kind.clone(),
-        source_range: export.source_range,
-        rendered_signature: export.rendered_signature.clone(),
-        interface_fingerprint: ArtifactHashRef::new(
-            ArtifactHashClass::Interface,
-            MODULE_SUMMARY_SCHEMA_FAMILY,
-            summary.schema_version,
-            export
-                .compute_interface_fingerprint(summary.schema_version, &summary.module)
-                .unwrap(),
-        ),
-        proof_status: None,
-        documentation_ref: None,
-    };
-    let theorem_nodes = ast
-        .node_views()
-        .filter(|node| {
-            node.as_theorem_item().is_some() && node.range() == source_owner.source_range
+    if let Some(export) = export {
+        assert_eq!(
+            (export.source_range.start_byte, export.source_range.end_byte),
+            (
+                u64::try_from(owner_range.start).unwrap(),
+                u64::try_from(owner_range.end).unwrap()
+            )
+        );
+    }
+    let verified_exports = export
+        .map(|export| VerifiedExport {
+            origin_id: export.origin_id.clone(),
+            fully_qualified_name: export.fully_qualified_name.clone(),
+            namespace_path: export.namespace_path.clone(),
+            visibility: ExportVisibility::Public,
+            export_kind: export.declaration_kind.clone(),
+            source_range: export.source_range,
+            rendered_signature: export.rendered_signature.clone(),
+            interface_fingerprint: ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                summary.schema_version,
+                export
+                    .compute_interface_fingerprint(summary.schema_version, &summary.module)
+                    .unwrap(),
+            ),
+            proof_status: None,
+            documentation_ref: None,
         })
-        .collect::<Vec<_>>();
-    let [theorem] = theorem_nodes.as_slice() else {
-        panic!("one original checked theorem")
-    };
+        .into_iter()
+        .collect();
     let proofs = theorem
         .child_views()
         .filter_map(|node| node.as_proof_block())
@@ -59827,7 +59874,7 @@ fn with_native_theorem_artifact_context(
     let obligation = ObligationMetadata {
         obligation_id: projection.obligation_id().into(),
         obligation_anchor: Some(original_meta.obligation_anchor().as_str().into()),
-        owner_origin_id: Some(export.origin_id.clone()),
+        owner_origin_id: export.map(|export| export.origin_id.clone()),
         source_range: SourceRangeSummary {
             start_byte: u64::try_from(vc_range.start).unwrap(),
             end_byte: u64::try_from(vc_range.end).unwrap(),
@@ -59863,7 +59910,7 @@ fn with_native_theorem_artifact_context(
                     source_file: snapshot.source_versions[0].normalized_path.as_str().into(),
                     source_hash: snapshot.source_versions[0].source_hash,
                     verified_at: None,
-                    exports: vec![verified_export],
+                    exports: verified_exports,
                     expressions,
                     statements: vec![statement],
                     obligations: vec![obligation],
@@ -59914,6 +59961,7 @@ fn native_theorem_artifact_draft_matches_source_rows() {
     for (text, threshold) in [
         (original.to_owned(), usize::MAX),
         (original.replace("T:", "Renamed:"), 0),
+        (format!("private {original}"), usize::MAX),
     ] {
         with_native_theorem_artifact_context(
             &text,
@@ -59968,6 +60016,7 @@ fn native_theorem_artifact_draft_matches_source_rows() {
                     profile.clone(),
                     verifier.clone(),
                 );
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
                 let actual = inputs
                     .project_native_theorem_artifact_draft(
                         six,
@@ -59979,7 +60028,6 @@ fn native_theorem_artifact_draft_matches_source_rows() {
                     )
                     .unwrap()
                     .unwrap();
-                let expected = expected.as_ref().unwrap().as_ref().unwrap();
                 assert_eq!(&actual, expected);
                 assert_eq!(
                     write_verified_artifact(&actual.artifact).unwrap(),
@@ -60002,12 +60050,26 @@ fn native_theorem_artifact_draft_matches_source_rows() {
                         Gap::ArtifactPublicationToken
                     ]
                 );
+                assert_eq!(
+                    actual.artifact.exports.len(),
+                    usize::from(!text.starts_with("private "))
+                );
                 assert!(
-                    !actual.artifact.exports.is_empty()
-                        && !actual.artifact.expressions.is_empty()
+                    !actual.artifact.expressions.is_empty()
                         && !actual.artifact.obligations.is_empty()
                 );
-                assert_eq!(actual.artifact.exports[0].proof_status, None);
+                assert!(
+                    actual
+                        .artifact
+                        .exports
+                        .iter()
+                        .all(|export| export.proof_status.is_none())
+                );
+                assert_eq!(actual.artifact.expressions.len(), 9);
+                assert_eq!(
+                    actual.artifact.obligations[0].owner_origin_id.is_none(),
+                    text.starts_with("private ")
+                );
                 assert_eq!(
                     actual.artifact.obligations[0].obligation_kind,
                     "theorem-proof-step"
@@ -60740,6 +60802,10 @@ fn native_theorem_artifact_main_matches_real_draft() {
             ":: main transport\ntheorem Renamed: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
             0,
         ),
+        (
+            "private theorem Hidden: for Bound being set holds Bound = Bound proof let Local be set; thus Local  =\n    Local; end;",
+            0,
+        ),
     ] {
         with_native_theorem_artifact_context(
             text,
@@ -60796,6 +60862,7 @@ fn native_theorem_artifact_main_matches_real_draft() {
                 );
                 let witness_path = "proof-witnesses/checked.json";
                 let baseline_root = fixture.root.join("baseline-main");
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
                 let baseline = inputs
                     .project_native_theorem_artifact_draft(
                         six,
@@ -60807,7 +60874,7 @@ fn native_theorem_artifact_main_matches_real_draft() {
                     )
                     .unwrap()
                     .unwrap();
-                assert_eq!(&baseline, expected.as_ref().unwrap().as_ref().unwrap());
+                assert_eq!(&baseline, expected);
                 assert_eq!(
                     baseline.external_dependency_gaps,
                     [
@@ -60817,7 +60884,15 @@ fn native_theorem_artifact_main_matches_real_draft() {
                         Gap::ArtifactPublicationToken,
                     ]
                 );
-                assert!(!baseline.artifact.exports.is_empty());
+                assert_eq!(
+                    baseline.artifact.exports.len(),
+                    usize::from(!text.starts_with("private "))
+                );
+                assert_eq!(
+                    baseline.artifact.obligations[0].owner_origin_id.is_none(),
+                    text.starts_with("private ")
+                );
+                assert_eq!(baseline.artifact.expressions.len(), 9);
                 assert!(!baseline.artifact.expressions.is_empty());
                 assert!(!baseline.artifact.obligations.is_empty());
                 let main_path = PublishedArtifactPath::new("main.mizir.json").unwrap();
@@ -62334,6 +62409,12 @@ fn native_theorem_artifact_statements_match_checked_formula() {
             "Local = Local",
             0,
         ),
+        (
+            "private theorem Hidden: for Bound being set holds Bound = Bound proof let Local be set; thus Local  =\n    Local; end;",
+            "for Bound being set holds Bound = Bound",
+            "Local = Local",
+            0,
+        ),
     ] {
         with_native_theorem_artifact_context(
             text,
@@ -62389,6 +62470,7 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                     )
                     .unwrap();
                 let root = fixture.root.join("statement-formula");
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
                 let actual = inputs
                     .project_native_theorem_artifact_draft(
                         six,
@@ -62400,10 +62482,27 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                     )
                     .unwrap()
                     .unwrap();
-                let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                assert_eq!(
+                    actual.artifact.exports.len(),
+                    usize::from(!text.starts_with("private "))
+                );
+                assert_eq!(
+                    actual.artifact.obligations[0].owner_origin_id.is_none(),
+                    text.starts_with("private ")
+                );
+                assert_eq!(actual.artifact.expressions.len(), 9);
+                let source_items = typed
+                    .source_context()
+                    .unwrap()
+                    .items()
+                    .iter()
+                    .collect::<Vec<_>>();
+                let [(_, source_item)] = source_items.as_slice() else {
+                    panic!("one actual source owner")
+                };
                 let quantified_id = format!(
                     "source.theorem.quantified.{}",
-                    expected.artifact.exports[0].fully_qualified_name
+                    expected.artifact.statements[0].item
                 );
                 assert_eq!(
                     actual.artifact.expressions.len(),
@@ -62472,10 +62571,7 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                     panic!("one checked theorem statement")
                 };
                 assert_eq!(statement.elaborated, formula);
-                assert_eq!(
-                    statement.item,
-                    expected.artifact.exports[0].fully_qualified_name
-                );
+                assert_eq!(statement.item, expected.artifact.statements[0].item);
                 let start = source.find(formula).unwrap();
                 let end = start + formula.len();
                 assert_eq!(
@@ -62484,22 +62580,15 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                 );
                 assert_eq!(statement.source_range.end_byte, u64::try_from(end).unwrap());
                 assert_eq!(source.get(start..end), Some(formula));
-                assert!(
-                    start
-                        > usize::try_from(actual.artifact.exports[0].source_range.start_byte)
-                            .unwrap()
-                );
-                assert!(
-                    end < usize::try_from(actual.artifact.exports[0].source_range.end_byte)
-                        .unwrap()
-                );
+                assert!(start > source_item.source_range.start);
+                assert!(end < source_item.source_range.end);
                 assert!(
                     statement.reserve_binders.is_empty() && statement.resolved_symbols.is_empty()
                 );
                 let expected_statement = CanonicalJson::object([
                     (
                         "item",
-                        CanonicalJson::string(&expected.artifact.exports[0].fully_qualified_name),
+                        CanonicalJson::string(&expected.artifact.statements[0].item),
                     ),
                     (
                         "source_range",

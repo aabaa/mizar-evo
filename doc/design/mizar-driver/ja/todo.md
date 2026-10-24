@@ -649,6 +649,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 111. **[Source terminal-point thesis metadata](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-TERMINAL-THESIS.md).** [x]
 
+112. **[Private theorem artifact metadata](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-PRIVATE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
