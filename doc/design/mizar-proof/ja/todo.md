@@ -479,6 +479,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 61. **[Source theorem reflexivity original graph](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-ORIGINAL-GRAPH.md).** [x]
 
+62. **[Fresh source theorem candidate check](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -503,6 +503,8 @@ layer consumes both; one alignment task is owned here.
 
 61. **[Source theorem reflexivity original graph](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-ORIGINAL-GRAPH.md).** [x]
 
+62. **[Fresh source theorem candidate check](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANDIDATE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

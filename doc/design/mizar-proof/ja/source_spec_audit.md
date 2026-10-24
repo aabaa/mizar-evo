@@ -147,3 +147,5 @@ coverage に対応している。未完成 integration point は上で `deferred
 `external_dependency_gap` と分類済みであり、いずれも externally attested evidence、
 backend diagnostics、cache records、witness metadata、policy assumptions を trusted
 proof acceptance または trusted `used_axioms` に昇格させない。
+
+`check_source_theorem_candidate`: [sole API owner](./status.md#source-theorem-candidate-check).

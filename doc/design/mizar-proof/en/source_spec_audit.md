@@ -151,3 +151,5 @@ integration points are classified above as `deferred` or
 `external_dependency_gap`; none permits externally attested evidence, backend
 diagnostics, cache records, witness metadata, or policy assumptions to become
 trusted proof acceptance or trusted `used_axioms`.
+
+`check_source_theorem_candidate`: [sole API owner](./status.md#source-theorem-candidate-check).

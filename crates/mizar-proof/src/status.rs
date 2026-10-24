@@ -856,6 +856,117 @@ pub fn check_source_algorithm_return_reflexivity(
     Ok((result, decision))
 }
 
+/// Freshly checks a source theorem's actual ATP candidate under the current policy.
+#[expect(
+    clippy::type_complexity,
+    reason = "Returns the seven actual pipeline values for whole-parent association without a holder"
+)]
+pub fn check_source_theorem_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policies: (&mizar_vc::discharge::DischargePolicy, &VerifierPolicy),
+) -> Result<
+    (
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
+        mizar_vc::discharge::DischargeOutput,
+        mizar_atp::backend::EncodedBackendProblem,
+        mizar_atp::backend::BackendCandidateEvidence,
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+    ),
+    String,
+> {
+    use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_atp::backend::{BackendCandidatePayload, build_source_theorem_candidate_inputs};
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, try_discharge},
+        generator::generate_source_theorem_vcs,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, build_source_theorem_discharge_kernel_handoff,
+        },
+    };
+
+    let fresh =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            source,
+            check.typed_ast(),
+            check.scope(),
+            symbols,
+            check.labels(),
+            check.resolved_labels(),
+            None,
+        )?;
+    let invalid = || "theorem.candidate.proof.invalid_source_evidence".to_owned();
+    if check.owners() != fresh.owners() {
+        return Err(invalid());
+    }
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&fresh, None)?;
+    let vcs = generate_source_theorem_vcs(&core, snapshot, encoding.0, encoding.1)?;
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &vcs,
+        policy: policies.0,
+    })
+    .map_err(|error| error.to_string())?;
+    let (encoded, candidate) = build_source_theorem_candidate_inputs(
+        &core, &vcs, vc_id, &discharge, policies.0, encoding.2, encoding.3,
+    )?;
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+        return Err(invalid());
+    };
+    let encoded_problem_matches = !bytes.is_empty()
+        && candidate.target_binding() == encoded.target_binding()
+        && candidate.encoded_problem_hash() == encoded.input_hash()
+        && candidate.provenance_hash() == encoded.provenance_hash()
+        && candidate.formula_label_refs() == encoded.formula_labels()
+        && candidate.symbol_binding_refs() == encoded.symbol_bindings();
+    let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+    let evaluator = ProofPolicyEvaluator::new(policies.1.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedFormulaSubstitution {
+        encoded_problem_matches,
+    }) {
+        return Err("theorem.candidate.proof.kernel_policy_rejected".to_owned());
+    }
+    let handoff =
+        build_source_theorem_discharge_kernel_handoff(&core, &vcs, vc_id, &discharge, policies.0)?;
+    let envelope = handoff.canonical_evidence();
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err(invalid()),
+    };
+    let target = envelope.target_vc();
+    let mut parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(bytes, &parse_context)
+        .map_err(|error| format!("theorem.candidate.proof.parse:{error:?}"))?;
+    let result = check_source_kernel_handoff(
+        &handoff,
+        &parsed,
+        "theorem.candidate.proof.invalid_source_evidence",
+    )?;
+    let input = KernelPolicyInput::from_kernel_result(&result, origin);
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok((core, vcs, discharge, encoded, candidate, result, decision))
+}
+
 /// Returns the actual original graphs and result from one genuine theorem check.
 pub fn check_source_theorem_reflexivity_with_original_graph(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

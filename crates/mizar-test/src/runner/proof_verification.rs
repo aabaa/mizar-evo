@@ -29039,4 +29039,673 @@ mod term_proof_tests {
         );
         assert_eq!((core, vcs, output, policy, profile), before);
     }
+
+    #[test]
+    fn source_theorem_candidate_check_matches_independent_pipeline() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_atp::{
+            backend::{BackendCandidatePayload, build_source_theorem_candidate_inputs as build},
+            problem::*,
+        };
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+        use mizar_core::{
+            core_ir::{CoreProofStatus, ObligationSeedStatus},
+            elaborator::lower_source_theorem_skeletons as lower,
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{
+                FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+                KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+                KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+                KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+            },
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+            rejection::TargetVcFingerprint,
+        };
+        use mizar_proof::{
+            policy::{
+                CandidatePolicyClass, KernelEvidenceFormat, KernelEvidenceOrigin,
+                KernelPolicyInput, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+            },
+            status::{
+                check_source_theorem_candidate as verify,
+                check_source_theorem_reflexivity as legacy,
+            },
+        };
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+            generator::generate_source_theorem_vcs as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
+                build_source_theorem_discharge_kernel_handoff as handoff,
+            },
+            vc_ir::{
+                GenerationSchemaVersion, PolicyKey, SeedOriginRef, VcFormulaRef, VcSchemaVersion,
+                VcStatus,
+            },
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let mut first_source = None;
+        for (case, text) in [
+            original.to_owned(),
+            original.replace(" X", " Local"),
+            format!(":: 日本語 λ\n{original}\n"),
+            original.replace("T:", "Renamed:"),
+            original.to_owned(),
+            original.to_owned(),
+            original.to_owned(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (package, module, skip) = if case == 4 {
+                ("another-package", "nested.owners", 7)
+            } else {
+                ("owner-test", "owners", 0)
+            };
+            let (frontend, source, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty() && collected.diagnostics().is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            let env = collected.env();
+            let source_before = (source.clone(), env.clone());
+            assert_eq!(ast.source_id, source.source_id());
+            if case == 0 {
+                first_source = Some(source.source_id());
+            }
+            if case == 4 {
+                assert_ne!(Some(source.source_id()), first_source);
+            }
+            let snapshot = snapshot_id(if case == 5 { 778 } else { 777 });
+            let generation =
+                GenerationSchemaVersion::new(if case == 5 { "" } else { "proof62-generation" });
+            let schema = VcSchemaVersion::new(if case == 5 {
+                "λ\n\0"
+            } else {
+                "proof62-schema"
+            });
+            let discharge_policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new(if case == 6 { "λ\n\0" } else { "explicit" }),
+                    max_steps: if case == 6 { 0 } else { 64 },
+                },
+            };
+            let policy = if case == 0 {
+                VerifierPolicy::default()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution])
+            } else if case == 6 {
+                VerifierPolicy::release().with_require_kernel_certificates(true)
+            } else {
+                VerifierPolicy::default()
+            };
+            let inputs_before = (
+                generation.clone(),
+                schema.clone(),
+                discharge_policy.clone(),
+                policy.clone(),
+            );
+            with_source_theorem_check(ast, &source, env, |check| {
+                let check_before = format!("{check:?}");
+                let (fragment, format) = if case % 2 == 0 {
+                    (LogicFragment::Fof, ConcreteFormat::Tptp)
+                } else {
+                    (LogicFragment::SmtLibUninterpreted, ConcreteFormat::SmtLib)
+                };
+                let fresh = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source,
+                    check.typed_ast(),
+                    check.scope(),
+                    env,
+                    check.labels(),
+                    check.resolved_labels(),
+                    None,
+                )?;
+                assert_eq!(check.owners(), fresh.owners());
+                let core = lower(&fresh, None)?;
+                let vcs = generate(&core, snapshot, &generation, &schema)?;
+                assert_eq!(vcs.vcs().len(), 1);
+                let id = vcs.vcs()[0].id;
+                let discharge = try_discharge(DischargeInput {
+                    vc_set: &vcs,
+                    policy: &discharge_policy,
+                })
+                .map_err(|error| error.to_string())?;
+                let profile = LogicProfile::try_new(
+                    "proof62-explicit",
+                    fragment,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let (encoded, candidate) = build(
+                    &core,
+                    &vcs,
+                    id,
+                    &discharge,
+                    &discharge_policy,
+                    profile.clone(),
+                    format,
+                )?;
+                let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+                let BackendCandidatePayload::FormulaSubstitutionBytes(wire) = candidate.payload()
+                else {
+                    panic!("actual ATP producer returns formula evidence")
+                };
+                assert!(!wire.is_empty());
+                let encoded_problem_matches = candidate.target_binding()
+                    == encoded.target_binding()
+                    && candidate.encoded_problem_hash() == encoded.input_hash()
+                    && candidate.provenance_hash() == encoded.provenance_hash()
+                    && candidate.formula_label_refs() == encoded.formula_labels()
+                    && candidate.symbol_binding_refs() == encoded.symbol_bindings();
+                assert!(encoded_problem_matches);
+                let evaluator = ProofPolicyEvaluator::new(policy.clone());
+                assert!(evaluator.can_schedule_kernel_check(
+                    &PolicyCandidate::UncheckedFormulaSubstitution {
+                        encoded_problem_matches
+                    }
+                ));
+                let processed = handoff(&core, &vcs, id, &discharge, &discharge_policy)?;
+                let target = processed.canonical_evidence().target_vc();
+                let kernel_profile = processed.canonical_evidence().kernel_profile();
+                let tautology = match kernel_profile.clause_tautology_policy {
+                    KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+                    KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+                    _ => panic!(),
+                };
+                let mut parse_context = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(kernel_profile.profile_id, tautology),
+                );
+                parse_context.accepted_schema_versions.insert(2);
+                let parsed = parse_formula_evidence(wire, &parse_context).unwrap();
+                let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                let entries = processed
+                    .context_identity()
+                    .entries()
+                    .iter()
+                    .map(|entry| {
+                        let VcFormulaRef::Core(formula) = entry.producer_formula_ref() else {
+                            panic!()
+                        };
+                        let SourceContext::LocalHypothesis { local_context_id } = entry.source()
+                        else {
+                            panic!()
+                        };
+                        KernelContextIdentityEntry::new(
+                            KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                            entry.formula_id(),
+                            Fingerprint::new(
+                                entry.formula_fingerprint().algorithm_id,
+                                entry.formula_fingerprint().digest.clone(),
+                            ),
+                            KernelFormulaProducerRef::Core(formula),
+                        )
+                    })
+                    .collect();
+                let context = FormulaEvidenceContext::with_context_identity(
+                    Some(processed.context_identity_hash().as_bytes().to_vec()),
+                    vec![],
+                    vec![],
+                    Some(KernelContextIdentityPayload::new(
+                        target.clone(),
+                        processed.canonical_hash(),
+                        processed.context_identity_hash(),
+                        entries,
+                    )),
+                    ImportedFactContextLimits::default(),
+                )
+                .unwrap();
+                let result = check_kernel_evidence(KernelEvidenceCheckInput {
+                    target_vc_fingerprint: &target,
+                    evidence: &parsed,
+                    formula_context: Some(&context),
+                    check_kind: KernelEvidenceCheckKind::ProofObligation,
+                    policy: KernelCheckPolicy::default(),
+                    limits: KernelEvidenceCheckLimits::default(),
+                });
+                let input = KernelPolicyInput::from_kernel_result(&result, origin);
+                assert_eq!(input.origin(), origin);
+                let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+                assert_eq!(core.source_id(), ast.source_id);
+                assert_eq!(core.module_id(), source.module());
+                assert_eq!(core.module_id().package().as_str(), package);
+                assert_eq!(core.module_id().path().as_str(), module);
+                assert_eq!(vcs.source(), ast.source_id);
+                assert_eq!(vcs.snapshot(), snapshot);
+                assert_eq!(
+                    vcs.module().as_str(),
+                    format!(
+                        "package={}:{};module={}:{}",
+                        package.len(),
+                        package,
+                        module.len(),
+                        module
+                    )
+                );
+                assert_eq!(vcs.schema_version(), &schema);
+                assert!(!core.proofs().is_empty() && !vcs.seed_accounting().is_empty());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, row)| row.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                for accounting in vcs.seed_accounting() {
+                    let SeedOriginRef::ExistingCore { seed } = accounting.origin else {
+                        panic!()
+                    };
+                    assert_eq!(accounting.seed_status, ObligationSeedStatus::Active);
+                    assert_eq!(
+                        core.obligation_seeds().get(seed).unwrap().status,
+                        ObligationSeedStatus::Active
+                    );
+                }
+                for row in vcs.vcs() {
+                    assert_eq!(row.status, VcStatus::Open);
+                    assert_eq!(row.anchor.generation_schema_version, generation);
+                    assert!(vcs.seed_accounting_for(row.seed.handoff).is_some());
+                }
+                assert!(
+                    discharge
+                        .vc_set()
+                        .vcs()
+                        .iter()
+                        .all(|row| row.status == VcStatus::NeedsAtp)
+                );
+                assert_eq!(discharge.vc_set().vc(id).unwrap().id, id);
+                assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                assert_eq!(
+                    result.evidence_check_kind(),
+                    Some(KernelEvidenceCheckKind::ProofObligation)
+                );
+                assert!(!result.policy_taint() && result.used_axioms().is_empty());
+                assert_eq!(result.target_vc_fingerprint(), &target);
+                assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+                if case == 0 {
+                    assert_eq!(
+                        legacy(&source, check, env, snapshot, id, &policy).unwrap_err(),
+                        "theorem.proof.kernel_policy_rejected"
+                    );
+                }
+                let expected = (core, vcs, discharge, encoded, candidate, result, decision);
+                let actual = verify(
+                    &source,
+                    check,
+                    env,
+                    snapshot,
+                    id,
+                    (&generation, &schema, profile.clone(), format),
+                    (&discharge_policy, &policy),
+                )?;
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    verify(
+                        &source,
+                        check,
+                        env,
+                        snapshot,
+                        id,
+                        (&generation, &schema, profile, format),
+                        (&discharge_policy, &policy)
+                    )?,
+                    expected
+                );
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), source_before);
+            assert_eq!(
+                (generation, schema, discharge_policy, policy),
+                inputs_before
+            );
+        }
+    }
+
+    #[test]
+    fn source_theorem_candidate_check_preserves_policy_and_errors() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+        use mizar_core::elaborator::lower_source_theorem_skeletons as lower;
+        use mizar_proof::{
+            policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+            status::{
+                check_source_theorem_candidate as verify,
+                check_source_theorem_reflexivity as legacy,
+            },
+        };
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+            generator::generate_source_theorem_vcs as generate,
+            vc_ir::{GenerationSchemaVersion, PolicyKey, VcId, VcSchemaVersion},
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snapshot = snapshot_id(777);
+        let generation = GenerationSchemaVersion::new("proof62-errors");
+        let schema = VcSchemaVersion::new("proof62-schema");
+        let discharge_policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("explicit"),
+                max_steps: 64,
+            },
+        };
+        let normal = VerifierPolicy::default();
+        let disabled = normal.clone().with_kernel_evidence_formats([]);
+        let builtin = normal
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]);
+        let profile = LogicProfile::try_new(
+            "proof62-errors",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Unsupported,
+            [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                .into_iter()
+                .collect(),
+        )
+        .unwrap();
+        let bad_profile = LogicProfile::try_new(
+            "proof62-bad",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::GuardPredicates,
+            NativePropertySupport::Unsupported,
+            [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                .into_iter()
+                .collect(),
+        )
+        .unwrap();
+        let inputs_before = (
+            generation.clone(),
+            schema.clone(),
+            discharge_policy.clone(),
+            normal.clone(),
+            disabled.clone(),
+            builtin.clone(),
+            profile.clone(),
+            bad_profile.clone(),
+        );
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        for (case, text) in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            original.replace("set", "object"),
+            format!("{original} {}", original.replace("T:", "U:")),
+            cited.to_owned(),
+            "theorem C: 0 = 0 by computation(steps: 8);".to_owned(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty() && collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (id, encoding, format) in [
+                    (VcId::new(0), &profile, ConcreteFormat::Tptp),
+                    (VcId::new(usize::MAX), &bad_profile, ConcreteFormat::SmtLib),
+                    (VcId::new(0), &bad_profile, ConcreteFormat::SmtLib),
+                    (VcId::new(0), &profile, ConcreteFormat::SmtLib),
+                ] {
+                    if case == 0
+                        && id == VcId::new(0)
+                        && encoding == &profile
+                        && format == ConcreteFormat::Tptp
+                    {
+                        continue;
+                    }
+                    let expected = (|| {
+                        let fresh = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                            &source,
+                            check.typed_ast(),
+                            check.scope(),
+                            env,
+                            check.labels(),
+                            check.resolved_labels(),
+                            None,
+                        )?;
+                        let core = lower(&fresh, None)?;
+                        let vcs = generate(&core, snapshot, &generation, &schema)?;
+                        let discharge = try_discharge(DischargeInput {
+                            vc_set: &vcs,
+                            policy: &discharge_policy,
+                        })
+                        .map_err(|error| error.to_string())?;
+                        build(
+                            &core,
+                            &vcs,
+                            id,
+                            &discharge,
+                            &discharge_policy,
+                            encoding.clone(),
+                            format,
+                        )
+                    })()
+                    .unwrap_err();
+                    for policy in [&normal, &disabled] {
+                        assert_eq!(
+                            verify(
+                                &source,
+                                check,
+                                env,
+                                snapshot,
+                                id,
+                                (&generation, &schema, encoding.clone(), format),
+                                (&discharge_policy, policy)
+                            )
+                            .unwrap_err(),
+                            expected
+                        );
+                    }
+                }
+                if case == 0 {
+                    let fresh = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                        &source,
+                        check.typed_ast(),
+                        check.scope(),
+                        env,
+                        check.labels(),
+                        check.resolved_labels(),
+                        None,
+                    )?;
+                    let core = lower(&fresh, None)?;
+                    let vcs = generate(&core, snapshot, &generation, &schema)?;
+                    let id = vcs.vcs()[0].id;
+                    let discharge = try_discharge(DischargeInput {
+                        vc_set: &vcs,
+                        policy: &discharge_policy,
+                    })
+                    .map_err(|error| error.to_string())?;
+                    let prior = build(
+                        &core,
+                        &vcs,
+                        id,
+                        &discharge,
+                        &discharge_policy,
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )?;
+                    let other_policy = DischargePolicy {
+                        computation_limit: ComputationLimit {
+                            policy: PolicyKey::new("different"),
+                            max_steps: 0,
+                        },
+                    };
+                    assert_eq!(
+                        try_discharge(DischargeInput {
+                            vc_set: &vcs,
+                            policy: &other_policy
+                        })
+                        .unwrap(),
+                        discharge
+                    );
+                    assert_eq!(
+                        build(
+                            &core,
+                            &vcs,
+                            id,
+                            &discharge,
+                            &other_policy,
+                            profile.clone(),
+                            ConcreteFormat::Tptp
+                        )?,
+                        prior
+                    );
+                    let old = legacy(&source, check, env, snapshot, id, &builtin)?;
+                    assert_eq!(old.1.class, CandidatePolicyClass::DischargedBuiltin);
+                    for policy in [&builtin, &disabled] {
+                        assert_eq!(
+                            verify(
+                                &source,
+                                check,
+                                env,
+                                snapshot,
+                                id,
+                                (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                                (&discharge_policy, policy)
+                            )
+                            .unwrap_err(),
+                            "theorem.candidate.proof.kernel_policy_rejected"
+                        );
+                    }
+                    assert_eq!(
+                        legacy(&source, check, env, snapshot, id, &disabled).unwrap_err(),
+                        "theorem.proof.kernel_policy_rejected"
+                    );
+                    let (other_frontend, other_source, other) = inputs(
+                        &original.replace("T:", "Foreign:"),
+                        "owner-test",
+                        "owners",
+                        7,
+                    );
+                    assert!(
+                        other_frontend.diagnostics.is_empty() && other.diagnostics().is_empty()
+                    );
+                    assert_ne!(other_source.source_id(), source.source_id());
+                    let foreign_before = (other_source.clone(), other.env().clone());
+                    for (current, symbols) in [
+                        (&source, other.env()),
+                        (&other_source, env),
+                        (&other_source, other.env()),
+                    ] {
+                        let expected = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                            current,
+                            check.typed_ast(),
+                            check.scope(),
+                            symbols,
+                            check.labels(),
+                            check.resolved_labels(),
+                            None,
+                        )
+                        .unwrap_err();
+                        for (selected, encoding, format, policy) in [
+                            (id, &profile, ConcreteFormat::Tptp, &normal),
+                            (
+                                VcId::new(usize::MAX),
+                                &bad_profile,
+                                ConcreteFormat::SmtLib,
+                                &disabled,
+                            ),
+                        ] {
+                            assert_eq!(
+                                verify(
+                                    current,
+                                    check,
+                                    symbols,
+                                    snapshot,
+                                    selected,
+                                    (&generation, &schema, encoding.clone(), format),
+                                    (&discharge_policy, policy)
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                        }
+                    }
+                    with_source_theorem_check(
+                        other_frontend.ast.as_ref().unwrap(),
+                        &other_source,
+                        other.env(),
+                        |foreign_check| {
+                            let expected = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                                &source,
+                                foreign_check.typed_ast(),
+                                foreign_check.scope(),
+                                env,
+                                foreign_check.labels(),
+                                foreign_check.resolved_labels(),
+                                None,
+                            )
+                            .unwrap_err();
+                            assert_eq!(
+                                verify(
+                                    &source,
+                                    foreign_check,
+                                    env,
+                                    snapshot,
+                                    VcId::new(usize::MAX),
+                                    (
+                                        &generation,
+                                        &schema,
+                                        bad_profile.clone(),
+                                        ConcreteFormat::SmtLib
+                                    ),
+                                    (&discharge_policy, &disabled)
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                            Ok(())
+                        },
+                    )?;
+                    assert_eq!((other_source, other.env().clone()), foreign_before);
+                    assert_eq!(legacy(&source, check, env, snapshot, id, &builtin)?, old);
+                    assert_eq!(
+                        build(
+                            &core,
+                            &vcs,
+                            id,
+                            &discharge,
+                            &discharge_policy,
+                            profile.clone(),
+                            ConcreteFormat::Tptp
+                        )?,
+                        prior
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+        assert_eq!(
+            (
+                generation,
+                schema,
+                discharge_policy,
+                normal,
+                disabled,
+                builtin,
+                profile,
+                bad_profile
+            ),
+            inputs_before
+        );
+    }
 }
