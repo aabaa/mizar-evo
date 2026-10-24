@@ -29750,6 +29750,20 @@ fn scheduled_theorem_resolver_requires_current_resources_and_honors_cancellation
 
 #[test]
 fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
+    use mizar_build::task_graph::{VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId};
+    use mizar_vc::{
+        discharge::{
+            ComputationLimit, DischargeExplanationCategory, DischargeInput, DischargeOutput,
+            DischargePolicy, try_discharge,
+        },
+        vc_ir::{PolicyKey, VcProvenancePhase, VcStatus},
+    };
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new("step6c12-explicit-limit"),
+            max_steps: 64,
+        },
+    };
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
@@ -29776,11 +29790,12 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_overload_resolution()
         .register_source_theorem_elaboration()
         .register_source_theorem_algorithm_preparation()
-        .register_source_theorem_vc_generation(generation_schema.clone(), vc_schema.clone());
+        .register_source_theorem_vc_generation(generation_schema.clone(), vc_schema.clone())
+        .register_source_theorem_vc_discharge(policy.clone());
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     #[expect(
         clippy::type_complexity,
-        reason = "retain genuine Core, preparation, and VC handles with their source session"
+        reason = "retain genuine Core, preparation, VC, and discharge handles with their source session"
     )]
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29845,7 +29860,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         });
         let owner = publisher(snapshot, 0, &units[0]);
         let clean_owner = publisher(snapshot, 0, &units[0]);
-        for current in [&owner, &clean_owner] {
+        let prepass_owner = publisher(snapshot, 0, &units[0]);
+        for current in [&owner, &clean_owner, &prepass_owner] {
             for module in ["main", "leaf"] {
                 for (phase, kind) in [
                     ("SourceLoad", "SourceUnit"),
@@ -29858,6 +29874,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("Elaboration", "SourceTheoremCore"),
                     ("AlgorithmPreparation", "SourceTheoremPreparation"),
                     ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29879,7 +29896,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_source_theorem_overload_resolution()
             .register_source_theorem_elaboration()
             .register_source_theorem_algorithm_preparation()
-            .register_source_theorem_vc_generation(generation_schema.clone(), vc_schema.clone());
+            .register_source_theorem_vc_generation(generation_schema.clone(), vc_schema.clone())
+            .register_source_theorem_vc_discharge(policy.clone());
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29889,6 +29907,88 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         clean_input.completion_order = CompletionOrder::Reverse;
         input.worker_count = 1;
         input.completion_order = CompletionOrder::Canonical;
+        let descriptor_id = VcTaskDescriptorId::new("step6c12-main");
+        input.vc_descriptors = Vec::new();
+        let baseline_vcs = if stage >= 3 {
+            let mut prepass_builder = PhaseRegistryBuilder::new();
+            prepass_builder
+                .register_source_load()
+                .register_frontend(vec![])
+                .register_source_theorem_module_resolver()
+                .register_source_theorem_signature_collection()
+                .register_source_theorem_type_checking()
+                .register_source_theorem_registration_resolution()
+                .register_source_theorem_overload_resolution()
+                .register_source_theorem_elaboration()
+                .register_source_theorem_algorithm_preparation()
+                .register_source_theorem_vc_generation(
+                    generation_schema.clone(),
+                    vc_schema.clone(),
+                );
+            let (_, mut prepass_input) = fixture.submit_request(vec![], vec![]);
+            prepass_input.source_layout = input.source_layout.clone();
+            prepass_input.dependency_overlay = input.dependency_overlay.clone();
+            let prepass = CompilerDriver::new(prepass_builder.build().unwrap())
+                .with_output_publisher(prepass_owner.clone())
+                .submit_captured(session.clone(), &ids, &snapshots, prepass_input)
+                .unwrap();
+            assert_eq!(prepass.session.captured(), &captured);
+            let task = prepass
+                .task_graph
+                .as_ref()
+                .unwrap()
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::VcGenerate && task.unit == units[0])
+                .unwrap();
+            let WorkUnit::Module { module } = &task.unit else {
+                panic!("actual main module")
+            };
+            assert_eq!(
+                prepass
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .task_states
+                    .iter()
+                    .find(|state| state.task_id == task.id)
+                    .unwrap()
+                    .state,
+                TaskState::Completed
+            );
+            let [row] = prepass.scheduler_run.as_ref().unwrap().phase_results[&task.id].as_slice()
+            else {
+                panic!("one prepass VC row")
+            };
+            assert_eq!(row.status, PhaseStatus::Complete);
+            assert!(row.diagnostics.is_empty());
+            let [output] = row.output_refs.as_slice() else {
+                panic!("one prepass VC output")
+            };
+            assert_eq!(output.output_kind(), &OutputKind::new("SourceTheoremVC"));
+            let handle = prepass_owner
+                .storage()
+                .typed_handle::<mizar_vc::vc_ir::VcSet>(output, output.output_kind())
+                .unwrap();
+            let vcs = prepass_owner.storage().get(&handle).unwrap();
+            let [record] = vcs.vcs() else {
+                panic!("actual singleton VC")
+            };
+            let selected = record.id;
+            let order = u64::try_from(selected.index()).unwrap();
+            input.vc_descriptors.push(VcTaskDescriptor::new(
+                descriptor_id.clone(),
+                module.clone(),
+                VcOrderKey::new(format!("{order:020}")),
+                vec![],
+                vec![],
+            ));
+            Some((vcs, selected))
+        } else {
+            None
+        };
+        clean_input.vc_descriptors = input.vc_descriptors.clone();
+        let descriptor_count = input.vc_descriptors.len();
         let clean = clean_driver
             .submit_captured(session.clone(), &ids, &snapshots, clean_input)
             .unwrap();
@@ -29921,6 +30021,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     | PipelinePhase::Elaboration
                     | PipelinePhase::AlgorithmPreparation
                     | PipelinePhase::VcGenerate
+                    | PipelinePhase::VcDischarge
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -29954,12 +30055,18 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         let graph = actual.task_graph.as_ref().unwrap();
         let run = actual.scheduler_run.as_ref().unwrap();
         let clean_run = clean.scheduler_run.as_ref().unwrap();
-        assert!(
-            !graph
+        assert_eq!(
+            graph
                 .tasks()
                 .iter()
-                .any(|task| task.kind == TaskKind::VcDischarge)
+                .filter(|task| task.kind == TaskKind::VcDischarge)
+                .count(),
+            descriptor_count
         );
+        assert!(!graph.tasks().iter().any(|task| matches!(
+            task.kind,
+            TaskKind::AtpSolve | TaskKind::BackendRun | TaskKind::KernelCheck
+        )));
         assert_eq!(run.phase_results, clean_run.phase_results);
         assert_eq!(run.task_states, clean_run.task_states);
         for module in ["main", "leaf"] {
@@ -30685,6 +30792,173 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 );
                 assert!(!run.phase_results.contains_key(&artifact.id));
                 stale_outputs.push(vc_output.clone());
+                let (baseline, selected) = baseline_vcs.as_ref().unwrap();
+                assert_eq!(&vc_set, baseline);
+                let [original] = vc_set.vcs() else {
+                    panic!("same actual singleton VC")
+                };
+                assert_eq!(original.id, *selected);
+                let discharge = graph
+                    .tasks()
+                    .iter()
+                    .find(|task| {
+                        task.kind == TaskKind::VcDischarge
+                            && matches!(&task.unit, WorkUnit::Vc { module, descriptor }
+                            if module.path.as_str() == "main" && descriptor == &descriptor_id)
+                    })
+                    .unwrap();
+                assert!(discharge.dependencies.contains(&vc.id));
+                assert_eq!(discharge.phases, [PipelinePhase::VcDischarge]);
+                assert_eq!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == discharge.id)
+                        .unwrap()
+                        .state,
+                    TaskState::Completed
+                );
+                let [row] = run.phase_results[&discharge.id].as_slice() else {
+                    panic!("one separate discharge row")
+                };
+                assert_eq!(row.status, PhaseStatus::Complete);
+                assert!(row.diagnostics.is_empty());
+                let [output] = row.output_refs.as_slice() else {
+                    panic!("one genuine discharge output")
+                };
+                let clean_output = &clean_run.phase_results[&discharge.id][0].output_refs[0];
+                assert_eq!(output.phase(), &IrPipelinePhase::new("VcDischarge"));
+                assert_eq!(
+                    output.output_kind(),
+                    &OutputKind::new("SourceTheoremDischarge")
+                );
+                assert_eq!(
+                    output.schema_version(),
+                    mizar_ir::storage::SchemaVersion::new(1)
+                );
+                assert_eq!(output.snapshot(), snapshot);
+                assert_eq!(output.work_unit(), core_output.work_unit());
+                assert!(matches!(output.placement(), StoragePlacement::Blob { .. }));
+                assert_eq!(
+                    owner.storage().side_tables_by_ref(output).unwrap(),
+                    clean_owner
+                        .storage()
+                        .side_tables_by_ref(clean_output)
+                        .unwrap()
+                );
+                let [value, clean_value] =
+                    [(&owner, output), (&clean_owner, clean_output)].map(|(current, output)| {
+                        let handle = current
+                            .storage()
+                            .typed_handle::<DischargeOutput>(output, output.output_kind())
+                            .unwrap();
+                        current.storage().get(&handle).unwrap()
+                    });
+                assert_eq!(value, clean_value);
+                assert_eq!(
+                    *value,
+                    try_discharge(DischargeInput {
+                        vc_set: &vc_set,
+                        policy: &policy
+                    })
+                    .unwrap()
+                );
+                let discharged = value.vc_set();
+                assert_eq!(discharged.source(), version.source_id);
+                assert_eq!(
+                    discharged.module().as_str(),
+                    "package=5:alpha;module=4:main"
+                );
+                assert_eq!(discharged.snapshot(), snapshot);
+                assert_eq!(discharged.schema_version(), &vc_schema);
+                let [record] = discharged.vcs() else {
+                    panic!("one actual discharged VC")
+                };
+                assert_eq!(record.id, *selected);
+                assert_eq!(record.status, VcStatus::NeedsAtp);
+                assert_eq!(record.anchor.generation_schema_version, generation_schema);
+                assert_eq!(
+                    record.provenance.last().unwrap().phase,
+                    VcProvenancePhase::Discharge
+                );
+                let [explanation] = value.explanations() else {
+                    panic!("one discharge explanation")
+                };
+                assert_eq!(explanation.vc, *selected);
+                assert_eq!(
+                    explanation.category,
+                    DischargeExplanationCategory::UnsupportedRule
+                );
+                assert_eq!(explanation.rule, None);
+                assert!(value.evidence_records().is_empty());
+                assert_eq!(original.status, VcStatus::Open);
+                assert!(core.proofs().iter().all(|(_, proof)| proof.status
+                    == mizar_core::core_ir::CoreProofStatus::PendingAutomaticProof));
+                assert!(
+                    core.obligation_seeds().iter().all(|(_, seed)| seed.status
+                        == mizar_core::core_ir::ObligationSeedStatus::Active)
+                );
+                let mut parent_ids = vec![core_output.output(), vc_output.output()];
+                parent_ids
+                    .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                assert_eq!(output.lineage().parents, parent_ids);
+                let parents = [core_output, vc_output]
+                    .into_iter()
+                    .map(|parent| {
+                        SealedParentOutputHandle::from_published_output(
+                            &owner,
+                            snapshot,
+                            parent.clone(),
+                        )
+                        .unwrap()
+                    })
+                    .collect();
+                let query = PhaseInput::new(
+                    discharge.unit.clone(),
+                    PhaseDispatchInputBundle::new(snapshot, source_key(version), vec![], parents)
+                        .unwrap(),
+                );
+                assert_eq!(
+                    query
+                        .parent_outputs()
+                        .iter()
+                        .map(SealedParentOutputHandle::output)
+                        .collect::<Vec<_>>(),
+                    parent_ids
+                );
+                assert_eq!(
+                    query.identities().parent_output_hashes(),
+                    parent_ids
+                        .iter()
+                        .map(|parent| parent.hash())
+                        .collect::<Vec<_>>()
+                );
+                let cache = driver
+                    .registry()
+                    .cache_key_for_phase(PipelinePhase::VcDischarge, &query)
+                    .unwrap();
+                assert!(
+                    matches!(&cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
+                );
+                assert_eq!(
+                    cache,
+                    clean_driver
+                        .registry()
+                        .cache_key_for_phase(PipelinePhase::VcDischarge, &query)
+                        .unwrap()
+                );
+                let probe = driver
+                    .registry()
+                    .execute_phase_with_resources(
+                        PipelinePhase::VcDischarge,
+                        query,
+                        PhaseExecutionResources::default(),
+                    )
+                    .unwrap();
+                assert_eq!(probe.result.status, PhaseStatus::Blocking);
+                assert!(probe.result.output_refs.is_empty());
+                assert_eq!(row.cache_observation, Some(probe.observation));
+                assert!(artifact.dependencies.contains(&discharge.id));
+                stale_outputs.push(output.clone());
             } else {
                 let vc = graph
                     .tasks()
