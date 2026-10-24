@@ -631,6 +631,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 102. **[Native theorem candidate check data publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK-PUBLICATION.md).** [x]
 
+103. **[Scheduled backend-free theorem candidate check and same-gate extension](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-CANDIDATE-CHECK.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

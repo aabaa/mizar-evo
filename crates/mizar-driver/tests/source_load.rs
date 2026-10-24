@@ -29760,6 +29760,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
     use mizar_build::task_graph::{
         BackendProfileId, EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
     };
+    use mizar_proof::policy::VerifierPolicy;
     use mizar_vc::{
         discharge::{
             ComputationLimit, DischargeExplanationCategory, DischargeInput, DischargeOutput,
@@ -29767,6 +29768,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         },
         vc_ir::{PolicyKey, VcProvenancePhase, VcStatus},
     };
+    let verifier = VerifierPolicy::default();
     let policy = DischargePolicy {
         computation_limit: ComputationLimit {
             policy: PolicyKey::new("step6c12-explicit-limit"),
@@ -29812,6 +29814,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_vc_generation(generation_schema.clone(), vc_schema.clone())
         .register_source_theorem_vc_discharge(policy.clone())
         .register_source_theorem_atp_solve(policy.clone(), profile.clone(), ConcreteFormat::Tptp)
+        .unwrap()
+        .register_source_theorem_candidate_check(
+            policy.clone(),
+            profile.clone(),
+            ConcreteFormat::Tptp,
+            verifier.clone(),
+        )
         .unwrap();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     #[expect(
@@ -29824,20 +29833,26 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         mizar_driver::request::BuildSession,
         [Hash; 2],
     )> = None;
-    for (stage, main) in [
-        private,
-        lemma,
-        renamed.as_str(),
-        theorem,
-        renamed_theorem.as_str(),
-    ]
-    .into_iter()
-    .enumerate()
+    for (generation, (backend_free, main)) in [false, true]
+        .into_iter()
+        .flat_map(|backend_free| {
+            [
+                private,
+                lemma,
+                renamed.as_str(),
+                theorem,
+                renamed_theorem.as_str(),
+            ]
+            .into_iter()
+            .map(move |main| (backend_free, main))
+        })
+        .enumerate()
     {
+        let stage = generation % 5;
         fixture.write(main.as_bytes());
         let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
         draft.source_inputs.versions.clear();
-        draft.generation = BuildRequestGeneration::new(stage as u64);
+        draft.generation = BuildRequestGeneration::new(generation as u64);
         input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
             package_id: PackageId::new("alpha"),
             files: vec![
@@ -29897,6 +29912,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("VcGenerate", "SourceTheoremVC"),
                     ("VcDischarge", "SourceTheoremDischarge"),
                     ("AtpSolve", "SourceTheoremCandidateInputs"),
+                    ("KernelCheck", "SourceTheoremCandidateCheck"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29924,6 +29940,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 policy.clone(),
                 profile.clone(),
                 ConcreteFormat::Tptp,
+            )
+            .unwrap()
+            .register_source_theorem_candidate_check(
+                policy.clone(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+                verifier.clone(),
             )
             .unwrap();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
@@ -30008,7 +30031,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 descriptor_id.clone(),
                 module.clone(),
                 VcOrderKey::new(format!("{order:020}")),
-                vec![BackendProfileId::new("step6c99-backend")],
+                if backend_free {
+                    vec![]
+                } else {
+                    vec![BackendProfileId::new("step6c99-backend")]
+                },
                 vec![EvidenceCandidateId::new("step6c99-evidence")],
             ));
             Some((vcs, selected))
@@ -30051,13 +30078,14 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     | PipelinePhase::VcGenerate
                     | PipelinePhase::VcDischarge
                     | PipelinePhase::AtpSolve
+                    | PipelinePhase::KernelCheck
             )));
             assert_eq!(
                 submission
                     .missing_services
                     .iter()
                     .any(|gap| gap.phase == PipelinePhase::BackendRun),
-                descriptor_count != 0
+                descriptor_count != 0 && !backend_free
             );
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -30110,7 +30138,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     .iter()
                     .filter(|task| task.kind == kind)
                     .count(),
-                descriptor_count
+                if backend_free && kind != TaskKind::KernelCheck {
+                    0
+                } else {
+                    descriptor_count
+                }
             );
         }
         assert_eq!(run.phase_results, clean_run.phase_results);
@@ -31005,168 +31037,473 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 assert_eq!(row.cache_observation, Some(probe.observation));
                 assert!(artifact.dependencies.contains(&discharge.id));
                 stale_outputs.push(output.clone());
-                let atp = graph
-                    .tasks()
-                    .iter()
-                    .find(|task| task.kind == TaskKind::AtpSolve && task.unit == discharge.unit)
-                    .unwrap();
-                assert_eq!(atp.phases, [PipelinePhase::AtpSolve]);
-                assert!(atp.dependencies.contains(&discharge.id));
-                assert_eq!(
-                    run.task_states
+                if backend_free {
+                    let kernel = graph
+                        .tasks()
                         .iter()
-                        .find(|state| state.task_id == atp.id)
-                        .unwrap()
-                        .state,
-                    TaskState::Completed
-                );
-                let [atp_row] = run.phase_results[&atp.id].as_slice() else {
-                    panic!("one actual ATP row")
-                };
-                assert_eq!(atp_row.status, PhaseStatus::Complete);
-                assert!(atp_row.diagnostics.is_empty());
-                let [atp_output] = atp_row.output_refs.as_slice() else {
-                    panic!("one genuine ATP output")
-                };
-                let clean_atp = &clean_run.phase_results[&atp.id][0].output_refs[0];
-                assert_eq!(atp_output.phase(), &IrPipelinePhase::new("AtpSolve"));
-                assert_eq!(
-                    atp_output.output_kind(),
-                    &OutputKind::new("SourceTheoremCandidateInputs")
-                );
-                assert_eq!(
-                    atp_output.schema_version(),
-                    mizar_ir::storage::SchemaVersion::new(1)
-                );
-                assert_eq!(atp_output.snapshot(), snapshot);
-                assert_eq!(atp_output.work_unit(), core_output.work_unit());
-                assert_eq!(
-                    atp_output.lineage().named_input_hashes,
-                    core_output.lineage().named_input_hashes
-                );
-                assert!(matches!(
-                    atp_output.placement(),
-                    StoragePlacement::Blob { .. }
-                ));
-                assert_eq!(
-                    owner.storage().side_tables_by_ref(atp_output).unwrap(),
-                    clean_owner.storage().side_tables_by_ref(clean_atp).unwrap()
-                );
-                let expected_pair = mizar_atp::backend::build_source_theorem_candidate_inputs(
-                    &core,
-                    &vc_set,
-                    *selected,
-                    &value,
-                    &policy,
-                    profile.clone(),
-                    ConcreteFormat::Tptp,
-                )
-                .unwrap();
-                let [pair, clean_pair] =
-                    [(&owner, atp_output), (&clean_owner, clean_atp)].map(|(current, output)| {
-                        let handle = current
-                            .storage()
-                            .typed_handle::<(EncodedBackendProblem, BackendCandidateEvidence)>(
-                                output,
-                                output.output_kind(),
-                            )
-                            .unwrap();
-                        current.storage().get(&handle).unwrap()
-                    });
-                assert_eq!(pair, clean_pair);
-                assert_eq!(*pair, expected_pair);
-                assert_eq!(pair.0.logic_profile_name(), "step6c99-explicit-atp");
-                assert_eq!(pair.0.concrete_format(), ConcreteFormat::Tptp);
-                assert_eq!(pair.1.target_binding(), pair.0.target_binding());
-                let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(&core, &vc_set, *selected, &value, &policy).unwrap();
-                let target = handoff.canonical_evidence().target_vc();
-                assert_eq!(
-                    pair.0.target_binding().fingerprint(),
-                    &mizar_atp::problem::AtpFingerprint::new(
-                        target.algorithm_id,
-                        target.digest.clone()
-                    )
-                    .unwrap()
-                );
-                let mut parent_ids =
-                    vec![core_output.output(), vc_output.output(), output.output()];
-                parent_ids
-                    .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
-                assert_eq!(atp_output.lineage().parents, parent_ids);
-                let parents = [core_output, vc_output, output]
-                    .into_iter()
-                    .map(|parent| {
-                        SealedParentOutputHandle::from_published_output(
-                            &owner,
-                            snapshot,
-                            parent.clone(),
-                        )
-                        .unwrap()
-                    })
-                    .collect();
-                let query = PhaseInput::new(
-                    atp.unit.clone(),
-                    PhaseDispatchInputBundle::new(snapshot, source_key(version), vec![], parents)
-                        .unwrap(),
-                );
-                assert_eq!(
-                    query
-                        .parent_outputs()
+                        .find(|task| task.kind == TaskKind::KernelCheck)
+                        .unwrap();
+                    assert_eq!(kernel.phases, [PipelinePhase::KernelCheck]);
+                    assert!(
+                        matches!(&kernel.unit, WorkUnit::EvidenceCandidate { module, descriptor, .. }
+                        if module.path.as_str() == "main" && descriptor == &descriptor_id)
+                    );
+                    let package_resolve = graph
+                        .tasks()
                         .iter()
-                        .map(SealedParentOutputHandle::output)
-                        .collect::<Vec<_>>(),
-                    parent_ids
-                );
-                assert_eq!(
-                    query.identities().parent_output_hashes(),
-                    parent_ids
-                        .iter()
-                        .map(|parent| parent.hash())
-                        .collect::<Vec<_>>()
-                );
-                let cache = driver
-                    .registry()
-                    .cache_key_for_phase(PipelinePhase::AtpSolve, &query)
-                    .unwrap();
-                assert!(
-                    matches!(&cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
-                );
-                assert_eq!(
-                    cache,
-                    clean_driver
-                        .registry()
-                        .cache_key_for_phase(PipelinePhase::AtpSolve, &query)
-                        .unwrap()
-                );
-                let probe = driver
-                    .registry()
-                    .execute_phase_with_resources(
-                        PipelinePhase::AtpSolve,
-                        query,
-                        PhaseExecutionResources::default(),
-                    )
-                    .unwrap();
-                assert_eq!(probe.result.status, PhaseStatus::Blocking);
-                assert!(probe.result.output_refs.is_empty());
-                assert_eq!(atp_row.cache_observation, Some(probe.observation));
-                let [backend, kernel] = [TaskKind::BackendRun, TaskKind::KernelCheck]
-                    .map(|kind| graph.tasks().iter().find(|task| task.kind == kind).unwrap());
-                assert!(backend.dependencies.contains(&atp.id));
-                assert!(kernel.dependencies.contains(&backend.id));
-                assert!(artifact.dependencies.contains(&atp.id));
-                for task in [backend, kernel] {
+                        .find(|task| {
+                            task.kind == TaskKind::PackageResolve
+                                && task.unit == WorkUnit::Workspace
+                        })
+                        .unwrap();
+                    let mut expected_dependencies =
+                        vec![package_resolve.id.clone(), discharge.id.clone()];
+                    expected_dependencies.sort();
+                    assert_eq!(kernel.dependencies, expected_dependencies);
                     assert_eq!(
                         run.task_states
                             .iter()
-                            .find(|state| state.task_id == task.id)
+                            .find(|state| state.task_id == kernel.id)
                             .unwrap()
                             .state,
-                        TaskState::Blocked
+                        TaskState::Completed
                     );
-                    assert!(!run.phase_results.contains_key(&task.id));
-                    assert!(artifact.dependencies.contains(&task.id));
+                    assert!(artifact.dependencies.contains(&kernel.id));
+                    let [kernel_row] = run.phase_results[&kernel.id].as_slice() else {
+                        panic!("one genuine Kernel row")
+                    };
+                    assert_eq!(kernel_row.status, PhaseStatus::Complete);
+                    assert!(kernel_row.diagnostics.is_empty());
+                    let [kernel_output] = kernel_row.output_refs.as_slice() else {
+                        panic!("one genuine Kernel output")
+                    };
+                    let clean_kernel = &clean_run.phase_results[&kernel.id][0].output_refs[0];
+                    assert_eq!(kernel_output.phase(), &IrPipelinePhase::new("KernelCheck"));
+                    assert_eq!(
+                        kernel_output.output_kind(),
+                        &OutputKind::new("SourceTheoremCandidateCheck")
+                    );
+                    assert_eq!(
+                        kernel_output.schema_version(),
+                        mizar_ir::storage::SchemaVersion::new(1)
+                    );
+                    assert_eq!(kernel_output.snapshot(), snapshot);
+                    assert_eq!(kernel_output.work_unit(), core_output.work_unit());
+                    assert_eq!(
+                        kernel_output.lineage().named_input_hashes,
+                        core_output.lineage().named_input_hashes
+                    );
+                    assert!(matches!(
+                        kernel_output.placement(),
+                        StoragePlacement::Blob { .. }
+                    ));
+                    assert_eq!(
+                        owner.storage().side_tables_by_ref(kernel_output).unwrap(),
+                        clean_owner
+                            .storage()
+                            .side_tables_by_ref(clean_kernel)
+                            .unwrap()
+                    );
+                    let [checked, clean_checked] =
+                        [(&owner, kernel_output), (&clean_owner, clean_kernel)].map(
+                            |(current, output)| {
+                                let handle = current
+                                    .storage()
+                                    .typed_handle::<(
+                                        mizar_kernel::checker::KernelCheckResult,
+                                        mizar_proof::policy::PolicyDecision,
+                                    )>(
+                                        output, output.output_kind()
+                                    )
+                                    .unwrap();
+                                current.storage().get(&handle).unwrap()
+                            },
+                        );
+                    assert_eq!(checked, clean_checked);
+                    let frontend_task = graph
+                        .tasks()
+                        .iter()
+                        .find(|task| task.kind == TaskKind::Frontend && task.unit == units[0])
+                        .unwrap();
+                    let frontend_output = &run.phase_results[&frontend_task.id][0].output_refs[0];
+                    let frontend_handle = owner
+                        .storage()
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            frontend_output,
+                            frontend_output.output_kind(),
+                        )
+                        .unwrap();
+                    let frontend = owner.storage().get(&frontend_handle).unwrap();
+                    let ast = frontend.ast.as_ref().unwrap();
+                    assert_eq!(ast.source_id, version.source_id);
+                    let (arena, env) =
+                        mizar_resolve::symbols::source_theorem_module_original_inputs(
+                            ast,
+                            core.module_id(),
+                        )
+                        .unwrap()
+                        .unwrap();
+                    let variable_scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+                        mizar_resolve::names::SourceVariableScopeInput::new(ast, core.module_id(), &env)
+                    ).unwrap();
+                    let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
+                        &arena,
+                        &env,
+                        &variable_scope,
+                    )
+                    .unwrap();
+                    let (scope, labels, resolved) =
+                        mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+                    let fresh_check = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                        &arena, &metadata.2, &scope, &env, &labels, &resolved, None
+                    ).unwrap();
+                    let fresh = mizar_proof::status::check_source_theorem_candidate(
+                        &arena,
+                        &fresh_check,
+                        &env,
+                        snapshot,
+                        *selected,
+                        (
+                            &generation_schema,
+                            &vc_schema,
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                        ),
+                        (&policy, &verifier),
+                    )
+                    .unwrap();
+                    let expected_pair = mizar_atp::backend::build_source_theorem_candidate_inputs(
+                        &core,
+                        &vc_set,
+                        *selected,
+                        &value,
+                        &policy,
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        (&fresh.0, &fresh.1, &fresh.2, &fresh.3, &fresh.4),
+                        (
+                            &*core,
+                            &*vc_set,
+                            &*value,
+                            &expected_pair.0,
+                            &expected_pair.1
+                        )
+                    );
+                    assert_eq!((&checked.0, &checked.1), (&fresh.5, &fresh.6));
+                    assert_eq!(
+                        checked.0.status(),
+                        mizar_kernel::checker::KernelCheckStatus::Accepted
+                    );
+                    assert_eq!(
+                        checked.0.evidence_check_kind(),
+                        Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
+                    );
+                    assert!(!checked.0.policy_taint());
+                    assert_eq!(
+                        checked.1.class,
+                        mizar_proof::policy::CandidatePolicyClass::KernelVerified
+                    );
+                    assert_eq!(
+                        expected_pair.1.target_binding(),
+                        expected_pair.0.target_binding()
+                    );
+                    let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(
+                        &core, &vc_set, *selected, &value, &policy
+                    ).unwrap();
+                    let target = handoff.canonical_evidence().target_vc();
+                    assert_eq!(
+                        expected_pair.0.target_binding().fingerprint(),
+                        &mizar_atp::problem::AtpFingerprint::new(
+                            target.algorithm_id,
+                            target.digest.clone()
+                        )
+                        .unwrap()
+                    );
+                    assert_eq!(fresh.1.vcs()[0].status, VcStatus::Open);
+                    assert_eq!(fresh.2.vc_set().vcs()[0].status, VcStatus::NeedsAtp);
+                    assert!(fresh.0.proofs().iter().all(|(_, proof)| proof.status
+                        == mizar_core::core_ir::CoreProofStatus::PendingAutomaticProof));
+                    assert!(
+                        fresh
+                            .0
+                            .obligation_seeds()
+                            .iter()
+                            .all(|(_, seed)| seed.status
+                                == mizar_core::core_ir::ObligationSeedStatus::Active)
+                    );
+                    let mut parent_ids =
+                        vec![core_output.output(), vc_output.output(), output.output()];
+                    parent_ids
+                        .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                    assert_eq!(kernel_output.lineage().parents.len(), 4);
+                    let intermediate_ids = kernel_output
+                        .lineage()
+                        .parents
+                        .iter()
+                        .filter(|id| !parent_ids.contains(id))
+                        .copied()
+                        .collect::<Vec<_>>();
+                    let [intermediate_id] = intermediate_ids.as_slice() else {
+                        panic!("one real intermediate ATP lineage id")
+                    };
+                    let intermediate = owner.registry().output_lineage(*intermediate_id).unwrap();
+                    let clean_intermediate = clean_owner
+                        .registry()
+                        .output_lineage(*intermediate_id)
+                        .unwrap();
+                    assert_eq!(intermediate, clean_intermediate);
+                    assert_eq!(intermediate.output, *intermediate_id);
+                    assert_eq!(intermediate.snapshot, snapshot);
+                    assert_eq!(intermediate.phase, IrPipelinePhase::new("AtpSolve"));
+                    assert_eq!(
+                        intermediate.output_kind,
+                        OutputKind::new("SourceTheoremCandidateInputs")
+                    );
+                    assert_eq!(&intermediate.work_unit, core_output.work_unit());
+                    assert_eq!(intermediate.parents, parent_ids);
+                    assert_eq!(
+                        intermediate.named_input_hashes,
+                        core_output.lineage().named_input_hashes
+                    );
+                    let mut output_parent_ids = parent_ids.clone();
+                    output_parent_ids.push(*intermediate_id);
+                    output_parent_ids
+                        .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                    assert_eq!(kernel_output.lineage().parents, output_parent_ids);
+                    let parents = [core_output, vc_output, output]
+                        .into_iter()
+                        .map(|parent| {
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                snapshot,
+                                parent.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect();
+                    let query = PhaseInput::new(
+                        kernel.unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            snapshot,
+                            source_key(version),
+                            vec![],
+                            parents,
+                        )
+                        .unwrap(),
+                    );
+                    assert_eq!(query.work_unit, kernel.unit);
+                    assert_eq!(query.identities().input_hash(), source_key(version));
+                    assert!(query.identities().dependency_hashes().is_empty());
+                    assert_eq!(
+                        query
+                            .parent_outputs()
+                            .iter()
+                            .map(SealedParentOutputHandle::output)
+                            .collect::<Vec<_>>(),
+                        parent_ids
+                    );
+                    assert_eq!(
+                        query.identities().parent_output_hashes(),
+                        parent_ids.iter().map(|id| id.hash()).collect::<Vec<_>>()
+                    );
+                    let cache = driver
+                        .registry()
+                        .cache_key_for_phase(PipelinePhase::KernelCheck, &query)
+                        .unwrap();
+                    assert!(matches!(&cache.intent, PhaseCacheIntent::NoKey { reason }
+                        if reason == "source theorem candidate check has no complete dependency footprint"));
+                    assert_eq!(
+                        cache,
+                        clean_driver
+                            .registry()
+                            .cache_key_for_phase(PipelinePhase::KernelCheck, &query)
+                            .unwrap()
+                    );
+                    let probe = driver
+                        .registry()
+                        .execute_phase_with_resources(
+                            PipelinePhase::KernelCheck,
+                            query,
+                            PhaseExecutionResources::default(),
+                        )
+                        .unwrap();
+                    assert_eq!(probe.result.status, PhaseStatus::Blocking);
+                    assert!(probe.result.output_refs.is_empty());
+                    assert_eq!(kernel_row.cache_observation, Some(probe.observation));
+                    stale_outputs.push(kernel_output.clone());
+                } else {
+                    let atp = graph
+                        .tasks()
+                        .iter()
+                        .find(|task| task.kind == TaskKind::AtpSolve && task.unit == discharge.unit)
+                        .unwrap();
+                    assert_eq!(atp.phases, [PipelinePhase::AtpSolve]);
+                    assert!(atp.dependencies.contains(&discharge.id));
+                    assert_eq!(
+                        run.task_states
+                            .iter()
+                            .find(|state| state.task_id == atp.id)
+                            .unwrap()
+                            .state,
+                        TaskState::Completed
+                    );
+                    let [atp_row] = run.phase_results[&atp.id].as_slice() else {
+                        panic!("one actual ATP row")
+                    };
+                    assert_eq!(atp_row.status, PhaseStatus::Complete);
+                    assert!(atp_row.diagnostics.is_empty());
+                    let [atp_output] = atp_row.output_refs.as_slice() else {
+                        panic!("one genuine ATP output")
+                    };
+                    let clean_atp = &clean_run.phase_results[&atp.id][0].output_refs[0];
+                    assert_eq!(atp_output.phase(), &IrPipelinePhase::new("AtpSolve"));
+                    assert_eq!(
+                        atp_output.output_kind(),
+                        &OutputKind::new("SourceTheoremCandidateInputs")
+                    );
+                    assert_eq!(
+                        atp_output.schema_version(),
+                        mizar_ir::storage::SchemaVersion::new(1)
+                    );
+                    assert_eq!(atp_output.snapshot(), snapshot);
+                    assert_eq!(atp_output.work_unit(), core_output.work_unit());
+                    assert_eq!(
+                        atp_output.lineage().named_input_hashes,
+                        core_output.lineage().named_input_hashes
+                    );
+                    assert!(matches!(
+                        atp_output.placement(),
+                        StoragePlacement::Blob { .. }
+                    ));
+                    assert_eq!(
+                        owner.storage().side_tables_by_ref(atp_output).unwrap(),
+                        clean_owner.storage().side_tables_by_ref(clean_atp).unwrap()
+                    );
+                    let expected_pair = mizar_atp::backend::build_source_theorem_candidate_inputs(
+                        &core,
+                        &vc_set,
+                        *selected,
+                        &value,
+                        &policy,
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )
+                    .unwrap();
+                    let [pair, clean_pair] = [(&owner, atp_output), (&clean_owner, clean_atp)].map(
+                        |(current, output)| {
+                            let handle = current
+                                .storage()
+                                .typed_handle::<(EncodedBackendProblem, BackendCandidateEvidence)>(
+                                    output,
+                                    output.output_kind(),
+                                )
+                                .unwrap();
+                            current.storage().get(&handle).unwrap()
+                        },
+                    );
+                    assert_eq!(pair, clean_pair);
+                    assert_eq!(*pair, expected_pair);
+                    assert_eq!(pair.0.logic_profile_name(), "step6c99-explicit-atp");
+                    assert_eq!(pair.0.concrete_format(), ConcreteFormat::Tptp);
+                    assert_eq!(pair.1.target_binding(), pair.0.target_binding());
+                    let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(&core, &vc_set, *selected, &value, &policy).unwrap();
+                    let target = handoff.canonical_evidence().target_vc();
+                    assert_eq!(
+                        pair.0.target_binding().fingerprint(),
+                        &mizar_atp::problem::AtpFingerprint::new(
+                            target.algorithm_id,
+                            target.digest.clone()
+                        )
+                        .unwrap()
+                    );
+                    let mut parent_ids =
+                        vec![core_output.output(), vc_output.output(), output.output()];
+                    parent_ids
+                        .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                    assert_eq!(atp_output.lineage().parents, parent_ids);
+                    let parents = [core_output, vc_output, output]
+                        .into_iter()
+                        .map(|parent| {
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                snapshot,
+                                parent.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect();
+                    let query = PhaseInput::new(
+                        atp.unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            snapshot,
+                            source_key(version),
+                            vec![],
+                            parents,
+                        )
+                        .unwrap(),
+                    );
+                    assert_eq!(
+                        query
+                            .parent_outputs()
+                            .iter()
+                            .map(SealedParentOutputHandle::output)
+                            .collect::<Vec<_>>(),
+                        parent_ids
+                    );
+                    assert_eq!(
+                        query.identities().parent_output_hashes(),
+                        parent_ids
+                            .iter()
+                            .map(|parent| parent.hash())
+                            .collect::<Vec<_>>()
+                    );
+                    let cache = driver
+                        .registry()
+                        .cache_key_for_phase(PipelinePhase::AtpSolve, &query)
+                        .unwrap();
+                    assert!(
+                        matches!(&cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
+                    );
+                    assert_eq!(
+                        cache,
+                        clean_driver
+                            .registry()
+                            .cache_key_for_phase(PipelinePhase::AtpSolve, &query)
+                            .unwrap()
+                    );
+                    let probe = driver
+                        .registry()
+                        .execute_phase_with_resources(
+                            PipelinePhase::AtpSolve,
+                            query,
+                            PhaseExecutionResources::default(),
+                        )
+                        .unwrap();
+                    assert_eq!(probe.result.status, PhaseStatus::Blocking);
+                    assert!(probe.result.output_refs.is_empty());
+                    assert_eq!(atp_row.cache_observation, Some(probe.observation));
+                    let [backend, kernel] = [TaskKind::BackendRun, TaskKind::KernelCheck]
+                        .map(|kind| graph.tasks().iter().find(|task| task.kind == kind).unwrap());
+                    assert!(backend.dependencies.contains(&atp.id));
+                    assert!(kernel.dependencies.contains(&backend.id));
+                    assert!(artifact.dependencies.contains(&atp.id));
+                    for task in [backend, kernel] {
+                        assert_eq!(
+                            run.task_states
+                                .iter()
+                                .find(|state| state.task_id == task.id)
+                                .unwrap()
+                                .state,
+                            TaskState::Blocked
+                        );
+                        assert!(!run.phase_results.contains_key(&task.id));
+                        assert!(artifact.dependencies.contains(&task.id));
+                    }
+                    stale_outputs.push(atp_output.clone());
                 }
-                stale_outputs.push(atp_output.clone());
             } else {
                 let vc = graph
                     .tasks()
@@ -54427,4 +54764,1284 @@ fn native_theorem_candidate_check_publication_preserves_refusals() {
             },
         );
     }
+}
+#[test]
+fn scheduled_theorem_candidate_check_matches_genuine_publication() {
+    use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_core::core_ir::{CoreIr, CoreProofStatus, ObligationSeedStatus};
+    use mizar_ir::storage::{CollectInput, IrSideTables, SchemaVersion, SideTableRecord};
+    use mizar_kernel::checker::{KernelCheckResult, KernelCheckStatus, KernelEvidenceCheckKind};
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, PolicyDecision, VerifierPolicy},
+        status::check_source_theorem_candidate as fresh,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{
+            source_proof_inputs, source_theorem_module_candidates,
+            source_theorem_module_original_inputs,
+        },
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeOutput, DischargePolicy},
+        vc_ir::{
+            GenerationSchemaVersion, PolicyKey, SeedOriginRef, VcSchemaVersion, VcSet, VcStatus,
+        },
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for (open, threshold, fragment, format) in [
+        (false, usize::MAX, LogicFragment::Fof, ConcreteFormat::Tptp),
+        (
+            true,
+            0,
+            LogicFragment::SmtLibUninterpreted,
+            ConcreteFormat::SmtLib,
+        ),
+    ] {
+        with_native_summary_parent(
+            text,
+            open,
+            threshold,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let generation = GenerationSchemaVersion::new("λ\n\0");
+                let schema = VcSchemaVersion::new("");
+                let profile = LogicProfile::try_new(
+                    "caller λ\n\0",
+                    fragment,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let WorkUnit::Module { module } = &old.work_unit else {
+                    panic!()
+                };
+                let mut representations = Vec::new();
+                for variant in 0..3 {
+                    let policy = DischargePolicy {
+                        computation_limit: ComputationLimit {
+                            policy: PolicyKey::new(if variant == 1 {
+                                "changed計算\0"
+                            } else {
+                                "計算\0"
+                            }),
+                            max_steps: u32::MAX,
+                        },
+                    };
+                    let verifier = if variant == 2 {
+                        VerifierPolicy::release().with_profile_id("current核\0")
+                    } else {
+                        VerifierPolicy::release()
+                    };
+                    let baseline = publisher(old.snapshot, threshold, &old.work_unit);
+                    let owner = publisher(old.snapshot, threshold, &old.work_unit);
+                    let mut submissions = Vec::new();
+                    for current in [&baseline, &owner] {
+                        allow_frontend(current, &old.work_unit);
+                        for (phase, kind) in [
+                            ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                            ("SignatureCollection", "SourceTheoremModuleSummary"),
+                            ("TypeChecking", "SourceTheoremTypedAst"),
+                            ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                            ("OverloadResolution", "SourceTheoremMetadata"),
+                            ("Elaboration", "SourceTheoremCore"),
+                            ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                            ("VcGenerate", "SourceTheoremVC"),
+                            ("VcDischarge", "SourceTheoremDischarge"),
+                            ("AtpSolve", "SourceTheoremCandidateInputs"),
+                            ("KernelCheck", "SourceTheoremCandidateCheck"),
+                        ] {
+                            current.allow_work_unit(AllowedWorkUnit::new(
+                                IrPipelinePhase::new(phase),
+                                OutputKind::new(kind),
+                                IrWorkUnit::new("\"alpha\":\"main\""),
+                            ));
+                        }
+                        let mut builder = PhaseRegistryBuilder::new();
+                        builder
+                            .register_source_load()
+                            .register_frontend(vec![])
+                            .register_source_theorem_module_resolver()
+                            .register_source_theorem_signature_collection()
+                            .register_source_theorem_type_checking()
+                            .register_source_theorem_registration_resolution()
+                            .register_source_theorem_overload_resolution()
+                            .register_source_theorem_elaboration()
+                            .register_source_theorem_algorithm_preparation()
+                            .register_source_theorem_vc_generation(
+                                generation.clone(),
+                                schema.clone(),
+                            )
+                            .register_source_theorem_vc_discharge(policy.clone());
+                        let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                        submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                            VcTaskDescriptorId::new("opaque-prerequisite:090"),
+                            module.clone(),
+                            VcOrderKey::new("order"),
+                            vec![],
+                            vec![],
+                        )];
+                        submissions.push(
+                            CompilerDriver::new(builder.build().unwrap())
+                                .with_output_publisher(current.clone())
+                                .submit_captured(session.clone(), ids, snapshots, submit)
+                                .unwrap(),
+                        );
+                    }
+                    let baseline_submission = submissions.remove(0);
+                    let actual_submission = submissions.remove(0);
+                    let (inputs, original) = native_disk_lookup_context(&baseline_submission, ids);
+                    let (actual_inputs, actual_original) =
+                        native_disk_lookup_context(&actual_submission, ids);
+                    let baseline_refs = baseline_submission
+                        .scheduler_run
+                        .as_ref()
+                        .unwrap()
+                        .phase_results
+                        .values()
+                        .flatten()
+                        .flat_map(|row| row.output_refs.iter().cloned())
+                        .collect::<Vec<_>>();
+                    let actual_refs = actual_submission
+                        .scheduler_run
+                        .as_ref()
+                        .unwrap()
+                        .phase_results
+                        .values()
+                        .flatten()
+                        .flat_map(|row| row.output_refs.iter().cloned())
+                        .collect::<Vec<_>>();
+                    assert_eq!((baseline_refs.len(), actual_refs.len()), (11, 11));
+                    let parent = |kind: &str| {
+                        baseline_refs
+                            .iter()
+                            .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                            .unwrap()
+                    };
+                    let core_ref = parent("SourceTheoremCore");
+                    let vc_ref = parent("SourceTheoremVC");
+                    let discharge_ref = parent("SourceTheoremDischarge");
+                    let frontend_ref = parent("FrontendOutput");
+                    let core_handle = baseline
+                        .storage()
+                        .typed_handle::<CoreIr>(core_ref, core_ref.output_kind())
+                        .unwrap();
+                    let vc_handle = baseline
+                        .storage()
+                        .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                        .unwrap();
+                    let discharge_handle = baseline
+                        .storage()
+                        .typed_handle::<DischargeOutput>(discharge_ref, discharge_ref.output_kind())
+                        .unwrap();
+                    let core = baseline.storage().get(&core_handle).unwrap();
+                    let vcs = baseline.storage().get(&vc_handle).unwrap();
+                    let discharge = baseline.storage().get(&discharge_handle).unwrap();
+                    let frontend = baseline.storage().get(&baseline.storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(frontend_ref, frontend_ref.output_kind()).unwrap()).unwrap();
+                    let ast = frontend.ast.as_ref().unwrap();
+                    let [vc] = vcs.vcs() else { panic!() };
+                    let selected = vc.id;
+                    let expected_pair = build(
+                        &core,
+                        &vcs,
+                        selected,
+                        &discharge,
+                        &policy,
+                        profile.clone(),
+                        format,
+                    )
+                    .unwrap();
+                    let (arena, env) = source_theorem_module_original_inputs(ast, core.module_id())
+                        .unwrap()
+                        .unwrap();
+                    assert!(
+                        source_theorem_module_candidates(ast, &arena, &env)
+                            .unwrap()
+                            .is_some()
+                    );
+                    let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                        SourceVariableScopeInput::new(ast, core.module_id(), &env),
+                    )
+                    .unwrap();
+                    let metadata = check_source_theorem_metadata(&arena, &env, &scope).unwrap();
+                    let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+                    let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                        &arena,
+                        &metadata.2,
+                        &scope,
+                        &env,
+                        &labels,
+                        &resolved,
+                        None,
+                    )
+                    .unwrap();
+                    let expected = fresh(
+                        &arena,
+                        &check,
+                        &env,
+                        old.snapshot,
+                        selected,
+                        (&generation, &schema, profile.clone(), format),
+                        (&policy, &verifier),
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        (
+                            &expected.0,
+                            &expected.1,
+                            &expected.2,
+                            &expected.3,
+                            &expected.4
+                        ),
+                        (
+                            &*core,
+                            &*vcs,
+                            &*discharge,
+                            &expected_pair.0,
+                            &expected_pair.1
+                        )
+                    );
+                    assert_eq!(expected.5.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(
+                        expected.5.evidence_check_kind(),
+                        Some(KernelEvidenceCheckKind::ProofObligation)
+                    );
+                    assert!(!expected.5.policy_taint());
+                    assert_eq!(expected.6.class, CandidatePolicyClass::KernelVerified);
+                    assert_eq!(ast.source_id, core.source_id());
+                    assert_eq!(vcs.source(), ast.source_id);
+                    assert_eq!(vcs.snapshot(), old.snapshot);
+                    assert_eq!(vcs.schema_version(), &schema);
+                    assert_eq!(vc.anchor.generation_schema_version, generation);
+                    assert!(!core.proofs().is_empty() && !vcs.seed_accounting().is_empty());
+                    assert!(
+                        core.proofs().iter().all(
+                            |(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof
+                        )
+                    );
+                    for seed in vcs.seed_accounting() {
+                        let SeedOriginRef::ExistingCore { seed: id } = seed.origin else {
+                            panic!()
+                        };
+                        assert_eq!(seed.seed_status, ObligationSeedStatus::Active);
+                        assert_eq!(
+                            core.obligation_seeds().get(id).unwrap().status,
+                            ObligationSeedStatus::Active
+                        );
+                    }
+                    assert!(vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+                    assert!(
+                        discharge
+                            .vc_set()
+                            .vcs()
+                            .iter()
+                            .all(|vc| vc.status == VcStatus::NeedsAtp)
+                    );
+                    assert_eq!(
+                        expected_pair.1.target_binding(),
+                        expected_pair.0.target_binding()
+                    );
+                    assert_eq!(expected_pair.0.concrete_format(), format);
+                    assert_eq!(
+                        expected_pair.0.logic_profile_name(),
+                        profile.name().as_str()
+                    );
+                    let baseline_input = PhaseInput::new(
+                        original.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            original.identities().input_hash(),
+                            original.identities().dependency_hashes().to_vec(),
+                            [core_ref, vc_ref, discharge_ref]
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        &baseline,
+                                        old.snapshot,
+                                        parent.clone(),
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        )
+                        .unwrap(),
+                    );
+                    let atp = inputs
+                        .publish_native_theorem_candidate(
+                            &baseline_input,
+                            &baseline,
+                            selected,
+                            &policy,
+                            profile.clone(),
+                            format,
+                        )
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(*baseline.storage().get(&atp).unwrap(), expected_pair);
+                    let mut four_parents = baseline_input.parent_outputs().to_vec();
+                    four_parents.push(
+                        SealedParentOutputHandle::from_published_output(
+                            &baseline,
+                            old.snapshot,
+                            atp.erase(),
+                        )
+                        .unwrap(),
+                    );
+                    let four_input = PhaseInput::new(
+                        original.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            original.identities().input_hash(),
+                            original.identities().dependency_hashes().to_vec(),
+                            four_parents,
+                        )
+                        .unwrap(),
+                    );
+                    let published = inputs
+                        .publish_native_theorem_candidate_check(
+                            &four_input,
+                            &baseline,
+                            selected,
+                            (profile.clone(), format),
+                            (&policy, &verifier),
+                        )
+                        .unwrap()
+                        .unwrap();
+                    let expected_checked = (expected.5, expected.6);
+                    assert_eq!(
+                        *baseline.storage().get(&published).unwrap(),
+                        expected_checked
+                    );
+                    let actual_parents = [
+                        "SourceTheoremDischarge",
+                        "SourceTheoremCore",
+                        "SourceTheoremVC",
+                    ]
+                    .map(|kind| {
+                        actual_refs
+                            .iter()
+                            .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                            .unwrap()
+                    });
+                    let query = PhaseInput::new(
+                        WorkUnit::EvidenceCandidate {
+                            module: module.clone(),
+                            descriptor: VcTaskDescriptorId::new("opaque-check:090"),
+                            evidence_candidate: EvidenceCandidateId::new("no numeric VC id here"),
+                        },
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            actual_original.identities().input_hash(),
+                            actual_original.identities().dependency_hashes().to_vec(),
+                            actual_parents
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        &owner,
+                                        old.snapshot,
+                                        parent.clone(),
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        )
+                        .unwrap(),
+                    );
+                    let mut builder = PhaseRegistryBuilder::new();
+                    builder
+                        .register_source_theorem_candidate_check(
+                            policy.clone(),
+                            profile.clone(),
+                            format,
+                            verifier.clone(),
+                        )
+                        .unwrap();
+                    let registry = builder.build().unwrap();
+                    let descriptor = registry
+                        .descriptor_for_phase(PipelinePhase::KernelCheck)
+                        .unwrap();
+                    let key = policy.computation_limit.policy.as_str();
+                    let candidate_schema = format!(
+                        "mizar-atp/source-theorem-candidate-publication/v1;computation_policy={}:{key};max_steps={};profile={}:caller λ\n\0;fragment={};equality=1;quantifiers=1;soft_types=3;native_properties=1;formats=3;format={}",
+                        key.len(),
+                        u32::MAX,
+                        "caller λ\n\0".len(),
+                        if open { 2 } else { 0 },
+                        u8::from(open)
+                    );
+                    let fingerprint = verifier.policy_fingerprint();
+                    let hex = fingerprint
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    assert_eq!(descriptor.service_name, "SourceTheoremCandidateCheck");
+                    assert_eq!(
+                        descriptor.owner,
+                        mizar_driver::registry::PhaseOwner::MizarKernelProof
+                    );
+                    assert_eq!(descriptor.phases, [PipelinePhase::KernelCheck]);
+                    assert_eq!(descriptor.output_kind, "SourceTheoremCandidateCheck");
+                    assert_eq!(
+                        descriptor.schema_version,
+                        format!(
+                            "mizar-proof/source-theorem-candidate-check-publication/v1;candidate={}:{};verifier_policy={hex}",
+                            candidate_schema.len(),
+                            candidate_schema
+                        )
+                    );
+                    let cache = registry
+                        .cache_key_for_phase(PipelinePhase::KernelCheck, &query)
+                        .unwrap();
+                    assert_eq!(cache.intent, PhaseCacheIntent::NoKey { reason: "source theorem candidate check has no complete dependency footprint".to_owned() });
+                    let mut hashes = actual_parents.map(|parent| parent.output().hash());
+                    hashes.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
+                    assert_eq!(query.identities().parent_output_hashes(), hashes);
+                    assert_eq!(
+                        query.identities().input_hash(),
+                        source_key(&actual_inputs.snapshot.source_versions[0])
+                    );
+                    assert_eq!(
+                        query.identities().dependency_hashes(),
+                        actual_original.identities().dependency_hashes()
+                    );
+                    let probe = registry
+                        .execute_phase_with_resources(
+                            PipelinePhase::KernelCheck,
+                            query.clone(),
+                            PhaseExecutionResources::default(),
+                        )
+                        .unwrap();
+                    assert_eq!(probe.result.status, PhaseStatus::Blocking);
+                    assert!(
+                        probe.result.output_refs.is_empty() && probe.result.diagnostics.is_empty()
+                    );
+                    let before = (
+                        query.clone(),
+                        (*core).clone(),
+                        (*vcs).clone(),
+                        (*discharge).clone(),
+                        expected_pair.clone(),
+                        policy.clone(),
+                        profile.clone(),
+                        verifier.clone(),
+                        session.captured().clone(),
+                    );
+                    fixture.write(&[0xff]);
+                    if fixture.root.join("alpha/src/main.miz").exists() {
+                        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                    }
+                    let result = registry
+                        .execute_phase_with_resources(
+                            PipelinePhase::KernelCheck,
+                            query.clone(),
+                            PhaseExecutionResources {
+                                output_publisher: Some(owner.clone()),
+                                source_load: Some(actual_inputs),
+                                ..PhaseExecutionResources::default()
+                            },
+                        )
+                        .unwrap();
+                    assert_eq!(result.result.status, PhaseStatus::Complete);
+                    assert!(result.result.diagnostics.is_empty());
+                    assert_eq!(result.observation, probe.observation);
+                    assert_eq!(result.result.cache_observation, Some(result.observation));
+                    let [actual] = result.result.output_refs.as_slice() else {
+                        panic!()
+                    };
+                    let handle = owner
+                        .storage()
+                        .typed_handle::<(KernelCheckResult, PolicyDecision)>(
+                            actual,
+                            actual.output_kind(),
+                        )
+                        .unwrap();
+                    assert_eq!(*owner.storage().get(&handle).unwrap(), expected_checked);
+                    assert_eq!(actual.phase(), &IrPipelinePhase::new("KernelCheck"));
+                    assert_eq!(
+                        actual.output_kind(),
+                        &OutputKind::new("SourceTheoremCandidateCheck")
+                    );
+                    assert_eq!(actual.schema_version(), SchemaVersion::new(1));
+                    assert_eq!(actual.snapshot(), old.snapshot);
+                    assert_eq!(actual.work_unit(), &IrWorkUnit::new("\"alpha\":\"main\""));
+                    assert_eq!(actual.lineage(), published.lineage());
+                    assert_eq!(actual.lineage().parents.len(), 4);
+                    assert_eq!(query.parent_outputs().len(), 3);
+                    for parent in actual_parents {
+                        assert!(actual.lineage().parents.contains(&parent.output()));
+                    }
+                    let hidden = actual
+                        .lineage()
+                        .parents
+                        .iter()
+                        .find(|id| !actual_parents.iter().any(|parent| parent.output() == **id))
+                        .unwrap();
+                    assert_eq!(
+                        owner.registry().output_lineage(*hidden).unwrap(),
+                        atp.lineage().clone()
+                    );
+                    assert_eq!(
+                        actual.lineage().named_input_hashes,
+                        core_ref.lineage().named_input_hashes
+                    );
+                    assert_eq!(actual.content_hash(), published.content_hash());
+                    assert_eq!(actual.side_table_hash(), published.side_table_hash());
+                    let tables = owner.storage().side_tables(&handle).unwrap();
+                    assert_eq!(
+                        *tables,
+                        *baseline.storage().side_tables(&published).unwrap()
+                    );
+                    let [record] = tables.source_maps.as_slice() else {
+                        panic!()
+                    };
+                    assert_eq!(
+                        *tables,
+                        IrSideTables {
+                            source_maps: vec![SideTableRecord::new(
+                                "candidate-check-theorem-storage",
+                                actual_inputs.snapshot.source_versions[0]
+                                    .normalized_path
+                                    .as_str(),
+                                record.digest,
+                            )],
+                            ..IrSideTables::default()
+                        }
+                    );
+                    assert_eq!(actual.placement(), published.placement());
+                    assert_eq!(
+                        matches!(actual.placement(), StoragePlacement::Blob { .. }),
+                        open
+                    );
+                    owner
+                        .validate_published_output(old.snapshot, actual)
+                        .unwrap();
+                    assert_eq!(
+                        owner.validate_current_output(old.snapshot, actual).is_ok(),
+                        !open
+                    );
+                    assert_eq!(
+                        (
+                            query.clone(),
+                            (*baseline.storage().get(&core_handle).unwrap()).clone(),
+                            (*baseline.storage().get(&vc_handle).unwrap()).clone(),
+                            (*baseline.storage().get(&discharge_handle).unwrap()).clone(),
+                            (*baseline.storage().get(&atp).unwrap()).clone(),
+                            policy.clone(),
+                            profile.clone(),
+                            verifier.clone(),
+                            session.captured().clone()
+                        ),
+                        before
+                    );
+                    let protected = owner.storage().collect(CollectInput {
+                        snapshot: old.snapshot,
+                        protected_outputs: actual_refs
+                            .iter()
+                            .map(|parent| parent.output())
+                            .chain([*hidden, actual.output()])
+                            .collect(),
+                    });
+                    assert_eq!(
+                        (
+                            protected.outputs_dropped,
+                            protected.protected_outputs,
+                            protected.abandoned_slots_dropped
+                        ),
+                        (0, 13, 0)
+                    );
+                    let repeated = registry
+                        .execute_phase_with_resources(
+                            PipelinePhase::KernelCheck,
+                            query,
+                            PhaseExecutionResources {
+                                output_publisher: Some(owner.clone()),
+                                source_load: Some(actual_inputs),
+                                ..PhaseExecutionResources::default()
+                            },
+                        )
+                        .unwrap();
+                    assert_eq!(repeated.result.status, PhaseStatus::Blocking);
+                    assert!(
+                        repeated.result.output_refs.is_empty()
+                            && repeated.result.diagnostics.is_empty()
+                    );
+                    assert_eq!(*owner.storage().get(&handle).unwrap(), expected_checked);
+                    representations.push((
+                        expected_pair,
+                        expected_checked,
+                        actual.content_hash(),
+                        descriptor.schema_version.clone(),
+                        cache.observation,
+                    ));
+                    for (current, abandoned) in [(&baseline, 0), (&owner, 1)] {
+                        let collected = current.storage().collect(CollectInput {
+                            snapshot: old.snapshot,
+                            protected_outputs: vec![],
+                        });
+                        assert_eq!(
+                            (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                            (13, abandoned)
+                        );
+                    }
+                }
+                for changed in &representations[1..] {
+                    assert_eq!(changed.0, representations[0].0);
+                    assert_eq!(changed.1, representations[0].1);
+                    assert_ne!(changed.2, representations[0].2);
+                    assert_ne!(changed.3, representations[0].3);
+                    assert_ne!(changed.4, representations[0].4);
+                }
+            },
+        );
+    }
+}
+
+#[test]
+fn scheduled_theorem_candidate_check_preserves_resource_refusals() {
+    use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_core::core_ir::CoreIr;
+    use mizar_ir::{publisher::PublishError, storage::CollectInput};
+    use mizar_proof::{policy::VerifierPolicy, status::check_source_theorem_candidate as fresh};
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{
+            source_proof_inputs, source_theorem_module_candidates,
+            source_theorem_module_original_inputs,
+        },
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeOutput, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    with_native_summary_parent(
+        text,
+        false,
+        0,
+        |fixture, _, old, _, _, (session, ids, snapshots)| {
+            let generation = GenerationSchemaVersion::new("λ\n\0");
+            let schema = VcSchemaVersion::new("");
+            let policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new("計算\0"),
+                    max_steps: 0,
+                },
+            };
+            let profile = LogicProfile::try_new(
+                "caller λ\n\0",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            let verifier = VerifierPolicy::release();
+            let disabled = verifier.clone().with_kernel_evidence_formats([]);
+            let WorkUnit::Module { module } = &old.work_unit else {
+                panic!()
+            };
+            let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+            let mut baseline_pair = None;
+            for case in [
+                "baseline",
+                "calibrate-atp-denied",
+                "cancel",
+                "foreign-token",
+                "no-publisher",
+                "no-inputs",
+                "source-snapshot",
+                "foreign-publisher",
+                "obsolete",
+                "collected",
+                "module",
+                "vc-unit",
+                "wrong-module",
+                "missing",
+                "surplus",
+                "atp-denied",
+                "kernel-denied",
+                "disabled-policy",
+                "unsupported-profile",
+            ] {
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                allow_frontend(&owner, &old.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        unit.clone(),
+                    ));
+                }
+                if !matches!(case, "atp-denied" | "calibrate-atp-denied") {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("AtpSolve"),
+                        OutputKind::new("SourceTheoremCandidateInputs"),
+                        unit.clone(),
+                    ));
+                }
+                if !matches!(case, "baseline" | "kernel-denied") {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("KernelCheck"),
+                        OutputKind::new("SourceTheoremCandidateCheck"),
+                        unit.clone(),
+                    ));
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(generation.clone(), schema.clone())
+                    .register_source_theorem_vc_discharge(policy.clone());
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                    VcTaskDescriptorId::new("opaque-prerequisite"),
+                    module.clone(),
+                    VcOrderKey::new("order"),
+                    vec![],
+                    vec![],
+                )];
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .unwrap();
+                let (inputs, original) = native_disk_lookup_context(&submission, ids);
+                let refs = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter().cloned())
+                    .collect::<Vec<_>>();
+                assert_eq!(refs.len(), 11);
+                let parent = |kind: &str| {
+                    refs.iter()
+                        .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                };
+                let core_ref = parent("SourceTheoremCore");
+                let vc_ref = parent("SourceTheoremVC");
+                let discharge_ref = parent("SourceTheoremDischarge");
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let [vc] = vcs.vcs() else { panic!() };
+                let selected = vc.id;
+                let module_input = PhaseInput::new(
+                    original.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        original.identities().input_hash(),
+                        original.identities().dependency_hashes().to_vec(),
+                        [core_ref, vc_ref, discharge_ref]
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    &owner,
+                                    old.snapshot,
+                                    parent.clone(),
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                );
+                if case == "baseline" {
+                    let core = owner
+                        .storage()
+                        .get(
+                            &owner
+                                .storage()
+                                .typed_handle::<CoreIr>(core_ref, core_ref.output_kind())
+                                .unwrap(),
+                        )
+                        .unwrap();
+                    let discharge = owner
+                        .storage()
+                        .get(
+                            &owner
+                                .storage()
+                                .typed_handle::<DischargeOutput>(
+                                    discharge_ref,
+                                    discharge_ref.output_kind(),
+                                )
+                                .unwrap(),
+                        )
+                        .unwrap();
+                    let expected_pair = build(
+                        &core,
+                        &vcs,
+                        selected,
+                        &discharge,
+                        &policy,
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )
+                    .unwrap();
+                    let frontend_ref = parent("FrontendOutput");
+                    let frontend = owner.storage().get(&owner.storage().typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    frontend_ref, frontend_ref.output_kind()).unwrap()).unwrap();
+                    let ast = frontend.ast.as_ref().unwrap();
+                    let (arena, env) = source_theorem_module_original_inputs(ast, core.module_id())
+                        .unwrap()
+                        .unwrap();
+                    assert!(
+                        source_theorem_module_candidates(ast, &arena, &env)
+                            .unwrap()
+                            .is_some()
+                    );
+                    let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                        SourceVariableScopeInput::new(ast, core.module_id(), &env),
+                    )
+                    .unwrap();
+                    let metadata = check_source_theorem_metadata(&arena, &env, &scope).unwrap();
+                    let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+                    let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                        &arena,
+                        &metadata.2,
+                        &scope,
+                        &env,
+                        &labels,
+                        &resolved,
+                        None,
+                    )
+                    .unwrap();
+                    let expected = fresh(
+                        &arena,
+                        &check,
+                        &env,
+                        old.snapshot,
+                        selected,
+                        (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        (
+                            &expected.0,
+                            &expected.1,
+                            &expected.2,
+                            &expected.3,
+                            &expected.4
+                        ),
+                        (
+                            &*core,
+                            &*vcs,
+                            &*discharge,
+                            &expected_pair.0,
+                            &expected_pair.1
+                        )
+                    );
+                    assert_eq!(
+                        inputs
+                            .native_theorem_candidate_with_core_vc_discharge_parents(
+                                &module_input,
+                                &owner,
+                                selected,
+                                &policy,
+                                profile.clone(),
+                                ConcreteFormat::Tptp
+                            )
+                            .unwrap(),
+                        Some(expected_pair.clone())
+                    );
+                    let atp = inputs
+                        .publish_native_theorem_candidate(
+                            &module_input,
+                            &owner,
+                            selected,
+                            &policy,
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                        )
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(*owner.storage().get(&atp).unwrap(), expected_pair);
+                    let mut four_parents = module_input.parent_outputs().to_vec();
+                    four_parents.push(
+                        SealedParentOutputHandle::from_published_output(
+                            &owner,
+                            old.snapshot,
+                            atp.erase(),
+                        )
+                        .unwrap(),
+                    );
+                    let four = PhaseInput::new(
+                        original.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            original.identities().input_hash(),
+                            original.identities().dependency_hashes().to_vec(),
+                            four_parents,
+                        )
+                        .unwrap(),
+                    );
+                    let checked = inputs
+                        .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                            &four,
+                            &owner,
+                            selected,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &verifier),
+                        )
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(checked, (expected.5, expected.6));
+                    assert!(
+                        mizar_driver::native_theorem_candidate_check_storage_bytes(
+                            ast,
+                            core.module_id(),
+                            &core,
+                            (old.snapshot, &generation, &schema, selected),
+                            (&policy, &profile, ConcreteFormat::Tptp),
+                            &verifier,
+                            (&expected_pair, &checked)
+                        )
+                        .unwrap()
+                        .is_some()
+                    );
+                    assert_eq!(
+                        inputs
+                            .publish_native_theorem_candidate_check(
+                                &four,
+                                &owner,
+                                selected,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier)
+                            )
+                            .unwrap_err(),
+                        PublishError::WorkUnitNotAllowed {
+                            phase: IrPipelinePhase::new("KernelCheck"),
+                            work_unit: unit.clone(),
+                            output_kind: OutputKind::new("SourceTheoremCandidateCheck")
+                        }
+                        .to_string()
+                    );
+                    let old_error = fresh(
+                        &arena,
+                        &check,
+                        &env,
+                        old.snapshot,
+                        selected,
+                        (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &disabled),
+                    )
+                    .unwrap_err();
+                    assert_eq!(
+                        inputs
+                            .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                                &four,
+                                &owner,
+                                selected,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &disabled)
+                            )
+                            .unwrap_err(),
+                        old_error
+                    );
+                    baseline_pair = Some(expected_pair);
+                    let collected = owner.storage().collect(CollectInput {
+                        snapshot: old.snapshot,
+                        protected_outputs: vec![],
+                    });
+                    assert_eq!(
+                        (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                        (12, 1)
+                    );
+                    continue;
+                }
+                let current_profile = if case == "unsupported-profile" {
+                    LogicProfile::try_new(
+                        "unsupported",
+                        LogicFragment::TffLike,
+                        EqualitySupport::Supported,
+                        QuantifierPolicy::FirstOrder,
+                        SoftTypeStrategy::ScopedGuardPredicates,
+                        NativePropertySupport::Supported,
+                        [ConcreteFormat::Tptp].into_iter().collect(),
+                    )
+                    .unwrap()
+                } else {
+                    profile.clone()
+                };
+                let raw = inputs.native_theorem_candidate_with_core_vc_discharge_parents(
+                    &module_input,
+                    &owner,
+                    selected,
+                    &policy,
+                    current_profile.clone(),
+                    ConcreteFormat::Tptp,
+                );
+                if case == "unsupported-profile" {
+                    assert!(raw.is_err());
+                } else {
+                    assert_eq!(raw.unwrap(), baseline_pair.clone());
+                }
+                if case == "calibrate-atp-denied" {
+                    assert_eq!(
+                        inputs
+                            .publish_native_theorem_candidate(
+                                &module_input,
+                                &owner,
+                                selected,
+                                &policy,
+                                profile.clone(),
+                                ConcreteFormat::Tptp
+                            )
+                            .unwrap_err(),
+                        PublishError::WorkUnitNotAllowed {
+                            phase: IrPipelinePhase::new("AtpSolve"),
+                            work_unit: unit.clone(),
+                            output_kind: OutputKind::new("SourceTheoremCandidateInputs")
+                        }
+                        .to_string()
+                    );
+                    let collected = owner.storage().collect(CollectInput {
+                        snapshot: old.snapshot,
+                        protected_outputs: vec![],
+                    });
+                    assert_eq!(
+                        (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                        (11, 1)
+                    );
+                    continue;
+                }
+                let work_unit = match case {
+                    "module" => original.work_unit.clone(),
+                    "vc-unit" => WorkUnit::Vc {
+                        module: module.clone(),
+                        descriptor: VcTaskDescriptorId::new("opaque"),
+                    },
+                    _ => WorkUnit::EvidenceCandidate {
+                        module: mizar_build::module_index::ModuleId::new(
+                            PackageId::new("alpha"),
+                            ModulePath::new(if case == "wrong-module" {
+                                "other"
+                            } else {
+                                "main"
+                            }),
+                        ),
+                        descriptor: VcTaskDescriptorId::new("opaque-check:09"),
+                        evidence_candidate: EvidenceCandidateId::new("not-an-index"),
+                    },
+                };
+                let mut parents = module_input.parent_outputs().to_vec();
+                if case == "missing" {
+                    parents.retain(|parent| {
+                        parent.as_output_ref().output_kind()
+                            != &OutputKind::new("SourceTheoremDischarge")
+                    });
+                }
+                if case == "surplus" {
+                    parents.push(
+                        SealedParentOutputHandle::from_published_output(
+                            &owner,
+                            old.snapshot,
+                            parent("FrontendOutput").clone(),
+                        )
+                        .unwrap(),
+                    );
+                }
+                let query = PhaseInput::new(
+                    work_unit,
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        original.identities().input_hash(),
+                        original.identities().dependency_hashes().to_vec(),
+                        parents,
+                    )
+                    .unwrap(),
+                );
+                let foreign = (case == "source-snapshot")
+                    .then(|| native_disk_frontend_record_submission(fixture, ids, snapshots, 0));
+                let foreign_inputs = foreign
+                    .as_ref()
+                    .map(|(_, submission, _, _, _)| native_disk_lookup_context(submission, ids).0);
+                let alien = publisher(old.snapshot, 0, &old.work_unit);
+                if case == "obsolete" {
+                    owner.mark_obsolete(old.snapshot).unwrap();
+                }
+                if case == "collected" {
+                    assert_eq!(
+                        owner
+                            .storage()
+                            .collect(CollectInput {
+                                snapshot: old.snapshot,
+                                protected_outputs: vec![]
+                            })
+                            .outputs_dropped,
+                        11
+                    );
+                }
+                let current_verifier = if case == "disabled-policy" {
+                    disabled.clone()
+                } else {
+                    verifier.clone()
+                };
+                let before = (
+                    query.clone(),
+                    policy.clone(),
+                    current_profile.clone(),
+                    current_verifier.clone(),
+                    session.captured().clone(),
+                );
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_theorem_candidate_check(
+                        policy.clone(),
+                        current_profile.clone(),
+                        ConcreteFormat::Tptp,
+                        current_verifier.clone(),
+                    )
+                    .unwrap();
+                let registry = builder.build().unwrap();
+                let cache = registry
+                    .cache_key_for_phase(PipelinePhase::KernelCheck, &query)
+                    .unwrap();
+                assert_eq!(
+                    cache.intent,
+                    PhaseCacheIntent::NoKey {
+                        reason:
+                            "source theorem candidate check has no complete dependency footprint"
+                                .to_owned()
+                    }
+                );
+                let result = registry
+                    .execute_phase_with_resources(
+                        PipelinePhase::KernelCheck,
+                        query.clone(),
+                        PhaseExecutionResources {
+                            cancellation: matches!(case, "cancel" | "foreign-token").then_some(
+                                CancellationToken {
+                                    snapshot: if case == "foreign-token" {
+                                        snapshot_id(0xd5)
+                                    } else {
+                                        old.snapshot
+                                    },
+                                    generation: CancellationGeneration::new(1),
+                                    reason: CancellationReason::ExplicitRequest,
+                                },
+                            ),
+                            output_publisher: if case == "no-publisher" {
+                                None
+                            } else {
+                                Some(if case == "foreign-publisher" {
+                                    alien.clone()
+                                } else {
+                                    owner.clone()
+                                })
+                            },
+                            source_load: if case == "no-inputs" {
+                                None
+                            } else {
+                                Some(foreign_inputs.unwrap_or(inputs))
+                            },
+                            ..PhaseExecutionResources::default()
+                        },
+                    )
+                    .unwrap();
+                assert_eq!(
+                    result.result.status,
+                    if case == "cancel" {
+                        PhaseStatus::Cancelled
+                    } else {
+                        PhaseStatus::Blocking
+                    },
+                    "{case}"
+                );
+                assert!(
+                    result.result.output_refs.is_empty() && result.result.diagnostics.is_empty(),
+                    "{case}"
+                );
+                assert_eq!(result.result.cache_observation, Some(result.observation));
+                assert_eq!(
+                    (
+                        query,
+                        policy.clone(),
+                        current_profile,
+                        current_verifier,
+                        session.captured().clone()
+                    ),
+                    before
+                );
+                let retained = usize::from(matches!(case, "kernel-denied" | "disabled-policy"));
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case == "collected" {
+                        0
+                    } else {
+                        11 + retained
+                    },
+                    "{case}"
+                );
+                assert_eq!(
+                    collected.abandoned_slots_dropped,
+                    usize::from(matches!(case, "atp-denied" | "kernel-denied")),
+                    "{case}"
+                );
+                let empty_foreign = alien.storage().collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (
+                        empty_foreign.outputs_dropped,
+                        empty_foreign.abandoned_slots_dropped
+                    ),
+                    (0, 0)
+                );
+            }
+        },
+    );
 }

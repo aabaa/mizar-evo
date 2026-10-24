@@ -99,7 +99,7 @@ registered only when the owner crate exposes all of these seams at once:
 | `Elaborator` | `mizar-core` exposes explicit lowering/control-flow data and local diagnostics, but source-to-checker extraction, concrete downstream identities, artifact schemas, public diagnostic allocation, and downstream VC/kernel/proof/artifact consumers remain unavailable. | `external_dependency_gap` |
 | `VcService` | Real [bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation) and [singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge) services supply untrusted module IR. General upstream payload families and accepted proof/ATP/cache/artifact consumers remain unavailable. | `external_dependency_gap` |
 | `AtpService` | Explicit [bounded ATP solve](frontend_adapter.md#scheduled-source-theorem-atp-solve) publishes real untrusted source candidate data with complete current transport identity. General backend execution/extraction, proof-policy integration, cache reuse and witness publication remain unavailable. | `external_dependency_gap` |
-| `KernelService` | `mizar-kernel` exposes trusted evidence checking for explicit normalized inputs, but source-derived certificates, ATP proof translation, cluster/reduction producer payloads, service-envelope normalization, cancellation plumbing, and downstream proof/cache/artifact consumers remain unavailable. | `external_dependency_gap` |
+| `KernelService` | Explicit [backend-free source candidate check](frontend_adapter.md#scheduled-source-theorem-candidate-check) composes real untrusted ATP and independent checking DATA. General source families, backend extraction, proof/cache/artifact acceptance integration remain unavailable. | `external_dependency_gap` |
 | `ArtifactService` | `mizar-artifact` exposes artifact schemas/store primitives, but real producer projections and phase-15 emission are still external gaps, and the driver has no publication-token authority to mint. The requested closeout report is absent as a separate report-only `repo_metadata_conflict` recorded in the gap table. | `external_dependency_gap` |
 | `DocExtractionService` | `mizar-doc` has design TODOs, but no workspace crate or implemented service-facing extraction owner surface exists. | `deferred` |
 
@@ -127,7 +127,7 @@ their real owning crate exposes an adapter seam.
 | `Elaborator` | 9-10 | `mizar-core` | `external_dependency_gap` until core/elaboration services land. |
 | `VcService` | 11-12 | `mizar-vc` | Explicit [bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation) and [singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge) are available; full generation/discharge profiles and proof/ATP/cache/artifact integration remain `external_dependency_gap`. |
 | `AtpService` | 13 | `mizar-atp` | [SourceTheoremAtpSolve](frontend_adapter.md#scheduled-source-theorem-atp-solve) is explicitly registered for bounded AtpSolve only; BackendRun and general ATP/policy/evidence integration remain `external_dependency_gap`. |
-| `KernelService` | 14 | `mizar-kernel`/`mizar-proof` | `external_dependency_gap`; kernel acceptance and proof-status projection remain owner decisions. |
+| `KernelService` | 14 | `mizar-kernel`/`mizar-proof` | Explicit [SourceTheoremCandidateCheck](frontend_adapter.md#scheduled-source-theorem-candidate-check) covers bounded backend-free KernelCheck DATA; general acceptance/status integration remains owner work. |
 | `ArtifactService` | 15 | `mizar-artifact` plus producer seams | `external_dependency_gap`; no publication token is invented by the registry. |
 | `DocExtractionService` | 16 | `mizar-doc` | `deferred` until documentation/extraction owner surfaces land. |
 
@@ -411,3 +411,5 @@ Task 5 must add focused tests for:
 `SourceLoadInputs` also borrows optional genuine `CapturedSnapshot` for [native services](frontend_adapter.md#native-captured-sources). Two Driver constructions share capture with discovery, SourceLoad and Frontend; summary metadata grants no native authority. Registered descriptors and owner ranks stay unchanged.
 
 `register_source_theorem_atp_solve(policy, logic_profile, concrete_format) -> Result<&mut Self, String>` admits all current transportable configurations through the [sole service owner](frontend_adapter.md#scheduled-source-theorem-atp-solve); unsupported future transport is refused before registration, distinct from real producer support errors.
+
+The explicit fallible register_source_theorem_candidate_check builder follows the [sole service owner](frontend_adapter.md#scheduled-source-theorem-candidate-check), preserving actual configured descriptor and unknown-transport refusal before registration.

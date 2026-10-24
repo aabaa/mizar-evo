@@ -3236,3 +3236,279 @@ fn scheduled_theorem_atp_solve_prefix_requires_real_twelve_services_and_preserve
         }
     }
 }
+
+#[test]
+fn scheduled_theorem_candidate_check_prefix_requires_real_thirteen_services_and_preserves_provider_priority()
+ {
+    use mizar_atp::problem::{
+        ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
+        QuantifierPolicy, SoftTypeStrategy,
+    };
+    use mizar_build::{
+        module_index::ModuleId,
+        task_graph::{EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId},
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    let generation = GenerationSchemaVersion::new("α\n\0");
+    let schema = VcSchemaVersion::new("");
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new("α\n\0"),
+            max_steps: u32::MAX,
+        },
+    };
+    let profile = LogicProfile::try_new(
+        "α\n\0",
+        LogicFragment::Fof,
+        EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder,
+        SoftTypeStrategy::ScopedGuardPredicates,
+        NativePropertySupport::Unsupported,
+        [ConcreteFormat::Tptp].into(),
+    )
+    .unwrap();
+    let verifier = mizar_proof::policy::VerifierPolicy::release();
+    let mut actual = PhaseRegistryBuilder::new();
+    actual
+        .register_source_theorem_vc_generation(generation.clone(), schema.clone())
+        .register_source_theorem_vc_discharge(policy.clone())
+        .register_source_theorem_atp_solve(policy.clone(), profile.clone(), ConcreteFormat::Tptp)
+        .unwrap()
+        .register_source_theorem_candidate_check(
+            policy.clone(),
+            profile.clone(),
+            ConcreteFormat::Tptp,
+            verifier.clone(),
+        )
+        .unwrap();
+    let actual = actual.build().unwrap();
+    for case in [
+        "real",
+        "spoof-kernel",
+        "wrong-kernel",
+        "missing-kernel",
+        "spoof-atp",
+        "wrong-atp",
+        "missing-atp",
+        "spoof-vc",
+        "wrong-discharge",
+        "missing-vc",
+        "missing-discharge",
+        "extra",
+        "no-publisher",
+        "obsolete",
+        "provider-none",
+        "provider-error",
+        "provider-snapshot",
+        "duplicate-discharge",
+        "duplicate-kernel",
+        "vacant",
+    ] {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let session = request(1)
+            .allocate(&ids)
+            .unwrap()
+            .capture_snapshot(&snapshots)
+            .unwrap();
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        let snapshot = session.captured().snapshot().id;
+        publisher.register_current_snapshot(snapshot);
+        if case == "obsolete" {
+            publisher.mark_obsolete(snapshot).unwrap();
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation();
+        for (name, phase) in [
+            ("vc", PipelinePhase::VcGenerate),
+            ("discharge", PipelinePhase::VcDischarge),
+            ("atp", PipelinePhase::AtpSolve),
+            ("kernel", PipelinePhase::KernelCheck),
+        ] {
+            if case == format!("missing-{name}") {
+                continue;
+            }
+            if case == format!("spoof-{name}") || case == format!("wrong-{name}") {
+                let mut descriptor = actual.descriptor_for_phase(phase).unwrap().clone();
+                if case.starts_with("wrong-") {
+                    descriptor.schema_version = "wrong-schema".into();
+                }
+                builder.register(DescriptorOnlyFixtureService { descriptor });
+            } else {
+                match phase {
+                    PipelinePhase::VcGenerate => {
+                        builder.register_source_theorem_vc_generation(
+                            generation.clone(),
+                            schema.clone(),
+                        );
+                    }
+                    PipelinePhase::VcDischarge => {
+                        builder.register_source_theorem_vc_discharge(policy.clone());
+                    }
+                    PipelinePhase::AtpSolve => {
+                        builder
+                            .register_source_theorem_atp_solve(
+                                policy.clone(),
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                            )
+                            .unwrap();
+                    }
+                    PipelinePhase::KernelCheck => {
+                        builder
+                            .register_source_theorem_candidate_check(
+                                policy.clone(),
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                                verifier.clone(),
+                            )
+                            .unwrap();
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        }
+        if case == "extra" {
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    "ExtraPlanner",
+                    mizar_driver::registry::PhaseOwner::MizarBuild,
+                    vec![PipelinePhase::PackageResolve],
+                    "fixture-v1",
+                    "fixture-output",
+                )
+                .unwrap(),
+            });
+        }
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        if case != "no-publisher" {
+            driver = driver.with_output_publisher(publisher);
+        }
+        let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+        if case != "vacant" {
+            let module = ModuleId::new(
+                PackageId::new("alpha"),
+                mizar_session::ModulePath::new("main"),
+            );
+            input.vc_descriptors = (0..if case == "duplicate-discharge" { 2 } else { 1 })
+                .map(|index| {
+                    VcTaskDescriptor::new(
+                        VcTaskDescriptorId::new(format!("opaque:{index}")),
+                        module.clone(),
+                        VcOrderKey::new(format!("{index}")),
+                        vec![],
+                        if case == "duplicate-discharge" {
+                            vec![]
+                        } else if case == "duplicate-kernel" {
+                            vec![
+                                EvidenceCandidateId::new("opaque-evidence-a"),
+                                EvidenceCandidateId::new("opaque-evidence-b"),
+                            ]
+                        } else {
+                            vec![EvidenceCandidateId::new("opaque-evidence")]
+                        },
+                    )
+                })
+                .collect();
+        }
+        input.phase_dispatch_inputs = match case {
+            "provider-none" => Some(Box::new(NonePhaseInputs)),
+            "provider-error" => Some(Box::new(ErrorPhaseInputs)),
+            "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
+            _ => None,
+        };
+        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        if case.starts_with("duplicate-") {
+            let graph = submission.task_graph.as_ref().unwrap();
+            for (kind, count) in [
+                (
+                    mizar_build::task_graph::TaskKind::VcDischarge,
+                    if case == "duplicate-discharge" { 2 } else { 1 },
+                ),
+                (
+                    mizar_build::task_graph::TaskKind::KernelCheck,
+                    if case == "duplicate-kernel" { 2 } else { 0 },
+                ),
+            ] {
+                assert_eq!(
+                    graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == kind)
+                        .count(),
+                    count,
+                    "{case}"
+                );
+            }
+        }
+        let admitted = matches!(
+            case,
+            "real"
+                | "missing-kernel"
+                | "vacant"
+                | "provider-none"
+                | "provider-error"
+                | "provider-snapshot"
+        );
+        assert_eq!(submission.scheduler_run.is_some(), admitted, "{case}");
+        assert!(
+            submission
+                .missing_services
+                .iter()
+                .any(|gap| gap.phase == PipelinePhase::ArtifactCommit)
+        );
+        if case == "missing-kernel" {
+            assert!(
+                submission
+                    .missing_services
+                    .iter()
+                    .any(|gap| gap.phase == PipelinePhase::KernelCheck)
+            );
+        }
+        if !admitted {
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            );
+        }
+        if case.starts_with("provider-") {
+            assert!(
+                submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .is_empty()
+            );
+            assert_eq!(
+                submission
+                    .dispatch_gap_phases
+                    .contains(&PipelinePhase::SourceLoad),
+                case == "provider-none"
+            );
+            assert_eq!(
+                submission.session.state(),
+                BuildSessionState::Finished(if case == "provider-none" {
+                    BuildSessionOutcome::Blocked
+                } else {
+                    BuildSessionOutcome::Failed
+                })
+            );
+        }
+    }
+}

@@ -461,6 +461,31 @@ impl PhaseRegistryBuilder {
         Ok(self.register(service))
     }
 
+    pub fn register_source_theorem_candidate_check(
+        &mut self,
+        discharge_policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+    ) -> Result<&mut Self, String> {
+        let candidate = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy: discharge_policy,
+            logic_profile,
+            concrete_format,
+        };
+        if candidate.configuration_tags().is_none() {
+            return Err(
+                "unsupported source theorem candidate check transport configuration".to_owned(),
+            );
+        }
+        Ok(self.register(
+            crate::frontend_adapter::SourceTheoremCandidateCheckService {
+                candidate,
+                verifier_policy,
+            },
+        ))
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

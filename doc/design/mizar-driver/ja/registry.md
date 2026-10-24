@@ -93,7 +93,7 @@ real adapter は、owning crate が次の seam を同時に公開した場合だ
 | `Elaborator` | `mizar-core` は explicit lowering / control-flow data と local diagnostics を公開しているが、source-to-checker extraction、具体的な downstream identity、artifact schema、public diagnostic allocation、downstream VC / kernel / proof / artifact consumer は未準備。 | `external_dependency_gap` |
 | `VcService` | 実[bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation)と[singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge) serviceは未信頼module IRを供給する。一般upstream payload familyと受理proof/ATP/cache/artifact consumerは未準備。 | `external_dependency_gap` |
 | `AtpService` | 明示[bounded ATP solve](frontend_adapter.md#scheduled-source-theorem-atp-solve)は完全なcurrent transport identityで実未信頼候補を公開。general backend execution/extraction、proof-policy、cache reuse、witness publicationは未準備。 | `external_dependency_gap` |
-| `KernelService` | `mizar-kernel` は explicit normalized input に対する trusted evidence checking を公開しているが、source-derived certificate、ATP proof translation、cluster / reduction producer payload、service-envelope normalization、cancellation plumbing、downstream proof / cache / artifact consumer は未準備。 | `external_dependency_gap` |
+| `KernelService` | 明示[backend-free source candidate check](frontend_adapter.md#scheduled-source-theorem-candidate-check)が実非信頼Atpと独立検査DATAを合成。一般source/backend抽出/proof-cache-artifact受理統合は未対応。 | `external_dependency_gap` |
 | `ArtifactService` | `mizar-artifact` は artifact schema / store primitive を公開しているが、real producer projection と phase-15 emission はまだ external gap であり、driver には publication-token authority を作る権限がない。要求された closeout report の欠落は、gap table に記録した別の report-only `repo_metadata_conflict` である。 | `external_dependency_gap` |
 | `DocExtractionService` | `mizar-doc` には design TODO があるが、workspace crate も実装済みの service-facing extraction owner surface も存在しない。 | `deferred` |
 
@@ -120,7 +120,7 @@ adapter seam を公開するまで absent でよい。
 | `Elaborator` | 9-10 | `mizar-core` | core/elaboration service が着地するまで `external_dependency_gap`。 |
 | `VcService` | 11-12 | `mizar-vc` | 明示[bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation)と[singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge)は利用可能。全generation/discharge profileとproof/ATP/cache/artifact統合は `external_dependency_gap` のまま。 |
 | `AtpService` | 13 | `mizar-atp` | [SourceTheoremAtpSolve](frontend_adapter.md#scheduled-source-theorem-atp-solve)をbounded AtpSolveだけに明示登録し、BackendRun/general ATP・policy・evidence integrationは`external_dependency_gap`。 |
-| `KernelService` | 14 | `mizar-kernel`/`mizar-proof` | `external_dependency_gap`。kernel acceptance と proof-status projection は owner decision のまま。 |
+| `KernelService` | 14 | `mizar-kernel`/`mizar-proof` | 明示[SourceTheoremCandidateCheck](frontend_adapter.md#scheduled-source-theorem-candidate-check)が限定backend-free KernelCheck DATAを供給し、一般受理status統合はowner作業。 |
 | `ArtifactService` | 15 | `mizar-artifact` と producer seam | `external_dependency_gap`。registry は publication token を作らない。 |
 | `DocExtractionService` | 16 | `mizar-doc` | documentation/extraction owner surface が着地するまで `deferred`。 |
 
@@ -392,3 +392,5 @@ task 5 は focused test を追加しなければならない:
 `SourceLoadInputs` は実 `CapturedSnapshot` を任意に借用して[Native service](frontend_adapter.md#native-captured-sources)へ運ぶ。Driver の二つの構築箇所から discovery/SourceLoad/Frontend が同じ捕捉を共有する。summary は Native 承認ではなく、登録 descriptor と owner rank は維持する。
 
 register_source_theorem_atp_solve(policy,logic_profile,concrete_format)->Result<&mut Self,String>は[sole owner](frontend_adapter.md#scheduled-source-theorem-atp-solve)に従いcurrent transport可能configを登録し、未知future transportを登録前拒否する。実producer support errorとは別のadmissionである。
+
+明示fallible register_source_theorem_candidate_check builderは[単一service owner](frontend_adapter.md#scheduled-source-theorem-candidate-check)に従い、実設定descriptorと登録前未知transport拒否を維持する。

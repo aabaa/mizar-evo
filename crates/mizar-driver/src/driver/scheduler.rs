@@ -191,8 +191,9 @@ fn dispatch_registry_phase(
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
-                    SourceTheoremAtpSolveService, SourceTheoremElaborationService,
-                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService,
+                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
+                    SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
@@ -218,7 +219,24 @@ fn dispatch_registry_phase(
             let atp_task = task.task.kind == mizar_build::task_graph::TaskKind::AtpSolve
                 && task.task.phases == [PipelinePhase::AtpSolve]
                 && matches!(task.task.unit, mizar_build::task_graph::WorkUnit::Vc { .. });
-            let atp_service = registry.descriptors().len() == 12
+            let kernel_task = task.task.kind == mizar_build::task_graph::TaskKind::KernelCheck
+                && task.task.phases == [PipelinePhase::KernelCheck]
+                && matches!(
+                    task.task.unit,
+                    mizar_build::task_graph::WorkUnit::EvidenceCandidate { .. }
+                );
+            let kernel_service = registry.descriptors().len() == 13
+                && registry
+                    .service_for_phase(PipelinePhase::KernelCheck)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremCandidateCheckService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                .ok()
+                                == Some(&service.phase())
+                    });
+            let atp_service = (registry.descriptors().len() == 12 || kernel_service)
                 && registry
                     .service_for_phase(PipelinePhase::AtpSolve)
                     .is_ok_and(|service| {
@@ -246,42 +264,43 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            let typed_profile = (check_and_elaborate || vc_task || discharge_task || atp_task)
-                && registry
-                    .descriptor_for_phase(PipelinePhase::SourceLoad)
-                    .ok()
-                    == Some(&SourceLoadService.phase())
-                && registry.descriptor_for_phase(PipelinePhase::Frontend).ok()
-                    == Some(
-                        &FrontendService {
-                            artifact_roots: Vec::new(),
-                        }
-                        .phase(),
-                    )
-                && [
-                    (
-                        PipelinePhase::ModuleResolve,
-                        SourceTheoremModuleResolverService.phase(),
-                        std::any::TypeId::of::<SourceTheoremModuleResolverService>(),
-                    ),
-                    (
-                        PipelinePhase::SignatureCollection,
-                        SourceTheoremSignatureCollectionService.phase(),
-                        std::any::TypeId::of::<SourceTheoremSignatureCollectionService>(),
-                    ),
-                    (
-                        PipelinePhase::TypeChecking,
-                        SourceTheoremTypeCheckingService.phase(),
-                        std::any::TypeId::of::<SourceTheoremTypeCheckingService>(),
-                    ),
-                ]
-                .into_iter()
-                .all(|(phase, descriptor, concrete)| {
-                    registry.descriptor_for_phase(phase).ok() == Some(&descriptor)
-                        && registry
-                            .service_for_phase(phase)
-                            .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
-                });
+            let typed_profile =
+                (check_and_elaborate || vc_task || discharge_task || atp_task || kernel_task)
+                    && registry
+                        .descriptor_for_phase(PipelinePhase::SourceLoad)
+                        .ok()
+                        == Some(&SourceLoadService.phase())
+                    && registry.descriptor_for_phase(PipelinePhase::Frontend).ok()
+                        == Some(
+                            &FrontendService {
+                                artifact_roots: Vec::new(),
+                            }
+                            .phase(),
+                        )
+                    && [
+                        (
+                            PipelinePhase::ModuleResolve,
+                            SourceTheoremModuleResolverService.phase(),
+                            std::any::TypeId::of::<SourceTheoremModuleResolverService>(),
+                        ),
+                        (
+                            PipelinePhase::SignatureCollection,
+                            SourceTheoremSignatureCollectionService.phase(),
+                            std::any::TypeId::of::<SourceTheoremSignatureCollectionService>(),
+                        ),
+                        (
+                            PipelinePhase::TypeChecking,
+                            SourceTheoremTypeCheckingService.phase(),
+                            std::any::TypeId::of::<SourceTheoremTypeCheckingService>(),
+                        ),
+                    ]
+                    .into_iter()
+                    .all(|(phase, descriptor, concrete)| {
+                        registry.descriptor_for_phase(phase).ok() == Some(&descriptor)
+                            && registry
+                                .service_for_phase(phase)
+                                .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                    });
             type_prefix = check_and_elaborate
                 && typed_profile
                 && registry.descriptors().len() == 5
@@ -393,6 +412,8 @@ fn dispatch_registry_phase(
                 && (registry.descriptors().len() == 10 || discharge_profile);
             let discharge_prefix = discharge_task && discharge_profile;
             let atp_prefix = atp_task && discharge_profile && atp_service;
+            let kernel_prefix = kernel_task && discharge_profile && atp_service && kernel_service;
+            let candidate_prefix = atp_prefix || kernel_prefix;
             vc_group = vc_prefix && check_and_elaborate;
             if !signature_prefix
                 && !type_prefix
@@ -403,6 +424,7 @@ fn dispatch_registry_phase(
                 && !vc_prefix
                 && !discharge_prefix
                 && !atp_prefix
+                && !kernel_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -445,6 +467,10 @@ fn dispatch_registry_phase(
                         .descriptor_for_phase(PipelinePhase::AtpSolve)
                         .ok()?
                         .clone(),
+                    [PipelinePhase::KernelCheck] if kernel_prefix => registry
+                        .descriptor_for_phase(PipelinePhase::KernelCheck)
+                        .ok()?
+                        .clone(),
                     [PipelinePhase::ModuleResolve] => {
                         if std::any::Any::type_id(
                             registry
@@ -484,6 +510,11 @@ fn dispatch_registry_phase(
                     {
                         module
                     }
+                    mizar_build::task_graph::WorkUnit::EvidenceCandidate { module, .. }
+                        if kernel_prefix =>
+                    {
+                        module
+                    }
                     _ => return None,
                 };
                 let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
@@ -506,7 +537,7 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let named = if discharge_prefix || atp_prefix {
+                let named = if discharge_prefix || candidate_prefix {
                     vec![mizar_ir::identity::NamedInputHash {
                         name: "source".to_owned(),
                         domain: crate::frontend_adapter::SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
@@ -515,8 +546,8 @@ fn dispatch_registry_phase(
                 } else {
                     Vec::new()
                 };
-                let direct = if discharge_prefix || atp_prefix {
-                    let (phase, kind) = if atp_prefix {
+                let direct = if discharge_prefix || candidate_prefix {
+                    let (phase, kind) = if candidate_prefix {
                         ("VcDischarge", "SourceTheoremDischarge")
                     } else {
                         ("VcGenerate", "SourceTheoremVC")
@@ -546,7 +577,7 @@ fn dispatch_registry_phase(
                 } else {
                     None
                 };
-                let vc = if atp_prefix {
+                let vc = if candidate_prefix {
                     let discharge = direct?;
                     if discharge.lineage().parents.len() != 2 {
                         return None;
@@ -577,9 +608,11 @@ fn dispatch_registry_phase(
                 } else {
                     direct
                 };
-                let parents = if (vc_task && vc_prefix) || discharge_prefix || atp_prefix {
+                let parents = if (vc_task && vc_prefix) || discharge_prefix || candidate_prefix {
                     let mut dependencies = phase_results.iter().filter_map(|(id, results)| {
-                        if !discharge_prefix && !atp_prefix && !task.task.dependencies.contains(id)
+                        if !discharge_prefix
+                            && !candidate_prefix
+                            && !task.task.dependencies.contains(id)
                         {
                             return None;
                         }
@@ -604,7 +637,7 @@ fn dispatch_registry_phase(
                                     && output.work_unit() == &unit
                                     && output.schema_version()
                                         == mizar_ir::storage::SchemaVersion::new(1)
-                                    && (!(discharge_prefix || atp_prefix)
+                                    && (!(discharge_prefix || candidate_prefix)
                                         || output.lineage().named_input_hashes == named)
                             })
                         {
@@ -620,7 +653,8 @@ fn dispatch_registry_phase(
                                     && vc.lineage().parents.contains(&core.output())
                                     && vc.lineage().parents.contains(&preparation.output())
                             })
-                            && (!atp_prefix || direct?.lineage().parents.contains(&core.output())))
+                            && (!candidate_prefix
+                                || direct?.lineage().parents.contains(&core.output())))
                         .then_some((core, preparation))
                     });
                     let (core, preparation) = dependencies.next()?;
@@ -628,7 +662,7 @@ fn dispatch_registry_phase(
                         return None;
                     }
                     let mut parents = vec![core, vc.unwrap_or(preparation)];
-                    if atp_prefix {
+                    if candidate_prefix {
                         parents.push(direct?);
                     }
                     parents

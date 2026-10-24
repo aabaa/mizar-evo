@@ -947,15 +947,45 @@ impl CompilerDriver {
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
-                    SourceTheoremAtpSolveService, SourceTheoremElaborationService,
-                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService,
+                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
+                    SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
-            let atp_profile = self.registry.descriptors().len() == 12
+            let kernel_profile = self.registry.descriptors().len() == 13
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::KernelCheck)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremCandidateCheckService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && {
+                    let mut modules = std::collections::BTreeSet::new();
+                    task_graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == mizar_build::task_graph::TaskKind::KernelCheck)
+                        .all(|task| {
+                            let mizar_build::task_graph::WorkUnit::EvidenceCandidate {
+                                module, ..
+                            } = &task.unit
+                            else {
+                                return false;
+                            };
+                            modules.insert((module.package.as_str(), module.path.as_str()))
+                        })
+                };
+            let atp_profile = (self.registry.descriptors().len() == 12 || kernel_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::AtpSolve)

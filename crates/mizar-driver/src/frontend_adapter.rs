@@ -6858,6 +6858,171 @@ impl PhaseService for SourceTheoremAtpSolveService {
     }
 }
 
+pub(crate) struct SourceTheoremCandidateCheckService {
+    pub(crate) candidate: SourceTheoremAtpSolveService,
+    pub(crate) verifier_policy: mizar_proof::policy::VerifierPolicy,
+}
+
+impl PhaseService for SourceTheoremCandidateCheckService {
+    fn phase(&self) -> PhaseDescriptor {
+        let schema = if self.candidate.configuration_tags().is_some() {
+            let candidate = self.candidate.phase().schema_version;
+            format!(
+                "mizar-proof/source-theorem-candidate-check-publication/v1;candidate={}:{};verifier_policy={}",
+                candidate.len(),
+                candidate,
+                self.verifier_policy.policy_fingerprint().to_lower_hex(),
+            )
+        } else {
+            "mizar-proof/source-theorem-candidate-check-publication/unsupported-transport"
+                .to_owned()
+        };
+        PhaseDescriptor::new(
+            "SourceTheoremCandidateCheck",
+            PhaseOwner::MizarKernelProof,
+            vec![PipelinePhase::KernelCheck],
+            schema,
+            "SourceTheoremCandidateCheck",
+        )
+        .expect("source theorem candidate check descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem candidate check has no complete dependency footprint"
+                .to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        if self.candidate.configuration_tags().is_none() {
+            return blocking();
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        let WorkUnit::EvidenceCandidate { module, .. } = &input.work_unit else {
+            return blocking();
+        };
+        if input.parent_outputs().len() != 3
+            || [
+                ("Elaboration", "SourceTheoremCore"),
+                ("VcDischarge", "SourceTheoremDischarge"),
+            ]
+            .into_iter()
+            .any(|(phase, kind)| {
+                unique(input.parent_outputs().iter().filter(|parent| {
+                    parent.as_output_ref().phase() == &IrPipelinePhase::new(phase)
+                        && parent.as_output_ref().output_kind() == &OutputKind::new(kind)
+                }))
+                .is_none()
+            })
+        {
+            return blocking();
+        }
+        let Some(parent) = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        })) else {
+            return blocking();
+        };
+        let Ok(handle) = publisher.storage().typed_handle::<mizar_vc::vc_ir::VcSet>(
+            parent.as_output_ref(),
+            &OutputKind::new("SourceTheoremVC"),
+        ) else {
+            return blocking();
+        };
+        let Ok(vcs) = publisher.storage().get(&handle) else {
+            return blocking();
+        };
+        let [vc] = vcs.vcs() else {
+            return blocking();
+        };
+        let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+            input.snapshot,
+            input.identities().input_hash(),
+            input.identities().dependency_hashes().to_vec(),
+            input.parent_outputs().to_vec(),
+        ) else {
+            return blocking();
+        };
+        let module_input = PhaseInput::new(
+            WorkUnit::Module {
+                module: module.clone(),
+            },
+            bundle,
+        );
+        let Ok(Some(candidate)) = inputs.publish_native_theorem_candidate(
+            &module_input,
+            &publisher,
+            vc.id,
+            &self.candidate.policy,
+            self.candidate.logic_profile.clone(),
+            self.candidate.concrete_format,
+        ) else {
+            return blocking();
+        };
+        let Ok(candidate) =
+            mizar_ir::dispatch_input::SealedParentOutputHandle::from_published_output(
+                &publisher,
+                input.snapshot,
+                candidate.erase(),
+            )
+        else {
+            return blocking();
+        };
+        let mut parents = input.parent_outputs().to_vec();
+        parents.push(candidate);
+        let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+            input.snapshot,
+            input.identities().input_hash(),
+            input.identities().dependency_hashes().to_vec(),
+            parents,
+        ) else {
+            return blocking();
+        };
+        let module_input = PhaseInput::new(module_input.work_unit, bundle);
+        match inputs.publish_native_theorem_candidate_check(
+            &module_input,
+            &publisher,
+            vc.id,
+            (
+                self.candidate.logic_profile.clone(),
+                self.candidate.concrete_format,
+            ),
+            (&self.candidate.policy, &self.verifier_policy),
+        ) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {
