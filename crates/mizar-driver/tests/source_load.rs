@@ -59203,7 +59203,7 @@ fn with_native_theorem_artifact_context(
         proof_status: None,
         documentation_ref: None,
     };
-    let expressions = metadata
+    let mut expressions = metadata
         .3
         .expr_metadata()
         .iter()
@@ -59244,6 +59244,139 @@ fn with_native_theorem_artifact_context(
             }
         })
         .collect::<Vec<_>>();
+    // Derive the additional syntax-root union from authentic declaration-owned types.
+    // Checker expression metadata deliberately remains the original term/formula table.
+    let source_types = metadata.2.source_type().unwrap();
+    let context = metadata.2.source_context().unwrap();
+    assert_eq!(source_types.source_id(), ast.source_id);
+    assert_eq!(source_types.module_id(), metadata.2.module_id());
+    assert_eq!(context.source_id(), ast.source_id);
+    assert_eq!(context.module_id(), metadata.2.module_id());
+    assert_eq!(
+        source_types.applications().len(),
+        context.declarations().len()
+    );
+    assert!(source_types.arguments().is_empty());
+    assert!(source_types.definition_returns().is_empty());
+    assert!(source_types.mode_rhs().is_empty());
+    assert!(source_types.structure_members().is_empty());
+    let mut covered_applications = std::collections::BTreeSet::new();
+    let mut covered_declarations = std::collections::BTreeSet::new();
+    let mut raw_sites = std::collections::BTreeSet::new();
+    for (root, written) in source_types.expressions().iter() {
+        use mizar_checker::{
+            source_type::{SourceTypeApplicationForm, SourceTypeHead},
+            typed_ast::{
+                NodeRecoveryState, TypeEntryActual, TypeStatus, TypedSiteRef, TypingState,
+            },
+        };
+        assert!(raw_sites.insert(written.site().clone()));
+        assert_eq!(written.source_id(), ast.source_id);
+        assert_eq!(written.module_id(), metadata.2.module_id());
+        assert_eq!(written.form(), SourceTypeApplicationForm::Bare);
+        assert_eq!(written.head(), &SourceTypeHead::BuiltinSet);
+        assert_eq!(written.recovery(), NodeRecoveryState::Normal);
+        assert_eq!(written.site(), &TypedSiteRef::Node(written.site().node()));
+        assert_eq!(
+            written.head_site(),
+            &TypedSiteRef::Node(written.head_site().node())
+        );
+        let raw = metadata.2.nodes().node(written.site().node()).unwrap();
+        let head = metadata.2.nodes().node(written.head_site().node()).unwrap();
+        assert_eq!(raw.kind.as_str(), "TypeExpression");
+        assert_eq!(head.kind.as_str(), "TypeHead");
+        assert_eq!(raw.anchor, SourceAnchor::Range(written.source_range()));
+        assert_eq!(head.anchor, SourceAnchor::Range(written.head_range()));
+        assert_eq!(raw.children, [written.head_site().node()]);
+        assert_eq!(raw.recovery, NodeRecoveryState::Normal);
+        assert_eq!(head.recovery, NodeRecoveryState::Normal);
+        assert_eq!(
+            source_text.get(written.source_range().start..written.source_range().end),
+            Some(written.spelling())
+        );
+        assert_eq!(
+            source_text.get(written.head_range().start..written.head_range().end),
+            Some(written.head_spelling())
+        );
+        let mut ordinals = Vec::new();
+        let mut checked_denotations = std::collections::BTreeSet::new();
+        for (application_id, application) in source_types
+            .applications()
+            .iter()
+            .filter(|(_, application)| application.root() == root)
+        {
+            assert!(covered_applications.insert(application_id));
+            let matching = context
+                .declarations()
+                .iter()
+                .filter(|(_, declaration)| {
+                    declaration.binding == application.binding()
+                        && declaration.source_ordinal == application.source_ordinal()
+                })
+                .collect::<Vec<_>>();
+            let [(declaration_id, declaration)] = matching.as_slice() else {
+                panic!("application must have exactly one genuine declaration")
+            };
+            assert!(covered_declarations.insert(*declaration_id));
+            assert_eq!(declaration.written_type_range, written.source_range());
+            assert_eq!(raw.links.context, Some(declaration.local_context));
+            assert_eq!(head.links.context, Some(declaration.local_context));
+            let node = metadata.2.nodes().node(declaration.site.node()).unwrap();
+            assert_eq!(node.typing, TypingState::Successful);
+            let entry = metadata
+                .2
+                .types()
+                .get(node.links.type_entry.unwrap())
+                .unwrap();
+            assert_eq!(entry.owner, declaration.site);
+            assert_eq!(entry.status, TypeStatus::Known);
+            let TypeEntryActual::Known(id) = entry.actual else {
+                panic!("declaration must retain a checked type")
+            };
+            let actual = metadata.1.normalized_types().get(id).unwrap();
+            assert_eq!(actual.status, NormalizedTypeStatus::Known);
+            assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+            assert!(actual.args.is_empty());
+            assert!(actual.attributes.positive().is_empty());
+            assert!(actual.attributes.negative().is_empty());
+            checked_denotations.insert(id);
+            ordinals.push(application.source_ordinal());
+        }
+        assert_eq!(checked_denotations.len(), 1);
+        let ordinal = ordinals.into_iter().min().unwrap();
+        let range = written.source_range();
+        expressions.push(ExpressionMetadata {
+            expression_id: format!("source.theorem.type.{ordinal}"),
+            source_range: SourceRangeSummary {
+                start_byte: u64::try_from(range.start).unwrap(),
+                end_byte: u64::try_from(range.end).unwrap(),
+            },
+            expression_kind: raw.kind.as_str().into(),
+            rendered_surface: source_text.get(range.start..range.end).unwrap().into(),
+            inferred_type: Some("set".into()),
+            resolved_symbol: None,
+            inserted_coercions: vec![],
+            active_thesis: None,
+            overload_resolution: None,
+        });
+    }
+    assert_eq!(
+        covered_applications.len(),
+        source_types.applications().len()
+    );
+    assert_eq!(covered_declarations.len(), context.declarations().len());
+    assert_eq!(
+        expressions.len(),
+        metadata.3.expr_metadata().len() + raw_sites.len()
+    );
+    assert_eq!(
+        expressions
+            .iter()
+            .map(|row| &row.expression_id)
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        expressions.len()
+    );
     assert!(!expressions.is_empty());
     let oracle_root = fixture.root.join("oracle-artifact");
     fs::create_dir(&oracle_root).unwrap();
@@ -59740,6 +59873,64 @@ fn native_theorem_artifact_draft_covers_real_expression_rows() {
                 assert_eq!(
                     actual.artifact.expressions.len(),
                     metadata.expr_metadata().len()
+                        + typed.source_type().unwrap().expressions().len()
+                );
+                let written = typed.source_type().unwrap();
+                let mut expression_ids = metadata
+                    .expr_metadata()
+                    .iter()
+                    .map(|(_, row)| row.expr.as_str().to_owned())
+                    .collect::<std::collections::BTreeSet<_>>();
+                for (root, row) in written.expressions().iter() {
+                    let ordinal = written
+                        .applications()
+                        .iter()
+                        .filter(|(_, application)| application.root() == root)
+                        .map(|(_, application)| application.source_ordinal())
+                        .min()
+                        .unwrap();
+                    let id = format!("source.theorem.type.{ordinal}");
+                    assert!(expression_ids.insert(id.clone()));
+                    let projected = actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .find(|value| value.expression_id == id)
+                        .unwrap();
+                    assert_eq!(
+                        projected.expression_kind,
+                        typed.nodes().node(row.site().node()).unwrap().kind.as_str()
+                    );
+                    assert_eq!(
+                        projected.source_range.start_byte,
+                        u64::try_from(row.source_range().start).unwrap()
+                    );
+                    assert_eq!(
+                        projected.source_range.end_byte,
+                        u64::try_from(row.source_range().end).unwrap()
+                    );
+                    assert_eq!(
+                        projected.rendered_surface,
+                        source
+                            .get(row.source_range().start..row.source_range().end)
+                            .unwrap()
+                    );
+                    assert_eq!(projected.inferred_type.as_deref(), Some("set"));
+                    assert!(
+                        projected.resolved_symbol.is_none()
+                            && projected.inserted_coercions.is_empty()
+                            && projected.active_thesis.is_none()
+                            && projected.overload_resolution.is_none()
+                    );
+                }
+                assert_eq!(
+                    actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .map(|row| row.expression_id.clone())
+                        .collect::<std::collections::BTreeSet<_>>(),
+                    expression_ids
                 );
                 let mut typed_terms = 0;
                 let mut untyped_formulas = 0;
@@ -60987,4 +61178,804 @@ fn native_theorem_artifact_main_preserves_witness_and_fresh_root() {
             );
         },
     );
+}
+
+#[test]
+fn native_theorem_artifact_written_types_match_source_handoffs() {
+    use mizar_artifact::verified_artifact::verified_artifact_json;
+    use mizar_atp::problem::*;
+    use mizar_checker::{
+        source_context::SourceBindingSiteRole,
+        type_checker::{NormalizedTypeStatus, TypeHeadRef},
+        typed_ast::{TypeEntryActual, TypeStatus, TypingState},
+    };
+    use mizar_ir::{projection::ProjectionExternalDependencyGap as Gap, storage::CollectInput};
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for threshold in [usize::MAX, 0] {
+        with_native_theorem_artifact_context(
+            text,
+            false,
+            threshold,
+            "",
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let types = typed.source_type().unwrap();
+                let context = typed.source_context().unwrap();
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = if threshold == 0 {
+                    VerifierPolicy::default()
+                        .with_profile_id("artifact λ\0")
+                        .with_checker_schema_version(7)
+                } else {
+                    VerifierPolicy::default()
+                };
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let actual = inputs
+                    .project_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile, ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (
+                            "proof-witnesses/checked.json",
+                            &fixture.root.join("written-handoffs"),
+                        ),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
+                assert_eq!(
+                    actual.external_dependency_gaps,
+                    [
+                        Gap::DriverSession,
+                        Gap::DiagnosticsIntegration,
+                        Gap::ProducerProjectionPayload,
+                        Gap::ArtifactPublicationToken
+                    ]
+                );
+                assert_eq!(
+                    verified_artifact_json(&actual.artifact).unwrap(),
+                    verified_artifact_json(&expected.as_ref().unwrap().as_ref().unwrap().artifact)
+                        .unwrap()
+                );
+                assert_eq!(types.expressions().len(), 2);
+                assert_eq!(types.applications().len(), context.declarations().len());
+                let mut applications = std::collections::BTreeSet::new();
+                let mut declarations = std::collections::BTreeSet::new();
+                let mut raw_sites = std::collections::BTreeSet::new();
+                let mut checked_ids = std::collections::BTreeSet::new();
+                let mut expected_ids = metadata
+                    .expr_metadata()
+                    .iter()
+                    .map(|(_, row)| row.expr.as_str().to_owned())
+                    .collect::<std::collections::BTreeSet<_>>();
+                let mut proof_let_roots = std::collections::BTreeSet::new();
+                for (root, expression) in types.expressions().iter() {
+                    assert!(raw_sites.insert(expression.site().clone()));
+                    let mut participants = Vec::new();
+                    for (application_id, application) in types
+                        .applications()
+                        .iter()
+                        .filter(|(_, row)| row.root() == root)
+                    {
+                        assert!(applications.insert(application_id));
+                        let matching = context
+                            .declarations()
+                            .iter()
+                            .filter(|(_, row)| {
+                                row.binding == application.binding()
+                                    && row.source_ordinal == application.source_ordinal()
+                            })
+                            .collect::<Vec<_>>();
+                        let [(declaration_id, declaration)] = matching.as_slice() else {
+                            panic!("unique actual application/declaration join")
+                        };
+                        assert!(declarations.insert(*declaration_id));
+                        assert_eq!(declaration.written_type_range, expression.source_range());
+                        let node = typed.nodes().node(declaration.site.node()).unwrap();
+                        assert_eq!(node.typing, TypingState::Successful);
+                        let entry = typed.types().get(node.links.type_entry.unwrap()).unwrap();
+                        assert_eq!(entry.owner, declaration.site);
+                        assert_eq!(entry.status, TypeStatus::Known);
+                        let TypeEntryActual::Known(id) = entry.actual else {
+                            panic!("actual known declaration type")
+                        };
+                        let normalized = inference.normalized_types().get(id).unwrap();
+                        assert_eq!(normalized.status, NormalizedTypeStatus::Known);
+                        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+                        assert!(
+                            normalized.args.is_empty()
+                                && normalized.attributes.positive().is_empty()
+                                && normalized.attributes.negative().is_empty()
+                        );
+                        checked_ids.insert(id);
+                        participants.push(application.source_ordinal());
+                        if declaration.role == SourceBindingSiteRole::ProofLet {
+                            proof_let_roots.insert(root);
+                        }
+                    }
+                    let ordinal = participants.into_iter().min().unwrap();
+                    let id = format!("source.theorem.type.{ordinal}");
+                    assert!(expected_ids.insert(id.clone()));
+                    let rows = actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .filter(|row| row.expression_id == id)
+                        .collect::<Vec<_>>();
+                    let [row] = rows.as_slice() else {
+                        panic!("exactly one artifact row per raw written root")
+                    };
+                    let raw = typed.nodes().node(expression.site().node()).unwrap();
+                    let head = typed.nodes().node(expression.head_site().node()).unwrap();
+                    assert_ne!(expression.site(), expression.head_site());
+                    assert_eq!(raw.kind.as_str(), "TypeExpression");
+                    assert_eq!(head.kind.as_str(), "TypeHead");
+                    assert_eq!(raw.children, [expression.head_site().node()]);
+                    assert_eq!(row.expression_kind, raw.kind.as_str());
+                    assert_eq!(
+                        row.source_range.start_byte,
+                        u64::try_from(expression.source_range().start).unwrap()
+                    );
+                    assert_eq!(
+                        row.source_range.end_byte,
+                        u64::try_from(expression.source_range().end).unwrap()
+                    );
+                    assert_eq!(
+                        row.rendered_surface,
+                        source
+                            .get(expression.source_range().start..expression.source_range().end)
+                            .unwrap()
+                    );
+                    assert_eq!(row.inferred_type.as_deref(), Some("set"));
+                    assert!(
+                        row.resolved_symbol.is_none()
+                            && row.inserted_coercions.is_empty()
+                            && row.active_thesis.is_none()
+                            && row.overload_resolution.is_none()
+                    );
+                }
+                assert_eq!(applications.len(), types.applications().len());
+                assert_eq!(declarations.len(), context.declarations().len());
+                assert_eq!(raw_sites.len(), types.expressions().len());
+                assert_eq!(checked_ids.len(), 1);
+                assert_eq!(proof_let_roots.len(), 1);
+                assert_eq!(
+                    actual.artifact.expressions.len(),
+                    metadata.expr_metadata().len() + raw_sites.len()
+                );
+                assert_eq!(
+                    actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .map(|row| row.expression_id.clone())
+                        .collect::<std::collections::BTreeSet<_>>(),
+                    expected_ids
+                );
+                for (_, row) in metadata.expr_metadata().iter() {
+                    let projected = actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .find(|value| value.expression_id == row.expr.as_str())
+                        .unwrap();
+                    assert_eq!(
+                        projected.expression_kind,
+                        typed
+                            .nodes()
+                            .node(row.typed_site.node())
+                            .unwrap()
+                            .kind
+                            .as_str()
+                    );
+                    assert_eq!(
+                        projected.source_range.start_byte,
+                        u64::try_from(row.source_range.start).unwrap()
+                    );
+                    assert_eq!(
+                        projected.source_range.end_byte,
+                        u64::try_from(row.source_range.end).unwrap()
+                    );
+                    assert_eq!(
+                        projected.rendered_surface,
+                        source
+                            .get(row.source_range.start..row.source_range.end)
+                            .unwrap()
+                    );
+                    assert_eq!(
+                        projected.inferred_type.as_deref(),
+                        row.final_type.map(|_| "set")
+                    );
+                    assert!(
+                        row.overload.is_none()
+                            && row.inserted_views.is_empty()
+                            && row.diagnostics.is_empty()
+                    );
+                }
+                assert!(
+                    actual
+                        .artifact
+                        .exports
+                        .iter()
+                        .all(|row| row.proof_status.is_none())
+                );
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_current_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_written_types_preserve_raw_roots_and_main() {
+    use mizar_artifact::{
+        store::{
+            PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+            canonical_json_bytes, read_published_artifact,
+        },
+        verified_artifact::{
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+            artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
+        },
+    };
+    use mizar_atp::problem::*;
+    use mizar_checker::typed_ast::TypeEntryActual;
+    use mizar_ir::{projection::ProjectionExternalDependencyGap as Gap, storage::CollectInput};
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let original = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for text in [
+        original.to_owned(),
+        format!(
+            ":: 日本語 λ\n{}\n",
+            original.replace(" X", " Bound").replace("T:", "Renamed:")
+        ),
+    ] {
+        with_native_theorem_artifact_context(
+            &text,
+            false,
+            0,
+            "",
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let types = typed.source_type().unwrap();
+                let context = typed.source_context().unwrap();
+                let roots = types
+                    .expressions()
+                    .iter()
+                    .map(|(_, row)| row)
+                    .collect::<Vec<_>>();
+                assert_eq!(roots.len(), 2);
+                assert_ne!(roots[0].site(), roots[1].site());
+                assert_ne!(roots[0].source_range(), roots[1].source_range());
+                let mut denotations = std::collections::BTreeSet::new();
+                for (_, application) in types.applications().iter() {
+                    let declaration = context
+                        .declarations()
+                        .iter()
+                        .find(|(_, row)| {
+                            row.binding == application.binding()
+                                && row.source_ordinal == application.source_ordinal()
+                        })
+                        .unwrap()
+                        .1;
+                    let node = typed.nodes().node(declaration.site.node()).unwrap();
+                    let entry = typed.types().get(node.links.type_entry.unwrap()).unwrap();
+                    let TypeEntryActual::Known(id) = entry.actual else {
+                        panic!("known type")
+                    };
+                    denotations.insert(id);
+                }
+                assert_eq!(denotations.len(), 1);
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = VerifierPolicy::default()
+                    .with_profile_id("artifact λ\0")
+                    .with_checker_schema_version(7);
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                let root = fixture.root.join("written-main");
+                let path = PublishedArtifactPath::new("resolved/main.mizir.json").unwrap();
+                let witness_path = "proof-witnesses/checked.json";
+                let (actual, written) = inputs
+                    .write_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile, ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, path.as_str(), &root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(&actual, expected);
+                assert_eq!(
+                    actual.external_dependency_gaps,
+                    [
+                        Gap::DriverSession,
+                        Gap::DiagnosticsIntegration,
+                        Gap::ProducerProjectionPayload,
+                        Gap::ArtifactPublicationToken
+                    ]
+                );
+                let value = verified_artifact_json(&expected.artifact).unwrap();
+                let domain = artifact_hash_domain(
+                    VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                    expected.artifact.schema_version,
+                );
+                let excluded = artifact_hash_excluded_paths();
+                assert_eq!(written.path, path);
+                assert_eq!(written.artifact_hash, domain.hash(&value, &excluded));
+                assert_eq!(
+                    fs::read(root.join(path.as_str())).unwrap(),
+                    canonical_json_bytes(&value)
+                );
+                let read = read_published_artifact(
+                    &root,
+                    &path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&domain),
+                        hash_excluded_paths: &excluded,
+                        expected_artifact_hash: Some(written.artifact_hash),
+                    },
+                )
+                .unwrap();
+                assert_eq!(read.value, value);
+                assert_eq!(
+                    read_verified_artifact(
+                        &read.value,
+                        VerifiedArtifactReadOptions {
+                            artifact_path: Some(path.as_str()),
+                            expected_module: Some(&expected.artifact.module),
+                            expected_interface_hash: Some(expected.artifact.interface_hash),
+                            expected_implementation_hash: Some(
+                                expected.artifact.implementation_hash
+                            )
+                        }
+                    )
+                    .unwrap(),
+                    expected.artifact
+                );
+                let type_rows = actual
+                    .artifact
+                    .expressions
+                    .iter()
+                    .filter(|row| row.expression_id.starts_with("source.theorem.type."))
+                    .collect::<Vec<_>>();
+                assert_eq!(type_rows.len(), roots.len());
+                assert_ne!(type_rows[0].expression_id, type_rows[1].expression_id);
+                assert_ne!(type_rows[0].source_range, type_rows[1].source_range);
+                for (id, expression) in types.expressions().iter() {
+                    let ordinal = types
+                        .applications()
+                        .iter()
+                        .filter(|(_, row)| row.root() == id)
+                        .map(|(_, row)| row.source_ordinal())
+                        .min()
+                        .unwrap();
+                    let row = type_rows
+                        .iter()
+                        .find(|row| row.expression_id == format!("source.theorem.type.{ordinal}"))
+                        .unwrap();
+                    assert_eq!(
+                        row.expression_kind,
+                        typed
+                            .nodes()
+                            .node(expression.site().node())
+                            .unwrap()
+                            .kind
+                            .as_str()
+                    );
+                    assert_eq!(
+                        row.source_range.start_byte,
+                        u64::try_from(expression.source_range().start).unwrap()
+                    );
+                    assert_eq!(
+                        row.source_range.end_byte,
+                        u64::try_from(expression.source_range().end).unwrap()
+                    );
+                    assert_eq!(
+                        row.rendered_surface,
+                        source
+                            .get(expression.source_range().start..expression.source_range().end)
+                            .unwrap()
+                    );
+                    assert_eq!(row.inferred_type.as_deref(), Some("set"));
+                    assert!(row.active_thesis.is_none());
+                }
+                let file_ref = refs
+                    .iter()
+                    .find(|row| {
+                        row.output_kind() == &OutputKind::new("SourceTheoremCandidateWitnessFile")
+                    })
+                    .unwrap();
+                let physical = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<CanonicalJson>(file_ref, file_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(
+                    fs::read(root.join(witness_path)).unwrap(),
+                    canonical_json_bytes(&physical)
+                );
+                assert_eq!(
+                    fs::read(root.join(witness_path)).unwrap(),
+                    fs::read(fixture.root.join("oracle-artifact").join(witness_path)).unwrap()
+                );
+                assert_eq!(actual.artifact.obligations, expected.artifact.obligations);
+                assert_eq!(
+                    actual.artifact.proof_witnesses,
+                    expected.artifact.proof_witnesses
+                );
+                assert_eq!(actual.artifact.provenance, expected.artifact.provenance);
+                assert!(
+                    actual
+                        .artifact
+                        .exports
+                        .iter()
+                        .all(|row| row.proof_status.is_none())
+                );
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_current_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
+    use mizar_atp::problem::*;
+    use mizar_ir::storage::CollectInput;
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in ["baseline", "buffer", "bytes", "link"] {
+        let fault = if matches!(case, "bytes" | "link") {
+            case
+        } else {
+            ""
+        };
+        with_native_theorem_artifact_context(
+            text,
+            case == "buffer",
+            0,
+            fault,
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, _)| {
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = VerifierPolicy::default()
+                    .with_profile_id("artifact λ\0")
+                    .with_checker_schema_version(7);
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let root = fixture.root.join("written-profile");
+                let result = inputs.project_native_theorem_artifact_draft(
+                    six,
+                    owner,
+                    vcs.vcs()[0].id,
+                    (profile.clone(), ConcreteFormat::Tptp),
+                    (&policy, &verifier),
+                    ("proof-witnesses/checked.json", &root),
+                );
+                if case == "baseline" {
+                    let actual = result.unwrap().unwrap();
+                    assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
+                    assert_eq!(
+                        actual
+                            .artifact
+                            .expressions
+                            .iter()
+                            .filter(|row| row.expression_id.starts_with("source.theorem.type."))
+                            .count(),
+                        typed.source_type().unwrap().expressions().len()
+                    );
+                    let bytes = fs::read(root.join("proof-witnesses/checked.json")).unwrap();
+                    let error = fs::create_dir(&root).unwrap_err().to_string();
+                    assert_eq!(
+                        inputs
+                            .project_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", &root)
+                            )
+                            .unwrap_err(),
+                        error
+                    );
+                    assert_eq!(
+                        fs::read(root.join("proof-witnesses/checked.json")).unwrap(),
+                        bytes
+                    );
+                    let absent = fixture.root.join("written-refusal-must-stay-absent");
+                    let mut bad_lock = inputs.build_plan.clone();
+                    bad_lock.lockfile.packages[0].name.push_str("-changed");
+                    let changed = SourceLoadInputs {
+                        build_plan: &bad_lock,
+                        ..inputs
+                    };
+                    let error = changed.validate_native_lock_content().unwrap_err();
+                    assert_eq!(
+                        changed
+                            .project_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", &absent)
+                            )
+                            .unwrap_err(),
+                        error
+                    );
+                    let mut bad_config = inputs.build_plan.clone();
+                    bad_config.build_config.packages[0].config.incremental =
+                        !bad_config.build_config.packages[0].config.incremental;
+                    let changed = SourceLoadInputs {
+                        build_plan: &bad_config,
+                        ..inputs
+                    };
+                    let error = changed.validate_native_config_content().unwrap_err();
+                    assert_eq!(
+                        changed
+                            .project_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", &absent)
+                            )
+                            .unwrap_err(),
+                        error
+                    );
+                    assert!(!absent.exists());
+                } else if case == "buffer" {
+                    assert!(result.unwrap().is_none());
+                    assert!(!root.exists());
+                    assert!(
+                        inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", "main.json", &root)
+                            )
+                            .unwrap()
+                            .is_none()
+                    );
+                    assert!(!root.exists());
+                } else {
+                    assert!(expected.is_none());
+                    let error = result.unwrap_err();
+                    assert!(!root.exists());
+                    assert_eq!(
+                        inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", "main.json", &root)
+                            )
+                            .unwrap_err(),
+                        error
+                    );
+                    assert!(!root.exists());
+                }
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_published_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                if case != "buffer" {
+                    assert_eq!(six.parent_outputs().len(), 6);
+                    for parent in six.parent_outputs() {
+                        owner
+                            .validate_current_output(six.snapshot, parent.as_output_ref())
+                            .unwrap();
+                    }
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
 }

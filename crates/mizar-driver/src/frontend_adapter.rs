@@ -5110,8 +5110,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             source_atomic_formula::{SourceAtomicFormulaKind, SourceAtomicFormulaRecovery},
             source_statement::{SourceStatementRecovery, SourceTheoremRole, SourceTheoremStatus},
             source_term::{SourcePrimaryTermKind, SourcePrimaryTermRecovery},
+            source_type::{SourceTypeApplicationForm, SourceTypeHead},
             type_checker::{NormalizedTypeStatus, TypeHeadRef},
-            typed_ast::NodeRecoveryState,
+            typed_ast::{NodeRecoveryState, TypeEntryActual, TypeStatus, TypingState},
         };
         use mizar_ir::{
             dispatch_input::PhaseDispatchInputBundle,
@@ -5451,6 +5452,157 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             });
         }
         if !sites.is_empty() {
+            return Ok(None);
+        }
+        let Some(written_types) = typed.source_type() else {
+            return Ok(None);
+        };
+        let Some(context) = typed.source_context() else {
+            return Ok(None);
+        };
+        if written_types.source_id() != version.source_id
+            || written_types.module_id() != arena.module()
+            || context.source_id() != version.source_id
+            || context.module_id() != arena.module()
+            || written_types.expressions().is_empty()
+            || written_types.applications().len() != context.declarations().len()
+            || !written_types.arguments().is_empty()
+            || !written_types.definition_returns().is_empty()
+            || !written_types.mode_rhs().is_empty()
+            || !written_types.structure_members().is_empty()
+        {
+            return Ok(None);
+        }
+        let mut type_sites = std::collections::BTreeSet::new();
+        let mut bindings = std::collections::BTreeSet::new();
+        let mut ordinals = std::collections::BTreeSet::new();
+        for (root_id, root) in written_types.expressions().iter() {
+            let range = root.source_range();
+            let head_range = root.head_range();
+            let Some(node) = typed.nodes().node(root.site().node()) else {
+                return Ok(None);
+            };
+            let Some(head) = typed.nodes().node(root.head_site().node()) else {
+                return Ok(None);
+            };
+            if root.source_id() != version.source_id
+                || root.module_id() != arena.module()
+                || root.form() != SourceTypeApplicationForm::Bare
+                || root.head() != &SourceTypeHead::BuiltinSet
+                || root.recovery() != NodeRecoveryState::Normal
+                || root.site() != &mizar_checker::typed_ast::TypedSiteRef::Node(root.site().node())
+                || root.head_site()
+                    != &mizar_checker::typed_ast::TypedSiteRef::Node(root.head_site().node())
+                || !type_sites.insert(root.site().clone())
+                || node.kind.as_str() != "TypeExpression"
+                || head.kind.as_str() != "TypeHead"
+                || node.recovery != NodeRecoveryState::Normal
+                || head.recovery != NodeRecoveryState::Normal
+                || node.children != [root.head_site().node()]
+                || node.anchor != mizar_session::SourceAnchor::Range(range)
+                || head.anchor != mizar_session::SourceAnchor::Range(head_range)
+                || range.source_id != version.source_id
+                || head_range.source_id != version.source_id
+                || range.start >= range.end
+                || head_range.start < range.start
+                || head_range.end > range.end
+                || head_range.start >= head_range.end
+            {
+                return Ok(None);
+            }
+            let Some(surface) = source.source_text.get(range.start..range.end) else {
+                return Ok(None);
+            };
+            if surface != root.spelling()
+                || source.source_text.get(head_range.start..head_range.end)
+                    != Some(root.head_spelling())
+            {
+                return Ok(None);
+            }
+            let mut first: Option<usize> = None;
+            let mut root_type = None;
+            for (_, application) in written_types
+                .applications()
+                .iter()
+                .filter(|(_, application)| application.root() == root_id)
+            {
+                let Some(declaration) = unique(
+                    context
+                        .declarations()
+                        .iter()
+                        .map(|(_, row)| row)
+                        .filter(|row| {
+                            row.binding == application.binding()
+                                && row.source_ordinal == application.source_ordinal()
+                        }),
+                ) else {
+                    return Ok(None);
+                };
+                if !bindings.insert(declaration.binding)
+                    || !ordinals.insert(declaration.source_ordinal)
+                    || declaration.written_type_range != range
+                    || node.links.context != Some(declaration.local_context)
+                    || head.links.context != Some(declaration.local_context)
+                {
+                    return Ok(None);
+                }
+                let Some(declared_node) = typed.nodes().node(declaration.site.node()) else {
+                    return Ok(None);
+                };
+                if declared_node.typing != TypingState::Successful {
+                    return Ok(None);
+                }
+                let Some(entry) = declared_node
+                    .links
+                    .type_entry
+                    .and_then(|id| typed.types().get(id))
+                else {
+                    return Ok(None);
+                };
+                let TypeEntryActual::Known(id) = entry.actual else {
+                    return Ok(None);
+                };
+                if entry.owner != declaration.site
+                    || entry.status != TypeStatus::Known
+                    || root_type.is_some_and(|previous| previous != id)
+                {
+                    return Ok(None);
+                }
+                let Some(ty) = inference.normalized_types().get(id) else {
+                    return Ok(None);
+                };
+                if ty.status != NormalizedTypeStatus::Known
+                    || ty.head != TypeHeadRef::BuiltinSet
+                    || !ty.args.is_empty()
+                    || !ty.attributes.positive().is_empty()
+                    || !ty.attributes.negative().is_empty()
+                {
+                    return Ok(None);
+                }
+                root_type = Some(id);
+                first = Some(first.map_or(declaration.source_ordinal, |previous| {
+                    previous.min(declaration.source_ordinal)
+                }));
+            }
+            let Some(first) = first else {
+                return Ok(None);
+            };
+            expressions.push(ExpressionMetadata {
+                expression_id: format!("source.theorem.type.{first}"),
+                source_range: SourceRangeSummary {
+                    start_byte: range.start as u64,
+                    end_byte: range.end as u64,
+                },
+                expression_kind: node.kind.as_str().to_owned(),
+                rendered_surface: surface.to_owned(),
+                inferred_type: Some("set".to_owned()),
+                resolved_symbol: None,
+                inserted_coercions: Vec::new(),
+                active_thesis: None,
+                overload_resolution: None,
+            });
+        }
+        if bindings.len() != written_types.applications().len() {
             return Ok(None);
         }
         let vcs = storage

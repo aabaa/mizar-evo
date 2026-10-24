@@ -672,6 +672,8 @@ the owning producers when the paired tasks land.
 
 107. **[Unpublished source theorem main-file transport](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-MAIN.md).** [x]
 
+108. **[Source artifact written-type rows](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-WRITTEN-TYPES.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
