@@ -716,6 +716,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 44. **[Explicit local-variable transitivity names](../../task_contracts/en/ATP-LOCAL-VARIABLE-TRANSITIVITY-NAMES.md).** [x] — Explicit actual-chain names only; source Proof consumption and full finder remain open.
 
+45. **[Source theorem scoped sequent](../../task_contracts/en/ATP-SOURCE-THEOREM-SCOPED-SEQUENT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

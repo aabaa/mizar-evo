@@ -244,3 +244,10 @@ Task 3 adds Rust coverage for:
 - absence of backend text, SAT clauses, instantiated formulas, proof methods,
   backend logs, legacy certificates, and accepted-proof status fields from the
   public problem API.
+
+## Scoped guard problems
+
+SoftTypeStrategy::ScopedGuardPredicates is an explicit initial representation for a closed local sequent, separate from global GuardPredicates. Preserve all old modes, their validation and MissingTypeContextBinding behavior.
+After ordinary declaration/provenance/formula validation, before type-context validation, require FirstOrder quantifiers, Supported equality, zero axioms/properties/type-context guards and exactly one unsorted Forall binder. Its body must be Implies(unary Atom(Variable(binder)), Equality(Variable(binder),Variable(binder))); no other variable/term/connective shape is admitted. Later structural failures use existing UnsupportedProfileFeature with feature scoped-guard sequent; earlier validation retains its errors.
+This bounded syntax rule needs no Core/source-role/predicate-name inspection, source proof seal or new visitor. Correct declaration signatures remain required; concrete encoders retain generated-binder source-kind and free-variable checks. The antecedent carries the local guard under the same binder as the goal; do not assert a global guard, ground the parameter or simplify away the guard.
+Only the [source theorem producer](./translator.md#source-theorem-scoped-sequent) supplies the bounded genuine integration. Wider guarded sequents remain deferred; direct problem data and successful construction confer no acceptance, origin or currentness authority.

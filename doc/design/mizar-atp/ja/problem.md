@@ -229,3 +229,10 @@ task 3 は Rust coverage を追加し、次を確認する:
   rendering / identity coverage を含む;
 - public problem API に backend text、SAT clause、instantiated formula、proof method、
   backend log、legacy certificate、accepted-proof status field が存在しないこと。
+
+## Scoped guard problems
+
+SoftTypeStrategy::ScopedGuardPredicates は閉じた局所 sequent の初期表現を明示し、大域 GuardPredicates と区別する。旧 mode・検証・MissingTypeContextBinding を保つ。
+通常の declaration/provenance/formula 検証後、type-context 検証前に FirstOrder/Supported equality、空 axioms/properties/type-context guards、sort なしの Forall binder 一つを要求する。body は Implies(単項 Atom(Variable(binder)), Equality(Variable(binder),Variable(binder))) に限り、他の variable/term/connective shape は拒否する。構造拒否は既存 UnsupportedProfileFeature の feature scoped-guard sequent、先行検証 error は従来どおり。
+この限定構文検査は Core/source role/predicate 名の解釈、source proof seal、新 visitor を必要としない。通常の declaration signature と encoder の generated-binder source-kind/free-variable 検査を保つ。antecedent に局所 guard を置き、goal と同じ binder で束縛し、大域 guard 断言・parameter 定数化・guard 消去はしない。
+真正な限定統合は [source theorem producer](./translator.md#source-theorem-scoped-sequent) が担う。広い guarded sequent は未完了。直接の problem data と構築成功は受理・生成元・currentness の権限ではない。

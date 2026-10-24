@@ -661,6 +661,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 44. **[Explicit local-variable transitivity names](../../task_contracts/ja/ATP-LOCAL-VARIABLE-TRANSITIVITY-NAMES.md).** [x] — 明示した実 chain の names のみ。source Proof consumer と汎用 finder は未完了。
 
+45. **[Source theorem scoped sequent](../../task_contracts/ja/ATP-SOURCE-THEOREM-SCOPED-SEQUENT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

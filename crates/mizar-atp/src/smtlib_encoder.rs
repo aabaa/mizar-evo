@@ -417,7 +417,10 @@ fn validate_uninterpreted_profile(problem: &AtpProblem) -> Result<(), SmtLibEnco
             feature: "non-Unsat expected result",
         });
     }
-    if profile.soft_types() != SoftTypeStrategy::GuardPredicates {
+    if !matches!(
+        profile.soft_types(),
+        SoftTypeStrategy::GuardPredicates | SoftTypeStrategy::ScopedGuardPredicates
+    ) {
         return Err(SmtLibEncodingError::UnsupportedProfile {
             feature: "non-guard-predicate soft type strategy",
         });

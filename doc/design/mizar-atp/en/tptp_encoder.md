@@ -66,7 +66,7 @@ Task 10 supports this fail-closed subset:
 | `ExpectedBackendResult` | `ExpectedBackendResult::Unsat`. The TPTP file presents the goal as a conjecture; later backend-result classification must map successful refutation/proof output back to the unchanged `Unsat` contract. |
 | `EqualitySupport` | `Unsupported` rejects equality formulas; `Supported` emits TPTP `=`. |
 | `QuantifierPolicy` | `PropositionalOnly` rejects `Forall` and `Exists`; `FirstOrder` emits TPTP quantifiers. |
-| `SoftTypeStrategy` | `GuardPredicates` only. `BackendSorts` and `SortsAndGuards` are unsupported for FOF because task 10 has no typed TPTP semantics and must not erase soft-type facts. |
+| `SoftTypeStrategy` | `GuardPredicates` and explicit [`ScopedGuardPredicates`](./problem.md#scoped-guard-problems); the latter keeps its guard in the closed conjecture and uses unchanged rendering/scope checks. `BackendSorts` and `SortsAndGuards` remain unsupported. |
 | `NativePropertySupport` | Does not authorize native declarations. `EncodedProperty::native_declaration` is unsupported until a concrete native TPTP spec exists. |
 
 FOF emission is unsorted first-order emission. Any `AtpBinder` with a sort,

@@ -410,6 +410,13 @@ pub fn translate_declarations(
         return Err(AtpTranslationError::MismatchedTargetHandoff { vc: input.vc });
     }
 
+    if input.logic_profile.soft_types() == SoftTypeStrategy::ScopedGuardPredicates {
+        return Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "scoped-guard generic translation",
+        }
+        .into());
+    }
+
     let target_binding = target_binding(input.kernel_handoff)?;
     let soft_type_projections = sort_soft_type_projections(input.soft_type_projections)?;
     let type_guard_ids = type_guard_ids(&soft_type_projections)?;
@@ -442,6 +449,202 @@ pub fn translate_declarations(
     };
     validate_translation(&translation)?;
     Ok(translation)
+}
+
+/// Builds a closed local sequent from an actual configured theorem discharge.
+pub fn translate_source_theorem_sequent(
+    core: &mizar_core::core_ir::CoreIr,
+    original: &VcSet,
+    vc_id: VcId,
+    discharge: &mizar_vc::discharge::DischargeOutput,
+    policy: &mizar_vc::discharge::DischargePolicy,
+    logic_profile: LogicProfile,
+) -> Result<AtpProblem, String> {
+    use crate::problem::{AtpAtom, AtpBinder, ConcreteFormat, LogicFragment};
+    use mizar_core::core_ir::{CoreFormulaKind, CoreTermKind};
+    let handoff = mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(
+        core, original, vc_id, discharge, policy,
+    )?;
+    let invalid = || "theorem.atp.invalid_projection".to_owned();
+    let format = match logic_profile.fragment() {
+        LogicFragment::Fof => ConcreteFormat::Tptp,
+        LogicFragment::SmtLibUninterpreted => ConcreteFormat::SmtLib,
+        _ => return Err(invalid()),
+    };
+    if logic_profile.soft_types() != SoftTypeStrategy::ScopedGuardPredicates
+        || logic_profile.quantifiers() != QuantifierPolicy::FirstOrder
+        || logic_profile.equality() != EqualitySupport::Supported
+        || !logic_profile.concrete_formats().contains(&format)
+    {
+        return Err(invalid());
+    }
+    let vc = discharge.vc_set().vc(vc_id).ok_or_else(invalid)?;
+    let [context] = vc.local_context.entries() else {
+        return Err(invalid());
+    };
+    if context.kind != ContextEntryKind::ProofAssumption
+        || vc.premises.as_slice() != [PremiseRef::LocalContext(context.id)]
+    {
+        return Err(invalid());
+    }
+    let context_id = u32::try_from(context.id.index().checked_add(1).ok_or_else(invalid)?)
+        .map_err(|_| invalid())?;
+    let guard_ref = context.formula.ok_or_else(invalid)?;
+    let (VcFormulaRef::Core(guard), VcFormulaRef::Core(goal)) = (guard_ref, vc.goal) else {
+        return Err(invalid());
+    };
+    let CoreFormulaKind::TypePred { subject, ty } =
+        &core.formulas().get(guard).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    let CoreTermKind::Var(local) = &core.terms().get(*subject).ok_or_else(invalid)?.kind else {
+        return Err(invalid());
+    };
+    let CoreFormulaKind::Equals { left, right } =
+        &core.formulas().get(goal).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    if ty.as_str() != "set"
+        || [left, right].into_iter().any(|term| {
+            core.terms().get(*term).map(|row| &row.kind) != Some(&CoreTermKind::Var(*local))
+        })
+    {
+        return Err(invalid());
+    }
+    let envelope = handoff.canonical_evidence();
+    let [guard_evidence] = envelope.formula_evidence() else {
+        return Err(invalid());
+    };
+    let goal_evidence = envelope.final_goal();
+    if guard_evidence.producer_formula_ref() != Some(guard_ref)
+        || !matches!(guard_evidence.source(), KernelFormulaSource::LocalHypothesis { local_context_id } if *local_context_id == context_id)
+        || goal_evidence.producer_formula_ref != vc.goal
+        || goal_evidence.polarity != KernelGoalPolarity::AssertFalseForRefutation
+    {
+        return Err(invalid());
+    }
+    let mut primitive_provenance = Vec::new();
+    for (id, fingerprint) in [
+        (
+            guard_evidence.provenance_id(),
+            guard_evidence.formula_fingerprint(),
+        ),
+        (
+            goal_evidence.provenance_id,
+            &goal_evidence.formula_fingerprint,
+        ),
+    ] {
+        primitive_provenance.push(
+            envelope
+                .provenance()
+                .iter()
+                .find(|row| {
+                    row.provenance_id == id
+                        && &row.formula_fingerprint == fingerprint
+                        && &row.target_vc == envelope.target_vc()
+                })
+                .ok_or_else(invalid)?,
+        );
+    }
+    let metadata = format!(
+        "mizar-atp/source-theorem-sequent/v1;source={};module={};binder={};target={}:{};handoff={};context={};guard-ref={};goal-ref={};guard-fingerprint={}:{};goal-fingerprint={}:{};guard-provenance={}:{};goal-provenance={}:{}",
+        hex(format!("{:?}", core.source_id()).as_bytes()),
+        hex(format!("{:?}", core.module_id()).as_bytes()),
+        local.index(),
+        envelope.target_vc().algorithm_id,
+        hex(&envelope.target_vc().digest),
+        hex(handoff.canonical_hash().as_bytes()),
+        hex(handoff.context_identity_hash().as_bytes()),
+        hex(format!("{guard_ref:?}").as_bytes()),
+        hex(format!("{:?}", vc.goal).as_bytes()),
+        guard_evidence.formula_fingerprint().algorithm_id,
+        hex(&guard_evidence.formula_fingerprint().digest),
+        goal_evidence.formula_fingerprint.algorithm_id,
+        hex(&goal_evidence.formula_fingerprint.digest),
+        primitive_provenance[0].provenance_id,
+        hex(&primitive_provenance[0].payload),
+        primitive_provenance[1].provenance_id,
+        hex(&primitive_provenance[1].payload),
+    );
+    let binder = AtpSourceBinding::new(format!("proof-let:{}", local.index()));
+    let provenance = [
+        (
+            AtpSourceRef::LocalHypothesis(AtpSourceBinding::new(format!(
+                "local-context:{context_id}"
+            ))),
+            "guard",
+        ),
+        (AtpSourceRef::CheckerOwnedFact(binder.clone()), "binder"),
+        (
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("goal:1")),
+            "closure",
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(id, (source, role))| {
+        AtpProvenance::new(
+            AtpProvenanceId::new(id as u32),
+            source,
+            format!("{metadata};role={role}"),
+        )
+    })
+    .collect();
+    let variable = AtpTerm::Variable(AtpSymbolName::new("local:0"));
+    AtpProblem::try_new(AtpProblemParts {
+        vc_id,
+        target_binding: target_binding(&handoff).map_err(|error| error.to_string())?,
+        logic_profile,
+        expected_result: ExpectedBackendResult::Unsat,
+        declarations: vec![
+            AtpDeclaration::new(
+                AtpDeclarationId::new(0),
+                AtpDeclarationKind::Predicate,
+                "type:set",
+                1,
+                AtpProvenanceId::new(0),
+            ),
+            AtpDeclaration::new(
+                AtpDeclarationId::new(1),
+                AtpDeclarationKind::GeneratedBinder,
+                "local:0",
+                0,
+                AtpProvenanceId::new(1),
+            ),
+        ],
+        axioms: vec![],
+        conjecture: AtpFormula::new(
+            AtpFormulaId::new(0),
+            AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new("local:0", None)],
+                body: Box::new(AtpFormulaTree::Implies(
+                    Box::new(AtpFormulaTree::Atom(AtpAtom::new(
+                        "type:set",
+                        vec![variable.clone()],
+                    ))),
+                    Box::new(AtpFormulaTree::Equality {
+                        left: variable.clone(),
+                        right: variable,
+                    }),
+                )),
+            },
+            AtpProvenanceId::new(2),
+        ),
+        type_context: AtpTypeContext::new(vec![]),
+        properties: vec![],
+        symbol_map: vec![
+            AtpSymbolMapEntry::new(
+                "type:set",
+                AtpSymbolSource::MizarSymbol(AtpSourceBinding::new("builtin-type:set")),
+            ),
+            AtpSymbolMapEntry::new("local:0", AtpSymbolSource::GeneratedBinder(binder)),
+        ],
+        provenance,
+        diagnostics: vec![],
+    })
+    .map_err(|error| error.to_string())
 }
 
 /// Builds structured ATP input only for the replayed source-registration discharge profile.
@@ -2077,6 +2280,12 @@ fn soft_type_strategy_requires_guards(
     strategy: SoftTypeStrategy,
 ) -> Result<bool, AtpTranslationError> {
     match strategy {
+        SoftTypeStrategy::ScopedGuardPredicates => {
+            Err(AtpProblemError::UnsupportedProfileFeature {
+                feature: "scoped-guard generic translation",
+            }
+            .into())
+        }
         SoftTypeStrategy::BackendSorts => Ok(false),
         SoftTypeStrategy::GuardPredicates | SoftTypeStrategy::SortsAndGuards => Ok(true),
     }

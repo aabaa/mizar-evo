@@ -1361,3 +1361,132 @@ fn observed_ground_terms_allow_empty_observations_and_refuse_valid_native_proper
     );
     assert_eq!(problem, before);
 }
+
+#[test]
+fn scoped_guard_problems_require_a_closed_unary_sequent() {
+    let mut parts = minimal_parts();
+    parts.logic_profile = profile_first_order();
+    parts.logic_profile.soft_types = SoftTypeStrategy::ScopedGuardPredicates;
+    parts.axioms.clear();
+    for (id, symbol, kind) in [
+        (3, "x", AtpDeclarationKind::GeneratedBinder),
+        (4, "y", AtpDeclarationKind::GeneratedBinder),
+        (5, "s", AtpDeclarationKind::Sort),
+    ] {
+        parts.declarations.push(AtpDeclaration::new(
+            AtpDeclarationId::new(id),
+            kind,
+            symbol,
+            0,
+            AtpProvenanceId::new(1),
+        ));
+        parts.symbol_map.push(AtpSymbolMapEntry::new(
+            symbol,
+            AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new(format!("binder:{symbol}"))),
+        ));
+    }
+    let guard = atom("P", vec![variable("x")]);
+    let goal = AtpFormulaTree::Equality {
+        left: variable("x"),
+        right: variable("x"),
+    };
+    let body = AtpFormulaTree::Implies(Box::new(guard.clone()), Box::new(goal.clone()));
+    let closed = AtpFormulaTree::Forall {
+        binders: vec![AtpBinder::new("x", None)],
+        body: Box::new(body.clone()),
+    };
+    parts.conjecture = AtpFormula::new(
+        AtpFormulaId::new(2),
+        closed.clone(),
+        AtpProvenanceId::new(3),
+    );
+    AtpProblem::try_new(parts.clone()).unwrap();
+    let invalid = AtpProblemError::UnsupportedProfileFeature {
+        feature: "scoped-guard sequent",
+    };
+    for mutation in 0..7 {
+        let mut tree = closed.clone();
+        let AtpFormulaTree::Forall { binders, body } = &mut tree else {
+            unreachable!()
+        };
+        match mutation {
+            0 => tree = AtpFormulaTree::True,
+            1 => tree = *body.clone(),
+            2 => binders[0] = AtpBinder::new("x", Some("s".into())),
+            3 => binders.push(AtpBinder::new("y", None)),
+            4 => binders[0] = AtpBinder::new("y", None),
+            5 => {
+                **body = AtpFormulaTree::Implies(
+                    Box::new(guard.clone()),
+                    Box::new(AtpFormulaTree::Equality {
+                        left: variable("x"),
+                        right: variable("y"),
+                    }),
+                )
+            }
+            6 => **body = AtpFormulaTree::And(vec![guard.clone(), goal.clone()]),
+            _ => unreachable!(),
+        }
+        let mut changed = parts.clone();
+        changed.conjecture = AtpFormula::new(AtpFormulaId::new(2), tree, AtpProvenanceId::new(3));
+        assert_eq!(AtpProblem::try_new(changed).unwrap_err(), invalid);
+    }
+    for extra in 0..3 {
+        let mut changed = parts.clone();
+        match extra {
+            0 => changed.axioms.push(AtpFormula::new(
+                AtpFormulaId::new(1),
+                guard.clone(),
+                AtpProvenanceId::new(2),
+            )),
+            1 => changed.type_context.guards.push(AtpTypeGuard::new(
+                AtpTypeGuardId::new(1),
+                guard.clone(),
+                AtpProvenanceId::new(2),
+            )),
+            2 => changed.properties.push(EncodedProperty::native_declaration(
+                AtpPropertyId::new(1),
+                "P",
+                AtpDeclarationId::new(1),
+                AtpProvenanceId::new(2),
+            )),
+            _ => unreachable!(),
+        }
+        assert_eq!(AtpProblem::try_new(changed).unwrap_err(), invalid);
+    }
+    for (equality, quantifiers, feature) in [
+        (
+            EqualitySupport::Unsupported,
+            QuantifierPolicy::FirstOrder,
+            "equality",
+        ),
+        (
+            EqualitySupport::Supported,
+            QuantifierPolicy::PropositionalOnly,
+            "quantifier",
+        ),
+    ] {
+        let mut changed = parts.clone();
+        changed.logic_profile.equality = equality;
+        changed.logic_profile.quantifiers = quantifiers;
+        assert_eq!(
+            AtpProblem::try_new(changed).unwrap_err(),
+            AtpProblemError::UnsupportedProfileFeature { feature }
+        );
+    }
+    let mut missing = parts.clone();
+    missing.conjecture = AtpFormula::missing(AtpFormulaId::new(2), AtpProvenanceId::new(3));
+    assert_eq!(
+        AtpProblem::try_new(missing).unwrap_err(),
+        AtpProblemError::MissingFormulaPayload {
+            formula_id: AtpFormulaId::new(2)
+        }
+    );
+    parts.logic_profile.soft_types = SoftTypeStrategy::GuardPredicates;
+    assert_eq!(
+        AtpProblem::try_new(parts).unwrap_err(),
+        AtpProblemError::MissingTypeContextBinding {
+            strategy: SoftTypeStrategy::GuardPredicates
+        }
+    );
+}

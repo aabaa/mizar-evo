@@ -72,7 +72,7 @@ Task 12 supports this fail-closed subset:
 | `ExpectedBackendResult` | `ExpectedBackendResult::Unsat`. The SMT-LIB file asserts the premises and the negated goal, then emits `check-sat`; only an `unsat` backend result can match the profile contract in later result classification. |
 | `EqualitySupport` | `Unsupported` rejects equality formulas; `Supported` emits SMT-LIB `=`. |
 | `QuantifierPolicy` | `PropositionalOnly` rejects `Forall` and `Exists` and selects `QF_UF`; `FirstOrder` emits SMT-LIB quantifiers and selects `UF`. Logic selection is profile-driven, not based on backend output or formula simplification. |
-| `SoftTypeStrategy` | `GuardPredicates` only. `BackendSorts` and `SortsAndGuards` are unsupported for task 12 because the current `AtpProblem` model has no function/predicate sort signatures, and sort-only encoding must not erase required soft-type facts. |
+| `SoftTypeStrategy` | `GuardPredicates` and explicit [`ScopedGuardPredicates`](./problem.md#scoped-guard-problems); the latter keeps its guard in the closed conjecture and uses unchanged rendering/scope checks. `BackendSorts` and `SortsAndGuards` remain unsupported. |
 | `NativePropertySupport` | Does not authorize native declarations. `EncodedProperty::native_declaration` is unsupported until a concrete native SMT-LIB spec exists. |
 
 Task-12 sort encoding is intentionally conservative: all terms live in one

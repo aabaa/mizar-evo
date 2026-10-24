@@ -27953,4 +27953,579 @@ mod term_proof_tests {
             before
         );
     }
+    #[test]
+    fn source_theorem_scoped_sequent_matches_genuine_problems() {
+        use mizar_atp::{
+            backend::{EncodedBackendProblem, EncodedBackendProblemParts},
+            problem::*,
+            translator::translate_source_theorem_sequent as sequent,
+        };
+        use mizar_core::core_ir::{CoreFormulaKind, CoreProofNodeKind, CoreTermKind};
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+            generator::generate_source_theorem_vcs,
+            kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff,
+            vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion, VcStatus},
+        };
+        let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let baseline = step5c14_computation_core(text).unwrap();
+        let module = baseline.module_id();
+        let hex = |bytes: &[u8]| {
+            bytes
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        };
+        let fields = |values: &[&str]| {
+            values
+                .iter()
+                .map(|value| format!("{}:{value};", value.len()))
+                .collect::<String>()
+        };
+        for (case, text) in [
+            text.to_owned(),
+            text.replace(" X", " Local"),
+            format!(":: 日本語 λ\n\n{text}"),
+            text.replace("T:", "Renamed:"),
+            text.to_owned(),
+            text.to_owned(),
+            text.to_owned(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) =
+                super::super::tests::source_registration_owner_inputs(
+                    &text,
+                    module.package().as_str(),
+                    module.path().as_str(),
+                    usize::from(case == 4),
+                );
+            assert!(frontend.diagnostics.is_empty() && collected.diagnostics().is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            if case == 4 {
+                assert_ne!(ast.source_id, baseline.source_id());
+            }
+            assert_eq!(source.source_id(), ast.source_id);
+            let core = with_source_theorem_check(ast, &source, collected.env(), |check| {
+                mizar_core::elaborator::lower_source_theorem_skeletons(check, None)
+            })
+            .unwrap();
+            assert_eq!(core.source_id(), ast.source_id);
+            let snapshot = snapshot_id(if case == 5 { 778 } else { 777 });
+            let generation =
+                GenerationSchemaVersion::new(if case == 5 { "" } else { "atp45-generation" });
+            let schema = VcSchemaVersion::new(if case == 5 { "λ\n\0" } else { "atp45-schema" });
+            let vcs = generate_source_theorem_vcs(&core, snapshot, &generation, &schema).unwrap();
+            let (label, max_steps) = match case {
+                5 => ("", 0),
+                6 => ("λ\n\0", u32::MAX),
+                _ => ("explicit", 64),
+            };
+            let policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new(label),
+                    max_steps,
+                },
+            };
+            let output = try_discharge(DischargeInput {
+                vc_set: &vcs,
+                policy: &policy,
+            })
+            .unwrap();
+            let [vc] = output.vc_set().vcs() else {
+                panic!("one processed theorem VC")
+            };
+            let id = vc.id;
+            let handoff =
+                build_source_theorem_discharge_kernel_handoff(&core, &vcs, id, &output, &policy)
+                    .unwrap();
+            let immutable = (core.clone(), vcs.clone(), output.clone(), policy.clone());
+            let proof = core.proofs().iter().next().unwrap().1;
+            let CoreProofNodeKind::IntroduceBinder { binder, .. } =
+                &core.proof_nodes().get(proof.root).unwrap().kind
+            else {
+                panic!()
+            };
+            let guard_ref = vc.local_context.entries()[0].formula.unwrap();
+            let mizar_vc::vc_ir::VcFormulaRef::Core(guard_id) = guard_ref else {
+                panic!()
+            };
+            let CoreFormulaKind::TypePred { subject, ty } =
+                &core.formulas().get(guard_id).unwrap().kind
+            else {
+                panic!()
+            };
+            assert_eq!(ty.as_str(), "set");
+            assert_eq!(
+                core.terms().get(*subject).unwrap().kind,
+                CoreTermKind::Var(binder.var)
+            );
+            let envelope = handoff.canonical_evidence();
+            let guard = &envelope.formula_evidence()[0];
+            let goal = envelope.final_goal();
+            let guard_origin = envelope
+                .provenance()
+                .iter()
+                .find(|row| row.provenance_id == guard.provenance_id())
+                .unwrap();
+            let goal_origin = envelope
+                .provenance()
+                .iter()
+                .find(|row| row.provenance_id == goal.provenance_id)
+                .unwrap();
+            let target = envelope.target_vc();
+            let common = format!(
+                "mizar-atp/source-theorem-sequent/v1;source={};module={};binder={};target={}:{};handoff={};context={};guard-ref={};goal-ref={};guard-fingerprint={}:{};goal-fingerprint={}:{};guard-provenance={}:{};goal-provenance={}:{}",
+                hex(format!("{:?}", core.source_id()).as_bytes()),
+                hex(format!("{:?}", core.module_id()).as_bytes()),
+                binder.var.index(),
+                target.algorithm_id,
+                hex(&target.digest),
+                hex(handoff.canonical_hash().as_bytes()),
+                hex(handoff.context_identity_hash().as_bytes()),
+                hex(format!("{guard_ref:?}").as_bytes()),
+                hex(format!("{:?}", vc.goal).as_bytes()),
+                guard.formula_fingerprint().algorithm_id,
+                hex(&guard.formula_fingerprint().digest),
+                goal.formula_fingerprint.algorithm_id,
+                hex(&goal.formula_fingerprint.digest),
+                guard_origin.provenance_id,
+                hex(&guard_origin.payload),
+                goal_origin.provenance_id,
+                hex(&goal_origin.payload)
+            );
+            let binder_source = format!("proof-let:{}", binder.var.index());
+            let provenance = [
+                (
+                    AtpSourceRef::LocalHypothesis(AtpSourceBinding::new(format!(
+                        "local-context:{}",
+                        vc.local_context.entries()[0].id.index() + 1
+                    ))),
+                    "guard",
+                ),
+                (
+                    AtpSourceRef::CheckerOwnedFact(AtpSourceBinding::new(&binder_source)),
+                    "binder",
+                ),
+                (
+                    AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("goal:1")),
+                    "closure",
+                ),
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(id, (source, role))| {
+                AtpProvenance::new(
+                    AtpProvenanceId::new(id as u32),
+                    source,
+                    format!("{common};role={role}"),
+                )
+            })
+            .collect::<Vec<_>>();
+            let local = AtpTerm::Variable("local:0".into());
+            let closed = AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new("local:0", None)],
+                body: Box::new(AtpFormulaTree::Implies(
+                    Box::new(AtpFormulaTree::Atom(AtpAtom::new(
+                        "type:set",
+                        vec![local.clone()],
+                    ))),
+                    Box::new(AtpFormulaTree::Equality {
+                        left: local.clone(),
+                        right: local,
+                    }),
+                )),
+            };
+            let predicate_key = fields(&[
+                "symbol",
+                "predicate",
+                "1",
+                &fields(&["mizar-symbol", "builtin-type:set"]),
+                "type:set",
+            ]);
+            let binder_key = fields(&[
+                "binder",
+                &fields(&["generated-binder", &binder_source]),
+                "1",
+                "0",
+                "0",
+            ]);
+            let predicate = format!("m_{}", hex(predicate_key.as_bytes()));
+            assert_eq!(
+                predicate,
+                "m_363a73796d626f6c3b393a7072656469636174653b313a313b33363a31323a6d697a61722d73796d626f6c3b31363a6275696c74696e2d747970653a7365743b3b383a747970653a7365743b"
+            );
+            for (fragment, format, prefix) in [
+                (LogicFragment::Fof, ConcreteFormat::Tptp, "V_"),
+                (
+                    LogicFragment::SmtLibUninterpreted,
+                    ConcreteFormat::SmtLib,
+                    "v_",
+                ),
+            ] {
+                let profile = LogicProfile::try_new(
+                    "caller-explicit",
+                    fragment,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let expected = AtpProblem::try_new(AtpProblemParts {
+                    vc_id: id,
+                    target_binding: AtpTargetBinding::new(
+                        AtpFingerprint::new(target.algorithm_id, target.digest.clone()).unwrap(),
+                        format!(
+                            "mizar-vc-kernel-evidence-handoff:{}",
+                            hex(handoff.canonical_hash().as_bytes())
+                        ),
+                    )
+                    .unwrap(),
+                    logic_profile: profile.clone(),
+                    expected_result: ExpectedBackendResult::Unsat,
+                    declarations: vec![
+                        AtpDeclaration::new(
+                            AtpDeclarationId::new(0),
+                            AtpDeclarationKind::Predicate,
+                            "type:set",
+                            1,
+                            AtpProvenanceId::new(0),
+                        ),
+                        AtpDeclaration::new(
+                            AtpDeclarationId::new(1),
+                            AtpDeclarationKind::GeneratedBinder,
+                            "local:0",
+                            0,
+                            AtpProvenanceId::new(1),
+                        ),
+                    ],
+                    axioms: vec![],
+                    conjecture: AtpFormula::new(
+                        AtpFormulaId::new(0),
+                        closed.clone(),
+                        AtpProvenanceId::new(2),
+                    ),
+                    type_context: AtpTypeContext::new(vec![]),
+                    properties: vec![],
+                    symbol_map: vec![
+                        AtpSymbolMapEntry::new(
+                            "type:set",
+                            AtpSymbolSource::MizarSymbol(AtpSourceBinding::new("builtin-type:set")),
+                        ),
+                        AtpSymbolMapEntry::new(
+                            "local:0",
+                            AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new(&binder_source)),
+                        ),
+                    ],
+                    provenance: provenance.clone(),
+                    diagnostics: vec![],
+                })
+                .unwrap();
+                let actual = sequent(&core, &vcs, id, &output, &policy, profile.clone()).unwrap();
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    actual,
+                    sequent(&core, &vcs, id, &output, &policy, profile.clone()).unwrap()
+                );
+                assert!(actual.observed_ground_terms().unwrap().is_empty());
+                let variable = format!("{prefix}{}", hex(binder_key.as_bytes()));
+                let (input_text, logic_fragment, label) = if format == ConcreteFormat::Tptp {
+                    (
+                        format!(
+                            "fof(conj_0, conjecture, (! [{variable}] : (({predicate}({variable}) => ({variable} = {variable}))))).\n"
+                        ),
+                        "fof",
+                        "conj_0",
+                    )
+                } else {
+                    (
+                        format!(
+                            "(set-logic UF)\n(declare-sort mizar_universe 0)\n(declare-fun {predicate} (mizar_universe) Bool)\n(assert (! (not (forall (({variable} mizar_universe)) (=> ({predicate} {variable}) (= {variable} {variable})))) :named neg_conj_0))\n(check-sat)\n"
+                        ),
+                        "smtlib-uninterpreted",
+                        "neg_conj_0",
+                    )
+                };
+                let symbol_bindings = vec![
+                    format!(
+                        "a=8:{};b={}:{};s=mizar=16:{}",
+                        hex(b"type:set"),
+                        predicate.len(),
+                        hex(predicate.as_bytes()),
+                        hex(b"builtin-type:set")
+                    ),
+                    format!(
+                        "a=7:{};b={}:{};s=binder={}:{}",
+                        hex(b"local:0"),
+                        variable.len(),
+                        hex(variable.as_bytes()),
+                        binder_source.len(),
+                        hex(binder_source.as_bytes())
+                    ),
+                ];
+                // Reuse the unchanged native producer only for its opaque provenance hash.
+                let provenance_hash = EncodedBackendProblem::encode(&expected, format)
+                    .unwrap()
+                    .provenance_hash();
+                let expected_encoded = EncodedBackendProblem::new(EncodedBackendProblemParts {
+                    problem_id: expected.problem_id(),
+                    target_binding: expected.target_binding().clone(),
+                    expected_result: ExpectedBackendResult::Unsat,
+                    concrete_format: format,
+                    logic_profile_name: "caller-explicit".to_owned(),
+                    logic_fragment: logic_fragment.to_owned(),
+                    input_text: input_text.into_bytes(),
+                    formula_labels: vec![label.to_owned()],
+                    symbol_bindings,
+                    provenance_hash,
+                })
+                .unwrap();
+                assert_eq!(
+                    EncodedBackendProblem::encode(&actual, format).unwrap(),
+                    expected_encoded
+                );
+            }
+            assert_eq!(vcs.vcs()[0].status, VcStatus::Open);
+            assert!(core.proofs().iter().all(|(_, row)| row.status
+                == mizar_core::core_ir::CoreProofStatus::PendingAutomaticProof));
+            assert!(core.obligation_seeds().iter().all(|(_, row)| row.status == mizar_core::core_ir::ObligationSeedStatus::Active));
+            assert_eq!((core, vcs, output, policy), immutable);
+        }
+    }
+
+    #[test]
+    fn source_theorem_scoped_sequent_preserves_refusals() {
+        use mizar_atp::{
+            problem::*,
+            translator::{translate_source_theorem_sequent as sequent, *},
+        };
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+            kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff as handoff,
+            vc_ir::*,
+        };
+        let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let core = step5c14_computation_core(text).unwrap();
+        let vcs = generate_core_vcs(&core, snapshot_id(777)).unwrap();
+        let id = vcs.vcs()[0].id;
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("explicit"),
+                max_steps: 64,
+            },
+        };
+        let output = try_discharge(DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let profile = LogicProfile::try_new(
+            "source-refusals",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Unsupported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        let before = (
+            core.clone(),
+            vcs.clone(),
+            output.clone(),
+            policy.clone(),
+            profile.clone(),
+        );
+        let good = sequent(&core, &vcs, id, &output, &policy, profile.clone()).unwrap();
+        let equal_policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("different"),
+                max_steps: 0,
+            },
+        };
+        assert_eq!(
+            output,
+            try_discharge(DischargeInput {
+                vc_set: &vcs,
+                policy: &equal_policy
+            })
+            .unwrap()
+        );
+        assert_eq!(
+            good,
+            sequent(&core, &vcs, id, &output, &equal_policy, profile.clone()).unwrap()
+        );
+        let foreign = step5c14_computation_core(&text.replace("T:", "Foreign:")).unwrap();
+        let foreign_vcs = generate_core_vcs(&foreign, snapshot_id(777)).unwrap();
+        let foreign_output = try_discharge(DischargeInput {
+            vc_set: &foreign_vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let later = generate_core_vcs(&core, snapshot_id(778)).unwrap();
+        let later_output = try_discharge(DischargeInput {
+            vc_set: &later,
+            policy: &policy,
+        })
+        .unwrap();
+        for wrong_output in [&foreign_output, &later_output] {
+            assert_ne!(wrong_output, &output);
+            let expected = handoff(&core, &vcs, id, wrong_output, &policy).unwrap_err();
+            assert_eq!(
+                sequent(&core, &vcs, id, wrong_output, &policy, profile.clone()).unwrap_err(),
+                expected
+            );
+        }
+        for (current_core, current_vcs, id) in [
+            (&foreign, &vcs, id),
+            (&core, &foreign_vcs, id),
+            (&core, output.vc_set(), id),
+            (&core, &vcs, VcId::new(usize::MAX)),
+        ] {
+            let expected =
+                handoff(current_core, current_vcs, id, &foreign_output, &policy).unwrap_err();
+            assert_eq!(
+                sequent(
+                    current_core,
+                    current_vcs,
+                    id,
+                    &foreign_output,
+                    &policy,
+                    profile.clone()
+                )
+                .unwrap_err(),
+                expected
+            );
+        }
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        for source in [
+            text.replacen("theorem", "lemma", 1),
+            text.replace("set", "object"),
+            format!("{text} {}", text.replace("T:", "U:")),
+            cited.to_owned(),
+            "theorem C: 0 = 0 by computation(steps: 8);".to_owned(),
+        ] {
+            let unsupported = step5c14_computation_core(&source).unwrap();
+            let vcs = if source.contains("computation") {
+                mizar_vc::generator::generate_source_computation_request(
+                    &unsupported,
+                    snapshot_id(777),
+                    &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-computation-v1"),
+                    &VcSchemaVersion::new("mizar-vc-vcset-step5c14-computation-v1"),
+                )
+                .unwrap()
+            } else {
+                generate_core_vcs(&unsupported, snapshot_id(777)).unwrap()
+            };
+            assert!(!vcs.vcs().is_empty());
+            for vc in vcs.vcs() {
+                let expected =
+                    handoff(&unsupported, &vcs, vc.id, &foreign_output, &policy).unwrap_err();
+                assert_eq!(
+                    sequent(
+                        &unsupported,
+                        &vcs,
+                        vc.id,
+                        &foreign_output,
+                        &policy,
+                        profile.clone()
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+            }
+        }
+        for invalid_profile in 0..5 {
+            let mut mode = SoftTypeStrategy::ScopedGuardPredicates;
+            let mut equality = EqualitySupport::Supported;
+            let mut quantifiers = QuantifierPolicy::FirstOrder;
+            let mut fragment = LogicFragment::Fof;
+            let mut format = ConcreteFormat::Tptp;
+            match invalid_profile {
+                0 => mode = SoftTypeStrategy::GuardPredicates,
+                1 => equality = EqualitySupport::Unsupported,
+                2 => quantifiers = QuantifierPolicy::PropositionalOnly,
+                3 => fragment = LogicFragment::TffLike,
+                4 => format = ConcreteFormat::SmtLib,
+                _ => unreachable!(),
+            }
+            let bad = LogicProfile::try_new(
+                "bad-profile",
+                fragment,
+                equality,
+                quantifiers,
+                mode,
+                NativePropertySupport::Unsupported,
+                [format].into_iter().collect(),
+            )
+            .unwrap();
+            assert_eq!(
+                sequent(&core, &vcs, id, &output, &policy, bad.clone()).unwrap_err(),
+                "theorem.atp.invalid_projection"
+            );
+            assert_eq!(
+                sequent(&foreign, &vcs, id, &foreign_output, &policy, bad).unwrap_err(),
+                handoff(&foreign, &vcs, id, &foreign_output, &policy).unwrap_err()
+            );
+        }
+        let processed = output.vc_set();
+        let actual_handoff = handoff(&core, &vcs, id, &output, &policy).unwrap();
+        for soft_type_projections in [
+            vec![],
+            vec![AtpSoftTypeProjection {
+                key: "guard".into(),
+                representation: AtpSoftTypeRepresentation::GuardFormula(AtpFormulaTree::True),
+                provenance: AtpProjectionProvenance::new(
+                    AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("control")),
+                    "control",
+                ),
+            }],
+        ] {
+            for result in [
+                translate_declarations(AtpDeclarationTranslationInput {
+                    vc_set: processed,
+                    vc: id,
+                    kernel_handoff: &actual_handoff,
+                    logic_profile: profile.clone(),
+                    declaration_projections: vec![],
+                    soft_type_projections: soft_type_projections.clone(),
+                    diagnostics: vec![],
+                })
+                .map(|_| ()),
+                translate_problem(AtpTranslationInput {
+                    vc_set: processed,
+                    vc: id,
+                    kernel_handoff: &actual_handoff,
+                    logic_profile: profile.clone(),
+                    declaration_projections: vec![],
+                    soft_type_projections,
+                    formula_projections: vec![],
+                    diagnostics: vec![],
+                })
+                .map(|_| ()),
+            ] {
+                assert!(matches!(
+                    result.unwrap_err(),
+                    AtpTranslationError::Problem {
+                        source: AtpProblemError::UnsupportedProfileFeature {
+                            feature: "scoped-guard generic translation"
+                        }
+                    }
+                ));
+            }
+        }
+        assert_eq!(
+            translate_source_existential_registration(&core, processed, id, profile.clone())
+                .unwrap_err(),
+            "registration.atp.invalid_projection"
+        );
+        assert_eq!((core, vcs, output, policy, profile), before);
+    }
 }

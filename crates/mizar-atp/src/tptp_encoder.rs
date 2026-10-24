@@ -370,7 +370,10 @@ fn validate_fof_profile(problem: &AtpProblem) -> Result<(), TptpEncodingError> {
             feature: "non-Unsat expected result",
         });
     }
-    if profile.soft_types() != SoftTypeStrategy::GuardPredicates {
+    if !matches!(
+        profile.soft_types(),
+        SoftTypeStrategy::GuardPredicates | SoftTypeStrategy::ScopedGuardPredicates
+    ) {
         return Err(TptpEncodingError::UnsupportedProfile {
             feature: "non-guard-predicate soft type strategy",
         });

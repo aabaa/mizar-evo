@@ -65,7 +65,7 @@ Task 10 は次の fail-closed subset を support する:
 | `ExpectedBackendResult` | `ExpectedBackendResult::Unsat`。TPTP file は goal を conjecture として提示する。後続 backend-result classification は successful refutation/proof output を、変更しない `Unsat` contract に対応付けなければならない。 |
 | `EqualitySupport` | `Unsupported` は equality formula を reject する。`Supported` は TPTP `=` を出力する。 |
 | `QuantifierPolicy` | `PropositionalOnly` は `Forall` と `Exists` を reject する。`FirstOrder` は TPTP quantifier を出力する。 |
-| `SoftTypeStrategy` | `GuardPredicates` のみ。`BackendSorts` と `SortsAndGuards` は、task 10 が typed TPTP semantics を持たず soft-type fact を消してはならないため FOF では unsupported。 |
+| `SoftTypeStrategy` | `GuardPredicates` と明示 [`ScopedGuardPredicates`](./problem.md#scoped-guard-problems)。後者は guard を閉じた conjecture 内に保ち、既存 render/scope 検査を使う。`BackendSorts` と `SortsAndGuards` は引き続き未対応。 |
 | `NativePropertySupport` | native declaration を許可しない。`EncodedProperty::native_declaration` は concrete native TPTP spec が存在するまで unsupported。 |
 
 FOF emission は unsorted first-order emission である。sort を持つ `AtpBinder`、

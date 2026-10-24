@@ -67,7 +67,7 @@ Task 12 は次の fail-closed subset を support する:
 | `ExpectedBackendResult` | `ExpectedBackendResult::Unsat`。SMT-LIB file は premise と negated goal を assert し、`check-sat` を出力する。後続 result classification では `unsat` backend result だけが profile contract に一致し得る。 |
 | `EqualitySupport` | `Unsupported` は equality formula を reject する。`Supported` は SMT-LIB `=` を出力する。 |
 | `QuantifierPolicy` | `PropositionalOnly` は `Forall` と `Exists` を reject し、`QF_UF` を選択する。`FirstOrder` は SMT-LIB quantifier を出力し、`UF` を選択する。logic selection は profile-driven であり、backend output や formula simplification に基づかない。 |
-| `SoftTypeStrategy` | `GuardPredicates` のみ。`BackendSorts` と `SortsAndGuards` は、現在の `AtpProblem` model が function/predicate sort signature を持たず、sort-only encoding が required soft-type fact を消してはならないため task 12 では unsupported。 |
+| `SoftTypeStrategy` | `GuardPredicates` と明示 [`ScopedGuardPredicates`](./problem.md#scoped-guard-problems)。後者は guard を閉じた conjecture 内に保ち、既存 render/scope 検査を使う。`BackendSorts` と `SortsAndGuards` は引き続き未対応。 |
 | `NativePropertySupport` | native declaration を許可しない。`EncodedProperty::native_declaration` は concrete native SMT-LIB spec が存在するまで unsupported。 |
 
 task-12 の sort encoding は意図的に保守的である。すべての term は `mizar_universe` という 1 つの

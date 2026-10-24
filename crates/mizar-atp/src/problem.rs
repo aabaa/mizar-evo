@@ -248,6 +248,7 @@ pub enum SoftTypeStrategy {
     BackendSorts,
     GuardPredicates,
     SortsAndGuards,
+    ScopedGuardPredicates,
 }
 
 impl SoftTypeStrategy {
@@ -1217,6 +1218,38 @@ fn normalize_parts(mut parts: AtpProblemParts) -> Result<AtpProblemParts, AtpPro
         &symbol_map,
         &declaration_map,
     )?;
+    if parts.logic_profile.soft_types() == SoftTypeStrategy::ScopedGuardPredicates {
+        let closed = match parts.conjecture.formula() {
+            Some(AtpFormulaTree::Forall { binders, body })
+                if binders.len() == 1 && binders[0].sort().is_none() =>
+            {
+                match body.as_ref() {
+                    AtpFormulaTree::Implies(guard, goal) => match (guard.as_ref(), goal.as_ref()) {
+                        (AtpFormulaTree::Atom(atom), AtpFormulaTree::Equality { left, right }) => {
+                            let variable = AtpTerm::Variable(binders[0].variable().clone());
+                            atom.arguments() == std::slice::from_ref(&variable)
+                                && left == &variable
+                                && right == &variable
+                        }
+                        _ => false,
+                    },
+                    _ => false,
+                }
+            }
+            _ => false,
+        };
+        if !closed
+            || parts.logic_profile.quantifiers() != QuantifierPolicy::FirstOrder
+            || parts.logic_profile.equality() != EqualitySupport::Supported
+            || !parts.axioms.is_empty()
+            || !parts.properties.is_empty()
+            || !parts.type_context.guards().is_empty()
+        {
+            return Err(AtpProblemError::UnsupportedProfileFeature {
+                feature: "scoped-guard sequent",
+            });
+        }
+    }
     validate_type_context(
         &parts.type_context,
         &parts.logic_profile,

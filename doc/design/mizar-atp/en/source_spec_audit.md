@@ -128,6 +128,7 @@ Public entry functions:
 - `translate_declarations`
 - `translate_problem`
 - `translate_source_existential_registration` (bounded source profile; general extraction remains deferred).
+- `translate_source_theorem_sequent` (bounded scoped guard; general extraction remains deferred).
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
