@@ -483,6 +483,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 63. **[Fresh source theorem candidate selection](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-SELECTION.md).** [x]
 
+64. **[Explicit-schema original theorem obligation identity](../../task_contracts/ja/PROOF-SOURCE-THEOREM-OBLIGATION-SCHEMAS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

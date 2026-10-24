@@ -155,3 +155,5 @@ trusted proof acceptance or trusted `used_axioms`.
 `check_source_theorem_candidate`: [sole API owner](./status.md#source-theorem-candidate-check).
 
 `select_source_theorem_candidate`: [sole API owner](./status.md#source-theorem-candidate-selection).
+
+`source_theorem_obligation_identity_with_schemas`: [sole API owner](./status.md#source-theorem-obligation-identity-with-explicit-schemas).
