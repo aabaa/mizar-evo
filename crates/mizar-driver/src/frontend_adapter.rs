@@ -3954,6 +3954,236 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Associates one fresh source candidate check with all four retained parents.
+    pub fn native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+    ) -> Result<
+        Option<(
+            mizar_kernel::checker::KernelCheckResult,
+            mizar_proof::policy::PolicyDecision,
+        )>,
+        String,
+    > {
+        if input.parent_outputs().len() != 4 {
+            return Err("native theorem candidate check requires four parents".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem candidate check requires a module".to_owned());
+        };
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem candidate check requires one Core parent".to_owned())?;
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem candidate check requires one VC parent".to_owned())?;
+        let discharge_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcDischarge")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremDischarge")
+        }))
+        .ok_or_else(|| "native theorem candidate check requires one Discharge parent".to_owned())?;
+        let atp_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("AtpSolve")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremCandidateInputs")
+        }))
+        .ok_or_else(|| "native theorem candidate check requires one ATP parent".to_owned())?;
+        let core_ref = core_parent.as_output_ref();
+        let vc_ref = vc_parent.as_output_ref();
+        let discharge_ref = discharge_parent.as_output_ref();
+        let atp_ref = atp_parent.as_output_ref();
+        let storage = publisher.storage();
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: input.identities().input_hash(),
+        }];
+        for parent in [core_ref, vc_ref, discharge_ref, atp_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+            if parent.snapshot() != input.snapshot
+                || parent.work_unit() != &work_unit
+                || parent.schema_version() != SchemaVersion::new(1)
+                || parent.lineage().named_input_hashes != named
+            {
+                return Err("native theorem candidate check parent binding mismatch".to_owned());
+            }
+        }
+        if atp_ref.lineage().parents.len() != 3
+            || !atp_ref.lineage().parents.contains(&core_ref.output())
+            || !atp_ref.lineage().parents.contains(&vc_ref.output())
+            || !atp_ref.lineage().parents.contains(&discharge_ref.output())
+        {
+            return Err("native theorem candidate check ATP parent link mismatch".to_owned());
+        }
+        let originals = PhaseInput::new(
+            input.work_unit.clone(),
+            mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                input.identities().dependency_hashes().to_vec(),
+                vec![
+                    core_parent.clone(),
+                    vc_parent.clone(),
+                    discharge_parent.clone(),
+                ],
+            )
+            .map_err(|error| error.to_string())?,
+        );
+        let Some(expected_pair) = self.native_theorem_candidate_with_core_vc_discharge_parents(
+            &originals,
+            publisher,
+            vc_id,
+            policies.0,
+            encoding.0.clone(),
+            encoding.1,
+        )?
+        else {
+            return Ok(None);
+        };
+        let pair = storage
+            .typed_handle::<(
+                mizar_atp::backend::EncodedBackendProblem,
+                mizar_atp::backend::BackendCandidateEvidence,
+            )>(atp_ref, &OutputKind::new("SourceTheoremCandidateInputs"))
+            .map_err(|error| error.to_string())?;
+        let pair = storage.get(&pair).map_err(|error| error.to_string())?;
+        if *pair != expected_pair {
+            return Err("native theorem candidate check complete ATP mismatch".to_owned());
+        }
+        let core = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                core_ref,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&core).map_err(|error| error.to_string())?;
+        let vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        let discharge = storage
+            .typed_handle::<mizar_vc::discharge::DischargeOutput>(
+                discharge_ref,
+                &OutputKind::new("SourceTheoremDischarge"),
+            )
+            .map_err(|error| error.to_string())?;
+        let discharge = storage.get(&discharge).map_err(|error| error.to_string())?;
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem candidate check requires one captured source".to_owned())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem candidate check capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem candidate check requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem candidate check requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let metadata =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )?;
+        let generation = &vcs
+            .vc(vc_id)
+            .ok_or_else(|| "native theorem candidate check requires the selected VC".to_owned())?
+            .anchor
+            .generation_schema_version;
+        let (checked_core, checked_vcs, checked_discharge, encoded, candidate, result, decision) =
+            mizar_proof::status::check_source_theorem_candidate(
+                &arena,
+                &check,
+                &env,
+                input.snapshot,
+                vc_id,
+                (generation, vcs.schema_version(), encoding.0, encoding.1),
+                policies,
+            )?;
+        if checked_core != *core
+            || checked_vcs != *vcs
+            || checked_discharge != *discharge
+            || (encoded, candidate) != *pair
+        {
+            return Err("native theorem candidate check complete pipeline mismatch".to_owned());
+        }
+        for parent in [core_ref, vc_ref, discharge_ref, atp_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((result, decision)))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

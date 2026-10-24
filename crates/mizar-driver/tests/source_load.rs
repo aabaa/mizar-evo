@@ -51080,3 +51080,1077 @@ fn scheduled_theorem_atp_solve_preserves_resource_refusals() {
         },
     );
 }
+
+#[test]
+fn native_theorem_candidate_check_four_parent_caller_matches_genuine_check() {
+    use mizar_atp::{
+        backend::{BackendCandidateEvidence, EncodedBackendProblem},
+        problem::*,
+    };
+    use mizar_build::task_graph::{
+        BackendProfileId, EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_core::core_ir::{CoreIr, CoreProofStatus, ObligationSeedStatus};
+    use mizar_ir::storage::CollectInput;
+    use mizar_kernel::checker::{KernelCheckStatus, KernelEvidenceCheckKind};
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+        status::check_source_theorem_candidate as fresh,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{
+            source_proof_inputs, source_theorem_module_candidates,
+            source_theorem_module_original_inputs,
+        },
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeOutput, DischargePolicy},
+        vc_ir::{
+            GenerationSchemaVersion, PolicyKey, SeedOriginRef, VcSchemaVersion, VcSet, VcStatus,
+        },
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for (open, threshold, fragment, format) in [
+        (false, usize::MAX, LogicFragment::Fof, ConcreteFormat::Tptp),
+        (
+            true,
+            0,
+            LogicFragment::SmtLibUninterpreted,
+            ConcreteFormat::SmtLib,
+        ),
+    ] {
+        with_native_summary_parent(
+            text,
+            open,
+            threshold,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let owner = publisher(old.snapshot, threshold, &old.work_unit);
+                let storage = owner.storage();
+                allow_frontend(&owner, &old.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let generation = GenerationSchemaVersion::new(if open { "" } else { "λ\n\0" });
+                let schema = VcSchemaVersion::new(if open { "核\t\0" } else { "" });
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("計算\0"),
+                        max_steps: u32::MAX,
+                    },
+                };
+                let profile = LogicProfile::try_new(
+                    "caller λ\n\0",
+                    fragment,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(generation.clone(), schema.clone())
+                    .register_source_theorem_vc_discharge(policy.clone())
+                    .register_source_theorem_atp_solve(policy.clone(), profile.clone(), format)
+                    .unwrap();
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                let WorkUnit::Module { module } = &old.work_unit else {
+                    panic!()
+                };
+                submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                    VcTaskDescriptorId::new("opaque-check:09"),
+                    module.clone(),
+                    VcOrderKey::new("order"),
+                    vec![BackendProfileId::new("missing-backend")],
+                    vec![EvidenceCandidateId::new("declared-evidence")],
+                )];
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .unwrap();
+                let (inputs, original) = native_disk_lookup_context(&submission, ids);
+                let outputs = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| &row.output_refs)
+                    .collect::<Vec<_>>();
+                assert_eq!(outputs.len(), 12);
+                let parent = |kind: &str| {
+                    *outputs
+                        .iter()
+                        .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                };
+                let core_ref = parent("SourceTheoremCore");
+                let vc_ref = parent("SourceTheoremVC");
+                let discharge_ref = parent("SourceTheoremDischarge");
+                let atp_ref = parent("SourceTheoremCandidateInputs");
+                let frontend_ref = parent("FrontendOutput");
+                let core_handle = storage
+                    .typed_handle::<CoreIr>(core_ref, core_ref.output_kind())
+                    .unwrap();
+                let vc_handle = storage
+                    .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                    .unwrap();
+                let discharge_handle = storage
+                    .typed_handle::<DischargeOutput>(discharge_ref, discharge_ref.output_kind())
+                    .unwrap();
+                let atp_handle = storage
+                    .typed_handle::<(EncodedBackendProblem, BackendCandidateEvidence)>(
+                        atp_ref,
+                        atp_ref.output_kind(),
+                    )
+                    .unwrap();
+                let core = storage.get(&core_handle).unwrap();
+                let vcs = storage.get(&vc_handle).unwrap();
+                let discharge = storage.get(&discharge_handle).unwrap();
+                let pair = storage.get(&atp_handle).unwrap();
+                let frontend = storage
+                    .get(
+                        &storage
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend_ref,
+                                frontend_ref.output_kind(),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let ast = frontend.ast.as_ref().unwrap();
+                let module = core.module_id();
+                let (arena, env) = source_theorem_module_original_inputs(ast, module)
+                    .unwrap()
+                    .unwrap();
+                assert!(
+                    source_theorem_module_candidates(ast, &arena, &env)
+                        .unwrap()
+                        .is_some()
+                );
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, module, &env),
+                )
+                .unwrap();
+                let metadata = check_source_theorem_metadata(&arena, &env, &scope).unwrap();
+                let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+                let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena,
+                    &metadata.2,
+                    &scope,
+                    &env,
+                    &labels,
+                    &resolved,
+                    None,
+                )
+                .unwrap();
+                let id = vcs.vcs()[0].id;
+                let actual_generation = &vcs.vc(id).unwrap().anchor.generation_schema_version;
+                let input = PhaseInput::new(
+                    original.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        original.identities().input_hash(),
+                        vec![],
+                        [atp_ref, discharge_ref, vc_ref, core_ref]
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    &owner,
+                                    old.snapshot,
+                                    parent.clone(),
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                );
+                assert_eq!(ast.source_id, core.source_id());
+                assert_eq!(vcs.source(), ast.source_id);
+                assert_eq!(
+                    core.module_id(),
+                    &ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"))
+                );
+                assert_eq!(vcs.module().as_str(), "package=5:alpha;module=4:main");
+                assert_eq!(vcs.snapshot(), old.snapshot);
+                assert_eq!(vcs.schema_version(), &schema);
+                assert_eq!(actual_generation, &generation);
+                assert_eq!(vcs.vcs().len(), 1);
+                assert!(!core.proofs().is_empty() && !vcs.seed_accounting().is_empty());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, row)| row.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert!(vcs.vcs().iter().all(|row| row.status == VcStatus::Open));
+                assert!(
+                    discharge
+                        .vc_set()
+                        .vcs()
+                        .iter()
+                        .all(|row| row.status == VcStatus::NeedsAtp)
+                );
+                for row in vcs.seed_accounting() {
+                    let SeedOriginRef::ExistingCore { seed } = row.origin else {
+                        panic!()
+                    };
+                    assert_eq!(row.seed_status, ObligationSeedStatus::Active);
+                    assert_eq!(
+                        core.obligation_seeds().get(seed).unwrap().status,
+                        ObligationSeedStatus::Active
+                    );
+                }
+                let before = (
+                    input.clone(),
+                    ast.clone(),
+                    (*core).clone(),
+                    (*vcs).clone(),
+                    (*discharge).clone(),
+                    (*pair).clone(),
+                    policy.clone(),
+                    profile.clone(),
+                    env.clone(),
+                    format!("{check:?}"),
+                    session.captured().clone(),
+                );
+                fixture.write(&[0xff]);
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                for verifier in [
+                    VerifierPolicy::default(),
+                    VerifierPolicy::release()
+                        .with_require_kernel_certificates(true)
+                        .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+                ] {
+                    let expected = fresh(
+                        &arena,
+                        &check,
+                        &env,
+                        old.snapshot,
+                        id,
+                        (
+                            actual_generation,
+                            vcs.schema_version(),
+                            profile.clone(),
+                            format,
+                        ),
+                        (&policy, &verifier),
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        (
+                            &expected.0,
+                            &expected.1,
+                            &expected.2,
+                            &expected.3,
+                            &expected.4
+                        ),
+                        (&*core, &*vcs, &*discharge, &pair.0, &pair.1)
+                    );
+                    assert_eq!(expected.5.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(
+                        expected.5.evidence_check_kind(),
+                        Some(KernelEvidenceCheckKind::ProofObligation)
+                    );
+                    assert!(!expected.5.policy_taint());
+                    assert_eq!(expected.6.class, CandidatePolicyClass::KernelVerified);
+                    let verifier_before = verifier.clone();
+                    for _ in 0..2 {
+                        assert_eq!(
+                            inputs
+                                .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                                    &input,
+                                    &owner,
+                                    id,
+                                    (profile.clone(), format),
+                                    (&policy, &verifier)
+                                )
+                                .unwrap(),
+                            Some((expected.5.clone(), expected.6.clone()))
+                        );
+                    }
+                    assert_eq!(verifier, verifier_before);
+                }
+                assert_eq!(
+                    (
+                        input,
+                        ast.clone(),
+                        (*storage.get(&core_handle).unwrap()).clone(),
+                        (*storage.get(&vc_handle).unwrap()).clone(),
+                        (*storage.get(&discharge_handle).unwrap()).clone(),
+                        (*storage.get(&atp_handle).unwrap()).clone(),
+                        policy,
+                        profile,
+                        env.clone(),
+                        format!("{check:?}"),
+                        session.captured().clone()
+                    ),
+                    before
+                );
+                let collected = storage.collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.outputs_dropped, 12);
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_candidate_check_four_parent_caller_preserves_refusals() {
+    use mizar_atp::{
+        backend::{
+            BackendCandidateEvidence, EncodedBackendProblem,
+            build_source_theorem_candidate_inputs as build,
+        },
+        problem::*,
+    };
+    use mizar_build::task_graph::{
+        BackendProfileId, EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_theorem_metadata,
+    };
+    use mizar_core::core_ir::CoreIr;
+    use mizar_driver::{
+        native_theorem_candidate_from_storage_bytes as decode,
+        native_theorem_candidate_storage_bytes as encode,
+        native_theorem_core_from_storage_bytes as decode_core,
+        native_theorem_core_storage_bytes as encode_core,
+    };
+    use mizar_ir::{
+        publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+        storage::{BlobDecodeError, BlobDecoder, CollectInput, IrSideTables, SchemaVersion},
+    };
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::check_source_theorem_candidate as fresh,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::{
+            source_proof_inputs, source_theorem_module_candidates,
+            source_theorem_module_original_inputs,
+        },
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargeOutput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion, VcSet},
+    };
+    use std::sync::Arc;
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    with_native_summary_parent(
+        text,
+        false,
+        0,
+        |fixture, _, old, _, _, (session, ids, snapshots)| {
+            let generation = GenerationSchemaVersion::new("λ\n\0");
+            let schema = VcSchemaVersion::new("");
+            let policy = DischargePolicy::default();
+            let profile = LogicProfile::try_new(
+                "caller",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            let disabled = VerifierPolicy::default().with_kernel_evidence_formats([]);
+            let normal = VerifierPolicy::default();
+            let WorkUnit::Module { module } = &old.work_unit else {
+                panic!()
+            };
+            let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+            let prerequisites = |owner: Arc<PhaseOutputPublisher>, candidate| {
+                allow_frontend(&owner, &old.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        unit.clone(),
+                    ));
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(generation.clone(), schema.clone())
+                    .register_source_theorem_vc_discharge(policy.clone());
+                if candidate {
+                    builder
+                        .register_source_theorem_atp_solve(
+                            policy.clone(),
+                            profile.clone(),
+                            ConcreteFormat::Tptp,
+                        )
+                        .unwrap();
+                }
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                    VcTaskDescriptorId::new("opaque-four-parents"),
+                    module.clone(),
+                    VcOrderKey::new("order"),
+                    if candidate {
+                        vec![BackendProfileId::new("missing-backend")]
+                    } else {
+                        vec![]
+                    },
+                    if candidate {
+                        vec![EvidenceCandidateId::new("declared-evidence")]
+                    } else {
+                        vec![]
+                    },
+                )];
+                CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner)
+                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .unwrap()
+            };
+            let outputs = |submission: &mizar_driver::driver::BuildSubmission| {
+                submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter().cloned())
+                    .collect::<Vec<_>>()
+            };
+            let input = |owner: &PhaseOutputPublisher, parents: Vec<AnyPhaseOutputRef>| {
+                PhaseInput::new(
+                    old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        source_key(&session.captured().snapshot().source_versions[0]),
+                        vec![],
+                        parents
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    owner,
+                                    old.snapshot,
+                                    parent,
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                )
+            };
+            let baseline = publisher(old.snapshot, 0, &old.work_unit);
+            let submission = prerequisites(baseline.clone(), true);
+            let (inputs, _) = native_disk_lookup_context(&submission, ids);
+            let refs = outputs(&submission);
+            assert_eq!(refs.len(), 12);
+            let parent = |kind: &str| {
+                refs.iter()
+                    .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                    .unwrap()
+                    .clone()
+            };
+            let core_ref = parent("SourceTheoremCore");
+            let vc_ref = parent("SourceTheoremVC");
+            let discharge_ref = parent("SourceTheoremDischarge");
+            let atp_ref = parent("SourceTheoremCandidateInputs");
+            let frontend_ref = parent("FrontendOutput");
+            let storage = baseline.storage();
+            let core = storage
+                .get(
+                    &storage
+                        .typed_handle::<CoreIr>(&core_ref, core_ref.output_kind())
+                        .unwrap(),
+                )
+                .unwrap();
+            let vcs = storage
+                .get(
+                    &storage
+                        .typed_handle::<VcSet>(&vc_ref, vc_ref.output_kind())
+                        .unwrap(),
+                )
+                .unwrap();
+            let discharge = storage
+                .get(
+                    &storage
+                        .typed_handle::<DischargeOutput>(
+                            &discharge_ref,
+                            discharge_ref.output_kind(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let pair = storage
+                .get(
+                    &storage
+                        .typed_handle::<(EncodedBackendProblem, BackendCandidateEvidence)>(
+                            &atp_ref,
+                            atp_ref.output_kind(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let frontend = storage
+                .get(
+                    &storage
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            &frontend_ref,
+                            frontend_ref.output_kind(),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let ast = frontend.ast.as_ref().unwrap();
+            let resolver_module = core.module_id();
+            let (arena, env) = source_theorem_module_original_inputs(ast, resolver_module)
+                .unwrap()
+                .unwrap();
+            assert!(
+                source_theorem_module_candidates(ast, &arena, &env)
+                    .unwrap()
+                    .is_some()
+            );
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, resolver_module, &env),
+            )
+            .unwrap();
+            let metadata = check_source_theorem_metadata(&arena, &env, &scope).unwrap();
+            let (scope, labels, resolved) = source_proof_inputs(&arena, &env).unwrap();
+            let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )
+            .unwrap();
+            let id = vcs.vcs()[0].id;
+            let expected = fresh(
+                &arena,
+                &check,
+                &env,
+                old.snapshot,
+                id,
+                (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                (&policy, &normal),
+            )
+            .unwrap();
+            assert_eq!(
+                (
+                    &expected.0,
+                    &expected.1,
+                    &expected.2,
+                    &expected.3,
+                    &expected.4
+                ),
+                (&*core, &*vcs, &*discharge, &pair.0, &pair.1)
+            );
+            let four = input(
+                &baseline,
+                vec![
+                    core_ref.clone(),
+                    vc_ref.clone(),
+                    discharge_ref.clone(),
+                    atp_ref.clone(),
+                ],
+            );
+            let three = input(
+                &baseline,
+                vec![core_ref.clone(), vc_ref.clone(), discharge_ref.clone()],
+            );
+            for verifier in [
+                disabled.clone(),
+                normal
+                    .clone()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+            ] {
+                let expected = fresh(
+                    &arena,
+                    &check,
+                    &env,
+                    old.snapshot,
+                    id,
+                    (&generation, &schema, profile.clone(), ConcreteFormat::Tptp),
+                    (&policy, &verifier),
+                )
+                .unwrap_err();
+                assert_eq!(
+                    inputs
+                        .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                            &four,
+                            &baseline,
+                            id,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &verifier)
+                        )
+                        .unwrap_err(),
+                    expected
+                );
+            }
+            let bad = LogicProfile::try_new(
+                "bad",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::GuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                    .into_iter()
+                    .collect(),
+            )
+            .unwrap();
+            for (selected, encoding, format) in [
+                (VcId::new(usize::MAX), &bad, ConcreteFormat::SmtLib),
+                (id, &bad, ConcreteFormat::Tptp),
+                (id, &profile, ConcreteFormat::SmtLib),
+            ] {
+                let expected = inputs
+                    .native_theorem_candidate_with_core_vc_discharge_parents(
+                        &three,
+                        &baseline,
+                        selected,
+                        &policy,
+                        encoding.clone(),
+                        format,
+                    )
+                    .unwrap_err();
+                assert_eq!(
+                    inputs
+                        .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                            &four,
+                            &baseline,
+                            selected,
+                            (encoding.clone(), format),
+                            (&policy, &disabled)
+                        )
+                        .unwrap_err(),
+                    expected
+                );
+            }
+            let foreign=Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
+            let (_, foreign_submission, adapter, handle, _) =
+                native_disk_frontend_record_submission(&foreign, ids, snapshots, 0);
+            let (foreign_inputs, foreign_old) =
+                native_disk_lookup_context(&foreign_submission, ids);
+            let foreign_owner = adapter.publisher();
+            let frontend_input = PhaseInput::new(
+                foreign_old.work_unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    foreign_old.snapshot,
+                    foreign_old.identities().input_hash(),
+                    vec![],
+                    vec![
+                        SealedParentOutputHandle::from_published_output(
+                            foreign_owner,
+                            foreign_old.snapshot,
+                            handle.erase(),
+                        )
+                        .unwrap(),
+                    ],
+                )
+                .unwrap(),
+            );
+            let foreign_core = foreign_inputs
+                .native_theorem_core_with_frontend_parent(&frontend_input, foreign_owner)
+                .unwrap()
+                .unwrap();
+            let foreign_frontend = foreign_owner.storage().get(&handle).unwrap();
+            let foreign_ast = foreign_frontend.ast.as_ref().unwrap();
+            assert_ne!(foreign_ast.source_id, ast.source_id);
+            let upstream = foreign_inputs
+                .native_theorem_candidate_with_core_vc_discharge_parents(
+                    &three,
+                    &baseline,
+                    VcId::new(usize::MAX),
+                    &policy,
+                    bad.clone(),
+                    ConcreteFormat::SmtLib,
+                )
+                .unwrap_err();
+            assert_eq!(
+                foreign_inputs
+                    .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                        &four,
+                        &baseline,
+                        VcId::new(usize::MAX),
+                        (bad.clone(), ConcreteFormat::SmtLib),
+                        (&policy, &disabled)
+                    )
+                    .unwrap_err(),
+                upstream
+            );
+            let core_bytes = encode_core(foreign_ast, resolver_module, &foreign_core)
+                .unwrap()
+                .unwrap();
+            let rebound = decode_core(&core_bytes, ast.source_id, resolver_module)
+                .unwrap()
+                .unwrap();
+            assert_eq!(rebound.source_id(), ast.source_id);
+            assert_eq!(rebound.module_id(), resolver_module);
+            let foreign_vcs = generate(&rebound, old.snapshot, &generation, &schema).unwrap();
+            let foreign_discharge = try_discharge(DischargeInput {
+                vc_set: &foreign_vcs,
+                policy: &policy,
+            })
+            .unwrap();
+            let foreign_pair = build(
+                &rebound,
+                &foreign_vcs,
+                foreign_vcs.vcs()[0].id,
+                &foreign_discharge,
+                &policy,
+                profile.clone(),
+                ConcreteFormat::Tptp,
+            )
+            .unwrap();
+            assert_ne!(foreign_pair, *pair);
+            let rebound_ast = <MizarParserSeam as ParserSeam>::Ast::from_canonical_bytes(
+                &foreign_ast.canonical_bytes().unwrap(),
+                ast.source_id,
+            )
+            .unwrap();
+            let foreign_bytes = encode(
+                &rebound_ast,
+                resolver_module,
+                &rebound,
+                (old.snapshot, &generation, &schema, foreign_vcs.vcs()[0].id),
+                (&policy, &profile, ConcreteFormat::Tptp),
+                &foreign_pair,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(
+                decode(&foreign_bytes, ast.source_id, resolver_module, old.snapshot).unwrap(),
+                Some(foreign_pair.clone())
+            );
+            let original_bytes = encode(
+                ast,
+                resolver_module,
+                &core,
+                (old.snapshot, &generation, &schema, id),
+                (&policy, &profile, ConcreteFormat::Tptp),
+                &pair,
+            )
+            .unwrap()
+            .unwrap();
+            let refuse = |source: SourceLoadInputs<'_>,
+                          query: &PhaseInput,
+                          publisher: &PhaseOutputPublisher| {
+                source
+                    .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                        query,
+                        publisher,
+                        id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &disabled),
+                    )
+                    .unwrap_err()
+            };
+            for case in ["pair", "lineage", "schema", "binding"] {
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                let storage = owner.storage();
+                let submission = prerequisites(owner.clone(), false);
+                let (inputs, _) = native_disk_lookup_context(&submission, ids);
+                let refs = outputs(&submission);
+                assert_eq!(refs.len(), 11);
+                let parent = |kind: &str| {
+                    refs.iter()
+                        .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                        .clone()
+                };
+                let parents = [
+                    parent("SourceTheoremCore"),
+                    parent("SourceTheoremVC"),
+                    parent("SourceTheoremDischarge"),
+                ];
+                assert_eq!(
+                    *storage
+                        .get(
+                            &storage
+                                .typed_handle::<CoreIr>(&parents[0], parents[0].output_kind())
+                                .unwrap()
+                        )
+                        .unwrap(),
+                    expected.0
+                );
+                assert_eq!(
+                    *storage
+                        .get(
+                            &storage
+                                .typed_handle::<VcSet>(&parents[1], parents[1].output_kind())
+                                .unwrap()
+                        )
+                        .unwrap(),
+                    expected.1
+                );
+                assert_eq!(
+                    *storage
+                        .get(
+                            &storage
+                                .typed_handle::<DischargeOutput>(
+                                    &parents[2],
+                                    parents[2].output_kind()
+                                )
+                                .unwrap()
+                        )
+                        .unwrap(),
+                    expected.2
+                );
+                let three = input(&owner, parents.to_vec());
+                assert_eq!(
+                    inputs
+                        .native_theorem_candidate_with_core_vc_discharge_parents(
+                            &three,
+                            &owner,
+                            id,
+                            &policy,
+                            profile.clone(),
+                            ConcreteFormat::Tptp
+                        )
+                        .unwrap(),
+                    Some((*pair).clone())
+                );
+                let payload = if case == "pair" {
+                    foreign_pair.clone()
+                } else {
+                    (*pair).clone()
+                };
+                let bytes = if case == "pair" {
+                    foreign_bytes.clone()
+                } else {
+                    original_bytes.clone()
+                };
+                let phase = IrPipelinePhase::new("AtpSolve");
+                let kind = OutputKind::new("SourceTheoremCandidateInputs");
+                let version = SchemaVersion::new(if case == "schema" { 2 } else { 1 });
+                let source_id = ast.source_id;
+                let module = resolver_module.clone();
+                let snapshot = old.snapshot;
+                let mut named = parents[0].lineage().named_input_hashes.clone();
+                if case == "binding" {
+                    named[0].digest = hash(0x64);
+                }
+                let atp = owner
+                    .publish(PublishOutputInput {
+                        slot: owner.allocate(
+                            snapshot,
+                            phase.clone(),
+                            unit.clone(),
+                            kind.clone(),
+                            version,
+                        ),
+                        snapshot,
+                        phase,
+                        work_unit: unit.clone(),
+                        output_kind: kind,
+                        schema_version: version,
+                        payload: payload.clone(),
+                        canonical_payload: Some(bytes.clone()),
+                        storage_payload: Some(bytes),
+                        decode: BlobDecoder::new(move |bytes| {
+                            decode(bytes, source_id, &module, snapshot)
+                                .map_err(BlobDecodeError::new)?
+                                .ok_or_else(|| BlobDecodeError::new("negative ATP replay"))
+                        }),
+                        parents: parents[..if case == "lineage" { 2 } else { 3 }].to_vec(),
+                        named_input_hashes: named,
+                        side_tables: IrSideTables::default(),
+                        origin: OutputOrigin::PackageSource,
+                        target: PublicationTarget::CurrentPackage,
+                    })
+                    .unwrap();
+                assert_eq!(*storage.get(&atp).unwrap(), payload);
+                let mut parents = parents.to_vec();
+                parents.push(atp.erase());
+                let four = input(&owner, parents);
+                assert_eq!(
+                    refuse(inputs, &four, &owner),
+                    match case {
+                        "pair" => "native theorem candidate check complete ATP mismatch",
+                        "lineage" => "native theorem candidate check ATP parent link mismatch",
+                        _ => "native theorem candidate check parent binding mismatch",
+                    }
+                );
+                if case == "pair" {
+                    let lower = inputs
+                        .native_theorem_candidate_with_core_vc_discharge_parents(
+                            &three,
+                            &owner,
+                            id,
+                            &policy,
+                            bad.clone(),
+                            ConcreteFormat::SmtLib,
+                        )
+                        .unwrap_err();
+                    assert_eq!(
+                        inputs
+                            .native_theorem_candidate_check_with_core_vc_discharge_atp_parents(
+                                &four,
+                                &owner,
+                                id,
+                                (bad.clone(), ConcreteFormat::SmtLib),
+                                (&policy, &disabled)
+                            )
+                            .unwrap_err(),
+                        lower
+                    );
+                }
+                let collected = storage.collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.outputs_dropped, 12);
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            }
+            for case in ["roles", "foreign", "obsolete", "collected"] {
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                let storage = owner.storage();
+                let submission = prerequisites(owner.clone(), true);
+                let (inputs, _) = native_disk_lookup_context(&submission, ids);
+                let refs = outputs(&submission);
+                let parent = |kind: &str| {
+                    refs.iter()
+                        .find(|parent| parent.output_kind() == &OutputKind::new(kind))
+                        .unwrap()
+                        .clone()
+                };
+                let parents = [
+                    parent("SourceTheoremCore"),
+                    parent("SourceTheoremVC"),
+                    parent("SourceTheoremDischarge"),
+                    parent("SourceTheoremCandidateInputs"),
+                ];
+                let four = input(&owner, parents.to_vec());
+                if case == "collected" {
+                    assert_eq!(
+                        storage
+                            .collect(CollectInput {
+                                snapshot: old.snapshot,
+                                protected_outputs: parents[..3]
+                                    .iter()
+                                    .map(|parent| parent.output())
+                                    .collect()
+                            })
+                            .outputs_dropped,
+                        9
+                    );
+                    let lower = storage
+                        .validate_handle(&parents[3])
+                        .unwrap_err()
+                        .to_string();
+                    assert_eq!(refuse(inputs, &four, &owner), lower);
+                } else if case == "roles" {
+                    let mut wrong = parents.to_vec();
+                    wrong[3] = parent("SourceTheoremPreparation");
+                    assert_eq!(
+                        refuse(inputs, &input(&owner, wrong), &owner),
+                        "native theorem candidate check requires one ATP parent"
+                    );
+                    for wrong in [
+                        parents[..3].to_vec(),
+                        [parents.as_slice(), &[parent("SourceTheoremPreparation")]].concat(),
+                    ] {
+                        assert_eq!(
+                            refuse(inputs, &input(&owner, wrong), &owner),
+                            "native theorem candidate check requires four parents"
+                        );
+                    }
+                } else {
+                    let alien = publisher(old.snapshot, 0, &old.work_unit);
+                    let publisher = if case == "foreign" { &alien } else { &owner };
+                    if case == "obsolete" {
+                        owner.mark_obsolete(old.snapshot).unwrap();
+                    }
+                    let lower = if case == "foreign" {
+                        alien
+                            .storage()
+                            .validate_handle(&parents[0])
+                            .unwrap_err()
+                            .to_string()
+                    } else {
+                        owner
+                            .validate_published_output(old.snapshot, &parents[0])
+                            .unwrap_err()
+                            .to_string()
+                    };
+                    assert_eq!(refuse(inputs, &four, publisher), lower);
+                }
+                let collected = storage.collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case == "collected" { 3 } else { 12 }
+                );
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            }
+            let collected = baseline.storage().collect(CollectInput {
+                snapshot: old.snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(collected.outputs_dropped, 12);
+            assert_eq!(collected.abandoned_slots_dropped, 0);
+        },
+    );
+}

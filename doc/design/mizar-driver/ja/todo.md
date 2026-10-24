@@ -625,6 +625,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 99. **[Scheduled theorem ATP solve and same-gate extension](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-ATP-SOLVE.md).** [x]
 
+100. **[Native theorem candidate check four-parent caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
