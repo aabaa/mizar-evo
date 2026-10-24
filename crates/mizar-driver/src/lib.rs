@@ -21,6 +21,8 @@ pub use frontend_adapter::native_algorithm_core_from_storage_bytes;
 pub use frontend_adapter::native_algorithm_core_storage_bytes;
 pub use frontend_adapter::native_algorithm_vc_from_storage_bytes;
 pub use frontend_adapter::native_algorithm_vc_storage_bytes;
+pub use frontend_adapter::native_theorem_candidate_from_storage_bytes;
+pub use frontend_adapter::native_theorem_candidate_storage_bytes;
 pub use frontend_adapter::native_theorem_core_from_storage_bytes;
 pub use frontend_adapter::native_theorem_core_semantic_payload;
 pub use frontend_adapter::native_theorem_core_storage_bytes;

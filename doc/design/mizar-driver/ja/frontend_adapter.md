@@ -696,3 +696,22 @@ MODULEと正確な3親を要求し、phase/kindでCore(Elaboration/SourceTheorem
 既存tests/source_load.rs末尾へ英語節指定2familyだけを追加しlocal import/旧helperを維持する。実同capture11出力chainから新API前にraw92/whole親/directATP46 baselineを得てpair全体・source/module/snapshot/schema/id/seed/target/config・元Pending/Active/OpenとDNeedsAtpを比較。Disk/residentとOpenBuffer/blob、両形式と明示特殊/空schema/policy/profileをcompactに割り当てる。
 反復・入力/親/config/過去出力純粋性・frozen disk編集削除/OpenBuffer下の不正disk・追加sealed/abandoned slotなしを検証。必須negativeはnative codecでwantedと同じsourceId/module/snapshotへrebindした実BのCore/VC/Dを作りD_B != D_Aを確認、正当なA Core/VC lineage下へnegative D_Bだけを実decoderで公開し、先行raw92(A) Some後にwhole mismatchを要求する。同じoutput identityへ先にD_Aを公開せず、AST rootだけのSourceId変更やlineage seal仮定をしない。
 正当な第3D親/lineage付きraw92 source-Noneまたは先行Stringとabsent/bad encodingの優先順、構築可能なouter binding/role/schema/publisher/snapshot/lifetime拒否を確認。下位行列/到達不能raceは継承しhook、架空Accepted/Proved/Complete、全行列複製、単独用途test helperを作らない。
+
+## Native theorem candidate storage replay
+公開encoder native_theorem_candidate_storage_bytesの6引数（ast/module/Core、snapshot+gen schema+VC schema+selected VcId tuple、D policy+LogicProfile+format tuple、whole pair）とdecoder native_theorem_candidate_from_storage_bytesの4引数（bytes/既存SourceId/module/snapshot）は[英語同節](../en/frontend_adapter.md#native-theorem-candidate-storage-replay)の既存型/Result/Optionを使う。最終cfg(test)直前へ2関数、root export2件とroot-policy guard4論理entryのみ追加。旧全byteを保ちholder/alias/field/helper/source file/依存/元VC・D引数を加えない。
+domainはmizar-driver/native-theorem-candidate-storage/v1のUTF8末尾NUL。6個のLE-u64長prefix fieldはopaque旧Core stream、正確なgen schema/VC schema/policy key/profile name UTF8、正確な19byte設定recordの順。record0–7はchecked selected VcId.indexのLE-u64、8–11はmax_stepsのLE-u32、12–18は次の固定code。Core内module/syntaxとcaller既存SourceId/snapshot以外の重複contextを保存しない。
+| Offset | 固定Driver code |
+|---|---|
+| 12 | fragment Fof=0/TffLike=1/SmtLibUninterpreted=2 |
+| 13 | equality Unsupported=0/Supported=1 |
+| 14 | quantifier PropositionalOnly=0/FirstOrder=1 |
+| 15 | soft BackendSorts=0/GuardPredicates=1/SortsAndGuards=2/ScopedGuardPredicates=3 |
+| 16 | native Unsupported=0/Supported=1 |
+| 17 | 全available-format mask Tptp=0x01/SmtLib=0x02、1/2/3のみ |
+| 18 | chosen format Tptp=0/SmtLib=1 |
+Rust ordinal/Debug/transmuteでなく明示codeを使い、将来未知enum/未定義tag・mask0/未知bit/不正幅はNone。全7profile getterと追加available format/native capabilityを保持しchosen formatと分離。schema/policyの空・Unicode/control/NULは旧constructor通り無変換、defaultを作らない。
+encoderは旧Core encoderを最初に呼びNone/Stringをconfig projection/上限/再生より先に保持。checked usize→u64、domain/prefix/field合計32MiB以下をouter確保/新producer前に検証。明示snapshot/schema/id/policy/full profile/formatで実generator→engine→ATP46を実行、下位String/Displayを保持しpair全体一致後に正確なframeをSomeで返す。新decoderの追加往復は不要。
+decoderは先に上限/domain/6frame/末尾なし/record19/scalar/UTF8/tag/非空maskを検証、次に旧Core decoderのNone/StringをLogicProfile constructorより先に保持する。既存constructorでschema/policy/profileを復元、空profile名などconstructor拒否はCore後のNone、既知だが未対応の有効configは実generator/D/ATP46のStringを保持。不正構造はNoneだが、有効変更は別の実pairまたは異policyの同じ実pairになり得る。
+未信頼pairだけを返し、source I/O/SourceId新割当/physical handle decoder capture/private VC・D frame parse/private pair serializer/新hash抽象/Proof/Kernel/currentness・config origin receipt/canonical VC/publication/service/Complete/Artifact/cache/STEP6C完了を与えない。広域profile/semantic content/公開は後続で、旧profile/errorを保つ。
+既存tests/source_load.rs末尾へ英語節指定2familyだけをlocal import/旧helper不変で追加。新API前に実source/Core/旧Core bytes/明示generator/D/ATP46 baselineを作り、6fieldと19byteのliteral code/offset独立oracleでEXACT bytesとdecoded pair全体を比較。両形式/追加format/native capability/特殊空schema・policy/name/u32限界をcompactに割当、入力/過去出力純粋性・反復・実SourceId/snapshot/module再生を確認。portable hash/cross-context同一性を仮定しない。
+astB/CoreB/configB/pairBの実Someを先に確立し、astA/CoreBへ同じconfigB/pairBを渡すNoneでsource affinityを分離する。CoreA/pairB mismatchはpairA!=pairBを別途確認。旧Core Stringのinvalid profile/format/absent id/巨大configに対する優先、既知unsupported下位String、有効frame変更の実再生値、domain/長さ/末尾/幅/UTF8/tag/mask/空名/上限と異policy frameの同値pairを確認。下位行列は継承しhook/架空Accepted・Proved・Complete/単独helperを加えない。SourceIdはparse前に実割当または旧完全decoderへ渡す。

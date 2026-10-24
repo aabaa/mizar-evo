@@ -48496,3 +48496,699 @@ fn native_theorem_candidate_core_vc_discharge_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_candidate_storage_replays_genuine_inputs() {
+    use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
+    use mizar_driver::{
+        native_theorem_candidate_from_storage_bytes as decode,
+        native_theorem_candidate_storage_bytes as encode,
+        native_theorem_core_from_storage_bytes as old_decode,
+        native_theorem_core_storage_bytes as old_encode,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let text = b"theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for (fragment, chosen, native, formats, tail, generation, schema, key, max_steps) in [
+        (
+            LogicFragment::Fof,
+            ConcreteFormat::Tptp,
+            NativePropertySupport::Supported,
+            vec![ConcreteFormat::Tptp, ConcreteFormat::SmtLib],
+            [0, 1, 1, 3, 1, 3, 0],
+            "λ\n\0",
+            "",
+            "",
+            0,
+        ),
+        (
+            LogicFragment::SmtLibUninterpreted,
+            ConcreteFormat::SmtLib,
+            NativePropertySupport::Supported,
+            vec![ConcreteFormat::Tptp, ConcreteFormat::SmtLib],
+            [2, 1, 1, 3, 1, 3, 1],
+            "",
+            "核\t\0",
+            "計算\0",
+            u32::MAX,
+        ),
+        (
+            LogicFragment::Fof,
+            ConcreteFormat::Tptp,
+            NativePropertySupport::Unsupported,
+            vec![ConcreteFormat::Tptp],
+            [0, 1, 1, 3, 0, 1, 0],
+            "",
+            "",
+            "exact",
+            17,
+        ),
+        (
+            LogicFragment::SmtLibUninterpreted,
+            ConcreteFormat::SmtLib,
+            NativePropertySupport::Unsupported,
+            vec![ConcreteFormat::SmtLib],
+            [2, 1, 1, 3, 0, 2, 1],
+            "explicit",
+            "schema",
+            "",
+            64,
+        ),
+    ] {
+        let fixture = Fixture::new(text);
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let input = PhaseInput::new(
+            original.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                original.snapshot,
+                original.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        original.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let core = inputs
+            .native_theorem_core_with_frontend_parent(&input, owner)
+            .unwrap()
+            .unwrap();
+        let frontend = owner.storage().get(&handle).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let opaque = old_encode(ast, &module, &core).unwrap().unwrap();
+        let generation = GenerationSchemaVersion::new(generation);
+        let schema = VcSchemaVersion::new(schema);
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new(key),
+                max_steps,
+            },
+        };
+        let profile = LogicProfile::try_new(
+            "caller λ\n\0",
+            fragment,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            native,
+            formats.into_iter().collect(),
+        )
+        .unwrap();
+        let vcs = generate(&core, original.snapshot, &generation, &schema).unwrap();
+        let id = vcs.vcs()[0].id;
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let pair = build(
+            &core,
+            &vcs,
+            id,
+            &discharge,
+            &policy,
+            profile.clone(),
+            chosen,
+        )
+        .unwrap();
+        let mut record = [0u8; 19];
+        record[..8].copy_from_slice(&u64::try_from(id.index()).unwrap().to_le_bytes());
+        record[8..12].copy_from_slice(&max_steps.to_le_bytes());
+        record[12..19].copy_from_slice(&tail);
+        let mut bytes = b"mizar-driver/native-theorem-candidate-storage/v1\0".to_vec();
+        for field in [
+            opaque.as_slice(),
+            generation.as_str().as_bytes(),
+            schema.as_str().as_bytes(),
+            key.as_bytes(),
+            profile.name().as_str().as_bytes(),
+            record.as_slice(),
+        ] {
+            bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        let before = (
+            ast.clone(),
+            core.clone(),
+            generation.clone(),
+            schema.clone(),
+            policy.clone(),
+            profile.clone(),
+            pair.clone(),
+            bytes.clone(),
+        );
+        for _ in 0..2 {
+            assert_eq!(
+                encode(
+                    ast,
+                    &module,
+                    &core,
+                    (original.snapshot, &generation, &schema, id),
+                    (&policy, &profile, chosen),
+                    &pair
+                )
+                .unwrap(),
+                Some(bytes.clone())
+            );
+        }
+        let shifted = snapshot_id(0x97);
+        let mut relocated = ids.next_source_id(shifted).unwrap();
+        if relocated == ast.source_id {
+            relocated = ids.next_source_id(shifted).unwrap();
+        }
+        assert_ne!(relocated, ast.source_id);
+        for (source_id, snapshot) in [(ast.source_id, original.snapshot), (relocated, shifted)] {
+            let replayed = old_decode(&opaque, source_id, &module).unwrap().unwrap();
+            let original = generate(&replayed, snapshot, &generation, &schema).unwrap();
+            let processed = try_discharge(DischargeInput {
+                vc_set: &original,
+                policy: &policy,
+            })
+            .unwrap();
+            let expected = build(
+                &replayed,
+                &original,
+                id,
+                &processed,
+                &policy,
+                profile.clone(),
+                chosen,
+            )
+            .unwrap();
+            for _ in 0..2 {
+                assert_eq!(
+                    decode(&bytes, source_id, &module, snapshot).unwrap(),
+                    Some(expected.clone())
+                );
+            }
+        }
+        let wrong = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("other"));
+        assert_eq!(old_decode(&opaque, ast.source_id, &wrong).unwrap(), None);
+        assert_eq!(
+            decode(&bytes, ast.source_id, &wrong, original.snapshot).unwrap(),
+            None
+        );
+        assert_eq!(
+            (
+                ast.clone(),
+                core,
+                generation,
+                schema,
+                policy,
+                profile,
+                pair,
+                bytes,
+            ),
+            before
+        );
+    }
+}
+
+#[test]
+fn native_theorem_candidate_storage_preserves_refusals() {
+    use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
+    use mizar_driver::{
+        native_theorem_candidate_from_storage_bytes as decode,
+        native_theorem_candidate_storage_bytes as encode,
+        native_theorem_core_from_storage_bytes as old_decode,
+        native_theorem_core_storage_bytes as old_encode,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcId, VcSchemaVersion},
+    };
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let generation = GenerationSchemaVersion::new("λ\n\0");
+    let schema = VcSchemaVersion::new("");
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new("計算\0"),
+            max_steps: 0,
+        },
+    };
+    let profile = LogicProfile::try_new(
+        "caller",
+        LogicFragment::Fof,
+        EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder,
+        SoftTypeStrategy::ScopedGuardPredicates,
+        NativePropertySupport::Supported,
+        [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+            .into_iter()
+            .collect(),
+    )
+    .unwrap();
+    let fixtures = [
+        Fixture::new(
+            b"theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        ),
+        Fixture::new(
+            b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+        ),
+    ];
+    let mut sources = Vec::new();
+    for fixture in &fixtures {
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(fixture, &ids, &snapshots, 0);
+        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let input = PhaseInput::new(
+            original.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                original.snapshot,
+                original.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        original.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let core = inputs
+            .native_theorem_core_with_frontend_parent(&input, owner)
+            .unwrap()
+            .unwrap();
+        let output = owner.storage().get(&handle).unwrap();
+        let ast = output.ast.as_ref().unwrap();
+        let opaque = old_encode(ast, &module, &core).unwrap().unwrap();
+        let vcs = generate(&core, original.snapshot, &generation, &schema).unwrap();
+        let id = vcs.vcs()[0].id;
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let pair = build(
+            &core,
+            &vcs,
+            id,
+            &discharge,
+            &policy,
+            profile.clone(),
+            ConcreteFormat::Tptp,
+        )
+        .unwrap();
+        sources.push((ast.clone(), core, opaque, pair, original.snapshot, id));
+    }
+    let (ast, core, opaque, pair, snapshot, id) = &sources[0];
+    let (other_ast, other_core, other_opaque, other_pair, other_snapshot, other_id) = &sources[1];
+    let frame = |fields: [&[u8]; 6]| {
+        let mut bytes = b"mizar-driver/native-theorem-candidate-storage/v1\0".to_vec();
+        for field in fields {
+            bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        bytes
+    };
+    let mut record = [0u8; 19];
+    record[..8].copy_from_slice(&u64::try_from(id.index()).unwrap().to_le_bytes());
+    record[8..12].copy_from_slice(&0u32.to_le_bytes());
+    record[12..].copy_from_slice(&[0, 1, 1, 3, 1, 3, 0]);
+    let fields = [
+        opaque.as_slice(),
+        generation.as_str().as_bytes(),
+        schema.as_str().as_bytes(),
+        policy.computation_limit.policy.as_str().as_bytes(),
+        profile.name().as_str().as_bytes(),
+        record.as_slice(),
+    ];
+    let bytes = frame(fields);
+    let mut other_record = record;
+    other_record[..8].copy_from_slice(&u64::try_from(other_id.index()).unwrap().to_le_bytes());
+    let other_bytes = frame([
+        other_opaque,
+        fields[1],
+        fields[2],
+        fields[3],
+        fields[4],
+        &other_record,
+    ]);
+    assert_eq!(
+        encode(
+            other_ast,
+            &module,
+            other_core,
+            (*other_snapshot, &generation, &schema, *other_id),
+            (&policy, &profile, ConcreteFormat::Tptp),
+            other_pair
+        )
+        .unwrap(),
+        Some(other_bytes)
+    );
+    assert_eq!(
+        encode(
+            ast,
+            &module,
+            other_core,
+            (*other_snapshot, &generation, &schema, *other_id),
+            (&policy, &profile, ConcreteFormat::Tptp),
+            other_pair
+        )
+        .unwrap(),
+        None
+    );
+    assert_ne!(pair, other_pair);
+    assert_eq!(
+        encode(
+            ast,
+            &module,
+            core,
+            (*snapshot, &generation, &schema, *id),
+            (&policy, &profile, ConcreteFormat::Tptp),
+            other_pair
+        )
+        .unwrap(),
+        None
+    );
+    for (changed_gen, changed_schema, key, max_steps, name) in [
+        ("changed", "", "計算\0", 0, "caller"),
+        ("λ\n\0", "changed", "計算\0", 0, "caller"),
+        ("λ\n\0", "", "different", u32::MAX, "caller"),
+        ("λ\n\0", "", "計算\0", 0, "different"),
+    ] {
+        let generation = GenerationSchemaVersion::new(changed_gen);
+        let schema = VcSchemaVersion::new(changed_schema);
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new(key),
+                max_steps,
+            },
+        };
+        let profile = LogicProfile::try_new(
+            name,
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                .into_iter()
+                .collect(),
+        )
+        .unwrap();
+        let vcs = generate(core, *snapshot, &generation, &schema).unwrap();
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let expected = build(
+            core,
+            &vcs,
+            *id,
+            &discharge,
+            &policy,
+            profile.clone(),
+            ConcreteFormat::Tptp,
+        )
+        .unwrap();
+        let mut changed = record;
+        changed[8..12].copy_from_slice(&max_steps.to_le_bytes());
+        let mutated = frame([
+            opaque,
+            changed_gen.as_bytes(),
+            changed_schema.as_bytes(),
+            key.as_bytes(),
+            name.as_bytes(),
+            &changed,
+        ]);
+        assert_ne!(mutated, bytes);
+        if key == "different" {
+            assert_eq!(&expected, pair);
+        }
+        assert_eq!(
+            decode(&mutated, ast.source_id, &module, *snapshot).unwrap(),
+            Some(expected.clone())
+        );
+    }
+    let vcs = generate(core, *snapshot, &generation, &schema).unwrap();
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &vcs,
+        policy: &policy,
+    })
+    .unwrap();
+    let mut bad_profile = profile.clone();
+    for (offset, value) in [
+        (0, 0),
+        (12, 1),
+        (13, 0),
+        (14, 0),
+        (15, 0),
+        (15, 1),
+        (15, 2),
+        (18, 1),
+    ] {
+        let selected = if offset == 0 {
+            VcId::new(usize::MAX)
+        } else {
+            *id
+        };
+        let fragment = if offset == 12 {
+            LogicFragment::TffLike
+        } else {
+            LogicFragment::Fof
+        };
+        let equality = if offset == 13 {
+            EqualitySupport::Unsupported
+        } else {
+            EqualitySupport::Supported
+        };
+        let quantifiers = if offset == 14 {
+            QuantifierPolicy::PropositionalOnly
+        } else {
+            QuantifierPolicy::FirstOrder
+        };
+        let soft = match (offset, value) {
+            (15, 0) => SoftTypeStrategy::BackendSorts,
+            (15, 1) => SoftTypeStrategy::GuardPredicates,
+            (15, 2) => SoftTypeStrategy::SortsAndGuards,
+            _ => SoftTypeStrategy::ScopedGuardPredicates,
+        };
+        let chosen = if offset == 18 {
+            ConcreteFormat::SmtLib
+        } else {
+            ConcreteFormat::Tptp
+        };
+        let unsupported = LogicProfile::try_new(
+            "caller",
+            fragment,
+            equality,
+            quantifiers,
+            soft,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                .into_iter()
+                .collect(),
+        )
+        .unwrap();
+        if (offset, value) == (15, 1) {
+            bad_profile = unsupported.clone();
+        }
+        let expected = build(
+            core,
+            &vcs,
+            selected,
+            &discharge,
+            &policy,
+            unsupported.clone(),
+            chosen,
+        )
+        .unwrap_err();
+        let mut changed = record;
+        changed[offset] = value;
+        changed[..8].copy_from_slice(&u64::try_from(selected.index()).unwrap().to_le_bytes());
+        let mutated = frame([
+            fields[0], fields[1], fields[2], fields[3], fields[4], &changed,
+        ]);
+        assert_eq!(
+            decode(&mutated, ast.source_id, &module, *snapshot).unwrap_err(),
+            expected
+        );
+        assert_eq!(
+            encode(
+                ast,
+                &module,
+                core,
+                (*snapshot, &generation, &schema, selected),
+                (&policy, &unsupported, chosen),
+                pair
+            )
+            .unwrap_err(),
+            expected
+        );
+    }
+    let private = Fixture::new(include_bytes!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    ));
+    let (_, _, adapter, handle, _) =
+        native_disk_frontend_record_submission(&private, &ids, &snapshots, 0);
+    let output = adapter.publisher().storage().get(&handle).unwrap();
+    let private_ast = output.ast.as_ref().unwrap();
+    let expected = old_encode(private_ast, &module, core).unwrap_err();
+    let syntax = private_ast.canonical_bytes().unwrap();
+    let mut private_core = b"mizar-driver/native-theorem-core-storage/v1\0".to_vec();
+    for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+        private_core.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+        private_core.extend_from_slice(field);
+    }
+    assert_eq!(
+        old_decode(&private_core, private_ast.source_id, &module).unwrap_err(),
+        expected
+    );
+    let huge = GenerationSchemaVersion::new("x".repeat(32 * 1024 * 1024));
+    assert_eq!(
+        encode(
+            private_ast,
+            &module,
+            core,
+            (*snapshot, &huge, &schema, VcId::new(usize::MAX)),
+            (&policy, &bad_profile, ConcreteFormat::SmtLib),
+            pair
+        )
+        .unwrap_err(),
+        expected
+    );
+    assert_eq!(
+        encode(
+            ast,
+            &module,
+            core,
+            (*snapshot, &huge, &schema, VcId::new(usize::MAX)),
+            (&policy, &profile, ConcreteFormat::SmtLib),
+            pair
+        )
+        .unwrap(),
+        None
+    );
+    let empty_name = frame([fields[0], fields[1], fields[2], fields[3], b"", fields[5]]);
+    assert_eq!(
+        decode(&empty_name, ast.source_id, &module, *snapshot).unwrap(),
+        None
+    );
+    let private_empty_name = frame([
+        &private_core,
+        fields[1],
+        fields[2],
+        fields[3],
+        b"",
+        fields[5],
+    ]);
+    assert_eq!(
+        decode(
+            &private_empty_name,
+            private_ast.source_id,
+            &module,
+            *snapshot
+        )
+        .unwrap_err(),
+        expected
+    );
+    for index in 1..5 {
+        let mut malformed = fields;
+        malformed[0] = &private_core;
+        malformed[index] = &[0xff];
+        assert_eq!(
+            decode(&frame(malformed), private_ast.source_id, &module, *snapshot).unwrap(),
+            None
+        );
+    }
+    for (offset, value) in [
+        (12, 3),
+        (13, 2),
+        (14, 2),
+        (15, 4),
+        (16, 2),
+        (17, 0),
+        (17, 4),
+        (18, 2),
+    ] {
+        let mut malformed = record;
+        malformed[offset] = value;
+        assert_eq!(
+            decode(
+                &frame([
+                    &private_core,
+                    fields[1],
+                    fields[2],
+                    fields[3],
+                    fields[4],
+                    &malformed
+                ]),
+                private_ast.source_id,
+                &module,
+                *snapshot
+            )
+            .unwrap(),
+            None
+        );
+    }
+    for record in [record[..18].to_vec(), [record.as_slice(), &[0]].concat()] {
+        assert_eq!(
+            decode(
+                &frame([
+                    &private_core,
+                    fields[1],
+                    fields[2],
+                    fields[3],
+                    fields[4],
+                    &record
+                ]),
+                private_ast.source_id,
+                &module,
+                *snapshot
+            )
+            .unwrap(),
+            None
+        );
+    }
+    let domain = b"mizar-driver/native-theorem-candidate-storage/v1\0";
+    let mut oversized = fields;
+    oversized[1] = huge.as_str().as_bytes();
+    let mut malformed = vec![
+        bytes[..domain.len() + 4].to_vec(),
+        bytes[..bytes.len() - 1].to_vec(),
+        bytes[..bytes.len() - 27].to_vec(),
+        frame(oversized),
+    ];
+    let mut bad = bytes.clone();
+    bad[0] = b'x';
+    malformed.push(bad);
+    let mut bad = bytes.clone();
+    bad[domain.len() - 2] = b'2';
+    malformed.push(bad);
+    let mut bad = bytes.clone();
+    bad[domain.len()..domain.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+    malformed.push(bad);
+    let mut bad = bytes.clone();
+    bad.push(0);
+    malformed.push(bad);
+    for bytes in malformed {
+        assert_eq!(
+            decode(&bytes, ast.source_id, &module, *snapshot).unwrap(),
+            None
+        );
+    }
+}

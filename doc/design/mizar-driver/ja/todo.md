@@ -619,6 +619,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 96. **[Native theorem candidate Core VC Discharge caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-CORE-VC-DISCHARGE-CALLER.md).** [x]
 
+97. **[Native theorem candidate storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-STORAGE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

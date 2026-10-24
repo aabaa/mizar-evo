@@ -8466,6 +8466,289 @@ pub fn native_theorem_discharge_from_storage_bytes(
     .map_err(|error| error.to_string())
 }
 
+/// Stores an authentic candidate pair through opaque Core bytes and complete configuration.
+pub fn native_theorem_candidate_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+    vc_context: (
+        mizar_session::BuildSnapshotId,
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_vc::vc_ir::VcId,
+    ),
+    atp_context: (
+        &mizar_vc::discharge::DischargePolicy,
+        &mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    pair: &(
+        mizar_atp::backend::EncodedBackendProblem,
+        mizar_atp::backend::BackendCandidateEvidence,
+    ),
+) -> Result<Option<Vec<u8>>, String> {
+    use mizar_atp::problem::{
+        ConcreteFormat, EqualitySupport, LogicFragment, NativePropertySupport, QuantifierPolicy,
+        SoftTypeStrategy,
+    };
+    let Some(core_bytes) = native_theorem_core_storage_bytes(ast, module, core)? else {
+        return Ok(None);
+    };
+    let Ok(selected) = u64::try_from(vc_context.3.index()) else {
+        return Ok(None);
+    };
+    let profile = atp_context.1;
+    let mut formats = 0;
+    for format in profile.concrete_formats() {
+        formats |= match format {
+            ConcreteFormat::Tptp => 1,
+            ConcreteFormat::SmtLib => 2,
+            _ => return Ok(None),
+        };
+    }
+    let mut record = [0; 19];
+    record[..8].copy_from_slice(&selected.to_le_bytes());
+    record[8..12].copy_from_slice(&atp_context.0.computation_limit.max_steps.to_le_bytes());
+    record[12..].copy_from_slice(&[
+        match profile.fragment() {
+            LogicFragment::Fof => 0,
+            LogicFragment::TffLike => 1,
+            LogicFragment::SmtLibUninterpreted => 2,
+            _ => return Ok(None),
+        },
+        match profile.equality() {
+            EqualitySupport::Unsupported => 0,
+            EqualitySupport::Supported => 1,
+            _ => return Ok(None),
+        },
+        match profile.quantifiers() {
+            QuantifierPolicy::PropositionalOnly => 0,
+            QuantifierPolicy::FirstOrder => 1,
+            _ => return Ok(None),
+        },
+        match profile.soft_types() {
+            SoftTypeStrategy::BackendSorts => 0,
+            SoftTypeStrategy::GuardPredicates => 1,
+            SoftTypeStrategy::SortsAndGuards => 2,
+            SoftTypeStrategy::ScopedGuardPredicates => 3,
+            _ => return Ok(None),
+        },
+        match profile.native_properties() {
+            NativePropertySupport::Unsupported => 0,
+            NativePropertySupport::Supported => 1,
+            _ => return Ok(None),
+        },
+        formats,
+        match atp_context.2 {
+            ConcreteFormat::Tptp => 0,
+            ConcreteFormat::SmtLib => 1,
+            _ => return Ok(None),
+        },
+    ]);
+    let domain = b"mizar-driver/native-theorem-candidate-storage/v1\0";
+    let fields = [
+        core_bytes.as_slice(),
+        vc_context.1.as_str().as_bytes(),
+        vc_context.2.as_str().as_bytes(),
+        atp_context.0.computation_limit.policy.as_str().as_bytes(),
+        profile.name().as_str().as_bytes(),
+        record.as_slice(),
+    ];
+    let mut size = domain.len();
+    for field in fields {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|_| size.checked_add(8))
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let original = mizar_vc::generator::generate_source_theorem_vcs(
+        core,
+        vc_context.0,
+        vc_context.1,
+        vc_context.2,
+    )?;
+    let discharge = mizar_vc::discharge::try_discharge(mizar_vc::discharge::DischargeInput {
+        vc_set: &original,
+        policy: atp_context.0,
+    })
+    .map_err(|error| error.to_string())?;
+    let actual = mizar_atp::backend::build_source_theorem_candidate_inputs(
+        core,
+        &original,
+        vc_context.3,
+        &discharge,
+        atp_context.0,
+        profile.clone(),
+        atp_context.2,
+    )?;
+    if actual != *pair {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    Ok(Some(bytes))
+}
+
+/// Replays an untrusted candidate pair from recorded configuration in an existing context.
+pub fn native_theorem_candidate_from_storage_bytes(
+    bytes: &[u8],
+    source_id: mizar_session::SourceId,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    snapshot: mizar_session::BuildSnapshotId,
+) -> Result<
+    Option<(
+        mizar_atp::backend::EncodedBackendProblem,
+        mizar_atp::backend::BackendCandidateEvidence,
+    )>,
+    String,
+> {
+    use mizar_atp::problem::{
+        ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
+        QuantifierPolicy, SoftTypeStrategy,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcId, VcSchemaVersion},
+    };
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) =
+        bytes.strip_prefix(b"mizar-driver/native-theorem-candidate-storage/v1\0")
+    else {
+        return Ok(None);
+    };
+    let mut fields = [&[][..]; 6];
+    for field in &mut fields {
+        let Some(length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        remaining = &remaining[8..];
+        let Some(value) = remaining.get(..length) else {
+            return Ok(None);
+        };
+        *field = value;
+        remaining = &remaining[length..];
+    }
+    if !remaining.is_empty() {
+        return Ok(None);
+    }
+    let (Ok(generation), Ok(schema), Ok(key), Ok(name), Ok(record)) = (
+        std::str::from_utf8(fields[1]),
+        std::str::from_utf8(fields[2]),
+        std::str::from_utf8(fields[3]),
+        std::str::from_utf8(fields[4]),
+        <[u8; 19]>::try_from(fields[5]),
+    ) else {
+        return Ok(None);
+    };
+    let Some(selected) = record
+        .get(..8)
+        .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+        .map(u64::from_le_bytes)
+        .and_then(|index| usize::try_from(index).ok())
+    else {
+        return Ok(None);
+    };
+    let fragment = match record[12] {
+        0 => LogicFragment::Fof,
+        1 => LogicFragment::TffLike,
+        2 => LogicFragment::SmtLibUninterpreted,
+        _ => return Ok(None),
+    };
+    let equality = match record[13] {
+        0 => EqualitySupport::Unsupported,
+        1 => EqualitySupport::Supported,
+        _ => return Ok(None),
+    };
+    let quantifiers = match record[14] {
+        0 => QuantifierPolicy::PropositionalOnly,
+        1 => QuantifierPolicy::FirstOrder,
+        _ => return Ok(None),
+    };
+    let soft_types = match record[15] {
+        0 => SoftTypeStrategy::BackendSorts,
+        1 => SoftTypeStrategy::GuardPredicates,
+        2 => SoftTypeStrategy::SortsAndGuards,
+        3 => SoftTypeStrategy::ScopedGuardPredicates,
+        _ => return Ok(None),
+    };
+    let native = match record[16] {
+        0 => NativePropertySupport::Unsupported,
+        1 => NativePropertySupport::Supported,
+        _ => return Ok(None),
+    };
+    if record[17] == 0 || record[17] & !3 != 0 {
+        return Ok(None);
+    }
+    let chosen = match record[18] {
+        0 => ConcreteFormat::Tptp,
+        1 => ConcreteFormat::SmtLib,
+        _ => return Ok(None),
+    };
+    let Some(core) = native_theorem_core_from_storage_bytes(fields[0], source_id, module)? else {
+        return Ok(None);
+    };
+    let formats = [(1, ConcreteFormat::Tptp), (2, ConcreteFormat::SmtLib)]
+        .into_iter()
+        .filter_map(|(bit, format)| (record[17] & bit != 0).then_some(format))
+        .collect();
+    let Ok(profile) = LogicProfile::try_new(
+        name,
+        fragment,
+        equality,
+        quantifiers,
+        soft_types,
+        native,
+        formats,
+    ) else {
+        return Ok(None);
+    };
+    let original = mizar_vc::generator::generate_source_theorem_vcs(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new(generation),
+        &VcSchemaVersion::new(schema),
+    )?;
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new(key),
+            max_steps: u32::from_le_bytes([record[8], record[9], record[10], record[11]]),
+        },
+    };
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &original,
+        policy: &policy,
+    })
+    .map_err(|error| error.to_string())?;
+    mizar_atp::backend::build_source_theorem_candidate_inputs(
+        &core,
+        &original,
+        VcId::new(selected),
+        &discharge,
+        &policy,
+        profile,
+        chosen,
+    )
+    .map(Some)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
