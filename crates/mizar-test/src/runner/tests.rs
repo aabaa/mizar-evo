@@ -25289,3 +25289,371 @@ fn source_algorithm_state_syntax_payloads_preserve_upstream_and_atomic_refusals(
     assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
     assert_eq!((source, collected.env().clone(), prior), before);
 }
+
+#[test]
+fn source_algorithm_state_transitivity_selection_reaches_normal_kernel() {
+    use mizar_atp::backend::{
+        encode_local_variable_transitivity_names, select_local_variable_transitivity_names,
+    };
+    use mizar_core::core_ir::CoreAlgorithmStmtKind as S;
+    use mizar_kernel::checker::KernelContextIdentitySource as KernelSource;
+    use mizar_kernel::{certificate_parser::*, checker::*, clause::*, formula_evidence::*};
+    use mizar_vc::kernel_evidence_handoff::KernelContextIdentitySource as VcSource;
+    use mizar_vc::{kernel_evidence_handoff::*, vc_ir::*};
+    let case = step5c14_state_case();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+    let base = original.replacen("    assert x = a;\n", "", 1);
+    for (index, source) in [
+        base.clone(),
+        base.replace("swapalgo", "copyalgo"),
+        base.replace("    x := c;", "    const d := a;\n    x := c;"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let terminal = if index == 2 { 4 } else { 3 };
+        let literal = if index == 2 {
+            "000000010300000000010000000401000000020100000000"
+        } else {
+            "000000010300000000010000000301000000020100000000"
+        };
+        let core = step5c14_static_core(&case, &source).unwrap();
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let statements = &algorithm.statements;
+        let (S::Let { binder: x, .. }, S::Let { binder: c, .. }) = (
+            &core.algorithm_statements().get(statements[0]).unwrap().kind,
+            &core.algorithm_statements().get(statements[1]).unwrap().kind,
+        ) else {
+            panic!("actual checked declarations")
+        };
+        let assignment = statements[statements.len() - 2];
+        let S::AssignLocal { target, value: rhs } =
+            core.algorithm_statements().get(assignment).unwrap().kind
+        else {
+            panic!("actual checked write")
+        };
+        assert_eq!(target, x.var);
+        assert_eq!(
+            core.terms().get(rhs).unwrap().kind,
+            mizar_core::core_ir::CoreTermKind::Var(c.var)
+        );
+        let value = |var, definition| VcProgramValue { var, definition };
+        let a = value(algorithm.params[0].var, None);
+        let c0 = value(c.var, Some(statements[1]));
+        let x1 = value(x.var, Some(assignment));
+        let vcs = step5c14_state_vcs(&core).unwrap();
+        for (left, right) in [(c0, a), (x1, c0)] {
+            assert!(vcs.generated_formulas().iter().any(|formula| formula.kind
+                == VcGeneratedFormulaKind::AlgorithmStateFact
+                && formula.shape == VcGeneratedFormulaShape::ProgramEquals { left, right }));
+        }
+        let [vc] = vcs.vcs() else {
+            panic!("one actual return VC")
+        };
+        assert_eq!(
+            (vc.kind.clone(), vc.status.clone()),
+            (VcKind::AlgorithmPostcondition, VcStatus::Open)
+        );
+        assert!(!vc.anchor.is_complete());
+        assert!(matches!(
+            vcs.seed_accounting()[0].mapping,
+            SeedVcMapping::NoConcreteVc {
+                reason: SeedNoVcReason::DeferredExternal(_)
+            }
+        ));
+        let VcFormulaRef::Generated(goal_id) = vc.goal else {
+            panic!()
+        };
+        assert_eq!(
+            vcs.generated_formulas()[goal_id.index()].shape,
+            VcGeneratedFormulaShape::ProgramEquals { left: x1, right: a }
+        );
+        let before = (core.clone(), vcs.clone());
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let handoff =
+            build_source_algorithm_state_kernel_handoff(&core, &vcs, vc.id, &generation).unwrap();
+        let fingerprint = handoff.canonical_evidence().target_vc();
+        let target = mizar_kernel::rejection::TargetVcFingerprint::new(
+            fingerprint.algorithm_id,
+            fingerprint.digest.clone(),
+        );
+        let mut parse_context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(fingerprint.algorithm_id, fingerprint.digest.clone()),
+            KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
+        );
+        let v1 = handoff.encode_local_evidence(None).unwrap();
+        let parsed = parse_formula_evidence(&v1, &parse_context).unwrap();
+        let Formula::Atom(goal) = &parsed.final_goal().formula else {
+            panic!()
+        };
+        assert_eq!(goal.symbol, SymbolKey::new(SymbolKind::Equality, 0));
+        assert_eq!(
+            goal.arguments,
+            [
+                Term::Variable(VariableId(terminal)),
+                Term::Variable(VariableId(0))
+            ]
+        );
+        for (left, right) in [(terminal, 2), (2, 0)] {
+            assert!(parsed.formulas().iter().any(|row| matches!(&row.formula,
+                Formula::Atom(atom) if atom.symbol == goal.symbol &&
+                atom.arguments == [Term::Variable(VariableId(left)), Term::Variable(VariableId(right))])));
+        }
+        let pristine = parsed.clone();
+        let names = encode_local_variable_transitivity_names(&parsed, VariableId(2)).unwrap();
+        assert_eq!(
+            names,
+            [literal
+                .as_bytes()
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+                .collect::<Vec<_>>()]
+        );
+        for limit in [None, Some(0), Some(1), Some(2)] {
+            assert_eq!(
+                select_local_variable_transitivity_names(&parsed, limit),
+                None
+            );
+        }
+        let automatic = select_local_variable_transitivity_names(&parsed, Some(3)).unwrap();
+        assert_eq!(automatic, names);
+        assert_eq!(
+            select_local_variable_transitivity_names(&parsed, Some(u64::MAX)),
+            Some(names.clone())
+        );
+        let entries = handoff
+            .context_identity()
+            .entries()
+            .iter()
+            .map(|row| {
+                let VcSource::LocalHypothesis { local_context_id } = row.source() else {
+                    panic!()
+                };
+                let producer = match row.producer_formula_ref() {
+                    VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                    VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(
+                        KernelVcGeneratedFormulaId::new(id.index()),
+                    ),
+                    _ => panic!(),
+                };
+                let fp = row.formula_fingerprint();
+                mizar_kernel::checker::KernelContextIdentityEntry::new(
+                    KernelSource::LocalHypothesis { local_context_id },
+                    row.formula_id(),
+                    Fingerprint::new(fp.algorithm_id, fp.digest.clone()),
+                    producer,
+                )
+            })
+            .collect();
+        let context = FormulaEvidenceContext::with_context_identity(
+            Some(handoff.context_identity_hash().as_bytes().to_vec()),
+            vec![],
+            vec![],
+            Some(mizar_kernel::checker::KernelContextIdentityPayload::new(
+                target.clone(),
+                handoff.canonical_hash(),
+                handoff.context_identity_hash(),
+                entries,
+            )),
+            ImportedFactContextLimits::default(),
+        )
+        .unwrap();
+        parse_context.accepted_schema_versions.insert(2);
+        let v2 = handoff.encode_local_evidence(Some(&automatic)).unwrap();
+        for (wire, status) in [
+            (&v1, KernelCheckStatus::Rejected),
+            (&v2, KernelCheckStatus::Accepted),
+        ] {
+            let evidence = parse_formula_evidence(wire, &parse_context).unwrap();
+            let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+                target_vc_fingerprint: &target,
+                evidence: &evidence,
+                formula_context: Some(&context),
+                check_kind: KernelEvidenceCheckKind::ProofObligation,
+                policy: KernelCheckPolicy::default(),
+                limits: KernelEvidenceCheckLimits::default(),
+            });
+            assert_eq!(checked.status(), status);
+            assert_eq!(
+                checked.evidence_check_kind(),
+                Some(KernelEvidenceCheckKind::ProofObligation)
+            );
+            assert!(!checked.policy_taint());
+            assert!(checked.used_axioms().is_empty());
+        }
+        assert_eq!(
+            select_local_variable_transitivity_names(&parsed, Some(3)),
+            Some(automatic)
+        );
+        assert_eq!(parsed, pristine);
+        assert_eq!((core, vcs), before);
+        assert_eq!(handoff.encode_local_evidence(None).unwrap(), v1);
+    }
+}
+
+#[test]
+fn source_algorithm_state_transitivity_selection_respects_order_and_limits() {
+    use mizar_atp::backend::{
+        encode_local_variable_transitivity_names, select_local_variable_transitivity_names,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        clause::{Atom, SymbolKey, SymbolKind, Term, VariableId},
+        formula_evidence::{Formula, FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::kernel_evidence_handoff::*;
+    let case = step5c14_state_case();
+    let source = std::fs::read_to_string(&case.source_path)
+        .unwrap()
+        .replacen("    assert x = a;\n", "", 1);
+    let core = step5c14_static_core(&case, &source).unwrap();
+    let vcs = step5c14_state_vcs(&core).unwrap();
+    let [vc] = vcs.vcs() else { panic!() };
+    assert!(vc.local_context.entries().len() >= 4);
+    let before = (core.clone(), vcs.clone());
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    // These generic projections are untrusted data, never source or Kernel acceptance evidence.
+    let atom = |left: u32, right: u32| {
+        let formula = Formula::Atom(Atom::new(
+            equality,
+            vec![
+                Term::Variable(VariableId(left)),
+                Term::Variable(VariableId(right)),
+            ],
+        ));
+        let mut wire = vec![1, 3];
+        wire.extend(7u32.to_be_bytes());
+        wire.extend(2u32.to_be_bytes());
+        wire.extend(2u32.to_be_bytes());
+        for id in [left, right] {
+            wire.push(1);
+            wire.extend(id.to_be_bytes());
+        }
+        KernelFormulaProjection {
+            formula_fingerprint: KernelEvidenceFingerprint {
+                algorithm_id: 2,
+                digest: formula.canonical_hash_input().unwrap(),
+            },
+            formula_bytes: wire,
+            provenance_payload: b"untrusted-selector-input".to_vec(),
+        }
+    };
+    let variables = [5u32, 11, 14, 27, 40].map(|id| KernelManifestEntry {
+        entry_id: id,
+        payload: id.to_be_bytes().to_vec(),
+    });
+    let symbols = [KernelManifestEntry {
+        entry_id: 7,
+        payload: vec![3, 0, 0, 0, 7],
+    }];
+    for profile in 0..4 {
+        let mut pairs = [(40, 27), (27, 5), (40, 14), (14, 5)];
+        if profile == 1 {
+            pairs.swap(0, 2);
+            pairs.swap(1, 3);
+        }
+        if profile == 2 {
+            pairs[1] = (5, 27);
+            pairs[3] = (5, 14);
+        }
+        let payloads = vc
+            .local_context
+            .entries()
+            .iter()
+            .enumerate()
+            .map(|(index, row)| {
+                let (left, right) = pairs.get(index).copied().unwrap_or((11, 11));
+                KernelFormulaPayload {
+                    formula_ref: row.formula.unwrap(),
+                    projection: atom(left, right),
+                }
+            })
+            .chain(std::iter::once(KernelFormulaPayload {
+                formula_ref: vc.goal,
+                projection: atom(40, 5),
+            }))
+            .collect::<Vec<_>>();
+        let handoff = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+            vc_set: &vcs,
+            vc: vc.id,
+            goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: &symbols,
+            variable_manifest: &variables,
+            formula_payloads: &payloads,
+            imported_formula_payloads: &[],
+            substitutions: &[],
+            formula_context: None,
+            discharge_output: None,
+        })
+        .unwrap();
+        let wire = handoff
+            .encode_local_evidence(if profile == 3 { Some(&[]) } else { None })
+            .unwrap();
+        let fingerprint = handoff.canonical_evidence().target_vc();
+        let mut context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(fingerprint.algorithm_id, fingerprint.digest.clone()),
+            KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
+        );
+        context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&wire, &context).unwrap();
+        let pristine = parsed.clone();
+        assert_eq!(parsed.schema_version(), if profile == 3 { 2 } else { 1 });
+        assert_eq!(
+            parsed
+                .variable_manifest()
+                .iter()
+                .map(|row| row.variable_id.0)
+                .collect::<Vec<_>>(),
+            [5, 11, 14, 27, 40]
+        );
+        for limit in [None, Some(0), Some(1), Some(2)] {
+            assert_eq!(
+                select_local_variable_transitivity_names(&parsed, limit),
+                None
+            );
+        }
+        let expected = if profile < 2 {
+            let positions = [27, 14].map(|middle| parsed.formulas().iter().position(|row| matches!(&row.formula,
+                Formula::Atom(atom) if atom.symbol == equality &&
+                atom.arguments == [Term::Variable(VariableId(40)), Term::Variable(VariableId(middle))])).unwrap());
+            assert_eq!(positions[0] < positions[1], profile == 0);
+            for middle in [5, 11] {
+                assert!(
+                    encode_local_variable_transitivity_names(&parsed, VariableId(middle)).is_err()
+                );
+            }
+            let names = encode_local_variable_transitivity_names(&parsed, VariableId(14)).unwrap();
+            assert_eq!(
+                names,
+                [vec![
+                    0, 0, 0, 1, 3, 0, 0, 0, 7, 1, 0, 0, 0, 40, 1, 0, 0, 0, 14, 1, 0, 0, 0, 5
+                ]]
+            );
+            assert_ne!(
+                encode_local_variable_transitivity_names(&parsed, VariableId(27)).unwrap(),
+                names
+            );
+            Some(names)
+        } else {
+            None
+        };
+        assert_eq!(
+            select_local_variable_transitivity_names(&parsed, Some(3)),
+            expected
+        );
+        assert_eq!(
+            select_local_variable_transitivity_names(&parsed, Some(u64::MAX)),
+            expected
+        );
+        assert_eq!(
+            select_local_variable_transitivity_names(&parsed, Some(3)),
+            expected
+        );
+        assert_eq!(parsed, pristine);
+    }
+    assert_eq!((core, vcs), before);
+}

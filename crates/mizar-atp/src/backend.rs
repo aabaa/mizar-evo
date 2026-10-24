@@ -914,6 +914,24 @@ pub fn encode_local_variable_transitivity_names(
     Ok(vec![name])
 }
 
+/// Selects the first actual variable chain within an explicit candidate bound.
+pub fn select_local_variable_transitivity_names(
+    parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
+    max_equality_candidates: Option<u64>,
+) -> Option<Vec<Vec<u8>>> {
+    let mut remaining = max_equality_candidates?;
+    for variable in parsed.variable_manifest() {
+        if remaining == 0 {
+            break;
+        }
+        remaining -= 1;
+        if let Ok(names) = encode_local_variable_transitivity_names(parsed, variable.variable_id) {
+            return Some(names);
+        }
+    }
+    None
+}
+
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt};
 

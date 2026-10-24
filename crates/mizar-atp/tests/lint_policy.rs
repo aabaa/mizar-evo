@@ -550,6 +550,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "encode_local_variable_transitivity_names",
             "run_backend",
             "screen_source_registration_candidate",
+            "select_local_variable_transitivity_names",
             "source_registration_ground_term_correspondence",
         ],
         "{} public functions and methods must stay limited to task-14 generic \

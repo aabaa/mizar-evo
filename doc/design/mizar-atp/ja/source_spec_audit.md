@@ -223,6 +223,7 @@ Public entry functions:
 - `encode_closed_choice_reflexivity_names`
 - `encode_local_variable_reflexivity_names`
 - `encode_local_variable_transitivity_names`
+- `select_local_variable_transitivity_names`
 - `build_source_registration_candidate_inputs`
 - `build_source_theorem_candidate_inputs`
 - `source_registration_ground_term_correspondence`

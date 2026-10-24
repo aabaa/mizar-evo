@@ -720,6 +720,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 46. **[Source theorem candidate inputs](../../task_contracts/en/ATP-SOURCE-THEOREM-CANDIDATE-INPUTS.md).** [x]
 
+47. **[Bounded transitivity middle selection](../../task_contracts/en/ATP-LOCAL-VARIABLE-TRANSITIVITY-SELECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
