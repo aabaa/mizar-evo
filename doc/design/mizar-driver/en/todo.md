@@ -658,6 +658,8 @@ the owning producers when the paired tasks land.
 
 100. **[Native theorem candidate check four-parent caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK.md).** [x]
 
+101. **[Context-bound theorem candidate check storage](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK-STORAGE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

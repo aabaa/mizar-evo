@@ -627,6 +627,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 100. **[Native theorem candidate check four-parent caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK.md).** [x]
 
+101. **[Context-bound theorem candidate check storage](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-CHECK-STORAGE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

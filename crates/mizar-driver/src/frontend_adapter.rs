@@ -9410,6 +9410,238 @@ pub fn native_theorem_candidate_from_storage_bytes(
     .map(Some)
 }
 
+/// Stores replay inputs after fresh checking in an explicit source and policy context.
+pub fn native_theorem_candidate_check_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+    vc_context: (
+        mizar_session::BuildSnapshotId,
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_vc::vc_ir::VcId,
+    ),
+    atp_context: (
+        &mizar_vc::discharge::DischargePolicy,
+        &mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policy: &mizar_proof::policy::VerifierPolicy,
+    expected: (
+        &(
+            mizar_atp::backend::EncodedBackendProblem,
+            mizar_atp::backend::BackendCandidateEvidence,
+        ),
+        &(
+            mizar_kernel::checker::KernelCheckResult,
+            mizar_proof::policy::PolicyDecision,
+        ),
+    ),
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(candidate_bytes) = native_theorem_candidate_storage_bytes(
+        ast,
+        module,
+        core,
+        vc_context,
+        atp_context,
+        expected.0,
+    )?
+    else {
+        return Ok(None);
+    };
+    let fingerprint = policy.policy_fingerprint();
+    let domain = b"mizar-driver/native-theorem-candidate-check-storage/v1\0";
+    let fields = [
+        candidate_bytes.as_slice(),
+        fingerprint.as_bytes().as_slice(),
+    ];
+    let mut size = domain.len();
+    for field in fields {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|_| size.checked_add(8))
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let Some((arena, env)) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(ast, module)?
+    else {
+        return Ok(None);
+    };
+    if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+        return Ok(None);
+    }
+    let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        mizar_resolve::names::SourceVariableScopeInput::new(ast, module, &env),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let metadata =
+        mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+    let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+    let check =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &arena,
+            &metadata.2,
+            &scope,
+            &env,
+            &labels,
+            &resolved,
+            None,
+        )?;
+    let (actual_core, _, _, encoded, candidate, result, decision) =
+        mizar_proof::status::check_source_theorem_candidate(
+            &arena,
+            &check,
+            &env,
+            vc_context.0,
+            vc_context.3,
+            (
+                vc_context.1,
+                vc_context.2,
+                atp_context.1.clone(),
+                atp_context.2,
+            ),
+            (atp_context.0, policy),
+        )?;
+    if actual_core != *core
+        || (encoded, candidate) != *expected.0
+        || (result, decision) != *expected.1
+    {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    Ok(Some(bytes))
+}
+
+/// Freshly recomputes checking data under the explicitly supplied replay context.
+pub fn native_theorem_candidate_check_from_storage_bytes(
+    bytes: &[u8],
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    vc_context: (
+        mizar_session::BuildSnapshotId,
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_vc::vc_ir::VcId,
+    ),
+    atp_context: (
+        &mizar_vc::discharge::DischargePolicy,
+        &mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policy: &mizar_proof::policy::VerifierPolicy,
+) -> Result<
+    Option<(
+        mizar_kernel::checker::KernelCheckResult,
+        mizar_proof::policy::PolicyDecision,
+    )>,
+    String,
+> {
+    let domain = b"mizar-driver/native-theorem-candidate-check-storage/v1\0";
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) = bytes.strip_prefix(domain) else {
+        return Ok(None);
+    };
+    let mut fields = [&[][..]; 2];
+    for field in &mut fields {
+        let Some(length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        remaining = &remaining[8..];
+        let Some(value) = remaining.get(..length) else {
+            return Ok(None);
+        };
+        *field = value;
+        remaining = &remaining[length..];
+    }
+    if !remaining.is_empty() || fields[1].len() != 32 {
+        return Ok(None);
+    }
+    let Some(decoded) = native_theorem_candidate_from_storage_bytes(
+        fields[0],
+        ast.source_id,
+        module,
+        vc_context.0,
+    )?
+    else {
+        return Ok(None);
+    };
+    if fields[1] != policy.policy_fingerprint().as_bytes() {
+        return Ok(None);
+    }
+    let Some((arena, env)) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(ast, module)?
+    else {
+        return Ok(None);
+    };
+    if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+        return Ok(None);
+    }
+    let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        mizar_resolve::names::SourceVariableScopeInput::new(ast, module, &env),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let metadata =
+        mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+    let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+    let check =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &arena,
+            &metadata.2,
+            &scope,
+            &env,
+            &labels,
+            &resolved,
+            None,
+        )?;
+    let (core, _, _, encoded, candidate, result, decision) =
+        mizar_proof::status::check_source_theorem_candidate(
+            &arena,
+            &check,
+            &env,
+            vc_context.0,
+            vc_context.3,
+            (
+                vc_context.1,
+                vc_context.2,
+                atp_context.1.clone(),
+                atp_context.2,
+            ),
+            (atp_context.0, policy),
+        )?;
+    let pair = (encoded, candidate);
+    if pair != decoded {
+        return Ok(None);
+    }
+    let Some(regenerated) =
+        native_theorem_candidate_storage_bytes(ast, module, &core, vc_context, atp_context, &pair)?
+    else {
+        return Ok(None);
+    };
+    if regenerated != fields[0] {
+        return Ok(None);
+    }
+    Ok(Some((result, decision)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
