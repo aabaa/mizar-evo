@@ -682,6 +682,8 @@ the owning producers when the paired tasks land.
 
 112. **[Private theorem artifact metadata](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-PRIVATE.md).** [x]
 
+113. **[Source module manifest transaction](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-MANIFEST.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

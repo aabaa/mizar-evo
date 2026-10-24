@@ -651,6 +651,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 112. **[Private theorem artifact metadata](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-PRIVATE.md).** [x]
 
+113. **[Source module manifest transaction](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-MANIFEST.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

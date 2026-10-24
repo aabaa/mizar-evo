@@ -145,7 +145,7 @@ diagnostic-payload hash である。proof authority ではなく、`VerifiedArti
 
 ## Declared enclosing profiles
 
-manifest schema／通常 API は1.0を保ち、witness entry は既存 id/fingerprint/path/hash tuple のままで status discriminator を加えない。参照する main artifact は宣言 artifact-hash schema version により、既知の上位1.0または明示2.0 reader profile を選び、未知 major/minor は拒否する。実 store-framed hash、expected module/interface/implementation hash、source/version 検査、正確な witness coverage と optional file reachability を保つ。共有する既存の上位 reader を直接使い、新 transaction／token／acceptance path は作らない。通常の上位1.0と既存 manifest／transaction 動作を保ち、構造的に有効な明示 reference から source 受理・完全 Proof identity・committed Proof publication 権限を導かない。
+manifest schema／通常 API は1.0を保ち、witness entry は既存 id/fingerprint/path/hash tuple のままで status discriminator を加えない。参照する main artifact は宣言 artifact-hash schema version により、既知の通常上位reader profileまたは明示2.0 reader profile を選び、未知 major/minor は拒否する。実 store-framed hash、expected module/interface/implementation hash、source/version 検査、正確な witness coverage と optional file reachability を保つ。共有する既存の上位 reader を直接使い、新 transaction／token／acceptance path は作らない。対応する通常上位artifactと既存 manifest／transaction 動作を保ち、構造的に有効な明示 reference から source 受理・完全 Proof identity・committed Proof publication 権限を導かない。
 
 ## Proof Witness Entries
 

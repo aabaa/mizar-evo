@@ -6289,6 +6289,191 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some((draft, written)))
     }
 
+    /// Commits a genuine source module manifest in its fresh package-local staging root.
+    pub fn commit_native_theorem_artifact_manifest(
+        self,
+        input: &PhaseInput,
+        publisher: &Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        staging: (&str, &str, &std::path::Path),
+    ) -> Result<
+        Option<(
+            mizar_ir::projection::VerifiedArtifactDraft,
+            mizar_artifact::store::PublishedArtifactWrite,
+            mizar_artifact::manifest::ManifestCommit,
+        )>,
+        String,
+    > {
+        use mizar_artifact::{
+            manifest::{
+                ArtifactManifest, ManifestCommitOptions, ManifestFileReadOptions,
+                ManifestProofWitnessEntry, ManifestProvenance, ManifestTransaction,
+                ModuleArtifactEntry, PackageIdentity, current_schema_version, read_manifest_file,
+            },
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::PublishedArtifactPath,
+            verified_artifact::VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+        };
+        let Some((draft, main_write)) = self.write_native_theorem_artifact_draft(
+            input, publisher, vc_id, encoding, policies, staging,
+        )?
+        else {
+            return Ok(None);
+        };
+        let fail = |detail| format!("native theorem artifact manifest {detail}");
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id.as_str() == draft.artifact.module.package_id)
+            .ok_or_else(|| fail("requires a bound package"))?;
+        let PackagePlanSource::Workspace {
+            root: package_root, ..
+        } = &package.source
+        else {
+            return Err(fail("requires a workspace package"));
+        };
+        let package_root = std::fs::canonicalize(
+            PathBuf::from(self.snapshot.workspace_root.as_str()).join(package_root),
+        )
+        .map_err(|error| error.to_string())?;
+        let root = std::fs::canonicalize(staging.2).map_err(|error| error.to_string())?;
+        let relative = root
+            .strip_prefix(&package_root)
+            .map_err(|_| fail("root must be below package root"))?;
+        if relative.as_os_str().is_empty() {
+            return Err(fail("root must be below package root"));
+        }
+        let label = relative
+            .components()
+            .map(|component| {
+                let std::path::Component::Normal(value) = component else {
+                    return Err(fail("root has an invalid path component"));
+                };
+                value.to_str().ok_or_else(|| fail("root is not UTF-8"))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .join("/");
+        let label = PublishedArtifactPath::new(label).map_err(|error| error.to_string())?;
+        let guard = input
+            .snapshot
+            .to_published_schema_string()
+            .map_err(|error| error.to_string())?;
+        let storage = publisher.storage();
+        let freshness = |candidate: Option<&str>| {
+            candidate == Some(guard.as_str())
+                && publisher.validate_current_snapshot(input.snapshot).is_ok()
+                && input.parent_outputs().iter().all(|parent| {
+                    let parent = parent.as_output_ref();
+                    storage.validate_handle(parent).is_ok()
+                        && publisher
+                            .validate_current_output(input.snapshot, parent)
+                            .is_ok()
+                })
+        };
+        if !freshness(Some(guard.as_str())) {
+            return Err(fail("currentness validation failed"));
+        }
+        let artifact = &draft.artifact;
+        let entry = ModuleArtifactEntry {
+            module: artifact.module.clone(),
+            source_file: artifact.source_file.clone(),
+            source_hash: artifact.source_hash,
+            artifact_file: main_write.path.as_str().to_owned(),
+            artifact_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Artifact,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                main_write.artifact_hash,
+            ),
+            interface_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                artifact.interface_hash,
+            ),
+            implementation_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Implementation,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                artifact.implementation_hash,
+            ),
+            module_summary_file: None,
+            module_summary_hash: None,
+            module_summary_interface_hash: None,
+            registration_summary_file: None,
+            registration_summary_hash: None,
+            registration_interface_hash: None,
+            proof_witnesses: artifact
+                .proof_witnesses
+                .iter()
+                .map(|witness| ManifestProofWitnessEntry {
+                    obligation_id: witness.obligation_id.clone(),
+                    obligation_fingerprint: witness.obligation_fingerprint.clone(),
+                    witness_path: witness.witness_path.clone(),
+                    witness_artifact_hash: witness.witness_artifact_hash.clone(),
+                })
+                .collect(),
+            diagnostics_hash: None,
+        };
+        let seed = ArtifactManifest {
+            schema_version: current_schema_version(),
+            package: PackageIdentity {
+                package_id: artifact.module.package_id.clone(),
+                package_version: artifact.module.package_version.clone(),
+                lockfile_identity: artifact.module.lockfile_identity.clone(),
+            },
+            artifact_root: label.as_str().to_owned(),
+            lockfile_hash: artifact.provenance.lockfile_hash.clone(),
+            toolchain: artifact.provenance.toolchain.clone(),
+            language_edition: artifact.provenance.language_edition.clone(),
+            verifier_config_hash: artifact.provenance.verifier_config_hash.clone(),
+            modules: Vec::new(),
+            development_artifacts: Vec::new(),
+            provenance: ManifestProvenance {
+                generated_by: concat!("mizar-driver/", env!("CARGO_PKG_VERSION")).to_owned(),
+                manifest_policy: "source-theorem-unpublished".to_owned(),
+                transaction_format: "mizar-artifact/manifest-transaction-v1".to_owned(),
+            },
+        };
+        let mut transaction = ManifestTransaction::begin(&root, seed, Some(guard.clone()))
+            .map_err(|error| error.to_string())?;
+        transaction
+            .stage_module(entry)
+            .map_err(|error| error.to_string())?;
+        let commit = transaction
+            .commit(ManifestCommitOptions {
+                freshness_check: Some(&freshness),
+            })
+            .map_err(|error| error.to_string())?;
+        let read = read_manifest_file(
+            &root,
+            ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                validate_development_artifacts: true,
+                expected_manifest_hash: Some(commit.write().artifact_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if read.manifest != *commit.manifest() || read.artifact_hash != commit.write().artifact_hash
+        {
+            return Err(fail("readback mismatch"));
+        }
+        if !freshness(Some(guard.as_str())) {
+            return Err(fail("currentness validation failed"));
+        }
+        Ok(Some((draft, main_write, commit)))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
