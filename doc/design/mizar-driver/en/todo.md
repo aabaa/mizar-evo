@@ -676,6 +676,8 @@ the owning producers when the paired tasks land.
 
 109. **[Statement-bearing normal Artifact and real source consumer](../../task_contracts/en/ARTIFACT-SOURCE-THEOREM-STATEMENTS.md).** [x]
 
+110. **[Source artifact outer universal expression](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-QUANTIFIED-EXPRESSION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

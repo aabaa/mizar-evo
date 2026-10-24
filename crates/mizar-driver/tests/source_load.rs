@@ -59186,6 +59186,18 @@ fn with_native_theorem_artifact_context(
         .node_view(*formulas.get(&source_owner.symbol).unwrap())
         .unwrap();
     assert!(formula.as_formula_expression().is_some());
+    let formula_children = formula.child_views().collect::<Vec<_>>();
+    let [quantified] = formula_children.as_slice() else {
+        panic!("one original formula child")
+    };
+    assert!(quantified.as_quantified_formula().is_some());
+    assert_eq!(
+        format!("{:?}", quantified.kind()),
+        "QuantifiedFormula(Universal)"
+    );
+    assert_ne!(quantified.id(), formula.id());
+    let quantified_range = quantified.range();
+    assert_eq!(quantified_range, formula.range());
     let formula_range = formula.range();
     assert_eq!(formula_range.source_id, ast.source_id);
     assert_eq!(owner_range.source_id, ast.source_id);
@@ -59409,9 +59421,29 @@ fn with_native_theorem_artifact_context(
         source_types.applications().len()
     );
     assert_eq!(covered_declarations.len(), context.declarations().len());
+    expressions.push(ExpressionMetadata {
+        expression_id: format!(
+            "source.theorem.quantified.{}",
+            source_owner.symbol.fqn().as_str()
+        ),
+        source_range: SourceRangeSummary {
+            start_byte: u64::try_from(quantified_range.start).unwrap(),
+            end_byte: u64::try_from(quantified_range.end).unwrap(),
+        },
+        expression_kind: format!("{:?}", quantified.kind()),
+        rendered_surface: source_text
+            .get(quantified_range.start..quantified_range.end)
+            .unwrap()
+            .into(),
+        inferred_type: None,
+        resolved_symbol: None,
+        inserted_coercions: vec![],
+        active_thesis: None,
+        overload_resolution: None,
+    });
     assert_eq!(
         expressions.len(),
-        metadata.3.expr_metadata().len() + raw_sites.len()
+        metadata.3.expr_metadata().len() + raw_sites.len() + 1
     );
     assert_eq!(
         expressions
@@ -59919,6 +59951,7 @@ fn native_theorem_artifact_draft_covers_real_expression_rows() {
                     actual.artifact.expressions.len(),
                     metadata.expr_metadata().len()
                         + typed.source_type().unwrap().expressions().len()
+                        + 1
                 );
                 let written = typed.source_type().unwrap();
                 let mut expression_ids = metadata
@@ -59968,6 +60001,17 @@ fn native_theorem_artifact_draft_covers_real_expression_rows() {
                             && projected.overload_resolution.is_none()
                     );
                 }
+                assert!(expression_ids.insert(format!(
+                        "source.theorem.quantified.{}",
+                        expected
+                            .as_ref()
+                            .unwrap()
+                            .as_ref()
+                            .unwrap()
+                            .artifact
+                            .exports[0]
+                            .fully_qualified_name
+                    )));
                 assert_eq!(
                     actual
                         .artifact
@@ -61430,8 +61474,19 @@ fn native_theorem_artifact_written_types_match_source_handoffs() {
                 assert_eq!(proof_let_roots.len(), 1);
                 assert_eq!(
                     actual.artifact.expressions.len(),
-                    metadata.expr_metadata().len() + raw_sites.len()
+                    metadata.expr_metadata().len() + raw_sites.len() + 1
                 );
+                assert!(expected_ids.insert(format!(
+                        "source.theorem.quantified.{}",
+                        expected
+                            .as_ref()
+                            .unwrap()
+                            .as_ref()
+                            .unwrap()
+                            .artifact
+                            .exports[0]
+                            .fully_qualified_name
+                    )));
                 assert_eq!(
                     actual
                         .artifact
@@ -62123,7 +62178,45 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                     .unwrap()
                     .unwrap();
                 let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                let quantified_id = format!(
+                    "source.theorem.quantified.{}",
+                    expected.artifact.exports[0].fully_qualified_name
+                );
+                assert_eq!(
+                    actual.artifact.expressions.len(),
+                    metadata.expr_metadata().len()
+                        + typed.source_type().unwrap().expressions().len()
+                        + 1,
+                    "missing {quantified_id}"
+                );
                 assert_eq!(&actual, expected);
+                let quantified = actual
+                    .artifact
+                    .expressions
+                    .iter()
+                    .find(|row| row.expression_id == quantified_id)
+                    .unwrap();
+                assert_eq!(quantified.expression_kind, "QuantifiedFormula(Universal)");
+                assert_eq!(quantified.rendered_surface, formula);
+                let quantified_start = source.find(formula).unwrap();
+                assert_eq!(
+                    (
+                        quantified.source_range.start_byte,
+                        quantified.source_range.end_byte
+                    ),
+                    (
+                        u64::try_from(quantified_start).unwrap(),
+                        u64::try_from(quantified_start + formula.len()).unwrap()
+                    )
+                );
+                assert!(
+                    quantified.inferred_type.is_none()
+                        && quantified.resolved_symbol.is_none()
+                        && quantified.active_thesis.is_none()
+                        && quantified.overload_resolution.is_none()
+                        && quantified.inserted_coercions.is_empty()
+                );
+
                 assert_eq!(actual.artifact.schema_version, SchemaVersion::new(1, 1));
                 let [statement] = actual.artifact.statements.as_slice() else {
                     panic!("one checked theorem statement")
@@ -62342,6 +62435,17 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                     )
                     .unwrap()
                     .unwrap();
+                let quantified_id = format!(
+                    "source.theorem.quantified.{}",
+                    expected.artifact.exports[0].fully_qualified_name
+                );
+                assert_eq!(
+                    actual.artifact.expressions.len(),
+                    metadata.expr_metadata().len()
+                        + typed.source_type().unwrap().expressions().len()
+                        + 1,
+                    "missing {quantified_id}"
+                );
                 assert_eq!(&actual, expected);
                 let json = verified_artifact_json(&expected.artifact).unwrap();
                 let domain = artifact_hash_domain(
@@ -62376,6 +62480,33 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                 )
                 .unwrap();
                 assert_eq!(artifact, expected.artifact);
+                let quantified = artifact
+                    .expressions
+                    .iter()
+                    .find(|row| row.expression_id == quantified_id)
+                    .unwrap();
+                assert_eq!(quantified.expression_kind, "QuantifiedFormula(Universal)");
+                assert_eq!(quantified.rendered_surface, "for X being set holds X = X");
+                let quantified_start = source.find("for X being set holds X = X").unwrap();
+                assert_eq!(
+                    (
+                        quantified.source_range.start_byte,
+                        quantified.source_range.end_byte
+                    ),
+                    (
+                        u64::try_from(quantified_start).unwrap(),
+                        u64::try_from(quantified_start + "for X being set holds X = X".len())
+                            .unwrap()
+                    )
+                );
+                assert!(
+                    quantified.inferred_type.is_none()
+                        && quantified.resolved_symbol.is_none()
+                        && quantified.active_thesis.is_none()
+                        && quantified.overload_resolution.is_none()
+                        && quantified.inserted_coercions.is_empty()
+                );
+
                 assert_eq!(artifact.statements.len(), 1);
                 let statement = &artifact.statements[0];
                 assert_eq!(statement.elaborated, "for X being set holds X = X");
@@ -62524,7 +62655,7 @@ fn native_theorem_artifact_statements_preserve_refusals() {
             case == "buffer",
             0,
             fault,
-            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, _)| {
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
                 let before = (
                     inference.clone(),
                     typed.clone(),
@@ -62580,7 +62711,47 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                 );
                 if case == "baseline" {
                     let actual = result.unwrap().unwrap();
-                    assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
+                    let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                    let quantified_id = format!(
+                        "source.theorem.quantified.{}",
+                        expected.artifact.exports[0].fully_qualified_name
+                    );
+                    assert_eq!(
+                        actual.artifact.expressions.len(),
+                        metadata.expr_metadata().len()
+                            + typed.source_type().unwrap().expressions().len()
+                            + 1,
+                        "missing {quantified_id}"
+                    );
+                    assert_eq!(&actual, expected);
+                    let quantified = actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .find(|row| row.expression_id == quantified_id)
+                        .unwrap();
+                    assert_eq!(quantified.expression_kind, "QuantifiedFormula(Universal)");
+                    assert_eq!(quantified.rendered_surface, "for X being set holds X = X");
+                    let quantified_start = source.find("for X being set holds X = X").unwrap();
+                    assert_eq!(
+                        (
+                            quantified.source_range.start_byte,
+                            quantified.source_range.end_byte
+                        ),
+                        (
+                            u64::try_from(quantified_start).unwrap(),
+                            u64::try_from(quantified_start + "for X being set holds X = X".len())
+                                .unwrap()
+                        )
+                    );
+                    assert!(
+                        quantified.inferred_type.is_none()
+                            && quantified.resolved_symbol.is_none()
+                            && quantified.active_thesis.is_none()
+                            && quantified.overload_resolution.is_none()
+                            && quantified.inserted_coercions.is_empty()
+                    );
+
                     assert_eq!(actual.artifact.statements.len(), 1);
                     let four = PhaseInput::new(
                         six.work_unit.clone(),

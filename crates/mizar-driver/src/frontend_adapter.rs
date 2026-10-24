@@ -5686,6 +5686,23 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         if bindings.len() != written_types.applications().len() {
             return Ok(None);
         }
+        let Some(node) = typed.nodes().node(formula) else {
+            return Ok(None);
+        };
+        expressions.push(ExpressionMetadata {
+            expression_id: format!("source.theorem.quantified.{}", owner.symbol.fqn().as_str()),
+            source_range: SourceRangeSummary {
+                start_byte: formula_range.start as u64,
+                end_byte: formula_range.end as u64,
+            },
+            expression_kind: node.kind.as_str().to_owned(),
+            rendered_surface: elaborated.to_owned(),
+            inferred_type: None,
+            resolved_symbol: None,
+            inserted_coercions: Vec::new(),
+            active_thesis: None,
+            overload_resolution: None,
+        });
         let vcs = storage
             .typed_handle::<mizar_vc::vc_ir::VcSet>(
                 vc_parent.as_output_ref(),
