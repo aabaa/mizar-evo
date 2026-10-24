@@ -621,6 +621,8 @@ authorized.
 77. **[Source algorithm state canonical components](../../task_contracts/en/VC-SOURCE-ALGORITHM-STATE-CANONICAL-COMPONENTS.md).** [x]
 78. **[Original source state identity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
 
+79. **[Source theorem configured-discharge handoff](../../task_contracts/en/VC-SOURCE-THEOREM-DISCHARGE-HANDOFF.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

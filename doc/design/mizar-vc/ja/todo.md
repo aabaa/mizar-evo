@@ -587,6 +587,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 77. **[Source algorithm state canonical components](../../task_contracts/ja/VC-SOURCE-ALGORITHM-STATE-CANONICAL-COMPONENTS.md).** [x]
 78. **[Original source state identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
 
+79. **[Source theorem configured-discharge handoff](../../task_contracts/ja/VC-SOURCE-THEOREM-DISCHARGE-HANDOFF.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

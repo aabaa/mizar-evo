@@ -1994,6 +1994,82 @@ pub fn build_source_algorithm_return_kernel_handoff(
     .map_err(|e| e.to_string())
 }
 
+/// Associates an explicit configured discharge with the original theorem projection.
+pub fn build_source_theorem_discharge_kernel_handoff(
+    core: &mizar_core::core_ir::CoreIr,
+    original: &VcSet,
+    vc_id: VcId,
+    discharge: &DischargeOutput,
+    policy: &crate::discharge::DischargePolicy,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    let original_handoff = build_source_theorem_kernel_handoff(core, original, vc_id)?;
+    let expected = crate::discharge::try_discharge(crate::discharge::DischargeInput {
+        vc_set: original,
+        policy,
+    })
+    .map_err(|error| error.to_string())?;
+    let invalid = || "theorem.discharge_handoff.invalid_projection".to_owned();
+    if &expected != discharge
+        || discharge.vc_set().vc(vc_id).ok_or_else(invalid)?.status
+            != crate::vc_ir::VcStatus::NeedsAtp
+    {
+        return Err(invalid());
+    }
+    let envelope = original_handoff.canonical_evidence();
+    let goal = envelope.final_goal();
+    let formula_payloads = envelope
+        .formula_evidence()
+        .iter()
+        .map(|entry| {
+            (
+                entry.producer_formula_ref(),
+                entry.formula_fingerprint(),
+                entry.formula_bytes(),
+                entry.provenance_id(),
+            )
+        })
+        .chain(std::iter::once((
+            Some(goal.producer_formula_ref),
+            &goal.formula_fingerprint,
+            goal.formula_bytes.as_slice(),
+            goal.provenance_id,
+        )))
+        .map(|(formula_ref, fingerprint, bytes, provenance_id)| {
+            let provenance = envelope
+                .provenance()
+                .iter()
+                .find(|row| {
+                    row.provenance_id == provenance_id
+                        && &row.formula_fingerprint == fingerprint
+                        && &row.target_vc == envelope.target_vc()
+                })
+                .ok_or_else(invalid)?;
+            Ok(KernelFormulaPayload {
+                formula_ref: formula_ref.ok_or_else(invalid)?,
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: fingerprint.clone(),
+                    formula_bytes: bytes.to_vec(),
+                    provenance_payload: provenance.payload.clone(),
+                },
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set: discharge.vc_set(),
+        vc: vc_id,
+        goal_polarity: goal.polarity,
+        kernel_profile: envelope.kernel_profile(),
+        symbol_manifest: envelope.symbol_manifest(),
+        variable_manifest: envelope.variable_manifest(),
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: Some(discharge),
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Replays the original generic theorem VC graph before projecting local evidence.
 pub fn build_source_theorem_kernel_handoff(
     core: &mizar_core::core_ir::CoreIr,
