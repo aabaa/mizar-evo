@@ -251,6 +251,8 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
 
 22. **[Cached publication 前の producer payload 期待値](../../task_contracts/ja/IR-CURRENT-CACHE-PAYLOAD-BINDING.md).** [x]
 
+23. **[Statement-bearing normal Artifact and real source consumer](../../task_contracts/ja/ARTIFACT-SOURCE-THEOREM-STATEMENTS.md).** [x]
+
 ### 監査レビュー注記(2026-07-06)
 
 2026 年 7 月の意味論・kernel 健全性・テンプレートエンコーディング監査

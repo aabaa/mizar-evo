@@ -5103,7 +5103,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             },
             verified_artifact::{
                 BuildProvenance, ExportVisibility, ExpressionMetadata, ObligationMetadata,
-                ObligationStatus, VerifiedExport,
+                ObligationStatus, StatementMetadata, VerifiedExport,
             },
         };
         use mizar_checker::{
@@ -5335,6 +5335,87 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err(fail("checked owner export mismatch"));
         }
+        let mizar_checker::typed_ast::TypedSiteRef::Node(owner_node) = owner.site else {
+            return Ok(None);
+        };
+        let mut formula = owner_node;
+        let formula_range = loop {
+            let Some(node) = typed.nodes().node(formula) else {
+                return Ok(None);
+            };
+            let Some(original) = node.resolved_node.and_then(|id| arena.arena().node(id)) else {
+                return Ok(None);
+            };
+            let mizar_session::SourceAnchor::Range(range) = node.anchor else {
+                return Ok(None);
+            };
+            let original_kind = format!("{:?}", original.kind());
+            let kind = original_kind.as_str();
+            if (formula == owner_node && kind != "TheoremItem")
+                || (formula != owner_node
+                    && !matches!(
+                        kind,
+                        "Proposition" | "FormulaExpression" | "QuantifiedFormula(Universal)"
+                    ))
+            {
+                return Ok(None);
+            }
+            if node.kind.as_str() != kind
+                || node.recovery != NodeRecoveryState::Normal
+                || original.origin().is_recovered()
+                || original.origin().import_edge().is_some()
+                || original.origin().source_id() != version.source_id
+                || original.origin().module_id() != arena.module()
+                || original.origin().anchor() != &node.anchor
+                || range.source_id != version.source_id
+                || range.start >= range.end
+                || range.start < owner.source_range.start
+                || range.end > owner.source_range.end
+                || (formula == owner_node && range != owner.source_range)
+            {
+                return Ok(None);
+            }
+            if kind == "QuantifiedFormula(Universal)" {
+                break range;
+            }
+            let mut children = node.children.iter().copied().filter(|child| {
+                typed
+                    .nodes()
+                    .node(*child)
+                    .is_some_and(|child| !child.kind.as_str().starts_with("Token("))
+            });
+            let Some(child) = children.next() else {
+                return Ok(None);
+            };
+            if formula != owner_node && children.next().is_some() {
+                return Ok(None);
+            }
+            if typed
+                .nodes()
+                .node(child)
+                .and_then(|child| child.resolved_node)
+                .is_none_or(|child| !original.children().contains(&child))
+            {
+                return Ok(None);
+            }
+            formula = child;
+        };
+        let Some(elaborated) = source
+            .source_text
+            .get(formula_range.start..formula_range.end)
+        else {
+            return Ok(None);
+        };
+        let statements = vec![StatementMetadata {
+            item: owner.symbol.fqn().as_str().to_owned(),
+            source_range: SourceRangeSummary {
+                start_byte: formula_range.start as u64,
+                end_byte: formula_range.end as u64,
+            },
+            elaborated: elaborated.to_owned(),
+            reserve_binders: Vec::new(),
+            resolved_symbols: std::collections::BTreeMap::new(),
+        }];
         let exports = vec![VerifiedExport {
             origin_id: export.origin_id.clone(),
             fully_qualified_name: export.fully_qualified_name.clone(),
@@ -5859,6 +5940,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 source_hash: version.source_hash,
                 verified_at: None,
                 exports,
+                statements,
                 expressions,
                 obligations,
                 proof_witnesses: vec![reference],

@@ -27,7 +27,7 @@ use crate::{
         ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
         DiagnosticSeverity, ExportProofStatus, ExportVisibility, ExpressionMetadata,
         ObligationMetadata, ObligationStatus, OverloadMetadata, VerifiedArtifact, VerifiedExport,
-        current_schema_version as verified_schema_version, verified_artifact_json,
+        verified_artifact_json,
     },
 };
 
@@ -960,7 +960,7 @@ fn sample_verified_artifact(
     source_hash: Hash,
     with_witness: bool,
 ) -> VerifiedArtifact {
-    let schema_version = verified_schema_version();
+    let schema_version = SchemaVersion::new(1, 0);
     let witness_schema_version = proof_witness_schema_version();
     let mut obligations = Vec::new();
     let mut proof_witnesses = Vec::new();
@@ -1072,6 +1072,7 @@ fn sample_verified_artifact(
             }),
             documentation_ref: None,
         }],
+        statements: Vec::new(),
         expressions: vec![ExpressionMetadata {
             expression_id: "expr-1".to_owned(),
             source_range: range(11, 12),

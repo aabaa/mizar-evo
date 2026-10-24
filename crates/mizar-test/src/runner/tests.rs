@@ -19444,7 +19444,7 @@ fn builtin_enclosing_fixture(multiple: bool) -> (mizar_artifact::verified_artifa
         source_file: "src/source.miz".into(), source_hash: mizar_session::hash_text(&text), verified_at: None,
         interface_hash: mizar_session::hash_text("unrefreshed interface"),
         implementation_hash: mizar_session::hash_text("unrefreshed implementation"),
-        exports: Vec::new(), expressions: Vec::new(), obligations, proof_witnesses: references,
+        exports: Vec::new(), statements: Vec::new(), expressions: Vec::new(), obligations, proof_witnesses: references,
         diagnostics: Vec::new(), provenance: BuildProvenance { toolchain: "structural-test".into(),
             language_edition: "2026".into(), lockfile_hash: ArtifactHashRef::new(ArtifactHashClass::Artifact,
                 "fixture/lock", SchemaVersion::new(1, 0), mizar_session::hash_text("lock")),
@@ -19455,10 +19455,70 @@ fn builtin_enclosing_fixture(multiple: bool) -> (mizar_artifact::verified_artifa
 }
 
 #[test]
+fn normal_statement_profile_rejects_genuine_builtin_reference() {
+    use mizar_artifact::{
+        proof_witness::{ProofStatus, ProofWitnessError, builtin_proof_witness_ref_json},
+        store::{CanonicalJson, SchemaVersion},
+        verified_artifact::*,
+    };
+    let (mut mixed, _) = builtin_enclosing_fixture(false);
+    let builtin = mixed
+        .proof_witnesses
+        .iter()
+        .find(|reference| reference.proof_status == ProofStatus::DischargedBuiltin)
+        .unwrap()
+        .clone();
+    mixed.schema_version = SchemaVersion::new(1, 1);
+    let mut normal = mixed.clone();
+    normal
+        .proof_witnesses
+        .retain(|reference| reference.proof_status == ProofStatus::KernelVerified);
+    assert!(!normal.proof_witnesses.is_empty());
+    normal.obligations.retain(|obligation| {
+        normal
+            .proof_witnesses
+            .iter()
+            .any(|reference| reference.obligation_id == obligation.obligation_id)
+    });
+    normal.refresh_hashes().unwrap();
+    let json = verified_artifact_json(&normal).unwrap();
+    assert_eq!(
+        read_verified_artifact(&json, Default::default()).unwrap(),
+        normal
+    );
+    assert!(write_verified_artifact(&normal).is_ok());
+    for result in [
+        verified_artifact_json(&mixed),
+        implementation_hash_input_json(&mixed),
+    ] {
+        assert!(matches!(
+            result,
+            Err(VerifiedArtifactError::ProofWitness {
+                error: ProofWitnessError::SchemaVersion(_),
+                ..
+            })
+        ));
+    }
+    let mut invalid = json;
+    let CanonicalJson::Object(fields) = &mut invalid else {
+        unreachable!()
+    };
+    fields.insert(
+        "proof_witnesses".into(),
+        CanonicalJson::array([builtin_proof_witness_ref_json(&builtin).unwrap()]),
+    );
+    assert!(
+        matches!(read_verified_artifact(&invalid, Default::default()),
+        Err(VerifiedArtifactError::ProofWitness { path, error: ProofWitnessError::SchemaVersion(_) })
+            if path == "$.proof_witnesses[0]")
+    );
+}
+
+#[test]
 fn builtin_enclosing_roundtrip_mixed_and_normal_compatibility() {
     use mizar_artifact::{proof_witness::{ProofStatus, builtin_proof_witness_ref_json, proof_witness_ref_json},
         store::{CanonicalJson, SchemaVersion, canonical_json_bytes}, verified_artifact::*};
-    assert_eq!(current_schema_version(), SchemaVersion::new(1, 0));
+    assert_eq!(current_schema_version(), SchemaVersion::new(1, 1));
     assert!(schema_version_support().check(Some("2.0")).is_err());
     for multiple in [false, true] {
         let (artifact, _) = builtin_enclosing_fixture(multiple);

@@ -15,8 +15,7 @@ use mizar_artifact::{
     store::{PublishedArtifactPath, SchemaVersion, artifact_hash_domain, write_published_artifact},
     verified_artifact::{
         BuildProvenance, VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifact,
-        artifact_hash_excluded_paths, current_schema_version as verified_schema_version,
-        verified_artifact_json,
+        artifact_hash_excluded_paths, verified_artifact_json,
     },
 };
 use mizar_build::{
@@ -985,7 +984,7 @@ fn sample_verified_artifact(
     seed: u8,
 ) -> VerifiedArtifact {
     let mut artifact = VerifiedArtifact {
-        schema_version: verified_schema_version(),
+        schema_version: SchemaVersion::new(1, 0),
         module,
         source_file: source_file.to_owned(),
         source_hash: hash(seed),
@@ -993,6 +992,7 @@ fn sample_verified_artifact(
         interface_hash: hash(0),
         implementation_hash: hash(0),
         exports: Vec::new(),
+        statements: Vec::new(),
         expressions: Vec::new(),
         obligations: Vec::new(),
         proof_witnesses: Vec::new(),

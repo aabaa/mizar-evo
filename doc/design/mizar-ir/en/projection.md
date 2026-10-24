@@ -255,3 +255,6 @@ Task 12 must cover:
 - cache-key and dependency-fingerprint non-ownership;
 - absence of a `mizar-driver` dependency and placeholder diagnostics or
   publication-token APIs.
+
+## Statement input and normalization
+ProjectVerifiedArtifactInput and the assembled VerifiedArtifact carry the existing Artifact-owned StatementMetadata vector; the current normal schema/version and row fields/validation/hash policy remain owned by [Verified Artifact](../../mizar-artifact/en/verified_artifact.md#statement-bearing-normal-profile). Sort statements by item and scan item/elaborated/reserve names/resolved-symbol keys and values through the existing raw-internal-leak checks before returning. Never authenticate source semantics from caller rows or remove any of the four default gaps. The real source caller supplies genuine checked statement data; generic fixtures explicitly supply empty vectors. Keep current-snapshot/physical-handle checks, old row ordering and failure purity unchanged. Tests cover statement permutation equivalence, whole candidate/normal readback and leakage in every new string location without new token/producer facades.

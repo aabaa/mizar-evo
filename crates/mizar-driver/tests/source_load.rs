@@ -58758,7 +58758,7 @@ fn with_native_theorem_artifact_context(
         },
         verified_artifact::{
             BuildProvenance, ExportVisibility, ExpressionMetadata, ObligationMetadata,
-            ObligationStatus, VerifiedExport,
+            ObligationStatus, StatementMetadata, VerifiedExport,
         },
     };
     use mizar_atp::problem::*;
@@ -59177,6 +59177,50 @@ fn with_native_theorem_artifact_context(
     );
     assert_eq!(export.proof_status, None);
     let owner_range = source_owner.source_range;
+    let formulas =
+        mizar_resolve::labels::source_public_theorem_formula_candidates(ast, &arena, &env)
+            .unwrap()
+            .unwrap();
+    assert_eq!(formulas.len(), 1);
+    let formula = ast
+        .node_view(*formulas.get(&source_owner.symbol).unwrap())
+        .unwrap();
+    assert!(formula.as_formula_expression().is_some());
+    let formula_range = formula.range();
+    assert_eq!(formula_range.source_id, ast.source_id);
+    assert_eq!(owner_range.source_id, ast.source_id);
+    assert_eq!(source_owner.symbol.module(), arena.module());
+    assert!(owner_range.start <= formula_range.start && formula_range.end <= owner_range.end);
+    assert!(formula_range.start < formula_range.end);
+    assert_eq!(check.scope().thesis(), None);
+    assert!(check.scope().bindings().iter().all(|binding| {
+        use mizar_resolve::names::{SourceVariableBindingKind, SourceVariableTypeRadix};
+        matches!(
+            binding.kind(),
+            SourceVariableBindingKind::Quantifier | SourceVariableBindingKind::Let
+        ) && binding.declared_type().is_some_and(|ty| {
+            ty.radix() == SourceVariableTypeRadix::Set && ty.attributes().is_empty()
+        })
+    }));
+    assert!(env.imports().is_empty() && env.exports().is_empty());
+    assert!(
+        env.symbols()
+            .iter()
+            .all(|entry| entry.symbol() == &source_owner.symbol)
+    );
+    let statement = StatementMetadata {
+        item: source_owner.symbol.fqn().as_str().into(),
+        source_range: SourceRangeSummary {
+            start_byte: u64::try_from(formula_range.start).unwrap(),
+            end_byte: u64::try_from(formula_range.end).unwrap(),
+        },
+        elaborated: source_text
+            .get(formula_range.start..formula_range.end)
+            .unwrap()
+            .into(),
+        reserve_binders: vec![],
+        resolved_symbols: std::collections::BTreeMap::new(),
+    };
     assert_eq!(
         (export.source_range.start_byte, export.source_range.end_byte),
         (
@@ -59588,6 +59632,7 @@ fn with_native_theorem_artifact_context(
                     verified_at: None,
                     exports: vec![verified_export],
                     expressions,
+                    statements: vec![statement],
                     obligations: vec![obligation],
                     proof_witnesses: vec![actual68.2.clone()],
                     diagnostics: vec![],
@@ -61949,6 +61994,720 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                 }
                 if case != "buffer" {
                     assert_eq!(six.parent_outputs().len(), 6);
+                    for parent in six.parent_outputs() {
+                        owner
+                            .validate_current_output(six.snapshot, parent.as_output_ref())
+                            .unwrap();
+                    }
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_statements_match_checked_formula() {
+    use mizar_artifact::{
+        store::SchemaVersion,
+        verified_artifact::{
+            VerifiedArtifactReadOptions, read_verified_artifact, verified_artifact_json,
+        },
+    };
+    use mizar_atp::problem::*;
+    use mizar_ir::{projection::ProjectionExternalDependencyGap as Gap, storage::CollectInput};
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    for (text, formula, threshold) in [
+        (
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            "for X being set holds X = X",
+            usize::MAX,
+        ),
+        (
+            ":: 日本語 λ\ntheorem Renamed: for Bound being set holds Bound = Bound proof let Bound be set; thus Bound = Bound; end;\n",
+            "for Bound being set holds Bound = Bound",
+            0,
+        ),
+        (
+            "theorem Spaced:\n  for X being set\n    holds X = X\nproof\n  let X be set;\n  thus X = X;\nend;",
+            "for X being set\n    holds X = X",
+            usize::MAX,
+        ),
+    ] {
+        with_native_theorem_artifact_context(
+            text,
+            false,
+            threshold,
+            "",
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = if threshold == 0 {
+                    VerifierPolicy::default()
+                        .with_profile_id("artifact λ\0")
+                        .with_checker_schema_version(7)
+                } else {
+                    VerifierPolicy::default()
+                };
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let root = fixture.root.join("statement-formula");
+                let actual = inputs
+                    .project_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        ("proof-witnesses/checked.json", &root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                assert_eq!(&actual, expected);
+                assert_eq!(actual.artifact.schema_version, SchemaVersion::new(1, 1));
+                let [statement] = actual.artifact.statements.as_slice() else {
+                    panic!("one checked theorem statement")
+                };
+                assert_eq!(statement.elaborated, formula);
+                assert_eq!(
+                    statement.item,
+                    expected.artifact.exports[0].fully_qualified_name
+                );
+                let start = source.find(formula).unwrap();
+                let end = start + formula.len();
+                assert_eq!(
+                    statement.source_range.start_byte,
+                    u64::try_from(start).unwrap()
+                );
+                assert_eq!(statement.source_range.end_byte, u64::try_from(end).unwrap());
+                assert_eq!(source.get(start..end), Some(formula));
+                assert!(
+                    start
+                        > usize::try_from(actual.artifact.exports[0].source_range.start_byte)
+                            .unwrap()
+                );
+                assert!(
+                    end < usize::try_from(actual.artifact.exports[0].source_range.end_byte)
+                        .unwrap()
+                );
+                assert!(
+                    statement.reserve_binders.is_empty() && statement.resolved_symbols.is_empty()
+                );
+                let expected_statement = CanonicalJson::object([
+                    (
+                        "item",
+                        CanonicalJson::string(&expected.artifact.exports[0].fully_qualified_name),
+                    ),
+                    (
+                        "source_range",
+                        CanonicalJson::object([
+                            (
+                                "start_byte",
+                                CanonicalJson::Integer(i64::try_from(start).unwrap()),
+                            ),
+                            (
+                                "end_byte",
+                                CanonicalJson::Integer(i64::try_from(end).unwrap()),
+                            ),
+                        ])
+                        .unwrap(),
+                    ),
+                    ("elaborated", CanonicalJson::string(formula)),
+                    ("reserve_binders", CanonicalJson::Array(vec![])),
+                    (
+                        "resolved_symbols",
+                        CanonicalJson::object(Vec::<(String, CanonicalJson)>::new()).unwrap(),
+                    ),
+                ])
+                .unwrap();
+                let json = verified_artifact_json(&actual.artifact).unwrap();
+                let CanonicalJson::Object(fields) = &json else {
+                    panic!("normal artifact object")
+                };
+                assert_eq!(
+                    fields.get("statements"),
+                    Some(&CanonicalJson::Array(vec![expected_statement]))
+                );
+                assert_eq!(
+                    read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap(),
+                    actual.artifact
+                );
+                assert_eq!(
+                    actual.external_dependency_gaps,
+                    [
+                        Gap::DriverSession,
+                        Gap::DiagnosticsIntegration,
+                        Gap::ProducerProjectionPayload,
+                        Gap::ArtifactPublicationToken
+                    ]
+                );
+                assert!(
+                    actual
+                        .artifact
+                        .expressions
+                        .iter()
+                        .all(|row| row.active_thesis.is_none())
+                );
+                assert_eq!(
+                    actual.artifact.source_hash,
+                    inputs.snapshot.source_versions[0].source_hash
+                );
+                assert_eq!(
+                    fs::read(root.join("proof-witnesses/checked.json")).unwrap(),
+                    fs::read(
+                        fixture
+                            .root
+                            .join("oracle-artifact/proof-witnesses/checked.json")
+                    )
+                    .unwrap()
+                );
+                assert_eq!(refs.len(), 13);
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_current_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_statements_preserve_main_and_identity() {
+    use mizar_artifact::{
+        store::{
+            PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+            canonical_json_bytes, read_published_artifact,
+        },
+        verified_artifact::{
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+            artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
+        },
+    };
+    use mizar_atp::problem::*;
+    use mizar_ir::storage::CollectInput;
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = ":: statement transport λ\ntheorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for threshold in [usize::MAX, 0] {
+        with_native_theorem_artifact_context(
+            text,
+            false,
+            threshold,
+            "",
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = if threshold == 0 {
+                    VerifierPolicy::default()
+                        .with_profile_id("artifact λ\0")
+                        .with_checker_schema_version(7)
+                } else {
+                    VerifierPolicy::default()
+                };
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let expected = expected.as_ref().unwrap().as_ref().unwrap();
+                let root = fixture.root.join("statement-main");
+                let witness_path = "proof-witnesses/checked.json";
+                let main_path = PublishedArtifactPath::new("main.mizir.json").unwrap();
+                let (actual, written) = inputs
+                    .write_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, main_path.as_str(), &root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(&actual, expected);
+                let json = verified_artifact_json(&expected.artifact).unwrap();
+                let domain = artifact_hash_domain(
+                    VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                    expected.artifact.schema_version,
+                );
+                let exclusions = artifact_hash_excluded_paths();
+                assert_eq!(written.artifact_hash, domain.hash(&json, &exclusions));
+                assert_eq!(
+                    fs::read(root.join(main_path.as_str())).unwrap(),
+                    canonical_json_bytes(&json)
+                );
+                let read = read_published_artifact(
+                    &root,
+                    &main_path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&domain),
+                        hash_excluded_paths: &exclusions,
+                        expected_artifact_hash: Some(written.artifact_hash),
+                    },
+                )
+                .unwrap();
+                assert_eq!(read.value, json);
+                let artifact = read_verified_artifact(
+                    &read.value,
+                    VerifiedArtifactReadOptions {
+                        artifact_path: Some(main_path.as_str()),
+                        expected_module: Some(&expected.artifact.module),
+                        expected_interface_hash: Some(expected.artifact.interface_hash),
+                        expected_implementation_hash: Some(expected.artifact.implementation_hash),
+                    },
+                )
+                .unwrap();
+                assert_eq!(artifact, expected.artifact);
+                assert_eq!(artifact.statements.len(), 1);
+                let statement = &artifact.statements[0];
+                assert_eq!(statement.elaborated, "for X being set holds X = X");
+                assert_eq!(
+                    source.get(
+                        usize::try_from(statement.source_range.start_byte).unwrap()
+                            ..usize::try_from(statement.source_range.end_byte).unwrap()
+                    ),
+                    Some(statement.elaborated.as_str())
+                );
+                assert!(
+                    artifact
+                        .exports
+                        .iter()
+                        .all(|row| row.proof_status.is_none())
+                );
+                let [witness] = artifact.proof_witnesses.as_slice() else {
+                    panic!("one authentic witness")
+                };
+                assert_eq!(
+                    artifact.obligations[0]
+                        .accepted_witness_obligation_id
+                        .as_deref(),
+                    Some(artifact.obligations[0].obligation_id.as_str())
+                );
+                let file_ref = refs
+                    .iter()
+                    .find(|row| {
+                        row.output_kind() == &OutputKind::new("SourceTheoremCandidateWitnessFile")
+                    })
+                    .unwrap();
+                let file = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<CanonicalJson>(file_ref, file_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let witness_bytes = fs::read(root.join(witness_path)).unwrap();
+                assert_eq!(witness_bytes, canonical_json_bytes(&file));
+                assert_eq!(
+                    witness_bytes,
+                    fs::read(fixture.root.join("oracle-artifact").join(witness_path)).unwrap()
+                );
+                let witness_domain = artifact_hash_domain(
+                    witness.witness_artifact_hash.schema_family.clone(),
+                    witness.witness_artifact_hash.schema_version,
+                );
+                let witness_read = read_published_artifact(
+                    &root,
+                    &PublishedArtifactPath::new(witness_path).unwrap(),
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&witness_domain),
+                        expected_artifact_hash: Some(witness.witness_artifact_hash.digest),
+                        ..PublishedArtifactReadOptions::default()
+                    },
+                )
+                .unwrap();
+                assert_eq!(witness_read.value, *file);
+                assert!(
+                    !mizar_proof::witness_store::read_source_theorem_witness_file(
+                        &witness_read,
+                        witness
+                    )
+                    .unwrap()
+                    .is_empty()
+                );
+                assert_ne!(written.artifact_hash, witness.witness_artifact_hash.digest);
+                assert_ne!(written.artifact_hash, artifact.interface_hash);
+                assert_ne!(written.artifact_hash, artifact.implementation_hash);
+                assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+                assert_eq!(
+                    fs::read_dir(root.join("proof-witnesses")).unwrap().count(),
+                    1
+                );
+                let error = fs::create_dir(&root).unwrap_err().to_string();
+                assert_eq!(
+                    inputs
+                        .write_native_theorem_artifact_draft(
+                            six,
+                            owner,
+                            vcs.vcs()[0].id,
+                            (profile, ConcreteFormat::Tptp),
+                            (&policy, &verifier),
+                            (witness_path, main_path.as_str(), &root),
+                        )
+                        .unwrap_err(),
+                    error
+                );
+                assert_eq!(
+                    fs::read(root.join(main_path.as_str())).unwrap(),
+                    canonical_json_bytes(&json)
+                );
+                assert_eq!(fs::read(root.join(witness_path)).unwrap(), witness_bytes);
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_current_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                assert_eq!(
+                    (
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (14, 0)
+                );
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_statements_preserve_refusals() {
+    use mizar_atp::problem::*;
+    use mizar_ir::storage::CollectInput;
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in ["baseline", "buffer", "bytes", "link"] {
+        let fault = if matches!(case, "bytes" | "link") {
+            case
+        } else {
+            ""
+        };
+        with_native_theorem_artifact_context(
+            text,
+            case == "buffer",
+            0,
+            fault,
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, _)| {
+                let before = (
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = VerifierPolicy::default()
+                    .with_profile_id("artifact λ\0")
+                    .with_checker_schema_version(7);
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let id = vcs.vcs()[0].id;
+                let root = fixture.root.join("statement-refusal");
+                let result = inputs.project_native_theorem_artifact_draft(
+                    six,
+                    owner,
+                    id,
+                    (profile.clone(), ConcreteFormat::Tptp),
+                    (&policy, &verifier),
+                    ("proof-witnesses/checked.json", &root),
+                );
+                if case == "baseline" {
+                    let actual = result.unwrap().unwrap();
+                    assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
+                    assert_eq!(actual.artifact.statements.len(), 1);
+                    let four = PhaseInput::new(
+                        six.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            six.snapshot,
+                            six.identities().input_hash(),
+                            six.identities().dependency_hashes().to_vec(),
+                            six.parent_outputs()
+                                .iter()
+                                .filter(|parent| {
+                                    matches!(
+                                        parent.as_output_ref().output_kind().as_str(),
+                                        "SourceTheoremCore"
+                                            | "SourceTheoremVC"
+                                            | "SourceTheoremDischarge"
+                                            | "SourceTheoremCandidateCheck"
+                                    )
+                                })
+                                .cloned()
+                                .collect(),
+                        )
+                        .unwrap(),
+                    );
+                    let wrong = verifier.clone().with_kernel_evidence_formats([]);
+                    let lower = inputs
+                        .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
+                            &four,
+                            owner,
+                            id,
+                            (profile.clone(), ConcreteFormat::Tptp),
+                            (&policy, &wrong),
+                            "proof-witnesses/checked.json",
+                        )
+                        .map(|value| value.is_some());
+                    assert_ne!(lower, Ok(true));
+                    let absent = fixture.root.join("statement-policy");
+                    assert_eq!(
+                        inputs
+                            .project_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &wrong),
+                                ("proof-witnesses/checked.json", &absent),
+                            )
+                            .map(|value| value.is_some()),
+                        lower
+                    );
+                    assert_eq!(
+                        inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &wrong),
+                                ("proof-witnesses/checked.json", "main.mizir.json", &absent),
+                            )
+                            .map(|value| value.is_some()),
+                        lower
+                    );
+                    assert!(!absent.exists());
+                    for lock in [true, false] {
+                        let mut changed_plan = inputs.build_plan.clone();
+                        if lock {
+                            changed_plan.lockfile.packages[0].name.push_str("-changed");
+                        } else {
+                            changed_plan.build_config.packages[0].config.incremental =
+                                !changed_plan.build_config.packages[0].config.incremental;
+                        }
+                        let changed = SourceLoadInputs {
+                            build_plan: &changed_plan,
+                            ..inputs
+                        };
+                        let lower = if lock {
+                            changed.validate_native_lock_content()
+                        } else {
+                            changed.validate_native_config_content()
+                        }
+                        .unwrap_err();
+                        let absent = fixture.root.join(format!("statement-config-{lock}"));
+                        assert_eq!(
+                            changed
+                                .write_native_theorem_artifact_draft(
+                                    six,
+                                    owner,
+                                    id,
+                                    (profile.clone(), ConcreteFormat::Tptp),
+                                    (&policy, &verifier),
+                                    ("proof-witnesses/checked.json", "main.mizir.json", &absent),
+                                )
+                                .unwrap_err(),
+                            lower
+                        );
+                        assert!(!absent.exists());
+                    }
+                } else {
+                    let lower = result.map(|value| value.is_some());
+                    if case == "buffer" {
+                        assert_eq!(lower, Ok(false));
+                    } else {
+                        assert!(expected.is_none());
+                        assert!(lower.is_err());
+                    }
+                    assert_eq!(
+                        inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                ("proof-witnesses/checked.json", "main.mizir.json", &root),
+                            )
+                            .map(|value| value.is_some()),
+                        lower
+                    );
+                    assert!(!root.exists());
+                }
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_published_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                if case != "buffer" {
                     for parent in six.parent_outputs() {
                         owner
                             .validate_current_output(six.snapshot, parent.as_output_ref())

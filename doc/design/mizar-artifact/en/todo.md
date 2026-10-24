@@ -356,6 +356,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 28. **[Retained manifest commit result](../../task_contracts/en/ARTIFACT-MANIFEST-COMMIT-RESULT-OPAQUE.md).** [x]
 29. **[In-memory canonical bytes parsing](../../task_contracts/en/ARTIFACT-CANONICAL-BYTES-PARSE.md).** [x]
 
+30. **[Statement-bearing normal Artifact and real source consumer](../../task_contracts/en/ARTIFACT-SOURCE-THEOREM-STATEMENTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

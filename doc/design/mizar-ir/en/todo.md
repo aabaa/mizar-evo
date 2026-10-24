@@ -263,6 +263,8 @@ Keep `cargo test -p mizar-ir` green after each task (see
 
 22. **[Producer payload expectations before cached publication](../../task_contracts/en/IR-CURRENT-CACHE-PAYLOAD-BINDING.md).** [x]
 
+23. **[Statement-bearing normal Artifact and real source consumer](../../task_contracts/en/ARTIFACT-SOURCE-THEOREM-STATEMENTS.md).** [x]
+
 ### Audit review note (2026-07-06)
 
 The July 2026 semantic, kernel-soundness, and template-encoding audits

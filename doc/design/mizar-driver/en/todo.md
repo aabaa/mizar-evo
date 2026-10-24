@@ -674,6 +674,8 @@ the owning producers when the paired tasks land.
 
 108. **[Source artifact written-type rows](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-WRITTEN-TYPES.md).** [x]
 
+109. **[Statement-bearing normal Artifact and real source consumer](../../task_contracts/en/ARTIFACT-SOURCE-THEOREM-STATEMENTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

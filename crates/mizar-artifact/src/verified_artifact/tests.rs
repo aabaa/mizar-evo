@@ -5,11 +5,13 @@ use mizar_session::Hash;
 use super::{
     ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
     DiagnosticSeverity, ExportProofStatus, ExportVisibility, ExpressionMetadata,
-    ObligationMetadata, ObligationStatus, OverloadMetadata, VERIFIED_ARTIFACT_SCHEMA_FAMILY,
-    VerifiedArtifact, VerifiedArtifactError, VerifiedArtifactReadOptions, VerifiedExport,
-    artifact_hash_excluded_paths, current_schema_version, implementation_hash_input_json,
-    interface_hash_input_json, read_verified_artifact, verified_artifact_hash_string,
-    verified_artifact_json, write_verified_artifact,
+    ObligationMetadata, ObligationStatus, OverloadMetadata, StatementMetadata,
+    VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifact, VerifiedArtifactError,
+    VerifiedArtifactReadOptions, VerifiedExport, artifact_hash_excluded_paths,
+    builtin_verified_artifact_json, current_schema_version, implementation_hash_input_json,
+    interface_hash_input_json, read_builtin_verified_artifact, read_verified_artifact,
+    read_verified_artifact_for_version, verified_artifact_hash_string, verified_artifact_json,
+    write_verified_artifact,
 };
 use crate::{
     module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
@@ -137,7 +139,7 @@ fn public_hash_input_helpers_match_computed_hashes() {
 #[test]
 fn incompatible_version_reads_fail_cleanly() {
     let mut json = sample_json();
-    set_field(&mut json, "schema_version", CanonicalJson::string("1.1"));
+    set_field(&mut json, "schema_version", CanonicalJson::string("1.2"));
 
     assert!(matches!(
         read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
@@ -580,7 +582,10 @@ fn verified_at_and_cache_key_are_hash_excluded() {
 #[test]
 fn artifact_hash_exclusions_cover_local_provenance_fields() {
     let original = sample_json();
-    let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, current_schema_version());
+    let domain = artifact_hash_domain(
+        VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+        sample_artifact().schema_version,
+    );
     let excluded_paths = artifact_hash_excluded_paths();
     let original_hash = domain.hash(&original, &excluded_paths);
 
@@ -1046,7 +1051,7 @@ fn sample_json() -> CanonicalJson {
 }
 
 fn sample_artifact() -> VerifiedArtifact {
-    let schema_version = current_schema_version();
+    let schema_version = SchemaVersion::new(1, 0);
     let witness_schema_version = proof_witness_schema_version();
     let module = identity("pkg", "articles/hidden", "2026");
     let dependency_module = identity("dep", "articles/base", "2026");
@@ -1129,6 +1134,7 @@ fn sample_artifact() -> VerifiedArtifact {
                 overload_resolution: None,
             },
         ],
+        statements: Vec::new(),
         obligations: vec![
             ObligationMetadata {
                 obligation_id: "obl-1".to_owned(),
@@ -1551,4 +1557,585 @@ fn mutate_dependency_artifact_hash(json: &mut CanonicalJson) {
 fn duplicate_array_item(values: &mut Vec<CanonicalJson>, index: usize) {
     let duplicate = values[index].clone();
     values.insert(index + 1, duplicate);
+}
+
+#[test]
+fn statement_profile_exact_fields_round_trip_and_row_normalization() {
+    assert_eq!(current_schema_version(), SchemaVersion::new(1, 1));
+    let artifact = sample_statement_artifact();
+    let json = verified_artifact_json(&artifact).unwrap();
+    let CanonicalJson::Object(fields) = &json else {
+        panic!("object")
+    };
+    assert_eq!(
+        fields.keys().map(String::as_str).collect::<Vec<_>>(),
+        [
+            "diagnostics",
+            "exports",
+            "expressions",
+            "implementation_hash",
+            "interface_hash",
+            "module",
+            "obligations",
+            "proof_witnesses",
+            "provenance",
+            "schema_version",
+            "source_file",
+            "source_hash",
+            "statements",
+            "verified_at",
+        ]
+    );
+    let expected_row = CanonicalJson::object([
+        ("item", CanonicalJson::string("Hidden.Th1")),
+        (
+            "source_range",
+            CanonicalJson::object([
+                ("start_byte", CanonicalJson::integer(10)),
+                ("end_byte", CanonicalJson::integer(30)),
+            ])
+            .unwrap(),
+        ),
+        (
+            "elaborated",
+            CanonicalJson::string("for x being set holds x = x"),
+        ),
+        (
+            "reserve_binders",
+            CanonicalJson::array([CanonicalJson::string("z"), CanonicalJson::string("a")]),
+        ),
+        (
+            "resolved_symbols",
+            CanonicalJson::object([
+                ("z", CanonicalJson::string("Base.z")),
+                ("a", CanonicalJson::string("Base.a")),
+            ])
+            .unwrap(),
+        ),
+    ])
+    .unwrap();
+    let CanonicalJson::Array(rows) = fields.get("statements").unwrap() else {
+        panic!("array")
+    };
+    assert_eq!(rows[0], expected_row);
+    assert_eq!(
+        read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap(),
+        artifact
+    );
+    assert_eq!(
+        write_verified_artifact(&artifact).unwrap(),
+        canonical_json_string(&json).into_bytes()
+    );
+
+    let mut reordered = artifact.clone();
+    reordered.statements.reverse();
+    reordered.statements[1].resolved_symbols = [
+        ("a".to_owned(), "Base.a".to_owned()),
+        ("z".to_owned(), "Base.z".to_owned()),
+    ]
+    .into_iter()
+    .collect();
+    assert_eq!(verified_artifact_json(&reordered).unwrap(), json);
+    assert_eq!(
+        reordered.compute_implementation_hash().unwrap(),
+        artifact.implementation_hash
+    );
+    let mut unordered_json = json.clone();
+    array_field_mut(&mut unordered_json, "statements").reverse();
+    let decoded =
+        read_verified_artifact(&unordered_json, VerifiedArtifactReadOptions::default()).unwrap();
+    assert_eq!(decoded, artifact);
+    assert_eq!(verified_artifact_json(&decoded).unwrap(), json);
+    assert_eq!(decoded.statements[0].reserve_binders, ["z", "a"]);
+}
+
+#[test]
+fn statement_fields_participate_in_implementation_and_artifact_but_not_interface_identity() {
+    let artifact = sample_statement_artifact();
+    let json = verified_artifact_json(&artifact).unwrap();
+    let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+    let artifact_hash = domain.hash(&json, &artifact_hash_excluded_paths());
+    for case in 0..8 {
+        let mut changed = artifact.clone();
+        let row = &mut changed.statements[0];
+        match case {
+            0 => row.item.push_str("Changed"),
+            1 => row.elaborated.push(' '),
+            2 => row.source_range.start_byte += 1,
+            3 => row.source_range.end_byte += 1,
+            4 => row.reserve_binders.reverse(),
+            5 => row.reserve_binders.push("b".to_owned()),
+            6 => {
+                row.resolved_symbols
+                    .insert("a".to_owned(), "Other.a".to_owned());
+            }
+            7 => {
+                row.resolved_symbols
+                    .insert("b".to_owned(), "Base.b".to_owned());
+            }
+            _ => unreachable!(),
+        }
+        changed.refresh_hashes().unwrap();
+        assert_eq!(
+            changed.interface_hash, artifact.interface_hash,
+            "case {case}"
+        );
+        assert_ne!(
+            changed.implementation_hash, artifact.implementation_hash,
+            "case {case}"
+        );
+        assert_ne!(
+            domain.hash(
+                &verified_artifact_json(&changed).unwrap(),
+                &artifact_hash_excluded_paths()
+            ),
+            artifact_hash,
+            "case {case}"
+        );
+    }
+    let mut local = artifact.clone();
+    local.verified_at = None;
+    local.provenance.cache_key = Some("other-local-cache".to_owned());
+    local.refresh_hashes().unwrap();
+    assert_eq!(local.interface_hash, artifact.interface_hash);
+    assert_eq!(local.implementation_hash, artifact.implementation_hash);
+    assert_eq!(
+        domain.hash(
+            &verified_artifact_json(&local).unwrap(),
+            &artifact_hash_excluded_paths()
+        ),
+        artifact_hash
+    );
+
+    let mut empty = artifact;
+    empty.statements.clear();
+    empty.refresh_hashes().unwrap();
+    let json = verified_artifact_json(&empty).unwrap();
+    assert_eq!(
+        read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap(),
+        empty
+    );
+    assert_eq!(
+        object_mut(&mut json.clone()).get("statements"),
+        Some(&CanonicalJson::array([]))
+    );
+}
+
+#[test]
+fn statement_profile_rejects_missing_unknown_and_malformed_fields() {
+    let original = verified_artifact_json(&sample_statement_artifact()).unwrap();
+    let mut missing = original.clone();
+    object_mut(&mut missing).remove("statements");
+    assert!(
+        matches!(read_verified_artifact(&missing, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::MissingField { path }) if path == "$.statements")
+    );
+    for field in [
+        "item",
+        "source_range",
+        "elaborated",
+        "reserve_binders",
+        "resolved_symbols",
+    ] {
+        let mut json = original.clone();
+        object_mut(&mut array_field_mut(&mut json, "statements")[0]).remove(field);
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::MissingField { path }) if path == format!("$.statements[0].{field}")),
+            "{field}"
+        );
+    }
+    for (field, value) in [
+        ("item", CanonicalJson::Null),
+        ("item", CanonicalJson::string("")),
+        ("source_range", CanonicalJson::Null),
+        ("elaborated", CanonicalJson::integer(1)),
+        ("elaborated", CanonicalJson::string("")),
+        ("reserve_binders", CanonicalJson::Null),
+        (
+            "reserve_binders",
+            CanonicalJson::array([CanonicalJson::integer(1)]),
+        ),
+        (
+            "reserve_binders",
+            CanonicalJson::array([CanonicalJson::string("")]),
+        ),
+        ("resolved_symbols", CanonicalJson::array([])),
+        (
+            "resolved_symbols",
+            CanonicalJson::object([("a", CanonicalJson::integer(1))]).unwrap(),
+        ),
+        (
+            "resolved_symbols",
+            CanonicalJson::object([("a", CanonicalJson::string(""))]).unwrap(),
+        ),
+        (
+            "resolved_symbols",
+            CanonicalJson::object([("", CanonicalJson::string("Base.a"))]).unwrap(),
+        ),
+    ] {
+        let mut json = original.clone();
+        set_field(
+            &mut array_field_mut(&mut json, "statements")[0],
+            field,
+            value,
+        );
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::UnexpectedType { path, .. } | VerifiedArtifactError::InvalidField { path, .. })
+            if path.starts_with(&format!("$.statements[0].{field}"))),
+            "{field}"
+        );
+    }
+    for value in [
+        CanonicalJson::Null,
+        CanonicalJson::object([] as [(&str, CanonicalJson); 0]).unwrap(),
+    ] {
+        let mut json = original.clone();
+        set_field(&mut json, "statements", value);
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::UnexpectedType { path, .. }) if path == "$.statements")
+        );
+    }
+    let mut json = original.clone();
+    array_field_mut(&mut json, "statements")[0] = CanonicalJson::Null;
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::UnexpectedType { path, .. }) if path == "$.statements[0]")
+    );
+    let mut json = original.clone();
+    set_field(
+        &mut array_field_mut(&mut json, "statements")[0],
+        "proof_status",
+        CanonicalJson::string("accepted"),
+    );
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::UnknownField { path, field }) if path == "$.statements[0]" && field == "proof_status")
+    );
+    let mut json = original.clone();
+    let row = &mut array_field_mut(&mut json, "statements")[0];
+    set_field(
+        object_field_mut(row, "source_range"),
+        "arena",
+        CanonicalJson::integer(3),
+    );
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::UnknownField { path, .. }) if path == "$.statements[0].source_range")
+    );
+    let mut json = original.clone();
+    set_nested_range(
+        &mut array_field_mut(&mut json, "statements")[0],
+        "source_range",
+        30,
+        10,
+    );
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.statements[0].source_range")
+    );
+    let mut json = original.clone();
+    duplicate_array_item(array_field_mut(&mut json, "statements"), 0);
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::DuplicateEntry { path, .. }) if path == "$.statements")
+    );
+    let mut json = original;
+    set_field(
+        &mut array_field_mut(&mut json, "statements")[0],
+        "reserve_binders",
+        CanonicalJson::array([CanonicalJson::string("x"), CanonicalJson::string("x")]),
+    );
+    assert!(
+        matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::DuplicateEntry { path, .. }) if path == "$.statements[0].reserve_binders")
+    );
+}
+
+#[test]
+fn statement_writer_validates_rows_and_legacy_nonempty_vectors() {
+    for case in 0..9 {
+        let mut artifact = sample_statement_artifact();
+        let row = &mut artifact.statements[0];
+        match case {
+            0 => row.item.clear(),
+            1 => row.elaborated.clear(),
+            2 => row.source_range = range(30, 10),
+            3 => row.reserve_binders.push(String::new()),
+            4 => row.reserve_binders.push("z".to_owned()),
+            5 => {
+                row.resolved_symbols
+                    .insert(String::new(), "Base.a".to_owned());
+            }
+            6 => {
+                row.resolved_symbols.insert("a".to_owned(), String::new());
+            }
+            7 => artifact.statements.push(artifact.statements[0].clone()),
+            8 => artifact.statements[1].source_range = artifact.statements[0].source_range,
+            _ => unreachable!(),
+        }
+        if case == 8 {
+            artifact.refresh_hashes().unwrap();
+            assert!(
+                verified_artifact_json(&artifact).is_ok(),
+                "distinct items can share ranges"
+            );
+        } else {
+            assert!(
+                matches!(
+                    verified_artifact_json(&artifact),
+                    Err(VerifiedArtifactError::InvalidField { .. }
+                        | VerifiedArtifactError::DuplicateEntry { .. })
+                ),
+                "case {case}"
+            );
+        }
+    }
+    for version in [SchemaVersion::new(1, 0), SchemaVersion::new(2, 0)] {
+        let mut artifact = sample_statement_artifact();
+        artifact.schema_version = version;
+        let result = if version.major() == 2 {
+            builtin_verified_artifact_json(&artifact)
+        } else {
+            verified_artifact_json(&artifact)
+        };
+        assert!(
+            matches!(result, Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.statements")
+        );
+        assert!(
+            matches!(artifact.compute_implementation_hash(), Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.statements")
+        );
+    }
+}
+
+#[test]
+fn statement_version_bounds_and_legacy_field_priority_remain_closed() {
+    let json = verified_artifact_json(&sample_statement_artifact()).unwrap();
+    assert!(matches!(
+        read_verified_artifact_for_version(
+            &json,
+            VerifiedArtifactReadOptions::default(),
+            SchemaVersion::new(1, 0)
+        ),
+        Err(VerifiedArtifactError::SchemaVersion(
+            SchemaVersionError::MinorTooNew { .. }
+        ))
+    ));
+    for version in ["1.2", "2.1", "3.0"] {
+        let mut value = json.clone();
+        set_field(&mut value, "schema_version", CanonicalJson::string(version));
+        set_field(&mut value, "aaa_unknown", CanonicalJson::Null);
+        assert!(matches!(
+            read_verified_artifact(&value, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::SchemaVersion(_))
+        ));
+        assert!(matches!(
+            read_builtin_verified_artifact(&value, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::SchemaVersion(_))
+        ));
+    }
+    for version in [SchemaVersion::new(1, 0), SchemaVersion::new(2, 0)] {
+        let mut artifact = sample_artifact();
+        artifact.schema_version = version;
+        artifact.refresh_hashes().unwrap();
+        let mut json = if version.major() == 2 {
+            builtin_verified_artifact_json(&artifact).unwrap()
+        } else {
+            verified_artifact_json(&artifact).unwrap()
+        };
+        assert!(!object_mut(&mut json).contains_key("statements"));
+        let decoded = if version.major() == 2 {
+            read_builtin_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap()
+        } else {
+            read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap()
+        };
+        assert_eq!(decoded, artifact);
+        set_field(&mut json, "statements", CanonicalJson::array([]));
+        object_mut(&mut json).remove("module");
+        let result = if version.major() == 2 {
+            read_builtin_verified_artifact(&json, VerifiedArtifactReadOptions::default())
+        } else {
+            read_verified_artifact(&json, VerifiedArtifactReadOptions::default())
+        };
+        assert!(
+            matches!(result, Err(VerifiedArtifactError::UnknownField { path, field }) if path == "$" && field == "statements")
+        );
+    }
+    let mut malformed = json.clone();
+    object_mut(&mut malformed).remove("source_file");
+    set_field(&mut malformed, "statements", CanonicalJson::Null);
+    assert!(
+        matches!(read_verified_artifact(&malformed, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::MissingField { path }) if path == "$.source_file")
+    );
+    let mut malformed = json;
+    object_mut(&mut malformed).remove("provenance");
+    object_mut(&mut malformed).remove("statements");
+    assert!(
+        matches!(read_verified_artifact(&malformed, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::MissingField { path }) if path == "$.provenance")
+    );
+}
+
+fn sample_statement_artifact() -> VerifiedArtifact {
+    let mut artifact = sample_artifact();
+    artifact.schema_version = SchemaVersion::new(1, 1);
+    artifact.statements = vec![
+        StatementMetadata {
+            item: "Hidden.Th1".to_owned(),
+            source_range: range(10, 30),
+            elaborated: "for x being set holds x = x".to_owned(),
+            reserve_binders: vec!["z".to_owned(), "a".to_owned()],
+            resolved_symbols: [
+                ("z".to_owned(), "Base.z".to_owned()),
+                ("a".to_owned(), "Base.a".to_owned()),
+            ]
+            .into_iter()
+            .collect(),
+        },
+        StatementMetadata {
+            item: "Hidden.Th2".to_owned(),
+            source_range: range(40, 60),
+            elaborated: "for y being set holds y = y".to_owned(),
+            reserve_binders: Vec::new(),
+            resolved_symbols: BTreeMap::new(),
+        },
+    ];
+    artifact.refresh_hashes().unwrap();
+    artifact
+}
+
+#[test]
+fn legacy_profiles_keep_independently_mapped_bytes_and_hash_projections() {
+    for version in [SchemaVersion::new(1, 0), SchemaVersion::new(2, 0)] {
+        let mut artifact = sample_artifact();
+        artifact.schema_version = version;
+        artifact.exports.clear();
+        artifact.expressions.clear();
+        artifact.obligations.clear();
+        artifact.proof_witnesses.clear();
+        artifact.diagnostics.clear();
+        artifact.provenance.dependency_artifact_hashes.clear();
+        let module = CanonicalJson::object([
+            ("package_id", CanonicalJson::string("pkg")),
+            ("package_version", CanonicalJson::string("1.0.0")),
+            ("lockfile_identity", CanonicalJson::string("lock")),
+            ("module_path", CanonicalJson::string("articles/hidden")),
+            ("language_edition", CanonicalJson::string("2026")),
+        ])
+        .unwrap();
+        let expected_interface = CanonicalJson::object([
+            ("schema_version", CanonicalJson::string(version.to_string())),
+            ("module", module.clone()),
+            ("exports", CanonicalJson::array([])),
+            ("dependency_artifact_hashes", CanonicalJson::array([])),
+        ])
+        .unwrap();
+        let provenance = CanonicalJson::object([
+            ("toolchain", CanonicalJson::string("mizar-evo-test")),
+            ("language_edition", CanonicalJson::string("2026")),
+            (
+                "lockfile_hash",
+                CanonicalJson::string(artifact.provenance.lockfile_hash.to_artifact_hash_string()),
+            ),
+            (
+                "verifier_config_hash",
+                CanonicalJson::string(
+                    artifact
+                        .provenance
+                        .verifier_config_hash
+                        .to_artifact_hash_string(),
+                ),
+            ),
+            ("dependency_artifact_hashes", CanonicalJson::array([])),
+        ])
+        .unwrap();
+        let expected_implementation = CanonicalJson::object([
+            ("schema_version", CanonicalJson::string(version.to_string())),
+            ("module", module),
+            ("source_file", CanonicalJson::string("articles/hidden.miz")),
+            (
+                "source_hash",
+                CanonicalJson::string(format!("mizar-session/hash-text/v1:{}", "01".repeat(32))),
+            ),
+            ("exports", CanonicalJson::array([])),
+            ("expressions", CanonicalJson::array([])),
+            ("obligations", CanonicalJson::array([])),
+            ("proof_witnesses", CanonicalJson::array([])),
+            ("diagnostics", CanonicalJson::array([])),
+            ("provenance", provenance),
+        ])
+        .unwrap();
+        let interface_hash = CanonicalHashDomain::new(
+            HashClass::Interface,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            version,
+        )
+        .hash(&expected_interface, &[]);
+        let implementation_hash = CanonicalHashDomain::new(
+            HashClass::Implementation,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            version,
+        )
+        .hash(&expected_implementation, &[]);
+        artifact.refresh_hashes().unwrap();
+        assert_eq!(artifact.interface_hash, interface_hash);
+        assert_eq!(artifact.implementation_hash, implementation_hash);
+        assert_eq!(
+            interface_hash_input_json(&artifact).unwrap(),
+            expected_interface
+        );
+        assert_eq!(
+            implementation_hash_input_json(&artifact).unwrap(),
+            expected_implementation
+        );
+        let mut expected = expected_implementation;
+        set_field(
+            &mut expected,
+            "interface_hash",
+            CanonicalJson::string(artifact_framed_hash_string_for_test(
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                ArtifactHashClass::Interface,
+                version,
+                interface_hash,
+            )),
+        );
+        set_field(
+            &mut expected,
+            "implementation_hash",
+            CanonicalJson::string(artifact_framed_hash_string_for_test(
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                ArtifactHashClass::Implementation,
+                version,
+                implementation_hash,
+            )),
+        );
+        set_field(
+            &mut expected,
+            "verified_at",
+            CanonicalJson::string("2026-06-22T14:03:05Z"),
+        );
+        set_field(
+            object_field_mut(&mut expected, "provenance"),
+            "cache_key",
+            CanonicalJson::string("cache-key-1"),
+        );
+        let actual = if version.major() == 2 {
+            builtin_verified_artifact_json(&artifact).unwrap()
+        } else {
+            verified_artifact_json(&artifact).unwrap()
+        };
+        assert_eq!(actual, expected);
+        assert_eq!(
+            canonical_json_string(&actual).into_bytes(),
+            canonical_json_string(&expected).into_bytes()
+        );
+        let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, version);
+        assert_eq!(
+            domain.hash(&actual, &artifact_hash_excluded_paths()),
+            domain.hash(&expected, &artifact_hash_excluded_paths())
+        );
+    }
 }

@@ -235,3 +235,6 @@ task 12 は以下を cover しなければならない:
 - cache-key と dependency-fingerprint を所有しないこと。
 - `mizar-driver` dependency と placeholder diagnostics / publication-token API が
   存在しないこと。
+
+## Statement input and normalization
+ProjectVerifiedArtifactInputと組立VerifiedArtifactはArtifact所有StatementMetadata Vecを持ち、現行通常schema/version・rowfield・検証/hashは[Verified Artifact](../../mizar-artifact/ja/verified_artifact.md#statement-bearing-normal-profile)が所有する。item順に並べ、item/elaborated/reserve名/resolved-symbol key/valueを既存raw-internal漏洩検査へ渡す。caller行からsource意味を認証したり既定4gapを消さない。実sourcecallerが検査済statementを供給し、genericfixtureは明示空Vec。既存snapshot/物理handle検証・他行order・失敗purityを保つ。row順同値/全candidate/通常readbackと全新string位置の漏洩を検証し、token/producer facadeは作らない。

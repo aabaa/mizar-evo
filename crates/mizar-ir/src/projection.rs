@@ -11,8 +11,9 @@ use mizar_artifact::{
     registration_summary::ArtifactHashRef,
     verified_artifact::{
         ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
-        ExpressionMetadata, ObligationMetadata, OverloadMetadata, VerifiedArtifact,
-        VerifiedArtifactError, VerifiedExport, current_schema_version, write_verified_artifact,
+        ExpressionMetadata, ObligationMetadata, OverloadMetadata, StatementMetadata,
+        VerifiedArtifact, VerifiedArtifactError, VerifiedExport, current_schema_version,
+        write_verified_artifact,
     },
 };
 use mizar_session::{BuildSnapshotId, Hash};
@@ -45,6 +46,8 @@ pub struct ProjectVerifiedArtifactInput {
     pub verified_at: Option<String>,
     /// Externally visible declarations and signatures.
     pub exports: Vec<VerifiedExport>,
+    /// Checked source-shaped statements supplied by the producer.
+    pub statements: Vec<StatementMetadata>,
     /// Stable source-shaped expression metadata.
     pub expressions: Vec<ExpressionMetadata>,
     /// Verification obligation metadata.
@@ -165,6 +168,7 @@ impl ArtifactProjectionService {
             interface_hash: zero_hash(),
             implementation_hash: zero_hash(),
             exports: input.exports,
+            statements: input.statements,
             expressions: input.expressions,
             obligations: input.obligations,
             proof_witnesses: input.proof_witnesses,
@@ -294,6 +298,9 @@ fn zero_hash() -> Hash {
 fn normalize_artifact_order(artifact: &mut VerifiedArtifact) {
     artifact.exports.sort_by_key(export_sort_key);
     artifact
+        .statements
+        .sort_by(|left, right| left.item.cmp(&right.item));
+    artifact
         .expressions
         .sort_by_key(|expression| (expression.expression_id.clone(), expression.source_range));
     artifact
@@ -374,6 +381,20 @@ fn reject_raw_internal_leakage(artifact: &VerifiedArtifact) -> Result<(), Projec
     scan_optional_string("$.verified_at", artifact.verified_at.as_deref())?;
     for (index, export) in artifact.exports.iter().enumerate() {
         scan_export(&format!("$.exports[{index}]"), export)?;
+    }
+    for (index, statement) in artifact.statements.iter().enumerate() {
+        let path = format!("$.statements[{index}]");
+        scan_string(&field_path(&path, "item"), &statement.item)?;
+        scan_string(&field_path(&path, "elaborated"), &statement.elaborated)?;
+        scan_string_array(
+            &field_path(&path, "reserve_binders"),
+            &statement.reserve_binders,
+        )?;
+        for (key, value) in &statement.resolved_symbols {
+            let path = field_path(&path, "resolved_symbols");
+            scan_string(&path, key)?;
+            scan_string(&path, value)?;
+        }
     }
     for (index, expression) in artifact.expressions.iter().enumerate() {
         scan_expression(&format!("$.expressions[{index}]"), expression)?;
@@ -849,6 +870,132 @@ mod tests {
         let read = read_verified_artifact(&json, VerifiedArtifactReadOptions::default())
             .expect("artifact reader accepts projected draft");
         assert_eq!(read, draft.artifact);
+    }
+
+    #[test]
+    fn statements_normalize_and_roundtrip_without_projection_authority() {
+        let snapshot = snapshot(30);
+        let publisher = publisher(snapshot);
+        let handle = publish_fixture(&publisher, snapshot, "module");
+        let service = ArtifactProjectionService::new(Arc::clone(&publisher));
+        let statements = ["Mizar.Test::zeta", "Mizar.Test::alpha"].map(|item| StatementMetadata {
+            item: item.to_owned(),
+            source_range: range(20),
+            elaborated: "for x being set holds x = x".to_owned(),
+            reserve_binders: vec!["z".to_owned(), "a".to_owned()],
+            resolved_symbols: std::collections::BTreeMap::from([
+                ("r".to_owned(), "Mizar.Test::Relation".to_owned()),
+                ("a".to_owned(), "Mizar.Test::Attribute".to_owned()),
+            ]),
+        });
+        let before = publisher.storage().get(&handle).unwrap();
+        let mut input = project_input(snapshot, handle.erase());
+        input.statements = statements.to_vec();
+        let draft = service.project_module(input).unwrap();
+        let mut expected = statements.to_vec();
+        expected.reverse();
+        assert_eq!(draft.artifact.statements, expected);
+        assert_eq!(
+            draft.artifact.schema_version,
+            ArtifactSchemaVersion::new(1, 1)
+        );
+        assert_eq!(draft.required_outputs, vec![handle.output()]);
+        assert_eq!(
+            draft.external_dependency_gaps,
+            default_external_dependency_gaps()
+        );
+        let mut input = project_input(snapshot, handle.erase());
+        input.statements = expected;
+        let reordered = service.project_module(input).unwrap();
+        assert_eq!(draft, reordered);
+        let json = verified_artifact_json(&draft.artifact).unwrap();
+        assert_eq!(
+            read_verified_artifact(&json, Default::default()).unwrap(),
+            draft.artifact
+        );
+        let mut empty = draft.artifact.clone();
+        empty.statements.clear();
+        empty.refresh_hashes().unwrap();
+        assert_eq!(empty.interface_hash, draft.artifact.interface_hash);
+        assert_ne!(
+            empty.implementation_hash,
+            draft.artifact.implementation_hash
+        );
+        assert_eq!(publisher.storage().get(&handle).unwrap(), before);
+        publisher
+            .validate_current_output(snapshot, &handle.erase())
+            .unwrap();
+    }
+
+    #[test]
+    fn statements_reject_each_internal_string_and_invalid_rows_without_mutation() {
+        let snapshot = snapshot(31);
+        let publisher = publisher(snapshot);
+        let handle = publish_fixture(&publisher, snapshot, "module");
+        let service = ArtifactProjectionService::new(Arc::clone(&publisher));
+        let statement = StatementMetadata {
+            item: "Mizar.Test::Th1".to_owned(),
+            source_range: range(20),
+            elaborated: "for x being set holds x = x".to_owned(),
+            reserve_binders: vec!["x".to_owned()],
+            resolved_symbols: std::collections::BTreeMap::from([(
+                "r".to_owned(),
+                "Mizar.Test::Relation".to_owned(),
+            )]),
+        };
+        let before = publisher.storage().get(&handle).unwrap();
+        for (index, field) in [
+            "item",
+            "elaborated",
+            "reserve_binders",
+            "resolved_symbols",
+            "resolved_symbols",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut input = project_input(snapshot, handle.erase());
+            let mut row = statement.clone();
+            match index {
+                0 => row.item = "raw TypedAst".to_owned(),
+                1 => row.elaborated = "raw TypedAst".to_owned(),
+                2 => row.reserve_binders[0] = "raw TypedAst".to_owned(),
+                3 => {
+                    row.resolved_symbols = std::collections::BTreeMap::from([(
+                        "raw TypedAst".to_owned(),
+                        "Mizar.Test::Relation".to_owned(),
+                    )])
+                }
+                _ => *row.resolved_symbols.get_mut("r").unwrap() = "raw TypedAst".to_owned(),
+            }
+            input.statements.push(row);
+            assert!(matches!(service.project_module(input),
+                Err(ProjectionError::RawInternalLeak { field: found, .. })
+                    if found.contains(&format!("statements[0].{field}"))));
+        }
+        for duplicate in [false, true] {
+            let mut input = project_input(snapshot, handle.erase());
+            input.statements.push(statement.clone());
+            if duplicate {
+                input.statements.push(statement.clone());
+            } else {
+                input.statements[0].elaborated.clear();
+            }
+            assert!(matches!(
+                service.project_module(input),
+                Err(ProjectionError::Artifact { .. })
+            ));
+        }
+        assert_eq!(publisher.storage().get(&handle).unwrap(), before);
+        publisher
+            .validate_current_output(snapshot, &handle.erase())
+            .unwrap();
+        let mut input = project_input(snapshot, handle.erase());
+        input.statements.push(statement.clone());
+        assert_eq!(
+            service.project_module(input).unwrap().artifact.statements,
+            vec![statement]
+        );
     }
 
     #[test]
@@ -1356,6 +1503,7 @@ mod tests {
             source_hash: hash(1),
             verified_at: None,
             exports: vec![export("zeta", 40), export("alpha", 10)],
+            statements: Vec::new(),
             expressions: vec![expression("expr-zeta", 30), expression("expr-alpha", 20)],
             obligations: vec![obligation("obl-zeta", ObligationStatus::NotRequired, 50)],
             proof_witnesses: Vec::new(),

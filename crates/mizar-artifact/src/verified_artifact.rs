@@ -50,6 +50,8 @@ pub struct VerifiedArtifact {
     pub exports: Vec<VerifiedExport>,
     /// Stable source-shaped expression metadata.
     pub expressions: Vec<ExpressionMetadata>,
+    /// Producer-owned elaborated source statements.
+    pub statements: Vec<StatementMetadata>,
     /// Verification obligations projected from VC/proof phases.
     pub obligations: Vec<ObligationMetadata>,
     /// References to published proof witness payloads.
@@ -128,6 +130,21 @@ pub struct ExpressionMetadata {
     pub active_thesis: Option<String>,
     /// Optional stable overload resolution summary.
     pub overload_resolution: Option<OverloadMetadata>,
+}
+
+/// Producer-owned elaborated statement and its source association.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatementMetadata {
+    /// Fully qualified item identifier.
+    pub item: String,
+    /// Range of the represented formula.
+    pub source_range: SourceRangeSummary,
+    /// Fully explicit rendered Mizar formula.
+    pub elaborated: String,
+    /// Reserve binders in semantic order.
+    pub reserve_binders: Vec<String>,
+    /// Rendered source symbols and their fully qualified identities.
+    pub resolved_symbols: BTreeMap<String, String>,
 }
 
 /// Stable overload resolution metadata.
@@ -331,7 +348,7 @@ pub enum VerifiedArtifactError {
 
 /// Returns the current verified artifact schema version.
 pub const fn current_schema_version() -> SchemaVersion {
-    SchemaVersion::new(1, 0)
+    SchemaVersion::new(1, 1)
 }
 
 /// Returns the supported verified artifact schema-version range.
@@ -403,27 +420,27 @@ pub(crate) fn read_verified_artifact_for_version(
     let support = enclosing_version_support(expected_version)?;
     let fields = expect_object(value, "$")?;
     let schema_version = read_schema_version(fields, options.artifact_path, support)?;
-    reject_unknown_fields(
-        fields,
-        &[
-            "schema_version",
-            "module",
-            "source_file",
-            "source_hash",
-            "verified_at",
-            "interface_hash",
-            "implementation_hash",
-            "exports",
-            "expressions",
-            "obligations",
-            "proof_witnesses",
-            "diagnostics",
-            "provenance",
-        ],
-        "$",
-    )?;
+    let mut allowed = vec![
+        "schema_version",
+        "module",
+        "source_file",
+        "source_hash",
+        "verified_at",
+        "interface_hash",
+        "implementation_hash",
+        "exports",
+        "expressions",
+        "obligations",
+        "proof_witnesses",
+        "diagnostics",
+        "provenance",
+    ];
+    if schema_version == SchemaVersion::new(1, 1) {
+        allowed.push("statements");
+    }
+    reject_unknown_fields(fields, &allowed, "$")?;
 
-    let artifact = VerifiedArtifact {
+    let mut artifact = VerifiedArtifact {
         schema_version,
         module: read_identity(required_field(fields, "module", "$")?, "$.module")?,
         source_file: read_required_string(fields, "source_file", "$")?,
@@ -463,8 +480,65 @@ pub(crate) fn read_verified_artifact_for_version(
             "$.diagnostics",
         )?,
         provenance: read_provenance(required_field(fields, "provenance", "$")?, "$.provenance")?,
+        statements: if schema_version == SchemaVersion::new(1, 1) {
+            expect_array(required_field(fields, "statements", "$")?, "$.statements")?
+                .iter()
+                .enumerate()
+                .map(|(index, value)| {
+                    let path = array_path("$.statements", index);
+                    let fields = expect_object(value, &path)?;
+                    reject_unknown_fields(
+                        fields,
+                        &[
+                            "item",
+                            "source_range",
+                            "elaborated",
+                            "reserve_binders",
+                            "resolved_symbols",
+                        ],
+                        &path,
+                    )?;
+                    let symbols_path = field_path(&path, "resolved_symbols");
+                    let symbols = expect_object(
+                        required_field(fields, "resolved_symbols", &path)?,
+                        &symbols_path,
+                    )?;
+                    let resolved_symbols = symbols
+                        .iter()
+                        .map(|(key, value)| {
+                            let path = field_path(&symbols_path, key);
+                            let CanonicalJson::String(value) = value else {
+                                return Err(VerifiedArtifactError::UnexpectedType {
+                                    path,
+                                    expected: "a string",
+                                });
+                            };
+                            Ok((key.clone(), value.clone()))
+                        })
+                        .collect::<Result<_, VerifiedArtifactError>>()?;
+                    Ok(StatementMetadata {
+                        item: read_required_string(fields, "item", &path)?,
+                        source_range: read_source_range(
+                            required_field(fields, "source_range", &path)?,
+                            &field_path(&path, "source_range"),
+                        )?,
+                        elaborated: read_required_string(fields, "elaborated", &path)?,
+                        reserve_binders: read_string_array(
+                            required_field(fields, "reserve_binders", &path)?,
+                            &field_path(&path, "reserve_binders"),
+                        )?,
+                        resolved_symbols,
+                    })
+                })
+                .collect::<Result<Vec<_>, VerifiedArtifactError>>()?
+        } else {
+            Vec::new()
+        },
     };
 
+    artifact
+        .statements
+        .sort_by(|left, right| left.item.cmp(&right.item));
     validate_artifact_shape(&artifact)?;
     let interface_hash = artifact.compute_interface_hash()?;
     if interface_hash != artifact.interface_hash {
@@ -792,13 +866,34 @@ fn validate_artifact_shape(artifact: &VerifiedArtifact) -> Result<(), VerifiedAr
     validate_diagnostics(&artifact.diagnostics, "$.diagnostics")?;
     validate_provenance(&artifact.provenance, "$.provenance")?;
     validate_witness_consistency(artifact)?;
+    if artifact.schema_version != SchemaVersion::new(1, 1) && !artifact.statements.is_empty() {
+        return Err(VerifiedArtifactError::InvalidField {
+            path: "$.statements".to_owned(),
+            reason: "statements require normal schema version 1.1".to_owned(),
+        });
+    }
+    ensure_no_duplicate_keys(&artifact.statements, |row| row.item.clone(), "$.statements")?;
+    for (index, row) in artifact.statements.iter().enumerate() {
+        let path = array_path("$.statements", index);
+        validate_non_empty(&row.item, &field_path(&path, "item"))?;
+        validate_source_range(row.source_range, &field_path(&path, "source_range"))?;
+        validate_non_empty(&row.elaborated, &field_path(&path, "elaborated"))?;
+        let reserves_path = field_path(&path, "reserve_binders");
+        validate_string_array(&row.reserve_binders, &reserves_path)?;
+        ensure_no_duplicate_keys(&row.reserve_binders, String::clone, &reserves_path)?;
+        for (key, value) in &row.resolved_symbols {
+            let path = field_path(&field_path(&path, "resolved_symbols"), key);
+            validate_non_empty(key, &path)?;
+            validate_non_empty(value, &path)?;
+        }
+    }
     Ok(())
 }
 
 fn verified_artifact_json_unchecked(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
-    json_object([
+    let mut fields = vec![
         (
             "schema_version",
             CanonicalJson::string(artifact.schema_version.to_string()),
@@ -882,7 +977,34 @@ fn verified_artifact_json_unchecked(
             ),
         ),
         ("provenance", provenance_json(&artifact.provenance)?),
-    ])
+    ];
+    if artifact.schema_version == SchemaVersion::new(1, 1) {
+        let mut statements = artifact.statements.iter().collect::<Vec<_>>();
+        statements.sort_by(|left, right| left.item.cmp(&right.item));
+        fields.push((
+            "statements",
+            CanonicalJson::array(
+                statements
+                    .into_iter()
+                    .map(|row| {
+                        json_object([
+                            ("item", CanonicalJson::string(&row.item)),
+                            ("source_range", source_range_json(row.source_range)?),
+                            ("elaborated", CanonicalJson::string(&row.elaborated)),
+                            ("reserve_binders", string_array_json(&row.reserve_binders)),
+                            (
+                                "resolved_symbols",
+                                CanonicalJson::object(row.resolved_symbols.iter().map(
+                                    |(key, value)| (key.clone(), CanonicalJson::string(value)),
+                                ))?,
+                            ),
+                        ])
+                    })
+                    .collect::<Result<Vec<_>, VerifiedArtifactError>>()?,
+            ),
+        ));
+    }
+    json_object(fields)
 }
 
 /// Returns the canonical JSON value used to compute an artifact's interface hash.
@@ -926,7 +1048,13 @@ pub fn interface_hash_input_json(
 pub fn implementation_hash_input_json(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
-    json_object([
+    if artifact.schema_version != SchemaVersion::new(1, 1) && !artifact.statements.is_empty() {
+        return Err(VerifiedArtifactError::InvalidField {
+            path: "$.statements".to_owned(),
+            reason: "statements require normal schema version 1.1".to_owned(),
+        });
+    }
+    let mut fields = vec![
         (
             "schema_version",
             CanonicalJson::string(artifact.schema_version.to_string()),
@@ -993,7 +1121,34 @@ pub fn implementation_hash_input_json(
             "provenance",
             provenance_implementation_json(&artifact.provenance)?,
         ),
-    ])
+    ];
+    if artifact.schema_version == SchemaVersion::new(1, 1) {
+        let mut statements = artifact.statements.iter().collect::<Vec<_>>();
+        statements.sort_by(|left, right| left.item.cmp(&right.item));
+        fields.push((
+            "statements",
+            CanonicalJson::array(
+                statements
+                    .into_iter()
+                    .map(|row| {
+                        json_object([
+                            ("item", CanonicalJson::string(&row.item)),
+                            ("source_range", source_range_json(row.source_range)?),
+                            ("elaborated", CanonicalJson::string(&row.elaborated)),
+                            ("reserve_binders", string_array_json(&row.reserve_binders)),
+                            (
+                                "resolved_symbols",
+                                CanonicalJson::object(row.resolved_symbols.iter().map(
+                                    |(key, value)| (key.clone(), CanonicalJson::string(value)),
+                                ))?,
+                            ),
+                        ])
+                    })
+                    .collect::<Result<Vec<_>, VerifiedArtifactError>>()?,
+            ),
+        ));
+    }
+    json_object(fields)
 }
 
 fn identity_json(identity: &ModuleSummaryIdentity) -> Result<CanonicalJson, VerifiedArtifactError> {
@@ -1429,7 +1584,12 @@ fn enclosing_version_support(
     } else {
         let support = schema_version_support();
         support.check(Some(&version.to_string()))?;
-        Ok(support)
+        Ok(SchemaVersionSupport::new(
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            version.major(),
+            version.minor(),
+            MinorVersionPolicy::UpToSupported,
+        ))
     }
 }
 

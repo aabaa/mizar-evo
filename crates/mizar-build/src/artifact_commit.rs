@@ -214,8 +214,7 @@ mod tests {
         store::{PublishedArtifactPath, artifact_hash_domain, write_published_artifact},
         verified_artifact::{
             BuildProvenance, VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifact,
-            artifact_hash_excluded_paths, current_schema_version as verified_schema_version,
-            verified_artifact_json,
+            artifact_hash_excluded_paths, verified_artifact_json,
         },
     };
     use mizar_session::Hash;
@@ -477,7 +476,7 @@ mod tests {
         seed: u8,
     ) -> VerifiedArtifact {
         let mut artifact = VerifiedArtifact {
-            schema_version: verified_schema_version(),
+            schema_version: mizar_artifact::store::SchemaVersion::new(1, 0),
             module,
             source_file: source_file.to_owned(),
             source_hash,
@@ -485,6 +484,7 @@ mod tests {
             interface_hash: hash(0),
             implementation_hash: hash(0),
             exports: Vec::new(),
+            statements: Vec::new(),
             expressions: Vec::new(),
             obligations: Vec::new(),
             proof_witnesses: Vec::new(),
