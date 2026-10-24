@@ -551,9 +551,9 @@ impl<'a> ProofLabelSourceCollector<'a> {
         };
         let mut state = ProofLabelCollectionState::new(self, include_proof_organization);
         for child in item_list.child_views() {
-            let private =
-                theorem_owners.is_some() && matches!(child.kind(), SurfaceNodeKind::VisibleItem);
-            let child = if private {
+            let (child, private) = if theorem_owners.is_some()
+                && matches!(child.kind(), SurfaceNodeKind::VisibleItem)
+            {
                 let children = child.child_views().collect::<Vec<_>>();
                 let [marker, theorem] = children.as_slice() else {
                     continue;
@@ -565,13 +565,21 @@ impl<'a> ProofLabelSourceCollector<'a> {
                     || !matches!(theorem.kind(), SurfaceNodeKind::TheoremItem)
                     || marker_tokens.len() != 1
                     || marker_tokens[0].is_recovered()
-                    || !token_is(&marker_tokens[0], SurfaceTokenKind::ReservedWord, "private")
+                    || !(token_is(&marker_tokens[0], SurfaceTokenKind::ReservedWord, "private")
+                        || token_is(&marker_tokens[0], SurfaceTokenKind::ReservedWord, "public"))
                 {
                     continue;
                 }
-                *theorem
+                (
+                    *theorem,
+                    Some(token_is(
+                        &marker_tokens[0],
+                        SurfaceTokenKind::ReservedWord,
+                        "private",
+                    )),
+                )
             } else {
-                child
+                (child, None)
             };
             if child.is_recovered()
                 || !(matches!(child.kind(), SurfaceNodeKind::TheoremItem)
@@ -942,7 +950,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         theorem: SurfaceNodeView<'a>,
         owner: TheoremOwner<'a>,
         symbols: &SymbolEnv,
-        private: bool,
+        private: Option<bool>,
     ) -> Option<usize> {
         if owner
             .proof
@@ -961,9 +969,20 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
             .iter()
             .filter(|entry| {
                 entry.symbol().module() == module
-                    && (!private
-                        || entry.visibility() == Visibility::Private
-                            && entry.export_status() == ExportStatus::LocalOnly)
+                    && private.is_none_or(|private| {
+                        entry.visibility()
+                            == if private {
+                                Visibility::Private
+                            } else {
+                                Visibility::Public
+                            }
+                            && entry.export_status()
+                                == if private {
+                                    ExportStatus::LocalOnly
+                                } else {
+                                    ExportStatus::Exported
+                                }
+                    })
                     && entry.kind() == owner_kind
                     && entry.namespace() == &self.collector.namespace
                     && entry.primary_spelling() == owner.spelling
@@ -1956,7 +1975,8 @@ pub fn source_public_theorem_label_candidates(
                 || !matches!(theorem.kind(), SurfaceNodeKind::TheoremItem)
                 || tokens.len() != 1
                 || tokens[0].is_recovered()
-                || !token_is(&tokens[0], SurfaceTokenKind::ReservedWord, "private")
+                || !(token_is(&tokens[0], SurfaceTokenKind::ReservedWord, "private")
+                    || token_is(&tokens[0], SurfaceTokenKind::ReservedWord, "public"))
             {
                 return Ok(None);
             }
@@ -2085,6 +2105,15 @@ pub fn source_public_theorem_formula_candidates(
         };
         let matches = items
             .child_views()
+            .map(|item| {
+                if matches!(item.kind(), SurfaceNodeKind::VisibleItem) {
+                    item.child_views()
+                        .nth(1)
+                        .expect("validated theorem visibility wrapper")
+                } else {
+                    item
+                }
+            })
             .filter(|item| {
                 item.range() == owner_range
                     && matches!(

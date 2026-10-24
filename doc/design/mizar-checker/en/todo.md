@@ -30,6 +30,8 @@
 
 - [x] [Scoped source theorem skeleton intake](../../task_contracts/en/CHECKER-SCOPED-THEOREM-SKELETON-INTAKE.md).
 
+- [x] [Original-source theorem visibility](../../task_contracts/en/CHECKER-SOURCE-THEOREM-VISIBILITY.md).
+
 ## Status Legend
 
 - [ ] not started

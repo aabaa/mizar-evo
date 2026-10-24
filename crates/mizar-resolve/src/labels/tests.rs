@@ -138,51 +138,64 @@ fn private_theorem_owner_opt_in_collects_real_source_label_and_citation() {
 }
 
 #[test]
-fn private_theorem_owner_requires_private_local_symbol_correspondence() {
-    let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(include_str!(
+fn theorem_owner_requires_marker_visibility_and_export_correspondence() {
+    let fixture = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
-    ));
-    let private = env
-        .symbols()
-        .iter()
-        .find(|entry| entry.primary_spelling() == "PrivT1")
-        .unwrap();
-    for (visibility, export) in [
-        (Visibility::Private, ExportStatus::LocalOnly),
-        (Visibility::Public, ExportStatus::LocalOnly),
-        (Visibility::Private, ExportStatus::Exported),
-    ] {
-        let mut indexes = SymbolEnvIndexes::default();
-        indexes.symbols.insert(
-            private
-                .clone()
-                .with_visibility(visibility)
-                .with_export_status(export),
-        );
-        let checked = SymbolEnv::new(module.clone(), indexes);
-        let collection = ProofLabelSourceCollector::new(
-            &ast,
-            &module,
-            namespace.clone(),
-            private.contribution(),
-            &resolved,
-        )
-        .unwrap()
-        .collect_with_theorem_owners(&checked)
-        .unwrap();
-        assert_eq!(
-            collection
-                .projections()
-                .iter()
-                .any(|projection| projection.primary_spelling() == "PrivT1"),
-            visibility == Visibility::Private && export == ExportStatus::LocalOnly,
-            "{visibility:?}/{export:?}"
-        );
+    );
+    for public in [false, true] {
+        let text = if public {
+            fixture.replacen("private theorem", "public theorem", 1)
+        } else {
+            fixture.to_owned()
+        };
+        let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(&text);
+        let private = env
+            .symbols()
+            .iter()
+            .find(|entry| entry.primary_spelling() == "PrivT1")
+            .unwrap();
+        for (visibility, export) in [
+            (Visibility::Private, ExportStatus::LocalOnly),
+            (Visibility::Public, ExportStatus::LocalOnly),
+            (Visibility::Private, ExportStatus::Exported),
+            (Visibility::Public, ExportStatus::Exported),
+        ] {
+            let mut indexes = SymbolEnvIndexes::default();
+            indexes.symbols.insert(
+                private
+                    .clone()
+                    .with_visibility(visibility)
+                    .with_export_status(export),
+            );
+            let checked = SymbolEnv::new(module.clone(), indexes);
+            let collection = ProofLabelSourceCollector::new(
+                &ast,
+                &module,
+                namespace.clone(),
+                private.contribution(),
+                &resolved,
+            )
+            .unwrap()
+            .collect_with_theorem_owners(&checked)
+            .unwrap();
+            assert_eq!(
+                collection
+                    .projections()
+                    .iter()
+                    .any(|projection| projection.primary_spelling() == "PrivT1"),
+                if public {
+                    visibility == Visibility::Public && export == ExportStatus::Exported
+                } else {
+                    visibility == Visibility::Private && export == ExportStatus::LocalOnly
+                },
+                "{visibility:?}/{export:?}"
+            );
+        }
     }
 }
 
 #[test]
-fn private_theorem_wrapper_remains_opt_in_and_public_wrapper_is_skipped() {
+fn theorem_visibility_wrappers_remain_opt_in_with_exact_owner_and_local_labels() {
     let source = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     ).replacen("thus X = X;", "Inner: X = X;\n  thus X = X by Inner;", 1);
@@ -198,6 +211,30 @@ fn private_theorem_wrapper_remains_opt_in_and_public_wrapper_is_skipped() {
             .iter()
             .find(|entry| entry.primary_spelling() == "PrivT1")
             .unwrap();
+        assert_eq!(
+            owner.visibility(),
+            if public {
+                Visibility::Public
+            } else {
+                Visibility::Private
+            }
+        );
+        assert_eq!(
+            owner.export_status(),
+            if public {
+                ExportStatus::Exported
+            } else {
+                ExportStatus::LocalOnly
+            }
+        );
+        assert_eq!(
+            source_range_from_anchor(owner.origin().anchor()),
+            Some(range(
+                ast.source_id,
+                if public { 7 } else { 8 },
+                if public { 116 } else { 117 }
+            ))
+        );
         let collector = ProofLabelSourceCollector::new(
             &ast,
             &module,
@@ -221,41 +258,65 @@ fn private_theorem_wrapper_remains_opt_in_and_public_wrapper_is_skipped() {
                 ["PrivT1"],
             );
         }
-        if !public {
-            let collection = collector.collect_with_theorem_owners(&env).unwrap();
-            assert!(
-                collection
-                    .projections()
-                    .iter()
-                    .any(|projection| projection.primary_spelling() == "Inner")
-            );
-            assert_eq!(
-                collection
-                    .references()
-                    .iter()
-                    .map(|reference| reference.site().spelling())
-                    .collect::<Vec<_>>(),
-                ["Inner", "PrivT1"]
-            );
-        }
-        if public {
-            assert_eq!(owner.visibility(), Visibility::Public);
-            let collection = collector.collect_with_theorem_owners(&env).unwrap();
-            assert!(
-                collection
-                    .projections()
-                    .iter()
-                    .all(|projection| !matches!(projection.primary_spelling(), "PrivT1" | "Inner"))
-            );
-            assert_eq!(
-                collection
-                    .references()
-                    .iter()
-                    .map(|reference| reference.site().spelling())
-                    .collect::<Vec<_>>(),
-                ["PrivT1"]
-            );
-        }
+        let collection = collector.collect_with_theorem_owners(&env).unwrap();
+        assert_eq!(
+            collection
+                .projections()
+                .iter()
+                .map(|projection| (
+                    projection.primary_spelling(),
+                    projection.visibility(),
+                    projection.export_status()
+                ))
+                .collect::<Vec<_>>(),
+            [
+                (
+                    "PrivT1",
+                    if public {
+                        Visibility::Public
+                    } else {
+                        Visibility::Private
+                    },
+                    if public {
+                        ExportStatus::Exported
+                    } else {
+                        ExportStatus::LocalOnly
+                    }
+                ),
+                ("Inner", Visibility::Private, ExportStatus::LocalOnly),
+                ("UsePriv1", Visibility::Public, ExportStatus::Exported),
+            ]
+        );
+        let projection = &collection.projections()[0];
+        assert_eq!(
+            projection.origin_path().as_str(),
+            owner.symbol().fqn().as_str()
+        );
+        assert_eq!(projection.origin(), owner.origin());
+        let start = if public { 15 } else { 16 };
+        assert_eq!(
+            projection.declaration_range(),
+            range(ast.source_id, start, start + 6)
+        );
+        assert_eq!(
+            collection
+                .references()
+                .iter()
+                .map(|reference| reference.site().spelling())
+                .collect::<Vec<_>>(),
+            ["Inner", "PrivT1"]
+        );
+        let result = LabelResolver::new(collection.projections()).resolve(
+            &module,
+            &NamespacePath::new("main"),
+            collection.references(),
+        );
+        assert_resolved_label(
+            &result,
+            0,
+            collection.projections()[1].origin_path().as_str(),
+        );
+        assert_resolved_label(&result, 1, owner.symbol().fqn().as_str());
     }
 }
 
@@ -4169,6 +4230,7 @@ fn source_public_theorem_label_candidates_project_exact_source_rows() {
     let alpha = "theorem Alpha: for X being set holds X = X\nproof\n  thus thesis;\nend;\n";
     for (text, expected) in [
         (fixture.to_owned(), vec![("UsePriv1", 102, 110)]),
+        (fixture.replacen("private theorem", "public theorem", 1), vec![("PrivT1", 15, 21), ("UsePriv1", 101, 109)]),
         (
             fixture.replace("UsePriv1", "Renamed1"),
             vec![("Renamed1", 102, 110)],
@@ -4252,7 +4314,7 @@ fn source_public_theorem_label_candidates_refuse_profiles_after_correspondence_c
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
     for text in [
-        fixture.replacen("private theorem", "public theorem", 1),
+        fixture.replacen("private theorem", "public lemma", 1),
         format!("{fixture}\nreserve Y for set;\n"),
         format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
         format!("{fixture}\ntheorem Direct: 0 = 0 by UsePriv1;\n"),
@@ -4336,6 +4398,7 @@ fn source_public_theorem_formula_candidates_associate_original_written_nodes() {
     );
     for (text, expected) in [
         (fixture.to_owned(), vec![("UsePriv1", 112, 139)]),
+        (fixture.replacen("private theorem", "public theorem", 1), vec![("PrivT1", 23, 50), ("UsePriv1", 111, 138)]),
         (
             fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
             vec![("UsePriv1", 110, 137)],
@@ -4369,8 +4432,9 @@ fn source_public_theorem_formula_candidates_associate_original_written_nodes() {
             }).collect::<Vec<_>>();
             let [formula] = nodes.as_slice() else { panic!("unique written formula for {label}") };
             assert_eq!(&text[start..end], "for X being set holds X = X");
-            let item = exact_proof_label_item_list(&ast).unwrap().child_views().find(|item| {
-                source_range_from_anchor(owner.origin().anchor()) == Some(item.range())
+            let item = ast.node_views().find(|item| {
+                matches!(item.kind(), SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem)
+                    && source_range_from_anchor(owner.origin().anchor()) == Some(item.range())
             }).unwrap();
             assert!(item.child_views().any(|child| child.id() == formula.id()));
             assert!(expected_formulas.insert(owner.symbol().clone(), formula.id()).is_none());
@@ -5435,6 +5499,7 @@ fn source_public_theorem_signature_candidates_frame_original_public_statements()
     let alpha = "theorem Alpha: 0 = 0\nproof\n  thus 0 = 0;\nend;\n";
     for (text, expected) in [
         (fixture.to_owned(), vec![("UsePriv1", quantified)]),
+        (fixture.replacen("private theorem", "public theorem", 1), vec![("PrivT1", quantified), ("UsePriv1", quantified)]),
         (fixture.replace("theorem UsePriv1", "lemma UsePriv1"), vec![("UsePriv1", quantified)]),
         (fixture.replace("private ", ""), vec![("PrivT1", quantified), ("UsePriv1", quantified)]),
         (fixture.replace("UsePriv1", "Renamed1"), vec![("Renamed1", quantified)]),
@@ -5474,7 +5539,7 @@ fn source_public_theorem_signature_candidates_refuse_whole_maps_and_preserve_err
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
     for text in [
-        fixture.replacen("private theorem", "public theorem", 1),
+        fixture.replacen("private theorem", "public lemma", 1),
         format!("{fixture}\nreserve Y for set;\n"),
         format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
         format!("{fixture}\ntheorem Direct: 0 = 0 by UsePriv1;\n"),
@@ -6715,8 +6780,9 @@ fn source_public_theorem_export_candidates_preserve_real_surface_and_identity() 
     let schema = mizar_artifact::module_summary::current_schema_version();
     let mut baseline = None;
     let mut baseline_source = None;
-    for case in 0..12 {
+    for case in 0..13 {
         let text = match case {
+            12 => fixture.replacen("private theorem", "public theorem", 1),
             1 => fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
             2 => fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
             3 => mixed.to_owned(),
@@ -6731,6 +6797,10 @@ fn source_public_theorem_export_candidates_preserve_real_surface_and_identity() 
             _ => fixture.to_owned(),
         };
         let expected = match case {
+            12 => vec![
+                ("PrivT1", "theorem PrivT1 : for X being set holds X = X"),
+                ("UsePriv1", quantified),
+            ],
             1 => vec![("UsePriv1", "lemma UsePriv1 : for X being set holds X = X")],
             2 => vec![],
             3 => vec![
@@ -7030,7 +7100,7 @@ fn source_public_theorem_export_candidates_preserve_refusals_and_boundaries() {
     for text in [
         format!("{fixture}\nreserve Y for set;\n"),
         format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
-        fixture.replacen("private theorem", "public theorem", 1),
+        fixture.replacen("private theorem", "public lemma", 1),
     ] {
         let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
         let before = (ast.clone(), arena.clone(), env.clone());

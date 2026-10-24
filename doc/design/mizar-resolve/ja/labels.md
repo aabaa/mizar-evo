@@ -1,6 +1,6 @@
 # Module: labels
 
-theorem-owner opt-in は正確で recovery のない `private` VisibleItem/VisibilityMarker/TheoremItem wrapper も扱い、source に対応する symbol の Private/LocalOnly を要求する。他の wrapper は対象外。
+theorem-owner opt-in は正確で recovery のない public/private VisibleItem/VisibilityMarker/TheoremItem wrapper を扱う。実 marker から optional private/public 条件を得て Private/LocalOnly または Public/Exported symbol を要求し、内部 owner node/range を保持する。直接項目の照合は保持し、全 source/symbol/definition 認証は下記 candidate 検証が所有する。他の wrapper と generic collector の範囲は変えない。
 
 `collect_with_theorem_owners` は theorem/lemma 宣言と証明内引用の opt-in 収集である。
 宣言後に有効な module-local owner と引用の source 順序・scope・site・origin を保持する。
@@ -548,7 +548,7 @@ contractはwrite scope外でbyte-for-byte不変。resolver test `144 -> 146`の�
 ## Source Public Theorem Label Candidates
 `source_public_theorem_label_candidates(&SurfaceAst, &SurfaceResolvedArena, &SymbolEnv) -> Result<Option<Vec<mizar_artifact::module_summary::ExportedLabelSummary>>, String>` は未公開の source-relative label 行だけを作り、ModuleSummary・VerifiedExport・受理済み事実・phase output は作らない。
 まず arena 全体を AST/module と照合し、既存 symbols::validate_source_symbol_env を呼ぶ。元 String error を保持し、arena/collector error は内部文字列にする。recovered/mismatch は admission より先に失敗する。この replay は caller-owned AST/arena/env の対応であり、元 source 取得・現在 runtime・公開の認証ではない。
-既存 exact_proof_label_item_list の root で、直下 item が unwrapped TheoremItem/LemmaItem または既存の正確な private VisibleItem/VisibilityMarker/TheoremItem だけの場合を扱う。全 item が既存 exact_theorem_owner(allow_proofless=true) と proof-block boundary を満たす必要がある。direct proof と既存 open/assumed 形は metadata 入力とし、public wrapper・他宣言/wrapper・direct-by/computation・通常 proofless・未対応構造は全 call を None にして部分 vector を返さない。元 collector は変えない。
+既存 exact_proof_label_item_list の root で、直下 item が unwrapped TheoremItem/LemmaItem または正確な public/private VisibleItem/VisibilityMarker/TheoremItem だけの場合を扱う。全 item が既存 exact_theorem_owner(allow_proofless=true) と proof-block boundary を満たす必要がある。direct proof と既存 open/assumed 形は metadata 入力とし、他宣言/wrapper・direct-by/computation・通常 proofless・未対応構造は全 call を None にして部分 vector を返さない。generic collector は変えない。
 検証済み source env の label index が空であることを要求し、既存 collector の source-owner fallback origin path に限定する。同じ module/default module namespace の実 Public/Exported Theorem/Lemma SymbolEntry を選び、実 record から contribution id を得て数値を推測しない。各 contribution で元 theorem-owner collector を同じ AST/arena/env に呼ぶ。private/local/proof-step を除外し、public Theorem projection の実 origin_path == SymbolId.fqn により元 owner 一件へ結ぶ。元 owner-id 集合の全件が一度ずつ必要で、不足・重複・対応なしは None。
 元 origin_path・primary_spelling・対応 owner FQN をコピーし、既存 summary reuse が扱う public visibility と theorem target-kind 文字列を用いる（LabelKind::Theorem は lemma も含む）。declaration_range の identifier offset を checked usize-to-u64 で写し、owner 全範囲は使わず、overflow は内部 String。既存の構造化 resolver identity を保持し、pretty name・numeric-id・Debug・より強い編集間安定性を作らない。admit された source に public theorem/lemma owner がない場合だけ Some(empty) とする。
 既存 Artifact の label/owner-FQN/origin 順で並べ、owner 対応の一意性で全順序にする。勝者選択・label 衝突の正規化を行わない。既存 resolver diagnostic は元 producer に残し、signature・proof body/status・fingerprint・source hash・完全 summary field を捏造・投影しない。
@@ -557,8 +557,8 @@ raw local theorem-label 候補だけの前提である。完全な public symbol
 
 ## Source Public Theorem Formula Candidates
 `source_public_theorem_formula_candidates(&SurfaceAst, &SurfaceResolvedArena, &SymbolEnv) -> Result<Option<BTreeMap<SymbolId, SurfaceNodeId>>, String>` は元の公開 source owner と同じ AST 内の既存 written FormulaExpression node を結ぶ、未公開 source-relative 候補だけを返す。
-最初に source_public_theorem_label_candidates を呼び、完全検証・元 owner 全件対応・限定 source admission・元 String error・全 call の None を継承する。profile を重複定義/拡大せず、元 collector を変えず、受理を推論しない。admit された source に public owner がなければ Some(empty)。
-各 label 行の owner FQN と実 SymbolId FQN、label と実 spelling が一致する元 SymbolEntry 一件を要求する。元 SemanticOrigin 全範囲で、同じ kind/label の直下 unwrapped theorem/lemma item 一件を既存 item list から特定し、label identifier 範囲を owner 範囲に流用しない。元 owner id を各一度だけ対応させ全行を満たし、曖昧/不足なら全 call を None にする。
+最初に source_public_theorem_label_candidates を呼び、完全検証・元 owner 全件対応・限定 source admission・元 String error・全 call の None を継承する。profile を重複定義/拡大せず、generic collector を変えず、受理を推論しない。admit された source に public owner がなければ Some(empty)。
+各 label 行の owner FQN と実 SymbolId FQN、label と実 spelling が一致する元 SymbolEntry 一件を要求する。元 SemanticOrigin 全範囲で、認証済み visibility wrapper だけを展開して同じ kind/label の theorem/lemma item 一件を既存 item list から特定し、label identifier 範囲を owner 範囲に流用しない。元 owner id を各一度だけ対応させ全行を満たし、曖昧/不足なら全 call を None にする。
 対応した public item ごとに既存の正確な六 child 形 role/label/colon/FormulaExpression/ProofBlock/semicolon、または open-or-assumed/role/label/colon/FormulaExpression/semicolon に限定する。元 theorem-owner 検査を再利用し、実末尾 semicolon と直下 formula/proof の位置を要求し、formula の欠落・複数・位置違いを拒否する。これは metadata admission の限定であり言語の有効性ではない。
 formula 範囲は同じ AST source の非空範囲で owner 内、colon end から proof start（proofless では semicolon start）の間に置く。到達可能な全 formula subtree node は同じ source/formula 範囲内にあり、ProofBlock・JustificationClause・ComputationJustification を含まないことを要求する。不正範囲や body/justification 混入は拒否し、既存 subtree だけを走査して別 formula 表現を作らない。
 元 SymbolId と実 formula SurfaceNodeId だけを owner-keyed BTreeMap へ写す。id 推測・FQN 分解・Debug/text encoding・新安定 identity・重複/勝者選択をしない。node id は渡した AST 内だけで有効で、serialize や別 AST/編集間の安定性を主張しない。source-text/parser replay・現在 runtime・公開の認証も供給しない。
@@ -567,7 +567,7 @@ written-node 候補は body-free な元 signature rendering の前提だけで�
 
 ## Source Theorem Label Reference Candidates
 `source_theorem_label_reference_candidates(&SurfaceAst, &SurfaceResolvedArena, &SymbolEnv) -> Result<Option<LabelResolutionResult>, String>` は元 source から限定した引用 batch 全体を取得する未公開 resolver 候補であり、完全 ResolvedAst の構築・認証ではない。
-最初に source_public_theorem_label_candidates を呼び、完全 AST/arena/unaugmented-env 対応 error と whole-source theorem/private-wrapper admission を変えず継承する。profile を重複/拡大しない。検証済み env の同じ AST/module に属する実 LocalSource contribution 一件を取り、既存 ProofLabelSourceCollector::collect_with_theorem_owners と実 module namespace の LabelResolver を使う。contribution/owner/scope/id/FQN を捏造しない。
+最初に source_public_theorem_label_candidates を呼び、完全 AST/arena/unaugmented-env 対応 error と whole-source theorem/public-or-private-wrapper admission を変えず継承する。profile を重複/拡大しない。検証済み env の同じ AST/module に属する実 LocalSource contribution 一件を取り、既存 ProofLabelSourceCollector::collect_with_theorem_owners と実 module namespace の LabelResolver を使う。contribution/owner/scope/id/FQN を捏造しない。
 新しい proof profile は既存の正確な proof/end 境界の間で直下 CompactStatement・ConclusionStatement・ラベルなし LetStatement だけを許す。他 proof statement は未対応。nested proof は既存 collector が走査する compact/conclusion の直下だけに置く。Let は label/citation を供給せず、colon/justification/reference/proof の内容を拒否し、labeled condition を欠落として黙認しない。既存 proof-organization/let-condition opt-in は結合・変更しない。
 元 theorem-owner proof subtree を走査し、回復なし・同じ source・順序の正しい範囲・各 parent 内包含・node 一意性を要求する。proof 内 colon は CompactStatement 直下 Proposition の正確な identifier/colon prefix で、実収集済み proof-step projection の declaration range と一致すること。他の label 宣言/colon 構文を拒否し、解決結果や言語の不正判定を捏造しない。
 引用 justification は compact/conclusion 直下の by と ReferenceList の二 child だけとし、非空 list は既存の正確な単純 Reference と comma token の交互列にする。template/qualified/grouped/bulk/computation・不正 citation は全 call を拒否する。既存 shape helper を再利用し、古い collector に構文や scope を追加しない。

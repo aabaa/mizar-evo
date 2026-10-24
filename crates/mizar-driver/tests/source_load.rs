@@ -22708,7 +22708,7 @@ fn native_theorem_metadata_caller_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "checker"),
+        (private.replace("set", "object"), "checker"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let ids = InMemorySessionIdAllocator::new();
@@ -23115,7 +23115,7 @@ fn native_theorem_core_caller_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "checker"),
+        (private.replace("set", "object"), "checker"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "skeleton",
@@ -23463,7 +23463,7 @@ fn native_theorem_core_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "private"),
+        (private.replace("set", "object"), "unsupported-type"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -23496,7 +23496,7 @@ fn native_theorem_core_storage_replay_preserves_refusals() {
                 let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
                     &arena, &env, &scope,
                 );
-                if case == "private" {
+                if case == "unsupported-type" {
                     Err(metadata.unwrap_err())
                 } else {
                     assert_eq!(case, "empty");
@@ -23729,7 +23729,7 @@ fn native_theorem_core_semantic_payload_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "private"),
+        (private.replace("set", "object"), "unsupported-type"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -23831,7 +23831,7 @@ fn native_theorem_core_semantic_payload_preserves_refusals() {
                 assert_eq!(refusal_owner, "candidate");
                 assert!(expected.is_err());
             }
-            "private" => {
+            "unsupported-type" => {
                 assert_eq!(refusal_owner, "metadata");
                 assert!(expected.is_err());
             }
@@ -24171,7 +24171,7 @@ fn native_theorem_core_publication_preserves_refusals_and_publisher_boundaries()
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.to_owned(), "metadata"),
+        (private.replace("set", "object"), "metadata"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -24626,7 +24626,7 @@ fn native_theorem_vc_caller_preserves_refusals() {
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.to_owned(), "metadata"),
+        (private.replace("set", "object"), "metadata"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -25154,7 +25154,7 @@ fn native_theorem_vc_storage_preserves_refusals() {
     );
     for (text, is_none) in [
         (format!("{private}\nreserve Y for set;\n"), true),
-        (private.to_owned(), false),
+        (private.replace("set", "object"), false),
     ] {
         let refused = Fixture::new(text.as_bytes());
         let (_, _, refused_adapter, refused_handle, _) =
@@ -25708,7 +25708,7 @@ fn native_theorem_vc_publication_preserves_refusals_and_publisher_boundaries() {
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.to_owned(), "metadata"),
+        (private.replace("set", "object"), "metadata"),
         (
             "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;"
                 .to_owned(),
@@ -29794,6 +29794,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
     let renamed = lemma.replace("Lem1", "Lem2");
     let theorem = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
     let renamed_theorem = theorem.replace("theorem T:", "theorem U:");
+    let private_theorem = format!("private {theorem}");
+    let public_theorem = format!("public {theorem}");
     let generation_schema = mizar_vc::vc_ir::GenerationSchemaVersion::new("step6c10-generation");
     let vc_schema = mizar_vc::vc_ir::VcSchemaVersion::new("step6c10-vc");
     let fixture = Fixture::new(private.as_bytes());
@@ -29843,13 +29845,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 renamed.as_str(),
                 theorem,
                 renamed_theorem.as_str(),
+                private_theorem.as_str(),
+                public_theorem.as_str(),
             ]
             .into_iter()
             .map(move |main| (backend_free, main))
         })
         .enumerate()
     {
-        let stage = generation % 5;
+        let stage = generation % 7;
         fixture.write(main.as_bytes());
         let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
         draft.source_inputs.versions.clear();
@@ -30215,13 +30219,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             | PipelinePhase::Elaboration
                             | PipelinePhase::AlgorithmPreparation
                     ) {
-                        if module == "main" && stage >= 3 {
-                            6
-                        } else if module == "main" && stage > 0 {
-                            5
-                        } else {
-                            2
-                        }
+                        if module == "main" && stage >= 3 { 6 } else { 5 }
                     } else {
                         1
                     }
@@ -30235,13 +30233,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     _ => 0,
                 };
                 let result = &results[result_index];
-                let type_refusal =
-                    phase == PipelinePhase::TypeChecking && (module == "leaf" || stage == 0);
                 let elaboration_refusal =
-                    phase == PipelinePhase::Elaboration && module == "main" && stage < 3;
+                    phase == PipelinePhase::Elaboration && (module == "leaf" || stage < 3);
                 assert_eq!(
                     result.status,
-                    if type_refusal || elaboration_refusal {
+                    if elaboration_refusal {
                         PhaseStatus::Blocking
                     } else {
                         PhaseStatus::Complete
@@ -30359,7 +30355,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .unwrap();
                     assert_eq!(result.cache_observation, Some(probe.observation));
                 }
-                if type_refusal || elaboration_refusal {
+                if elaboration_refusal {
                     assert!(result.output_refs.is_empty());
                     break;
                 }
@@ -30434,6 +30430,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(summary.source_hash, version.source_hash);
                     assert_eq!(summary.module.package_id, version.package_id.as_str());
                     assert_eq!(summary.module.module_path, version.module_path.as_str());
+                    if module == "main" && stage >= 3 {
+                        assert_eq!(summary.exported_symbols.len(), usize::from(stage != 5));
+                        assert!(
+                            summary
+                                .exported_symbols
+                                .iter()
+                                .all(|row| row.visibility == "public")
+                        );
+                    }
                 } else if phase == PipelinePhase::RegistrationResolution {
                     assert_eq!(
                         output.phase(),
@@ -30569,6 +30574,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             current.storage().get(&handle).unwrap()
                         });
                     assert_eq!(core, clean_core);
+                    assert_eq!(core.items().len(), 1);
+                    for (_, item) in core.items().iter() {
+                        assert_eq!(
+                            item.visibility.as_str(),
+                            if stage == 5 { "private" } else { "public" }
+                        );
+                    }
                     assert_eq!(core.source_id(), version.source_id);
                     assert_eq!(
                         core.module_id(),
@@ -32674,6 +32686,9 @@ fn native_theorem_typed_ast_storage_replay_preserves_genuine_outputs() {
             "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
         ),
         "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        include_str!(
+            "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+        ),
         "theorem T: for Y being set holds Y = Y\r\nproof\r\n  let Y be set;\r\n  thus Y = Y;\r\nend;\r\n",
     ];
     for text in texts {
@@ -32848,7 +32863,7 @@ fn native_theorem_typed_ast_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "private"),
+        (private.replace("set", "object"), "unsupported-type"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let (_, _, adapter, parent, _) =
@@ -32860,7 +32875,7 @@ fn native_theorem_typed_ast_storage_replay_preserves_refusals() {
         let expected = lower(ast);
         assert!(matches!(
             (&expected, case),
-            (Ok(None), "reserve" | "citation") | (Err(_), "unbound" | "private")
+            (Ok(None), "reserve" | "citation") | (Err(_), "unbound" | "unsupported-type")
         ));
         assert_eq!(decode(&bytes, ast.source_id, &module), expected, "{case}");
         assert_eq!(
@@ -33044,6 +33059,7 @@ fn native_theorem_typed_ast_signature_caller_preserves_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
+    let unsupported = private.replace("set", "object");
     for case in [
         "checker",
         "missing",
@@ -33059,7 +33075,11 @@ fn native_theorem_typed_ast_signature_caller_preserves_refusals() {
         "collected",
     ] {
         with_native_summary_parent(
-            if case == "checker" { private } else { lemma },
+            if case == "checker" {
+                &unsupported
+            } else {
+                lemma
+            },
             false,
             0,
             |fixture, inputs, old_input, owner, outputs, _| {
@@ -33651,8 +33671,9 @@ fn native_theorem_typed_ast_publication_preserves_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
+    let unsupported = private.replace("set", "object");
     for case in [
-        "private",
+        "unsupported-type",
         "missing",
         "wrong-phase",
         "hash",
@@ -33662,7 +33683,11 @@ fn native_theorem_typed_ast_publication_preserves_refusals() {
         "denied",
     ] {
         with_native_summary_parent(
-            if case == "private" { private } else { lemma },
+            if case == "unsupported-type" {
+                &unsupported
+            } else {
+                lemma
+            },
             false,
             0,
             |_, inputs, old, owner, _, _| {
@@ -34111,6 +34136,7 @@ fn scheduled_theorem_type_checking_preserves_resource_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
+    let unsupported = private.replace("set", "object");
     for case in [
         "cancel",
         "foreign-token",
@@ -34120,10 +34146,14 @@ fn scheduled_theorem_type_checking_preserves_resource_refusals() {
         "obsolete",
         "collected",
         "denied",
-        "private",
+        "unsupported-type",
     ] {
         with_native_summary_parent(
-            if case == "private" { private } else { lemma },
+            if case == "unsupported-type" {
+                &unsupported
+            } else {
+                lemma
+            },
             false,
             0,
             |_, inputs, old, owner, _, _| {
@@ -34161,7 +34191,7 @@ fn scheduled_theorem_type_checking_preserves_resource_refusals() {
                         unit,
                     ));
                 }
-                if case == "private" {
+                if case == "unsupported-type" {
                     let raw = inputs
                         .native_theorem_typed_ast_with_signature_parent(&input, owner)
                         .unwrap_err();
@@ -34327,6 +34357,9 @@ fn native_theorem_registration_closure_storage_replay_preserves_genuine_outputs(
             "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
         ),
         "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        include_str!(
+            "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+        ),
         "theorem Renamed: for Y being set holds Y = Y\r\nproof\r\n  let Y be set;\r\n  thus Y = Y;\r\nend;\r\n",
     ] {
         for open in [false, true] {
@@ -34622,7 +34655,7 @@ fn native_theorem_registration_closure_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "private"),
+        (private.replace("set", "object"), "unsupported-type"),
         (registration.to_owned(), "registration"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
@@ -34639,7 +34672,8 @@ fn native_theorem_registration_closure_storage_replay_preserves_refusals() {
         let expected = lower(ast, &module);
         assert!(matches!(
             (&expected, case),
-            (Ok(None), "reserve" | "citation" | "registration") | (Err(_), "private" | "unbound")
+            (Ok(None), "reserve" | "citation" | "registration")
+                | (Err(_), "unsupported-type" | "unbound")
         ));
         let syntax = ast.canonical_bytes().unwrap();
         let before = (ast.clone(), closure.clone());
@@ -36133,8 +36167,9 @@ fn scheduled_theorem_registration_resolution_preserves_resource_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
+    let unsupported = private.replace("set", "object");
     with_native_summary_parent(
-        private,
+        &unsupported,
         false,
         0,
         |fixture, _, old, _, _, (session, ids, snapshots)| {
@@ -36173,7 +36208,7 @@ fn scheduled_theorem_registration_resolution_preserves_resource_refusals() {
                 .unwrap();
             let run = submission.scheduler_run.as_ref().unwrap();
             let [signature, typed] = run.phase_results[&task.id].as_slice() else {
-                panic!("private source stops before registration")
+                panic!("unsupported source stops before registration")
             };
             assert_eq!(signature.status, PhaseStatus::Complete);
             assert_eq!(typed.status, PhaseStatus::Blocking);
@@ -36223,6 +36258,9 @@ fn native_theorem_metadata_storage_replay_preserves_genuine_outputs() {
             "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
         ),
         "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        include_str!(
+            "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+        ),
         "theorem Renamed: for Y being set holds Y = Y\r\nproof\r\n let Y be set;\r\n thus Y = Y;\r\nend;\r\n",
     ] {
         for (open, threshold) in [(false, usize::MAX), (true, 0)] {
@@ -36494,7 +36532,7 @@ fn native_theorem_metadata_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.to_owned(), "private"),
+        (private.replace("set", "object"), "unsupported-type"),
         (registration.to_owned(), "registration"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
@@ -36505,7 +36543,8 @@ fn native_theorem_metadata_storage_replay_preserves_refusals() {
         let expected = lower(ast);
         assert!(matches!(
             (&expected, case),
-            (Ok(None), "reserve" | "citation" | "registration") | (Err(_), "private" | "unbound")
+            (Ok(None), "reserve" | "citation" | "registration")
+                | (Err(_), "unsupported-type" | "unbound")
         ));
         let before = (ast.clone(), metadata.clone());
         assert_eq!(
@@ -38082,8 +38121,9 @@ fn scheduled_theorem_overload_resolution_preserves_resource_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
+    let unsupported = private.replace("set", "object");
     with_native_summary_parent(
-        private,
+        &unsupported,
         false,
         0,
         |fixture, _, old, _, _, (session, ids, snapshots)| {
@@ -38124,7 +38164,7 @@ fn scheduled_theorem_overload_resolution_preserves_resource_refusals() {
                 .unwrap();
             let run = submission.scheduler_run.as_ref().unwrap();
             let [signature, typed] = run.phase_results[&task.id].as_slice() else {
-                panic!("private source stops before registration and overload")
+                panic!("unsupported source stops before registration and overload")
             };
             assert_eq!(signature.status, PhaseStatus::Complete);
             assert_eq!(typed.status, PhaseStatus::Blocking);
@@ -39776,7 +39816,7 @@ fn scheduled_theorem_elaboration_preserves_resource_refusals() {
                     .unwrap();
                 let run = submission.scheduler_run.as_ref().unwrap();
                 let rows = &run.phase_results[&task.id];
-                assert_eq!(rows.len(), if source == private { 2 } else { 5 });
+                assert_eq!(rows.len(), 5);
                 let (blocked, completed) = rows.split_last().unwrap();
                 assert!(
                     completed
@@ -40651,7 +40691,7 @@ fn native_theorem_preparation_storage_replay_preserves_refusals() {
     let private = include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
-    let fixture = Fixture::new(private.as_bytes());
+    let fixture = Fixture::new(private.replace("set", "object").as_bytes());
     let (_, _, adapter, handle, _) =
         native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
     let output = adapter.publisher().storage().get(&handle).unwrap();
@@ -41797,7 +41837,7 @@ fn scheduled_theorem_algorithm_preparation_preserves_resource_refusals() {
                     .unwrap();
                 let run = submission.scheduler_run.as_ref().unwrap();
                 let rows = &run.phase_results[&task.id];
-                assert_eq!(rows.len(), if source == private { 2 } else { 5 });
+                assert_eq!(rows.len(), 5);
                 let (blocked, completed) = rows.split_last().unwrap();
                 assert!(
                     completed
@@ -43948,7 +43988,7 @@ fn scheduled_theorem_vc_generation_preserves_resource_refusals() {
                     .unwrap();
                 let run = submission.scheduler_run.as_ref().unwrap();
                 let rows = &run.phase_results[&task.id];
-                assert_eq!(rows.len(), if source == private { 2 } else { 5 });
+                assert_eq!(rows.len(), 5);
                 let (blocked, completed) = rows.split_last().unwrap();
                 assert!(
                     completed
@@ -46935,7 +46975,7 @@ fn native_theorem_discharge_storage_preserves_refusals() {
     );
     for (text, is_none) in [
         (format!("{private}\nreserve Y for set;\n"), true),
-        (private.to_owned(), false),
+        (private.replace("set", "object"), false),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let (_, _, adapter, frontend, _) =
@@ -48129,15 +48169,8 @@ fn scheduled_theorem_vc_discharge_preserves_resource_refusals() {
                         .find(|task| task.kind == TaskKind::CheckAndElaborate)
                         .unwrap();
                     let rows = &run.phase_results[&group.id];
-                    assert_eq!(rows.len(), if case == "private" { 2 } else { 5 });
-                    assert_eq!(
-                        group.phases[rows.len() - 1],
-                        if case == "private" {
-                            PipelinePhase::TypeChecking
-                        } else {
-                            PipelinePhase::Elaboration
-                        }
-                    );
+                    assert_eq!(rows.len(), 5);
+                    assert_eq!(group.phases[rows.len() - 1], PipelinePhase::Elaboration);
                     let (blocked, completed) = rows.split_last().unwrap();
                     assert!(
                         completed
@@ -49715,9 +49748,9 @@ fn native_theorem_candidate_storage_preserves_refusals() {
             expected
         );
     }
-    let private = Fixture::new(include_bytes!(
+    let private = Fixture::new(include_str!(
         "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
-    ));
+    ).replace("set", "object").as_bytes());
     let (_, _, adapter, handle, _) =
         native_disk_frontend_record_submission(&private, &ids, &snapshots, 0);
     let output = adapter.publisher().storage().get(&handle).unwrap();
@@ -53565,9 +53598,9 @@ fn native_theorem_candidate_check_storage_preserves_refusals() {
                 .unwrap(),
                 None
             );
-            let private = Fixture::new(include_bytes!(
+            let private = Fixture::new(include_str!(
                 "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
-            ));
+            ).replace("set", "object").as_bytes());
             let (_, _, adapter, handle, _) =
                 native_disk_frontend_record_submission(&private, ids, snapshots, 0);
             let private_frontend = adapter.publisher().storage().get(&handle).unwrap();

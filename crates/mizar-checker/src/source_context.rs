@@ -522,9 +522,14 @@ impl SourceBindingContextProducer {
                 DeclarationShellKind::Lemma => SourceItemRole::Lemma,
                 _ => return Err(invalid()),
             };
+            let visibility = match shell.visibility().state() {
+                DeclarationShellVisibilityState::Unspecified => SourceItemVisibility::Unspecified,
+                DeclarationShellVisibilityState::Public => SourceItemVisibility::Public,
+                DeclarationShellVisibilityState::Private => SourceItemVisibility::Private,
+                _ => return Err(invalid()),
+            };
             if shell.parent().is_some()
                 || shell.recovered()
-                || shell.visibility().state() != DeclarationShellVisibilityState::Unspecified
                 || shell.module() != source.module()
                 || shell.range().source_id != source.source_id()
             {
@@ -561,7 +566,7 @@ impl SourceBindingContextProducer {
                 role,
                 source_range: shell.range(),
                 parent: shell.parent(),
-                visibility: SourceItemVisibility::Unspecified,
+                visibility,
                 site,
                 local_scope: None,
                 recovery: SourceItemRecovery::Normal,

@@ -6527,7 +6527,7 @@ impl TermFormulaChecker {
                 SurfaceTokenKind::ReservedWord
                     if [
                         "theorem", "lemma", "for", "be", "being", "set", "holds", "proof", "let",
-                        "thus", "end", "by",
+                        "thus", "end", "by", "public", "private",
                     ]
                     .contains(&token.text.as_ref()) =>
                 {
@@ -6574,10 +6574,12 @@ impl TermFormulaChecker {
                 (K::CompilationUnit, ["ItemList"]) => true,
                 (K::ItemList, items) => {
                     !items.is_empty()
-                        && items
-                            .iter()
-                            .all(|item| matches!(*item, "TheoremItem" | "LemmaItem"))
+                        && items.iter().all(|item| {
+                            matches!(*item, "TheoremItem" | "LemmaItem" | "VisibleItem")
+                        })
                 }
+                (K::VisibleItem, ["VisibilityMarker", "TheoremItem" | "LemmaItem"])
+                | (K::VisibilityMarker, ["public" | "private"]) => true,
                 (K::TheoremItem | K::LemmaItem, [keyword, rest @ ..]) => {
                     *keyword
                         == if current.kind() == &K::TheoremItem {
@@ -16343,6 +16345,20 @@ impl SourceVariableSemanticsChecker {
             items = vec![theorem];
         }
 
+        if typed.source_context().is_some() && !phrase && !computation && algorithm.is_none() {
+            for item in &mut items {
+                if step5c8_kind(typed, *item) == Some("VisibleItem") {
+                    let children = step5c8_children(typed, *item).ok_or_else(invalid)?;
+                    let [marker, inner] = children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if step5c8_kind(typed, *marker) != Some("VisibilityMarker") {
+                        return Err(invalid());
+                    }
+                    *item = *inner;
+                }
+            }
+        }
         if items.is_empty()
             || items
                 .iter()

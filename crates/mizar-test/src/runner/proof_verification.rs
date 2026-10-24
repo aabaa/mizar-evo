@@ -11419,8 +11419,9 @@ mod term_proof_tests {
             text.replace("thus X = X", "thus X = f(X)"),
             text.replace("holds X = X", "holds X = X & X = X"),
             text.replace("for X being set, Unused being set", "ex X being set"),
-            text.replace("theorem T", "private theorem T"),
-            text.replace("theorem T", "public theorem T"),
+            text.replace("theorem T", "private theorem T")
+                .replace("set", "object"),
+            text.replace("theorem T", "public open theorem T"),
             "open theorem T: for X being set holds X = X;".into(),
             "assumed theorem T: for X being set holds X = X;".into(),
             "theorem T: 0 = 0 by computation(steps: 8);".into(),
@@ -18536,6 +18537,7 @@ mod term_proof_tests {
             ),
             (source.clone(), symbols.clone(), other_scope.clone()),
         ];
+        let private_control = controls.len();
         for (case, text) in [
             include_str!("../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz").to_owned(),
             text.replace("set", "object"),
@@ -18547,17 +18549,22 @@ mod term_proof_tests {
             controls.push((source.clone(), symbols, scope));
             controls.push((source, empty.clone(), other_scope.clone()));
         }
-        for (source, symbols, scope) in controls {
+        for (index, (source, symbols, scope)) in controls.into_iter().enumerate() {
             let before = (
                 source.clone(),
                 symbols.clone(),
                 scope.clone(),
                 other_typed.clone(),
             );
-            let expected = Checker::check_source_theorem_equalities_with_typed_declarations(
+            let lower = Checker::check_source_theorem_equalities_with_typed_declarations(
                 &source, &symbols, &scope,
-            )
-            .unwrap_err();
+            );
+            let expected = if index == private_control {
+                assert_ne!(lower.unwrap().2, other_typed);
+                "theorems.equality.invalid_registration_closure_association".to_owned()
+            } else {
+                lower.unwrap_err()
+            };
             for _ in 0..2 {
                 assert_eq!(
                     check(&source, &symbols, &scope, &other_typed).unwrap_err(),
@@ -19692,11 +19699,17 @@ mod term_proof_tests {
 
     #[test]
     fn source_theorem_scoped_skeleton_intake_preserves_genuine_consumers() -> Result<(), String> {
-        use mizar_checker::type_checker::{
-            SourceVariableSemanticsChecker as Checker, check_source_theorem_metadata,
+        use mizar_checker::{
+            source_context::SourceItemVisibility,
+            type_checker::{
+                SourceVariableSemanticsChecker as Checker, check_source_theorem_metadata,
+            },
+            typed_ast::{LocalTypeContextId, TypedNodeId},
         };
         use mizar_core::{
-            core_ir::{CoreCitation, CoreFormulaKind, CoreProofNodeKind, CoreProofStatus},
+            core_ir::{
+                CoreCitation, CoreFormulaKind, CoreProofNodeKind, CoreProofStatus, CoreSourceAnchor,
+            },
             elaborator::lower_source_theorem_skeletons as lower,
         };
         use mizar_frontend::{
@@ -19705,15 +19718,18 @@ mod term_proof_tests {
             source::{FrontendSourceLoader, SourceUnitRequest},
         };
         use mizar_resolve::{
-            declarations::DeclarationShellCollector,
-            env::NamespacePath,
+            declarations::{DeclarationShellCollector, DeclarationShellVisibilityState},
+            env::{ExportStatus, NamespacePath, Visibility},
             resolved_ast::{ModuleId, SurfaceResolvedArena},
             symbols::{SignatureProjectionExtractor, source_proof_inputs},
         };
         use mizar_session::{
             DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
-            SourceInput, SourceOrigin, SourceOriginInput, hash_text,
+            SourceAnchor, SourceInput, SourceOrigin, SourceOriginInput, hash_text,
         };
+        use mizar_syntax::SurfaceNodeKind as K;
+        let private =
+            "private theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
         let fixture = include_str!(
             "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
         );
@@ -19724,6 +19740,12 @@ mod term_proof_tests {
                 .replace("let X be set;", "let Local be set;")
                 .replace("thus X = X", "thus Local = Local"),
             "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;".into(),
+            include_str!("../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz").to_owned(),
+            private.to_owned(),
+            private.replacen("private", "public", 1),
+            private.replace("set", "object"),
+            private.replace("theorem T", "open theorem T"),
+            private.replace("thus X = X;", "thus X = ;"),
         ];
         let temporary = std::process::Command::new("mktemp")
             .arg("-d")
@@ -19766,8 +19788,9 @@ mod term_proof_tests {
                     &ids,
                 )
                 .unwrap();
-                assert!(
+                assert_eq!(
                     frontend.diagnostics.is_empty(),
+                    case != 8,
                     "{:?}",
                     frontend.diagnostics
                 );
@@ -19793,8 +19816,12 @@ mod term_proof_tests {
                     NamespacePath::new(module.path().as_str()),
                 )
                 .collect(&module);
-                assert!(collected.diagnostics().is_empty());
                 let symbols = collected.env();
+                if case == 8 {
+                    assert!(source_proof_inputs(&source, symbols).is_err());
+                    continue;
+                }
+                assert!(collected.diagnostics().is_empty());
                 let (scope, labels, resolved) = source_proof_inputs(&source, symbols)?;
                 let before = (
                     source.clone(),
@@ -19802,20 +19829,51 @@ mod term_proof_tests {
                     scope.clone(),
                     labels.clone(),
                     resolved.clone(),
+                    ast.snapshot_text(),
+                    frontend.source.clone(),
                 );
+                if case >= 6 {
+                    let error =
+                        check_source_theorem_metadata(&source, symbols, &scope).unwrap_err();
+                    assert_eq!(
+                        check_source_theorem_metadata(&source, symbols, &scope).unwrap_err(),
+                        error
+                    );
+                    assert_eq!(
+                        (
+                            source.clone(),
+                            symbols.clone(),
+                            scope,
+                            labels,
+                            resolved,
+                            ast.snapshot_text(),
+                            frontend.source.clone()
+                        ),
+                        before
+                    );
+                    continue;
+                }
                 let output = check_source_theorem_metadata(&source, symbols, &scope)?;
                 let (_, inference, typed, metadata) = &output;
                 assert!(typed.source_context().is_some());
                 assert!(!inference.terms().is_empty());
                 assert!(!metadata.expr_metadata().is_empty());
                 let output_before = output.clone();
-                let (expected, expected_vcs, owners) =
-                    with_source_theorem_check(ast, &source, symbols, |legacy| {
-                        assert!(legacy.typed_ast().source_context().is_none());
-                        let core = lower(legacy, None)?;
-                        let vcs = generate_core_vcs(&core, snapshot)?;
-                        Ok((core, vcs, legacy.owners().to_vec()))
-                    })?;
+                let expected = if case < 3 {
+                    Some(with_source_theorem_check(
+                        ast,
+                        &source,
+                        symbols,
+                        |legacy| {
+                            assert!(legacy.typed_ast().source_context().is_none());
+                            let core = lower(legacy, None)?;
+                            let vcs = generate_core_vcs(&core, snapshot)?;
+                            Ok((core, vcs, legacy.owners().to_vec()))
+                        },
+                    )?)
+                } else {
+                    None
+                };
                 let checked = Checker::check_theorem_skeletons(
                     &source, typed, &scope, symbols, &labels, &resolved, None,
                 )?;
@@ -19823,11 +19881,15 @@ mod term_proof_tests {
                 assert!(std::ptr::eq(checked.scope(), &scope));
                 assert!(std::ptr::eq(checked.labels(), &labels));
                 assert!(std::ptr::eq(checked.resolved_labels(), &resolved));
-                assert_eq!(checked.owners(), owners);
+                if let Some((_, _, owners)) = &expected {
+                    assert_eq!(checked.owners(), owners);
+                }
                 let names = if case == 0 {
                     vec!["Lem1", "UseLem1"]
                 } else if case == 1 {
                     vec!["Seed", "UseSeed"]
+                } else if case == 3 {
+                    vec!["PrivT1", "UsePriv1"]
                 } else {
                     vec!["T"]
                 };
@@ -19839,8 +19901,15 @@ mod term_proof_tests {
                         .collect::<Vec<_>>(),
                     names
                 );
-                for (owner, visibility) in checked.owners() {
-                    assert_eq!(*visibility, "public");
+                for (index, (owner, visibility)) in checked.owners().iter().enumerate() {
+                    assert_eq!(
+                        *visibility,
+                        if index == 0 && matches!(case, 3 | 4) {
+                            "private"
+                        } else {
+                            "public"
+                        }
+                    );
                     assert_eq!(owner.source_range.source_id, source.source_id());
                     assert!(
                         text[owner.source_range.start..owner.source_range.end]
@@ -19848,7 +19917,9 @@ mod term_proof_tests {
                     );
                 }
                 let core = lower(&checked, None)?;
-                assert_eq!(core, expected);
+                if let Some((expected, _, _)) = &expected {
+                    assert_eq!(&core, expected);
+                }
                 assert_eq!(core.source_id(), source.source_id());
                 assert_eq!(core.module_id(), source.module());
                 assert_eq!(core.proofs().len(), names.len());
@@ -19857,6 +19928,138 @@ mod term_proof_tests {
                         .iter()
                         .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
                 );
+                if case >= 3 {
+                    let context = typed.source_context().unwrap();
+                    assert_eq!(typed.nodes().len(), ast.nodes().len());
+                    for (id, original) in source.arena().iter() {
+                        let node = typed.nodes().node(TypedNodeId::new(id.index())).unwrap();
+                        assert_eq!(node.resolved_node, Some(id));
+                        assert_eq!(node.anchor, *original.origin().anchor());
+                        assert!(
+                            node.children
+                                .iter()
+                                .map(|id| id.index())
+                                .eq(original.children().iter().map(|id| id.index()))
+                        );
+                    }
+                    let wrappers = ast
+                        .node_views()
+                        .filter(|view| matches!(view.kind(), K::VisibleItem))
+                        .collect::<Vec<_>>();
+                    assert_eq!(wrappers.len(), 1);
+                    let wrapper = wrappers[0];
+                    let [marker_id, inner_id] = wrapper.children() else {
+                        panic!("unexpected visibility topology")
+                    };
+                    let marker = ast.node(*marker_id).unwrap();
+                    let inner = ast.node(*inner_id).unwrap();
+                    assert!(matches!(marker.kind, K::VisibilityMarker));
+                    assert!(matches!(inner.kind, K::TheoremItem));
+                    assert!(wrapper.range().start < inner.range.start);
+                    assert_eq!(shells.declarations()[0].range(), inner.range);
+                    assert_eq!(shells.declarations()[0].node_id(), *inner_id);
+                    assert_eq!(
+                        shells.declarations()[0].visibility().marker_range(),
+                        Some(marker.range)
+                    );
+                    assert_eq!(wrapper.range().end, inner.range.end);
+                    assert_eq!(
+                        &text[marker.range.start..marker.range.end],
+                        if case == 5 { "public" } else { "private" }
+                    );
+                    assert_eq!(&text[inner.range.start..inner.range.start + 7], "theorem");
+                    for id in [wrapper.id(), *marker_id, *inner_id] {
+                        let resolved = source.resolved_node_for(id).unwrap();
+                        assert_eq!(
+                            typed
+                                .nodes()
+                                .node(TypedNodeId::new(resolved.index()))
+                                .unwrap()
+                                .links
+                                .context,
+                            Some(LocalTypeContextId::new(0))
+                        );
+                    }
+                    assert_eq!(context.items().len(), shells.declarations().len());
+                    assert_eq!(core.items().len(), names.len());
+                    for (index, (((owner, visibility), shell), (_, item))) in checked
+                        .owners()
+                        .iter()
+                        .zip(shells.declarations())
+                        .zip(context.items().iter())
+                        .enumerate()
+                    {
+                        let private = index == 0 && case != 5;
+                        let explicit = index == 0;
+                        let expected_shell = if !explicit {
+                            DeclarationShellVisibilityState::Unspecified
+                        } else if private {
+                            DeclarationShellVisibilityState::Private
+                        } else {
+                            DeclarationShellVisibilityState::Public
+                        };
+                        let expected_item = if !explicit {
+                            SourceItemVisibility::Unspecified
+                        } else if private {
+                            SourceItemVisibility::Private
+                        } else {
+                            SourceItemVisibility::Public
+                        };
+                        assert_eq!(shell.visibility().state(), expected_shell);
+                        assert_eq!(item.visibility, expected_item);
+                        assert_eq!(item.shell, shell.id());
+                        assert_eq!(item.source_range, shell.range());
+                        assert_eq!(owner.source_range, shell.range());
+                        assert_eq!(item.site, owner.site);
+                        assert_eq!(
+                            source.resolved_node_for(shell.node_id()),
+                            typed.nodes().node(item.site.node()).unwrap().resolved_node
+                        );
+                        let symbol = symbols.symbols().get(&owner.symbol).unwrap();
+                        assert_eq!(
+                            symbol.visibility(),
+                            if private {
+                                Visibility::Private
+                            } else {
+                                Visibility::Public
+                            }
+                        );
+                        assert_eq!(
+                            symbol.export_status(),
+                            if private {
+                                ExportStatus::LocalOnly
+                            } else {
+                                ExportStatus::Exported
+                            }
+                        );
+                        assert_eq!(
+                            symbol.origin().anchor(),
+                            &SourceAnchor::Range(shell.range())
+                        );
+                        let definition = symbols.definitions().by_symbol(&owner.symbol).unwrap();
+                        assert_eq!(definition.visibility(), symbol.visibility());
+                        let (core_id, core_item) = core.items().iter().nth(index).unwrap();
+                        assert_eq!(core_item.symbol, owner.symbol);
+                        assert_eq!(core_item.visibility.as_str(), *visibility);
+                        assert_eq!(
+                            core_item.source.anchor,
+                            CoreSourceAnchor::SourceRange(shell.range())
+                        );
+                        assert_eq!(core.proofs().iter().nth(index).unwrap().1.item, core_id);
+                    }
+                    assert!(metadata.expr_metadata().iter().all(|(_, expression)| {
+                        let node = typed.nodes().node(expression.typed_site.node()).unwrap();
+                        expression.local_context == node.links.context
+                            && expression.local_context.is_some()
+                    }));
+                    if case == 3 {
+                        let first = core.items().iter().next().unwrap().0;
+                        assert_eq!(
+                            core.items().iter().nth(1).unwrap().1.dependencies,
+                            vec![first]
+                        );
+                    }
+                }
                 let binders = core
                     .proof_nodes()
                     .iter()
@@ -19884,33 +20087,64 @@ mod term_proof_tests {
                     })
                     .flatten()
                     .collect::<Vec<_>>();
-                if case < 2 {
+                if matches!(case, 0 | 1 | 3) {
                     assert_eq!(labels.references().len(), 1);
                     assert_eq!(
                         citations,
-                        vec![&CoreCitation::Symbol(owners[0].0.symbol.clone())]
+                        vec![&CoreCitation::Symbol(checked.owners()[0].0.symbol.clone())]
                     );
                 } else {
                     assert!(labels.references().is_empty());
                     assert!(citations.is_empty());
                 }
                 let vcs = generate_core_vcs(&core, snapshot)?;
-                assert_eq!(vcs, expected_vcs);
+                if let Some((_, expected_vcs, _)) = &expected {
+                    assert_eq!(&vcs, expected_vcs);
+                }
                 assert_eq!(vcs.vcs().len(), names.len());
                 assert!(
                     vcs.vcs()
                         .iter()
                         .all(|vc| vc.status == mizar_vc::vc_ir::VcStatus::Open)
                 );
+                if case >= 3 {
+                    for (vc, (_, proof)) in vcs.vcs().iter().zip(core.proofs().iter()) {
+                        assert_eq!(
+                            vc.anchor.owner,
+                            mizar_vc::vc_ir::AnchorOwner::Theorem(proof.item)
+                        );
+                        let (_, seed) = core
+                            .obligation_seeds()
+                            .iter()
+                            .find(|(_, seed)| seed.owner == proof.item)
+                            .unwrap();
+                        assert_eq!(
+                            vc.goal,
+                            mizar_vc::vc_ir::VcFormulaRef::Core(seed.goal.unwrap())
+                        );
+                    }
+                }
                 let replay = Checker::check_theorem_skeletons(
                     &source, typed, &scope, symbols, &labels, &resolved, None,
                 )?;
                 assert_eq!(replay.owners(), checked.owners());
                 assert_eq!(lower(&replay, None)?, core);
                 assert_eq!(generate_core_vcs(&core, snapshot)?, vcs);
+                assert_eq!(
+                    check_source_theorem_metadata(&source, symbols, &scope)?,
+                    output
+                );
                 assert_eq!(output, output_before);
                 assert_eq!(
-                    (source.clone(), symbols.clone(), scope, labels, resolved,),
+                    (
+                        source.clone(),
+                        symbols.clone(),
+                        scope,
+                        labels,
+                        resolved,
+                        ast.snapshot_text(),
+                        frontend.source.clone()
+                    ),
                     before
                 );
                 if buffer {
