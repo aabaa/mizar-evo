@@ -481,6 +481,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 62. **[Fresh source theorem candidate check](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE.md).** [x]
 
+63. **[Fresh source theorem candidate selection](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-SELECTION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

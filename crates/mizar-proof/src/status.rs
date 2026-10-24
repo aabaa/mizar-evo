@@ -967,6 +967,71 @@ pub fn check_source_theorem_candidate(
     Ok((core, vcs, discharge, encoded, candidate, result, decision))
 }
 
+/// Selects one freshly checked ATP theorem candidate and retains its actual pipeline.
+#[expect(
+    clippy::type_complexity,
+    reason = "Returns the eight actual pipeline and selection values without a holder"
+)]
+pub fn select_source_theorem_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        &mizar_vc::vc_ir::GenerationSchemaVersion,
+        &mizar_vc::vc_ir::VcSchemaVersion,
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policies: (&mizar_vc::discharge::DischargePolicy, &VerifierPolicy),
+) -> Result<
+    (
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
+        mizar_vc::discharge::DischargeOutput,
+        mizar_atp::backend::EncodedBackendProblem,
+        mizar_atp::backend::BackendCandidateEvidence,
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+        crate::selection::ProofSelection,
+    ),
+    String,
+> {
+    use crate::{
+        policy::CandidatePolicyClass,
+        selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner},
+    };
+
+    let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+    let (core, vcs, discharge, encoded, candidate, result, decision) =
+        check_source_theorem_candidate(
+            source, check, symbols, snapshot, vc_id, encoding, policies,
+        )?;
+    let id = CandidateSourceId::new(candidate.candidate_id()).map_err(|error| error.to_string())?;
+    let evidence = if decision.class == CandidatePolicyClass::KernelVerified {
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            id,
+            &KernelPolicyInput::from_kernel_result(&result, origin),
+        )
+        .ok_or_else(|| "theorem.candidate.proof.invalid_source_selection".to_owned())?
+    } else {
+        ProofEvidenceCandidate::new(id, decision.clone())
+    }
+    .with_provenance_hash(candidate.provenance_hash());
+    let selection = select_winner(
+        &ProofEvidenceSet::new(
+            result.target_vc_fingerprint().sort_bytes(),
+            encoded.input_hash(),
+            policies.1.clone(),
+        )
+        .with_candidates([evidence]),
+    );
+    Ok((
+        core, vcs, discharge, encoded, candidate, result, decision, selection,
+    ))
+}
+
 /// Returns the actual original graphs and result from one genuine theorem check.
 pub fn check_source_theorem_reflexivity_with_original_graph(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
