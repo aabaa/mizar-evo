@@ -790,6 +790,77 @@ pub fn check_source_algorithm_state_transitivity(
     Ok((result, decision))
 }
 
+/// Tries bounded state-chain selection with fresh source and normal Kernel checking.
+pub fn try_check_source_algorithm_state_transitivity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<Option<(KernelCheckResult, crate::policy::PolicyDecision)>, String> {
+    use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        generator::generate_source_algorithm_postconditions,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, build_source_algorithm_state_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+
+    let fresh = mizar_checker::type_checker::check_source_algorithm_types(source, nodes, symbols)?;
+    let core = mizar_core::elaborator::lower_source_algorithms(&fresh)?;
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+    let vcs = generate_source_algorithm_postconditions(
+        &core,
+        snapshot,
+        &generation,
+        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1"),
+    )?;
+    let handoff = build_source_algorithm_state_kernel_handoff(&core, &vcs, vc_id, &generation)?;
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let profile = envelope.kernel_profile();
+    let bytes = handoff.encode_local_evidence(None)?;
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err("algorithm.proof.invalid_source_evidence".to_owned()),
+    };
+    let mut parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("algorithm.proof.parse:{error:?}"))?;
+    let Some(names) = mizar_atp::backend::select_local_variable_transitivity_names(
+        &parsed,
+        policy.instance_search_limits().map(|limits| limits[2]),
+    ) else {
+        return Ok(None);
+    };
+    let bytes = handoff.encode_local_evidence(Some(&names))?;
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("algorithm.proof.parse:{error:?}"))?;
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedBuiltinDischarge {
+        has_stable_kernel_representation: true,
+    }) {
+        return Err("algorithm.proof.kernel_policy_rejected".to_owned());
+    }
+    let result =
+        check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
+    let input = KernelPolicyInput::from_kernel_result(&result, origin);
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok(Some((result, decision)))
+}
+
 /// Checks one genuine source algorithm return goal with normal Kernel and policy.
 pub fn check_source_algorithm_return_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

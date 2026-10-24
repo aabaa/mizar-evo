@@ -33605,4 +33605,358 @@ mod term_proof_tests {
         }
         fs::remove_dir_all(root).unwrap();
     }
+    #[test]
+    fn source_algorithm_state_transitivity_search_matches_fresh_explicit_check() {
+        use super::super::{
+            formula_statement::step5c8_test_frontend as frontend,
+            source_registration_inputs as inputs,
+        };
+        use mizar_atp::backend::{
+            encode_local_variable_transitivity_names, select_local_variable_transitivity_names,
+        };
+        use mizar_checker::type_checker::check_source_algorithm_types as check_source;
+        use mizar_core::elaborator::lower_source_algorithms as lower;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{KernelCheckStatus, KernelEvidenceCheckKind},
+            clause::VariableId,
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::status::try_check_source_algorithm_state_transitivity as search;
+        use mizar_proof::{
+            policy::{
+                AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin,
+                KernelPolicyInput, VerifierPolicy,
+            },
+            status::check_source_algorithm_state_transitivity as explicit,
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, build_source_algorithm_state_kernel_handoff as build,
+            },
+            vc_ir::{
+                AnchorCompleteness, AnchorIngredient, GenerationSchemaVersion, SeedVcMapping,
+                VcSchemaVersion, VcStatus,
+            },
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let independent = flat.replace("    x := c;", "    const d := a;\n    x := c;");
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (variant, text) in [flat, renamed, independent].iter().enumerate() {
+            let (s, n, e) = inputs(&config.workspace_root, case, frontend(text)).unwrap();
+            let before_inputs = (s.clone(), n.clone(), e.clone());
+            let check = check_source(&s, &n, &e).unwrap();
+            let core = lower(&check).unwrap();
+            let cases = [
+                (0, VerifierPolicy::default()),
+                (1, VerifierPolicy::default()),
+                (0, VerifierPolicy::development()),
+                (0, VerifierPolicy::interactive()),
+            ];
+            for (snapshot, policy) in cases.into_iter().take(if variant == 0 { 4 } else { 1 }) {
+                let snapshot = snapshot_id(snapshot);
+                let policy = policy.with_instance_search_limits(Some([0, 0, 3, 0]));
+                let vcs = generate(&core, snapshot, &generation, &schema).unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("one genuine state VC")
+                };
+                assert_eq!(vc.status, VcStatus::Open);
+                assert!(
+                    matches!(&vc.anchor.completeness, AnchorCompleteness::Incomplete { missing }
+                if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash])
+                );
+                let [termination, contract] = vcs.seed_accounting() else {
+                    panic!("actual state accounting")
+                };
+                assert_eq!(
+                    termination.seed_status,
+                    mizar_core::core_ir::ObligationSeedStatus::Deferred
+                );
+                assert!(matches!(
+                    &termination.mapping,
+                    SeedVcMapping::NoConcreteVc { .. }
+                ));
+                assert!(matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id));
+                let handoff = build(&core, &vcs, vc.id, &generation).unwrap();
+                let envelope = handoff.canonical_evidence();
+                let target = envelope.target_vc();
+                let profile = envelope.kernel_profile();
+                assert!(matches!(
+                    profile.clause_tautology_policy,
+                    KernelClauseTautologyPolicy::Reject
+                ));
+                let bytes = handoff.encode_local_evidence(None).unwrap();
+                let parsed = parse_formula_evidence(
+                    &bytes,
+                    &FormulaEvidenceParseContext::v1(
+                        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                        KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+                    ),
+                )
+                .unwrap();
+                let before = (core.clone(), vcs.clone(), parsed.clone(), policy.clone());
+                let names =
+                    encode_local_variable_transitivity_names(&parsed, VariableId(2)).unwrap();
+                assert_eq!(names.len(), 1);
+                assert_eq!(
+                    names[0]
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>(),
+                    if variant == 2 {
+                        "000000010300000000010000000401000000020100000000"
+                    } else {
+                        "000000010300000000010000000301000000020100000000"
+                    }
+                );
+                for limit in [None, Some(0), Some(1), Some(2)] {
+                    assert_eq!(
+                        select_local_variable_transitivity_names(&parsed, limit),
+                        None
+                    );
+                    let bounded = policy
+                        .clone()
+                        .with_instance_search_limits(limit.map(|limit| [0, 0, limit, 0]));
+                    assert_eq!(search(&s, &n, &e, snapshot, vc.id, &bounded).unwrap(), None);
+                }
+                for limit in [3, u64::MAX] {
+                    assert_eq!(
+                        select_local_variable_transitivity_names(&parsed, Some(limit)),
+                        Some(names.clone())
+                    );
+                    let bounded = policy
+                        .clone()
+                        .with_instance_search_limits(Some([0, 0, limit, 0]));
+                    let expected =
+                        explicit(&s, &n, &e, snapshot, vc.id, VariableId(2), &bounded).unwrap();
+                    let actual = search(&s, &n, &e, snapshot, vc.id, &bounded).unwrap();
+                    let before_results = (expected.clone(), actual.clone());
+                    assert_eq!(actual, Some(expected.clone()));
+                    assert_eq!(
+                        search(&s, &n, &e, snapshot, vc.id, &bounded).unwrap(),
+                        actual
+                    );
+                    assert_eq!((expected, actual), before_results);
+                }
+                let expected =
+                    explicit(&s, &n, &e, snapshot, vc.id, VariableId(2), &policy).unwrap();
+                assert_eq!(expected.0.status(), KernelCheckStatus::Accepted);
+                assert_eq!(expected.1.class, CandidatePolicyClass::DischargedBuiltin);
+                assert_eq!(
+                    expected.0.target_vc_fingerprint(),
+                    &mizar_kernel::rejection::TargetVcFingerprint::new(
+                        target.algorithm_id,
+                        target.digest.clone()
+                    )
+                );
+                assert_eq!(
+                    expected.0.evidence_check_kind(),
+                    Some(KernelEvidenceCheckKind::ProofObligation)
+                );
+                assert!(!expected.0.policy_taint());
+                assert!(expected.0.used_axioms().is_empty());
+                let trusted = KernelPolicyInput::from_kernel_result(
+                    &expected.0,
+                    KernelEvidenceOrigin::BuiltinDischarge,
+                );
+                assert!(trusted.accepted_evidence_hash().is_some());
+                assert_eq!(
+                    trusted.accepted_goal_polarity(),
+                    Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                );
+                assert_eq!(
+                    (&core, &vcs, &parsed, &policy),
+                    (&before.0, &before.1, &before.2, &before.3)
+                );
+                assert_eq!(handoff.encode_local_evidence(None).unwrap(), bytes);
+            }
+            assert_eq!(
+                (&s, &n, &e),
+                (&before_inputs.0, &before_inputs.1, &before_inputs.2)
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_transitivity_search_preserves_errors_and_misses() {
+        use super::super::{
+            formula_statement::step5c8_test_frontend as frontend,
+            source_registration_inputs as inputs,
+        };
+        use mizar_atp::backend::{
+            encode_local_variable_transitivity_names, select_local_variable_transitivity_names,
+        };
+        use mizar_checker::type_checker::check_source_algorithm_types as check_source;
+        use mizar_core::elaborator::lower_source_algorithms as lower;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            clause::VariableId,
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::status::try_check_source_algorithm_state_transitivity as search;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat, VerifierPolicy},
+            status::check_source_algorithm_state_transitivity as explicit,
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, build_source_algorithm_state_kernel_handoff as build,
+            },
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let return_case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let return_source = fs::read_to_string(&return_case.source_path).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let disabled = VerifierPolicy::default()
+            .with_instance_search_limits(Some([0, 0, 3, 0]))
+            .with_kernel_evidence_formats([]);
+        let no_ensures = flat.replace("    ensures result = a\n", "");
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let bare_return = return_source.replace("return a;", "return;");
+        for (fixture, text, id, stage) in [
+            (case, flat.clone(), VcId::new(99), 2),
+            (case, no_ensures, VcId::new(0), 2),
+            (case, original, VcId::new(0), 2),
+            (return_case, two_returns, VcId::new(99), 1),
+            (return_case, bare_return, VcId::new(99), 0),
+        ] {
+            let (s, n, e) = inputs(&config.workspace_root, fixture, frontend(&text)).unwrap();
+            let before = (s.clone(), n.clone(), e.clone(), disabled.clone());
+            let expected = match check_source(&s, &n, &e) {
+                Err(error) => {
+                    assert_eq!(stage, 0);
+                    error
+                }
+                Ok(check) => {
+                    let core = lower(&check).unwrap();
+                    match generate(&core, snapshot_id(0), &generation, &schema) {
+                        Err(error) => {
+                            assert_eq!(stage, 1);
+                            error
+                        }
+                        Ok(vcs) => {
+                            assert_eq!(stage, 2);
+                            build(&core, &vcs, id, &generation).unwrap_err()
+                        }
+                    }
+                }
+            };
+            assert_eq!(
+                explicit(&s, &n, &e, snapshot_id(0), id, VariableId(2), &disabled).unwrap_err(),
+                expected
+            );
+            for limits in [None, Some([0; 4])] {
+                let policy = disabled.clone().with_instance_search_limits(limits);
+                assert_eq!(
+                    search(&s, &n, &e, snapshot_id(0), id, &policy).unwrap_err(),
+                    expected
+                );
+            }
+            assert_eq!((s, n, e, disabled.clone()), before);
+        }
+        let no_chain = flat.replace("    x := c;", "    x := a;");
+        for (text, miss) in [(&flat, false), (&no_chain, true)] {
+            let (s, n, e) = inputs(&config.workspace_root, case, frontend(text)).unwrap();
+            let check = check_source(&s, &n, &e).unwrap();
+            let core = lower(&check).unwrap();
+            let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+            let id = vcs.vcs()[0].id;
+            let handoff = build(&core, &vcs, id, &generation).unwrap();
+            let envelope = handoff.canonical_evidence();
+            let target = envelope.target_vc();
+            let profile = envelope.kernel_profile();
+            assert!(matches!(
+                profile.clause_tautology_policy,
+                KernelClauseTautologyPolicy::Reject
+            ));
+            let bytes = handoff.encode_local_evidence(None).unwrap();
+            let parsed = parse_formula_evidence(
+                &bytes,
+                &FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+                ),
+            )
+            .unwrap();
+            let before = (
+                s.clone(),
+                n.clone(),
+                e.clone(),
+                core.clone(),
+                vcs.clone(),
+                parsed.clone(),
+            );
+            assert_eq!(
+                select_local_variable_transitivity_names(&parsed, Some(u64::MAX)).is_none(),
+                miss
+            );
+            let expected_error = if miss {
+                encode_local_variable_transitivity_names(&parsed, VariableId(2)).unwrap_err()
+            } else {
+                "algorithm.proof.kernel_policy_rejected".to_owned()
+            };
+            for policy in [
+                disabled.clone(),
+                disabled
+                    .clone()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            ] {
+                assert_eq!(
+                    explicit(&s, &n, &e, snapshot_id(0), id, VariableId(2), &policy).unwrap_err(),
+                    expected_error
+                );
+                for limit in [None, Some(0), Some(2), Some(3), Some(u64::MAX)] {
+                    let bounded = policy
+                        .clone()
+                        .with_instance_search_limits(limit.map(|limit| [0, 0, limit, 0]));
+                    let actual = search(&s, &n, &e, snapshot_id(0), id, &bounded);
+                    assert_eq!(search(&s, &n, &e, snapshot_id(0), id, &bounded), actual);
+                    if miss || limit.unwrap_or(0) < 3 {
+                        assert_eq!(actual.unwrap(), None);
+                    } else {
+                        assert_eq!(actual.unwrap_err(), expected_error);
+                    }
+                }
+            }
+            assert_eq!((s, n, e, core, vcs, parsed), before);
+            assert_eq!(handoff.encode_local_evidence(None).unwrap(), bytes);
+        }
+    }
 }

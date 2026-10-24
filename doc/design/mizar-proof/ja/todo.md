@@ -491,6 +491,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 67. **[Source theorem candidate internal witness draft](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-WITNESS-DRAFT.md).** [x]
 68. **[Normal source theorem candidate witness file](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANDIDATE-WITNESS-FILE.md).** [x]
 
+69. **[Bounded source state transitivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

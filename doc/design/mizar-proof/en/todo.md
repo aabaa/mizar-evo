@@ -515,6 +515,8 @@ layer consumes both; one alignment task is owned here.
 67. **[Source theorem candidate internal witness draft](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANDIDATE-WITNESS-DRAFT.md).** [x]
 68. **[Normal source theorem candidate witness file](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANDIDATE-WITNESS-FILE.md).** [x]
 
+69. **[Bounded source state transitivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
