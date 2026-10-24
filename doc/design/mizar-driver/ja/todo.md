@@ -639,6 +639,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 106. **[Source-owned unpublished theorem module draft](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-DRAFT.md).** [x]
 
+107. **[Unpublished source theorem main-file transport](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-MAIN.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

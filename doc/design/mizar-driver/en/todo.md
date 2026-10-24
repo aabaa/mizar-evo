@@ -670,6 +670,8 @@ the owning producers when the paired tasks land.
 
 106. **[Source-owned unpublished theorem module draft](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-DRAFT.md).** [x]
 
+107. **[Unpublished source theorem main-file transport](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-MAIN.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

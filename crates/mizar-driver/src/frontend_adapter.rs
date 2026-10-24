@@ -5732,6 +5732,111 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(draft))
     }
 
+    /// Writes and reads back a genuine unpublished module draft with normal Artifact owners.
+    pub fn write_native_theorem_artifact_draft(
+        self,
+        input: &PhaseInput,
+        publisher: &Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+        vc_id: mizar_vc::vc_ir::VcId,
+        encoding: (
+            mizar_atp::problem::LogicProfile,
+            mizar_atp::problem::ConcreteFormat,
+        ),
+        policies: (
+            &mizar_vc::discharge::DischargePolicy,
+            &mizar_proof::policy::VerifierPolicy,
+        ),
+        staging: (&str, &str, &std::path::Path),
+    ) -> Result<
+        Option<(
+            mizar_ir::projection::VerifiedArtifactDraft,
+            mizar_artifact::store::PublishedArtifactWrite,
+        )>,
+        String,
+    > {
+        use mizar_artifact::{
+            store::{
+                PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+                read_published_artifact, write_published_artifact,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
+            },
+        };
+        let Some(draft) = self.project_native_theorem_artifact_draft(
+            input,
+            publisher,
+            vc_id,
+            encoding,
+            policies,
+            (staging.0, staging.2),
+        )?
+        else {
+            return Ok(None);
+        };
+        let path = PublishedArtifactPath::new(staging.1).map_err(|error| error.to_string())?;
+        if !path.as_str().ends_with(".mizir.json") {
+            return Err("native theorem artifact main requires a .mizir.json main path".to_owned());
+        }
+        match std::fs::symlink_metadata(staging.2.join(path.as_str())) {
+            Ok(_) => {
+                return Err("native theorem artifact main requires a fresh main path".to_owned());
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
+        }
+        let value = verified_artifact_json(&draft.artifact).map_err(|error| error.to_string())?;
+        let domain = artifact_hash_domain(
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            draft.artifact.schema_version,
+        );
+        let excluded = artifact_hash_excluded_paths();
+        let storage = publisher.storage();
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        let written = write_published_artifact(staging.2, &path, &value, &domain, &excluded)
+            .map_err(|error| error.to_string())?;
+        let read = read_published_artifact(
+            staging.2,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &excluded,
+                expected_artifact_hash: Some(written.artifact_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        let decoded = read_verified_artifact(
+            &read.value,
+            VerifiedArtifactReadOptions {
+                artifact_path: Some(path.as_str()),
+                expected_module: Some(&draft.artifact.module),
+                expected_interface_hash: Some(draft.artifact.interface_hash),
+                expected_implementation_hash: Some(draft.artifact.implementation_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if decoded != draft.artifact {
+            return Err("native theorem artifact main readback mismatch".to_owned());
+        }
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((draft, written)))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
