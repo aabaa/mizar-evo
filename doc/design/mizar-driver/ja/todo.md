@@ -621,6 +621,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 97. **[Native theorem candidate storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-STORAGE.md).** [x]
 
+98. **[Native theorem candidate publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CANDIDATE-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -3709,6 +3709,251 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(pair))
     }
 
+    /// Seals the actual untrusted candidate pair with coherent semantic and storage streams.
+    pub fn publish_native_theorem_candidate(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        policy: &mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+    ) -> Result<
+        Option<
+            mizar_ir::storage::PhaseOutputRef<(
+                mizar_atp::backend::EncodedBackendProblem,
+                mizar_atp::backend::BackendCandidateEvidence,
+            )>,
+        >,
+        String,
+    > {
+        let Some(pair) = self.native_theorem_candidate_with_core_vc_discharge_parents(
+            input,
+            publisher,
+            vc_id,
+            policy,
+            logic_profile.clone(),
+            concrete_format,
+        )?
+        else {
+            return Ok(None);
+        };
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem candidate publication requires one Core parent".to_owned())?
+        .as_output_ref();
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem candidate publication requires one VC parent".to_owned())?
+        .as_output_ref();
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                core_parent,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&typed).map_err(|error| error.to_string())?;
+        let typed_vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_parent, &OutputKind::new("SourceTheoremVC"))
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&typed_vcs).map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem candidate publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native theorem candidate publication requires one captured source".to_owned()
+        })?;
+        let (source, _) = self.native_source(version).ok_or_else(|| {
+            "native theorem candidate publication capture binding failed".to_owned()
+        })?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| {
+                "native theorem candidate publication requires a bound package".to_owned()
+            })?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(
+                "native theorem candidate publication requires a workspace package".to_owned(),
+            );
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some(core_semantic_bytes) =
+            native_theorem_core_semantic_payload(ast, &resolver_module, &core)?
+        else {
+            return Ok(None);
+        };
+        let generation_schema = &vcs
+            .vc(vc_id)
+            .ok_or_else(|| {
+                "native theorem candidate publication requires the selected VC".to_owned()
+            })?
+            .anchor
+            .generation_schema_version;
+        let Some(storage_bytes) = native_theorem_candidate_storage_bytes(
+            ast,
+            &resolver_module,
+            &core,
+            (
+                input.snapshot,
+                generation_schema,
+                vcs.schema_version(),
+                vc_id,
+            ),
+            (policy, &logic_profile, concrete_format),
+            &pair,
+        )?
+        else {
+            return Ok(None);
+        };
+        let Some(remaining) =
+            storage_bytes.strip_prefix(b"mizar-driver/native-theorem-candidate-storage/v1\0")
+        else {
+            return Ok(None);
+        };
+        let Some(core_length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        let Some(config) = remaining
+            .get(8..)
+            .and_then(|bytes| bytes.get(core_length..))
+        else {
+            return Ok(None);
+        };
+        let domain = b"mizar-driver/native-theorem-candidate-content/v1\0";
+        let fields = [core_semantic_bytes.as_slice(), config];
+        let mut size = domain.len();
+        for field in fields {
+            let Some(next) = u64::try_from(field.len())
+                .ok()
+                .and_then(|_| size.checked_add(8))
+                .and_then(|size| size.checked_add(field.len()))
+            else {
+                return Ok(None);
+            };
+            if next > 32 * 1024 * 1024 {
+                return Ok(None);
+            }
+            size = next;
+        }
+        let mut semantic_bytes = Vec::with_capacity(size);
+        semantic_bytes.extend_from_slice(domain);
+        for field in fields {
+            semantic_bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+            semantic_bytes.extend_from_slice(field);
+        }
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-driver/native-theorem-candidate-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("AtpSolve");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceTheoremCandidateInputs");
+        let source_id = version.source_id;
+        let snapshot = input.snapshot;
+        for parent in input.parent_outputs() {
+            storage
+                .validate_handle(parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .map_err(|error| error.to_string())?;
+        }
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: pair,
+                canonical_payload: Some(semantic_bytes),
+                storage_payload: Some(storage_bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    native_theorem_candidate_from_storage_bytes(
+                        bytes,
+                        source_id,
+                        &resolver_module,
+                        snapshot,
+                    )
+                    .map_err(BlobDecodeError::new)?
+                    .ok_or_else(|| BlobDecodeError::new("invalid native theorem candidate storage"))
+                }),
+                parents: input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref().clone())
+                    .collect(),
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "candidate-theorem-storage",
+                        version.normalized_path.as_str(),
+                        storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                },
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

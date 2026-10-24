@@ -652,6 +652,8 @@ the owning producers when the paired tasks land.
 
 97. **[Native theorem candidate storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-STORAGE.md).** [x]
 
+98. **[Native theorem candidate publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CANDIDATE-PUBLICATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
