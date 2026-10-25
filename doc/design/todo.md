@@ -873,7 +873,7 @@ listed dependencies are complete.
    blocked-reserved on the transferable accepted-status authority shared with
    checker Task 274 and VC 53.
 
-8. [ ] [ALGDEF-PARSER-FAIL](./task_contracts/en/ALGDEF-PARSER-FAIL.md) — ready bare-fail syntax; message forms remain spec-gap blocked.
+8. [~] [ALGDEF-PARSER-FAIL](./task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare syntax complete; message/report forms remain lexical-spec-gap blocked, reflected reports also await AST-PARSE.
 9. [ ] [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) — follows fail and authentic call/CFG/proof producers.
 
 Core 48 additionally owns the missing-`return`-or-`fail` diagnostic, and Core 46 the

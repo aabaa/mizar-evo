@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_algorithm_fail_bare_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithm_fail_bare"
+source = "pass_parser_algorithm_fail_bare_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = ["spec.en.20.algorithm_fail_bare.parser"]
+notes = "Bare fail in flat and nested if/while algorithm statement lists. The terminating algorithm is syntax-only coverage and claims no static acceptance."

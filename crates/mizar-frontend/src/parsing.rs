@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v7";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v8";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -793,7 +793,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v7"
+            "mizar-parser/surface-ast-v8"
         );
     }
 
@@ -845,7 +845,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v7"
+            "mizar-parser/surface-ast-v8"
         );
         assert_ne!(
             seam.cache_key_version().version.as_ref(),
@@ -1629,5 +1629,64 @@ mod tests {
             "mizar-session-build-snapshot-v1:{hex}"
         ))
         .unwrap()
+    }
+
+    #[test]
+    fn real_parser_seam_bare_fail_same_tokens_invalidate_v7_cache() {
+        let source_id = source_id(36);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "definition", 0, 10),
+                token(source_id, TokenKind::ReservedWord, "algorithm", 11, 20),
+                token(source_id, TokenKind::Identifier, "stop", 21, 25),
+                token(source_id, TokenKind::ReservedSymbol, "(", 25, 26),
+                token(source_id, TokenKind::ReservedSymbol, ")", 26, 27),
+                token(source_id, TokenKind::ReservedWord, "do", 28, 30),
+                token(source_id, TokenKind::ReservedWord, "fail", 31, 35),
+                token(source_id, TokenKind::ReservedSymbol, ";", 35, 36),
+                token(source_id, TokenKind::ReservedWord, "end", 37, 40),
+                token(source_id, TokenKind::ReservedSymbol, ";", 40, 41),
+                token(source_id, TokenKind::ReservedWord, "end", 42, 45),
+                token(source_id, TokenKind::ReservedSymbol, ";", 45, 46),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+        let token_hash = Hash::from_bytes([8; Hash::BYTE_LEN]);
+        let current = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            seam.cache_key_version(),
+            &inputs,
+        );
+        let retained = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            super::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v7"),
+            &inputs,
+        );
+        let output = seam.parse(ParseRequest::new(&tokens, inputs.clone()));
+        eprintln!(
+            "BARE_FAIL_SAME_TOKEN_BASELINE:version={:?};tokens={tokens:?};inputs={inputs:?};diagnostics={:?}",
+            seam.cache_key_version(),
+            output.diagnostics
+        );
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let ast = output.ast.expect("bare fail module AST");
+        assert!(
+            ast.nodes()
+                .iter()
+                .any(|node| format!("{:?}", node.kind) == "FailStatement")
+        );
+        assert_eq!(
+            current.parser_version.version.as_ref(),
+            "mizar-parser/surface-ast-v8"
+        );
+        assert_eq!(current.token_stream_hash, retained.token_stream_hash);
+        assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
+        assert_ne!(current.stable_hash(), retained.stable_hash());
     }
 }

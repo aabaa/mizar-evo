@@ -1,0 +1,14 @@
+definition
+  algorithm missing_semicolons()
+  do
+    if thesis do
+      fail
+    else
+      return;
+    end;
+    while thesis do
+      fail
+    end;
+    return;
+  end;
+end;

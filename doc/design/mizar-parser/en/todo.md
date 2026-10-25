@@ -8,7 +8,7 @@
 - [~] in progress
 - [x] done
 
-- [ ] [ALGDEF-PARSER-FAIL](../../task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare fail; message forms have a lexical spec_gap, reflected reports also wait for AST-PARSE.
+- [~] [ALGDEF-PARSER-FAIL](../../task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare syntax complete; message/report forms retain the lexical spec_gap and AST-PARSE deferral.
 
 ## Step 5 Frontend Gap Closure
 

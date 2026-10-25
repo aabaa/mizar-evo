@@ -1,0 +1,7 @@
+fail;
+definition
+  algorithm sentinel()
+  do
+    return;
+  end;
+end;

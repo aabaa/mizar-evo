@@ -26133,3 +26133,206 @@ fn algorithm_ordinary_occurrences_preserve_source_binding_targets() {
         );
     }
 }
+
+#[test]
+fn bare_algorithm_fail_source_projection_and_annotation_hosts() {
+    use mizar_syntax::{SurfaceTokenKind, SyntaxKind};
+    let text = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/parser/pass_parser_algorithm_fail_bare_001.miz"
+    ));
+    let annotated = text.replace("fail;", "@trace(\"stop\", 1)\n    fail;");
+    let kind = SyntaxKind::FailStatement;
+    assert_eq!(kind as u16, 194);
+    assert_eq!(SyntaxKind::from_raw(194), kind);
+    assert!(kind.is_node_kind() && !kind.is_token_kind());
+    for text in [text, annotated.as_str()] {
+        let output = super::formula_statement::step5c8_test_frontend(text);
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let ast = output.ast.unwrap();
+        let views = ast
+            .node_views()
+            .filter_map(|v| v.as_fail_statement())
+            .collect::<Vec<_>>();
+        assert_eq!(views.len(), 4);
+        for (view, (start, _)) in views.iter().zip(text.match_indices("fail;")) {
+            assert_eq!(view.range(), range(ast.source_id, start, start + 5));
+            assert_eq!(view.syntax_kind(), kind);
+            assert!(!view.is_recovered());
+            let children = view.children();
+            assert_eq!(children.len(), 2);
+            for (id, word) in children.iter().zip(["fail", ";"]) {
+                let token = ast.node_view(*id).unwrap().as_token().unwrap();
+                assert_eq!(token.text.as_ref(), word);
+                if word == "fail" {
+                    assert_eq!(token.kind, SurfaceTokenKind::ReservedWord);
+                }
+            }
+        }
+        let rowan = ast.rowan_root();
+        assert_eq!(rowan.descendants().filter(|n| n.kind() == kind).count(), 4);
+        assert_eq!(ast.snapshot_text().matches("FailStatement").count(), 4);
+        assert!(
+            ast.node_views()
+                .all(|v| v.as_fail_statement().is_some() == (v.syntax_kind() == kind))
+        );
+        if text == annotated {
+            let hosts = ast
+                .node_views()
+                .filter_map(|v| v.as_annotated_algorithm_statement())
+                .collect::<Vec<_>>();
+            assert_eq!(hosts.len(), 4);
+            for host in hosts {
+                let mut children = host.children().iter().filter_map(|id| ast.node_view(*id));
+                assert!(children.any(|v| v.as_fail_statement().is_some()));
+            }
+        }
+    }
+}
+
+#[test]
+fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
+    use mizar_syntax::SyntaxRecoveryKind;
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let cases = [
+        "pass_parser_algorithm_fail_bare_001",
+        "fail_parser_algorithm_fail_semicolon_001",
+        "fail_parser_algorithm_fail_placement_001",
+    ];
+    for (ordinal, id) in cases.iter().enumerate() {
+        let case = plan.cases.iter().find(|case| case.id.0 == *id).unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        if id.starts_with("fail_") {
+            let checked = super::formula_statement::step5c8_test_frontend(&text);
+            let syntax = checked
+                .diagnostics
+                .iter()
+                .filter(|d| matches!(d.code, DiagnosticCode::Syntax(_)))
+                .collect::<Vec<_>>();
+            let semicolon = id.contains("semicolon");
+            let expected = if semicolon {
+                vec!["missing_semicolon", "missing_semicolon"]
+            } else {
+                vec!["unexpected_top_level_token"]
+            };
+            let actual = syntax
+                .iter()
+                .map(|d| match &d.code {
+                    DiagnosticCode::Syntax(c) => c.to_string(),
+                    _ => unreachable!(),
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(actual, expected);
+            let ast = checked.ast.unwrap();
+            let boundaries = if semicolon {
+                vec![
+                    (text.find("else").unwrap(), 4),
+                    (text.find("end;\n    return").unwrap(), 3),
+                ]
+            } else {
+                vec![(0, 4)]
+            };
+            let note = if semicolon {
+                "insert `;` before continuing"
+            } else {
+                "skip tokens until the next top-level item boundary"
+            };
+            for (d, (start, width)) in syntax.iter().zip(boundaries) {
+                let expected_range = range(ast.source_id, start, start + width);
+                assert_eq!(d.location, DiagnosticLocation::SourceRange(expected_range));
+                assert!(d.secondary.is_empty());
+                assert_eq!(d.recovery_note.as_deref(), Some(note));
+            }
+            let returns = ast
+                .node_views()
+                .filter_map(|v| v.as_return_statement())
+                .collect::<Vec<_>>();
+            assert_eq!(returns.len(), if semicolon { 2 } else { 1 });
+            for (view, (start, _)) in returns.iter().zip(text.match_indices("return;")) {
+                assert_eq!(view.range(), range(ast.source_id, start, start + 7));
+            }
+            assert_eq!(
+                ast.node_views()
+                    .filter_map(|v| v.as_algorithm_definition())
+                    .count(),
+                1
+            );
+            let failures = ast
+                .node_views()
+                .filter_map(|v| v.as_fail_statement())
+                .count();
+            assert_eq!(failures, if semicolon { 2 } else { 0 });
+            if !semicolon {
+                let skipped = ast.trivia().skipped_token_ranges();
+                assert_eq!(skipped.len(), 1);
+                assert_eq!(skipped[0].range, range(ast.source_id, 0, 5));
+                let recovery = ast
+                    .node_views()
+                    .find(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken))
+                    .unwrap();
+                assert_eq!(recovery.range(), skipped[0].range);
+            }
+        }
+        let output = task257c4c1_frontend_output(&text, 80 + ordinal);
+        let replay = task257c4c1_frontend_output(&text, 80 + ordinal);
+        assert_eq!(output.cache_keys, replay.cache_keys);
+        assert_eq!(output.ast, replay.ast);
+        assert_eq!(output.diagnostics, replay.diagnostics);
+        let source = &output.source;
+        let input = mizar_session::SourceInput {
+            package_id: source.package_id.clone(),
+            module_path: source.module_path.clone(),
+            normalized_path: source.normalized_path.clone(),
+            edition: source.edition.clone(),
+            origin: mizar_session::SourceOriginInput::Disk {
+                path: source.file_path.clone(),
+            },
+        };
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = super::shared::snapshot_id(25_780 + ordinal);
+        let mut fresh_id = ids.next_source_id(snapshot).unwrap();
+        if fresh_id == source.source_id {
+            fresh_id = ids.next_source_id(snapshot).unwrap();
+        }
+        assert_ne!(fresh_id, source.source_id);
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let same =
+            FrontendOutput::from_canonical_disk_bytes(&bytes, source.source_id, &input).unwrap();
+        assert_eq!(same, output);
+        let rebound = FrontendOutput::from_canonical_disk_bytes(&bytes, fresh_id, &input).unwrap();
+        assert!(rebound.source.matches_canonical_storage(source, &input));
+        assert_eq!(rebound.canonical_disk_bytes().unwrap(), bytes);
+        assert_eq!(rebound.cache_keys, output.cache_keys);
+        assert_eq!(rebound.tokens.source_id, fresh_id);
+        assert!(
+            rebound
+                .tokens
+                .tokens
+                .iter()
+                .all(|t| t.span.source_id == fresh_id)
+        );
+        let ast = output.ast.as_ref().unwrap();
+        let restored = rebound.ast.as_ref().unwrap();
+        assert_eq!(restored.canonical_bytes(), ast.canonical_bytes());
+        assert_eq!(restored.green_node(), ast.green_node());
+        for (before, after) in ast.nodes().iter().zip(restored.nodes()) {
+            assert_eq!(
+                after.range,
+                range(fresh_id, before.range.start, before.range.end)
+            );
+        }
+        for (before, after) in output.diagnostics.iter().zip(&rebound.diagnostics) {
+            let DiagnosticLocation::SourceRange(original) = before.location else {
+                panic!("source range")
+            };
+            let expected = range(fresh_id, original.start, original.end);
+            assert_eq!(after.location, DiagnosticLocation::SourceRange(expected));
+        }
+        let key = output.cache_keys.ast.as_ref().unwrap();
+        assert_eq!(
+            key.parser_version.version.as_ref(),
+            "mizar-parser/surface-ast-v8"
+        );
+    }
+}

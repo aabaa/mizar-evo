@@ -8,7 +8,7 @@
 - [~] 進行中
 - [x] 完了
 
-- [ ] アルゴリズムの `fail_stmt` 構文解析と active corpus カバレッジ。[予約語のギャップ](source_spec_audit.md#予約語カバレッジ)を参照。
+- [~] [ALGDEF-PARSER-FAIL](../../task_contracts/ja/ALGDEF-PARSER-FAIL.md) — bare構文は実装済み。message/reportのlexical spec_gapとAST-PARSE待ちは保持する。
 
 ## Step 5 Frontend Gap Closure
 
@@ -1130,7 +1130,5 @@ cargo test -p mizar-test
     `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を observe した。これは historical
     evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
     implementation task は closed。
-
-- [ ] [ALGDEF-PARSER-FAIL](../../task_contracts/ja/ALGDEF-PARSER-FAIL.md)。
 
 - [ ] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md).

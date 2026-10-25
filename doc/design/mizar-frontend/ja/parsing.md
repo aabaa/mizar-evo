@@ -260,3 +260,6 @@ token と parser input でも、obligation の直後に合法的に `;` が続�
 justification node や recovery node を作らずに AST を生成できる。frontend seam と token
 adaptation API は不変であり、frontend は parser result をそのまま渡し、旧 AST cache
 namespace を無効化する。
+
+## Bare algorithm failure cache namespace
+公開ParseRequestはv7が拒否したものと同じReservedWord fail token stream/parser inputsを渡せるため、MizarParserSeamのAST key namespaceをmizar-parser/surface-ast-v8へ進める。token namespace、key shape、storage schemaは変えない。既存coordinatorのtoken keyは予約語全体のfingerprintを含むので、語彙変更でも実Frontend AST keyは失効する。

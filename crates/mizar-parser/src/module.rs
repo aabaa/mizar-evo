@@ -5757,6 +5757,14 @@ impl Parser {
         if self.is_reserved_word_at(position, "continue") {
             return Some(self.parse_continue_statement_at(position, boundary));
         }
+        if self.is_reserved_word_at(position, "fail") {
+            return Some(self.parse_algorithm_keyword_semicolon_statement_at(
+                position,
+                SurfaceNodeKind::FailStatement,
+                boundary,
+                "unexpected token in fail statement",
+            ));
+        }
         if self.is_reserved_word_at(position, "assert") {
             return Some(self.parse_assert_statement_at(position, boundary));
         }
@@ -14868,6 +14876,7 @@ impl Parser {
             || self.is_reserved_word_at(position, "match")
             || self.is_reserved_word_at(position, "break")
             || self.is_reserved_word_at(position, "continue")
+            || self.is_reserved_word_at(position, "fail")
             || self.is_reserved_word_at(position, "assert")
             || self.is_reserved_word_at(position, "var")
             || self.is_reserved_word_at(position, "const")

@@ -383,3 +383,6 @@ produce an AST without fabricated justification or recovery nodes when an
 obligation is legally followed immediately by `;`. The frontend seam and token
 adaptation APIs remain unchanged; the frontend only forwards the parser result
 and invalidates the previous AST-cache namespace.
+
+## Bare algorithm failure cache namespace
+The concrete MizarParserSeam uses mizar-parser/surface-ast-v8: the public ParseRequest may supply the same ReservedWord fail stream and parser inputs that v7 rejected, so the AST key namespace changes independently of the lexer. Keep the token namespace, key shapes and storage schema unchanged; actual coordinator token keys already include the full reserved vocabulary fingerprint, which also invalidates genuine frontend AST keys.

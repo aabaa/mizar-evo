@@ -1880,3 +1880,6 @@ external callability, private `SurfaceNodeId::new`, and private tuple
 construction. Syntax library/lint/rustdoc are `59/8/3`; focused downstream,
 formatting, workspace Clippy with warnings denied, and full workspace tests
 pass. No consumer, language behavior, or forbidden artifact changed.
+
+## Bare algorithm failure
+Append `SyntaxKind::FailStatement = 194`, `SurfaceNodeKind::FailStatement` and `SurfaceNodeView::as_fail_statement`; prior raw kinds and surface variants retain their values/order. A valid node preserves the authored fail and semicolon tokens; existing raw/node classification, rowan projection, FailStatement snapshot spelling and source-free storage/rebind carry the same source ranges and recovery. No payload/message field, parallel statement type or semantic failure authority is added.

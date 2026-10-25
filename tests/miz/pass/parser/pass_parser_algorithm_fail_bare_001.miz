@@ -1,0 +1,18 @@
+definition
+  algorithm stop()
+  do
+    fail;
+    if thesis do
+      while thesis do
+        fail;
+      end;
+    else
+      fail;
+    end;
+    return;
+  end;
+  terminating algorithm syntactic_only()
+  do
+    fail;
+  end;
+end;

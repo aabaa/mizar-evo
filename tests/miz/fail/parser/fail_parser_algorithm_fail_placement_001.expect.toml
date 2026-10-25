@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_algorithm_fail_placement_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.algorithm_fail_bare"
+source = "fail_parser_algorithm_fail_placement_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "unexpected_top_level_token"
+stable_detail_key = "parser.algorithm_fail_bare.placement"
+diagnostic_codes = ["unexpected_top_level_token"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.algorithm_fail_bare.parser"]
+notes = "Root fail is rejected as a top-level token; the valid definition/algorithm sentinel forces module parsing and remains available after recovery."

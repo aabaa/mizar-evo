@@ -229,6 +229,7 @@ pub enum SyntaxKind {
     AnnotatedRegistrationContent = 191,
     PropertyImplementation = 192,
     OperatorDeclaration = 193,
+    FailStatement = 194,
     TokenAnnotationMarker = 99,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
@@ -427,6 +428,7 @@ impl SyntaxKind {
             191 => Self::AnnotatedRegistrationContent,
             192 => Self::PropertyImplementation,
             193 => Self::OperatorDeclaration,
+            194 => Self::FailStatement,
             99 => Self::TokenAnnotationMarker,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
@@ -606,6 +608,7 @@ impl SyntaxKind {
                 | Self::MatchEnding
                 | Self::BreakStatement
                 | Self::ContinueStatement
+                | Self::FailStatement
                 | Self::AlgorithmTerminationClause
                 | Self::AlgorithmRequiresClause
                 | Self::AlgorithmEnsuresClause
@@ -2127,6 +2130,13 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_fail_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FailStatement => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_algorithm_termination_clause(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::AlgorithmTerminationClause => Some(self),
@@ -3325,6 +3335,7 @@ pub enum SurfaceNodeKind {
     QualifiedSymbol,
     PathSegment,
     RelativePrefix,
+    FailStatement,
 }
 
 impl SurfaceNodeKind {
@@ -3391,6 +3402,7 @@ impl SurfaceNodeKind {
             Self::MatchEnding => SyntaxKind::MatchEnding,
             Self::BreakStatement => SyntaxKind::BreakStatement,
             Self::ContinueStatement => SyntaxKind::ContinueStatement,
+            Self::FailStatement => SyntaxKind::FailStatement,
             Self::AlgorithmTerminationClause => SyntaxKind::AlgorithmTerminationClause,
             Self::AlgorithmRequiresClause => SyntaxKind::AlgorithmRequiresClause,
             Self::AlgorithmEnsuresClause => SyntaxKind::AlgorithmEnsuresClause,

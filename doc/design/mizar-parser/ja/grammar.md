@@ -2219,3 +2219,7 @@ lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと 
 
 計画中の一般 mode/structure bracket slice は、現在の identifier/qua fallback に加えて完全な term-expression value actual を扱う (§3.3/Appendix A.3)。引数順、曖昧な syntax、delimiter recovery を保持する。of/over term parsing は既存で、generic-template の bounded qua grammar は別責務のまま。意味上の role/applicability は Resolver/Checker が所有する。
 [module/tests.rs](../../../../crates/mizar-parser/src/module/tests.rs) の regression control: parser_preserves_parameter_prefix_and_bracket_qua_arguments、parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only、parser_recovers_missing_type_argument_bracket_close、parser_parses_task31_template_arguments_on_references_and_functors。現在の primary/operator/of/over parsing を保持する。
+
+## Bare algorithm failure
+Spec20.2.6/AppendixA.A20の`fail;`を既存algorithm statement list、nested branch/loop、annotation hostで構文解析する。既存keyword/semicolon parserへ直接dispatchし、statement-start判定にfailを含める。既存のsemicolon境界recoveryとtop-level拒否を保持し、terminating/ghost/type検査、message/report解析、新診断やrecovery方式は追加しない。
+Lexerはfailを予約する。message形式はlexical authority決定待ち。新規parse-onlyのpass/semicolon欠落/algorithm外source、正常な後続node、型付きview・source/cache replayを検査し、既存oracleは保持する。
