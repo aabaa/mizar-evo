@@ -684,6 +684,8 @@ the owning producers when the paired tasks land.
 
 113. **[Source module manifest transaction](../../task_contracts/en/DRIVER-NATIVE-THEOREM-ARTIFACT-MANIFEST.md).** [x]
 
+114. **[Native algorithm summary candidate](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

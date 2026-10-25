@@ -653,6 +653,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 113. **[Source module manifest transaction](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-ARTIFACT-MANIFEST.md).** [x]
 
+114. **[Native algorithm summary candidate](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

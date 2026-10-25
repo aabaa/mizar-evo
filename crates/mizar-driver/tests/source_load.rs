@@ -64194,3 +64194,339 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
         );
     }
 }
+
+#[test]
+fn native_algorithm_module_summary_candidate_preserves_captured_projection_and_refusals() {
+    use mizar_build::{module_index::ModuleId as BuildModuleId, planner::PackagePlanSource};
+    use mizar_frontend::{
+        orchestration::Frontend,
+        source::{FrontendSourceLoader, diagnostic_file_path, source_unit_from_loaded},
+    };
+    let fixture_text = include_str!(
+        "../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut original = None;
+    let cases = [
+        fixture_text.to_owned(),
+        fixture_text.replace("x := c;", "x := a;"),
+        format!(":: λ relocation\n{fixture_text}"),
+        fixture_text.replace("terminating algorithm", "private terminating algorithm"),
+        String::new(),
+        fixture_text.replace("terminating ", ""),
+        fixture_text.replace("terminating algorithm", "public terminating algorithm"),
+        fixture_text.replace("-> object", "-> set"),
+        include_str!(
+            "../../../tests/miz/fail/parser/fail_parser_algorithm_verification_recovery_001.miz"
+        )
+        .to_owned(),
+        format!("import std.core;\n{fixture_text}"),
+        format!(
+            "{fixture_text}\ndefinition\n let X, Y be set;\n private pred Hidden: X secret Y means X = Y;\nend;\n"
+        ),
+    ];
+    for (case, text) in cases.into_iter().enumerate() {
+        for open in [false, true] {
+            let fixture = Fixture::new(text.as_bytes());
+            let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let descriptor = SourceInput {
+                package_id: PackageId::new("alpha"),
+                module_path: ModulePath::new("main"),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: Edition::new("2025"),
+                origin: if open {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!(
+                            "file://{}",
+                            fixture.root.join("alpha/src/main.miz").display()
+                        ),
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: std::sync::Arc::from(text.as_str()),
+                    }
+                } else {
+                    SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    }
+                },
+            };
+            if open {
+                fixture.write(&[0xff]);
+            }
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        descriptor.clone(),
+                    )],
+                )
+                .unwrap();
+            let mut registry = PhaseRegistryBuilder::new();
+            registry.register_source_load();
+            let submission = CompilerDriver::new(registry.build().unwrap())
+                .submit_captured(session, &ids, &snapshots, submit)
+                .unwrap();
+            let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+            let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let (_, loaded, captured_input) =
+                &inputs.captured.unwrap().native_sources().unwrap()[0];
+            let output = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+                inputs.dependency_lexical_provider(&[]),
+                MizarParserSeam,
+            )
+            .run_loaded(source_unit_from_loaded(
+                loaded.clone(),
+                diagnostic_file_path(captured_input),
+            ))
+            .unwrap();
+            assert_eq!(output.cache_keys.ast.is_some(), output.ast.is_some());
+            assert_eq!(output.source.source_id, loaded.source_id);
+            let ast = output.ast.as_ref().unwrap();
+            let resolver_module =
+                ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
+            let collection =
+                SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main"))
+                    .collect(&resolver_module);
+            let identity = ModuleSummaryIdentity {
+                package_id: "alpha".into(),
+                package_version: Some("0.1.0".into()),
+                lockfile_identity: None,
+                module_path: "main".into(),
+                language_edition: "2025".into(),
+            };
+            assert_eq!(inputs.build_plan.packages[0].package_id, module.package);
+            assert_eq!(inputs.build_plan.packages[0].version.to_string(), "0.1.0");
+            assert!(matches!(
+                inputs.build_plan.packages[0].source,
+                PackagePlanSource::Workspace { .. }
+            ));
+            let version = &inputs.snapshot.source_versions[0];
+            assert_eq!(version.edition.as_str(), identity.language_edition);
+            assert_eq!(loaded.source_id, version.source_id);
+            assert_eq!(loaded.source_hash, version.source_hash);
+            assert_eq!(
+                loaded.source_hash,
+                mizar_session::hash_text(&output.source.source_text)
+            );
+            assert_eq!(output.source.source_text.as_ref(), text);
+            assert_eq!(loaded.origin, version.origin);
+            assert_eq!(
+                matches!(loaded.origin, SourceOrigin::OpenBuffer { .. }),
+                open
+            );
+            let expected = collection.source_algorithm_module_summary_candidate(&output, &identity);
+            if case <= 6 {
+                assert!(output.diagnostics.is_empty() && output.cache_keys.ast.is_some());
+                let summary = expected.as_ref().unwrap().as_ref().unwrap();
+                assert_eq!(summary.module, identity);
+                assert_eq!(summary.source_hash, loaded.source_hash);
+                assert_eq!(
+                    summary.exported_symbols.len(),
+                    usize::from(!matches!(case, 3 | 4))
+                );
+                assert!(
+                    summary
+                        .exported_symbols
+                        .iter()
+                        .all(|row| row.proof_status.is_none())
+                );
+                assert!(summary.exported_labels.is_empty());
+                assert!(summary.lexical_summary.contributions.is_empty());
+                assert!(summary.reexports.is_empty() && summary.dependency_interfaces.is_empty());
+            } else {
+                assert_eq!(expected, Ok(None));
+                if matches!(case, 8 | 9) {
+                    assert!(!output.diagnostics.is_empty());
+                } else {
+                    assert!(output.diagnostics.is_empty() && output.cache_keys.ast.is_some());
+                }
+                if case == 10 {
+                    assert!(!output.tokens.local_declarations().user_symbols.is_empty());
+                    assert_eq!(
+                        collection.export_frontend_lexical_contributions(&output, &identity),
+                        Some(vec![])
+                    );
+                }
+            }
+            // The old theorem method calibrates shared native binding, not algorithm eligibility.
+            if case == 0 {
+                assert_eq!(
+                    inputs.native_theorem_module_summary_candidate(&module),
+                    Ok(None)
+                );
+            }
+            let before = (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                captured_input.clone(),
+                output.clone(),
+                collection.clone(),
+                identity.clone(),
+            );
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                }
+                if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                let replayed = Frontend::new(
+                    FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+                    inputs.dependency_lexical_provider(&[]),
+                    MizarParserSeam,
+                )
+                .run_loaded(source_unit_from_loaded(
+                    loaded.clone(),
+                    diagnostic_file_path(captured_input),
+                ))
+                .unwrap();
+                for _ in 0..2 {
+                    assert_eq!(
+                        inputs.native_algorithm_module_summary_candidate(&module),
+                        expected,
+                        "case={case}, open={open}, stage={stage}"
+                    );
+                }
+                assert_eq!(replayed, output);
+            }
+            if case == 0 && !open {
+                for requested in [
+                    BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("missing")),
+                    BuildModuleId::new(PackageId::new("foreign"), ModulePath::new("main")),
+                ] {
+                    assert_eq!(
+                        inputs
+                            .native_algorithm_module_summary_candidate(&requested)
+                            .unwrap_err(),
+                        "native algorithm summary requires one captured source version"
+                    );
+                    assert_eq!(
+                        inputs
+                            .native_theorem_module_summary_candidate(&requested)
+                            .unwrap_err(),
+                        "native theorem summary requires one captured source version"
+                    );
+                }
+                let mut absent = inputs.snapshot.clone();
+                absent.source_versions.clear();
+                let mut ambiguous = inputs.snapshot.clone();
+                ambiguous
+                    .source_versions
+                    .push(ambiguous.source_versions[0].clone());
+                for snapshot in [&absent, &ambiguous] {
+                    assert_eq!(
+                        SourceLoadInputs {
+                            snapshot,
+                            captured: None,
+                            ..inputs
+                        }
+                        .native_algorithm_module_summary_candidate(&module)
+                        .unwrap_err(),
+                        "native algorithm summary requires one captured source version"
+                    );
+                    assert_eq!(
+                        SourceLoadInputs {
+                            snapshot,
+                            captured: None,
+                            ..inputs
+                        }
+                        .native_theorem_module_summary_candidate(&module)
+                        .unwrap_err(),
+                        "native theorem summary requires one captured source version"
+                    );
+                }
+                let mut ambiguous_plan = inputs.build_plan.clone();
+                ambiguous_plan
+                    .packages
+                    .push(ambiguous_plan.packages[0].clone());
+                let mut wrong_edition = inputs.build_plan.clone();
+                wrong_edition.packages[0].edition = Edition::new("1900");
+                let mut foreign_index = inputs.module_index.clone();
+                foreign_index.modules[0].module.package = PackageId::new("foreign");
+                for invalid in [
+                    SourceLoadInputs {
+                        captured: None,
+                        ..inputs
+                    },
+                    SourceLoadInputs {
+                        build_plan: &ambiguous_plan,
+                        ..inputs
+                    },
+                    SourceLoadInputs {
+                        build_plan: &wrong_edition,
+                        ..inputs
+                    },
+                    SourceLoadInputs {
+                        module_index: &foreign_index,
+                        ..inputs
+                    },
+                ] {
+                    assert_eq!(
+                        invalid
+                            .native_algorithm_module_summary_candidate(&module)
+                            .unwrap_err(),
+                        "native algorithm summary capture binding failed"
+                    );
+                    assert_eq!(
+                        invalid
+                            .native_theorem_module_summary_candidate(&module)
+                            .unwrap_err(),
+                        "native theorem summary capture binding failed"
+                    );
+                }
+            }
+            if case == 0 && open {
+                let (_, foreign_submission) = original.as_ref().unwrap();
+                let (foreign, _) = native_disk_lookup_context(foreign_submission, &ids);
+                for invalid in [
+                    SourceLoadInputs {
+                        captured: foreign.captured,
+                        ..inputs
+                    },
+                    SourceLoadInputs {
+                        captured: inputs.captured,
+                        ..foreign
+                    },
+                ] {
+                    assert_eq!(
+                        invalid
+                            .native_algorithm_module_summary_candidate(&module)
+                            .unwrap_err(),
+                        "native algorithm summary capture binding failed"
+                    );
+                    assert_eq!(
+                        invalid
+                            .native_theorem_module_summary_candidate(&module)
+                            .unwrap_err(),
+                        "native theorem summary capture binding failed"
+                    );
+                }
+            }
+            assert_eq!(
+                (
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inputs.module_index.clone(),
+                    loaded.clone(),
+                    captured_input.clone(),
+                    output,
+                    collection,
+                    identity,
+                ),
+                before
+            );
+            assert_eq!(captured_input, &descriptor);
+            if case == 0 && !open {
+                original = Some((fixture, submission));
+            }
+        }
+    }
+}

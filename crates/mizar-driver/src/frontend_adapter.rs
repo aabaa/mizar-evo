@@ -1002,6 +1002,65 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)
     }
 
+    /// Returns an unpublished source algorithm summary from protected native capture.
+    pub fn native_algorithm_module_summary_candidate(
+        self,
+        module: &mizar_build::module_index::ModuleId,
+    ) -> Result<Option<mizar_artifact::module_summary::ModuleSummary>, String> {
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native algorithm summary requires one captured source version".to_owned()
+        })?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native algorithm summary capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native algorithm summary requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native algorithm summary requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let shells =
+            mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
+                .collect();
+        let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            mizar_resolve::env::NamespacePath::new(module.path.as_str()),
+        )
+        .collect(&resolver_module);
+        let identity = mizar_artifact::module_summary::ModuleSummaryIdentity {
+            package_id: module.package.as_str().to_owned(),
+            package_version: Some(package.version.to_string()),
+            lockfile_identity: None,
+            module_path: module.path.as_str().to_owned(),
+            language_edition: version.edition.as_str().to_owned(),
+        };
+        collection.source_algorithm_module_summary_candidate(&output, &identity)
+    }
+
     /// Returns an unpublished source theorem summary from protected native capture.
     pub fn native_theorem_module_summary_candidate(
         self,
