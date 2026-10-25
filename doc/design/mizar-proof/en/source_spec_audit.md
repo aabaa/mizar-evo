@@ -60,6 +60,7 @@ matching crate or module-level boundary comment:
 
 ### Status
 `source_algorithm_state_transitivity_witness_draft`: [sole API owner](./status.md#source-algorithm-state-transitivity-witness-draft).
+`try_source_algorithm_state_transitivity_witness_draft`: [sole API owner](./status.md#optional-bounded-source-algorithm-state-witness-draft).
 `project_source_algorithm_state_transitivity_status`: [sole API owner](./status.md#source-algorithm-state-transitivity-status).
 `try_project_source_algorithm_state_transitivity_status`: [sole API owner](./status.md#optional-bounded-source-algorithm-state-status).
 `check_source_algorithm_state_transitivity`: [sole API owner](./status.md#source-algorithm-state-transitivity).

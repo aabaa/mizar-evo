@@ -34294,4 +34294,389 @@ mod term_proof_tests {
             });
         }
     }
+
+    #[test]
+    fn source_algorithm_state_transitivity_search_draft_matches_checked_wire() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_artifact::{
+            registration_summary::{ArtifactHashClass as Class, ArtifactHashRef as Ref},
+            store::{
+                CanonicalJson as J, SchemaVersion as V, artifact_hash_domain, canonical_json_bytes,
+            },
+        };
+        use mizar_atp::backend::{
+            encode_local_variable_transitivity_names as names,
+            select_local_variable_transitivity_names as select,
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            clause::VariableId,
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence as parse},
+        };
+        use mizar_proof::status::try_source_algorithm_state_transitivity_witness_draft as optional;
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+            selection::CandidateSourceId,
+            status::{
+                ArtifactPublicationGap, check_source_algorithm_state_transitivity as normal,
+                source_algorithm_state_obligation_identity as identify,
+                source_algorithm_state_transitivity_witness_draft as explicit,
+            },
+            witness_store::{ProofWitnessPayloadSchema, ProofWitnessProvenance, stage},
+        };
+        use mizar_vc::{
+            dependency_slice::DependencySliceCompleteness,
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy::Reject as LocalReject,
+                build_source_algorithm_state_kernel_handoff as build,
+            },
+            vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+        };
+        let root = config().workspace_root.join("tests/miz/pass/algorithms");
+        let original = fs::read_to_string(
+            root.join("pass_proof_verification_algorithm_var_const_assert_001.miz"),
+        )
+        .unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let independent = flat.replace("    x := c;", "    const d := a;\n    x := c;");
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for text in [flat, renamed, independent] {
+            with_inputs(&text, &p, |s, c, e, b| {
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                let vcs = generate(&core, b.id, &generation, &schema).unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("native singleton discovery")
+                };
+                assert_eq!(vc.status, VcStatus::Open);
+                assert!(
+                    vcs.seed_accounting().iter().any(|seed| seed.seed_status
+                        == mizar_core::core_ir::ObligationSeedStatus::Deferred)
+                );
+                let (identity, slice) = identify(s, c, e, b.id, vc.id).unwrap();
+                assert_eq!(
+                    slice.completeness(),
+                    DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(slice.requires_cache_miss());
+                let handoff = build(&core, &vcs, vc.id, &generation).unwrap();
+                let envelope = handoff.canonical_evidence();
+                let target = envelope.target_vc();
+                let profile = envelope.kernel_profile();
+                assert!(matches!(profile.clause_tautology_policy, LocalReject));
+                let mut context = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+                );
+                let parsed =
+                    parse(&handoff.encode_local_evidence(None).unwrap(), &context).unwrap();
+                let names = names(&parsed, VariableId(2)).unwrap();
+                assert_eq!(select(&parsed, Some(3)), Some(names.clone()));
+                assert_eq!(select(&parsed, Some(u64::MAX)), Some(names.clone()));
+                let wire = handoff.encode_local_evidence(Some(&names)).unwrap();
+                context.accepted_schema_versions.insert(2);
+                let parsed = parse(&wire, &context).unwrap();
+                let checked = normal(s, c.typed(), e, b.id, vc.id, VariableId(2), &p).unwrap();
+                let input = KernelPolicyInput::from_kernel_result(
+                    &checked.0,
+                    KernelEvidenceOrigin::BuiltinDischarge,
+                );
+                let accepted = input.accepted_evidence_hash().unwrap();
+                let path = "proof-witnesses/state-search.json";
+                let product = explicit(s, c, e, b, VariableId(2), &p, path).unwrap();
+                assert_eq!(product.1, slice);
+                let draft = &product.2;
+                assert_eq!(draft.payload_bytes(), wire);
+                let original_hash = Ref::new(
+                    Class::Interface,
+                    "mizar-proof/source-algorithm-state-original-obligation",
+                    V::new(1, 0),
+                    identity.obligation_fingerprint(),
+                );
+                let h = handoff.local_evidence_component_hashes().unwrap();
+                let m = draft.kernel_acceptance();
+                let policy_hash = p.policy_fingerprint().hash();
+                let version = V::new(parsed.schema_version(), 0);
+                assert_eq!(
+                    [
+                        m.kernel_profile_fingerprint.digest,
+                        m.formula_evidence_hash.digest,
+                        m.substitution_evidence_hash.digest,
+                        m.provenance_hash.digest
+                    ],
+                    h
+                );
+                assert_eq!(m.target_binding_hash.digest, handoff.canonical_hash());
+                assert_eq!(m.accepted_result_hash.digest, accepted);
+                assert_eq!(m.verifier_policy_fingerprint.digest, policy_hash);
+                assert_eq!(m.evidence_schema_version, version);
+                assert!(m.formula_context_hash.is_none());
+                let hex = |bytes: &[u8]| {
+                    bytes
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                };
+                let candidate = CandidateSourceId::new(format!(
+                    "source-algorithm-state-transitivity-v1:{}",
+                    hex(&checked.0.target_vc_fingerprint().sort_bytes())
+                ))
+                .unwrap();
+                let provenance = ProofWitnessProvenance::new(
+                    b.id.fingerprint(),
+                    "mizar-proof/source-algorithm-state-transitivity-witness-draft/v1",
+                    candidate,
+                    KernelEvidenceOrigin::BuiltinDischarge,
+                    identity.vc_fingerprint(),
+                    identity.dependency_slice_fingerprint(),
+                    b.dependency_artifact_fingerprint(),
+                    policy_hash,
+                    V::new(p.checker_schema_version(), 0),
+                    version,
+                )
+                .unwrap()
+                .with_accepted_result_hash(accepted);
+                assert_eq!(draft.provenance(), &provenance);
+                let ps = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+                    "mizar-proof/source-algorithm-state-transitivity-checked-wire",
+                    version,
+                    true,
+                )
+                .unwrap();
+                assert_eq!(draft.payload_schema(), &ps);
+                let value = J::object(
+                    [
+                        ("hash_domain", "mizar-proof/witness-payload/v1".to_owned()),
+                        (
+                            "obligation_fingerprint",
+                            original_hash.to_artifact_hash_string(),
+                        ),
+                        ("payload_bytes_hex", hex(&wire)),
+                        ("payload_schema_family", ps.family().to_owned()),
+                        ("payload_schema_version", ps.version().to_string()),
+                        ("selected_evidence_hash", hex(accepted.as_bytes())),
+                        ("verifier_policy_fingerprint", hex(policy_hash.as_bytes())),
+                    ]
+                    .map(|(key, value)| (key, J::string(value))),
+                )
+                .unwrap();
+                assert_eq!(canonical_json_bytes(&value).last(), Some(&b'\n'));
+                assert_eq!(draft.payload_hash_value(), value);
+                let hash = artifact_hash_domain(ps.family(), ps.version()).hash(&value, &[]);
+                let staged = stage(draft.clone()).unwrap();
+                assert_eq!(staged.staged_payload_hash().digest, hash);
+                assert!(staged.artifact_reference_candidate().is_none());
+                for bound in [None, Some(0), Some(1), Some(2), Some(3), Some(u64::MAX)] {
+                    let bounded = p
+                        .clone()
+                        .with_instance_search_limits(bound.map(|bound| [0, 0, bound, 0]));
+                    let expected = if bound.unwrap_or(0) >= 3 {
+                        Some(explicit(s, c, e, b, VariableId(2), &bounded, path).unwrap())
+                    } else {
+                        None
+                    };
+                    let before_result = expected.clone();
+                    let actual = optional(s, c, e, b, &bounded, path).unwrap();
+                    assert_eq!(actual, expected);
+                    assert_eq!(optional(s, c, e, b, &bounded, path).unwrap(), actual);
+                    assert_eq!(expected, before_result);
+                }
+                assert_eq!(
+                    product.0.artifact_publication().gap(),
+                    Some(ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported)
+                );
+                assert!(!product.0.reuse_metadata().cache_reuse_predicate_complete());
+                let reuse = product.0.reuse_metadata();
+                assert!(reuse.selected_proof_witness_hash().is_none());
+                assert_eq!(
+                    explicit(s, c, e, b, VariableId(2), &p, path).unwrap(),
+                    product
+                );
+                assert_eq!(identify(s, c, e, b.id, vc.id).unwrap(), (identity, slice));
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_transitivity_search_draft_preserves_errors_and_absence() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use super::super::tests::source_registration_owner_inputs as owners;
+        use mizar_atp::backend::select_local_variable_transitivity_names as select;
+        use mizar_checker::type_checker::check_source_algorithm_types as check_source;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            clause::VariableId,
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence as parse},
+        };
+        use mizar_proof::status::try_source_algorithm_state_transitivity_witness_draft as optional;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                source_algorithm_state_obligation_identity as identify,
+                source_algorithm_state_transitivity_witness_draft as explicit,
+                try_check_source_algorithm_state_transitivity as normal,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy::Reject as LocalReject,
+                build_source_algorithm_state_kernel_handoff as build,
+            },
+            vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+        };
+        let root = config().workspace_root.join("tests/miz/pass/algorithms");
+        let original = fs::read_to_string(
+            root.join("pass_proof_verification_algorithm_var_const_assert_001.miz"),
+        )
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let return_source = fs::read_to_string(
+            root.join("pass_proof_verification_algorithm_ensures_return_001.miz"),
+        )
+        .unwrap();
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        let disabled = p.clone().with_kernel_evidence_formats([]);
+        let foreign = with_inputs(
+            &flat.replace("swapalgo", "foreign_algorithm"),
+            &p,
+            |_, _, e, _| e.clone(),
+        );
+        let (_, _, augmented) = owners(
+            &format!("{flat}\n{flat}"),
+            "mizar-test-corpus",
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+            0,
+        );
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let zero = flat.replace("    ensures result = a\n", "");
+        let assertion = original.replace("    ensures result = a\n", "");
+        for (kind, text, count) in [
+            ("zero", zero, Some(0)),
+            ("multi", original, Some(2)),
+            ("assertion", assertion, Some(1)),
+            ("two", two_returns, None),
+            ("foreign", flat.clone(), Some(1)),
+            ("augmented", flat.clone(), Some(1)),
+        ] {
+            with_inputs(&text, &p, |s, c, e, b| {
+                let e = match kind {
+                    "foreign" => &foreign,
+                    "augmented" => augmented.env(),
+                    _ => e,
+                };
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                let expected = if matches!(kind, "foreign" | "augmented") {
+                    check_source(s, c.typed(), e).unwrap_err()
+                } else {
+                    let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                    let vcs = generate(&core, b.id, &generation, &schema);
+                    match count {
+                        Some(count) => {
+                            let vcs = vcs.unwrap();
+                            assert_eq!(vcs.vcs().len(), count);
+                            match vcs.vcs() {
+                                [vc] => identify(s, c, e, b.id, vc.id).unwrap_err(),
+                                _ => {
+                                    "algorithm.proof.invalid_source_state_witness_draft".to_owned()
+                                }
+                            }
+                        }
+                        None => vcs.unwrap_err(),
+                    }
+                };
+                assert_eq!(
+                    explicit(s, c, e, b, VariableId(99), &disabled, "../invalid").unwrap_err(),
+                    expected
+                );
+                for limits in [None, Some([0; 4])] {
+                    let bounded = disabled.clone().with_instance_search_limits(limits);
+                    assert_eq!(
+                        optional(s, c, e, b, &bounded, "../invalid").unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+        let no_chain = flat.replace("    x := c;", "    x := a;");
+        assert_ne!(no_chain, flat);
+        for (text, miss) in [(&flat, false), (&no_chain, true)] {
+            with_inputs(text, &p, |s, c, e, b| {
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                let vcs = generate(&core, b.id, &generation, &schema).unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("native singleton before no-chain observation")
+                };
+                let original = identify(s, c, e, b.id, vc.id).unwrap();
+                assert!(original.1.requires_cache_miss());
+                let handoff = build(&core, &vcs, vc.id, &generation).unwrap();
+                let profile = handoff.canonical_evidence().kernel_profile();
+                let target = handoff.canonical_evidence().target_vc();
+                assert!(matches!(profile.clause_tautology_policy, LocalReject));
+                let parsed = parse(
+                    &handoff.encode_local_evidence(None).unwrap(),
+                    &FormulaEvidenceParseContext::v1(
+                        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                        KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+                    ),
+                )
+                .unwrap();
+                let max = p
+                    .clone()
+                    .with_instance_search_limits(Some([0, 0, u64::MAX, 0]));
+                assert_eq!(select(&parsed, Some(u64::MAX)).is_none(), miss);
+                for bound in [None, Some(0), Some(1), Some(2)] {
+                    let bounded = disabled
+                        .clone()
+                        .with_instance_search_limits(bound.map(|bound| [0, 0, bound, 0]));
+                    assert_eq!(optional(s, c, e, b, &bounded, "../invalid").unwrap(), None);
+                }
+                if miss {
+                    assert_eq!(normal(s, c.typed(), e, b.id, vc.id, &max).unwrap(), None);
+                    let bounded = max.clone().with_kernel_evidence_formats([]);
+                    assert_eq!(optional(s, c, e, b, &bounded, "../invalid").unwrap(), None);
+                } else {
+                    let expected = normal(s, c.typed(), e, b.id, vc.id, &disabled).unwrap_err();
+                    assert_eq!(expected, "algorithm.proof.kernel_policy_rejected");
+                    assert_eq!(
+                        optional(s, c, e, b, &disabled, "../invalid").unwrap_err(),
+                        expected
+                    );
+                    assert_eq!(
+                        explicit(s, c, e, b, VariableId(2), &disabled, "../invalid").unwrap_err(),
+                        expected
+                    );
+                    let invalid =
+                        explicit(s, c, e, b, VariableId(2), &p, "../invalid").unwrap_err();
+                    assert_eq!(
+                        invalid,
+                        "invalid proof witness path: path must start with proof-witnesses/"
+                    );
+                    assert_eq!(optional(s, c, e, b, &p, "../invalid").unwrap_err(), invalid);
+                }
+                assert_eq!(identify(s, c, e, b.id, vc.id).unwrap(), original);
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+    }
 }
