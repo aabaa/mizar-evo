@@ -517,6 +517,8 @@ layer consumes both; one alignment task is owned here.
 
 69. **[Bounded source state transitivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH.md).** [x]
 
+70. **[Optional bounded state status](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-STATUS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

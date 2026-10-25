@@ -61,6 +61,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 ### Status
 `source_algorithm_state_transitivity_witness_draft`: [sole API owner](./status.md#source-algorithm-state-transitivity-witness-draft).
 `project_source_algorithm_state_transitivity_status`: [sole API owner](./status.md#source-algorithm-state-transitivity-status).
+`try_project_source_algorithm_state_transitivity_status`: [sole API owner](./status.md#optional-bounded-source-algorithm-state-status).
 `check_source_algorithm_state_transitivity`: [sole API owner](./status.md#source-algorithm-state-transitivity).
 `try_check_source_algorithm_state_transitivity`: [sole API owner](./status.md#bounded-source-algorithm-state-transitivity).
 `project_source_algorithm_return_reflexivity_status`: [sole API owner](./status.md#source-algorithm-return-reflexivity-status).

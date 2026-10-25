@@ -33959,4 +33959,339 @@ mod term_proof_tests {
             assert_eq!(handoff.encode_local_evidence(None).unwrap(), bytes);
         }
     }
+
+    #[test]
+    fn source_algorithm_state_transitivity_search_status_matches_original_projection() {
+        use self::with_source_algorithm_identity_inputs as with_inputs;
+        use mizar_kernel::{checker::KernelCheckStatus, clause::VariableId};
+        use mizar_proof::status::try_project_source_algorithm_state_transitivity_status as optional;
+        use mizar_proof::{
+            policy::{
+                CandidatePolicyClass as Class, KernelEvidenceOrigin, KernelPolicyInput,
+                VerifierPolicy,
+            },
+            selection::{
+                CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, ProofWinnerClass,
+                VcProofSelection, merge_artifact_proof_selections, select_winner,
+            },
+            status::{
+                ArtifactPublicationGap, ProofStatusProjectionInput,
+                project_source_algorithm_state_transitivity_status as explicit, project_status,
+                source_algorithm_state_obligation_identity as identify,
+                try_check_source_algorithm_state_transitivity as normal,
+            },
+        };
+        use mizar_vc::{
+            dependency_slice::{
+                DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+            },
+            generator::generate_source_algorithm_postconditions as generate,
+            vc_ir::{AnchorCompleteness, GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+        };
+        let package = "mizar-test-corpus";
+        let module =
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001";
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let independent = flat.replace("    x := c;", "    const d := a;\n    x := c;");
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (variant, text) in [flat, renamed, independent].iter().enumerate() {
+            with_inputs(text, package, module, 0, |s, n, e, c| {
+                let before = format!("{s:?}{n:?}{e:?}{c:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                let cases = [
+                    (0, VerifierPolicy::default()),
+                    (1, VerifierPolicy::default()),
+                    (0, VerifierPolicy::development()),
+                    (0, VerifierPolicy::interactive()),
+                ];
+                for (snapshot, p) in cases.into_iter().take(if variant == 0 { 4 } else { 1 }) {
+                    let snapshot = snapshot_id(snapshot);
+                    let p = p.with_instance_search_limits(Some([0, 0, 3, 0]));
+                    let vcs = generate(&core, snapshot, &generation, &schema).unwrap();
+                    let [vc] = vcs.vcs() else {
+                        panic!("one original raw state VC")
+                    };
+                    assert_eq!(vc.status, VcStatus::Open);
+                    assert!(matches!(
+                        &vc.anchor.completeness,
+                        AnchorCompleteness::Incomplete { .. }
+                    ));
+                    assert!(vcs.seed_accounting().iter().any(|seed| seed.seed_status
+                        == mizar_core::core_ir::ObligationSeedStatus::Deferred));
+                    let slices = try_compute_dependency_slices(DependencySliceInput {
+                        vc_set: &vcs,
+                        discharge_output: None,
+                    })
+                    .unwrap();
+                    let whole = slices.slice_for(vc.id).unwrap().clone();
+                    let (identity, slice) = identify(s, c, e, snapshot, vc.id).unwrap();
+                    assert_eq!(slice, whole);
+                    assert_eq!(
+                        slice.completeness(),
+                        DependencySliceCompleteness::IncompleteUncacheable
+                    );
+                    assert!(slice.requires_cache_miss());
+                    let graph_before = (core.clone(), vcs.clone(), p.clone());
+                    let checked = normal(s, n, e, snapshot, vc.id, &p).unwrap().unwrap();
+                    let (result, decision) = &checked;
+                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                    assert!(!result.policy_taint());
+                    assert_eq!(decision.class, Class::DischargedBuiltin);
+                    let target = result.target_vc_fingerprint().sort_bytes();
+                    let id_text = format!(
+                        "source-algorithm-state-transitivity-v1:{}",
+                        target
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    );
+                    assert_ne!(id_text, identity.obligation_id());
+                    let id = CandidateSourceId::new(id_text.clone()).unwrap();
+                    let candidate = if decision.class == Class::DischargedBuiltin {
+                        ProofEvidenceCandidate::from_trusted_kernel_input(
+                            id,
+                            &KernelPolicyInput::from_kernel_result(
+                                result,
+                                KernelEvidenceOrigin::BuiltinDischarge,
+                            ),
+                        )
+                        .unwrap()
+                    } else {
+                        ProofEvidenceCandidate::new(id, decision.clone())
+                    };
+                    let selected = select_winner(
+                        &ProofEvidenceSet::new(target, None, p.clone())
+                            .with_candidates([candidate]),
+                    );
+                    let [row] = <[_; 1]>::try_from(
+                        merge_artifact_proof_selections(
+                            [],
+                            [VcProofSelection::new(vc.id, selected)],
+                        )
+                        .unwrap(),
+                    )
+                    .unwrap();
+                    let projected = project_status(ProofStatusProjectionInput::new(
+                        row,
+                        p.clone(),
+                        identity.clone(),
+                    ))
+                    .unwrap();
+                    let expected = (projected, whole);
+                    let actual = explicit(s, c, e, snapshot, vc.id, VariableId(2), &p).unwrap();
+                    assert_eq!(actual, expected);
+                    for bound in [None, Some(0), Some(1), Some(2)] {
+                        let bounded = p
+                            .clone()
+                            .with_instance_search_limits(bound.map(|bound| [0, 0, bound, 0]));
+                        assert_eq!(optional(s, c, e, snapshot, vc.id, &bounded).unwrap(), None);
+                    }
+                    for bound in [3, u64::MAX] {
+                        let bounded = p
+                            .clone()
+                            .with_instance_search_limits(Some([0, 0, bound, 0]));
+                        let expected =
+                            explicit(s, c, e, snapshot, vc.id, VariableId(2), &bounded).unwrap();
+                        let before_result = expected.clone();
+                        let projected = optional(s, c, e, snapshot, vc.id, &bounded).unwrap();
+                        assert_eq!(projected, Some(expected.clone()));
+                        assert_eq!(
+                            optional(s, c, e, snapshot, vc.id, &bounded).unwrap(),
+                            projected
+                        );
+                        assert_eq!(expected, before_result);
+                    }
+                    assert_eq!(
+                        actual,
+                        explicit(s, c, e, snapshot, vc.id, VariableId(2), &p).unwrap()
+                    );
+                    assert_eq!(actual.0.vc(), vc.id);
+                    assert_eq!(actual.0.obligation_id(), identity.obligation_id());
+                    assert_eq!(
+                        actual.0.selected_class(),
+                        ProofWinnerClass::DischargedBuiltin
+                    );
+                    assert_eq!(
+                        actual.0.artifact_publication().gap(),
+                        Some(ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported)
+                    );
+                    assert!(actual.0.accepted_witness_obligation_id().is_none());
+                    assert!(actual.0.trusted_used_axioms().is_none());
+                    assert!(actual.0.explanation_ref().is_none());
+                    let reuse = actual.0.reuse_metadata();
+                    assert_eq!(reuse.selected_candidate_id().unwrap().as_str(), id_text);
+                    assert!(reuse.trusted_used_axioms_hash().is_none());
+                    assert!(reuse.selected_proof_witness_hash().is_none());
+                    assert!(reuse.dependency_compatibility().is_none());
+                    assert!(!reuse.cache_reuse_predicate_complete());
+                    assert_eq!(
+                        identify(s, c, e, snapshot, vc.id).unwrap(),
+                        (identity, slice)
+                    );
+                    assert_eq!(normal(s, n, e, snapshot, vc.id, &p).unwrap(), Some(checked));
+                    assert_eq!(
+                        (&core, &vcs, &p),
+                        (&graph_before.0, &graph_before.1, &graph_before.2)
+                    );
+                }
+                assert_eq!(format!("{s:?}{n:?}{e:?}{c:?}"), before);
+            });
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_transitivity_search_status_preserves_errors_and_absence() {
+        use self::with_source_algorithm_identity_inputs as with_inputs;
+        use super::super::tests::source_registration_owner_inputs as owners;
+        use mizar_checker::type_checker::check_source_algorithm_types as check_source;
+        use mizar_kernel::clause::VariableId;
+        use mizar_proof::status::try_project_source_algorithm_state_transitivity_status as optional;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                project_source_algorithm_state_transitivity_status as explicit,
+                source_algorithm_state_obligation_identity as identify,
+                try_check_source_algorithm_state_transitivity as normal,
+            },
+        };
+        use mizar_vc::{
+            dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+            generator::generate_source_algorithm_postconditions as generate,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+        let package = "mizar-test-corpus";
+        let module =
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001";
+        let root = config().workspace_root;
+        let original = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let return_source = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let (_, _, foreign) = owners(
+            &flat.replace("swapalgo", "foreign_algorithm"),
+            package,
+            module,
+            0,
+        );
+        let (_, _, augmented) = owners(&format!("{flat}\n{flat}"), package, module, 0);
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let disabled = VerifierPolicy::default()
+            .with_instance_search_limits(Some([0, 0, u64::MAX, 0]))
+            .with_kernel_evidence_formats([]);
+        for (kind, text) in [
+            ("absent", flat.clone()),
+            ("zero", flat.replace("    ensures result = a\n", "")),
+            ("assertion", original),
+            ("two", two_returns),
+            ("foreign", flat.clone()),
+            ("augmented", flat.clone()),
+        ] {
+            with_inputs(&text, package, module, 0, |s, n, e, c| {
+                let e = match kind {
+                    "foreign" => foreign.env(),
+                    "augmented" => augmented.env(),
+                    _ => e,
+                };
+                let before = format!("{s:?}{n:?}{e:?}{c:?}");
+                let id = VcId::new(if matches!(kind, "absent" | "two") {
+                    99
+                } else {
+                    0
+                });
+                let expected = identify(s, c, e, snapshot_id(0), id).unwrap_err();
+                if matches!(kind, "foreign" | "augmented") {
+                    assert_eq!(check_source(s, n, e).unwrap_err(), expected);
+                } else if kind == "two" {
+                    let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                    assert_eq!(
+                        generate(&core, snapshot_id(0), &generation, &schema).unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(
+                    explicit(s, c, e, snapshot_id(0), id, VariableId(99), &disabled).unwrap_err(),
+                    expected
+                );
+                for limits in [None, Some([0; 4])] {
+                    let bounded = disabled.clone().with_instance_search_limits(limits);
+                    assert_eq!(
+                        optional(s, c, e, snapshot_id(0), id, &bounded).unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(format!("{s:?}{n:?}{e:?}{c:?}"), before);
+            });
+        }
+        let no_chain = flat.replace("    x := c;", "    x := a;");
+        assert_ne!(flat, no_chain);
+        for (text, miss) in [(&flat, false), (&no_chain, true)] {
+            with_inputs(text, package, module, 0, |s, n, e, c| {
+                let before = format!("{s:?}{n:?}{e:?}{c:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(c).unwrap();
+                let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                let id = vcs.vcs()[0].id;
+                let original = identify(s, c, e, snapshot_id(0), id).unwrap();
+                let slices = try_compute_dependency_slices(DependencySliceInput {
+                    vc_set: &vcs,
+                    discharge_output: None,
+                })
+                .unwrap();
+                assert_eq!(&original.1, slices.slice_for(id).unwrap());
+                let checked = normal(s, n, e, snapshot_id(0), id, &disabled);
+                if miss {
+                    assert_eq!(checked.unwrap(), None);
+                } else {
+                    assert_eq!(
+                        checked.unwrap_err(),
+                        "algorithm.proof.kernel_policy_rejected"
+                    );
+                    assert_eq!(
+                        explicit(s, c, e, snapshot_id(0), id, VariableId(2), &disabled)
+                            .unwrap_err(),
+                        "algorithm.proof.kernel_policy_rejected"
+                    );
+                }
+                for bound in [None, Some(0), Some(2), Some(3), Some(u64::MAX)] {
+                    let bounded = disabled
+                        .clone()
+                        .with_instance_search_limits(bound.map(|bound| [0, 0, bound, 0]));
+                    let checked = normal(s, n, e, snapshot_id(0), id, &bounded);
+                    let projected = optional(s, c, e, snapshot_id(0), id, &bounded);
+                    assert_eq!(optional(s, c, e, snapshot_id(0), id, &bounded), projected);
+                    if miss || bound.unwrap_or(0) < 3 {
+                        assert_eq!(checked.unwrap(), None);
+                        assert_eq!(projected.unwrap(), None);
+                    } else {
+                        assert_eq!(projected.unwrap_err(), checked.unwrap_err());
+                    }
+                }
+                assert_eq!(identify(s, c, e, snapshot_id(0), id).unwrap(), original);
+                assert_eq!(format!("{s:?}{n:?}{e:?}{c:?}"), before);
+            });
+        }
+    }
 }

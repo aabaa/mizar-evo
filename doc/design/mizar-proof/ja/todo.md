@@ -493,6 +493,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 69. **[Bounded source state transitivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH.md).** [x]
 
+70. **[Optional bounded state status](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-STATUS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
