@@ -106,13 +106,14 @@ active parser corpus source に `ReservedWord` token として出現し始めた
 
 | 予約語 | 理由 |
 |---|---|
-| `expr` | `source_drift` / `test_gap`：構文型と文脈付き入力 (§3/§20/付録A) のlexer/parser/syntax対応とactive corpusは未実装。達成状態は変更しない。 |
 | `transitivity` | provisional な Appendix A word list では予約済みだが、canonical な実装済み property production には含まれない。task 28 が design drift を記録済みであり、現時点の parser grammar position はない。 |
 
 その他すべての Appendix A 予約語は、少なくとも 1 つの active parser corpus `.miz`
 source に frontend `ReservedWord` token として出現している。
 
 Bare `fail;`はparser構文のみを対象とする。message/report形式は第2.7/20.2.6章のlexical矛盾、reflected reportはAST-PARSE待ちを保持し、静的配置検査、Core/VC/MVM、acceptanceは延期する。
+
+expr型の再帰headと明示constructor型引数のみlexical/parser coverageを持つ。contextual reflected input、Binder、配置/型検査、runtime semanticsは延期する。
 
 ## Task 47 source/specification再確認
 

@@ -26332,7 +26332,240 @@ fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v8"
+            "mizar-parser/surface-ast-v9"
+        );
+    }
+}
+
+#[test]
+fn expr_type_source_projection_preserves_recursive_heads_and_actual_routes() {
+    use mizar_syntax::SurfaceNodeKind as K;
+    let text = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/parser/pass_parser_expr_types_001.miz"
+    ));
+    let output = super::formula_statement::step5c8_test_frontend(text);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output.ast.unwrap();
+    let mut heads = ast
+        .nodes()
+        .iter()
+        .filter(|n| n.kind == K::TypeHead && text[n.range.start..].starts_with("expr"))
+        .collect::<Vec<_>>();
+    heads.sort_by_key(|n| n.range.start);
+    let spellings = heads.iter().map(|n| &text[n.range.start..n.range.end]);
+    assert_eq!(
+        spellings.collect::<Vec<_>>(),
+        [
+            "expr of object",
+            "expr of expr of non empty T",
+            "expr of non empty T",
+            "expr of object",
+            "expr of set",
+            "expr of object",
+            "expr of T",
+            "expr of object",
+            "expr of object",
+        ]
+    );
+    for head in heads {
+        assert!(!head.recovered);
+        assert_eq!(head.children.len(), 3);
+        for (id, word) in head.children[..2].iter().zip(["expr", "of"]) {
+            let child = ast.node_view(*id).unwrap();
+            let token = child.as_token().unwrap();
+            assert_eq!(token.text.as_ref(), word);
+            assert_eq!(token.kind, SurfaceTokenKind::ReservedWord);
+        }
+        let operand = ast.node(head.children[2]).unwrap();
+        assert_eq!(operand.kind, K::TypeExpression);
+        assert_eq!(
+            operand.range,
+            range(ast.source_id, head.range.start + 8, head.range.end)
+        );
+    }
+    let attributed = ast
+        .node_views()
+        .find(|v| {
+            v.as_type_expression().is_some()
+                && &text[v.range().start..v.range().end] == "non empty T"
+        })
+        .unwrap();
+    let kinds = attributed
+        .children()
+        .iter()
+        .map(|id| ast.node(*id).unwrap().kind.clone())
+        .collect::<Vec<_>>();
+    assert_eq!(kinds, [K::AttributeChain, K::TypeHead]);
+    let mut actuals = ast
+        .node_views()
+        .filter_map(|v| v.as_type_arguments())
+        .collect::<Vec<_>>();
+    actuals.sort_by_key(|v| v.range().start);
+    assert_eq!(actuals.len(), 3);
+    for (arguments, (spelling, kinds)) in actuals.iter().zip([
+        ("of expr of object", vec![K::TypeExpression]),
+        (
+            "over expr of set, a",
+            vec![K::TypeExpression, K::TermExpression],
+        ),
+        (
+            "[expr of object, expr of T]",
+            vec![K::TypeExpression, K::TypeExpression],
+        ),
+    ]) {
+        assert_eq!(
+            &text[arguments.range().start..arguments.range().end],
+            spelling
+        );
+        let children = arguments
+            .children()
+            .iter()
+            .map(|id| ast.node_view(*id).unwrap());
+        let structural = children.filter(|v| v.as_token().is_none());
+        assert_eq!(
+            structural.map(|v| v.kind().clone()).collect::<Vec<_>>(),
+            kinds
+        );
+    }
+    let value = ast
+        .node_view(*actuals[1].children().last().unwrap())
+        .unwrap();
+    assert_eq!(&text[value.range().start..value.range().end], "a");
+    for (kind, spelling) in [
+        (K::DefinitionParameter, "let input be expr of object;"),
+        (
+            K::AlgorithmDefinition,
+            "algorithm echo(input) -> expr of object do\n    return input;\n  end;",
+        ),
+    ] {
+        let host = ast.node_views().find(|v| v.kind() == &kind).unwrap();
+        let start = text.find(spelling).unwrap();
+        assert_eq!(
+            host.range(),
+            range(ast.source_id, start, start + spelling.len())
+        );
+        assert!(ast.node_views().any(|v| v.as_type_expression().is_some()
+            && v.range().start > host.range().start
+            && v.range().end < host.range().end));
+    }
+    for (source, valid) in [
+        (
+            "import parser.type_fixtures; reserve x for T[V qua expr of non empty object];",
+            true,
+        ),
+        (
+            "import parser.type_fixtures; reserve x for T[V qua non empty expr of object];",
+            false,
+        ),
+        (
+            "definition let U be type; pred H: h[U] means for x being expr of U holds x = x; end;",
+            true,
+        ),
+        (
+            "definition let U be type; pred H: h[U] means x is expr of U; end;",
+            false,
+        ),
+    ] {
+        let output = super::formula_statement::step5c8_test_frontend(source);
+        assert_eq!(
+            output.diagnostics.is_empty(),
+            valid,
+            "{source}: {:?}",
+            output.diagnostics
+        );
+    }
+}
+
+#[test]
+fn expr_type_recovery_cache_storage_and_source_provenance() {
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let cases = [
+        ("pass_parser_expr_types_001", vec![]),
+        ("fail_parser_expr_missing_of_001", vec![("object;", 6)]),
+        (
+            "fail_parser_expr_missing_target_001",
+            vec![(";\nreserve nested", 1), ("];", 1)],
+        ),
+    ];
+    for (ordinal, (id, boundaries)) in cases.iter().enumerate() {
+        let case = plan.cases.iter().find(|case| case.id.0 == *id).unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let checked = super::formula_statement::step5c8_test_frontend(&text);
+        assert_eq!(
+            checked.diagnostics.len(),
+            boundaries.len(),
+            "{:?}",
+            checked.diagnostics
+        );
+        let ast = checked.ast.unwrap();
+        let mut expected_missing = Vec::new();
+        for (diagnostic, (boundary, width)) in checked.diagnostics.iter().zip(boundaries) {
+            let code = DiagnosticCode::Syntax("malformed_type_expression".into());
+            assert_eq!(diagnostic.code, code);
+            let start = text.find(*boundary).unwrap();
+            let location = range(ast.source_id, start, start + width);
+            assert_eq!(
+                diagnostic.location,
+                DiagnosticLocation::SourceRange(location)
+            );
+            assert!(diagnostic.secondary.is_empty());
+            if ordinal == 2 {
+                expected_missing.push(range(ast.source_id, start, start));
+                assert!(ast.token_views().any(|v| v.range() == location));
+            }
+        }
+        let mut recovered = ast
+            .node_views()
+            .filter(|v| v.as_recovery() == Some(SyntaxRecoveryKind::MissingTypeExpression))
+            .map(|v| v.range())
+            .collect::<Vec<_>>();
+        recovered.sort_by_key(|r| r.start);
+        assert_eq!(recovered, expected_missing);
+        if ordinal == 1 {
+            let operand = ast
+                .node_views()
+                .filter_map(|v| v.as_type_expression())
+                .find(|v| &text[v.range().start..v.range().end] == "object")
+                .unwrap();
+            assert!(!operand.is_recovered());
+        }
+        if ordinal > 0 {
+            let start = text.find("sentinel for set").unwrap();
+            let sentinel = ast
+                .node_views()
+                .filter_map(|v| v.as_reserve_segment())
+                .find(|v| v.range().start == start)
+                .unwrap();
+            assert_eq!(sentinel.range(), range(ast.source_id, start, start + 16));
+            assert!(!sentinel.is_recovered());
+        }
+        assert!(ast.trivia().skipped_token_ranges().is_empty());
+        let output = task257c4c1_frontend_output(&text, 90 + ordinal);
+        let replay = task257c4c1_frontend_output(&text, 90 + ordinal);
+        assert_eq!(output.cache_keys, replay.cache_keys);
+        assert_eq!(output.ast, replay.ast);
+        assert_eq!(output.diagnostics, replay.diagnostics);
+        let source = &output.source;
+        let input = mizar_session::SourceInput {
+            package_id: source.package_id.clone(),
+            module_path: source.module_path.clone(),
+            normalized_path: source.normalized_path.clone(),
+            edition: source.edition.clone(),
+            origin: mizar_session::SourceOriginInput::Disk {
+                path: source.file_path.clone(),
+            },
+        };
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let same =
+            FrontendOutput::from_canonical_disk_bytes(&bytes, source.source_id, &input).unwrap();
+        assert_eq!(same, output);
+        assert_eq!(same.ast.as_ref().unwrap().source_id, source.source_id);
+        let key = output.cache_keys.ast.as_ref().unwrap();
+        assert_eq!(
+            key.parser_version.version.as_ref(),
+            "mizar-parser/surface-ast-v9"
         );
     }
 }

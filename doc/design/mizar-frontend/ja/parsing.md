@@ -262,4 +262,4 @@ adaptation API は不変であり、frontend は parser result をそのまま�
 namespace を無効化する。
 
 ## Bare algorithm failure cache namespace
-公開ParseRequestはv7が拒否したものと同じReservedWord fail token stream/parser inputsを渡せるため、MizarParserSeamのAST key namespaceをmizar-parser/surface-ast-v8へ進める。token namespace、key shape、storage schemaは変えない。既存coordinatorのtoken keyは予約語全体のfingerprintを含むので、語彙変更でも実Frontend AST keyは失効する。
+bare failはv7が拒否した同一tokenに対してnamespacev8を必要とした。expr型構文はv8が拒否した同一ReservedWord expr token/parser inputsに対してmizar-parser/surface-ast-v9を必要とする。token namespace/key shape/storageは不変。coordinator token keyは予約語全体のfingerprintを含むため実Frontend AST keyも失効する。

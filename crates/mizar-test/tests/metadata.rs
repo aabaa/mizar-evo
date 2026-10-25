@@ -50,7 +50,7 @@ const PROPERTY_IMPLEMENTATIONS_REQUIREMENT_ID: &str =
 const STRUCTURES_REQUIREMENT_ID: &str = "spec.en.05.structures.parser";
 const CORRECTNESS_CONDITIONS_REQUIREMENT_ID: &str = "spec.en.16.correctness_conditions.parser";
 const REGISTRATIONS_REQUIREMENT_ID: &str = "spec.en.17.clusters_and_registrations.parser";
-const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &["expr", "transitivity"];
+const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &["transitivity"];
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -6567,6 +6567,8 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_export_missing_path_001",
             "fail_parser_export_missing_semicolon_001",
             "fail_parser_export_trailing_comma_001",
+            "fail_parser_expr_missing_of_001",
+            "fail_parser_expr_missing_target_001",
             "fail_parser_formula_missing_holds_001",
             "fail_parser_formula_missing_not_001",
             "fail_parser_formula_missing_operand_001",
@@ -6631,6 +6633,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_definition_attributes_001",
             "pass_parser_empty_justifications_001",
             "pass_parser_export_visibility_001",
+            "pass_parser_expr_types_001",
             "pass_parser_formula_connectives_001",
             "pass_parser_functor_definitions_001",
             "pass_parser_import_items_001",
@@ -7180,8 +7183,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 116);
-    assert_eq!(report.passed_count(), 116);
+    assert_eq!(report.results.len(), 119);
+    assert_eq!(report.passed_count(), 119);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10593,8 +10596,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 116"));
-    assert!(stdout.contains("passed: 116"));
+    assert!(stdout.contains("parse-only cases: 119"));
+    assert!(stdout.contains("passed: 119"));
     assert!(stdout.contains("failed: 0"));
 }
 

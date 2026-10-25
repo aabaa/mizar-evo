@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_expr_missing_target_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.expr_types"
+source = "fail_parser_expr_missing_target_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_type_expression"
+stable_detail_key = "parser.expr_types.missing_target"
+diagnostic_codes = ["malformed_type_expression", "malformed_type_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.03.expr_types.parser"]
+notes = "Missing expr grammar preserves the following declaration and authored delimiter; existing type diagnostics only."

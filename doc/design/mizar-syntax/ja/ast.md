@@ -1787,3 +1787,6 @@ language behavior、forbidden artifact は変更していない。
 
 ## Bare algorithm failure
 `SyntaxKind::FailStatement = 194`、`SurfaceNodeKind::FailStatement`、`SurfaceNodeView::as_fail_statement`をappendし、既存raw kind値とsurface variant順序を保持する。正常nodeは元のfail/semicolon tokenを保存し、既存raw/node分類、rowan projection、FailStatement snapshot表記、source-free storage/rebindでrangeとrecoveryを保持する。payload/message field、別statement型、失敗の意味論的authorityは追加しない。
+
+## Expr type head
+exprのTypeHeadは既存kindでexpr/of tokenと入れ子TypeExpressionまたはMissingTypeExpressionを順に保持する。raw kind、typed view、snapshot label、storage schemaは追加しない。

@@ -1,0 +1,12 @@
+import parser.type_fixtures;
+reserve e for expr of object;
+reserve nested for expr of expr of non empty T;
+reserve sequence for T of expr of object;
+reserve over_sequence for T over expr of set, a;
+reserve bracketed for T[expr of object, expr of T];
+definition
+  let input be expr of object;
+  algorithm echo(input) -> expr of object do
+    return input;
+  end;
+end;

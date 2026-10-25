@@ -110,13 +110,14 @@ Current parser-deferred reserved words:
 
 | Word | Reason |
 |---|---|
-| `expr` | `source_drift` / `test_gap`: reflected syntax types and contextual inputs (§3/§20/Appendix A) await lexer/parser/syntax support and active corpus coverage; no credit is activated. |
 | `transitivity` | Reserved by the provisional Appendix A word list, but not part of the canonical implemented property productions; task 28 records the design drift and there is no current parser grammar position. |
 
 All other Appendix A reserved words appear in at least one active parser corpus
 `.miz` source as frontend `ReservedWord` tokens.
 
 Bare `fail;` is covered as parser syntax only; message/report forms remain blocked by the Chapter2.7/20.2.6 lexical conflict and reflected reports by AST-PARSE. Static failure placement, Core/VC/MVM and acceptance remain deferred.
+
+Expr types have lexical/parser-only coverage for recursive heads and explicit constructor type actuals. Contextual reflected inputs, Binder, placement/typing and runtime semantics remain deferred.
 
 ## Task 47 Source/Specification Recheck
 

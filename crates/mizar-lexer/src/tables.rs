@@ -42,6 +42,7 @@ pub const RESERVED_WORDS: &[&str] = &[
     "exhaustive",
     "existence",
     "export",
+    "expr",
     "extends",
     "fail",
     "field",

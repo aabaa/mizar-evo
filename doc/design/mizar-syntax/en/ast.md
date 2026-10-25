@@ -1883,3 +1883,6 @@ pass. No consumer, language behavior, or forbidden artifact changed.
 
 ## Bare algorithm failure
 Append `SyntaxKind::FailStatement = 194`, `SurfaceNodeKind::FailStatement` and `SurfaceNodeView::as_fail_statement`; prior raw kinds and surface variants retain their values/order. A valid node preserves the authored fail and semicolon tokens; existing raw/node classification, rowan projection, FailStatement snapshot spelling and source-free storage/rebind carry the same source ranges and recovery. No payload/message field, parallel statement type or semantic failure authority is added.
+
+## Expr type head
+An expr TypeHead uses existing kinds: ordered expr/of tokens followed by its nested TypeExpression or MissingTypeExpression. No raw kind, typed view, snapshot label or storage schema is added.

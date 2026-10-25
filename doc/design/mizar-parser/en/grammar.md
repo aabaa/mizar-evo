@@ -2374,3 +2374,6 @@ Regression controls in [module/tests.rs](../../../../crates/mizar-parser/src/mod
 ## Bare algorithm failure
 Spec20.2.6/AppendixA.A20 admit `fail;` in existing algorithm statement lists, nested branches/loops and annotation hosts. Dispatch directly to the existing keyword/semicolon parser and include fail in statement-start recognition; preserve its existing missing-semicolon boundary recovery and top-level rejection. No terminating/ghost/type check, message/report parsing, new diagnostics or recovery algorithm is introduced.
 The actual lexer reserves fail. Unsupported message forms await the separate lexical authority decision. Tests use fresh parse-only pass/missing-semicolon/non-algorithm sources, inspect valid successors and source/typed/cache replay, and retain all existing oracles.
+
+## Expr type syntax
+Chapter3.3/A3: TypeHead preserves `expr`, required `of` and a recursive TypeExpression. Explicit expr-led of/over actuals are type candidates; ordinary value actuals and generic qua restrictions remain unchanged. Missing of uses MalformedTypeExpression at the next token and keeps a valid operand; a missing operand uses zero-width MissingTypeExpression without consuming its delimiter. Required-type policies and lookahead retain nested types. Placement, covariance, constructor roles and reflection are Checker-owned.

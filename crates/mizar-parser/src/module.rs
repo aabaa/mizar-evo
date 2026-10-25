@@ -9135,7 +9135,36 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
 
-        if self.is_builtin_type_word_at(cursor) {
+        if self.is_reserved_word_at(cursor, "expr") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            let has_of = self.is_reserved_word_at(cursor, "of");
+            if has_of {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_type_expression(cursor, "expected `of` after `expr`");
+            }
+            let target = match policy {
+                Some(policy) => self.parse_required_type_expression_at(cursor, policy),
+                None => self.parse_type_expression_at(cursor),
+            };
+            if let Some(target) = target {
+                children.push(target.id);
+                recovery_nodes.extend(target.recovery_nodes);
+                cursor = target.next_position;
+            } else {
+                if has_of {
+                    self.diagnose_malformed_type_expression(
+                        cursor,
+                        "expected type expression after `expr of`",
+                    );
+                }
+                let recovery = self.add_missing_type_expression(cursor);
+                children.push(recovery);
+                recovery_nodes.push(recovery);
+            }
+        } else if self.is_builtin_type_word_at(cursor) {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
         } else {
@@ -10060,7 +10089,12 @@ impl Parser {
                 expecting_argument = true;
                 continue;
             }
-            let term = if stop_before_field_list {
+            let term = if self.is_reserved_word_at(cursor, "expr") {
+                match policy {
+                    Some(policy) => self.parse_required_type_expression_at(cursor, policy),
+                    None => self.parse_type_expression_at(cursor),
+                }
+            } else if stop_before_field_list {
                 self.parse_term_expression_before_structure_field_list_at(cursor)
             } else {
                 self.parse_term_expression_at(cursor)
@@ -16322,7 +16356,9 @@ impl Parser {
     }
 
     fn can_start_type_head_at(&self, position: usize) -> bool {
-        self.is_builtin_type_word_at(position) || self.qualified_symbol_next_at(position).is_some()
+        self.is_reserved_word_at(position, "expr")
+            || self.is_builtin_type_word_at(position)
+            || self.qualified_symbol_next_at(position).is_some()
     }
 
     fn can_parse_structure_constructor_after_symbol(&self, symbol_end: usize) -> bool {
@@ -16449,6 +16485,13 @@ impl Parser {
                 break;
             }
             cursor = plan.next_position;
+        }
+        if self.is_reserved_word_at(cursor, "expr") {
+            cursor += 1;
+            if self.is_reserved_word_at(cursor, "of") {
+                cursor += 1;
+            }
+            return self.type_expression_end_at(cursor);
         }
         if self.is_builtin_type_word_at(cursor) {
             return Some(cursor + 1);

@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v8";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v9";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -793,7 +793,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v8"
+            "mizar-parser/surface-ast-v9"
         );
     }
 
@@ -845,7 +845,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v8"
+            "mizar-parser/surface-ast-v9"
         );
         assert_ne!(
             seam.cache_key_version().version.as_ref(),
@@ -1683,7 +1683,56 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v8"
+            "mizar-parser/surface-ast-v9"
+        );
+        assert_eq!(current.token_stream_hash, retained.token_stream_hash);
+        assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
+        assert_ne!(current.stable_hash(), retained.stable_hash());
+    }
+
+    #[test]
+    fn real_parser_seam_expr_type_same_tokens_invalidate_v8_cache() {
+        let source_id = source_id(37);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "reserve", 0, 7),
+                token(source_id, TokenKind::Identifier, "e", 8, 9),
+                token(source_id, TokenKind::ReservedWord, "for", 10, 13),
+                token(source_id, TokenKind::ReservedWord, "expr", 14, 18),
+                token(source_id, TokenKind::ReservedWord, "of", 19, 21),
+                token(source_id, TokenKind::ReservedWord, "object", 22, 28),
+                token(source_id, TokenKind::ReservedSymbol, ";", 28, 29),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+        let token_hash = Hash::from_bytes([9; Hash::BYTE_LEN]);
+        let current = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            seam.cache_key_version(),
+            &inputs,
+        );
+        let retained = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            super::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v8"),
+            &inputs,
+        );
+        let output = seam.parse(ParseRequest::new(&tokens, inputs.clone()));
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let ast = output.ast.expect("expr type module AST");
+        assert!(
+            ast.node_views()
+                .filter_map(|v| v.as_type_head())
+                .any(|v| v.children().len() == 3)
+        );
+        assert_eq!(
+            current.parser_version.version.as_ref(),
+            "mizar-parser/surface-ast-v9"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);

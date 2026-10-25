@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_expr_types_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.expr_types"
+source = "pass_parser_expr_types_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.expr_types.parser"]
+notes = "Syntax-only recursive expr types in declarations, constructor actuals and algorithm results; no typing or reflection execution."

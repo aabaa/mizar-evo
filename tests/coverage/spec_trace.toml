@@ -553,6 +553,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.expr_types.parser"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_expr_types_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_expr_missing_of_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_expr_missing_target_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.type_expressions.argument_bearing_attribute_payload_gap"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"

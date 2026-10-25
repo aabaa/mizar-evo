@@ -1183,4 +1183,4 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] [AST-PARSE](../../task_contracts/en/AST-PARSE.md).
+- [~] [AST-PARSE](../../task_contracts/en/AST-PARSE.md) — expr types only; Binder/contextual inputs and legacy retirement remain open.

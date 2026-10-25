@@ -2223,3 +2223,6 @@ lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと 
 ## Bare algorithm failure
 Spec20.2.6/AppendixA.A20の`fail;`を既存algorithm statement list、nested branch/loop、annotation hostで構文解析する。既存keyword/semicolon parserへ直接dispatchし、statement-start判定にfailを含める。既存のsemicolon境界recoveryとtop-level拒否を保持し、terminating/ghost/type検査、message/report解析、新診断やrecovery方式は追加しない。
 Lexerはfailを予約する。message形式はlexical authority決定待ち。新規parse-onlyのpass/semicolon欠落/algorithm外source、正常な後続node、型付きview・source/cache replayを検査し、既存oracleは保持する。
+
+## Expr type syntax
+第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持する。exprで始まるof/over引数のみ型候補とし、通常値引数とgeneric qua制限は維持する。of欠落は次tokenでMalformedTypeExpressionを出し有効な型を保持し、型欠落は区切りを消費せずゼロ幅MissingTypeExpressionを置く。required-type policyとlookaheadを入れ子でも保持する。配置、共変性、constructor role、reflectionはCheckerが所有する。
