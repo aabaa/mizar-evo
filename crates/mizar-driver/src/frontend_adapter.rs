@@ -6533,6 +6533,127 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some((draft, main_write, commit)))
     }
 
+    /// Returns captured algorithm summaries after binding a published Frontend.
+    pub fn native_algorithm_module_summary_with_frontend_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<Option<mizar_artifact::module_summary::ModuleSummary>, String> {
+        if input.snapshot != self.snapshot.id {
+            return Err("native Frontend algorithm summary snapshot mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Frontend algorithm summary requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native Frontend algorithm summary requires one captured source".to_owned()
+        })?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native Frontend algorithm summary capture binding failed".to_owned())?;
+        if input.identities().input_hash() != source_input_hash(version)
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || input.parent_outputs().len() != 1
+        {
+            return Err(
+                "native Frontend algorithm summary requires the leaf input profile".to_owned(),
+            );
+        }
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        if parent.snapshot() != input.snapshot
+            || parent.phase() != &IrPipelinePhase::new("Frontend")
+            || parent.work_unit() != &work_unit
+            || parent.output_kind() != &OutputKind::new("FrontendOutput")
+            || parent.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend algorithm summary parent binding mismatch".to_owned());
+        }
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let [ancestor] = typed.lineage().parents.as_slice() else {
+            return Err(
+                "native Frontend algorithm summary requires one SourceLoad ancestor".to_owned(),
+            );
+        };
+        let ancestor = publisher
+            .registry()
+            .output_lineage(*ancestor)
+            .ok_or_else(|| {
+                "native Frontend algorithm summary requires registered ancestry".to_owned()
+            })?;
+        if ancestor.snapshot != input.snapshot
+            || ancestor.phase != IrPipelinePhase::new("SourceLoad")
+            || ancestor.work_unit != work_unit
+            || ancestor.output_kind != OutputKind::new("SourceUnit")
+            || !ancestor.parents.is_empty()
+            || ancestor.named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+        {
+            return Err(
+                "native Frontend algorithm summary SourceLoad ancestry mismatch".to_owned(),
+            );
+        }
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| {
+                "native Frontend algorithm summary requires a bound package".to_owned()
+            })?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(
+                "native Frontend algorithm summary requires a workspace package".to_owned(),
+            );
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if *retained != output {
+            return Err("native Frontend algorithm summary complete output mismatch".to_owned());
+        }
+        let summary = self.native_algorithm_module_summary_candidate(module)?;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(summary)
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

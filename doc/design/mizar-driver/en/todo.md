@@ -686,6 +686,8 @@ the owning producers when the paired tasks land.
 
 114. **[Native algorithm summary candidate](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 
+115. **[Native algorithm summary Frontend caller](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-SUMMARY-FRONTEND-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
