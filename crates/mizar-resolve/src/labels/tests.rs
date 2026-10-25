@@ -8834,3 +8834,431 @@ fn source_algorithm_module_summary_candidate_preserves_original_projection_and_r
         );
     }
 }
+#[test]
+fn algorithm_ordinary_occurrences_retain_exact_source_targets() {
+    use crate::names::{
+        SourceVariableBindingKind as B, SourceVariableReferenceKind as R,
+        SourceVariableScopeResolver, SourceVariableTypeRadix,
+    };
+
+    for (label, text, declarations, references) in [
+        (
+            "shadow_snapshot",
+            "definition let a be object; terminating algorithm sample(a) -> object ensures result = a do snapshot before; var a := a; ghost var g := a; const c := a; a := c; assert not a = c; snapshot after; return a; end; end;",
+            vec![(15, "a"), (113, "a"), (131, "g"), (145, "c")],
+            vec![
+                (57, "header", 15),
+                (87, "term", 15),
+                (118, "term", 15),
+                (136, "term", 113),
+                (150, "term", 113),
+                (153, "write", 113),
+                (158, "term", 145),
+                (172, "term", 113),
+                (176, "term", 145),
+                (202, "term", 113),
+            ],
+        ),
+        (
+            "parameter_result",
+            "definition let result be object; algorithm named(result) -> object do var result := result; return result; end; end;",
+            vec![(15, "result"), (74, "result")],
+            vec![(49, "header", 15), (84, "term", 15), (99, "term", 74)],
+        ),
+        (
+            "local_result",
+            "definition let a be object; algorithm ordinary(a) -> object ensures result = a do var result := a; result := a; assert result = a; return result; end; end;",
+            vec![(15, "a"), (86, "result")],
+            vec![
+                (47, "header", 15),
+                (77, "term", 15),
+                (96, "term", 15),
+                (99, "write", 86),
+                (109, "term", 15),
+                (119, "term", 86),
+                (128, "term", 15),
+                (138, "term", 86),
+            ],
+        ),
+        (
+            "while",
+            include_str!(
+                "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz"
+            ),
+            vec![(17, "a"), (100, "x")],
+            vec![
+                (51, "header", 17),
+                (85, "term", 17),
+                (105, "term", 17),
+                (122, "term", 100),
+                (126, "term", 17),
+                (147, "term", 100),
+                (151, "term", 100),
+                (160, "write", 100),
+                (165, "term", 17),
+                (188, "term", 100),
+            ],
+        ),
+        (
+            "choice",
+            include_str!(
+                "../../../../tests/miz/fail/algorithms/fail_proof_verification_algorithm_ensures_unprovable_001.miz"
+            ),
+            vec![(17, "a")],
+            vec![(62, "header", 17), (96, "term", 17)],
+        ),
+        (
+            "ghost",
+            include_str!(
+                "../../../../tests/miz/fail/algorithms/fail_type_elaboration_algorithm_ghost_isolation_001.miz"
+            ),
+            vec![(17, "a"), (96, "g"), (112, "x")],
+            vec![
+                (64, "header", 17),
+                (101, "term", 17),
+                (117, "term", 96),
+                (131, "term", 112),
+            ],
+        ),
+        (
+            "break",
+            include_str!(
+                "../../../../tests/miz/fail/algorithms/fail_type_elaboration_algorithm_break_outside_loop_001.miz"
+            ),
+            vec![(17, "a")],
+            vec![(63, "header", 17), (103, "term", 17)],
+        ),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let expected_binders = declarations.iter().map(|(start, spelling)| {
+            let matches = ast.node_views().filter(|node| {
+                node.range() == SourceRange { source_id: ast.source_id, start: *start, end: start + spelling.len() }
+                    && matches!(node.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == *spelling)
+            }).map(|node| node.id()).collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{label} original binder {start}");
+            matches[0]
+        }).collect::<Vec<_>>();
+        let definition = ast
+            .node_views()
+            .find(|node| matches!(node.kind(), SurfaceNodeKind::DefinitionBlockItem))
+            .unwrap();
+        let body = ast
+            .node_views()
+            .find(|node| matches!(node.kind(), SurfaceNodeKind::AlgorithmBody))
+            .unwrap();
+        let definition_scope = vec![u32::try_from(definition.id().index()).unwrap()];
+        let body_scope = vec![
+            definition_scope[0],
+            u32::try_from(body.id().index()).unwrap(),
+        ];
+        let expected_references = references.iter().map(|(start, role, target)| {
+            let target_index = declarations.iter().position(|(declaration, _)| declaration == target).unwrap();
+            let spelling = declarations[target_index].1;
+            let matches = ast.node_views().filter(|node| {
+                node.range() == SourceRange { source_id: ast.source_id, start: *start, end: start + spelling.len() }
+                    && match *role {
+                        "header" => matches!(node.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == spelling),
+                        "term" => matches!(node.kind(), SurfaceNodeKind::TermReference),
+                        "write" => matches!(node.kind(), SurfaceNodeKind::Lvalue),
+                        _ => unreachable!(),
+                    }
+            }).map(|node| node.id()).collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{label} original use {start}");
+            (matches[0], target_index)
+        }).collect::<Vec<_>>();
+        let actual =
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(&arena, &env).unwrap();
+        assert_eq!(actual.source_id(), ast.source_id);
+        assert_eq!(actual.module_id(), &module);
+        assert_eq!(actual.bindings().len(), declarations.len(), "{label}");
+        assert_eq!(actual.references().len(), references.len(), "{label}");
+        assert!(actual.thesis().is_none());
+        assert!(actual.statements().is_empty());
+        for (ordinal, (binding, (start, spelling))) in
+            actual.bindings().iter().zip(&declarations).enumerate()
+        {
+            assert_eq!(binding.id().index(), ordinal);
+            assert_eq!(binding.ordinal(), ordinal);
+            assert_eq!(binding.node(), expected_binders[ordinal]);
+            assert_eq!(binding.spelling(), *spelling);
+            assert_eq!(
+                binding.range(),
+                SourceRange {
+                    source_id: ast.source_id,
+                    start: *start,
+                    end: start + spelling.len()
+                }
+            );
+            assert_eq!(
+                binding.kind(),
+                if ordinal == 0 {
+                    B::DefinitionParameter
+                } else {
+                    B::AlgorithmLocal
+                }
+            );
+            assert_eq!(
+                binding.scope().path(),
+                if ordinal == 0 {
+                    &definition_scope
+                } else {
+                    &body_scope
+                }
+            );
+            assert!(binding.arity().is_none());
+            assert!(binding.captures().is_empty());
+            if ordinal == 0 {
+                let ty = binding.declared_type().unwrap();
+                assert_eq!(ty.radix(), SourceVariableTypeRadix::Object);
+                assert!(ty.attributes().is_empty());
+            } else {
+                assert!(binding.declared_type().is_none());
+            }
+        }
+        for (ordinal, ((reference, (start, role, _)), (node, target_index))) in actual
+            .references()
+            .iter()
+            .zip(&references)
+            .zip(&expected_references)
+            .enumerate()
+        {
+            let target = actual
+                .bindings()
+                .iter()
+                .find(|binding| binding.id() == reference.binding())
+                .unwrap();
+            assert_eq!(target.node(), expected_binders[*target_index]);
+            assert_eq!(reference.id().index(), ordinal);
+            assert_eq!(reference.ordinal(), ordinal);
+            assert_eq!(reference.node(), *node);
+            assert_eq!(reference.spelling(), declarations[*target_index].1);
+            assert_eq!(
+                reference.range(),
+                SourceRange {
+                    source_id: ast.source_id,
+                    start: *start,
+                    end: start + declarations[*target_index].1.len()
+                }
+            );
+            assert_eq!(
+                reference.kind(),
+                match *role {
+                    "header" => R::AlgorithmParameter,
+                    "term" => R::Term,
+                    "write" => R::AlgorithmAssignmentTarget,
+                    _ => unreachable!(),
+                }
+            );
+            assert!(reference.kind().arity().is_none());
+            let expected_scope = if *role == "header"
+                || ast.node_views().any(|owner| {
+                    matches!(owner.kind(), SurfaceNodeKind::AlgorithmEnsuresClause)
+                        && owner.range().start <= *start
+                        && *start < owner.range().end
+                }) {
+                &definition_scope
+            } else {
+                &body_scope
+            };
+            assert_eq!(reference.scope().path(), expected_scope);
+        }
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(&arena, &env).unwrap(),
+            actual
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn algorithm_ordinary_occurrences_refuse_visibility_and_profile_errors() {
+    use crate::names::{SourceVariableScopeError as E, SourceVariableScopeResolver};
+    let original = "definition let a be object; algorithm ordinary(a) -> object ensures result = a do var x := a; x := a; return x; end; end;";
+    for (label, text, expected) in [
+        (
+            "header",
+            original.replace("ordinary(a)", "ordinary(absent)"),
+            E::UnresolvedReference,
+        ),
+        (
+            "self_initializer",
+            original.replace("var x := a", "var x := x"),
+            E::UnresolvedReference,
+        ),
+        (
+            "forward_initializer",
+            original.replace("var x := a", "var x := later; var later := a"),
+            E::UnresolvedReference,
+        ),
+        (
+            "assignment",
+            original.replace("x := a; return", "absent := a; return"),
+            E::UnresolvedReference,
+        ),
+        (
+            "return",
+            original.replace("return x", "return absent"),
+            E::UnresolvedReference,
+        ),
+        (
+            "ensures_local",
+            original.replace("result = a", "result = x"),
+            E::UnresolvedReference,
+        ),
+        (
+            "result_body",
+            original.replace("return x", "return result"),
+            E::UnresolvedReference,
+        ),
+        (
+            "formal_type",
+            original.replace("let a be object", "let a be set"),
+            E::InvalidShape,
+        ),
+        (
+            "result_formal_with_ensures",
+            "definition let result be object; algorithm ordinary(result) -> object ensures result = result do var x := result; x := result; return x; end; end;".to_owned(),
+            E::InvalidShape,
+        ),
+        (
+            "literal",
+            original.replace("return x", "return 0"),
+            E::InvalidShape,
+        ),
+        (
+            "extra_item",
+            format!("{original} definition end;"),
+            E::InvalidShape,
+        ),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(&arena, &env),
+            Err(expected),
+            "{label}"
+        );
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(&arena, &env),
+            Err(expected),
+            "{label} replay"
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(original);
+    let (_, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&original.replace("ordinary", "different"));
+    let empty_env = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let foreign_module = module_id("pkg", "foreign");
+    let foreign_arena = SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap();
+    let before = (
+        ast.clone(),
+        env.clone(),
+        arena.clone(),
+        foreign_env.clone(),
+        empty_env.clone(),
+        foreign_arena.clone(),
+    );
+    for (source, symbols) in [
+        (&arena, &foreign_env),
+        (&arena, &empty_env),
+        (&foreign_arena, &env),
+    ] {
+        let first = SourceVariableScopeResolver::resolve_algorithm_occurrences(source, symbols);
+        assert!(first.is_err());
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(source, symbols),
+            first
+        );
+    }
+    assert_eq!(
+        (ast, env, arena, foreign_env, empty_env, foreign_arena),
+        before
+    );
+}
+
+#[test]
+fn algorithm_ordinary_occurrences_reject_source_recovery_and_missing_write_token() {
+    use crate::names::{SourceVariableScopeError, SourceVariableScopeResolver};
+    let text = "definition let a be object; algorithm ordinary(a) -> object do var x := a; x := a; return x; var y := a; end; end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let before = (ast.clone(), env.clone(), arena.clone());
+    assert_eq!(
+        SourceVariableScopeResolver::resolve_algorithm_occurrences(&arena, &env)
+            .unwrap()
+            .bindings()
+            .len(),
+        3
+    );
+    for mutation in 0..4 {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for node in ast.node_views() {
+            let mut range = node.range();
+            if mutation == 2 {
+                // Exchange only the one-character assignment operands and descendants.
+                range.start = match (range.start, range.end) {
+                    (75, 76) => 80,
+                    (80, 81) => 75,
+                    _ => range.start,
+                };
+                range.end = range.start + (node.range().end - node.range().start);
+            }
+            let children = node
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect();
+            let replacement = match node.kind() {
+                SurfaceNodeKind::Token(token) if mutation == 1 && node.range().start == 15 => {
+                    builder.add_recovered_token(token.kind, token.text.clone(), range)
+                }
+                SurfaceNodeKind::Token(token) if mutation == 3 && node.range().start == 97 => {
+                    assert_eq!(token.text.as_ref(), "y");
+                    builder.add_token(token.kind, "x", range)
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), range)
+                }
+                SurfaceNodeKind::Lvalue if mutation == 0 => {
+                    builder.add_node(node.kind().clone(), range, Vec::new())
+                }
+                kind => builder.add_node(kind.clone(), range, children),
+            };
+            rebuilt.push(replacement);
+        }
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&changed, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&changed, &shells, namespace.clone())
+                .collect(&module);
+        let changed_arena = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        if mutation >= 2 {
+            assert!(collected.diagnostics().is_empty());
+            if mutation == 2 {
+                assert_eq!(collected.env(), &env);
+            }
+            crate::symbols::validate_source_symbol_env(&changed_arena, collected.env()).unwrap();
+        }
+        let changed_before = (changed.clone(), collected.clone(), changed_arena.clone());
+        let first = SourceVariableScopeResolver::resolve_algorithm_occurrences(
+            &changed_arena,
+            collected.env(),
+        );
+        assert!(first.is_err(), "source mutation {mutation}");
+        if mutation >= 2 {
+            assert_eq!(first, Err(SourceVariableScopeError::InvalidShape));
+        }
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_algorithm_occurrences(
+                &changed_arena,
+                collected.env()
+            ),
+            first
+        );
+        assert_eq!((changed, collected, changed_arena), changed_before);
+    }
+    assert_eq!((ast, env, arena), before);
+}

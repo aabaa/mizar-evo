@@ -25978,3 +25978,158 @@ fn source_public_algorithm_export_candidates_preserve_refusals() {
         }
     }
 }
+
+#[test]
+fn algorithm_ordinary_occurrences_preserve_source_binding_targets() {
+    use mizar_checker::binding_env::BindingKind;
+    use mizar_checker::type_checker::{TermReference, TermStatus, TypeHeadRef};
+    use mizar_checker::typed_ast::TypeEntryActual;
+    use mizar_session::SourceAnchor;
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    for (label, text, declarations, expected_uses, captures) in [
+        (
+            "shadow_snapshot",
+            "definition let a be object; terminating algorithm sample(a) -> object ensures result = a do snapshot before; var a := a; ghost var g := a; const c := a; a := c; assert not a = c; snapshot after; return a; end; end;",
+            vec![15, 113, 131, 145],
+            vec![
+                (57, "header", Some(15)),
+                (78, "term", None),
+                (87, "term", Some(15)),
+                (118, "term", Some(15)),
+                (136, "term", Some(113)),
+                (150, "term", Some(113)),
+                (153, "lvalue", Some(113)),
+                (158, "term", Some(145)),
+                (172, "term", Some(113)),
+                (176, "term", Some(145)),
+                (202, "term", Some(113)),
+            ],
+            vec![("before", vec![15]), ("after", vec![113, 131, 145])],
+        ),
+        (
+            "parameter_result",
+            "definition let result be object; algorithm named(result) -> object do var result := result; return result; end; end;",
+            vec![15, 74],
+            vec![
+                (49, "header", Some(15)),
+                (84, "term", Some(15)),
+                (99, "term", Some(74)),
+            ],
+            vec![],
+        ),
+        (
+            "local_result",
+            "definition let a be object; algorithm ordinary(a) -> object ensures result = a do var result := a; result := a; assert result = a; return result; end; end;",
+            vec![15, 86],
+            vec![
+                (47, "header", Some(15)),
+                (68, "term", None),
+                (77, "term", Some(15)),
+                (96, "term", Some(15)),
+                (99, "lvalue", Some(86)),
+                (109, "term", Some(15)),
+                (119, "term", Some(86)),
+                (128, "term", Some(15)),
+                (138, "term", Some(86)),
+            ],
+            vec![],
+        ),
+    ] {
+        let (source, typed, symbols) = super::source_registration_inputs(
+            &config.workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(text),
+        )
+        .unwrap();
+        let checked =
+            mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)
+                .unwrap();
+        let bindings = checked.bindings().bindings();
+        assert_eq!(
+            bindings
+                .iter()
+                .filter(|(_, binding)| binding.kind != BindingKind::Generated)
+                .map(|(_, binding)| binding.declaration_range.start)
+                .collect::<Vec<_>>(),
+            declarations,
+            "{label} source declarations"
+        );
+        let generated = bindings
+            .iter()
+            .filter(|(_, binding)| binding.kind == BindingKind::Generated)
+            .collect::<Vec<_>>();
+        assert_eq!(generated.len(), usize::from(label != "parameter_result"));
+        if let Some((id, _)) = generated.first() {
+            assert_eq!(bindings.iter().nth(1).unwrap().0, *id);
+        }
+        let inference = checked.inference();
+        assert!(inference.diagnostics().is_empty());
+        assert!(inference.facts().is_empty());
+        assert!(inference.candidate_sets().is_empty());
+        let mut actual_uses = Vec::new();
+        for (_, term) in inference.terms().iter() {
+            assert_eq!(term.status, TermStatus::Inferred);
+            let Some(TermReference::Binding(binding)) = term.reference else {
+                panic!("{label} missing binding")
+            };
+            let node = typed.node(term.site.node()).unwrap();
+            let SourceAnchor::Range(range) = node.anchor else {
+                panic!("{label} missing source range")
+            };
+            let role = match source
+                .arena()
+                .node(node.resolved_node.unwrap())
+                .unwrap()
+                .kind()
+            {
+                K::Token(_) => "header",
+                K::Lvalue => "lvalue",
+                K::TermReference => "term",
+                _ => panic!("{label} unexpected ordinary use owner"),
+            };
+            let target = bindings.get(binding).unwrap();
+            let declaration =
+                (target.kind != BindingKind::Generated).then_some(target.declaration_range.start);
+            actual_uses.push((range.start, role, declaration));
+            let TypeEntryActual::Known(ty) = inference
+                .type_entries()
+                .get(term.type_entry)
+                .unwrap()
+                .actual
+            else {
+                panic!("{label} unknown type")
+            };
+            assert_eq!(
+                inference.normalized_types().get(ty).unwrap().head,
+                TypeHeadRef::BuiltinObject
+            );
+        }
+        actual_uses.sort_by_key(|(start, _, _)| *start);
+        assert_eq!(actual_uses, expected_uses, "{label} source use targets");
+        assert_eq!(
+            checked
+                .snapshots()
+                .values()
+                .map(|(name, captures)| (
+                    name.as_str(),
+                    captures
+                        .iter()
+                        .map(|id| bindings.get(*id).unwrap().declaration_range.start)
+                        .collect::<Vec<_>>()
+                ))
+                .collect::<Vec<_>>(),
+            captures,
+            "{label} source snapshot targets"
+        );
+        assert_eq!(checked.typed(), &typed);
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        assert_eq!(core, step5c14_static_core(&case, text).unwrap());
+        eprintln!(
+            "ALGORITHM_OCCURRENCE_BASELINE:{label}:{:?}",
+            (&checked, &core)
+        );
+    }
+}

@@ -373,3 +373,6 @@ Spec11 [visibility](../../../spec/en/11.symbol_management.md#114-public-and-priv
 
 ## Source theorem module summary candidate
 Spec12 [import prelude](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [forwarding exports](../../../spec/en/12.modules_and_namespaces.md#124-export-statements), [public interface](../../../spec/en/12.modules_and_namespaces.md#125-visibility-control-privatepublic) and existing [source export-row mapping](#source-public-theorem-export-candidates) map to the bounded [summary candidate owner](./symbols.md#source-theorem-module-summary-candidate); actual absence checks and Artifact shape validation confer no publication, semantic fingerprint or acceptance credit.
+
+## Algorithm ordinary variable occurrences
+Spec04.6 and spec20.1/20.6.1 map to the [ordinary occurrence owner](./names.md#algorithm-ordinary-variable-occurrences) and existing Checker intake; labels/tests.rs and runner/tests.rs preserve declaration/use identity and algorithm outputs without widening grammar or semantic coverage.

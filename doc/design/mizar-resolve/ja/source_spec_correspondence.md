@@ -349,3 +349,6 @@ Spec11 [visibility](../../../spec/en/11.symbol_management.md#114-public-and-priv
 
 ## Source theorem module summary candidate
 Spec12 の [import prelude](../../../spec/en/12.modules_and_namespaces.md#123-import-statements)、[forwarding export](../../../spec/en/12.modules_and_namespaces.md#124-export-statements)、[public interface](../../../spec/en/12.modules_and_namespaces.md#125-visibility-control-privatepublic) と既存 [source export-row mapping](./source_spec_correspondence.md#source-public-theorem-export-candidates) は限定 [summary candidate owner](./symbols.md#source-theorem-module-summary-candidate) に対応する。実不在検査と Artifact shape 検証は publication、semantic fingerprint、acceptance の credit を与えない。
+
+## Algorithm ordinary variable occurrences
+Spec04.6 and spec20.1/20.6.1 map to the [ordinary occurrence owner](./names.md#algorithm-ordinary-variable-occurrences) and existing Checker intake; labels/tests.rs and runner/tests.rs preserve declaration/use identity and algorithm outputs without widening grammar or semantic coverage.

@@ -3024,6 +3024,10 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 `check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert と限定 while guard に対応し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、限定 while invariant 以外の注釈、justification、他の契約、限定 while 以外の制御、入れ子 snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
 
+### Algorithm ordinary occurrence intake
+既存symbol/source/neutral認証後、object結果branchは[Resolver通常occurrence](../../mizar-resolve/ja/names.md#algorithm-ordinary-variable-occurrences)を取り込む。元binder node/range/kind/scopeで各宣言を従来の挿入位置のChecker BindingIdへ対応させ、生成resultは分離する。全参照の網羅とrole/identity検査によりResolver targetを通常useに使用し、BindingEnv名lookupへのfallbackやid/ordinal castは行わない。
+既存context、binding可視性/type site、引数/header入力、生成resultの順序、inference/owner/snapshot/Core出力を保持する。厳密なensures特殊resultだけ生成bindingを使い、snapshot captureのBindingEnv選択は保持する。引数なしvoid/claim branchとruntime choice型付けは変更しない。scope失敗はalgorithms.unsupported_source_typesへ変換し、先行SymbolEnv errorを優先する。既存API基礎テストと実sourceの下位表で初期化shadowing、全参照role、result scope、出力同一性を検証する。
+
 ## Source attributed argument widening
 
 `check_source_attribute_widening_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, &RegistrationDatabase)` は既存 `(ExistentialGateOutput, CoercionCheckingOutput, OverloadCollectionOutput, CandidateViabilityOutput)` を `Result<_, String>` で返し、新 payload・proof receipt は追加しない。

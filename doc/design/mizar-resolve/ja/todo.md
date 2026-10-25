@@ -653,6 +653,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 54. **[Source algorithm state syntax payloads](../../task_contracts/ja/RESOLVE-SOURCE-ALGORITHM-STATE-SYNTAX-PAYLOADS.md).** [x]
 55. **[Source public algorithm export candidates](../../task_contracts/ja/RESOLVE-SOURCE-PUBLIC-ALGORITHM-EXPORT-ROWS.md).** [x]
 56. **[Source algorithm ModuleSummary candidate](../../task_contracts/ja/RESOLVE-SOURCE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
+57. **[Algorithm ordinary occurrence ownership](../../task_contracts/ja/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).** [x]
 
 ## crate close-out
 

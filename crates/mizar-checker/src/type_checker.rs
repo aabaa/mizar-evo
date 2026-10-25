@@ -192,6 +192,7 @@ pub fn check_source_algorithm_types<'a>(
     symbols: &SymbolEnv,
 ) -> Result<SourceAlgorithmCheck<'a>, String> {
     use crate::binding_env::{BindingLookupResult, BindingLookupSite};
+    use mizar_resolve::names::{SourceVariableReferenceKind as R, SourceVariableScopeResolver};
     let invalid = || "algorithms.unsupported_source_types".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
     let node = |id| source.arena().node(id).ok_or_else(invalid);
@@ -473,6 +474,8 @@ pub fn check_source_algorithm_types<'a>(
         [ensures] if node(*ensures)?.kind() == &K::AlgorithmEnsuresClause => Some(*ensures),
         _ => return Err(invalid()),
     };
+    let occurrences = SourceVariableScopeResolver::resolve_algorithm_occurrences(source, symbols)
+        .map_err(|_| invalid())?;
     let body_statements = parts(*statements, &K::AlgorithmStatementList)?;
     let contract_profile = ensures.is_some()
         || body_statements.iter().any(|statement| {
@@ -533,6 +536,12 @@ pub fn check_source_algorithm_types<'a>(
         BindingDraft::from_local_term(definition_context, BindingKind::DefinitionParameter, &local);
     draft.type_site = BindingTypeSite::Source(range(*parameter_type)?);
     let parameter_binding = bindings.insert(draft);
+    let mut source_binding_sites = vec![(
+        *binder,
+        parameter_binding,
+        SourceVariableBindingKind::DefinitionParameter,
+        definition_scope.clone(),
+    )];
     let mut uses = vec![(
         *header_parameter,
         *header_parameter,
@@ -662,6 +671,12 @@ pub fn check_source_algorithm_types<'a>(
                     body_context,
                     BindingKind::LetBinding,
                     &local,
+                ));
+                source_binding_sites.push((
+                    *binder,
+                    binding,
+                    SourceVariableBindingKind::AlgorithmLocal,
+                    body_scope.clone(),
                 ));
                 let term = only(*initializer, &K::TermExpression)?;
                 uses.push((
@@ -800,6 +815,47 @@ pub fn check_source_algorithm_types<'a>(
         .map(|usage| Ok((range(usage.1)?.start, usage)))
         .collect::<Result<Vec<_>, String>>()?;
     uses.sort_by_key(|(ordinal, _)| *ordinal);
+    let mut declarations = occurrences
+        .bindings()
+        .iter()
+        .map(|entry| {
+            Ok((
+                source.resolved_node_for(entry.node()).ok_or_else(invalid)?,
+                entry,
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, String>>()?;
+    if declarations.len() != occurrences.bindings().len() {
+        return Err(invalid());
+    }
+    let mut source_binding_targets = BTreeMap::new();
+    for (binder, actual, kind, scope) in source_binding_sites {
+        let declaration = declarations.remove(&binder).ok_or_else(invalid)?;
+        if declaration.kind() != kind
+            || declaration.range() != range(binder)?
+            || declaration.scope() != &scope
+            || declaration.spelling() != identifier(binder)?
+        {
+            return Err(invalid());
+        }
+        source_binding_targets.insert(declaration.id(), actual);
+    }
+    if !declarations.is_empty() {
+        return Err(invalid());
+    }
+    let mut ordinary_uses = occurrences
+        .references()
+        .iter()
+        .map(|entry| {
+            Ok((
+                source.resolved_node_for(entry.node()).ok_or_else(invalid)?,
+                entry,
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, String>>()?;
+    if ordinary_uses.len() != occurrences.references().len() {
+        return Err(invalid());
+    }
     let all_bindings = bindings
         .iter()
         .filter_map(|(id, entry)| (entry.kind != BindingKind::Generated).then_some(id))
@@ -901,16 +957,27 @@ pub fn check_source_algorithm_types<'a>(
         } else {
             &body_scope
         };
-        let lookup = BindingLookupSite::new(
-            identifier(token)?,
-            context,
-            Some(scope.clone()),
-            range(token)?.start,
-        );
-        let BindingLookupResult::Local(binding) =
-            bindings.lookup(&lookup).map_err(|_| invalid())?
-        else {
-            return Err(invalid());
+        let binding = if context == ensures_context && identifier(token)? == "result" {
+            result_binding.ok_or_else(invalid)?
+        } else {
+            let reference = ordinary_uses.remove(&term).ok_or_else(invalid)?;
+            let kind = if term == *header_parameter {
+                R::AlgorithmParameter
+            } else if node(term)?.kind() == &K::Lvalue {
+                R::AlgorithmAssignmentTarget
+            } else {
+                R::Term
+            };
+            if reference.kind() != kind
+                || reference.range() != range(token)?
+                || reference.scope() != scope
+                || reference.spelling() != identifier(token)?
+            {
+                return Err(invalid());
+            }
+            *source_binding_targets
+                .get(&reference.binding())
+                .ok_or_else(invalid)?
         };
         let ty = *binding_types.get(&binding).ok_or_else(invalid)?;
         let typed_node = TypedNodeId::new(term.index());
@@ -946,6 +1013,9 @@ pub fn check_source_algorithm_types<'a>(
         if let Some(local) = initialized_binding {
             binding_types.insert(local, ty);
         }
+    }
+    if !ordinary_uses.is_empty() {
+        return Err(invalid());
     }
     if let Some((choice, target)) = runtime_choice {
         use crate::registration_resolution::{

@@ -695,6 +695,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 54. **[Source algorithm state syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-ALGORITHM-STATE-SYNTAX-PAYLOADS.md).** [x]
 55. **[Source public algorithm export candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-ALGORITHM-EXPORT-ROWS.md).** [x]
 56. **[Source algorithm ModuleSummary candidate](../../task_contracts/en/RESOLVE-SOURCE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
+57. **[Algorithm ordinary occurrence ownership](../../task_contracts/en/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).** [x]
 
 ## Crate Close-Out
 

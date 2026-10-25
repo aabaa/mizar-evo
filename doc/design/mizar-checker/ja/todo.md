@@ -1274,3 +1274,5 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 ## Source theorem registration closure
 
 - [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).
+
+- [x] [Algorithm ordinary occurrence intake](../../task_contracts/ja/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).

@@ -4844,6 +4844,10 @@ pub enum SourceVariableBindingKind {
     GivenWitness,
     /// A proof-local witness introduced by `consider`.
     ConsiderWitness,
+    /// A parameter declared by the surrounding definition block.
+    DefinitionParameter,
+    /// An initialized algorithm-local declaration.
+    AlgorithmLocal,
 }
 
 /// Kind of source variable reference admitted by the variable resolver.
@@ -4856,14 +4860,18 @@ pub enum SourceVariableReferenceKind {
     InlineFunctor { arity: usize },
     /// A call to an inline predicate.
     InlinePredicate { arity: usize },
+    /// An algorithm header parameter selection.
+    AlgorithmParameter,
+    /// A direct algorithm assignment destination.
+    AlgorithmAssignmentTarget,
 }
 
 impl SourceVariableReferenceKind {
-    /// Returns the inline-call arity, or `None` for a plain term.
+    /// Returns the inline-call arity, or `None` for an ordinary occurrence.
     #[must_use]
     pub const fn arity(self) -> Option<usize> {
         match self {
-            Self::Term => None,
+            Self::Term | Self::AlgorithmParameter | Self::AlgorithmAssignmentTarget => None,
             Self::InlineFunctor { arity } | Self::InlinePredicate { arity } => Some(arity),
         }
     }
@@ -5388,6 +5396,339 @@ impl ResolvedVariableScope {
 pub struct SourceVariableScopeResolver;
 
 impl SourceVariableScopeResolver {
+    /// Resolves ordinary names in the bounded source algorithm profile.
+    pub fn resolve_algorithm_occurrences(
+        source: &SurfaceResolvedArena,
+        symbols: &crate::env::SymbolEnv,
+    ) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        use self::{SourceVariableBindingKind as B, SourceVariableReferenceKind as R};
+        use mizar_session::SourceAnchor;
+        use mizar_syntax::{SurfaceFormulaPrefixOperator::Not, SurfaceNodeKind as K};
+        let invalid = || SourceVariableScopeError::InvalidShape;
+        if source.module() != symbols.module_id() {
+            return Err(SourceVariableScopeError::ModuleMismatch);
+        }
+        for (_, node) in source.arena().iter() {
+            if node.origin().is_recovered() || matches!(node.kind(), K::ErrorRecovery(_)) {
+                return Err(SourceVariableScopeError::RecoveredSyntax);
+            }
+            if node.origin().module_id() != source.module() {
+                return Err(SourceVariableScopeError::ModuleMismatch);
+            }
+            if node.origin().source_id() != source.source_id()
+                || !matches!(node.origin().anchor(), SourceAnchor::Range(range) if range.source_id == source.source_id() && range.start <= range.end)
+            {
+                return Err(SourceVariableScopeError::SourceMismatch);
+            }
+            let mut end = 0;
+            for child in node.children() {
+                let child = source.arena().node(*child).ok_or_else(invalid)?;
+                let SourceAnchor::Range(span) = child.origin().anchor() else {
+                    return Err(invalid());
+                };
+                if !matches!(node.kind(), K::Root) && span.start < end {
+                    return Err(invalid());
+                }
+                end = span.end;
+            }
+        }
+        let ast =
+            crate::symbols::validated_source_symbol_ast(source, symbols).map_err(|_| invalid())?;
+        validate_variable_surface(&ast)?;
+        let view = |id| ast.node_view(id).ok_or_else(invalid);
+        let parts = |id, kind: &K| {
+            let current = view(id)?;
+            (current.kind() == kind)
+                .then_some(current.children())
+                .ok_or_else(invalid)
+        };
+        let identifier = |id| match view(id)?.kind() {
+            K::Token(t) if t.kind == SurfaceTokenKind::Identifier => Ok(t.text.as_ref()),
+            _ => Err(invalid()),
+        };
+        let shape = |id, kind: &K, layout: &[&str]| {
+            let children = parts(id, kind)?;
+            if children.len() != layout.len() {
+                return Err(invalid());
+            }
+            for (child, text) in children.iter().zip(layout).filter(|(_, t)| !t.is_empty()) {
+                let kind = if text.chars().all(char::is_alphabetic) {
+                    SurfaceTokenKind::ReservedWord
+                } else {
+                    SurfaceTokenKind::ReservedSymbol
+                };
+                if !matches!(view(*child)?.kind(), K::Token(t) if t.kind == kind && t.text.as_ref() == *text)
+                {
+                    return Err(invalid());
+                }
+            }
+            Ok(children)
+        };
+        let only = |id, kind: &K| Ok::<_, SourceVariableScopeError>(shape(id, kind, &[""])?[0]);
+        let radix =
+            |id, text| shape(only(id, &K::TypeExpression)?, &K::TypeHead, &[text]).map(|_| ());
+        let structural = parts(ast.root().ok_or_else(invalid)?, &K::Root)?
+            .iter()
+            .copied()
+            .filter(|id| !matches!(ast.node_view(*id).map(|v| v.kind()), Some(K::Token(_))))
+            .collect::<Vec<_>>();
+        let [unit] = structural.as_slice() else {
+            return Err(invalid());
+        };
+        let block = only(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
+        let p = shape(
+            block,
+            &K::DefinitionBlockItem,
+            &["definition", "", "", "end", ";"],
+        )?;
+        let (parameter, algorithm) = (p[1], p[2]);
+        let p = shape(parameter, &K::DefinitionParameter, &["let", "", ";"])?;
+        let p = shape(p[1], &K::QualifiedVariableSegment, &["", "be", ""])?;
+        let binder = p[0];
+        radix(p[2], "object")?;
+        let mut p = parts(algorithm, &K::AlgorithmDefinition)?;
+        if let [termination, rest @ ..] = p
+            && view(*termination)?.kind() == &K::AlgorithmTerminationClause
+        {
+            shape(
+                *termination,
+                &K::AlgorithmTerminationClause,
+                &["terminating"],
+            )?;
+            p = rest;
+        }
+        let [
+            kw,
+            name,
+            parameters,
+            arrow,
+            result_type,
+            clauses @ ..,
+            body,
+            semi,
+        ] = p
+        else {
+            return Err(invalid());
+        };
+        for (id, text) in [(*kw, "algorithm"), (*arrow, "->"), (*semi, ";")] {
+            if !matches!(view(id)?.kind(), K::Token(t) if t.text.as_ref() == text && t.kind == if text == "algorithm" { SurfaceTokenKind::ReservedWord } else { SurfaceTokenKind::ReservedSymbol })
+            {
+                return Err(invalid());
+            }
+        }
+        identifier(*name)?;
+        radix(*result_type, "object")?;
+        let header = shape(*parameters, &K::AlgorithmParameters, &["(", "", ")"])?[1];
+        let statements = shape(*body, &K::AlgorithmBody, &["do", "", "end"])?[1];
+        let ensures = match clauses {
+            [] => None,
+            [ensures] => Some(shape(*ensures, &K::AlgorithmEnsuresClause, &["ensures", ""])?[1]),
+            _ => return Err(invalid()),
+        };
+        if ensures.is_some() && identifier(binder)? == "result" {
+            return Err(invalid());
+        }
+        let definition_scope =
+            LocalTermScope::new(vec![u32::try_from(block.index()).map_err(|_| invalid())?]);
+        let body_scope = LocalTermScope::new(vec![
+            definition_scope.path()[0],
+            u32::try_from(body.index()).map_err(|_| invalid())?,
+        ]);
+        let mut declarations = vec![(binder, view(parameter)?.range().end, B::DefinitionParameter)];
+        let mut uses = vec![(header, header, false, R::AlgorithmParameter)];
+        let mut formulas = ensures.into_iter().map(|id| (id, true)).collect::<Vec<_>>();
+        let mut terms = Vec::new();
+        let body_statements = parts(statements, &K::AlgorithmStatementList)?;
+        let mut statement_order = body_statements.to_vec();
+        if body_statements
+            .iter()
+            .any(|id| view(*id).is_ok_and(|v| v.kind() == &K::WhileStatement))
+        {
+            let [initial, loop_site, returned] = body_statements else {
+                return Err(invalid());
+            };
+            if ensures.is_none() || view(*returned)?.kind() != &K::ReturnStatement {
+                return Err(invalid());
+            }
+            shape(*initial, &K::VariableDeclaration, &["var", "", ";"])?;
+            let p = shape(
+                *loop_site,
+                &K::WhileStatement,
+                &["while", "", "do", "", "", "end", ";"],
+            )?;
+            if !matches!(
+                view(only(p[1], &K::FormulaExpression)?)?.kind(),
+                K::PrefixFormula(Not)
+            ) {
+                return Err(invalid());
+            }
+            let invariant = shape(p[3], &K::LoopInvariantClause, &["invariant", "", ";"])?[1];
+            if view(only(invariant, &K::FormulaExpression)?)?.kind()
+                != &K::BuiltinPredicateApplication
+            {
+                return Err(invalid());
+            }
+            let assignment = only(p[4], &K::AlgorithmStatementList)?;
+            if view(assignment)?.kind() != &K::AssignmentStatement {
+                return Err(invalid());
+            }
+            formulas.extend([(p[1], false), (invariant, false)]);
+            statement_order = vec![*initial, assignment, *returned];
+        }
+        let mut snapshot_names = BTreeSet::new();
+        for statement in statement_order {
+            let current = view(statement)?;
+            match current.kind() {
+                K::VariableDeclaration => {
+                    let offset = usize::from(current.children().len() == 4);
+                    let keyword = view(*current.children().get(offset).ok_or_else(invalid)?)?
+                        .as_token()
+                        .ok_or_else(invalid)?
+                        .text
+                        .as_ref();
+                    if !matches!(keyword, "var" | "const") {
+                        return Err(invalid());
+                    }
+                    let layout = if offset == 1 {
+                        vec!["ghost", keyword, "", ";"]
+                    } else {
+                        vec![keyword, "", ";"]
+                    };
+                    let p = shape(statement, &K::VariableDeclaration, &layout)?;
+                    let binding = p[offset + 1];
+                    let p = shape(binding, &K::VariableBinding, &["", ":=", ""])?;
+                    declarations.push((p[0], view(binding)?.range().end, B::AlgorithmLocal));
+                    terms.push((p[2], false));
+                }
+                K::AssignmentStatement => {
+                    let p = shape(statement, &K::AssignmentStatement, &["", ":=", "", ";"])?;
+                    uses.push((
+                        p[0],
+                        only(p[0], &K::Lvalue)?,
+                        true,
+                        R::AlgorithmAssignmentTarget,
+                    ));
+                    terms.push((p[2], false));
+                }
+                K::AssertStatement => {
+                    formulas.push((
+                        shape(statement, &K::AssertStatement, &["assert", "", ";"])?[1],
+                        false,
+                    ));
+                }
+                K::ReturnStatement => {
+                    let expression =
+                        shape(statement, &K::ReturnStatement, &["return", "", ";"])?[1];
+                    let term = only(expression, &K::TermExpression)?;
+                    if view(term)?.kind() == &K::ChoiceTerm {
+                        let p = shape(term, &K::ChoiceTerm, &["the", ""])?;
+                        radix(p[1], "set")?;
+                        if ensures.is_none() || body_statements.len() != 1 {
+                            return Err(invalid());
+                        }
+                    } else {
+                        terms.push((expression, false));
+                    }
+                }
+                K::BreakStatement => {
+                    shape(statement, &K::BreakStatement, &["break", ";"])?;
+                }
+                K::SnapshotStatement => {
+                    let p = shape(statement, &K::SnapshotStatement, &["snapshot", "", ";"])?;
+                    if !snapshot_names.insert(identifier(p[1])?) {
+                        return Err(invalid());
+                    }
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        for (expression, special) in formulas {
+            let outer = only(expression, &K::FormulaExpression)?;
+            let equality = if !special && matches!(view(outer)?.kind(), K::PrefixFormula(Not)) {
+                shape(outer, view(outer)?.kind(), &["not", ""])?[1]
+            } else {
+                outer
+            };
+            let p = shape(equality, &K::BuiltinPredicateApplication, &["", "=", ""])?;
+            terms.extend([(p[0], special), (p[2], special)]);
+        }
+        for (expression, special) in terms {
+            let term = only(expression, &K::TermExpression)?;
+            let token = only(term, &K::TermReference)?;
+            if !(special && identifier(token)? == "result") {
+                uses.push((term, token, !special, R::Term));
+            }
+        }
+        declarations.sort_by_key(|(id, ..)| ast.node_view(*id).map(|v| v.range().start));
+        let mut bindings = Vec::<SourceVariableBinding>::new();
+        let mut visibility = Vec::new();
+        for (node, visible_after, kind) in declarations {
+            let scope = if kind == B::DefinitionParameter {
+                &definition_scope
+            } else {
+                &body_scope
+            };
+            let spelling = identifier(node)?;
+            if bindings
+                .iter()
+                .any(|b| &b.scope == scope && b.spelling == spelling)
+            {
+                return Err(invalid());
+            }
+            bindings.push(SourceVariableBinding {
+                id: SourceVariableBindingId(bindings.len()),
+                kind,
+                spelling: spelling.to_owned(),
+                node,
+                range: view(node)?.range(),
+                scope: scope.clone(),
+                ordinal: bindings.len(),
+                declared_type: (kind == B::DefinitionParameter).then_some(SourceVariableType {
+                    radix: SourceVariableTypeRadix::Object,
+                    attributes: Vec::new(),
+                }),
+                arity: None,
+                captures: Vec::new(),
+            });
+            visibility.push(visible_after);
+        }
+        uses.sort_by_key(|(_, token, ..)| ast.node_view(*token).map(|v| v.range().start));
+        let mut references = Vec::new();
+        for (node, token, body, kind) in uses {
+            let scope = if body { &body_scope } else { &definition_scope };
+            let spelling = identifier(token)?;
+            let range = view(token)?.range();
+            let binding = bindings
+                .iter()
+                .filter(|binding| {
+                    binding.spelling == spelling
+                        && binding.scope.contains(scope)
+                        && visibility[binding.id.index()] <= range.start
+                })
+                .max_by_key(|binding| (binding.scope.path().len(), binding.ordinal))
+                .ok_or(SourceVariableScopeError::UnresolvedReference)?
+                .id;
+            references.push(SourceVariableReference {
+                id: SourceVariableReferenceId(references.len()),
+                kind,
+                spelling: spelling.to_owned(),
+                node,
+                range,
+                scope: scope.clone(),
+                ordinal: references.len(),
+                binding,
+            });
+        }
+        Ok(ResolvedVariableScope {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            bindings,
+            references,
+            thesis: None,
+            statements: Vec::new(),
+        })
+    }
+
     /// Resolves source-shaped declarations and references after authenticating
     /// provenance, recovery, and structural shape.
     pub fn resolve(
@@ -5934,7 +6275,9 @@ impl<'a> VariableResolveState<'a> {
                 SourceVariableReferenceKind::InlinePredicate { .. } => {
                     SourceVariableBindingKind::InlinePredicate
                 }
-                SourceVariableReferenceKind::Term => unreachable!(),
+                SourceVariableReferenceKind::Term
+                | SourceVariableReferenceKind::AlgorithmParameter
+                | SourceVariableReferenceKind::AlgorithmAssignmentTarget => unreachable!(),
             };
             if binding_kind != expected {
                 return Err(SourceVariableScopeError::InvalidShape);
@@ -7254,6 +7597,8 @@ fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
         SourceVariableBindingKind::ComprehensionGenerator => 8,
         SourceVariableBindingKind::GivenWitness => 9,
         SourceVariableBindingKind::ConsiderWitness => 10,
+        SourceVariableBindingKind::DefinitionParameter => 11,
+        SourceVariableBindingKind::AlgorithmLocal => 12,
     }
 }
 

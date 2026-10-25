@@ -1289,3 +1289,5 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 ## Source theorem registration closure
 
 - [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/en/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).
+
+- [x] [Algorithm ordinary occurrence intake](../../task_contracts/en/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).

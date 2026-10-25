@@ -140,7 +140,7 @@ pub fn source_proof_inputs(
     Ok((scope, collection, labels))
 }
 
-fn validated_source_symbol_ast(
+pub(crate) fn validated_source_symbol_ast(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
 ) -> Result<SurfaceAst, String> {
