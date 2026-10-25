@@ -693,6 +693,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 52. **[Original source proof input acquisition](../../task_contracts/en/RESOLVE-SOURCE-PROOF-INPUTS.md).** [x]
 53. **[Source algorithm syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-ALGORITHM-SYNTAX-PAYLOADS.md).** [x]
 54. **[Source algorithm state syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-ALGORITHM-STATE-SYNTAX-PAYLOADS.md).** [x]
+55. **[Source public algorithm export candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-ALGORITHM-EXPORT-ROWS.md).** [x]
 
 ## Crate Close-Out
 

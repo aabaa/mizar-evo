@@ -4018,6 +4018,279 @@ pub fn source_public_theorem_signature_candidates(
     Ok(Some(signatures))
 }
 
+/// Projects unpublished original algorithm declarations without proof acceptance metadata.
+pub fn source_public_algorithm_export_candidates(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    identity: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+) -> Result<Option<Vec<mizar_artifact::module_summary::ExportedSymbolSummary>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    identity
+        .canonical_json()
+        .map_err(|error| error.to_string())?;
+    if identity.package_id != source.module().package().as_str()
+        || identity.module_path != source.module().path().as_str()
+    {
+        return Err("export identity does not match source module".to_owned());
+    }
+    let children = |node: SurfaceNodeView<'_>, kind, count| {
+        node.kind() == &kind && node.children().len() == count
+    };
+    let token = |node: SurfaceNodeView<'_>, kind, text: &str| {
+        node.as_token()
+            .is_some_and(|actual| actual.kind == kind && actual.text.as_ref() == text)
+    };
+    let root = ast.root_view().unwrap();
+    let units = root
+        .child_views()
+        .filter(|node| !matches!(node.kind(), SurfaceNodeKind::Token(_)))
+        .collect::<Vec<_>>();
+    let [unit] = units.as_slice() else {
+        return Ok(None);
+    };
+    if !matches!(root.kind(), SurfaceNodeKind::Root)
+        || !children(*unit, SurfaceNodeKind::CompilationUnit, 1)
+    {
+        return Ok(None);
+    }
+    let list = unit.child_views().next().unwrap();
+    if !matches!(list.kind(), SurfaceNodeKind::ItemList) {
+        return Ok(None);
+    }
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let algorithms = symbols
+        .symbols()
+        .iter()
+        .filter(|owner| owner.kind() == SymbolKind::Algorithm)
+        .collect::<Vec<_>>();
+    let items = list.child_views().collect::<Vec<_>>();
+    if items.is_empty() {
+        return Ok((shells.is_empty() && algorithms.is_empty()).then(Vec::new));
+    }
+    let [block] = items.as_slice() else {
+        return Ok(None);
+    };
+    if !children(*block, SurfaceNodeKind::DefinitionBlockItem, 5) {
+        return Ok(None);
+    }
+    let content = block.child_views().collect::<Vec<_>>();
+    let parameter = content[1];
+    if !token(content[0], SurfaceTokenKind::ReservedWord, "definition")
+        || !token(content[3], SurfaceTokenKind::ReservedWord, "end")
+        || !token(content[4], SurfaceTokenKind::ReservedSymbol, ";")
+        || !children(parameter, SurfaceNodeKind::DefinitionParameter, 3)
+    {
+        return Ok(None);
+    }
+    let parameters = parameter.child_views().collect::<Vec<_>>();
+    let segment = parameters[1];
+    if !token(parameters[0], SurfaceTokenKind::ReservedWord, "let")
+        || !token(parameters[2], SurfaceTokenKind::ReservedSymbol, ";")
+        || !children(segment, SurfaceNodeKind::QualifiedVariableSegment, 3)
+    {
+        return Ok(None);
+    }
+    let segments = segment.child_views().collect::<Vec<_>>();
+    let Some(formal) = segments[0]
+        .as_token()
+        .filter(|actual| actual.kind == SurfaceTokenKind::Identifier && !actual.text.is_empty())
+    else {
+        return Ok(None);
+    };
+    if !token(segments[1], SurfaceTokenKind::ReservedWord, "be")
+        && !token(segments[1], SurfaceTokenKind::ReservedWord, "being")
+    {
+        return Ok(None);
+    }
+    let target = content[2];
+    let algorithm = if matches!(target.kind(), SurfaceNodeKind::VisibleItem) {
+        if target.children().len() != 2 {
+            return Ok(None);
+        }
+        let visible = target.child_views().collect::<Vec<_>>();
+        if !children(visible[0], SurfaceNodeKind::VisibilityMarker, 1) {
+            return Ok(None);
+        }
+        let marker = visible[0].child_views().next().unwrap();
+        if !token(marker, SurfaceTokenKind::ReservedWord, "public")
+            && !token(marker, SurfaceTokenKind::ReservedWord, "private")
+        {
+            return Ok(None);
+        }
+        visible[1]
+    } else {
+        target
+    };
+    let parts = algorithm.child_views().collect::<Vec<_>>();
+    let header = if let [termination, rest @ ..] = parts.as_slice()
+        && matches!(
+            termination.kind(),
+            SurfaceNodeKind::AlgorithmTerminationClause
+        ) {
+        if termination.children().len() != 1
+            || !token(
+                termination.child_views().next().unwrap(),
+                SurfaceTokenKind::ReservedWord,
+                "terminating",
+            )
+        {
+            return Ok(None);
+        }
+        rest
+    } else {
+        parts.as_slice()
+    };
+    let [
+        keyword,
+        name,
+        formals,
+        arrow,
+        result_type,
+        clauses @ ..,
+        body,
+        semi,
+    ] = header
+    else {
+        return Ok(None);
+    };
+    if !matches!(algorithm.kind(), SurfaceNodeKind::AlgorithmDefinition)
+        || !token(*keyword, SurfaceTokenKind::ReservedWord, "algorithm")
+        || !matches!(name.as_token(), Some(actual) if actual.kind == SurfaceTokenKind::Identifier && !actual.text.is_empty())
+        || !children(*formals, SurfaceNodeKind::AlgorithmParameters, 3)
+        || !token(*arrow, SurfaceTokenKind::ReservedSymbol, "->")
+        || !matches!(body.kind(), SurfaceNodeKind::AlgorithmBody)
+        || !token(*semi, SurfaceTokenKind::ReservedSymbol, ";")
+    {
+        return Ok(None);
+    }
+    let formals = formals.child_views().collect::<Vec<_>>();
+    if !token(formals[0], SurfaceTokenKind::ReservedSymbol, "(")
+        || !token(
+            formals[1],
+            SurfaceTokenKind::Identifier,
+            formal.text.as_ref(),
+        )
+        || !token(formals[2], SurfaceTokenKind::ReservedSymbol, ")")
+    {
+        return Ok(None);
+    }
+    for ty in [segments[2], *result_type] {
+        if !children(ty, SurfaceNodeKind::TypeExpression, 1) {
+            return Ok(None);
+        }
+        let head = ty.child_views().next().unwrap();
+        if !children(head, SurfaceNodeKind::TypeHead, 1)
+            || !token(
+                head.child_views().next().unwrap(),
+                SurfaceTokenKind::ReservedWord,
+                "object",
+            )
+        {
+            return Ok(None);
+        }
+    }
+    if let [ensures] = clauses {
+        if !children(*ensures, SurfaceNodeKind::AlgorithmEnsuresClause, 2) {
+            return Ok(None);
+        }
+        let formula = ensures.child_views().collect::<Vec<_>>();
+        if !token(formula[0], SurfaceTokenKind::ReservedWord, "ensures")
+            || !children(formula[1], SurfaceNodeKind::FormulaExpression, 1)
+        {
+            return Ok(None);
+        }
+        let equality = formula[1].child_views().next().unwrap();
+        if !children(equality, SurfaceNodeKind::BuiltinPredicateApplication, 3) {
+            return Ok(None);
+        }
+        let operands = equality.child_views().collect::<Vec<_>>();
+        if !token(operands[1], SurfaceTokenKind::ReservedSymbol, "=") {
+            return Ok(None);
+        }
+        for (term, spelling) in [(operands[0], "result"), (operands[2], formal.text.as_ref())] {
+            if !children(term, SurfaceNodeKind::TermExpression, 1) {
+                return Ok(None);
+            }
+            let reference = term.child_views().next().unwrap();
+            if !children(reference, SurfaceNodeKind::TermReference, 1)
+                || !token(
+                    reference.child_views().next().unwrap(),
+                    SurfaceTokenKind::Identifier,
+                    spelling,
+                )
+            {
+                return Ok(None);
+            }
+        }
+    } else if !clauses.is_empty() {
+        return Ok(None);
+    }
+    let [_, algorithm_shell] = shells.declarations() else {
+        return Ok(None);
+    };
+    let [owner] = algorithms.as_slice() else {
+        return Ok(None);
+    };
+    let origin = shell_origin(
+        ast.source_id,
+        source.module(),
+        algorithm_shell,
+        &shell_context(&shells, algorithm_shell),
+    );
+    if !shells.exports().is_empty()
+        || owner.origin() != &origin
+        || !token(
+            *name,
+            SurfaceTokenKind::Identifier,
+            owner.primary_spelling(),
+        )
+    {
+        return Ok(None);
+    }
+    match (owner.visibility(), owner.export_status()) {
+        (Visibility::Private, ExportStatus::LocalOnly) => return Ok(Some(Vec::new())),
+        (Visibility::Public, ExportStatus::Exported) => {}
+        _ => return Ok(None),
+    }
+    let mut tokens = flattened_tokens(parameter);
+    for child in &parts[..parts.len() - 2] {
+        tokens.extend(flattened_tokens(*child));
+    }
+    let range = algorithm_shell.range();
+    let mut row = mizar_artifact::module_summary::ExportedSymbolSummary {
+        origin_id: owner.symbol().fqn().as_str().to_owned(),
+        fully_qualified_name: owner.symbol().fqn().as_str().to_owned(),
+        namespace_path: owner
+            .namespace()
+            .as_str()
+            .split('.')
+            .map(str::to_owned)
+            .collect(),
+        visibility: "public".to_owned(),
+        declaration_kind: "algorithm".to_owned(),
+        source_range: mizar_artifact::module_summary::SourceRangeSummary {
+            start_byte: u64::try_from(range.start)
+                .map_err(|_| "source algorithm range start exceeds u64".to_owned())?,
+            end_byte: u64::try_from(range.end)
+                .map_err(|_| "source algorithm range end exceeds u64".to_owned())?,
+        },
+        rendered_signature: tokens
+            .into_iter()
+            .map(|(_, text)| text)
+            .collect::<Vec<_>>()
+            .join(" "),
+        interface_fingerprint: mizar_session::Hash::from_bytes([0; mizar_session::Hash::BYTE_LEN]),
+        proof_status: None,
+    };
+    row.interface_fingerprint = row
+        .compute_interface_fingerprint(
+            mizar_artifact::module_summary::current_schema_version(),
+            identity,
+        )
+        .map_err(|error| error.to_string())?;
+    Ok(Some(vec![row]))
+}
+
 /// Projects unpublished original public theorem rows without proof acceptance metadata.
 pub fn source_public_theorem_export_candidates(
     ast: &SurfaceAst,
