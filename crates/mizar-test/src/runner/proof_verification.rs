@@ -34679,4 +34679,299 @@ mod term_proof_tests {
             });
         }
     }
+
+    #[test]
+    fn source_algorithm_state_witness_file_matches_genuine_transport() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_artifact::{
+            proof_witness::{
+                EvidenceKind, ProofStatus, ProofWitnessReadOptions, ProofWitnessRef,
+                builtin_proof_witness_ref_json, read_builtin_proof_witness_ref,
+            },
+            registration_summary::{ArtifactHashClass as Class, ArtifactHashRef as Ref},
+            store::{
+                CanonicalJson as J, PublishedArtifactPath, PublishedArtifactReadOptions,
+                SchemaVersion as V, artifact_hash_domain, canonical_json_bytes,
+                read_published_artifact, write_published_artifact,
+            },
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                ArtifactPublicationGap,
+                try_source_algorithm_state_transitivity_witness_draft as acquire,
+                try_source_algorithm_state_transitivity_witness_file_candidate as candidate,
+            },
+            witness_store::{read_source_theorem_witness_file as recover, stage},
+        };
+        use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let independent = flat.replace("    x := c;", "    const d := a;\n    x := c;");
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let transport =
+            std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        for text in [flat, renamed, independent] {
+            with_inputs(&text, &p, |s, c, e, b| {
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                let path = "proof-witnesses/state-file/checked.json";
+                let baseline = acquire(s, c, e, b, &p, path).unwrap().unwrap();
+                let slice = &baseline.1;
+                assert_eq!(slice.status(), &VcStatus::Open);
+                assert_eq!(
+                    slice.completeness(),
+                    DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(slice.requires_cache_miss());
+                let d = &baseline.2;
+                let m = d.kernel_acceptance();
+                let reuse = baseline.0.reuse_metadata();
+                let mut metadata = std::collections::BTreeMap::new();
+                for (key, hash) in [
+                    ("kernel_profile_fingerprint", &m.kernel_profile_fingerprint),
+                    (
+                        "verifier_policy_fingerprint",
+                        &m.verifier_policy_fingerprint,
+                    ),
+                    ("target_binding_hash", &m.target_binding_hash),
+                    ("formula_evidence_hash", &m.formula_evidence_hash),
+                    ("substitution_evidence_hash", &m.substitution_evidence_hash),
+                    ("provenance_hash", &m.provenance_hash),
+                    ("accepted_result_hash", &m.accepted_result_hash),
+                ] {
+                    metadata.insert(key.to_owned(), J::string(hash.to_artifact_hash_string()));
+                }
+                metadata.insert(
+                    "checker_schema_version".into(),
+                    J::string(m.checker_schema_version.to_string()),
+                );
+                metadata.insert(
+                    "evidence_schema_version".into(),
+                    J::string(m.evidence_schema_version.to_string()),
+                );
+                metadata.insert(
+                    "formula_context_hash".into(),
+                    m.formula_context_hash
+                        .as_ref()
+                        .map_or(J::Null, |hash| J::string(hash.to_artifact_hash_string())),
+                );
+                let wire_hex = d
+                    .payload_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                let family = "mizar-proof/source-algorithm-state-witness-file";
+                let strings = [
+                    ("schema_version", "1.0".to_owned()),
+                    ("schema_family", family.to_owned()),
+                    ("obligation_id", d.obligation_id().to_owned()),
+                    (
+                        "obligation_fingerprint",
+                        d.obligation_fingerprint().to_artifact_hash_string(),
+                    ),
+                    (
+                        "payload_schema_family",
+                        d.payload_schema().family().to_owned(),
+                    ),
+                    (
+                        "payload_schema_version",
+                        d.payload_schema().version().to_string(),
+                    ),
+                    ("payload_bytes_hex", wire_hex),
+                ]
+                .map(|(key, value)| (key, J::string(value)));
+                let file = J::object(
+                    strings
+                        .into_iter()
+                        .chain([("kernel_acceptance", J::Object(metadata))]),
+                )
+                .unwrap();
+                let domain = artifact_hash_domain(family, V::new(1, 0));
+                let digest = domain.hash(&file, &[]);
+                let hash = Ref::new(Class::Artifact, family, V::new(1, 0), digest);
+                let reference = ProofWitnessRef {
+                    schema_version: V::new(3, 0),
+                    obligation_id: d.obligation_id().into(),
+                    obligation_fingerprint: d.obligation_fingerprint().clone(),
+                    proof_status: ProofStatus::DischargedBuiltin,
+                    evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+                    witness_path: path.into(),
+                    witness_artifact_hash: hash.clone(),
+                    kernel_acceptance: m.clone(),
+                };
+                let encoded = builtin_proof_witness_ref_json(&reference).unwrap();
+                let options = ProofWitnessReadOptions {
+                    expected_witness_artifact_hash: Some(&hash),
+                    ..ProofWitnessReadOptions::default()
+                };
+                assert_eq!(
+                    read_builtin_proof_witness_ref(&encoded, options).unwrap(),
+                    reference
+                );
+                let staged = stage(d.clone()).unwrap();
+                let generic_value = d.payload_hash_value();
+                let J::Object(keys) = &generic_value else {
+                    panic!("generic object")
+                };
+                assert_eq!(keys.len(), 7);
+                assert_eq!(
+                    staged.staged_payload_hash().digest,
+                    artifact_hash_domain(d.payload_schema().family(), d.payload_schema().version())
+                        .hash(&generic_value, &[])
+                );
+                assert_ne!(staged.staged_payload_hash(), &hash);
+                assert!(staged.artifact_reference_candidate().is_none());
+                assert_eq!(
+                    baseline.0.artifact_publication().gap(),
+                    Some(ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported)
+                );
+                assert!(!reuse.cache_reuse_predicate_complete());
+                assert!(reuse.selected_proof_witness_hash().is_none());
+                assert!(baseline.0.trusted_used_axioms().is_none());
+                assert!(d.provenance().trusted_used_axioms_ref().is_none());
+                assert!(d.provenance().advisory_backend_ref().is_none());
+                let published_path = PublishedArtifactPath::new(path).unwrap();
+                let bytes = canonical_json_bytes(&file);
+                assert_eq!(bytes.last(), Some(&b'\n'));
+                let written =
+                    write_published_artifact(&transport, &published_path, &file, &domain, &[])
+                        .unwrap();
+                assert_eq!(written.artifact_hash, hash.digest);
+                let read = read_published_artifact(
+                    &transport,
+                    &published_path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&domain),
+                        expected_artifact_hash: Some(hash.digest),
+                        ..PublishedArtifactReadOptions::default()
+                    },
+                )
+                .unwrap();
+                assert_eq!(read.value, file);
+                assert_eq!(read.artifact_hash, Some(hash.digest));
+                assert_eq!(fs::read(transport.join(path)).unwrap(), bytes);
+                let refusal = recover(&read, &reference).unwrap_err();
+                assert!(refusal.starts_with("incompatible schema family for"));
+                let refused = d.clone().stage_source_theorem_file(&read, &reference);
+                assert_eq!(refused.unwrap_err(), refusal);
+                let actual = candidate(s, c, e, b, &p, path).unwrap();
+                let expected = Some((baseline.clone(), file.clone(), reference.clone()));
+                assert_eq!(actual, expected);
+                assert_eq!(candidate(s, c, e, b, &p, path).unwrap(), actual);
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+        fs::remove_dir_all(transport).unwrap();
+    }
+
+    #[test]
+    fn source_algorithm_state_witness_file_preserves_absence_and_errors() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_checker::type_checker::check_source_algorithm_types as check_source;
+        use mizar_kernel::clause::VariableId;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                source_algorithm_state_transitivity_witness_draft as explicit,
+                try_source_algorithm_state_transitivity_witness_draft as acquire,
+                try_source_algorithm_state_transitivity_witness_file_candidate as candidate,
+            },
+        };
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        let disabled = p.clone().with_kernel_evidence_formats([]);
+        let foreign = with_inputs(
+            &flat.replace("swapalgo", "foreign_algorithm"),
+            &p,
+            |_, _, e, _| e.clone(),
+        );
+        for (text, identity_error) in [(original, false), (flat.clone(), true)] {
+            with_inputs(&text, &p, |s, c, e, b| {
+                let e = if identity_error { &foreign } else { e };
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                let expected = if identity_error {
+                    check_source(s, c.typed(), e).unwrap_err()
+                } else {
+                    explicit(s, c, e, b, VariableId(99), &disabled, "../invalid").unwrap_err()
+                };
+                for limits in [None, Some([0; 4])] {
+                    let bounded = disabled.clone().with_instance_search_limits(limits);
+                    assert_eq!(
+                        acquire(s, c, e, b, &bounded, "../invalid").unwrap_err(),
+                        expected
+                    );
+                    assert_eq!(
+                        candidate(s, c, e, b, &bounded, "../invalid").unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+        let no_chain = flat.replace("    x := c;", "    x := a;");
+        for (text, miss) in [(&flat, false), (&no_chain, true)] {
+            with_inputs(text, &p, |s, c, e, b| {
+                let before = format!("{s:?}{c:?}{e:?}{b:?}{p:?}");
+                for bound in [None, Some(0), Some(2)] {
+                    let bounded = disabled
+                        .clone()
+                        .with_instance_search_limits(bound.map(|bound| [0, 0, bound, 0]));
+                    assert_eq!(acquire(s, c, e, b, &bounded, "../invalid").unwrap(), None);
+                    assert_eq!(candidate(s, c, e, b, &bounded, "../invalid").unwrap(), None);
+                }
+                let max = p
+                    .clone()
+                    .with_instance_search_limits(Some([0, 0, u64::MAX, 0]));
+                if miss {
+                    let denied = max.with_kernel_evidence_formats([]);
+                    assert_eq!(acquire(s, c, e, b, &denied, "../invalid").unwrap(), None);
+                    assert_eq!(candidate(s, c, e, b, &denied, "../invalid").unwrap(), None);
+                } else {
+                    let selected = acquire(s, c, e, b, &max, "proof-witnesses/max.json").unwrap();
+                    assert!(selected.is_some());
+                    let produced = candidate(s, c, e, b, &max, "proof-witnesses/max.json")
+                        .unwrap()
+                        .map(|(triple, _, _)| triple);
+                    assert_eq!(produced, selected);
+                    let scheduling =
+                        explicit(s, c, e, b, VariableId(2), &disabled, "../invalid").unwrap_err();
+                    assert_eq!(scheduling, "algorithm.proof.kernel_policy_rejected");
+                    assert_eq!(
+                        acquire(s, c, e, b, &disabled, "../invalid").unwrap_err(),
+                        scheduling
+                    );
+                    assert_eq!(
+                        candidate(s, c, e, b, &disabled, "../invalid").unwrap_err(),
+                        scheduling
+                    );
+                    let path = explicit(s, c, e, b, VariableId(2), &p, "../invalid").unwrap_err();
+                    assert!(path.starts_with("invalid proof witness path:"));
+                    assert_eq!(acquire(s, c, e, b, &p, "../invalid").unwrap_err(), path);
+                    assert_eq!(candidate(s, c, e, b, &p, "../invalid").unwrap_err(), path);
+                }
+                assert_eq!(format!("{s:?}{c:?}{e:?}{b:?}{p:?}"), before);
+            });
+        }
+    }
 }

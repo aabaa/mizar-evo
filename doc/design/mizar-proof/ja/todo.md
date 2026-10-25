@@ -497,6 +497,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 71. **[Optional bounded state witness draft](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-WITNESS-DRAFT.md).** [x]
 
+72. **[有限探索state証拠FILE候補](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-WITNESS-FILE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

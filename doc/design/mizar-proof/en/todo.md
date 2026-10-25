@@ -521,6 +521,8 @@ layer consumes both; one alignment task is owned here.
 
 71. **[Optional bounded state witness draft](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-WITNESS-DRAFT.md).** [x]
 
+72. **[Optional bounded state witness file](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-WITNESS-FILE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
