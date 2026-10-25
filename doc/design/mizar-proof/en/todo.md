@@ -525,6 +525,8 @@ layer consumes both; one alignment task is owned here.
 
 73. **[State witness file structural reader](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-READER.md).** [x]
 
+74. **[State Draft/file staging association](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-STAGING.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

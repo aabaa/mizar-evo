@@ -501,6 +501,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 73. **[state証拠FILE構造reader](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-READER.md).** [x]
 
+74. **[state Draft/FILE staging対応](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-STAGING.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

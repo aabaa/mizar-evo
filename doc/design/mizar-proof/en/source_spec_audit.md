@@ -108,6 +108,7 @@ matching crate or module-level boundary comment:
 | `StatusReuseMetadata` | Proof reuse metadata section in `status.md`, including accepted goal polarity in proof-evidence identity. | Architecture-22 identity and reuse metadata coverage tests, accepted-polarity hash invalidation, terminal rejection projection, plus determinism suite. | consistent for the current task scope; downstream cache consumers remain outside this crate. |
 
 ### Witness Store
+`ProofWitnessDraft::stage_source_algorithm_state_file`: [state file staging owner](./witness_store.md#source-algorithm-state-file-staging).
 `read_source_algorithm_state_witness_file`: [schema and API owner](./witness_store.md#source-algorithm-state-witness-file).
 `read_source_theorem_witness_file`: [schema and API owner](./witness_store.md#source-theorem-witness-file).
 `ProofWitnessDraft::stage_source_theorem_file`: [explicit file staging](./witness_store.md#explicit-source-theorem-file-staging).

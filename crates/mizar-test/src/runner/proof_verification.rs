@@ -35328,4 +35328,296 @@ mod term_proof_tests {
         }
         fs::remove_dir_all(root).unwrap();
     }
+
+    #[test]
+    fn source_algorithm_state_witness_file_staging_matches_genuine_association() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_artifact::store::{
+            PublishedArtifactPath as Path, PublishedArtifactReadOptions as Opt, SchemaVersion as V,
+            artifact_hash_domain, read_published_artifact as read,
+            write_published_artifact as write,
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::try_source_algorithm_state_transitivity_witness_file_candidate as file,
+            witness_store::{read_source_algorithm_state_witness_file as recover, stage},
+        };
+        let text = include_str!("../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz")
+            .replacen("    assert x = a;\n", "", 1);
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let family = "mizar-proof/source-algorithm-state-witness-file";
+        let domain = artifact_hash_domain(family, V::new(1, 0));
+        for (case, text) in [text.clone(), text.replace("swapalgo", "copyalgo")]
+            .into_iter()
+            .enumerate()
+        {
+            let p = VerifierPolicy::default()
+                .with_profile_id(format!("staging-{case}"))
+                .with_instance_search_limits(Some([0, 0, 3, 0]));
+            with_inputs(&text, &p, |s, c, e, b| {
+                let path = Path::new(format!("proof-witnesses/staging-{case}.json")).unwrap();
+                let got = file(s, c, e, b, &p, path.as_str()).unwrap().unwrap();
+                let d = &got.0.2;
+                let written = write(&root, &path, &got.1, &domain, &[]).unwrap();
+                let options = Opt {
+                    artifact_hash_domain: Some(&domain),
+                    expected_artifact_hash: Some(got.2.witness_artifact_hash.digest),
+                    ..Opt::default()
+                };
+                let received = read(&root, &path, options).unwrap();
+                assert_eq!(received.value, got.1);
+                assert_eq!(received.artifact_hash, Some(written.artifact_hash));
+                assert_eq!(recover(&received, &got.2).unwrap(), d.payload_bytes());
+                let legacy = stage(d.clone()).unwrap();
+                assert_eq!(legacy.obligation_id(), d.obligation_id());
+                assert_eq!(legacy.obligation_anchor(), d.obligation_anchor());
+                assert_eq!(legacy.obligation_fingerprint(), d.obligation_fingerprint());
+                assert_eq!(legacy.selected_class(), d.selected_class());
+                assert_eq!(legacy.selected_evidence_hash(), d.selected_evidence_hash());
+                assert_eq!(legacy.witness_path(), d.witness_path());
+                assert_eq!(legacy.provenance(), d.provenance());
+                assert_eq!(legacy.payload_schema(), d.payload_schema());
+                assert_ne!(legacy.staged_payload_hash(), &got.2.witness_artifact_hash);
+                assert!(legacy.artifact_reference_candidate().is_none());
+                let before = (got.clone(), received.clone());
+                let staged = d
+                    .clone()
+                    .stage_source_algorithm_state_file(&received, &got.2)
+                    .unwrap();
+                assert_eq!(staged.obligation_id(), legacy.obligation_id());
+                assert_eq!(staged.obligation_anchor(), legacy.obligation_anchor());
+                assert_eq!(
+                    staged.obligation_fingerprint(),
+                    legacy.obligation_fingerprint()
+                );
+                assert_eq!(staged.selected_class(), legacy.selected_class());
+                assert_eq!(
+                    staged.selected_evidence_hash(),
+                    legacy.selected_evidence_hash()
+                );
+                assert_eq!(staged.witness_path(), legacy.witness_path());
+                assert_eq!(staged.provenance(), legacy.provenance());
+                assert_eq!(staged.payload_schema().family(), family);
+                assert_eq!(staged.payload_schema().version(), V::new(1, 0));
+                assert!(staged.payload_schema().canonical_bytes_required());
+                assert_eq!(staged.staged_payload_hash(), &got.2.witness_artifact_hash);
+                assert_eq!(staged.artifact_reference_candidate(), Some(&got.2));
+                let again = d
+                    .clone()
+                    .stage_source_algorithm_state_file(&received, &got.2)
+                    .unwrap();
+                assert_eq!(staged, again);
+                assert_eq!((got, received), before);
+            });
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn source_algorithm_state_witness_file_staging_preserves_reader_errors_and_rejects_mismatch() {
+        use self::{
+            with_source_algorithm_state_draft_inputs as with_inputs,
+            with_source_theorem_file_staging_inputs as with_theorem,
+        };
+        use mizar_artifact::{
+            proof_witness::builtin_proof_witness_ref_json as encode,
+            store::{
+                CanonicalJson as J, PublishedArtifactPath as Path,
+                PublishedArtifactReadOptions as Opt, SchemaVersion as V, artifact_hash_domain,
+                read_published_artifact as read, write_published_artifact as write,
+            },
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::try_source_algorithm_state_transitivity_witness_file_candidate as file,
+            witness_store::{
+                read_source_algorithm_state_witness_file as recover,
+                read_source_theorem_witness_file as theorem,
+            },
+        };
+        let text = include_str!("../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz")
+            .replacen("    assert x = a;\n", "", 1);
+        let renamed = text
+            .replace("swapalgo", "foreign_algorithm")
+            .replace("    x := c;", "    const d := a;\n    x := c;");
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        let changed = p.clone().with_profile_id("foreign-staging-policy");
+        let mut products = Vec::new();
+        for (text, policy, path) in [
+            (&text, &p, "proof-witnesses/base.json"),
+            (&renamed, &p, "proof-witnesses/base.json"),
+            (&text, &changed, "proof-witnesses/base.json"),
+            (&text, &p, "proof-witnesses/foreign.json"),
+        ] {
+            products.push(with_inputs(text, policy, |s, c, e, b| {
+                file(s, c, e, b, policy, path).unwrap().unwrap()
+            }));
+        }
+        let mut foreign = None;
+        with_theorem(|index, got, _, _| {
+            if index == 0 {
+                foreign = Some(got.0.2.clone());
+            }
+            Ok(())
+        })
+        .unwrap();
+        let foreign = foreign.unwrap();
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let family = "mizar-proof/source-algorithm-state-witness-file";
+        let domain = artifact_hash_domain(family, V::new(1, 0));
+        let options = Opt {
+            artifact_hash_domain: Some(&domain),
+            ..Opt::default()
+        };
+        let transport = |path: &Path, value: &J| {
+            write(&root, path, value, &domain, &[]).unwrap();
+            read(&root, path, options).unwrap()
+        };
+        let reads = products
+            .iter()
+            .map(|got| {
+                let path = Path::new(got.2.witness_path.clone()).unwrap();
+                let read = transport(&path, &got.1);
+                assert_eq!(recover(&read, &got.2).unwrap(), got.0.2.payload_bytes());
+                read
+            })
+            .collect::<Vec<_>>();
+        let got = &products[0];
+        let d = &got.0.2;
+        let received = &reads[0];
+        let path = Path::new(got.2.witness_path.clone()).unwrap();
+        let mismatch = "source algorithm state witness file staging mismatch";
+        for (other, read) in products.iter().zip(&reads).skip(1) {
+            let od = &other.0.2;
+            assert!(
+                d.obligation_id() != od.obligation_id()
+                    || d.obligation_fingerprint() != od.obligation_fingerprint()
+                    || d.witness_path() != od.witness_path()
+                    || d.kernel_acceptance() != od.kernel_acceptance()
+                    || d.payload_bytes() != od.payload_bytes(),
+                "actual foreign read: {read:?}"
+            );
+            assert_eq!(
+                d.clone()
+                    .stage_source_algorithm_state_file(read, &other.2)
+                    .unwrap_err(),
+                mismatch
+            );
+            assert_eq!(
+                od.clone()
+                    .stage_source_algorithm_state_file(received, &got.2)
+                    .unwrap_err(),
+                mismatch
+            );
+        }
+        assert_eq!(foreign.selected_class(), d.selected_class());
+        assert_ne!(foreign.payload_schema(), d.payload_schema());
+        assert_eq!(
+            foreign
+                .clone()
+                .stage_source_algorithm_state_file(received, &got.2)
+                .unwrap_err(),
+            mismatch
+        );
+        let theorem_error = theorem(received, &got.2).unwrap_err();
+        assert_eq!(
+            foreign
+                .clone()
+                .stage_source_theorem_file(received, &got.2)
+                .unwrap_err(),
+            theorem_error
+        );
+        let mut missing_hash = received.clone();
+        missing_hash.artifact_hash = None;
+        let mut incompatible = got.1.clone();
+        let J::Object(ref mut fields) = incompatible else {
+            unreachable!()
+        };
+        fields.insert("schema_version".into(), J::string("2.0"));
+        fields.insert("payload_bytes_hex".into(), J::Null);
+        let incompatible = transport(&path, &incompatible);
+        let mut wrong_reference = got.2.clone();
+        wrong_reference.witness_path = "proof-witnesses/wrong.json".into();
+        for (read, reference) in [
+            (missing_hash, got.2.clone()),
+            (incompatible, got.2.clone()),
+            (received.clone(), wrong_reference),
+        ] {
+            let error = recover(&read, &reference).unwrap_err();
+            assert_ne!(error, mismatch);
+            assert_eq!(
+                foreign
+                    .clone()
+                    .stage_source_algorithm_state_file(&read, &reference)
+                    .unwrap_err(),
+                error
+            );
+        }
+        let J::Object(fields) = &got.1 else {
+            unreachable!()
+        };
+        let hash = mizar_session::hash_text("untrusted-state-association-edit");
+        for kind in ["wire", "id", "fingerprint", "metadata", "path"] {
+            let mut value = fields.clone();
+            let mut expected = got.2.clone();
+            match kind {
+                "id" => expected.obligation_id.push_str("-foreign"),
+                "fingerprint" => expected.obligation_fingerprint.digest = hash,
+                "path" => expected.witness_path = "proof-witnesses/coherent-path.json".into(),
+                "metadata" => {
+                    expected
+                        .kernel_acceptance
+                        .verifier_policy_fingerprint
+                        .digest = hash
+                }
+                _ => {}
+            }
+            let J::Object(reference) = encode(&expected).unwrap() else {
+                unreachable!()
+            };
+            for key in [
+                "obligation_id",
+                "obligation_fingerprint",
+                "kernel_acceptance",
+            ] {
+                value.insert(key.into(), reference[key].clone());
+            }
+            if kind == "wire" {
+                value.insert("payload_bytes_hex".into(), J::string("00"));
+            }
+            let edited_path = Path::new(expected.witness_path.clone()).unwrap();
+            let edited = transport(&edited_path, &J::Object(value));
+            expected.witness_artifact_hash.digest = edited.artifact_hash.unwrap();
+            let recovered = recover(&edited, &expected).unwrap();
+            if kind == "wire" {
+                assert_eq!(recovered, [0]);
+            } else {
+                assert_eq!(recovered, d.payload_bytes());
+            }
+            assert!(
+                recovered != d.payload_bytes()
+                    || expected.obligation_id != d.obligation_id()
+                    || expected.witness_path != d.witness_path()
+                    || &expected.obligation_fingerprint != d.obligation_fingerprint()
+                    || &expected.kernel_acceptance != d.kernel_acceptance()
+            );
+            assert_eq!(
+                d.clone()
+                    .stage_source_algorithm_state_file(&edited, &expected)
+                    .unwrap_err(),
+                mismatch
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 }
