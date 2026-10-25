@@ -65066,3 +65066,558 @@ fn native_algorithm_summary_frontend_caller_preserves_genuine_results_and_refusa
         }
     }
 }
+
+#[test]
+fn native_algorithm_summary_publication_preserves_real_bytes_and_refusals() {
+    use mizar_artifact::{
+        module_summary::{ModuleSummaryReadOptions, read_module_summary, write_module_summary},
+        store::parse_canonical_json_bytes,
+    };
+    use mizar_build::module_index::ModuleId as BuildModuleId;
+    use mizar_ir::{
+        identity::NamedInputHash,
+        publisher::PublishError,
+        storage::{CollectInput, RetainOwner, SchemaVersion},
+    };
+    let text = include_str!(
+        "../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let phase = IrPipelinePhase::new("SignatureCollection");
+    let kind = OutputKind::new("SourceAlgorithmModuleSummary");
+    let schema = SchemaVersion::new(1);
+    let mut displayed_baseline = None;
+    for (case, text, open, threshold) in [
+        ("disk", text.to_owned(), false, usize::MAX),
+        ("buffer", text.to_owned(), true, 0),
+        (
+            "private",
+            text.replace("terminating algorithm", "private terminating algorithm"),
+            false,
+            usize::MAX,
+        ),
+        (
+            "body",
+            text.replace("x := c;", "x := a;"),
+            false,
+            usize::MAX,
+        ),
+        ("trivia", format!(":: λ relocation\n{text}"), false, 0),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: PackageId::new("alpha"),
+            module_path: ModulePath::new("main"),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: Edition::new("2025"),
+            origin: if open {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: std::sync::Arc::from(text.as_str()),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        if open {
+            fixture.write(&[0xff]);
+        }
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor.clone(),
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+        let unit = WorkUnit::Module {
+            module: module.clone(),
+        };
+        let owner = publisher(snapshot, threshold, &unit);
+        allow_frontend(&owner, &unit);
+        let mut registry = PhaseRegistryBuilder::new();
+        registry.register_source_load();
+        registry.register_frontend(vec![]);
+        let submission = CompilerDriver::new(registry.build().unwrap())
+            .with_output_publisher(owner.clone())
+            .submit_captured(session, &ids, &snapshots, submit)
+            .unwrap();
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let handles: Vec<_> = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .cloned()
+            .collect();
+        assert_eq!(handles.len(), 2);
+        let parent = handles
+            .iter()
+            .find(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        let source_parent = handles
+            .iter()
+            .find(|handle| handle.output_kind() == &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let input = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        &owner,
+                        snapshot,
+                        parent.clone(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        assert_eq!(input.parent_outputs()[0].as_output_ref(), parent);
+        assert_eq!(parent.lineage().parents, vec![source_parent.output()]);
+        assert_eq!(parent.phase(), &IrPipelinePhase::new("Frontend"));
+        assert_eq!(parent.schema_version(), schema);
+        assert_eq!(parent.work_unit(), &IrWorkUnit::new("\"alpha\":\"main\""));
+        assert_eq!(
+            parent.placement() == &StoragePlacement::Resident,
+            threshold != 0
+        );
+        let typed = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let original = (*owner.storage().get(&typed).unwrap()).clone();
+        let (_, loaded, captured_input) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let version = &inputs.snapshot.source_versions[0];
+        assert_eq!(captured_input, &descriptor);
+        assert_eq!(version.edition.as_str(), "2025");
+        assert_eq!(loaded.source_id, version.source_id);
+        assert_eq!(loaded.source_hash, version.source_hash);
+        assert_eq!(loaded.source_hash, mizar_session::hash_text(&text));
+        assert_eq!(loaded.origin, version.origin);
+        assert_eq!(
+            matches!(version.origin, SourceOrigin::OpenBuffer { .. }),
+            open
+        );
+        assert_eq!(original.source.source_text.as_ref(), text);
+        assert_eq!(original.source.source_id, loaded.source_id);
+        assert!(original.diagnostics.is_empty() && original.cache_keys.ast.is_some());
+        let expected = inputs
+            .native_algorithm_module_summary_with_frontend_parent(&input, &owner)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            expected.module,
+            ModuleSummaryIdentity {
+                package_id: "alpha".into(),
+                package_version: Some("0.1.0".into()),
+                lockfile_identity: None,
+                module_path: "main".into(),
+                language_edition: "2025".into(),
+            }
+        );
+        assert_eq!(inputs.build_plan.packages[0].version.to_string(), "0.1.0");
+        assert_eq!(expected.source_hash, version.source_hash);
+        assert_eq!(
+            expected.exported_symbols.len(),
+            usize::from(case != "private")
+        );
+        assert!(
+            expected
+                .exported_symbols
+                .iter()
+                .all(|row| row.proof_status.is_none())
+        );
+        let bytes = write_module_summary(&expected).unwrap();
+        let parsed = parse_canonical_json_bytes(&bytes, "algorithm summary baseline").unwrap();
+        assert_eq!(
+            read_module_summary(
+                &parsed,
+                ModuleSummaryReadOptions {
+                    artifact_path: Some("algorithm summary baseline"),
+                    expected_module: Some(&expected.module),
+                    expected_interface_hash: Some(expected.interface_hash),
+                }
+            )
+            .unwrap(),
+            expected
+        );
+        if case == "disk" {
+            displayed_baseline =
+                Some((expected.interface_hash, expected.source_hash, bytes.clone()));
+        } else if matches!(case, "body" | "trivia") {
+            let (interface, source_hash, original_bytes) = displayed_baseline.as_ref().unwrap();
+            assert_eq!(&expected.interface_hash, interface);
+            assert_ne!(&expected.source_hash, source_hash);
+            assert_ne!(&bytes, original_bytes);
+        }
+        let source_named = vec![NamedInputHash {
+            name: "source".into(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.into(),
+            digest: source_key(version),
+        }];
+        assert_eq!(source_input.identities().input_hash(), source_key(version));
+        assert_eq!(source_parent.lineage().named_input_hashes, source_named);
+        let mut content = blake3::Hasher::new();
+        for field in [
+            b"mizar-ir/publisher-content-hash/v1".as_slice(),
+            bytes.as_slice(),
+        ] {
+            content.update(&(field.len() as u64).to_le_bytes());
+            content.update(field);
+        }
+        content.update(&1_u64.to_le_bytes());
+        content.update(&("parent_content".len() as u64).to_le_bytes());
+        content.update(b"parent_content");
+        content.update(parent.content_hash().as_bytes());
+        content.update(&1_u64.to_le_bytes());
+        for field in [
+            "source",
+            SOURCE_UNIT_CACHE_KEY_VERSION,
+            "mizar-ir/publisher-named-input-hash/v1",
+        ] {
+            content.update(&(field.len() as u64).to_le_bytes());
+            content.update(field.as_bytes());
+        }
+        content.update(source_key(version).as_bytes());
+        let expected_content = Hash::from_bytes(*content.finalize().as_bytes());
+        let mut blob = blake3::Hasher::new();
+        let domain = b"mizar-ir/content-blob/v1";
+        blob.update(&(domain.len() as u64).to_le_bytes());
+        blob.update(domain);
+        blob.update(&1_u32.to_le_bytes());
+        blob.update(&(bytes.len() as u64).to_le_bytes());
+        blob.update(&bytes);
+        let expected_blob = Hash::from_bytes(*blob.finalize().as_bytes());
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            captured_input.clone(),
+            input.clone(),
+            parent.clone(),
+            original.clone(),
+            expected.clone(),
+            bytes.clone(),
+            expected_content,
+            expected_blob,
+        );
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            phase.clone(),
+            kind.clone(),
+            parent.work_unit().clone(),
+        ));
+        owner.validate_published_output(snapshot, parent).unwrap();
+        assert_eq!(
+            owner.validate_current_output(snapshot, parent).is_ok(),
+            !open
+        );
+        fixture.write(b"open theorem Changed: 0 = 1;\n");
+        assert_eq!(
+            inputs.native_algorithm_module_summary_with_frontend_parent(&input, &owner),
+            Ok(Some(expected.clone()))
+        );
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        assert!(fixture.root.join("alpha").is_dir());
+        assert_eq!(
+            inputs.native_algorithm_module_summary_with_frontend_parent(&input, &owner),
+            Ok(Some(expected.clone()))
+        );
+        let sealed = inputs
+            .publish_native_algorithm_module_summary(&input, &owner)
+            .unwrap()
+            .unwrap();
+        let actual = owner.storage().get(&sealed).unwrap();
+        assert_eq!(*actual, expected);
+        assert_eq!(write_module_summary(&actual).unwrap(), bytes);
+        assert_eq!(sealed.snapshot(), snapshot);
+        assert_eq!(sealed.phase(), &phase);
+        assert_eq!(sealed.output_kind(), &kind);
+        assert_eq!(sealed.schema_version(), schema);
+        assert_eq!(sealed.work_unit(), parent.work_unit());
+        assert_eq!(sealed.lineage().parents, vec![parent.output()]);
+        assert_eq!(sealed.lineage().named_input_hashes, source_named);
+        assert_eq!(sealed.content_hash(), expected_content);
+        assert_eq!(
+            *owner.storage().side_tables(&sealed).unwrap(),
+            mizar_ir::storage::IrSideTables::default()
+        );
+        match sealed.placement() {
+            StoragePlacement::Resident => assert_eq!(threshold, usize::MAX),
+            StoragePlacement::Blob { blob, len } => {
+                assert_eq!(threshold, 0);
+                assert_eq!(*len, bytes.len());
+                assert_eq!(blob.hash(), expected_blob);
+            }
+            _ => panic!("unexpected summary storage placement"),
+        }
+        owner
+            .validate_published_output(snapshot, sealed.any())
+            .unwrap();
+        assert_eq!(
+            owner
+                .validate_current_output(snapshot, sealed.any())
+                .is_ok(),
+            !open
+        );
+        assert_eq!(*owner.storage().get(&typed).unwrap(), original);
+        let protected_outputs: Vec<_> = handles.iter().map(|handle| handle.output()).collect();
+        let protected_outputs = {
+            let mut outputs = protected_outputs;
+            outputs.push(sealed.output());
+            assert_eq!(outputs.len(), 3);
+            outputs
+        };
+        let protected_count = protected_outputs.len();
+        let collected = owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs,
+        });
+        assert_eq!(
+            (
+                collected.outputs_dropped,
+                collected.abandoned_slots_dropped,
+                collected.protected_outputs
+            ),
+            (0, 0, protected_count)
+        );
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                captured_input.clone(),
+                input,
+                parent.clone(),
+                original,
+                expected,
+                bytes,
+                expected_content,
+                expected_blob,
+            ),
+            before
+        );
+    }
+    for case in [
+        "unsupported",
+        "capture",
+        "obsolete",
+        "collected",
+        "denied-phase",
+        "denied-kind",
+    ] {
+        let fixture = Fixture::new(
+            if case == "unsupported" {
+                text.replace("-> object", "-> set").into_bytes()
+            } else {
+                text.as_bytes().to_vec()
+            }
+            .as_slice(),
+        );
+        let (_driver, submission, adapter, handle, frontend_input) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let snapshot = source_input.snapshot;
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        assert_eq!(input.parent_outputs()[0].as_output_ref(), &handle.erase());
+        let original = (*owner.storage().get(&handle).unwrap()).clone();
+        let baseline = inputs.native_algorithm_module_summary_with_frontend_parent(&input, owner);
+        if case == "unsupported" {
+            assert_eq!(baseline, Ok(None));
+        } else {
+            assert!(baseline.as_ref().unwrap().is_some());
+        }
+        let selected_inputs = SourceLoadInputs {
+            captured: if case == "capture" {
+                None
+            } else {
+                inputs.captured
+            },
+            ..inputs
+        };
+        if !matches!(case, "unsupported" | "capture") {
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new(if case == "denied-phase" {
+                    "WrongPhase"
+                } else {
+                    "SignatureCollection"
+                }),
+                OutputKind::new(if case == "denied-kind" {
+                    "WrongKind"
+                } else {
+                    "SourceAlgorithmModuleSummary"
+                }),
+                handle.work_unit().clone(),
+            ));
+        }
+        let expected_permission = PublishError::WorkUnitNotAllowed {
+            phase: phase.clone(),
+            work_unit: handle.work_unit().clone(),
+            output_kind: kind.clone(),
+        };
+        assert_eq!(
+            expected_permission.to_string(),
+            "work unit `\"alpha\":\"main\"` is not allowed for phase `SignatureCollection` and output kind `SourceAlgorithmModuleSummary`"
+        );
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            input.clone(),
+            handle.clone(),
+            original.clone(),
+        );
+        let retain = RetainOwner::new("driver116-obsolete-observer");
+        if case == "obsolete" {
+            owner
+                .storage()
+                .retain(handle.output(), retain.clone())
+                .unwrap();
+            owner.mark_obsolete(snapshot).unwrap();
+            let collected = owner.storage().collect(CollectInput {
+                snapshot,
+                protected_outputs: vec![
+                    frontend_input.parent_outputs()[0].as_output_ref().output(),
+                ],
+            });
+            assert_eq!(
+                (
+                    collected.outputs_dropped,
+                    collected.abandoned_slots_dropped,
+                    collected.retained_outputs
+                ),
+                (0, 0, 1)
+            );
+            assert_eq!(*owner.storage().get(&handle).unwrap(), original);
+        }
+        if case == "collected" {
+            let collected = owner.storage().collect(CollectInput {
+                snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(
+                (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                (2, 0)
+            );
+        }
+        let expected =
+            selected_inputs.native_algorithm_module_summary_with_frontend_parent(&input, owner);
+        match case {
+            "unsupported" => assert_eq!(expected, Ok(None)),
+            "capture" => assert_eq!(
+                expected,
+                Err("native Frontend algorithm summary capture binding failed".into())
+            ),
+            "obsolete" => assert_eq!(
+                expected,
+                Err(owner
+                    .validate_published_output(snapshot, &handle.erase())
+                    .unwrap_err()
+                    .to_string())
+            ),
+            "collected" => assert_eq!(
+                expected,
+                Err(owner
+                    .storage()
+                    .validate_handle(&handle.erase())
+                    .unwrap_err()
+                    .to_string())
+            ),
+            "denied-phase" | "denied-kind" => assert_eq!(expected, baseline),
+            _ => unreachable!(),
+        }
+        let actual = selected_inputs.publish_native_algorithm_module_summary(&input, owner);
+        if case.starts_with("denied-") {
+            assert_eq!(actual.unwrap_err(), expected_permission.to_string());
+            let collected = owner.storage().collect(CollectInput {
+                snapshot,
+                protected_outputs: vec![
+                    frontend_input.parent_outputs()[0].as_output_ref().output(),
+                    handle.output(),
+                ],
+            });
+            assert_eq!(
+                (
+                    collected.outputs_dropped,
+                    collected.abandoned_slots_dropped,
+                    collected.protected_outputs
+                ),
+                (0, 1, 2)
+            );
+        } else {
+            assert_eq!(
+                actual
+                    .map(|value| value
+                        .map(|handle| (*owner.storage().get(&handle).unwrap()).clone())),
+                expected
+            );
+        }
+        if case != "collected" {
+            assert_eq!(*owner.storage().get(&handle).unwrap(), original);
+        }
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                input,
+                handle.clone(),
+                original
+            ),
+            before
+        );
+        if case == "obsolete" {
+            assert!(owner.storage().release(handle.output(), &retain).unwrap());
+        }
+        let collected = owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(
+            (collected.outputs_dropped, collected.abandoned_slots_dropped),
+            (if case == "collected" { 0 } else { 2 }, 0)
+        );
+    }
+}

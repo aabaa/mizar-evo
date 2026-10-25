@@ -688,6 +688,8 @@ the owning producers when the paired tasks land.
 
 115. **[Native algorithm summary Frontend caller](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-SUMMARY-FRONTEND-CALLER.md).** [x]
 
+116. **[Native algorithm summary publication](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-SUMMARY-PUBLICATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

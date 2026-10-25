@@ -7503,6 +7503,116 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Seals a captured algorithm summary bound to its genuine Frontend parent.
+    pub fn publish_native_algorithm_module_summary(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<mizar_ir::storage::PhaseOutputRef<mizar_artifact::module_summary::ModuleSummary>>,
+        String,
+    > {
+        use mizar_artifact::{
+            module_summary::{ModuleSummaryReadOptions, read_module_summary, write_module_summary},
+            store::parse_canonical_json_bytes,
+        };
+
+        const STORAGE_CONTEXT: &str = "native algorithm module summary storage";
+        let Some(summary) =
+            self.native_algorithm_module_summary_with_frontend_parent(input, publisher)?
+        else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native algorithm summary publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native algorithm summary publication requires one captured source".to_owned()
+        })?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let work_unit = parent.work_unit().clone();
+        let named_input_hashes = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: source_input_hash(version),
+        }];
+        let bytes = write_module_summary(&summary).map_err(|error| error.to_string())?;
+        let value = parse_canonical_json_bytes(&bytes, STORAGE_CONTEXT)
+            .map_err(|error| error.to_string())?;
+        let decoded = read_module_summary(
+            &value,
+            ModuleSummaryReadOptions {
+                artifact_path: Some(STORAGE_CONTEXT),
+                expected_module: Some(&summary.module),
+                expected_interface_hash: Some(summary.interface_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if decoded != summary {
+            return Err("native algorithm summary publication storage mismatch".to_owned());
+        }
+        let identity = summary.module.clone();
+        let interface_hash = summary.interface_hash;
+        let phase = IrPipelinePhase::new("SignatureCollection");
+        let output_kind = OutputKind::new("SourceAlgorithmModuleSummary");
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: summary,
+                canonical_payload: Some(bytes.clone()),
+                storage_payload: Some(bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    let value = parse_canonical_json_bytes(bytes, STORAGE_CONTEXT)
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    read_module_summary(
+                        &value,
+                        ModuleSummaryReadOptions {
+                            artifact_path: Some(STORAGE_CONTEXT),
+                            expected_module: Some(&identity),
+                            expected_interface_hash: Some(interface_hash),
+                        },
+                    )
+                    .map_err(|error| BlobDecodeError::new(error.to_string()))
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes,
+                side_tables: IrSideTables::default(),
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Seals a genuine native theorem summary bound to its resolved parent.
     pub fn publish_native_theorem_module_summary(
         self,

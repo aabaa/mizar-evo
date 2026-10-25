@@ -657,6 +657,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 115. **[Native algorithm summary Frontend caller](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-SUMMARY-FRONTEND-CALLER.md).** [x]
 
+116. **[Native algorithm summary publication](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-SUMMARY-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
