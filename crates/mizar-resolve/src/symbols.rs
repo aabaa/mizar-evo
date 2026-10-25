@@ -1221,6 +1221,60 @@ impl SymbolCollectionResult {
             .collect()
     }
 
+    /// Composes bounded unpublished algorithm metadata from the retained frontend.
+    /// The caller owns acquisition, source currentness and build identity.
+    pub fn source_algorithm_module_summary_candidate(
+        &self,
+        frontend: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+        identity: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+    ) -> Result<Option<mizar_artifact::module_summary::ModuleSummary>, String> {
+        use mizar_artifact::module_summary::{
+            ModuleLexicalSummary, ModuleSummary, current_schema_version, module_summary_json,
+        };
+        if !self.diagnostics.is_empty() {
+            return Ok(None);
+        }
+        let Some(contributions) = self.export_frontend_lexical_contributions(frontend, identity)
+        else {
+            return Ok(None);
+        };
+        let locals = frontend.tokens.local_declarations();
+        if !locals.user_symbols.is_empty()
+            || !locals.operator_declarations.is_empty()
+            || !frontend.preprocessed.import_stubs.is_empty()
+        {
+            return Ok(None);
+        }
+        let ast = frontend.ast.as_ref().unwrap();
+        let arena = SurfaceResolvedArena::lower(ast, self.env.module_id())
+            .map_err(|error| error.to_string())?;
+        let Some(exported_symbols) =
+            source_public_algorithm_export_candidates(&arena, &self.env, identity)?
+        else {
+            return Ok(None);
+        };
+        let mut summary = ModuleSummary {
+            schema_version: current_schema_version(),
+            module: identity.clone(),
+            source_hash: frontend.source.source_hash,
+            interface_hash: frontend.source.source_hash,
+            exported_symbols,
+            exported_labels: Vec::new(),
+            lexical_summary: ModuleLexicalSummary {
+                schema_version: "mizar-resolve/exported-lexical/v1".to_owned(),
+                fingerprint: None,
+                contributions,
+            },
+            reexports: Vec::new(),
+            dependency_interfaces: Vec::new(),
+        };
+        summary
+            .refresh_interface_hash()
+            .map_err(|error| error.to_string())?;
+        module_summary_json(&summary).map_err(|error| error.to_string())?;
+        Ok(Some(summary))
+    }
+
     /// Composes an unpublished summary from a genuine unchanged source frontend.
     /// The caller owns frontend acquisition, source currentness and build identity.
     pub fn source_theorem_module_summary_candidate(

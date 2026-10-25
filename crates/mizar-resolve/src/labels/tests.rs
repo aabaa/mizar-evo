@@ -8477,3 +8477,360 @@ fn source_declaration_shells_preserve_upstream_errors() {
     assert_eq!((frontend, recovered_env, recovered_arena), recovered_before);
     assert_eq!((ast, env, arena, actual), before);
 }
+
+#[test]
+fn source_algorithm_module_summary_candidate_preserves_original_projection_and_refusals() {
+    use crate::symbols::source_public_algorithm_export_candidates as rows;
+    use mizar_artifact::{
+        module_summary::*,
+        store::{CanonicalHashDomain, CanonicalJson as J, HashClass, canonical_json_bytes},
+    };
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, hash_text, normalize_path,
+    };
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz"
+    );
+    let mut original = None;
+    for case in 0..22 {
+        let text = match case {
+            1 => fixture.replace("x := c;", "x := a;"),
+            2 => format!(":: λ relocation\n{fixture}"),
+            3 => fixture.replace("terminating algorithm", "private terminating algorithm"),
+            4 => String::new(),
+            5 => fixture.replace("terminating ", ""),
+            6 => fixture.replace("terminating algorithm", "public terminating algorithm"),
+            11 => fixture.replace("swapalgo", "renamed"),
+            12 => format!("import std.core;\n{fixture}"),
+            13 => format!("{fixture}\ndefinition\n let X, Y be set;\n private pred Hidden: X secret Y means X = Y;\nend;\n"),
+            14 => format!("{fixture}\nprivate infix_operator(\"+\", left, 80);\n"),
+            15 => format!("{fixture}\ndefinition\n let X, Y be set;\n synonym X alias Y for X base Y;\nend;\n"),
+            16 => format!("{fixture}\nreserve Extra for object;\n"),
+            17 => fixture.replace("-> object", "-> set"),
+            18 => include_str!("../../../../tests/miz/fail/parser/fail_parser_algorithm_verification_recovery_001.miz").to_owned(),
+            19 => format!("export std.core;\n{fixture}"),
+            20 => format!("{fixture}\n{}", fixture.replace("swapalgo", "second")),
+            21 => include_str!("../../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz").to_owned(),
+            _ => fixture.to_owned(),
+        };
+        let package = if case == 7 { "other-package" } else { "pkg" };
+        let module_path = if case == 8 { "Nested.Main" } else { "main" };
+        let edition = if case == 9 { "2026" } else { "2025" };
+        let root = std::env::temp_dir().join(format!(
+            "mizar-algorithm-summary-{}-{case}",
+            std::process::id()
+        ));
+        let path = root.join("src/main.miz");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, &text).unwrap();
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            NoImportedSummaries,
+            MizarParserSeam,
+        )
+        .run(
+            mizar_frontend::source::SourceUnitRequest {
+                snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                    "mizar-session-build-snapshot-v1:{}",
+                    "31".repeat(Hash::BYTE_LEN)
+                ))
+                .unwrap(),
+                input: SourceInput {
+                    package_id: PackageId::new(package),
+                    module_path: ModulePath::new(module_path),
+                    normalized_path: normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new(edition),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = module_id(package, module_path);
+        let shells = crate::declarations::DeclarationShellCollector::new(ast, &module).collect();
+        let collected = crate::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module_path),
+        )
+        .collect(&module);
+        let arena = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        let identity = ModuleSummaryIdentity {
+            package_id: package.into(),
+            package_version: Some(if case == 10 { "2.0" } else { "1.0" }.into()),
+            lockfile_identity: Some("caller-lock".into()),
+            module_path: module_path.into(),
+            language_edition: edition.into(),
+        };
+        let before = (frontend.clone(), collected.clone(), identity.clone());
+        let lexical = collected.export_frontend_lexical_contributions(&frontend, &identity);
+        let exported = rows(&arena, collected.env(), &identity);
+        let locals = frontend.tokens.local_declarations();
+        if case <= 11 {
+            assert!(
+                frontend.diagnostics.is_empty() && collected.diagnostics().is_empty(),
+                "{case}"
+            );
+            assert_eq!(lexical, Some(vec![]));
+            assert!(locals.user_symbols.is_empty() && locals.operator_declarations.is_empty());
+            assert!(frontend.preprocessed.import_stubs.is_empty());
+            assert!(collected.env().imports().is_empty() && collected.env().exports().is_empty());
+            assert_eq!(frontend.source.source_hash, hash_text(&text));
+            let exported = exported.unwrap().unwrap();
+            assert_eq!(exported.len(), usize::from(!matches!(case, 3 | 4)));
+            assert!(exported.iter().all(|row| row.proof_status.is_none()));
+            // Ordinary expected data comes from the two existing lower producers.
+            let mut expected = ModuleSummary {
+                schema_version: current_schema_version(),
+                module: identity.clone(),
+                source_hash: frontend.source.source_hash,
+                interface_hash: frontend.source.source_hash,
+                exported_symbols: exported,
+                exported_labels: vec![],
+                lexical_summary: ModuleLexicalSummary {
+                    schema_version: "mizar-resolve/exported-lexical/v1".into(),
+                    fingerprint: None,
+                    contributions: lexical.unwrap(),
+                },
+                reexports: vec![],
+                dependency_interfaces: vec![],
+            };
+            expected.refresh_interface_hash().unwrap();
+            let json = module_summary_json(&expected).unwrap();
+            assert_eq!(
+                write_module_summary(&expected).unwrap(),
+                canonical_json_bytes(&json)
+            );
+            assert_eq!(
+                read_module_summary(
+                    &json,
+                    ModuleSummaryReadOptions {
+                        artifact_path: Some("algorithm-summary.json"),
+                        expected_module: Some(&identity),
+                        expected_interface_hash: Some(expected.interface_hash),
+                    }
+                )
+                .unwrap(),
+                expected
+            );
+            if case == 0 {
+                let row = &expected.exported_symbols[0];
+                assert_eq!(
+                    row.rendered_signature,
+                    "let a be object ; terminating algorithm swapalgo ( a ) -> object ensures result = a"
+                );
+                let fingerprint = row
+                    .interface_fingerprint
+                    .as_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                let symbol = J::object([
+                    ("origin_id", J::string(&row.origin_id)),
+                    ("fully_qualified_name", J::string(&row.fully_qualified_name)),
+                    ("namespace_path", J::array([J::string("main")])),
+                    ("visibility", J::string("public")),
+                    ("declaration_kind", J::string("algorithm")),
+                    ("rendered_signature", J::string("let a be object ; terminating algorithm swapalgo ( a ) -> object ensures result = a")),
+                    ("interface_fingerprint", J::string(format!("mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/module-summary:1.0:{fingerprint}"))),
+                    ("proof_status", J::Null),
+                ]).unwrap();
+                // This displayed interface projection excludes source hash and ranges.
+                let projection = J::object([
+                    ("schema_version", J::string("1.0")),
+                    (
+                        "module",
+                        J::object([
+                            ("package_id", J::string("pkg")),
+                            ("package_version", J::string("1.0")),
+                            ("lockfile_identity", J::string("caller-lock")),
+                            ("module_path", J::string("main")),
+                            ("language_edition", J::string("2025")),
+                        ])
+                        .unwrap(),
+                    ),
+                    ("exported_symbols", J::array([symbol])),
+                    ("exported_labels", J::array([])),
+                    (
+                        "lexical_summary",
+                        J::object([
+                            (
+                                "schema_version",
+                                J::string("mizar-resolve/exported-lexical/v1"),
+                            ),
+                            ("fingerprint", J::Null),
+                            ("contributions", J::array([])),
+                        ])
+                        .unwrap(),
+                    ),
+                    ("reexports", J::array([])),
+                    ("dependency_interfaces", J::array([])),
+                ])
+                .unwrap();
+                let domain = CanonicalHashDomain::new(
+                    HashClass::Interface,
+                    MODULE_SUMMARY_SCHEMA_FAMILY,
+                    current_schema_version(),
+                );
+                assert_eq!(expected.interface_hash, domain.hash(&projection, &[]));
+                original = Some((
+                    frontend.clone(),
+                    collected.clone(),
+                    identity.clone(),
+                    expected.clone(),
+                ));
+            }
+            let baseline = &original.as_ref().unwrap().3;
+            if matches!(case, 1 | 2) {
+                assert_eq!(expected.interface_hash, baseline.interface_hash);
+                assert_ne!(expected.source_hash, baseline.source_hash);
+            }
+            if matches!(case, 5 | 7..=11) {
+                assert_ne!(expected.interface_hash, baseline.interface_hash);
+            }
+            let got = collected.source_algorithm_module_summary_candidate(&frontend, &identity);
+            assert_eq!(got, Ok(Some(expected.clone())));
+            assert_eq!(
+                collected.source_algorithm_module_summary_candidate(&frontend, &identity),
+                got
+            );
+            let mut invalid = identity.clone();
+            invalid.package_version = Some(String::new());
+            if case == 11 {
+                let (first, first_collection, first_id, _) = original.as_ref().unwrap();
+                assert_eq!(
+                    first_collection.export_frontend_lexical_contributions(&frontend, &identity),
+                    None
+                );
+                assert_eq!(
+                    collected.export_frontend_lexical_contributions(first, first_id),
+                    None
+                );
+                assert_eq!(
+                    first_collection
+                        .source_algorithm_module_summary_candidate(&frontend, &identity),
+                    Ok(None)
+                );
+                assert_eq!(
+                    first_collection.source_algorithm_module_summary_candidate(&frontend, &invalid),
+                    Ok(None)
+                );
+                assert_eq!(
+                    collected.source_algorithm_module_summary_candidate(first, first_id),
+                    Ok(None)
+                );
+                let error = rows(&arena, first_collection.env(), &identity).unwrap_err();
+                assert_eq!(
+                    rows(&arena, first_collection.env(), &invalid).unwrap_err(),
+                    error
+                );
+                let first_arena =
+                    SurfaceResolvedArena::lower(first.ast.as_ref().unwrap(), &module).unwrap();
+                assert!(rows(&first_arena, collected.env(), first_id).is_err());
+            }
+            assert_eq!(
+                collected.export_frontend_lexical_contributions(&frontend, &invalid),
+                None
+            );
+            assert_eq!(
+                collected.source_algorithm_module_summary_candidate(&frontend, &invalid),
+                Ok(None)
+            );
+            assert_eq!(
+                rows(&arena, collected.env(), &invalid).unwrap_err(),
+                invalid.canonical_json().unwrap_err().to_string()
+            );
+        } else {
+            assert_eq!(
+                collected.source_algorithm_module_summary_candidate(&frontend, &identity),
+                Ok(None),
+                "{case}"
+            );
+            match case {
+                12 | 19 => {
+                    assert!(
+                        !frontend.preprocessed.import_stubs.is_empty()
+                            || !shells.exports().is_empty()
+                    );
+                    assert_eq!(exported.unwrap(), None);
+                }
+                13 => {
+                    assert!(!locals.user_symbols.is_empty());
+                    assert_eq!(
+                        lexical,
+                        Some(vec![]),
+                        "private lexical omission is not absence"
+                    );
+                    assert_eq!(
+                        exported.unwrap(),
+                        None,
+                        "extra source also fails the row profile"
+                    );
+                    let (first, first_collection, first_id, _) = original.as_ref().unwrap();
+                    let mut stale = first.clone();
+                    stale.tokens.local_declarations = frontend.tokens.local_declarations.clone();
+                    assert_eq!(
+                        first_collection.export_frontend_lexical_contributions(&stale, first_id),
+                        None
+                    );
+                    assert_eq!(
+                        first_collection
+                            .source_algorithm_module_summary_candidate(&stale, first_id),
+                        Ok(None)
+                    );
+                }
+                14 => {
+                    assert!(!locals.operator_declarations.is_empty());
+                    assert_eq!(lexical, None);
+                }
+                15 => assert_eq!(lexical, None),
+                16 | 17 | 20 => assert_eq!(exported.unwrap(), None),
+                18 => {
+                    assert!(!frontend.diagnostics.is_empty());
+                    assert_eq!(lexical, None);
+                    let (first, first_collection, first_id, _) = original.as_ref().unwrap();
+                    let mut diagnostic = first.clone();
+                    diagnostic.diagnostics = frontend.diagnostics.clone();
+                    assert_eq!(
+                        first_collection
+                            .export_frontend_lexical_contributions(&diagnostic, first_id),
+                        None
+                    );
+                    assert_eq!(
+                        first_collection
+                            .source_algorithm_module_summary_candidate(&diagnostic, first_id),
+                        Ok(None)
+                    );
+                }
+                21 => assert!(!collected.diagnostics().is_empty()),
+                _ => unreachable!(),
+            }
+        }
+        assert_eq!((frontend, collected, identity), before);
+    }
+    let (first, collected, identity, _) = original.unwrap();
+    for mutation in 0..5 {
+        let mut stale = first.clone();
+        match mutation {
+            0 => stale.ast = None,
+            1 => stale.source.source_hash = hash_text("stale"),
+            2 => stale.source.source_text = "stale".into(),
+            3 => stale.preprocessed.lexical_hash = hash_text("stale lexical text"),
+            4 => stale.preprocessed.source_map.lexical_text_len += 1,
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            collected.export_frontend_lexical_contributions(&stale, &identity),
+            None
+        );
+        assert_eq!(
+            collected.source_algorithm_module_summary_candidate(&stale, &identity),
+            Ok(None)
+        );
+    }
+}
