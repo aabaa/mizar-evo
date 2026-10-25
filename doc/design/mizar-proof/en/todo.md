@@ -523,6 +523,8 @@ layer consumes both; one alignment task is owned here.
 
 72. **[Optional bounded state witness file](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY-SEARCH-WITNESS-FILE.md).** [x]
 
+73. **[State witness file structural reader](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-READER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -107,6 +107,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `StatusReuseMetadata` | `status.md` の proof reuse metadata section。accepted goal polarity を proof-evidence identity に含む。 | architecture-22 identity と reuse metadata coverage tests、accepted-polarity hash invalidation、terminal rejection projection、determinism suite。 | current task scope では consistent。downstream cache consumer はこの crate の外側に残る。 |
 
 ### Witness Store
+`read_source_algorithm_state_witness_file`: [schema and API owner](./witness_store.md#source-algorithm-state-witness-file).
 `read_source_theorem_witness_file`: [schema and API owner](./witness_store.md#source-theorem-witness-file).
 `ProofWitnessDraft::stage_source_theorem_file`: [explicit file staging](./witness_store.md#explicit-source-theorem-file-staging).
 

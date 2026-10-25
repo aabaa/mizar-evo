@@ -34974,4 +34974,358 @@ mod term_proof_tests {
             });
         }
     }
+
+    #[test]
+    fn source_algorithm_state_witness_file_reader_matches_genuine_transport() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_artifact::{
+            proof_witness::{
+                ProofWitnessReadOptions as R, read_builtin_proof_witness_ref as decode,
+            },
+            store::{
+                CanonicalJson as J, PublishedArtifactPath as Path,
+                PublishedArtifactReadOptions as Opt, SchemaVersion as V, artifact_hash_domain,
+                canonical_json_bytes, read_published_artifact as read,
+                write_published_artifact as write,
+            },
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::try_source_algorithm_state_transitivity_witness_file_candidate as file,
+            witness_store::read_source_algorithm_state_witness_file as recover,
+        };
+        let text = include_str!("../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz")
+            .replacen("    assert x = a;\n", "", 1);
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let family = "mizar-proof/source-algorithm-state-witness-file";
+        let domain = artifact_hash_domain(family, V::new(1, 0));
+        for (case, text) in [text.clone(), text.replace("swapalgo", "copyalgo")]
+            .into_iter()
+            .enumerate()
+        {
+            let p = VerifierPolicy::default()
+                .with_profile_id(format!("reader-{case}"))
+                .with_instance_search_limits(Some([0, 0, 3, 0]));
+            with_inputs(&text, &p, |s, c, e, b| {
+                let path = Path::new(format!("proof-witnesses/reader-{case}.json")).unwrap();
+                let got = file(s, c, e, b, &p, path.as_str()).unwrap().unwrap();
+                let hash = &got.2.witness_artifact_hash;
+                let written = write(&root, &path, &got.1, &domain, &[]).unwrap();
+                let read_options = Opt {
+                    artifact_hash_domain: Some(&domain),
+                    expected_artifact_hash: Some(hash.digest),
+                    ..Opt::default()
+                };
+                let received = read(&root, &path, read_options).unwrap();
+                assert_eq!(received.value, got.1);
+                assert_eq!(received.artifact_hash, Some(written.artifact_hash));
+                assert_eq!(written.artifact_hash, domain.hash(&got.1, &[]));
+                let bytes = canonical_json_bytes(&got.1);
+                assert_eq!(bytes.last(), Some(&b'\n'));
+                assert_eq!(fs::read(root.join(path.as_str())).unwrap(), bytes);
+                let J::Object(fields) = &received.value else {
+                    panic!("genuine FILE")
+                };
+                let mut reference_fields = std::collections::BTreeMap::from([
+                    ("schema_version".into(), J::string("3.0")),
+                    ("proof_status".into(), J::string("discharged_builtin")),
+                    (
+                        "evidence_kind".into(),
+                        J::string("formula_substitution_kernel_evidence"),
+                    ),
+                    ("witness_path".into(), J::string(received.path.as_str())),
+                    (
+                        "witness_artifact_hash".into(),
+                        J::string(hash.to_artifact_hash_string()),
+                    ),
+                ]);
+                for key in [
+                    "obligation_id",
+                    "obligation_fingerprint",
+                    "kernel_acceptance",
+                ] {
+                    reference_fields.insert(key.into(), fields[key].clone());
+                }
+                let reference_json = J::Object(reference_fields);
+                let options = R {
+                    artifact_path: Some(path.as_str()),
+                    expected_witness_artifact_hash: Some(hash),
+                };
+                assert_eq!(decode(&reference_json, options).unwrap(), got.2);
+                assert!(!got.0.2.payload_bytes().is_empty());
+                let inputs = (received.clone(), got.2.clone());
+                let recovered = recover(&received, &got.2).unwrap();
+                assert_eq!(recovered, got.0.2.payload_bytes());
+                assert_eq!(recover(&received, &got.2).unwrap(), recovered);
+                assert_eq!((received, got.2), inputs);
+            });
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn source_algorithm_state_witness_file_reader_rejects_profiles_and_associations() {
+        use self::with_source_algorithm_state_draft_inputs as with_inputs;
+        use mizar_artifact::{
+            proof_witness::{
+                EvidenceKind, ProofStatus, ProofWitnessReadOptions as R,
+                builtin_proof_witness_ref_json as encode, read_builtin_proof_witness_ref as decode,
+            },
+            registration_summary::ArtifactHashClass as Class,
+            store::{
+                CanonicalJson as J, MinorVersionPolicy, PublishedArtifactPath as Path,
+                PublishedArtifactReadOptions as Opt, SchemaVersion as V, SchemaVersionSupport,
+                artifact_hash_domain, read_published_artifact as read,
+                write_published_artifact as write,
+            },
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::try_source_algorithm_state_transitivity_witness_file_candidate as file,
+            witness_store::read_source_algorithm_state_witness_file as recover,
+        };
+        let text = include_str!("../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz")
+            .replacen("    assert x = a;\n", "", 1);
+        let p = VerifierPolicy::default().with_instance_search_limits(Some([0, 0, 3, 0]));
+        let path = Path::new("proof-witnesses/reader-errors.json").unwrap();
+        let got = with_inputs(&text, &p, |s, c, e, b| {
+            file(s, c, e, b, &p, path.as_str()).unwrap().unwrap()
+        });
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let family = "mizar-proof/source-algorithm-state-witness-file";
+        let domain = artifact_hash_domain(family, V::new(1, 0));
+        let options = Opt {
+            artifact_hash_domain: Some(&domain),
+            ..Opt::default()
+        };
+        let transport = |path: &Path, value: &J| {
+            write(&root, path, value, &domain, &[]).unwrap();
+            read(&root, path, options).unwrap()
+        };
+        let support = SchemaVersionSupport::new(family, 1, 0, MinorVersionPolicy::UpToSupported);
+        let payload = "payload_bytes_hex";
+        let acceptance = "kernel_acceptance";
+        let prefix = "source algorithm state witness file";
+        let invalid = format!("invalid {prefix}");
+        let J::Object(fields) = &got.1 else {
+            panic!("genuine FILE")
+        };
+        let mut cases = vec![(J::Null, format!("{prefix} must be an object"))];
+        for version in ["missing", "null", "bad", "0.0", "2.0", "1.1"] {
+            let header = match version {
+                "missing" => None,
+                "null" => Some(""),
+                _ => Some(version),
+            };
+            let mut value = fields.clone();
+            let error = support
+                .check_at_path(header, path.as_str())
+                .unwrap_err()
+                .to_string();
+            let replacement = header
+                .filter(|text| !text.is_empty())
+                .map_or(J::Null, J::string);
+            value.insert("schema_version".into(), replacement);
+            if header.is_none() {
+                value.remove("schema_version");
+            }
+            value.insert(payload.into(), J::Null);
+            value.insert(acceptance.into(), J::Null);
+            cases.push((J::Object(value), error));
+        }
+        let incompatible = format!(
+            "incompatible schema family for {family}: actual version 1.0, supported 1.0..=1.0, artifact path {}",
+            path.as_str()
+        );
+        let profile_error = format!("{invalid} payload profile");
+        for (key, replacement, error) in [
+            ("schema_family", "foreign/file", incompatible),
+            ("unknown", "", format!("{invalid} fields")),
+            (
+                "payload_schema_family",
+                "mizar-proof/source-theorem-reflexivity-checked-wire",
+                profile_error.clone(),
+            ),
+            ("payload_schema_version", "1.0", profile_error),
+        ] {
+            let mut value = fields.clone();
+            value.insert(key.into(), J::string(replacement));
+            if key == "schema_family" {
+                value.insert(acceptance.into(), J::Null);
+            }
+            cases.push((J::Object(value), error));
+        }
+        for key in ["obligation_id", acceptance] {
+            let mut value = fields.clone();
+            value.remove(key);
+            cases.push((J::Object(value), format!("{invalid} fields")));
+            value = fields.clone();
+            value.insert(key.into(), J::Null);
+            let suffix = if key == acceptance {
+                "an object"
+            } else {
+                "a string"
+            };
+            cases.push((J::Object(value), format!("{prefix} {key} must be {suffix}")));
+        }
+        for hex in ["", "0", "AA", "0g", "00 0", "é", "0é0", "００"] {
+            let mut value = fields.clone();
+            value.insert(payload.into(), J::string(hex));
+            cases.push((J::Object(value), format!("{invalid} payload hex")));
+        }
+        let J::Object(metadata) = &fields[acceptance] else {
+            panic!("actual metadata")
+        };
+        for (key, replacement) in [
+            ("formula_context_hash", None),
+            ("accepted_result_hash", Some(J::string("bad-hash"))),
+        ] {
+            let mut nested = metadata.clone();
+            if let Some(replacement) = replacement {
+                nested.insert(key.into(), replacement);
+            } else {
+                nested.remove(key);
+            }
+            let mut value = fields.clone();
+            value.insert(acceptance.into(), J::Object(nested.clone()));
+            let J::Object(mut lower) = encode(&got.2).unwrap() else {
+                unreachable!()
+            };
+            lower.insert(acceptance.into(), J::Object(nested));
+            let error = decode(&J::Object(lower), R::default())
+                .unwrap_err()
+                .to_string();
+            cases.push((J::Object(value), error));
+        }
+        for (value, error) in cases {
+            let received = transport(&path, &value);
+            let mut expected = got.2.clone();
+            expected.witness_artifact_hash.digest = received.artifact_hash.unwrap();
+            assert_eq!(received.value, value, "{error}; {expected:?}");
+            assert_eq!(recover(&received, &expected).unwrap_err(), error);
+        }
+        let received = transport(&path, &got.1);
+        let hash_error = format!("{prefix} read hash mismatch");
+        for options in [
+            Opt::default(),
+            Opt {
+                artifact_hash_domain: Some(&artifact_hash_domain("foreign/file", V::new(1, 0))),
+                ..Opt::default()
+            },
+        ] {
+            let wrong = read(&root, &path, options).unwrap();
+            assert_ne!(wrong.artifact_hash, received.artifact_hash);
+            assert_eq!(recover(&wrong, &got.2).unwrap_err(), hash_error);
+        }
+        let mut stale = received.clone();
+        let J::Object(ref mut value) = stale.value else {
+            unreachable!()
+        };
+        value.insert(payload.into(), J::string("00"));
+        assert_ne!(domain.hash(&stale.value, &[]), stale.artifact_hash.unwrap());
+        assert_eq!(recover(&stale, &got.2).unwrap_err(), hash_error);
+        for name in ["proof-witnesses/foreign-path.json", "other/checked.json"] {
+            let other = Path::new(name).unwrap();
+            let moved = transport(&other, &got.1);
+            let mut lower = encode(&got.2).unwrap();
+            let J::Object(ref mut values) = lower else {
+                unreachable!()
+            };
+            values.insert("witness_path".into(), J::string(moved.path.as_str()));
+            let error = match decode(&lower, R::default()) {
+                Ok(decoded) => {
+                    assert_ne!(decoded, got.2);
+                    format!("{prefix} reference mismatch")
+                }
+                Err(error) => error.to_string(),
+            };
+            assert_ne!(moved.path, path, "{error}");
+            assert_eq!(recover(&moved, &got.2).unwrap_err(), error);
+        }
+        let foreign_hash = mizar_session::hash_text("foreign");
+        for index in 1..13 {
+            let mut expected = got.2.clone();
+            let hash = &mut expected.witness_artifact_hash;
+            let metadata = &mut expected.kernel_acceptance;
+            match index {
+                1 => expected.schema_version = V::new(2, 0),
+                2 => expected.obligation_id.push_str("-other"),
+                3 => expected.obligation_fingerprint.digest = foreign_hash,
+                4 => expected.proof_status = ProofStatus::KernelVerified,
+                5 => expected.evidence_kind = EvidenceKind::BuiltinCertificate,
+                6 => expected.witness_path = "proof-witnesses/other.json".into(),
+                7 => hash.digest = foreign_hash,
+                8 => hash.class = Class::Interface,
+                9 => hash.schema_family = "foreign/file".into(),
+                10 => metadata.verifier_policy_fingerprint.digest = foreign_hash,
+                11 => metadata.formula_context_hash = Some(expected.obligation_fingerprint.clone()),
+                12 => hash.schema_version = V::new(2, 0),
+                _ => unreachable!(),
+            }
+            let lower = decode(
+                &encode(&got.2).unwrap(),
+                R {
+                    expected_witness_artifact_hash: Some(&expected.witness_artifact_hash),
+                    ..R::default()
+                },
+            );
+            let error = match lower {
+                Ok(decoded) => {
+                    assert_ne!(decoded, expected);
+                    format!("{prefix} reference mismatch")
+                }
+                Err(error) => error.to_string(),
+            };
+            assert_ne!(expected, got.2, "{error}");
+            assert_eq!(recover(&received, &expected).unwrap_err(), error);
+        }
+        let mismatch = format!("{prefix} reference mismatch");
+        for kind in ["family", "version", "evidence", "wire"] {
+            let mut value = fields.clone();
+            let mut expected = got.2.clone();
+            match kind {
+                "family" => {
+                    expected.obligation_fingerprint.schema_family = "foreign/original".into()
+                }
+                "version" => expected.obligation_fingerprint.schema_version = V::new(2, 0),
+                "evidence" => expected.kernel_acceptance.evidence_schema_version = V::new(1, 0),
+                _ => {}
+            }
+            let J::Object(reference) = encode(&expected).unwrap() else {
+                unreachable!()
+            };
+            for key in ["obligation_fingerprint", acceptance] {
+                value.insert(key.into(), reference[key].clone());
+            }
+            if kind == "wire" {
+                value.insert(payload.into(), J::string("00"));
+            }
+            let value = J::Object(value);
+            let edited = transport(&path, &value);
+            expected.witness_artifact_hash.digest = edited.artifact_hash.unwrap();
+            assert_eq!(edited.value, value);
+            assert_eq!(
+                decode(&encode(&expected).unwrap(), R::default()).unwrap(),
+                expected
+            );
+            if kind == "wire" {
+                assert_ne!(got.0.2.payload_bytes(), [0]);
+                assert_eq!(recover(&edited, &expected).unwrap(), [0]);
+            }
+            if kind != "wire" {
+                assert_eq!(recover(&edited, &expected).unwrap_err(), mismatch);
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 }

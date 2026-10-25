@@ -65,7 +65,7 @@ pub fn try_source_algorithm_state_transitivity_witness_file_candidate(
     else {
         return Ok(None);
     };
-    let file_family = "mizar-proof/source-algorithm-state-witness-file";
+    let file_family = crate::witness_store::SOURCE_ALGORITHM_STATE_WITNESS_FILE_SCHEMA_FAMILY;
     let draft = &original.2;
     let metadata = draft.kernel_acceptance();
     let mut acceptance = std::collections::BTreeMap::new();
