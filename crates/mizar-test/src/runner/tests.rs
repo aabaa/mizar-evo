@@ -26332,7 +26332,7 @@ fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v9"
+            "mizar-parser/surface-ast-v10"
         );
     }
 }
@@ -26565,7 +26565,410 @@ fn expr_type_recovery_cache_storage_and_source_provenance() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v9"
+            "mizar-parser/surface-ast-v10"
         );
+    }
+}
+
+#[test]
+fn binder_roots_preserve_order_precedence_and_grouped_hosts() {
+    use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind};
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    for (id, expected_count) in [
+        ("pass_parser_binder_roots_001", 14),
+        ("pass_parser_binder_grouped_hosts_001", 9),
+    ] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let output = super::formula_statement::step5c8_test_frontend(&text);
+        assert!(
+            output.diagnostics.is_empty(),
+            "{id}: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.unwrap();
+        let binders = ast
+            .node_views()
+            .filter(|v| format!("{:?}", v.kind()) == "BinderExpression")
+            .collect::<Vec<_>>();
+        assert_eq!(binders.len(), expected_count);
+        assert!(ast.node_views().all(|v| !v.is_recovered()));
+        assert!(ast.trivia().skipped_token_ranges().is_empty());
+        let mut arrows = ast
+            .token_views()
+            .filter(|v| v.as_token().unwrap().text.as_ref() == "|->")
+            .map(|v| {
+                assert_eq!(v.as_token().unwrap().kind, SurfaceTokenKind::ReservedSymbol);
+                v.range()
+            })
+            .collect::<Vec<_>>();
+        arrows.sort_by_key(|r| r.start);
+        assert_eq!(
+            arrows,
+            text.match_indices("|->")
+                .map(|(start, _)| range(ast.source_id, start, start + 3))
+                .collect::<Vec<_>>()
+        );
+        for binder in binders {
+            assert_eq!(binder.syntax_kind(), SyntaxKind::from_raw(195));
+            let children = binder.children();
+            let arrow = ast.node_view(children[children.len() - 2]).unwrap();
+            let body = ast.node_view(*children.last().unwrap()).unwrap();
+            assert_eq!(arrow.as_token().unwrap().text.as_ref(), "|->");
+            assert_eq!(body.kind(), &K::TermExpression);
+            assert_eq!(
+                binder.range(),
+                range(
+                    ast.source_id,
+                    ast.node_view(children[0]).unwrap().range().start,
+                    body.range().end
+                )
+            );
+            assert_eq!(
+                children[..children.len() - 2]
+                    .iter()
+                    .map(|child| ast.node_view(*child).unwrap().as_token().unwrap())
+                    .map(|token| token.text.as_ref())
+                    .collect::<String>(),
+                text[binder.range().start..arrow.range().start]
+                    .chars()
+                    .filter(|c| !c.is_whitespace())
+                    .collect::<String>()
+            );
+        }
+        let rhs = |name: &str| {
+            let equating = ast
+                .node_views()
+                .filter_map(|v| v.as_equating())
+                .find(|v| text[v.range().start..].starts_with(format!("{name} =").as_str()))
+                .unwrap();
+            let term = ast.node_view(*equating.children().last().unwrap()).unwrap();
+            ast.node_view(term.children()[0]).unwrap()
+        };
+        if id == "pass_parser_binder_roots_001" {
+            for (name, body_kind) in [
+                ("right_nested", "BinderExpression"),
+                ("body_qua", "QuaExpression"),
+                ("body_restriction", "InfixExpression"),
+            ] {
+                let binder = rhs(name);
+                let body = ast.node_view(*binder.children().last().unwrap()).unwrap();
+                let payload = ast.node_view(body.children()[0]).unwrap();
+                assert!(format!("{:?}", payload.kind()).starts_with(body_kind));
+                if name == "right_nested" {
+                    assert_eq!(
+                        ast.node_view(payload.children()[0])
+                            .unwrap()
+                            .as_token()
+                            .unwrap()
+                            .text
+                            .as_ref(),
+                        "y"
+                    );
+                }
+            }
+            for (name, kind, operand) in [
+                ("whole_qua", K::QuaExpression, 0),
+                ("application", K::SelectorAccess, 0),
+            ] {
+                let root = rhs(name);
+                assert_eq!(root.kind(), &kind);
+                assert_eq!(
+                    ast.node_view(root.children()[operand]).unwrap().kind(),
+                    &K::ParenthesizedTerm
+                );
+            }
+            let target = ast
+                .node_view(*rhs("whole_qua").children().last().unwrap())
+                .unwrap();
+            assert_eq!(
+                &text[target.range().start..target.range().end],
+                "expr of set"
+            );
+            for (name, grouped_operand) in [("whole_restriction", 0), ("grouped_operand", 2)] {
+                let root = rhs(name);
+                let operator = root.as_infix_expression().unwrap();
+                assert_eq!(operator.spelling.as_ref(), "|");
+                assert_eq!(operator.precedence, 64);
+                assert_eq!(
+                    operator.associativity,
+                    mizar_syntax::SurfaceOperatorAssociativity::NonAssociative
+                );
+                assert_eq!(
+                    ast.node_view(root.children()[grouped_operand])
+                        .unwrap()
+                        .kind(),
+                    &K::ParenthesizedTerm
+                );
+            }
+            assert!(ast.token_views().any(|v| {
+                v.as_token().is_some_and(|token| {
+                    token.text.as_ref() == "|" && token.kind == SurfaceTokenKind::UserSymbol
+                })
+            }));
+        } else {
+            for name in ["call", "call_before", "nested_call"] {
+                let call = rhs(name);
+                assert_eq!(call.kind(), &K::ApplicationTerm);
+                let arguments = call
+                    .children()
+                    .iter()
+                    .filter(|child| ast.node_view(**child).unwrap().kind() == &K::TermExpression)
+                    .count();
+                assert_eq!(arguments, 2);
+            }
+            for name in ["GroupedEquality", "GroupedPredicate"] {
+                let theorem = ast
+                    .node_views()
+                    .filter_map(|v| v.as_theorem_item())
+                    .find(|v| {
+                        text[v.range().start..v.range().end]
+                            .starts_with(format!("theorem {name}:").as_str())
+                    })
+                    .unwrap();
+                assert_eq!(
+                    ast.node_views()
+                        .filter(|v| format!("{:?}", v.kind()) == "BinderExpression"
+                            && v.range().start > theorem.range().start
+                            && v.range().end < theorem.range().end)
+                        .count(),
+                    2
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn binder_roots_recovery_cache_storage_and_source_provenance() {
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    for (ordinal, (id, boundaries)) in [
+        ("pass_parser_binder_roots_001", vec![]),
+        ("pass_parser_binder_grouped_hosts_001", vec![]),
+        (
+            "fail_parser_binder_heads_001",
+            vec![
+                ("() |->", 1),
+                ("(x,x) |->", 1),
+                ("(x,y,) |->", 1),
+                ("(x being object,y) |->", 1),
+                ("(x,(y,z)) |->", 1),
+                ("(x) |->", 1),
+                ("|-> x;\nset after_unparenthesized", 3),
+                ("|-> x;\nset after_unparenthesized", 3),
+            ],
+        ),
+        (
+            "fail_parser_binder_missing_body_001",
+            vec![
+                (";\nset after_semicolon_body", 1),
+                (");\nset after_grouped_body", 1),
+            ],
+        ),
+        (
+            "fail_parser_binder_operator_operands_001",
+            vec![
+                ("|-> x;\nset after_restriction", 3),
+                ("|-> x;\nset after_selector", 3),
+            ],
+        ),
+    ]
+    .iter()
+    .enumerate()
+    {
+        let case = plan.cases.iter().find(|case| case.id.0 == *id).unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let checked = super::formula_statement::step5c8_test_frontend(&text);
+        assert_eq!(
+            checked.diagnostics.len(),
+            boundaries.len(),
+            "{id}: {:?}",
+            checked.diagnostics
+        );
+        let ast = checked.ast.unwrap();
+        for (diagnostic, (boundary, width)) in checked.diagnostics.iter().zip(boundaries) {
+            let start = text.find(*boundary).unwrap();
+            assert_eq!(
+                diagnostic.code,
+                DiagnosticCode::Syntax("malformed_term_expression".into())
+            );
+            assert_eq!(
+                diagnostic.location,
+                DiagnosticLocation::SourceRange(range(ast.source_id, start, start + width))
+            );
+            assert!(diagnostic.secondary.is_empty());
+        }
+        for (start, _) in text.match_indices("set after_") {
+            let end = start + text[start..].find(';').unwrap() + 1;
+            let sentinel = ast
+                .node_views()
+                .filter_map(|v| v.as_set_statement())
+                .find(|v| v.range().start == start)
+                .unwrap();
+            assert_eq!(sentinel.range(), range(ast.source_id, start, end));
+            assert!(!sentinel.is_recovered());
+            let delimiter = ast.node_view(*sentinel.children().last().unwrap()).unwrap();
+            assert_eq!(delimiter.as_token().unwrap().text.as_ref(), ";");
+        }
+        if ordinal == 2 {
+            let mut recovered_binders = ast
+                .node_views()
+                .filter(|v| format!("{:?}", v.kind()) == "BinderExpression")
+                .collect::<Vec<_>>();
+            recovered_binders.sort_by_key(|v| v.range().start);
+            assert_eq!(recovered_binders.len(), 6);
+            for (binder, head) in recovered_binders.iter().zip([
+                "()",
+                "(x,x)",
+                "(x,y,)",
+                "(x being object,y)",
+                "(x,(y,z))",
+                "(x)",
+            ]) {
+                let start = text.find(format!("{head} |->").as_str()).unwrap();
+                let head_range = range(ast.source_id, start, start + head.len());
+                assert!(binder.is_recovered());
+                assert_eq!(binder.children().len(), 3);
+                let recovery = ast.node_view(binder.children()[0]).unwrap();
+                assert_eq!(
+                    recovery.as_recovery(),
+                    Some(SyntaxRecoveryKind::SkippedToken)
+                );
+                assert_eq!(recovery.range(), head_range);
+                let retained = recovery
+                    .children()
+                    .iter()
+                    .filter_map(|child| ast.node_view(*child).unwrap().as_token())
+                    .map(|token| token.text.as_ref())
+                    .collect::<String>();
+                assert_eq!(
+                    retained,
+                    head.chars()
+                        .filter(|c| !c.is_whitespace())
+                        .collect::<String>()
+                );
+                let arrow = ast.node_view(binder.children()[1]).unwrap();
+                assert_eq!(arrow.as_token().unwrap().text.as_ref(), "|->");
+                assert_eq!(arrow.range().start, head_range.end + 1);
+                assert_eq!(
+                    ast.node_view(binder.children()[2]).unwrap().kind(),
+                    &K::TermExpression
+                );
+                assert!(
+                    ast.trivia()
+                        .skipped_token_ranges()
+                        .iter()
+                        .any(|skip| skip.range == head_range)
+                );
+            }
+            assert_eq!(ast.trivia().skipped_token_ranges().len(), 7);
+        } else if ordinal == 3 {
+            let binders = ast
+                .node_views()
+                .filter(|v| format!("{:?}", v.kind()) == "BinderExpression")
+                .collect::<Vec<_>>();
+            assert_eq!(binders.len(), 2);
+            for binder in binders {
+                let arrow = ast.node_view(binder.children()[1]).unwrap();
+                let missing = ast.node_view(binder.children()[2]).unwrap();
+                assert!(binder.is_recovered());
+                assert_eq!(missing.as_recovery(), Some(SyntaxRecoveryKind::MissingTerm));
+                assert_eq!(missing.range().start, missing.range().end);
+                assert_eq!(binder.range().end, arrow.range().end);
+                assert!(missing.range().start > binder.range().end);
+                assert!(
+                    ast.token_views()
+                        .any(|v| v.range().start == missing.range().start
+                            && matches!(v.as_token().unwrap().text.as_ref(), ";" | ")"))
+                );
+                let wrapper = ast
+                    .node_views()
+                    .find(|v| v.kind() == &K::TermExpression && v.children() == [binder.id()])
+                    .unwrap();
+                assert_eq!(wrapper.range(), binder.range());
+            }
+            assert!(ast.trivia().skipped_token_ranges().is_empty());
+        }
+        assert!(
+            ast.node_views()
+                .all(|v| v.range().source_id == ast.source_id)
+        );
+        let output = task257c4c1_frontend_output(&text, 100 + ordinal);
+        let replay = task257c4c1_frontend_output(&text, 100 + ordinal);
+        assert_eq!(output.cache_keys, replay.cache_keys);
+        assert_eq!(output.ast, replay.ast);
+        assert_eq!(output.diagnostics, replay.diagnostics);
+        let source = &output.source;
+        let input = mizar_session::SourceInput {
+            package_id: source.package_id.clone(),
+            module_path: source.module_path.clone(),
+            normalized_path: source.normalized_path.clone(),
+            edition: source.edition.clone(),
+            origin: mizar_session::SourceOriginInput::Disk {
+                path: source.file_path.clone(),
+            },
+        };
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let same =
+            FrontendOutput::from_canonical_disk_bytes(&bytes, source.source_id, &input).unwrap();
+        assert_eq!(same, output);
+        assert_eq!(same.canonical_disk_bytes().unwrap(), bytes);
+        assert!(
+            same.ast
+                .as_ref()
+                .unwrap()
+                .node_views()
+                .all(|v| v.range().source_id == source.source_id)
+        );
+        assert_eq!(
+            output
+                .cache_keys
+                .ast
+                .as_ref()
+                .unwrap()
+                .parser_version
+                .version
+                .as_ref(),
+            "mizar-parser/surface-ast-v10"
+        );
+    }
+    let checked = super::formula_statement::step5c8_test_frontend("set f = x |-> y |-> ;");
+    assert_eq!(checked.diagnostics.len(), 1);
+    let ast = checked.ast.unwrap();
+    let binders = ast
+        .node_views()
+        .filter(|v| v.kind() == &K::BinderExpression)
+        .collect::<Vec<_>>();
+    assert_eq!(binders.len(), 2);
+    assert!(binders.iter().all(|v| v.is_recovered()));
+    assert!(
+        ast.node_views()
+            .filter(|v| v.kind() == &K::TermExpression)
+            .all(|v| !v.is_recovered())
+    );
+    let successor = "set after_boundary = y;";
+    for text in [
+        "set f = (x,y;\n) |-> x;\nset after_boundary = y;",
+        "theorem Boundary: thesis proof\nset f = (x,y\nend\n) |-> x;\nset after_boundary = y;",
+        "set f = (x,y\ntheorem Boundary: thesis\n) |-> x;\nset after_boundary = y;",
+        "set f = (x,y\nset gap = y\n) |-> x;\nset after_boundary = y;",
+    ] {
+        let ast = super::formula_statement::step5c8_test_frontend(text)
+            .ast
+            .unwrap();
+        assert!(ast.node_views().all(|v| v.kind() != &K::BinderExpression));
+        let start = text.find(successor).unwrap();
+        let sentinel = ast
+            .node_views()
+            .filter_map(|v| v.as_set_statement())
+            .find(|v| v.range().start == start)
+            .unwrap();
+        assert_eq!(
+            sentinel.range(),
+            range(ast.source_id, start, start + successor.len())
+        );
+        assert!(!sentinel.is_recovered());
     }
 }

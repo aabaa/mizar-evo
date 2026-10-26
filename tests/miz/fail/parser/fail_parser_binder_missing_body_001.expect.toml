@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_binder_missing_body_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.binder_roots"
+source = "fail_parser_binder_missing_body_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.binder_roots.missing_body"
+diagnostic_codes = ["malformed_term_expression", "malformed_term_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.13.binder_roots.parser"]
+notes = "A missing body at semicolon or closing parenthesis produces one existing term diagnostic and zero-width MissingTerm at the retained owner delimiter; following statements remain intact."

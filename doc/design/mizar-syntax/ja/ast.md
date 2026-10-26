@@ -1790,3 +1790,8 @@ language behavior、forbidden artifact は変更していない。
 
 ## Expr type head
 exprのTypeHeadは既存kindでexpr/of tokenと入れ子TypeExpressionまたはMissingTypeExpressionを順に保持する。raw kind、typed view、snapshot label、storage schemaは追加しない。
+
+## Binder expression roots
+SyntaxKind::BinderExpressionはraw195とし、SurfaceNodeKind::BinderExpressionはFailStatementの後へ追加して既存serialized ordinalを保持する。有効nodeの子はhead token（元の括弧/commaを含む）、|->、本文TermExpressionの順。head node、arity field、desugaringは追加しない。確定した不正headはそのtoken群を既存SkippedToken回復で置き換え、Binderをrecoveredとする。本文欠落は既存MissingTermで保持する。
+Binder/本文/tokenのrangeは元source IDと消費token範囲を保持する。Binderは最初のhead tokenから最後に消費した本文tokenまで、本文欠落時はarrow末尾までとする。通常の本文TermExpressionは自身の消費token範囲を持つ。本文欠落は本文slotの直接の子にゼロ幅MissingTermを置き、位置は現在の区切り/token-stream EOF挿入点とする。空白がある場合、この回復点は既存のrecovery例外に従いBinder/TermExpressionの消費範囲より後でもよい。確定不正headのSkippedToken子とskipped-range triviaはarrowを除く同一head範囲とし、元head tokenを保持する。snapshot名は正確にBinderExpressionで、既存genericのrange/recovered/子表示、escaping、source順を使う。新sorting/comment attachmentは追加しない。
+typed inspectionはraw rowanでなく既存SurfaceAst::node_view/node_viewsとSurfaceNodeView::kind/children/range/is_recoveredを使う。既存generic green/storage/source-rebinding経路を利用し、raw mapping、node分類、snapshot labelのみ追加する。schema変更や単発view型/accessorは作らない。

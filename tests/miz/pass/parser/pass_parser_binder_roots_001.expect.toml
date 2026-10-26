@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_roots_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_roots"
+source = "pass_parser_binder_roots_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_roots.parser"]
+notes = "Binder syntax at set RHS and recursive body roots: ordered unary/multiple heads, right nesting, grouping and qualification; local restriction spelling uses existing default fixity. No binding, typing or execution credit."

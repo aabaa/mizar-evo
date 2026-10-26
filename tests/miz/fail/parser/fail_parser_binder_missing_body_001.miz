@@ -1,0 +1,4 @@
+set missing_semicolon_body = x |-> ;
+set after_semicolon_body = sentinel;
+set missing_grouped_body = (x |-> );
+set after_grouped_body = sentinel;

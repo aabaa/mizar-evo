@@ -2384,6 +2384,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.binder_roots.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.10 Function Binder (`|->`)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_binder_roots_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_binder_grouped_hosts_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_binder_heads_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_binder_missing_body_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_binder_operator_operands_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.13.choice_operator.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.5 The Choice Operator"

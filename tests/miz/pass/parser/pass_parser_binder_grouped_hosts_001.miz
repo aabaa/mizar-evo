@@ -1,0 +1,8 @@
+deffunc F(a be set, b being set) -> set equals a;
+defpred P(a be set, b being set) means a = b;
+
+set call = F((x |-> x), ((y,z) |-> y));
+set call_before = F(a, (x |-> x));
+set nested_call = F((x |-> F((y |-> y), x)), a);
+theorem GroupedEquality: (x |-> x) = ((y,z) |-> y);
+theorem GroupedPredicate: P((x |-> x), ((y,z) |-> y));

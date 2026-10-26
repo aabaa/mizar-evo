@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_binder_operator_operands_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.binder_roots"
+source = "fail_parser_binder_operator_operands_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.binder_roots.operator_heads"
+diagnostic_codes = ["malformed_term_expression", "malformed_term_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.13.binder_roots.parser"]
+notes = "Ordinary restriction and selector expressions cannot become Binder heads. The existing set-statement unexpected-token recovery diagnoses the leftover arrow once and preserves each valid successor."

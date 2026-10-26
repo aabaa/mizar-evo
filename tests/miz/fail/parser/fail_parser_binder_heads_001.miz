@@ -1,0 +1,14 @@
+set empty_head = () |-> x;
+set after_empty = sentinel;
+set repeated_head = (x,x) |-> x;
+set after_repeated = sentinel;
+set trailing_head = (x,y,) |-> x;
+set after_trailing = sentinel;
+set typed_head = (x being object,y) |-> x;
+set after_typed = sentinel;
+set destructured_head = (x,(y,z)) |-> x;
+set after_destructured = sentinel;
+set grouped_unary_head = (x) |-> x;
+set after_grouped_unary = sentinel;
+set unparenthesized_heads = x,y |-> x;
+set after_unparenthesized = sentinel;

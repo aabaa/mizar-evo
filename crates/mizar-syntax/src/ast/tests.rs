@@ -12134,3 +12134,72 @@ fn canonical_codec_checks_selected_union_and_rootless_parents() {
         );
     }
 }
+
+#[test]
+fn binder_root_vocabulary_generic_view_and_canonical_storage() {
+    let ids = InMemorySessionIdAllocator::new();
+    let original = ids.next_source_id(snapshot_id(210)).unwrap();
+    let rebound = ids.next_source_id(snapshot_id(211)).unwrap();
+    assert_ne!(original, rebound);
+    let mut builder = SurfaceAstBuilder::new(original);
+    let head = builder.add_token(SurfaceTokenKind::Identifier, "x", range(original, 0, 1));
+    let arrow = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "|->",
+        range(original, 2, 5),
+    );
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(original, 6, 7));
+    let reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(original, 6, 7),
+        vec![token],
+    );
+    let body = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(original, 6, 7),
+        vec![reference],
+    );
+    let binder = builder.add_node(
+        SurfaceNodeKind::BinderExpression,
+        range(original, 0, 7),
+        vec![head, arrow, body],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(original, 0, 7),
+        vec![binder],
+    );
+    let ast = builder.finish(Some(root), None);
+    assert_eq!(SyntaxKind::from_raw(195), SyntaxKind::BinderExpression);
+    assert_eq!(
+        SurfaceNodeKind::BinderExpression.syntax_kind(),
+        SyntaxKind::BinderExpression
+    );
+    assert!(SyntaxKind::BinderExpression.is_node_kind());
+    assert!(!SyntaxKind::BinderExpression.is_token_kind());
+    let view = ast
+        .node_views()
+        .find(|view| view.kind() == &SurfaceNodeKind::BinderExpression)
+        .unwrap();
+    assert_eq!(view.range(), range(original, 0, 7));
+    assert!(!view.is_recovered());
+    assert_eq!(view.children(), &[sid(head), sid(arrow), sid(body)]);
+    assert!(
+        ast.snapshot_text()
+            .contains("BinderExpression range=0..7 recovered=false")
+    );
+    assert!(
+        ast.rowan_root()
+            .descendants()
+            .any(|node| node.kind() == SyntaxKind::BinderExpression)
+    );
+    let bytes = ast.canonical_bytes().unwrap();
+    let decoded = SurfaceAst::from_canonical_bytes(&bytes, rebound).unwrap();
+    assert_eq!(decoded.canonical_bytes().unwrap(), bytes);
+    assert_eq!(decoded.snapshot_text(), ast.snapshot_text());
+    assert!(
+        decoded
+            .node_views()
+            .all(|view| view.range().source_id == rebound)
+    );
+}

@@ -1,0 +1,10 @@
+definition
+  let X, Y be set;
+  func RestrictSyntax: X | Y -> set equals X;
+  coherence proof thus thesis; end;
+end;
+
+set restriction_head = x | X |-> x;
+set after_restriction = sentinel;
+set selector_head = x.a |-> x;
+set after_selector = sentinel;

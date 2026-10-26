@@ -230,6 +230,7 @@ pub enum SyntaxKind {
     PropertyImplementation = 192,
     OperatorDeclaration = 193,
     FailStatement = 194,
+    BinderExpression = 195,
     TokenAnnotationMarker = 99,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
@@ -429,6 +430,7 @@ impl SyntaxKind {
             192 => Self::PropertyImplementation,
             193 => Self::OperatorDeclaration,
             194 => Self::FailStatement,
+            195 => Self::BinderExpression,
             99 => Self::TokenAnnotationMarker,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
@@ -609,6 +611,7 @@ impl SyntaxKind {
                 | Self::BreakStatement
                 | Self::ContinueStatement
                 | Self::FailStatement
+                | Self::BinderExpression
                 | Self::AlgorithmTerminationClause
                 | Self::AlgorithmRequiresClause
                 | Self::AlgorithmEnsuresClause
@@ -1514,7 +1517,19 @@ impl SurfaceAstBuilder {
             "SurfaceAstBuilder::add_node cannot create token or recovery side-table entries"
         );
         self.assert_existing_children(&children);
-        self.push_node(BuilderNode::new(kind, range, children))
+        let mut node = BuilderNode::new(kind, range, children);
+        if matches!(node.kind, SurfaceNodeKind::BinderExpression) {
+            let mut pending = node.children.clone();
+            while let Some(child) = pending.pop() {
+                let descendant = &self.nodes[child.index()];
+                if descendant.recovered {
+                    node.recovered = true;
+                    break;
+                }
+                pending.extend_from_slice(&descendant.children);
+            }
+        }
+        self.push_node(node)
     }
 
     fn add_recovered_node(
@@ -3336,6 +3351,7 @@ pub enum SurfaceNodeKind {
     PathSegment,
     RelativePrefix,
     FailStatement,
+    BinderExpression,
 }
 
 impl SurfaceNodeKind {
@@ -3403,6 +3419,7 @@ impl SurfaceNodeKind {
             Self::BreakStatement => SyntaxKind::BreakStatement,
             Self::ContinueStatement => SyntaxKind::ContinueStatement,
             Self::FailStatement => SyntaxKind::FailStatement,
+            Self::BinderExpression => SyntaxKind::BinderExpression,
             Self::AlgorithmTerminationClause => SyntaxKind::AlgorithmTerminationClause,
             Self::AlgorithmRequiresClause => SyntaxKind::AlgorithmRequiresClause,
             Self::AlgorithmEnsuresClause => SyntaxKind::AlgorithmEnsuresClause,

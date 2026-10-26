@@ -1,6 +1,6 @@
 # Task AST-MULTI-BINDER-PLAN: Multiple-argument Binder implementation decomposition
 Canonical language: English; [Japanese pointer](../ja/AST-MULTI-BINDER-PLAN.md).
-Status: planning only; all implementation slices below remain unimplemented. Tier: full gates.
+Status: partial; MBP-01 root syntax implemented, all other implementation slices remain unimplemented. Tier: full gates.
 Owners: [Checker plan](../../mizar-checker/en/00.crate_plan.md) (coordination/typing), [Resolver plan](../../mizar-resolve/en/00.crate_plan.md) (MBP-02 source identities).
 Consumers: Parser, Core, VC, Proof, Diagnostics, Artifact and Test through their existing AST tasks.
 Authority: [§13.10](../../../spec/en/13.term_expression.md#1310-function-binder--), [§20.5.3](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax), [Appendix A](../../../spec/en/appendix_a.grammar_summary.md#a13-term-expressions).
@@ -10,7 +10,7 @@ Classification: source_drift/test_gap for Binder syntax, source identities, cert
 
 ## Readiness and boundaries
 
-MBP-01 can begin bounded design and test-first preparation. MBP-03 can inventory pinned library inputs and MBP-08 can prepare descriptors independently; their acceptance/emission still waits for authentic producers.
+MBP-01 has a bounded set/grouped/body-root syntax increment; remaining host/pattern preparation stays open. MBP-03 can inventory pinned library inputs and MBP-08 can prepare descriptors independently; their acceptance/emission still waits for authentic producers.
 Before implementing a row, freeze its source forms, real producer/consumer route and stage-specific tests under the named existing task; these are slices, not replacement owners or new public APIs.
 MBP-02 is the explicit Resolver prerequisite missing from AST-TYPE's generic declaration dependency; algorithm synonym/citation task RESOLVE33 does not supply Binder scope records.
 Retain AST-PARSE's protected legacy exhaustive fixture blocker; additive Binder work neither requires nor authorizes its retirement.

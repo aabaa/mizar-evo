@@ -75,6 +75,7 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::BreakStatement => output.push_str("BreakStatement"),
         SurfaceNodeKind::ContinueStatement => output.push_str("ContinueStatement"),
         SurfaceNodeKind::FailStatement => output.push_str("FailStatement"),
+        SurfaceNodeKind::BinderExpression => output.push_str("BinderExpression"),
         SurfaceNodeKind::AlgorithmTerminationClause => {
             output.push_str("AlgorithmTerminationClause");
         }

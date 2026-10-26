@@ -2226,3 +2226,8 @@ Lexerはfailを予約する。message形式はlexical authority決定待ち。�
 
 ## Expr type syntax
 第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持する。exprで始まるof/over引数のみ型候補とし、通常値引数とgeneric qua制限は維持する。of欠落は次tokenでMalformedTypeExpressionを出し有効な型を保持し、型欠落は区切りを消費せずゼロ幅MissingTypeExpressionを置く。required-type policyとlookaheadを入れ子でも保持する。配置、共変性、constructor role、reflectionはCheckerが所有する。
+
+## Binder expression roots
+第13.10章/A13のroot構文は単一identifierまたは異なる2個以上のidentifierの括弧head、予約記号|->、term本文からなる。この増分の入口はset equating右辺、ParenthesizedTerm内部、再帰Binder本文のみ。共有qualified-term/formula/call/constructor/comprehension経路は維持する。裸のalgorithm-callの仕様例は後続構文で扱い、言語上無効とは宣言しない。
+単一/複数headのarityと順序をtuple/nested構文へ変換せず保持する。Binderは最弱・右結合で、通常operator解析は別経路とする。本文qua/restrictionは本文内、Binder全体へのqua/application/restrictionは括弧で区別する。新fixtureの|は既存のlocal functor activationから供給する。
+直後のarrowで候補が確定するまでhead探索はevent/diagnosticを出さない。既存semicolon/end/item/statement-keyword境界では括弧内でも探索を止め、未確定prefixとして既存解析に委ねる。確定した不正headは開始位置のMalformedTermExpression1個と既存SkippedTokenによる既知head範囲の回復を持ち、arrow/本文をrecovered Binderへ保持する。本文欠落は区切りを消費せずMissingTermを置く。未確定/不均衡prefixは既存の外側回復に委ねる。新diagnostic/recovery語彙や広いhost許可規則は追加しない。

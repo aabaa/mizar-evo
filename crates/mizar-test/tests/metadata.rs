@@ -6559,6 +6559,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_annotations_recovery_001",
             "fail_parser_atomic_formula_missing_rhs_001",
             "fail_parser_atomic_formula_mixed_chain_001",
+            "fail_parser_binder_heads_001",
+            "fail_parser_binder_missing_body_001",
+            "fail_parser_binder_operator_operands_001",
             "fail_parser_block_statements_recovery_001",
             "fail_parser_conclusions_iterative_recovery_001",
             "fail_parser_consider_reconsider_recovery_001",
@@ -6627,6 +6630,8 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_algorithms_claims_001",
             "pass_parser_annotations_001",
             "pass_parser_atomic_formulas_001",
+            "pass_parser_binder_grouped_hosts_001",
+            "pass_parser_binder_roots_001",
             "pass_parser_block_statements_001",
             "pass_parser_conclusions_iterative_001",
             "pass_parser_consider_reconsider_001",
@@ -7183,8 +7188,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 119);
-    assert_eq!(report.passed_count(), 119);
+    assert_eq!(report.results.len(), 124);
+    assert_eq!(report.passed_count(), 124);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10596,8 +10601,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 119"));
-    assert!(stdout.contains("passed: 119"));
+    assert!(stdout.contains("parse-only cases: 124"));
+    assert!(stdout.contains("passed: 124"));
     assert!(stdout.contains("failed: 0"));
 }
 

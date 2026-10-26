@@ -1,0 +1,18 @@
+definition
+  let X, Y be set;
+  func RestrictSyntax: X | Y -> set equals X;
+  coherence proof thus thesis; end;
+end;
+
+set unary = x|->x;
+set binary = (x,y) |-> x;
+set ternary = (x,y,z) |-> z;
+set four_heads = (w,x,y,z) |-> w;
+set right_nested = x |-> y |-> x;
+set body_qua = x |-> x qua set;
+set whole_qua = (x |-> x) qua expr of set;
+set body_restriction = x |-> e | X;
+set whole_restriction = (x |-> e) | X;
+set application = (x |-> e).a;
+set grouped_operand = a | (x |-> x);
+set first = x |-> x, second = (x,y) |-> y;
