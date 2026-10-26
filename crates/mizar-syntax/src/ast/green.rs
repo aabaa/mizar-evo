@@ -31,20 +31,21 @@ fn append_root_contents(
             })
         })
         .collect::<Vec<_>>();
-    let structural_tokens = structural_children
-        .iter()
-        .flat_map(|child| collect_token_descendants(nodes, *child))
-        .collect::<Vec<_>>();
+    let mut structural_tokens = Vec::new();
+    let mut structural_first_tokens = Vec::with_capacity(structural_children.len());
+    for structure in &structural_children {
+        let tokens = collect_token_descendants(nodes, *structure);
+        structural_first_tokens.push(tokens.first().copied());
+        structural_tokens.extend(tokens);
+    }
     let mut appended_structural = Vec::new();
 
     for child in root.children.iter().copied() {
         if structural_tokens.contains(&child) {
-            let containing_structural = structural_children.iter().copied().find(|structure| {
-                collect_token_descendants(nodes, *structure)
-                    .first()
-                    .copied()
-                    == Some(child)
-            });
+            let containing_structural = structural_first_tokens
+                .iter()
+                .position(|first| *first == Some(child))
+                .map(|index| structural_children[index]);
             if let Some(structure) = containing_structural {
                 append_green_node(builder, nodes, structure);
                 appended_structural.push(structure);

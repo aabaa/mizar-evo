@@ -65,6 +65,64 @@ fn builder_round_trips_into_rowan_backed_tree() {
 }
 
 #[test]
+fn green_root_lists_preserve_empty_structures_and_repeated_first_tokens() {
+    for repeat_first in [false, true] {
+        let source_id = source_id(65);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let tokens = ["a", "b", "c", "d"]
+            .into_iter()
+            .enumerate()
+            .map(|(index, text)| {
+                builder.add_token(
+                    SurfaceTokenKind::Identifier,
+                    text,
+                    range(source_id, index, index + 1),
+                )
+            })
+            .collect::<Vec<_>>();
+        let left = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 2),
+            tokens[..2].to_vec(),
+        );
+        let empty = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 2, 2),
+            Vec::new(),
+        );
+        let right = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 2, 4),
+            tokens[2..].to_vec(),
+        );
+        let mut children = vec![
+            empty, tokens[0], left, tokens[1], tokens[2], right, tokens[3],
+        ];
+        if repeat_first {
+            children.push(tokens[0]);
+        }
+        let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 4), children);
+        let ast = builder.finish(Some(root), None);
+        let mut expected = vec![
+            (SyntaxKind::PlaceholderItem, String::new()),
+            (SyntaxKind::TermExpression, "ab".to_owned()),
+            (SyntaxKind::FormulaExpression, "cd".to_owned()),
+        ];
+        if repeat_first {
+            expected.push((SyntaxKind::TermExpression, "ab".to_owned()));
+        }
+        assert_eq!(
+            ast.rowan_root()
+                .children()
+                .map(|node| (node.kind(), node.to_string()))
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_surface_codec_roundtrip(&ast);
+    }
+}
+
+#[test]
 fn node_views_cover_empty_and_connected_arenas_in_dense_order() {
     let source_id = source_id(61);
     let empty = SurfaceAstBuilder::new(source_id).finish(None, None);
