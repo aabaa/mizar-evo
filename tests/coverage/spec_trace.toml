@@ -2412,6 +2412,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.binder_mathematical_hosts.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.10 Function Binder (`|->`)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Parser-only mathematical statement and functor/redefinition/property term-definiens roots; no formation, typing, proof or runtime credit."
+tests = [
+  "tests/miz/pass/parser/pass_parser_binder_mathematical_hosts_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_binder_mathematical_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.13.binder_roots.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.10 Function Binder (`|->`)"

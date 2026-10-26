@@ -1310,7 +1310,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) -> usize {
-        if let Some(term) = self.parse_term_expression_at(cursor) {
+        if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
             term.next_position
@@ -2262,7 +2262,7 @@ impl Parser {
             children.push(self.token_node_ids[cursor]);
             children.push(self.token_node_ids[cursor + 1]);
             cursor += 2;
-            if let Some(term) = self.parse_term_expression_at(cursor) {
+            if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -2270,7 +2270,7 @@ impl Parser {
                 self.diagnose_malformed_term_expression(cursor, "expected witness term after `=`");
                 self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
             }
-        } else if let Some(term) = self.parse_term_expression_at(cursor) {
+        } else if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             cursor = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -2322,7 +2322,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, "=") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_term_expression_at(cursor) {
+            if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -3742,7 +3742,7 @@ impl Parser {
             );
         }
 
-        if let Some(left) = self.parse_term_expression_at(cursor) {
+        if let Some(left) = self.parse_binder_term_expression_at(cursor) {
             cursor = left.next_position;
             children.push(left.id);
             recovery_nodes.extend(left.recovery_nodes);
@@ -3758,7 +3758,7 @@ impl Parser {
             self.diagnose_malformed_term_expression(cursor, "expected `to` in reduction");
         }
 
-        if let Some(right) = self.parse_term_expression_at(cursor) {
+        if let Some(right) = self.parse_binder_term_expression_at(cursor) {
             cursor = right.next_position;
             children.push(right.id);
             recovery_nodes.extend(right.recovery_nodes);
@@ -8410,7 +8410,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
 
-        let first_term = if let Some(term) = self.parse_term_expression_at(cursor) {
+        let first_term = if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             cursor = term.next_position;
             term
         } else {
@@ -8445,7 +8445,7 @@ impl Parser {
             if self.is_reserved_word_at(cursor, "otherwise") {
                 children.push(self.token_node_ids[cursor]);
                 cursor += 1;
-                if let Some(term) = self.parse_term_expression_at(cursor) {
+                if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                     cursor = term.next_position;
                     children.push(term.id);
                     recovery_nodes.extend(term.recovery_nodes);
@@ -8481,7 +8481,7 @@ impl Parser {
 
     fn parse_term_case_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut cursor = position;
-        let value = if let Some(term) = self.parse_term_expression_at(cursor) {
+        let value = if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             cursor = term.next_position;
             term
         } else {

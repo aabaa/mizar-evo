@@ -1,0 +1,23 @@
+theorem Ref: thesis;
+theorem BinderRecovery: thesis proof
+  deffunc F() -> set equals x |-> ;
+  take x |-> , named = y |-> ;
+  reconsider f = x |-> as set by Ref;
+  thus thesis by Ref;
+end;
+
+registration
+  reduce MissingLeft: x |-> to y;
+  reducibility by Ref;
+  reduce MissingRight: x to y |-> ;
+  reducibility by Ref;
+end;
+
+definition
+  func MissingCases: f x -> set equals
+    x |-> if thesis,
+    y |-> if contradiction
+    otherwise z |-> ;
+end;
+
+set after_math_hosts = sentinel;

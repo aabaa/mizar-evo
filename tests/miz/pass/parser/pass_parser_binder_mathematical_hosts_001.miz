@@ -1,0 +1,28 @@
+theorem Ref: thesis;
+theorem BinderStatementHosts: thesis proof
+  deffunc Nested(x be set) -> set equals x |-> y |-> x;
+  take x |-> x, f = (x,y) |-> y;
+  reconsider f = x |-> x, g = (x,y) |-> y as set by Ref;
+  thus thesis by Ref;
+end;
+registration
+  reduce BinderSides: x |-> x to y |-> y;
+  reducibility by Ref;
+end;
+definition
+  mode DomainLabel: Domain is set;
+  let x, y, z be set;
+  func DirectBinder: f x -> set equals x |-> x;
+  func ConditionalBinders: g x -> set equals x |-> x if thesis, y |-> y if contradiction otherwise z |-> z;
+  func OriginalBinderHost: F x -> set equals x;
+end;
+definition
+  let x be set;
+  redefine func RefinedBinderHost: F x -> set equals x |-> x;
+  coherence by Ref;
+end;
+definition
+  let D be Domain;
+  property D.binder_value equals x |-> x;
+end;
+set after_math_hosts = sentinel;

@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_mathematical_hosts_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_mathematical_hosts"
+source = "pass_parser_binder_mathematical_hosts_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_mathematical_hosts.parser"]
+notes = "Nested proof-local deffunc; unnamed and named take witnesses; two reconsider Binder values followed by a Ref citation; both reduction operands; direct and first/later/otherwise term definiens values; source functor definition and redefinition; and a property implementation using a source-declared Domain. Syntax only; no typing, formation, coherence, reflection, proof, or runtime credit."
