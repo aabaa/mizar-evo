@@ -3143,7 +3143,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = symbol.next_position;
         if self.is_type_arguments_start_at(cursor) {
-            let arguments = self.parse_type_arguments_at(cursor, None);
+            let arguments = self.parse_type_arguments_at(cursor, None, false);
             cursor = arguments.next_position;
             children.push(arguments.id);
             recovery_nodes.extend(arguments.recovery_nodes);
@@ -8719,7 +8719,7 @@ impl Parser {
                     cursor,
                     "expected identifier after `,` in reserve statement",
                 );
-                if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+                if let Some(recovery) = self.recover_malformed_type_tail(cursor, false) {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -8736,7 +8736,7 @@ impl Parser {
                 cursor,
                 "expected `for` after reserve identifier list",
             );
-            if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+            if let Some(recovery) = self.recover_malformed_type_tail(cursor, false) {
                 children.push(recovery.id);
                 recovery_nodes.extend(recovery.recovery_nodes);
                 cursor = recovery.next_position;
@@ -8767,7 +8767,7 @@ impl Parser {
             }
             None => {
                 self.diagnose_malformed_type_expression(cursor, "malformed type expression");
-                if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+                if let Some(recovery) = self.recover_malformed_type_tail(cursor, false) {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -8952,13 +8952,14 @@ impl Parser {
     }
 
     fn parse_type_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        self.parse_type_expression_at_with_policy(position, None)
+        self.parse_type_expression_at_with_policy(position, None, false)
     }
 
     fn parse_type_expression_at_with_policy(
         &mut self,
         position: usize,
         policy: Option<RequiredTypePolicy>,
+        stop_before_field_list: bool,
     ) -> Option<ParsedTypeNode> {
         if self.is_type_expression_boundary_at(position) {
             return None;
@@ -8996,7 +8997,7 @@ impl Parser {
             children.push(attribute_chain);
         }
 
-        let head = self.parse_type_head_at(cursor, policy)?;
+        let head = self.parse_type_head_at(cursor, policy, stop_before_field_list)?;
         cursor = head.next_position;
         children.push(head.id);
         recovery_nodes.extend(head.recovery_nodes);
@@ -9017,10 +9018,13 @@ impl Parser {
         &mut self,
         position: usize,
         policy: RequiredTypePolicy,
+        stop_before_field_list: bool,
     ) -> Option<ParsedTypeNode> {
-        if let Some(type_expression) =
-            self.parse_type_expression_at_with_policy(position, Some(policy))
-        {
+        if let Some(type_expression) = self.parse_type_expression_at_with_policy(
+            position,
+            Some(policy),
+            stop_before_field_list,
+        ) {
             return Some(type_expression);
         }
 
@@ -9119,6 +9123,7 @@ impl Parser {
         &mut self,
         position: usize,
         policy: Option<RequiredTypePolicy>,
+        stop_before_field_list: bool,
     ) -> Option<ParsedTypeNode> {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
@@ -9135,8 +9140,12 @@ impl Parser {
                 self.diagnose_malformed_type_expression(cursor, "expected `of` after `expr`");
             }
             let target = match policy {
-                Some(policy) => self.parse_required_type_expression_at(cursor, policy),
-                None => self.parse_type_expression_at(cursor),
+                Some(policy) => {
+                    self.parse_required_type_expression_at(cursor, policy, stop_before_field_list)
+                }
+                None => {
+                    self.parse_type_expression_at_with_policy(cursor, None, stop_before_field_list)
+                }
             };
             if let Some(target) = target {
                 children.push(target.id);
@@ -9161,7 +9170,8 @@ impl Parser {
             children.push(symbol.id);
             cursor = symbol.next_position;
             if self.is_type_arguments_start_at(cursor) {
-                let arguments = self.parse_type_arguments_at(cursor, policy);
+                let arguments =
+                    self.parse_type_arguments_at(cursor, policy, stop_before_field_list);
                 children.push(arguments.id);
                 recovery_nodes.extend(arguments.recovery_nodes);
                 cursor = arguments.next_position;
@@ -9590,9 +9600,11 @@ impl Parser {
         if self.is_reserved_word_at(cursor, "be") || self.is_reserved_word_at(cursor, "being") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(type_expression) = self
-                .parse_required_type_expression_at(cursor, RequiredTypePolicy::TemplateLocalBinder)
-            {
+            if let Some(type_expression) = self.parse_required_type_expression_at(
+                cursor,
+                RequiredTypePolicy::TemplateLocalBinder,
+                false,
+            ) {
                 cursor = type_expression.next_position;
                 children.push(type_expression.id);
                 recovery_nodes.extend(type_expression.recovery_nodes);
@@ -10006,9 +10018,10 @@ impl Parser {
         &mut self,
         position: usize,
         policy: Option<RequiredTypePolicy>,
+        stop_before_field_list: bool,
     ) -> ParsedTypeNode {
         if self.is_reserved_word_at(position, "of") || self.is_reserved_word_at(position, "over") {
-            return self.parse_of_over_type_arguments_at(position, policy);
+            return self.parse_of_over_type_arguments_at(position, policy, stop_before_field_list);
         }
         self.parse_bracket_type_arguments_at(position)
     }
@@ -10027,8 +10040,9 @@ impl Parser {
         &mut self,
         position: usize,
         policy: Option<RequiredTypePolicy>,
+        stop_before_field_list: bool,
     ) -> ParsedTypeNode {
-        self.parse_of_over_type_arguments_at_with_options(position, false, policy)
+        self.parse_of_over_type_arguments_at_with_options(position, stop_before_field_list, policy)
     }
 
     fn parse_of_over_type_arguments_before_structure_fields_at(
@@ -10080,8 +10094,16 @@ impl Parser {
             }
             let term = if self.is_reserved_word_at(cursor, "expr") {
                 match policy {
-                    Some(policy) => self.parse_required_type_expression_at(cursor, policy),
-                    None => self.parse_type_expression_at(cursor),
+                    Some(policy) => self.parse_required_type_expression_at(
+                        cursor,
+                        policy,
+                        stop_before_field_list,
+                    ),
+                    None => self.parse_type_expression_at_with_policy(
+                        cursor,
+                        None,
+                        stop_before_field_list,
+                    ),
                 }
             } else if stop_before_field_list {
                 self.parse_term_expression_before_structure_field_list_at(cursor)
@@ -10190,7 +10212,7 @@ impl Parser {
                 expecting_argument = false;
             } else {
                 self.diagnose_malformed_type_expression(cursor, "malformed type argument");
-                if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+                if let Some(recovery) = self.recover_malformed_type_tail(cursor, false) {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -10628,7 +10650,8 @@ impl Parser {
         }
 
         let operator = self.parse_term_operator_expression_at(position, 0, false)?;
-        let term = self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
+        let term =
+            self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, false);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -10642,7 +10665,7 @@ impl Parser {
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
             let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
             let term =
-                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
+                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -10654,7 +10677,7 @@ impl Parser {
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
             let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
             let term =
-                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
+                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -10662,7 +10685,8 @@ impl Parser {
             return None;
         }
         let operator = self.parse_term_operator_expression_at(position, 0, true)?;
-        let term = self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
+        let term =
+            self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -11011,6 +11035,7 @@ impl Parser {
         start_position: usize,
         mut term: ParsedTypeNode,
         target_grammar: QuaTargetGrammar,
+        stop_before_field_list: bool,
     ) -> ParsedTypeNode {
         while self.is_reserved_word_at(term.next_position, "qua") {
             let qua_position = term.next_position;
@@ -11019,6 +11044,7 @@ impl Parser {
                 term,
                 qua_position,
                 target_grammar,
+                stop_before_field_list,
             );
         }
         term
@@ -11030,12 +11056,13 @@ impl Parser {
         base: ParsedTypeNode,
         qua_position: usize,
         target_grammar: QuaTargetGrammar,
+        stop_before_field_list: bool,
     ) -> ParsedTypeNode {
         let mut children = vec![base.id, self.token_node_ids[qua_position]];
         let mut recovery_nodes = base.recovery_nodes;
         let mut cursor = qua_position + 1;
 
-        match self.parse_qua_target_type_at(cursor, target_grammar) {
+        match self.parse_qua_target_type_at(cursor, target_grammar, stop_before_field_list) {
             Some(target) => {
                 children.push(target.id);
                 recovery_nodes.extend(target.recovery_nodes);
@@ -11049,7 +11076,9 @@ impl Parser {
                 let missing = self.add_missing_type_expression(cursor);
                 children.push(missing);
                 recovery_nodes.push(missing);
-                if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+                if let Some(recovery) =
+                    self.recover_malformed_type_tail(cursor, stop_before_field_list)
+                {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -11073,9 +11102,12 @@ impl Parser {
         &mut self,
         position: usize,
         target_grammar: QuaTargetGrammar,
+        stop_before_field_list: bool,
     ) -> Option<ParsedTypeNode> {
         match target_grammar {
-            QuaTargetGrammar::TypeExpression => self.parse_type_expression_at(position),
+            QuaTargetGrammar::TypeExpression => {
+                self.parse_type_expression_at_with_policy(position, None, stop_before_field_list)
+            }
             QuaTargetGrammar::RadixType => self.parse_radix_type_expression_at(position),
         }
     }
@@ -11084,7 +11116,7 @@ impl Parser {
         if self.is_type_expression_boundary_at(position) {
             return None;
         }
-        let head = self.parse_type_head_at(position, None)?;
+        let head = self.parse_type_head_at(position, None, false)?;
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::TypeExpression,
             range: self.covering_token_range(position, head.next_position),
@@ -11736,6 +11768,7 @@ impl Parser {
             if let Some(type_expression) = self.parse_required_type_expression_at(
                 cursor,
                 RequiredTypePolicy::ComprehensionGenerator,
+                false,
             ) {
                 cursor = type_expression.next_position;
                 children.push(type_expression.id);
@@ -12181,7 +12214,7 @@ impl Parser {
             return None;
         }
         let base = self.parse_identifier_reference_term_at(position);
-        let term = self.parse_qua_chain_at(position, base, QuaTargetGrammar::RadixType);
+        let term = self.parse_qua_chain_at(position, base, QuaTargetGrammar::RadixType, false);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -12827,7 +12860,11 @@ impl Parser {
         recovery_nodes.push(recovery);
     }
 
-    fn recover_malformed_type_tail(&mut self, position: usize) -> Option<ParsedItem> {
+    fn recover_malformed_type_tail(
+        &mut self,
+        position: usize,
+        stop_before_field_list: bool,
+    ) -> Option<ParsedItem> {
         let mut cursor = position;
         while cursor < self.request.tokens.len()
             && !self.is_semicolon_at(cursor)
@@ -12836,6 +12873,9 @@ impl Parser {
             && !self.is_reserved_symbol_at(cursor, ")")
             && !self.is_item_start_at(cursor)
         {
+            if stop_before_field_list && self.is_structure_field_list_opener_at(cursor) {
+                break;
+            }
             cursor += 1;
         }
         self.emit_malformed_tail_recovery(position, cursor)

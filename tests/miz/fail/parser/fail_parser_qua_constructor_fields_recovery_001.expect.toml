@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_qua_constructor_fields_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.qua_constructor_fields"
+source = "fail_parser_qua_constructor_fields_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_qua_target_type"
+stable_detail_key = "parser.qua_terms.missing_type"
+diagnostic_codes = ["malformed_type_expression", "malformed_type_expression", "malformed_type_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.13.qua_constructor_field_boundary.parser"]
+notes = "Parse-only recovery coverage for MissingTypeExpression after an omitted, malformed, or recursively omitted qua target. Preserve each ValueBox field list and closing delimiter plus the following after_qua_fields declaration; no new diagnostic policy or semantic credit."

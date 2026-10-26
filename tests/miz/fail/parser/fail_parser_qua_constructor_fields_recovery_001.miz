@@ -1,0 +1,14 @@
+reserve x, sentinel for set;
+
+definition
+  let P be set;
+  struct ValueBox of P where
+    field value -> set;
+    field other -> set;
+  end;
+end;
+
+set missing_target = ValueBox of x qua (value: sentinel, other: sentinel);
+set malformed_prefix = ValueBox of x qua 7 (value: sentinel, other: sentinel);
+set recursive_missing_target = ValueBox of x qua expr of (value: sentinel, other: sentinel);
+set after_qua_fields = sentinel;

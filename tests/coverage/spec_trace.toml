@@ -2514,6 +2514,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.qua_constructor_field_boundary.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.6 Type Qualification (`qua`)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Parser-only outer constructor field ownership through ordinary and recursive expr qua targets, including malformed-target recovery; no type compatibility, proof or reflection credit."
+tests = [
+  "tests/miz/pass/parser/pass_parser_qua_constructor_fields_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_qua_constructor_fields_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.13.qua_qualification.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.6 Type Qualification (qua)"

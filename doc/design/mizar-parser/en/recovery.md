@@ -282,3 +282,7 @@ Implementation closes the nine panics without weakening
 `SurfaceAstBuilder`. The byte-112 regression proves that the first unclaimed
 `take`/`thus` boundaries survive after the claimed `x !` prefix, while the
 five excluded proof mutations retain the documented `ast = None` result.
+
+## Constructor field boundary
+
+A qua target parsed in an outer-constructor actual retains that constructor's field-list opener. The existing malformed-type-tail recovery stops before the same opener: missing targets retain zero-width MissingTypeExpression, and an invalid prefix retains only its skipped span. Field arguments, closers and later statements stay with their existing owners; ordinary contexts and generic radix-only qua recovery are unchanged.

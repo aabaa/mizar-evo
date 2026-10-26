@@ -253,3 +253,7 @@ diagnostic、public API、semantic behaviorを追加せず、parser Task 49で�
 implementationは`SurfaceAstBuilder`を弱めずpanic 9件をcloseする。byte-112
 regressionはclaimed `x !` prefix後の最初のunclaimed `take`/`thus` boundaryを保持し、
 excluded proof mutation 5件はdocumented `ast = None`を保持する。
+
+## Constructor field boundary
+
+外側constructorのactual内で解析するqua targetは、そのconstructorのfield-list openerを保持する。既存malformed-type-tail recoveryも同じopenerの直前で止まり、target欠落はゼロ幅MissingTypeExpression、不正prefixはそのSkippedToken範囲だけを保持する。field引数、closer、後続文は既存ownerに残し、通常contextとgeneric radix-only quaの回復は維持する。

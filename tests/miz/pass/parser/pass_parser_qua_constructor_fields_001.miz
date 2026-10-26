@@ -1,0 +1,21 @@
+reserve x, sentinel for set;
+
+definition
+  let P be set;
+  struct ValueBox of P where
+    field value -> set;
+    field other -> set;
+  end;
+  mode FamilyLabel: Family of P is set;
+end;
+
+definition
+  func AtomLabel: atom -> set equals sentinel;
+end;
+
+set ordinary_qua_fields = ValueBox of x qua Family of atom (value: sentinel, other: sentinel);
+set expr_qua_fields = ValueBox of x qua expr of Family of atom (value: sentinel, other: sentinel);
+set nested_expr_qua_fields = ValueBox of x qua expr of expr of Family of atom (value: sentinel, other: sentinel);
+set nested_qua_fields = ValueBox of x qua Family of atom qua Family of sentinel (value: sentinel, other: sentinel);
+set expr_actual_qua_fields = ValueBox of x qua Family of expr of Family of atom (value: sentinel, other: sentinel);
+set after_qua_fields = sentinel;

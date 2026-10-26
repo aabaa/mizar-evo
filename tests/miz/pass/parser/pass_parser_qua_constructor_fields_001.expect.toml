@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_qua_constructor_fields_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.qua_constructor_fields"
+source = "pass_parser_qua_constructor_fields_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.qua_constructor_field_boundary.parser"]
+notes = "Parse-only boundary coverage: ordinary and recursive explicit qua targets in a parameterized ValueBox actual leave its outer value/other field list available; the following after_qua_fields declaration remains present. No name resolution, field ownership, typing, or proof credit."

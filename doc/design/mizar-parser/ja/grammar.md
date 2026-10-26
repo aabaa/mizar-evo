@@ -2215,6 +2215,8 @@ lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと 
 
 ## General Constructor Actual Boundary
 
+外側constructorのfield openerは、再帰的なexpr of targetを含む通常qua targetの引数も区切る。既存のstop contextを型/引数経路へ渡し、required-type policyと別責務のgeneric qua grammarは維持する。
+
 計画中の一般 mode/structure bracket slice は、現在の identifier/qua fallback に加えて完全な term-expression value actual を扱う (§3.3/Appendix A.3)。引数順、曖昧な syntax、delimiter recovery を保持する。of/over term parsing は既存で、generic-template の bounded qua grammar は別責務のまま。意味上の role/applicability は Resolver/Checker が所有する。
 [module/tests.rs](../../../../crates/mizar-parser/src/module/tests.rs) の regression control: parser_preserves_parameter_prefix_and_bracket_qua_arguments、parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only、parser_recovers_missing_type_argument_bracket_close、parser_parses_task31_template_arguments_on_references_and_functors。現在の primary/operator/of/over parsing を保持する。
 
