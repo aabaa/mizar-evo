@@ -26,7 +26,7 @@ expectation files, and traceability metadata.
 7. Source/documentation consistency review, including whether
    `doc/design/spec_coverage_audit.md` coverage, owner, or deferral changed.
    If nothing changed, leave it untouched and write no note.
-8. Run verification from `AGENTS.md`.
+8. Run verification from `AGENTS.md` under [Verification Cadence](#verification-cadence).
 9. Commit when authorized by `AGENTS.md`. The next-task handoff, with its
    recommended reasoning setting, goes in the final response only.
 
@@ -461,6 +461,64 @@ recorded in the commit body. Files without a row are held at the default.
 | `contract_lines` | each `doc/design/task_contracts/{en,ja}/**/*.md` | 60 |
 | `contract_fanout` | files outside `task_contracts/`, `todo.md`, crate plans, crate todos, and `spec_coverage_audit.md` that link a contract | 0 |
 
+## Verification Cadence
+
+Local test cadence is separate from full/light review tiers; all required
+independent reviews and semantic gates remain in force. Ten changed tasks is
+an initial ceiling on delayed regression detection, not a measured optimum.
+
+- **Each changed task:** run `cargo fmt --check`, the Clippy command in
+  `AGENTS.md`, new/changed regression tests, affected unit and corpus checks,
+  and a short representative end-to-end check for executable changes.
+  Documentation-only changes run the affected documentation/ledger and link
+  checks. Reuse formatting/Clippy evidence only when relevant sources and
+  execution conditions are unchanged.
+- **Relevant changes:** run the affected long tests immediately when their
+  obligations are changed: proof/kernel/acceptance, evidence participants,
+  policy, identity/hash, canonical bytes/schema, snapshot/cache/replay,
+  broad recovery, or test harness/selection. If impact cannot be bounded,
+  run the full suite. Dependency reachability alone does not make every long
+  matrix mandatory for a localized parser change; select by test obligation.
+- **At most ten changed tasks:** full `cargo test` must pass before completing
+  the tenth task since the last full success. Count repository-changing tasks,
+  including documentation changes; exclude read-only investigation and review
+  retries. Task splitting, conversation restarts, and branch changes do not
+  reset the outstanding count or discard inherited unverified changes.
+- **Integration and exit:** full `cargo test` must pass on the tree being
+  integrated before pushing shared branches, merging, release, or crate/
+  milestone exit, even when fewer than ten tasks have accumulated. A local
+  intermediate task commit may remain pending full regression.
+- **Failure or missing state:** stop adding feature changes after full failure;
+  investigate from the last full success, repair, and obtain full success.
+  Missing or ambiguous full-success/count evidence requires a full run before
+  further deferral. Only a full success covering all outstanding changes
+  resets the count.
+
+Record the last full-success revision plus dirty-diff identity if applicable,
+outstanding task count, commands/results/log paths, and the reason each long
+group is run or deferred in the existing checkpoint and commit body when
+committing; keep run evidence outside `doc/`. Report intermediate tasks as
+"focused checks passed; full regression pending", never as fully verified.
+Reuse another run, including CI, only for the same tested tree and applicable
+conditions; unrelated concurrent edits require isolation or renewed checks.
+
+Representative selection (expand for the actual changed obligation):
+
+| Change | Each task | Immediate long checks | Periodic full suite |
+|---|---|---|---|
+| Local parser/AST | syntax/parser/frontend tests, affected corpus cases, short Driver publication check | resolver edit-versus-clean matrix when incremental resolution or broad recovery changes | remaining unrelated matrices |
+| Verifier/evidence | affected checker/kernel tests and positive/refusal end-to-end cases | affected candidate metadata policy/generation matrix and witness participant/name-byte matrix | unrelated matrices |
+| Documentation | `cargo test -p mizar-test --test lint_policy` and affected link/metadata lints | policy or test-selection changes run full immediately | otherwise full by the same ceiling/integration rule |
+
+Choose concrete commands and cases before implementation. Do not defer all
+end-to-end checks merely because dependencies are broad. A regression first
+found by periodic full testing becomes a focused check for that change class.
+
+Keep ordinary `cargo test` exhaustive and CI running it on every push/PR.
+Do not add `#[ignore]` or omit cases from CI to implement this cadence.
+`TestProfile::Fast` selects corpus cases, not ordinary Rust tests; Rust target/
+case filters need explicit selection, and `--skip` still compiles its binary.
+
 ## Gate Tiering
 
 Ceremony is tiered by what a task can put at risk (September 2026 audit 2).
@@ -497,8 +555,8 @@ Light-tier requirements (all mandatory):
    rule), with language-local redirects where the rulebook requires them;
 3. one independent equivalence review (single pass; re-review only on
    findings) instead of the multi-stage review sequence;
-4. required verification commands pass (at minimum `cargo test` for changes
-   the doc/ledger lints cover, plus the local link/fragment checks);
+4. required verification under [Verification Cadence](#verification-cadence)
+   passes, including affected doc/ledger and local link/fragment checks;
 5. a task-only commit with the tier named in the contract or commit body.
 
 Not required in the light tier: the nine-gate ceremony, frozen-doc
@@ -529,8 +587,7 @@ all hard gates pass:
 7. `doc/design/spec_coverage_audit.md` is updated for any changed spec/design
    coverage, follow-up ownership, or deferred coverage status (unchanged
    coverage leaves the file and every other document untouched)
-8. required verification commands pass, or any unrun command is explicitly
-   justified
+8. required verification under [Verification Cadence](#verification-cadence) passes
 9. remaining risks are classified as deferred, out of scope, or human-owned
 
 In this protocol, "no findings" means no unresolved blocking/high findings. Low

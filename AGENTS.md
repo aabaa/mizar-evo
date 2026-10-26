@@ -75,8 +75,25 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test
 ```
 
-Run narrow tests first when sufficient, then the full set before finalizing
-Rust changes. Reviewers reuse the parent's command, checked revision/worktree,
+Follow the canonical [Verification Cadence](doc/design/autonomous_crate_development.md#verification-cadence).
+Its operational summary is:
+
+- Each changed task: focused regressions and affected crate/corpus/doc checks,
+  including ledger/link checks. Executable changes need a short end-to-end check.
+  Run fmt/Clippy above each changed task; reuse evidence only with unchanged
+  relevant inputs and execution conditions.
+- Run affected long tests immediately. Verification-policy/selection changes
+  or unbounded impact require full `cargo test` immediately.
+- Count all repository-changing tasks, including docs. Full must pass before
+  completing the tenth task since the last full success, and before shared
+  push/merge, release, or crate/milestone exit.
+- Track the last full-success tree and pending task count in checkpoint/commit
+  evidence. Never reset on restart/branch change; unknown state requires full.
+  Local commits may be "focused checks passed; full regression pending".
+- Full failure stops feature work until repair and full success. Keep CI
+  running full on every push/PR.
+
+Reviewers reuse the parent's command, checked revision/worktree,
 exit status, and log location; rerun affected checks if changes or environment
 differences invalidate results, or findings need reproduction. Keep full logs
 outside `doc/`; report concise results, relevant failures, and reasons/risks for
