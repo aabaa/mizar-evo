@@ -10220,16 +10220,13 @@ impl Parser {
                 .is_some_and(|end| self.can_parse_structure_constructor_after_symbol(end));
             let prefix = self.prefix_operator_at(cursor).is_some()
                 && self.can_start_term_operator_operand_at(cursor + 1, false);
-            let attributed_type = self.plan_attribute_ref_at(cursor).is_some_and(|plan| {
-                let depth = (cursor..plan.next_position).fold(0_isize, |depth, index| {
-                    depth + isize::from(self.is_reserved_symbol_at(index, "("))
-                        - isize::from(self.is_reserved_symbol_at(index, ")"))
+            let attributed_type = self
+                .plan_complete_attribute_ref_at(cursor)
+                .is_some_and(|plan| {
+                    self.can_form_type_expression_at(plan.next_position)
+                        && self.infix_operator_at(plan.next_position).is_none()
+                        && self.postfix_operator_at(plan.next_position).is_none()
                 });
-                depth == 0
-                    && self.can_form_type_expression_at(plan.next_position)
-                    && self.infix_operator_at(plan.next_position).is_none()
-                    && self.postfix_operator_at(plan.next_position).is_none()
-            });
             let application =
                 self.template_argument_starts_term_application_at(cursor) && !attributed_type;
             let payload = if term_tail || constructor || prefix || application {
@@ -10426,16 +10423,13 @@ impl Parser {
             symbol_end.is_some_and(|end| self.can_parse_structure_constructor_after_symbol(end));
         let prefix = self.prefix_operator_at(position).is_some()
             && self.can_start_term_operator_operand_at(position + 1, false);
-        let attributed_type = self.plan_attribute_ref_at(position).is_some_and(|plan| {
-            let depth = (position..plan.next_position).fold(0_isize, |depth, index| {
-                depth + isize::from(self.is_reserved_symbol_at(index, "("))
-                    - isize::from(self.is_reserved_symbol_at(index, ")"))
+        let attributed_type = self
+            .plan_complete_attribute_ref_at(position)
+            .is_some_and(|plan| {
+                self.can_form_type_expression_at(plan.next_position)
+                    && self.infix_operator_at(plan.next_position).is_none()
+                    && self.postfix_operator_at(plan.next_position).is_none()
             });
-            depth == 0
-                && self.can_form_type_expression_at(plan.next_position)
-                && self.infix_operator_at(plan.next_position).is_none()
-                && self.postfix_operator_at(plan.next_position).is_none()
-        });
         let application =
             self.template_argument_starts_term_application_at(position) && !attributed_type;
         let payload = if term_tail || constructor || prefix || application {
@@ -16389,10 +16383,49 @@ impl Parser {
             return false;
         }
 
-        let Some(plan) = self.plan_attribute_ref_at(position) else {
+        let Some(plan) = self
+            .plan_complete_attribute_ref_at(position)
+            .filter(|plan| self.is_formula_expression_boundary_at(plan.next_position))
+            .or_else(|| self.plan_attribute_ref_at(position))
+        else {
             return false;
         };
         !self.can_form_type_expression_at(plan.next_position)
+    }
+
+    fn plan_complete_attribute_ref_at(&self, position: usize) -> Option<AttributeRefPlan> {
+        let plan = self.plan_attribute_ref_at(position)?;
+        let mut closing = Vec::new();
+        for cursor in position..self.request.tokens.len() {
+            if self.is_semicolon_at(cursor)
+                || self.is_end_keyword_at(cursor)
+                || self.is_item_start_at(cursor)
+            {
+                return None;
+            }
+            if self.is_reserved_symbol_at(cursor, "(") {
+                closing.push(")");
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                closing.push("]");
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                closing.push("}");
+            } else if [")", "]", "}"]
+                .iter()
+                .any(|symbol| self.is_reserved_symbol_at(cursor, symbol))
+            {
+                let expected = closing.pop()?;
+                if !self.is_reserved_symbol_at(cursor, expected) {
+                    return None;
+                }
+            }
+            if cursor + 1 >= plan.next_position && closing.is_empty() {
+                return Some(AttributeRefPlan {
+                    start_position: position,
+                    next_position: cursor + 1,
+                });
+            }
+        }
+        None
     }
 
     fn plan_attribute_ref_at(&self, position: usize) -> Option<AttributeRefPlan> {

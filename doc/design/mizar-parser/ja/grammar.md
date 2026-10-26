@@ -307,7 +307,7 @@ source drift として分類する。
 
 ### Attribute argument consumption
 
-root typeと通常qua targetではpure preflightがnodeを送出せず、commit後は実際の消費cursorで各attribute planを再計算し、rightmost-head条件とfield-stop policyを保つ。各attributeを一度だけparseし、argumentと`AttributeChain` rangeは実際の消費範囲を使う。消費済みtokenを後続attribute/headへ再利用しない。各argumentは完全な通常のtermであり、複数headのBinderも一個のargumentである。argumentが古いrecovery endpointに達してもcommaはlistに属し、消費済みargumentの後で次のargumentを待つ状態だけがendpointを越えて継続できる。comma以外ではrecovery barrierを保つ。複雑な属性型のbracket/template dispatchはdeferred。attribute消費後にheadがなければ、`AttributeChain`と未消費boundary上のzero-width `MissingTypeExpression`を順に持つ`TypeExpression`を返し、既存`MalformedTypeExpression`を出す。attribute送出後に`None`を返さない。閉じたattributeにはunmatched-close recoveryを付けず、close欠落時は既存attribute recoveryを保つ。diagnostic primary spanはboundary token全体、missing nodeはその開始位置を使う。
+root typeと通常qua targetではpure preflightがnodeを送出せず、commit後は実際の消費cursorで各attribute planを再計算し、rightmost-head条件とfield-stop policyを保つ。各attributeを一度だけparseし、argumentと`AttributeChain` rangeは実際の消費範囲を使う。消費済みtokenを後続attribute/headへ再利用しない。各argumentは完全な通常のtermであり、複数headのBinderも一個のargumentである。argumentが古いrecovery endpointに達してもcommaはlistに属し、消費済みargumentの後で次のargumentを待つ状態だけがendpointを越えて継続できる。comma以外ではrecovery barrierを保つ。bracket/templateと単一refのbare-is dispatchには後述のcompletion境界を使い、完全なchainと大文字bare assertionはdeferredとする。attribute消費後にheadがなければ、`AttributeChain`と未消費boundary上のzero-width `MissingTypeExpression`を順に持つ`TypeExpression`を返し、既存`MalformedTypeExpression`を出す。attribute送出後に`None`を返さない。閉じたattributeにはunmatched-close recoveryを付けず、close欠落時は既存attribute recoveryを保つ。diagnostic primary spanはboundary token全体、missing nodeはその開始位置を使う。
 
 `TypeArguments` は `of` / `over` argument list を保持する。task 9 以降、これらの list は
 一時的な term-entry placeholder ではなく primary term の `TermExpression` child を所有する。
@@ -2224,7 +2224,9 @@ lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと 
 一般TypeArgumentsとgeneric TemplateArgumentのpayloadは既存term grammarの完全な候補を扱い、その文法自体の制限は維持する（§3.3/§18.2.2/A.3/A.18）。この現行境界はtask-8/11のradix-only fallbackとtask-31のattributed-qua一律拒否の記述に優先する。
 両payload箇所で明確なterm根拠を既存の消費型parserより先に判定し、それ以外は型優先、その後Binder-aware term fallbackとする。消費parseは一度だけで、投機的event/diagnosticや終端位置だけの検証は行わない。
 完結したqualified-symbol/reference prefixにselector、with、qua、active infix/postfixが続けばtermとする。任意bracketが不完結ならtail根拠としない。既存named-field constructor lookaheadはof/overを含めtermを選び、active prefixは後続operandがある場合のみtermを選ぶ。
-既存application lookaheadはtermを選ぶが、引数付きattribute planの括弧が対応し、その後続が型ならその型解釈を維持する。ただしその位置のactive infix/postfixは例外を打ち消す。call内部のrecovery終点はattributeの根拠にしない。attr(x) Rは型、image(~ Atom)とimage(x) ++ Otherは項とし、単独の型風nameとbuiltin/attribute/exprのrecoveryは既存型parserに委ねる。
+application lookaheadは、属性refが完全に対応する()[]{} spanとtype continuationを持つ場合以外はtermを選ぶ。continuation上のactive infix/postfixは属性例外を無効にする。pure probeはname/prefix認識を再利用し、早いrecovery endpointから最初のbalanced completionまで伸ばし、semicolon/end/item/EOFや不一致closeをnode送出なしで拒否する。attr(~ Atom) Rはtype、image(~ Atom)とimage(x) ++ Otherはtermのままとする。完全なtype風の裸の名前とrecovered builtin/attribute/expr prefixは既存type parseを保つ。
+
+単一の小文字/non bare-is bodyはformula boundaryでのみcompletionを使い、それ以外では既存queryとrecovery-plan fallbackを保つ。typed-is bodyは実際の最終headを保持する。completionはterm-list内容の妥当性を検証せず、既存consumerが空/trailing argumentを診断し、hole/close/successorを所有する。完全なchainと大文字bare assertionはdeferredのまま、symbol roleや意味論の受理を主張しない。
 一般リストはTypeExpression/TermExpressionを直接保持し、genericリストはpayloadごとにTemplateArgumentを一個保持して既存reference/predicate/functor親を維持する。token順、range、missing node、list recovery、後続所有権を保持する。不要なprivate radix-only qua経路のみ削除し、通常quaとfield-stop伝達は残す。
 raw x qua non empty Rは両箇所で完全な通常項候補で、括弧は任意。bounded-type qua_argのidentifier/radix targetとwidening根拠はResolver/Checkerが検証し、構文kindからparameter roleを決めない。未対応の意味処理はfail closed/延期する。
 回帰controlは型/値の所有権、task-31 wrapper、primary/operator、of/over、通常quaのfieldとBinder formula/反復等式を維持する。新bracket値/型/recovery fixtureは両payloadを固定する。派生したraw attributed-qua拒否unitは肯定的構文検査に直し、実source consumerでtype-role/narrowing/referenceの否定検査を別に行う。

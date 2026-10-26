@@ -1,0 +1,13 @@
+reserve x, sentinel for set;
+definition let n, m, element be set;
+  mode RadixLabel: R is set; mode FamilyLabel: Family[n] is set;
+  func AtomLabel: Atom -> set equals sentinel; func PickLabel: pick[n](element) -> set equals element;
+  func PrefixLabel: ~ n -> set equals n; attr LinkedLabel: element is (n,m)-linked means thesis;
+end;
+prefix_operator("~", 85);
+reserve trailing_comma for Family[linked(~ Atom,) R];
+set after_bracket_trailing_comma = sentinel;
+set empty_arguments = pick[linked() R](x);
+set after_template_empty_arguments = sentinel;
+theorem BareTrailingComma: x is linked(~ Atom,);
+set after_bare_trailing_comma = sentinel;

@@ -20035,3 +20035,63 @@ fn snapshot_id(byte: u8) -> BuildSnapshotId {
     BuildSnapshotId::from_published_schema_str(&format!("mizar-session-build-snapshot-v1:{hex}"))
         .unwrap()
 }
+
+#[test]
+fn complete_attribute_ref_probe_tracks_delimiters_and_stops_at_barriers() {
+    let cases: &[(usize, &[&str], Option<usize>)] = &[
+        (
+            1,
+            &[
+                "source", "non", "M", ".", "small", "(", "the", "set", ",", "{", "x", "where", "x",
+                "is", "set", ":", "P", "[", "x", "]", "}", ",", "[", "a", ",", "(", "b", ")", "]",
+                ")", "next",
+            ],
+            Some(30),
+        ),
+        (0, &["small", "(", ")", "next"], Some(3)),
+        (0, &["small", "(", "x", ",", ")", "next"], Some(5)),
+        (0, &["small", "(", "x", "]", ")"], None),
+        (0, &["small", "(", "[", "x", ")", "]", ")"], None),
+        (0, &["small", "(", "[", "x", ")"], None),
+        (0, &["small", "(", "x", ";", "y", ")"], None),
+        (0, &["small", "(", "x", "end", "y", ")"], None),
+        (0, &["small", "(", "x", "definition", "y", ")"], None),
+        (0, &["small", "(", "x"], None),
+    ];
+    let source_id = source_id(253);
+    for (start, spellings, expected_end) in cases {
+        let entries = spellings
+            .iter()
+            .map(|text| {
+                (
+                    *text,
+                    match *text {
+                        "non" | "the" | "set" | "where" | "is" | "end" | "definition" => {
+                            ParserTokenKind::ReservedWord
+                        }
+                        "(" | ")" | "[" | "]" | "{" | "}" | "," | ":" | "." | ";" => {
+                            ParserTokenKind::ReservedSymbol
+                        }
+                        "small" => ParserTokenKind::UserSymbol,
+                        _ => ParserTokenKind::Identifier,
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        let parser = crate::grammar::Parser::new(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(source_id, &entries),
+            Vec::new(),
+        ));
+        let plan = parser.plan_complete_attribute_ref_at(*start);
+        assert_eq!(
+            plan.map(|plan| (plan.start_position, plan.next_position)),
+            expected_end.map(|end| (*start, end)),
+            "{spellings:?}"
+        );
+        assert!(parser.token_node_ids.is_empty());
+        assert!(parser.diagnostics.is_empty());
+        assert!(parser.events.finish(None, None).nodes().is_empty());
+    }
+}

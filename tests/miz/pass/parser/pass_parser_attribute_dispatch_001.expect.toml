@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_attribute_dispatch_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.attribute_dispatch"
+source = "pass_parser_attribute_dispatch_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.attribute_dispatch.parser"]
+notes = "Complete attribute argument delimiters select attributed type payloads in both bracket consumers, preserving ordinary term children, suffix attributes, actual final R heads and host continuations. Single lowercase/non bare assertions select AttributeTestChain inside generic IsAssertion at a formula boundary; typed assertions retain their R head. Ordinary applications without a head and infix/postfix continuations remain terms. Parser-only; complete assertion chains, uppercase bare applications and semantic admission remain deferred."

@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_attribute_dispatch_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.attribute_dispatch"
+source = "fail_parser_attribute_dispatch_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.attribute_dispatch.recovery"
+diagnostic_codes = ["malformed_term_expression", "malformed_term_expression", "malformed_term_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.03.attribute_dispatch.parser"]
+notes = "Balanced delimiters do not validate attribute argument syntax. A bracket type trailing comma, a generic template empty argument list, and a bare-is trailing comma each require one malformed term with a zero-width MissingTerm at the attribute close. Existing consumers retain each close and enclosing continuation, both bracketed R heads and all three following statements; no MissingTypeExpression or host-level skip is intended."
