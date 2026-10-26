@@ -343,6 +343,7 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     let mut ids = BTreeMap::new();
     let mut violations = Vec::new();
     validate_legacy_compaction_manifest(&workspace, &mut violations);
+    let plan_backlinks = crate_plan_backlinks(&workspace.join("doc/design"));
     for relative_path in &en_paths {
         let Some(task_id) = relative_path.file_stem().and_then(|stem| stem.to_str()) else {
             violations.push(format!(
@@ -420,7 +421,7 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
             }
 
             validate_crate_plan_backlinks(
-                &workspace,
+                &plan_backlinks,
                 &path,
                 &en_root.join(relative_path),
                 &links,
@@ -526,15 +527,24 @@ fn task_contract_backlinks_distinguish_consumers_and_existing_todo_owners() {
                 document.push_str("[sequence](../../../todo.md)\n");
             }
             write_test_file(&contract, &document);
+            write_test_file(&contract.with_file_name("U.md"), "# Unrelated contract\n");
+            let unrelated =
+                workspace.join(format!("doc/design/unrelated/{language}/00.crate_plan.md"));
+            create_dir(unrelated.parent().unwrap());
+            write_test_file(
+                &unrelated,
+                &format!("## Task Index\n[U](../../task_contracts/{language}/nested/U.md)\n"),
+            );
         }
 
         for language in ["en", "ja"] {
+            let plan_backlinks = crate_plan_backlinks(&workspace.join("doc/design"));
             let contract =
                 workspace.join(format!("doc/design/task_contracts/{language}/nested/T.md"));
             let links = markdown_link_destinations(&read_to_string(&contract));
             let mut violations = Vec::new();
             validate_crate_plan_backlinks(
-                &workspace,
+                &plan_backlinks,
                 &contract,
                 &canonical_contract,
                 &links,
@@ -553,7 +563,7 @@ fn task_contract_backlinks_distinguish_consumers_and_existing_todo_owners() {
                     .collect::<Vec<_>>();
                 let mut violations = Vec::new();
                 validate_crate_plan_backlinks(
-                    &workspace,
+                    &plan_backlinks,
                     &contract,
                     &canonical_contract,
                     &links,
@@ -564,6 +574,19 @@ fn task_contract_backlinks_distinguish_consumers_and_existing_todo_owners() {
                         .iter()
                         .any(|violation| violation.contains("indexed owning crate plan"))
                 );
+                let consumer =
+                    workspace.join(format!("doc/design/consumer/{language}/00.crate_plan.md"));
+                write_test_file(&consumer, "## Task Index\n");
+                let plan_backlinks = crate_plan_backlinks(&workspace.join("doc/design"));
+                let mut violations = Vec::new();
+                validate_crate_plan_backlinks(
+                    &plan_backlinks,
+                    &contract,
+                    &canonical_contract,
+                    &links,
+                    &mut violations,
+                );
+                assert!(violations.is_empty(), "{language}: {violations:?}");
             }
         }
     }
@@ -1619,7 +1642,7 @@ fn validate_local_markdown_links(source_path: &Path, document: &str, violations:
 }
 
 fn validate_crate_plan_backlinks(
-    workspace: &Path,
+    plan_backlinks: &BTreeMap<PathBuf, BTreeSet<PathBuf>>,
     contract_path: &Path,
     canonical_contract_path: &Path,
     destinations: &[String],
@@ -1657,9 +1680,8 @@ fn validate_crate_plan_backlinks(
                 .map(Path::to_path_buf)
         })
         .collect::<BTreeSet<_>>();
-    let plan_paths = crate_plan_paths(&workspace.join("doc/design"));
-    let todo_paths = plan_paths
-        .iter()
+    let todo_paths = plan_backlinks
+        .keys()
         .filter(|path| path.file_name().and_then(|name| name.to_str()) == Some("todo.md"))
         .filter_map(|path| fs::canonicalize(path).ok())
         .collect::<BTreeSet<_>>();
@@ -1673,26 +1695,9 @@ fn validate_crate_plan_backlinks(
         })
         .collect::<BTreeSet<_>>();
     let mut indexed_plans = BTreeSet::new();
-    for plan_path in plan_paths {
-        let plan = read_to_string(&plan_path);
-        let task_index = if plan_path.file_name().and_then(|name| name.to_str()) == Some("todo.md")
-        {
-            Some(plan.as_str())
-        } else {
-            markdown_h2_section(&plan, "Task Index")
-        };
-        let Some(task_index) = task_index else {
-            continue;
-        };
-        let has_backlink = markdown_link_destinations(task_index)
-            .iter()
-            .any(|destination| {
-                markdown_target_path(&plan_path, destination)
-                    .and_then(|target| fs::canonicalize(target).ok())
-                    .is_some_and(|target| target == contract)
-            });
-        if has_backlink {
-            indexed_plans.insert(fs::canonicalize(&plan_path).unwrap_or_else(|error| {
+    for (plan_path, targets) in plan_backlinks {
+        if targets.contains(&contract) {
+            indexed_plans.insert(fs::canonicalize(plan_path).unwrap_or_else(|error| {
                 panic!(
                     "failed to resolve crate plan {}: {error}",
                     plan_path.display()
@@ -1730,7 +1735,7 @@ fn validate_crate_plan_backlinks(
     }
 }
 
-fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
+fn crate_plan_backlinks(design_root: &Path) -> BTreeMap<PathBuf, BTreeSet<PathBuf>> {
     let mut plans = Vec::new();
     let canonical_design_root = fs::canonicalize(design_root).unwrap_or_else(|error| {
         panic!(
@@ -1771,6 +1776,24 @@ fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
     }
     plans.sort();
     plans
+        .into_iter()
+        .map(|plan_path| {
+            let plan = read_to_string(&plan_path);
+            let task_index =
+                if plan_path.file_name().and_then(|name| name.to_str()) == Some("todo.md") {
+                    Some(plan.as_str())
+                } else {
+                    markdown_h2_section(&plan, "Task Index")
+                };
+            let targets = task_index
+                .into_iter()
+                .flat_map(markdown_link_destinations)
+                .filter_map(|destination| markdown_target_path(&plan_path, &destination))
+                .filter_map(|target| fs::canonicalize(target).ok())
+                .collect();
+            (plan_path, targets)
+        })
+        .collect()
 }
 
 fn validate_legacy_compaction_manifest(workspace: &Path, violations: &mut Vec<String>) {
