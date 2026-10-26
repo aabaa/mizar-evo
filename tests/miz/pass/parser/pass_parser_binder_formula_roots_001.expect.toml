@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_formula_roots_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_formula_roots"
+source = "pass_parser_binder_formula_roots_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_formula_roots.parser"]
+notes = "Parse-only Binder roots in built-in relation sides (including multi-head and nested terms), an is-subject, leading and trailing user-predicate loci, and every iterative-equality term. Ref is a source-local theorem label used only as a parser citation; no proof acceptance or semantic result is asserted."

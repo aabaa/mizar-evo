@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_binder_formula_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.binder_formula_roots"
+source = "fail_parser_binder_formula_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.binder_formula_roots.recovery"
+diagnostic_codes = ["malformed_term_expression", "malformed_term_expression", "malformed_term_expression", "malformed_term_expression", "malformed_term_expression", "malformed_term_expression", "malformed_term_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.13.binder_formula_roots.parser"]
+notes = "Seven malformed Binder bodies reuse malformed_term_expression: one each before relation '=', relation RHS semicolon, is, leading-predicate comma, and trailing-predicate comma, plus two in iterative equality at .= and by. Retain those delimiters and the final after_formula_binder_recovery statement."

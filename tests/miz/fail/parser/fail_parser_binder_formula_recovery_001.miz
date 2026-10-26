@@ -1,0 +1,16 @@
+reserve x, y, z, f, g, sentinel for set;
+
+definition
+  let a,b,c,d be set;
+  pred ManyDef: a,b many c,d means thesis;
+  pred TripleDef: a,b,c triples d means thesis;
+end;
+
+theorem Ref: thesis;
+theorem MissingLeft: x |-> = f;
+theorem MissingRight: f = x |->;
+theorem MissingIs: x |-> is set;
+theorem MissingLeading: f, x |->, g triples y;
+theorem MissingTrailing: f, g many x |->, y;
+A: f = x |-> .= y |-> by Ref;
+set after_formula_binder_recovery = sentinel;

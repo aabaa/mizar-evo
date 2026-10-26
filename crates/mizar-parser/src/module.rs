@@ -722,7 +722,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) -> usize {
-        if let Some(term) = self.parse_term_expression_at(cursor) {
+        if let Some(term) = self.parse_binder_term_expression_at(cursor, false) {
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
             term.next_position
@@ -9641,7 +9641,7 @@ impl Parser {
             return self.parse_inline_predicate_application_at(position);
         }
 
-        let left = self.parse_term_expression_at(position)?;
+        let left = self.parse_binder_term_expression_at(position, false)?;
         let cursor = left.next_position;
         if self.is_builtin_predicate_at(cursor) {
             return Some(
@@ -9667,7 +9667,7 @@ impl Parser {
         let mut recovery_nodes = left.recovery_nodes;
         let mut cursor = predicate_position + 1;
 
-        if let Some(right) = self.parse_term_expression_at(cursor) {
+        if let Some(right) = self.parse_binder_term_expression_at(cursor, false) {
             children.push(right.id);
             recovery_nodes.extend(right.recovery_nodes);
             cursor = right.next_position;
@@ -9842,7 +9842,7 @@ impl Parser {
         while self.is_reserved_symbol_at(cursor, ",") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_term_expression_at(cursor) {
+            if let Some(term) = self.parse_binder_term_expression_at(cursor, false) {
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
                 cursor = term.next_position;
@@ -9984,7 +9984,7 @@ impl Parser {
         }
 
         loop {
-            let Some(term) = self.parse_term_expression_at(cursor) else {
+            let Some(term) = self.parse_binder_term_expression_at(cursor, false) else {
                 self.diagnose_malformed_term_expression(
                     cursor,
                     "expected term in predicate argument list",

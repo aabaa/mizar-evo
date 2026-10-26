@@ -1,0 +1,18 @@
+reserve x, y, z, f, g, sentinel for set;
+
+definition
+  let a,b,c,d be set;
+  pred RelDef: a relates b means thesis;
+  pred ManyDef: a,b many c,d means thesis;
+end;
+
+theorem Ref: thesis;
+theorem EqualityRoots: x |-> y = f |-> g;
+theorem MultiInequalityRoots: (x,y) |-> x <> (f,g) |-> g;
+theorem NestedMembershipRoots: x |-> y |-> z in f |-> g |-> x;
+theorem IsSubjectRoot: x |-> y is set;
+theorem PredicateRoots: x |-> x relates y |-> y;
+theorem PredicateListRoots: x |-> x, y |-> y many z |-> z, f |-> f;
+A: x |-> y = y |-> z by Ref
+  .= z |-> x by Ref;
+set after_formula_binders = sentinel;
