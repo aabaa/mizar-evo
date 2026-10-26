@@ -1,0 +1,25 @@
+reserve x, y, sentinel, a for set;
+
+definition
+  let n, m be set;
+  mode FamilyLabel: Family of n, m is set;
+  struct ValueBox of n where
+    field value -> set;
+    field other -> set;
+  end;
+end;
+
+definition
+  let n, m, element be set;
+  func PickLabel: pick[n, m](element) -> set equals element;
+end;
+
+reserve missing_of_body for Family of x |->, sentinel;
+reserve missing_over_body for Family over x |->;
+reserve after_over_body for set;
+set missing_box_body = ValueBox of x |-> (value: sentinel, other: sentinel);
+set nested_missing_box_body = ValueBox of x |-> y |-> (value: sentinel, other: sentinel);
+set missing_pick_body = pick[x |->, sentinel](a);
+set missing_pick_close_body = pick[sentinel, y |->](a);
+set repeated_box_head = ValueBox of (x,x) |-> x (value: sentinel, other: sentinel);
+set after_binder_actuals = sentinel;

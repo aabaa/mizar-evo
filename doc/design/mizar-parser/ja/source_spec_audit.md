@@ -113,7 +113,7 @@ source に frontend `ReservedWord` token として出現している。
 
 Bare `fail;`はparser構文のみを対象とする。message/report形式は第2.7/20.2.6章のlexical矛盾、reflected reportはAST-PARSE待ちを保持し、静的配置検査、Core/VC/MVM、acceptanceは延期する。
 
-expr型とBinder rootはset右辺/括弧内/再帰本文、区切り付き項リスト、algorithmの項root/patternとcontainer値（field既定値、名前付きconstructor/update値、comprehension mapper）、数学文の項値、func/redefine/propertyのterm definiensでlexical/parserのみを対象とする。残るiterative-equality、constructor actual/templateとformula root、contextual reflection、配置/型検査、capture、runtime semanticsは延期する。
+expr型とBinder rootはset右辺/括弧内/再帰本文、区切り付き項リスト、algorithmの項root/patternとcontainer値（field既定値、名前付きconstructor/update値、comprehension mapper）、数学文の項値、func/redefine/propertyのterm definiens、of/over constructor actualとgeneric-template actualでlexical/parserのみを対象とする。残るiterative-equality、一般mode/structure bracket actualとformula root、contextual reflection、配置/型検査、capture、runtime semanticsは延期する。
 
 ## Task 47 source/specification再確認
 

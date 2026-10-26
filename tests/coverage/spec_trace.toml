@@ -2384,6 +2384,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.binder_actuals.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.10 Function Binder (`|->`)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Parser-only of/over constructor and generic-template Binder actuals preserve outer fields and argument boundaries; general bracket value actuals and all semantic roles remain deferred."
+tests = [
+  "tests/miz/pass/parser/pass_parser_binder_actuals_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_binder_actual_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.13.binder_container_values.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.10 Function Binder (`|->`)"

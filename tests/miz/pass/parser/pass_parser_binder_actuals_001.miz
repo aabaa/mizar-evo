@@ -1,0 +1,30 @@
+reserve x, y, p, sentinel, a for set;
+
+definition
+  let n, m be set;
+  mode FamilyLabel: Family of n, m is set;
+  struct ValueBox of n where
+    field value -> set;
+    field other -> set;
+  end;
+  func AtomLabel: atom -> set equals sentinel;
+end;
+
+definition
+  let n, m, element be set;
+  func PickLabel: pick[n, m](element) -> set equals element;
+end;
+
+reserve family_of for Family of x |-> x, (x, y) |-> y;
+reserve family_over for Family over x |-> y |-> x, sentinel;
+set value_box_identifier = ValueBox of x |-> x (value: sentinel, other: sentinel);
+set value_box_symbol = ValueBox of x |-> atom (value: sentinel, other: sentinel);
+set value_box_selector = ValueBox of x |-> p.value (value: sentinel, other: sentinel);
+set value_box_nested = ValueBox of x |-> y |-> x (value: sentinel, other: sentinel);
+set value_box_qua = ValueBox of x |-> x qua Family of atom, sentinel (value: sentinel, other: sentinel);
+set pick_unary = pick[x |-> x, sentinel](a);
+set pick_multi = pick[(x, y) |-> y, sentinel](a);
+set pick_nested = pick[x |-> y |-> x, sentinel](a);
+set pick_body_qua = pick[x |-> x qua set, sentinel](a);
+set pick_whole_qua = pick[(x |-> x) qua set, sentinel](a);
+set after_binder_actuals = sentinel;

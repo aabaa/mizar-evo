@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_actuals_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_actuals"
+source = "pass_parser_binder_actuals_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_actuals.parser"]
+notes = "Syntax-only Binder actual coverage for mode of/over arguments, structure constructor actuals before named field lists, and generic template functor arguments. The final after_binder_actuals declaration remains present. No actual-role resolution, formation, type compatibility, reflection, or runtime credit."

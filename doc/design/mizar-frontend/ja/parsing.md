@@ -262,4 +262,4 @@ adaptation API は不変であり、frontend は parser result をそのまま�
 namespace を無効化する。
 
 ## Bare algorithm failure cache namespace
-bare failはnamespacev8、expr型はv9、Binderのset右辺/括弧内/再帰本文はv10を必要とした。Binder項リスト/algorithm rootはv11を用いた。container値rootはv12を用いた。matchのotherwise省略はv13を用いた。数学文/定義のBinder rootはv14を用いた。通常qua targetを経由するconstructor field所有権は、v14がfieldを誤ったownerへ渡した同一caller-supplied tokens/parser inputsに対してmizar-parser/surface-ast-v15を必要とする。exhaustive廃止は既存の予約語fingerprintによるtoken keyも変更する。token namespace/key shape/storageは不変で、coordinator token keyは予約語全体のfingerprintを含む。
+bare failはnamespacev8、expr型はv9、Binderのset右辺/括弧内/再帰本文はv10を必要とした。Binder項リスト/algorithm rootはv11を用いた。container値rootはv12を用いた。matchのotherwise省略はv13を用いた。数学文/定義のBinder rootはv14を用いた。通常quaのconstructor field所有権はv15を用いた。of/over constructorとgeneric-templateのBinder actualは、v15が拒否した同一caller-supplied tokens/parser inputsに対してmizar-parser/surface-ast-v16を必要とする。exhaustive廃止は既存の予約語fingerprintによるtoken keyも変更する。token namespace/key shape/storageは不変で、coordinator token keyは予約語全体のfingerprintを含む。
