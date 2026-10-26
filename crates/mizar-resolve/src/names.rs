@@ -7454,22 +7454,23 @@ fn source_type(
         if matches!(child.kind(), SurfaceNodeKind::AttributeChain) {
             for attribute in child.child_views() {
                 if !matches!(attribute.kind(), SurfaceNodeKind::AttributeRef) {
-                    continue;
+                    return Err(SourceVariableScopeError::InvalidShape);
                 }
-                let spelling = attribute
-                    .child_views()
-                    .filter(|descendant| {
-                        matches!(descendant.kind(), SurfaceNodeKind::QualifiedSymbol)
-                    })
-                    .map(|descendant| qualified_symbol_spelling(ast, descendant.id()))
-                    .collect::<Option<Vec<_>>>();
-                let Some(spelling) = spelling else {
+                let mut children = attribute.child_views();
+                let Some(symbol) = children.next() else {
                     return Err(SourceVariableScopeError::InvalidShape);
                 };
+                if !matches!(symbol.kind(), SurfaceNodeKind::QualifiedSymbol)
+                    || children.next().is_some()
+                {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+                let spelling = qualified_symbol_spelling(ast, symbol.id())
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
                 if spelling.is_empty() {
                     return Err(SourceVariableScopeError::InvalidShape);
                 }
-                attributes.push(spelling.join("."));
+                attributes.push(spelling);
             }
         }
     }

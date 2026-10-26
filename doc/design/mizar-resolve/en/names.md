@@ -522,6 +522,8 @@ capture, diagnostic, active route, semantic result, or coverage credit.
 
 ## Step 5C.1 variable scope resolution
 
+Only positive argument-free attribute references with one QualifiedSymbol child enter name-only source types; other attribute payloads fail with InvalidShape. Symbol/arity validation and full attribute-instance semantics remain deferred.
+
 `names.rs` owns authenticated `SurfaceAst` variable scope. It derives binding,
 reference, capture, and source-order identity and rejects duplicate/forward/
 unreserved input; checker `BindingEnv` alone maps this receipt internally.

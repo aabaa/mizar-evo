@@ -28183,3 +28183,78 @@ fn attribute_argument_continuation_recovery_preserves_holes_heads_and_successors
     let restored = mizar_syntax::SurfaceAst::from_canonical_bytes(&bytes, ast.source_id).unwrap();
     assert_eq!(restored.snapshot_text_with_trivia(), ast.snapshot_text_with_trivia());
 }
+
+#[test]
+fn source_variable_type_projection_rejects_unrepresented_attribute_payloads() {
+    use mizar_resolve::names::{
+        SourceVariableScopeError, SourceVariableScopeInput as Input,
+        SourceVariableScopeResolver as Resolver,
+    };
+    let declaration = "definition let n, element be set; attr TaggedDef: element is n-tagged means thesis; end;";
+    for (tail, declarations) in [
+        ("reserve a for tagged(0) set;", true),
+        ("reserve a for tagged(0,1) set;", true),
+        ("reserve a for tagged({0}) set;", true),
+        ("reserve a for non tagged set;", true),
+        ("reserve a for non tagged(0) set;", true),
+        ("reserve a for 0-tagged set;", true),
+        ("theorem Test: for a being tagged(0) set holds a = a;", true),
+        ("theorem Test: for a being set holds a = a proof let a be tagged(0) set; end;", true),
+        ("deffunc F(a be tagged(0) set) -> set equals a;", true),
+        ("deffunc F(a be set) -> tagged(1) set equals a;", true),
+        ("reserve a for set; theorem Test: a is tagged(1) set;", false),
+        ("reserve a for set; theorem Test: a = a proof reconsider b = a as tagged(1) set; end;", true),
+    ] {
+        let text = format!("{declaration} {tail}");
+        let (frontend, source, collection) =
+            source_registration_owner_inputs(&text, "attribute-boundary", "main", 0);
+        assert!(frontend.diagnostics.is_empty(), "{tail}: {:?}", frontend.diagnostics);
+        assert!(collection.diagnostics().is_empty(), "{tail}: {:?}", collection.diagnostics());
+        let ast = frontend.ast.as_ref().unwrap();
+        let before = ast.snapshot_text();
+        let mut results = vec![Resolver::resolve(Input::new(ast, source.module(), collection.env()))];
+        if declarations {
+            results.extend([
+                Resolver::resolve_occurrences(Input::new(ast, source.module(), collection.env())),
+                Resolver::resolve_proof_occurrences(Input::new(ast, source.module(), collection.env())),
+            ]);
+        }
+        for result in results {
+            assert_eq!(result.unwrap_err(), SourceVariableScopeError::InvalidShape, "{tail}");
+        }
+        assert_eq!(ast.snapshot_text(), before, "{tail}");
+    }
+}
+
+#[test]
+fn source_variable_type_projection_preserves_builtin_and_plain_attribute_checking() {
+    use mizar_checker::type_checker::{SourceVariableSemanticsChecker, SourceVariableSemanticsInput};
+    use mizar_resolve::names::{SourceVariableScopeInput as Input, SourceVariableScopeResolver as Resolver};
+    let narrowing = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/variables/fail_type_elaboration_reconsider_unjustified_narrowing_001.miz"
+    ));
+    for (text, expected) in [
+        ("reserve a for set; reserve b for object;", None),
+        ("theorem Test: for a being set holds a = a proof let a be set; reconsider b = a as object; end;", None),
+        ("deffunc F(a be set) -> set equals a;", None),
+        (narrowing, Some("variables.reconsider.unjustified_narrowing")),
+    ] {
+        let (frontend, source, collection) =
+            source_registration_owner_inputs(text, "attribute-boundary", "main", 0);
+        assert!(frontend.diagnostics.is_empty(), "{text}: {:?}", frontend.diagnostics);
+        assert!(collection.diagnostics().is_empty(), "{text}: {:?}", collection.diagnostics());
+        let ast = frontend.ast.as_ref().unwrap();
+        let before = ast.snapshot_text();
+        let scope = Resolver::resolve(Input::new(ast, source.module(), collection.env())).unwrap();
+        if expected.is_some() {
+            assert!(scope.bindings().iter().any(|binding| binding.declared_type()
+                .is_some_and(|ty| ty.attributes() == ["marked1"])));
+        }
+        let output = SourceVariableSemanticsChecker::check(SourceVariableSemanticsInput::new(&scope));
+        assert_eq!(output.diagnostics().iter().map(|diagnostic| diagnostic.detail_key())
+            .collect::<Vec<_>>(), expected.into_iter().collect::<Vec<_>>(), "{text}");
+        assert!(!output.binding_types().is_empty(), "{text}");
+        assert_eq!(ast.snapshot_text(), before, "{text}");
+    }
+}

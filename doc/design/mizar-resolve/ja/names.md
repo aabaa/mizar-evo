@@ -468,6 +468,8 @@ identity、checker capture、diagnostic、active route、semantic result、cover
 
 ## Step 5C.1 variable scope resolution
 
+名前のみの source type には単一 QualifiedSymbol を持つ正の引数なし属性だけを投影し、他の属性 payload は InvalidShape で拒否する。symbol/arity 検証と完全な属性 instance の意味論は未対応。
+
 `names.rs` は authenticated `SurfaceAst` から binding/reference/capture/
 source-order identity を導出し、duplicate/forward/unreserved を fail closed にする。
 checker `BindingEnv` だけが内部 identity へ写像し、type/thesis は resolver 外に残る。
