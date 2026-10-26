@@ -502,17 +502,24 @@ committing; keep run evidence outside `doc/`. Report intermediate tasks as
 Reuse another run, including CI, only for the same tested tree and applicable
 conditions; unrelated concurrent edits require isolation or renewed checks.
 
-Representative selection (expand for the actual changed obligation):
+Starting commands from the workspace root:
 
-| Change | Each task | Immediate long checks | Periodic full suite |
-|---|---|---|---|
-| Local parser/AST | syntax/parser/frontend tests, affected corpus cases, short Driver publication check | resolver edit-versus-clean matrix when incremental resolution or broad recovery changes | remaining unrelated matrices |
-| Verifier/evidence | affected checker/kernel tests and positive/refusal end-to-end cases | affected candidate metadata policy/generation matrix and witness participant/name-byte matrix | unrelated matrices |
-| Documentation | `cargo test -p mizar-test --test lint_policy` and affected link/metadata lints | policy or test-selection changes run full immediately | otherwise full by the same ceiling/integration rule |
+| Scope | Command | Selected tests |
+|---|---|---|
+| Documentation | `bash tests/check.sh docs` | contract/documentation lints |
+| Local parser/AST | `bash tests/check.sh parser` | syntax/parser/frontend tests, parse-only and syntax-smoke corpus, short Driver publication case |
+| Verifier | `bash tests/check.sh verifier` | checker/kernel/proof/VC tests, proof-verification corpus, Driver positive/refusal cases |
+| Incremental resolution | `bash tests/check.sh resolver` | resolver edit-versus-clean matrix |
+| Evidence identity/policy | `bash tests/check.sh evidence` | metadata policy/snapshot and witness participant/name-byte matrices |
+| Full regression | `bash tests/check.sh full` | unfiltered `cargo test` |
 
-Choose concrete commands and cases before implementation. Do not defer all
-end-to-end checks merely because dependencies are broad. A regression first
-found by periodic full testing becomes a focused check for that change class.
+Changes to verification policy or test selection require `full` immediately.
+These are starting sets. Before implementation, add change-specific regressions,
+affected crate/corpus checks, and relevant long tests under the rules above.
+Run formatting and Clippy separately as required by `AGENTS.md`; these commands
+select tests only. A regression first found by periodic full testing becomes a
+focused check for that change class. Exact representative tests must exist;
+a renamed or missing test makes the command fail rather than pass zero tests.
 
 Keep ordinary `cargo test` exhaustive and CI running it on every push/PR.
 Do not add `#[ignore]` or omit cases from CI to implement this cadence.
