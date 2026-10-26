@@ -64,12 +64,6 @@ enum ProofHintOptionValueKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum QuaTargetGrammar {
-    TypeExpression,
-    RadixType,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RequiredTypePolicy {
     ComprehensionGenerator,
     TemplateLocalBinder,
@@ -10198,15 +10192,47 @@ impl Parser {
                 continue;
             }
 
-            if let Some(type_argument) = self.parse_type_expression_at(cursor) {
-                children.push(type_argument.id);
-                recovery_nodes.extend(type_argument.recovery_nodes);
-                cursor = type_argument.next_position;
-                expecting_argument = false;
-            } else if let Some(term) = self.parse_bracket_qua_argument_at(cursor) {
-                children.push(term.id);
-                recovery_nodes.extend(term.recovery_nodes);
-                cursor = term.next_position;
+            let symbol_end = self.qualified_symbol_next_at(cursor);
+            let reference_end = symbol_end.and_then(|end| {
+                if self.is_reserved_symbol_at(end, "[") {
+                    self.template_arguments_end_at(end)
+                } else {
+                    Some(end)
+                }
+            });
+            let term_tail = reference_end.is_some_and(|end| {
+                self.is_reserved_symbol_at(end, ".")
+                    || self.is_reserved_word_at(end, "with")
+                    || self.is_reserved_word_at(end, "qua")
+                    || self.infix_operator_at(end).is_some()
+                    || self.postfix_operator_at(end).is_some()
+            });
+            let constructor = symbol_end
+                .is_some_and(|end| self.can_parse_structure_constructor_after_symbol(end));
+            let prefix = self.prefix_operator_at(cursor).is_some()
+                && self.can_start_term_operator_operand_at(cursor + 1, false);
+            let attributed_type = self.plan_attribute_ref_at(cursor).is_some_and(|plan| {
+                let depth = (cursor..plan.next_position).fold(0_isize, |depth, index| {
+                    depth + isize::from(self.is_reserved_symbol_at(index, "("))
+                        - isize::from(self.is_reserved_symbol_at(index, ")"))
+                });
+                depth == 0
+                    && self.can_form_type_expression_at(plan.next_position)
+                    && self.infix_operator_at(plan.next_position).is_none()
+                    && self.postfix_operator_at(plan.next_position).is_none()
+            });
+            let application =
+                self.template_argument_starts_term_application_at(cursor) && !attributed_type;
+            let payload = if term_tail || constructor || prefix || application {
+                self.parse_binder_term_expression_at(cursor, false)
+            } else {
+                self.parse_type_expression_at(cursor)
+                    .or_else(|| self.parse_binder_term_expression_at(cursor, false))
+            };
+            if let Some(argument) = payload {
+                children.push(argument.id);
+                recovery_nodes.extend(argument.recovery_nodes);
+                cursor = argument.next_position;
                 expecting_argument = false;
             } else {
                 self.diagnose_malformed_type_expression(cursor, "malformed type argument");
@@ -10372,18 +10398,44 @@ impl Parser {
 
     fn parse_template_argument_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut recovery_nodes = Vec::new();
-        let payload = if self.template_argument_starts_term_application_at(position)
-            || (self.is_identifier_at(position) && self.is_reserved_symbol_at(position + 1, "|->"))
-        {
+        let symbol_end = self.qualified_symbol_next_at(position);
+        let reference_end = symbol_end.and_then(|end| {
+            if self.is_reserved_symbol_at(end, "[") {
+                self.template_arguments_end_at(end)
+            } else {
+                Some(end)
+            }
+        });
+        let term_tail = reference_end.is_some_and(|end| {
+            self.is_reserved_symbol_at(end, ".")
+                || self.is_reserved_word_at(end, "with")
+                || self.is_reserved_word_at(end, "qua")
+                || self.infix_operator_at(end).is_some()
+                || self.postfix_operator_at(end).is_some()
+        });
+        let constructor =
+            symbol_end.is_some_and(|end| self.can_parse_structure_constructor_after_symbol(end));
+        let prefix = self.prefix_operator_at(position).is_some()
+            && self.can_start_term_operator_operand_at(position + 1, false);
+        let attributed_type = self.plan_attribute_ref_at(position).is_some_and(|plan| {
+            let depth = (position..plan.next_position).fold(0_isize, |depth, index| {
+                depth + isize::from(self.is_reserved_symbol_at(index, "("))
+                    - isize::from(self.is_reserved_symbol_at(index, ")"))
+            });
+            depth == 0
+                && self.can_form_type_expression_at(plan.next_position)
+                && self.infix_operator_at(plan.next_position).is_none()
+                && self.postfix_operator_at(plan.next_position).is_none()
+        });
+        let application =
+            self.template_argument_starts_term_application_at(position) && !attributed_type;
+        let payload = if term_tail || constructor || prefix || application {
             self.parse_binder_term_expression_at(position, false)
-                .expect("template term-application or Binder lookahead should parse")
-        } else if let Some(type_expression) = self.parse_type_expression_at(position) {
-            type_expression
-        } else if let Some(term) = self.parse_bracket_qua_argument_at(position) {
-            term
-        } else if let Some(term) = self.parse_binder_term_expression_at(position, false) {
-            term
         } else {
+            self.parse_type_expression_at(position)
+                .or_else(|| self.parse_binder_term_expression_at(position, false))
+        };
+        let Some(payload) = payload else {
             self.diagnose_malformed_type_expression(position, "expected template argument");
             let missing = self.add_missing_type_expression(position);
             recovery_nodes.push(missing);
@@ -10663,8 +10715,7 @@ impl Parser {
         }
 
         let operator = self.parse_term_operator_expression_at(position, 0, false)?;
-        let term =
-            self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, false);
+        let term = self.parse_qua_chain_at(position, operator, false);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -10677,8 +10728,7 @@ impl Parser {
             let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
             let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
-            let term =
-                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
+            let term = self.parse_qua_chain_at(position, operator, true);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -10689,8 +10739,7 @@ impl Parser {
             let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
             let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
-            let term =
-                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
+            let term = self.parse_qua_chain_at(position, operator, true);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -10698,8 +10747,7 @@ impl Parser {
             return None;
         }
         let operator = self.parse_term_operator_expression_at(position, 0, true)?;
-        let term =
-            self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression, true);
+        let term = self.parse_qua_chain_at(position, operator, true);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -11047,7 +11095,6 @@ impl Parser {
         &mut self,
         start_position: usize,
         mut term: ParsedTypeNode,
-        target_grammar: QuaTargetGrammar,
         stop_before_field_list: bool,
     ) -> ParsedTypeNode {
         while self.is_reserved_word_at(term.next_position, "qua") {
@@ -11056,7 +11103,6 @@ impl Parser {
                 start_position,
                 term,
                 qua_position,
-                target_grammar,
                 stop_before_field_list,
             );
         }
@@ -11068,14 +11114,13 @@ impl Parser {
         start_position: usize,
         base: ParsedTypeNode,
         qua_position: usize,
-        target_grammar: QuaTargetGrammar,
         stop_before_field_list: bool,
     ) -> ParsedTypeNode {
         let mut children = vec![base.id, self.token_node_ids[qua_position]];
         let mut recovery_nodes = base.recovery_nodes;
         let mut cursor = qua_position + 1;
 
-        match self.parse_qua_target_type_at(cursor, target_grammar, stop_before_field_list) {
+        match self.parse_type_expression_at_with_policy(cursor, None, stop_before_field_list) {
             Some(target) => {
                 children.push(target.id);
                 recovery_nodes.extend(target.recovery_nodes);
@@ -11109,37 +11154,6 @@ impl Parser {
             next_position: cursor.max(qua_position + 1),
             recovery_nodes,
         }
-    }
-
-    fn parse_qua_target_type_at(
-        &mut self,
-        position: usize,
-        target_grammar: QuaTargetGrammar,
-        stop_before_field_list: bool,
-    ) -> Option<ParsedTypeNode> {
-        match target_grammar {
-            QuaTargetGrammar::TypeExpression => {
-                self.parse_type_expression_at_with_policy(position, None, stop_before_field_list)
-            }
-            QuaTargetGrammar::RadixType => self.parse_radix_type_expression_at(position),
-        }
-    }
-
-    fn parse_radix_type_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        if self.is_type_expression_boundary_at(position) {
-            return None;
-        }
-        let head = self.parse_type_head_at(position, None, false)?;
-        let id = self.events.emit(SyntaxEvent::Node {
-            kind: SurfaceNodeKind::TypeExpression,
-            range: self.covering_token_range(position, head.next_position),
-            children: vec![head.id],
-        });
-        Some(ParsedTypeNode {
-            id,
-            next_position: head.next_position.max(position + 1),
-            recovery_nodes: head.recovery_nodes,
-        })
     }
 
     fn parse_term_primary_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
@@ -12220,15 +12234,6 @@ impl Parser {
             }
         }
         cursor
-    }
-
-    fn parse_bracket_qua_argument_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        if !self.is_identifier_at(position) {
-            return None;
-        }
-        let base = self.parse_identifier_reference_term_at(position);
-        let term = self.parse_qua_chain_at(position, base, QuaTargetGrammar::RadixType, false);
-        Some(self.wrap_term_expression(position, term))
     }
 
     fn parse_attribute_symbol_at(&mut self, position: usize) -> Option<ParsedPathNode> {

@@ -1,0 +1,16 @@
+reserve x, y, sentinel, a for set;
+infix_operator("++", left, 80);
+definition
+  let n, m, element be set;
+  mode FamilyLabel: Family[n, m] is set;
+  struct ValueBox[n, m] where field value -> set; end;
+  func PickLabel: pick[n, m](element) -> set equals element;
+  func JoinLabel: n ++ m -> set equals n;
+end;
+reserve missing_binder for Family[x |->, sentinel];
+set generic_missing_binder = pick[x |->, sentinel](a);
+set missing_operand = ValueBox[x ++, sentinel](value: sentinel);
+set generic_missing_operand = pick[x ++, sentinel](a);
+reserve missing_qua for Family[x qua, sentinel];
+set generic_missing_qua = pick[x qua, sentinel](a);
+set after_bracket_recovery = sentinel;

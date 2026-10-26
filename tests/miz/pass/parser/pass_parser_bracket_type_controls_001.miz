@@ -1,0 +1,29 @@
+reserve x, y, sentinel, a for set;
+definition
+  let T, U, V, W be type;
+  let element be set;
+  mode FamilyLabel: Family[T, U, V, W] is set;
+  mode RadixLabel: R is set;
+  struct TypeBox[T] where field value -> set; end;
+  func TypedLabel: typed[T, U, V, W](element) -> set equals element;
+  pred TypedMatchLabel: element typed_matches[T, U, V, W] means thesis;
+  attr EmptyLabel: element is empty means thesis;
+end;
+definition
+  let n, m, element be set;
+  attr TaggedLabel: element is n-tagged means thesis;
+  attr LinkedLabel: element is (n,m)-linked means thesis;
+end;
+reserve builtins for Family[set, object, R, TypeBox[R]];
+set generic_builtins = typed[set, object, R, TypeBox[R]](a);
+reserve attributes for Family[non empty R, tagged(x) R, tagged(x) non empty R, linked(x,y) R];
+set generic_attributes = typed[non empty R, tagged(x) R, tagged(x) non empty R, linked(x,y) R](a);
+reserve expressions for Family[expr of R, expr of expr of R, non empty expr of R, tagged(x) expr of R];
+set generic_expressions = typed[expr of R, expr of expr of R, non empty expr of R, tagged(x) expr of R](a);
+reserve nesting for Family[TypeBox[set], TypeBox[non empty R], TypeBox[expr of R], x];
+set generic_nesting = typed[TypeBox[set], TypeBox[non empty R], TypeBox[expr of R], x](a);
+theorem PredicateTypes: x typed_matches[set, R, non empty R, tagged(x) R];
+theorem TypeReference: thesis;
+theorem ReferenceTypes: thesis by TypeReference[set, R, non empty R, tagged(x) R];
+reserve structure_type for TypeBox[tagged(x) non empty R];
+set after_bracket_types = sentinel;

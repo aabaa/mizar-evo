@@ -117,7 +117,7 @@ All other Appendix A reserved words appear in at least one active parser corpus
 
 Bare `fail;` is covered as parser syntax only; message/report forms remain blocked by the Chapter2.7/20.2.6 lexical conflict and reflected reports by AST-PARSE. Static failure placement, Core/VC/MVM and acceptance remain deferred.
 
-Expr types and Binder roots have lexical/parser-only coverage in set/grouped/body roots, delimited term lists, algorithm term roots/patterns and container values (field defaults, named constructor/update values, comprehension mappers), mathematical statement values, functor/redefinition/property term definiens, of/over constructor actuals, generic-template actuals, ordinary formula term slots and iterative equality. Remaining general mode/structure bracket actuals, contextual reflection, placement/typing, capture and runtime semantics remain deferred.
+Expr types and Binder roots have lexical/parser-only coverage in set/grouped/body roots, delimited term lists, algorithm term roots/patterns and container values (field defaults, named constructor/update values, comprehension mappers), mathematical statement values, functor/redefinition/property term definiens, of/over constructor actuals, general mode/structure bracket actuals, generic-template actuals, ordinary formula term slots and iterative equality. Complete bracket term candidates follow the [actual boundary](grammar.md#general-constructor-actual-boundary). Remaining contextual reflection, placement/typing, capture and runtime semantics remain deferred.
 
 ## Task 47 Source/Specification Recheck
 

@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_bracket_type_controls_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.bracket_value_actuals"
+source = "pass_parser_bracket_type_controls_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.bracket_value_actuals.parser"]
+notes = "Local producers preserve type preference without definite term evidence at both bracket payload sites: builtin and naked types, attributed and argument-bearing attribute types, nested type arguments, nested expr types, and a bare identifier term control. Parameterized attributes are authentically declared with parameter-prefix patterns. Generic predicate and reference parents retain their wrappers. No semantic type-role or inhabitation acceptance credit."

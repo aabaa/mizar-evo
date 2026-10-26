@@ -9194,7 +9194,7 @@ fn parser_recovers_missing_bracket_qua_target_type() {
 }
 
 #[test]
-fn parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only() {
+fn parser_preserves_attribute_bearing_bracket_qua_as_term_candidate() {
     let source_id = source_id(138);
     let tokens = token_sequence(
         source_id,
@@ -9213,7 +9213,6 @@ fn parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only() {
             (";", ParserTokenKind::ReservedSymbol),
         ],
     );
-    let non_range = tokens[7].span;
     let output = parse(ParseRequest::new(
         source_id,
         Edition::new("2026"),
@@ -9221,28 +9220,24 @@ fn parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only() {
         Vec::new(),
     ));
 
-    assert_eq!(output.diagnostics.len(), 1);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output.ast.expect("full bracket term candidate");
+    let arguments = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::TypeArguments));
+    let term = ast.node(arguments.children[1]).unwrap();
+    assert_eq!(term.kind, SurfaceNodeKind::TermExpression);
+    let qua = ast.node(term.children[0]).unwrap();
+    assert_eq!(qua.kind, SurfaceNodeKind::QuaExpression);
+    let target = ast.node(qua.children[2]).unwrap();
+    assert_eq!(target.kind, SurfaceNodeKind::TypeExpression);
+    assert_eq!(target.children.len(), 2);
     assert_eq!(
-        output.diagnostics[0].code,
-        SyntaxDiagnosticCode::MalformedTypeExpression
+        ast.node(target.children[0]).unwrap().kind,
+        SurfaceNodeKind::AttributeChain
     );
-    assert_eq!(output.diagnostics[0].primary, non_range);
-    let ast = output
-        .ast
-        .expect("attribute-bearing bracket qua target should recover");
-    let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
-    assert!(qua.children.iter().any(|id| {
-        matches!(
-            ast.node(*id).unwrap().kind,
-            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
-        )
-    }));
-    assert!(qua.children.iter().any(|id| {
-        matches!(
-            ast.node(*id).unwrap().kind,
-            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
-        )
-    }));
+    assert_eq!(
+        ast.node(target.children[1]).unwrap().kind,
+        SurfaceNodeKind::TypeHead
+    );
 }
 
 #[test]
@@ -12987,13 +12982,37 @@ fn parser_recovers_task31_malformed_template_arguments() {
         vec![
             SyntaxDiagnosticCode::MalformedTypeExpression,
             SyntaxDiagnosticCode::MalformedTypeExpression,
-            SyntaxDiagnosticCode::MalformedTypeExpression,
         ],
         "malformed template args should report exact type diagnostics"
     );
     let ast = output
         .ast
         .expect("malformed template args should recover an AST");
+    let first_close = ast
+        .nodes()
+        .iter()
+        .find(|node| node.token_text() == Some("]"))
+        .unwrap();
+    let last_semicolon = ast
+        .nodes()
+        .iter()
+        .rev()
+        .find(|node| node.token_text() == Some(";"))
+        .unwrap();
+    assert_eq!(output.diagnostics[0].primary, first_close.range);
+    assert_eq!(output.diagnostics[1].primary, last_semicolon.range);
+    let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+    assert_eq!(
+        subtree_token_texts(&ast, qua),
+        ["q", "qua", "non", "empty", "T"]
+    );
+    let target = ast.node(qua.children[2]).unwrap();
+    assert_eq!(target.kind, SurfaceNodeKind::TypeExpression);
+    assert_eq!(target.children.len(), 2);
+    assert_eq!(
+        ast.node(target.children[0]).unwrap().kind,
+        SurfaceNodeKind::AttributeChain
+    );
     assert_eq!(
         count_nodes(&ast, |kind| matches!(
             kind,
@@ -13006,7 +13025,7 @@ fn parser_recovers_task31_malformed_template_arguments() {
             kind,
             SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
         )),
-        2
+        1
     );
     assert_eq!(
         count_nodes(&ast, |kind| matches!(

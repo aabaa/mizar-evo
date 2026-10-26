@@ -354,6 +354,50 @@ fn step5c12_check(case: &crate::harness::TestCase, text: &str) -> Result<(), Str
 }
 
 #[test]
+fn step5c12_full_qua_actuals_remain_unsupported_at_declared_type_roles() {
+    use mizar_syntax::SurfaceNodeKind as K;
+    let (case, text) = step5c12_case("fail_type_elaboration_template_bound_violation_001");
+    let call = "tid3[object]";
+    let offsets = text.match_indices(call).map(|(offset, _)| offset).collect::<Vec<_>>();
+    assert_eq!(offsets.len(), 2);
+    for offset in offsets {
+        for actual in ["a qua non empty BoundBox", "a qua BoundBox"] {
+            let mut changed = text.clone();
+            changed.replace_range(offset..offset + call.len(), &format!("tid3[{actual}]"));
+            if actual.contains("non empty") {
+                changed = format!("definition let x be object; attr EmptyDef: x is empty means x = x; end;\n{changed}");
+            }
+            let (source, symbols) = step5c12_inputs(&case, &changed);
+            for (kind, count) in [(K::QuaExpression, 1), (K::AttributeChain, usize::from(actual.contains("non empty")))] {
+                assert_eq!(source.arena().iter().filter(|(_, node)| node.kind() == &kind).count(), count);
+            }
+            assert_eq!(
+                mizar_checker::type_checker::check_source_unbounded_template_types(&source, &symbols),
+                Err("templates.unsupported_source_types".into()),
+                "call offset {offset}: {actual}"
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c12_reference_actuals_cannot_be_checked_as_plain_citations() {
+    use mizar_syntax::SurfaceNodeKind as K;
+    let (case, text) = step5c12_case("fail_type_elaboration_template_bound_violation_001");
+    for actual in ["a qua BoundBox", "a qua non empty BoundBox"] {
+        let mut changed = text.replace("by TId3Def", &format!("by TId3Def[{actual}]"));
+        if actual.contains("non empty") {
+            changed = format!("definition let x be object; attr EmptyDef: x is empty means x = x; end;\n{changed}");
+        }
+        let (source, symbols) = step5c12_inputs(&case, &changed);
+        for (kind, count) in [(K::QuaExpression, 1), (K::AttributeChain, usize::from(actual.contains("non empty")))] {
+            assert_eq!(source.arena().iter().filter(|(_, node)| node.kind() == &kind).count(), count);
+        }
+        assert_eq!(mizar_checker::type_checker::check_source_unbounded_template_types(&source, &symbols), Err("templates.unsupported_source_types".into()));
+    }
+}
+
+#[test]
 fn step5c12_real_templates_check_symbolic_formals_and_concrete_uses() {
     for (id, expected) in [
         (

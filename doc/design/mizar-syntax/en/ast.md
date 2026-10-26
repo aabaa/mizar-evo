@@ -798,18 +798,8 @@ parameter-scope facts into lexing/parsing.
 term arguments, or `[` followed by comma-separated type-template arguments and
 an optional `]`. Starting in parser task 9, `of`/`over` and attribute argument
 lists use concrete `TermExpression` children instead of task-8
-`TermPlaceholder` children. A bracket argument that parses as a type expression
-is represented as a nested `TypeExpression`. Starting in parser task 11, a
-bracket argument that uses Appendix-A `qua_arg` syntax is represented as a
-`TermExpression` child whose term-shape is an identifier `TermReference` or a
-left-nested `QuaExpression` chain. That fallback remains narrower than the
-ordinary term parser: it starts from an identifier-shaped `qua_arg`, and each
-`qua` target is parsed as a radix-type-shaped `TypeExpression`. Missing bracket
-closers use
-`MalformedTypeExpression` plus `UnmatchedOpeningDelimiter` recovery under the
-`TypeArguments` node. `TermPlaceholder` is retained only as legacy task-8
-vocabulary and is not emitted by the task-11 bracket `qua_arg` parser path; it
-must not encode term classification, operator facts, or name resolution.
+`TermPlaceholder` children. Bracket actuals preserve complete TypeExpression or Binder-aware TermExpression payloads. General TypeArguments stores these directly; generic TemplateArguments stores one TemplateArgument wrapper around each payload. Ordinary qua terms retain full attributed targets; syntax kind does not decide parameter roles or bounded-type qua_arg eligibility. The [parser actual boundary](../../mizar-parser/en/grammar.md#general-constructor-actual-boundary) owns type/term selection and recovery.
+Missing bracket closers use MalformedTypeExpression plus UnmatchedOpeningDelimiter recovery under TypeArguments. TermPlaceholder remains legacy vocabulary and must not encode term classification, operator facts or name resolution.
 `SurfaceNodeView` exposes typed `as_reserve_item`,
 `as_reserve_segment`, `as_type_expression`, `as_attribute_chain`,
 `as_attribute_ref`, `as_parameter_prefix`, `as_type_head`,

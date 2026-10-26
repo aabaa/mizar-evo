@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_bracket_value_actuals_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.bracket_value_actuals"
+source = "pass_parser_bracket_value_actuals_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.bracket_value_actuals.parser"]
+notes = "Local mode, structure, functor, predicate, attribute, and fixity declarations exercise complete existing term roots through direct TypeArguments and wrapped generic TemplateArgument payloads, including reference actuals. Preserve operator/application tails, collection and Binder ownership, full attributed qua targets, nested constructor fields, following arguments, and the final sentinel. Parser-only: no role, arity, inhabitation, widening, formation, or proof acceptance credit."

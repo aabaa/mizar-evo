@@ -774,18 +774,8 @@ prefix `PathSegment` が namespace identifier だけでなく user-symbol token 
 `TypeArguments` は `of` / `over` token と comma-separated term arguments、または
 `[`、comma-separated type-template arguments、任意の `]` を所有する。parser task 9 以降、
 `of`/`over` と attribute argument list は task 8 の `TermPlaceholder` child ではなく、
-concrete `TermExpression` child を使う。type expression として parse できる bracket
-argument は nested `TypeExpression` として表す。parser task 11 以降、Appendix A の
-`qua_arg` syntax を使う bracket argument は `TermExpression` child として表し、その
-term-shape は identifier の `TermReference` または left-nested `QuaExpression` chain である。
-この fallback は通常の term parser より狭く、identifier-shaped `qua_arg` からだけ始まり、
-各 `qua` target は radix-type 形の `TypeExpression` として parse する。
-bracket close が欠ける場合は
-`TypeArguments` node の下で
-`MalformedTypeExpression` と `UnmatchedOpeningDelimiter` recovery を使う。
-`TermPlaceholder` は task 8 の legacy vocabulary としてのみ残り、task 11 の
-bracket `qua_arg` parser path では生成しない。term classification、operator fact、
-name resolution を encode してはならない。
+concrete `TermExpression` child を使う。bracket actualは完全なTypeExpressionまたはBinder-aware TermExpression payloadを保持する。一般TypeArgumentsは直接、generic TemplateArgumentsはpayloadごとにTemplateArgument wrapperを一個保持する。通常qua項は属性付きtarget全体を保持し、構文kindはparameter roleやbounded-type qua_argの適格性を決定しない。[parser actual境界](../../mizar-parser/ja/grammar.md#general-constructor-actual-boundary)が型/項の選択とrecoveryを所有する。
+bracket close欠落はTypeArgumentsの下のMalformedTypeExpressionとUnmatchedOpeningDelimiterで回復する。TermPlaceholderはlegacy語彙のままで、term classification、operator fact、name resolutionをencodeしない。
 `SurfaceNodeView` は
 `as_reserve_item`、`as_reserve_segment`、`as_type_expression`、`as_attribute_chain`、
 `as_attribute_ref`、`as_parameter_prefix`、`as_type_head`、`as_type_arguments`、

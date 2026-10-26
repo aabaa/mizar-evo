@@ -6569,6 +6569,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_binder_missing_body_001",
             "fail_parser_binder_operator_operands_001",
             "fail_parser_block_statements_recovery_001",
+            "fail_parser_bracket_value_recovery_001",
             "fail_parser_conclusions_iterative_recovery_001",
             "fail_parser_consider_reconsider_recovery_001",
             "fail_parser_definition_attributes_recovery_001",
@@ -6648,6 +6649,8 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_binder_roots_001",
             "pass_parser_binder_term_lists_001",
             "pass_parser_block_statements_001",
+            "pass_parser_bracket_type_controls_001",
+            "pass_parser_bracket_value_actuals_001",
             "pass_parser_conclusions_iterative_001",
             "pass_parser_consider_reconsider_001",
             "pass_parser_definition_attributes_001",
@@ -7205,8 +7208,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 141);
-    assert_eq!(report.passed_count(), 141);
+    assert_eq!(report.results.len(), 144);
+    assert_eq!(report.passed_count(), 144);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10618,8 +10621,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 141"));
-    assert!(stdout.contains("passed: 141"));
+    assert!(stdout.contains("parse-only cases: 144"));
+    assert!(stdout.contains("passed: 144"));
     assert!(stdout.contains("failed: 0"));
 }
 

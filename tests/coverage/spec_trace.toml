@@ -553,6 +553,21 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.bracket_value_actuals.parser"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "General constructor and generic template brackets preserve full term candidates and existing type candidates; roles, arity, typing and bounded qua eligibility remain semantic."
+tests = [
+  "tests/miz/pass/parser/pass_parser_bracket_value_actuals_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_bracket_type_controls_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_bracket_value_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.expr_types.parser"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"

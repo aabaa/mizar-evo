@@ -1921,9 +1921,9 @@ pattern 側の bracket は call-site actual と分けて表現する。predicate
 definition pattern は `TemplateLoci` / `TemplateLocus` を所有し、predicate head、
 template functor application、local / qualified reference、grouped-reference item は
 `TemplateArguments` / `TemplateArgument` を所有する。template argument は
-parser-visible な type expression、term expression、identifier actual、radix-type
-target を持つ `qua` argument を受理する。attribute-bearing `qua` target は malformed
-のまま、type diagnostic 付きで recover する。
+parser-visible なtype expressionとattributed通常quaを含む完全なterm候補を受理する。
+bounded-typeの適格性はconsumerの責務で、payload選択は現行の
+[actual境界](#general-constructor-actual-boundary)が所有する。
 
 active lexical environment がまだ symbol を export していない場合でも、parser は
 `x matches[T]` のような template-local identifier predicate head を受け付ける。
@@ -2215,19 +2215,24 @@ lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと 
 
 ## General Constructor Actual Boundary
 
-外側constructorのfield openerは、再帰的なexpr of targetを含む通常qua targetの引数も区切る。既存のstop contextを型/引数経路へ渡し、required-type policyと別責務のgeneric qua grammarは維持する。
+外側constructorのfield openerは再帰的expr of targetを含む通常qua targetの引数を区切る。非bracketのof/overとrequired-type policyは既存stop contextを維持する。明示bracket actualは既存Binder-aware term parserへfalseを渡し、入れ子constructorのfieldをactual内に保つ。
 
-計画中の一般 mode/structure bracket slice は、現在の identifier/qua fallback に加えて完全な term-expression value actual を扱う (§3.3/Appendix A.3)。引数順、曖昧な syntax、delimiter recovery を保持する。of/over term parsing は既存で、generic-template の bounded qua grammar は別責務のまま。意味上の role/applicability は Resolver/Checker が所有する。
-[module/tests.rs](../../../../crates/mizar-parser/src/module/tests.rs) の regression control: parser_preserves_parameter_prefix_and_bracket_qua_arguments、parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only、parser_recovers_missing_type_argument_bracket_close、parser_parses_task31_template_arguments_on_references_and_functors。現在の primary/operator/of/over parsing を保持する。
+一般TypeArgumentsとgeneric TemplateArgumentのpayloadは既存term grammarの完全な候補を扱い、その文法自体の制限は維持する（§3.3/§18.2.2/A.3/A.18）。この現行境界はtask-8/11のradix-only fallbackとtask-31のattributed-qua一律拒否の記述に優先する。
+両payload箇所で明確なterm根拠を既存の消費型parserより先に判定し、それ以外は型優先、その後Binder-aware term fallbackとする。消費parseは一度だけで、投機的event/diagnosticや終端位置だけの検証は行わない。
+完結したqualified-symbol/reference prefixにselector、with、qua、active infix/postfixが続けばtermとする。任意bracketが不完結ならtail根拠としない。既存named-field constructor lookaheadはof/overを含めtermを選び、active prefixは後続operandがある場合のみtermを選ぶ。
+既存application lookaheadはtermを選ぶが、引数付きattribute planの括弧が対応し、その後続が型ならその型解釈を維持する。ただしその位置のactive infix/postfixは例外を打ち消す。call内部のrecovery終点はattributeの根拠にしない。attr(x) Rは型、image(~ Atom)とimage(x) ++ Otherは項とし、単独の型風nameとbuiltin/attribute/exprのrecoveryは既存型parserに委ねる。
+一般リストはTypeExpression/TermExpressionを直接保持し、genericリストはpayloadごとにTemplateArgumentを一個保持して既存reference/predicate/functor親を維持する。token順、range、missing node、list recovery、後続所有権を保持する。不要なprivate radix-only qua経路のみ削除し、通常quaとfield-stop伝達は残す。
+raw x qua non empty Rは両箇所で完全な通常項候補で、括弧は任意。bounded-type qua_argのidentifier/radix targetとwidening根拠はResolver/Checkerが検証し、構文kindからparameter roleを決めない。未対応の意味処理はfail closed/延期する。
+回帰controlは型/値の所有権、task-31 wrapper、primary/operator、of/over、通常quaのfieldとBinder formula/反復等式を維持する。新bracket値/型/recovery fixtureは両payloadを固定する。派生したraw attributed-qua拒否unitは肯定的構文検査に直し、実source consumerでtype-role/narrowing/referenceの否定検査を別に行う。
 
 ## Bare algorithm failure
 Spec20.2.6/AppendixA.A20の`fail;`を既存algorithm statement list、nested branch/loop、annotation hostで構文解析する。既存keyword/semicolon parserへ直接dispatchし、statement-start判定にfailを含める。既存のsemicolon境界recoveryとtop-level拒否を保持し、terminating/ghost/type検査、message/report解析、新診断やrecovery方式は追加しない。
 Lexerはfailを予約する。message形式はlexical authority決定待ち。新規parse-onlyのpass/semicolon欠落/algorithm外source、正常な後続node、型付きview・source/cache replayを検査し、既存oracleは保持する。
 
 ## Expr type syntax
-第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持する。exprで始まるof/over引数のみ型候補とし、通常値引数とgeneric qua制限は維持する。of欠落は次tokenでMalformedTypeExpressionを出し有効な型を保持し、型欠落は区切りを消費せずゼロ幅MissingTypeExpressionを置く。required-type policyとlookaheadを入れ子でも保持する。配置、共変性、constructor role、reflectionはCheckerが所有する。
+第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持する。exprで始まるof/over引数のみ型候補とし、通常値引数とbounded-typeの意味上の適格性は維持する。of欠落は次tokenでMalformedTypeExpressionを出し有効な型を保持し、型欠落は区切りを消費せずゼロ幅MissingTypeExpressionを置く。required-type policyとlookaheadを入れ子でも保持する。配置、共変性、constructor role、reflectionはCheckerが所有する。
 
 ## Binder expression roots
-第13.10章/A13のroot構文は単一identifierまたは異なる2個以上のidentifierの括弧head、予約記号|->、term本文からなる。Binder入口はset右辺、括弧内、再帰本文、既存の区切り付き項リスト（属性/述語/呼出し/selector/角括弧/列挙）、algorithmの項初期値/代入/return/loop入力/measure/match対象/項pattern、構造体field既定値、名前付きconstructor/update値、comprehension mapper、deffunc本文、名前付き/名前なしtake witness、reconsider値、reduction両項、func/redefine/property equalsのdirect/case/otherwise term definiens、of/over constructor actual、generic-template actual、通常の関係/is/述語の項slot、反復等式の全項である。qualified/operator operand、一般mode/structure bracket actual、contextual formula入力は既存経路を維持する。型検査、capture、停止性の受理ではなく構文候補のみを提供する。
+第13.10章/A13のroot構文は単一identifierまたは異なる2個以上のidentifierの括弧head、予約記号|->、term本文からなる。Binder入口はset右辺、括弧内、再帰本文、既存の区切り付き項リスト（属性/述語/呼出し/selector/角括弧/列挙）、algorithmの項初期値/代入/return/loop入力/measure/match対象/項pattern、構造体field既定値、名前付きconstructor/update値、comprehension mapper、deffunc本文、名前付き/名前なしtake witness、reconsider値、reduction両項、func/redefine/property equalsのdirect/case/otherwise term definiens、of/over constructor actual、一般mode/structure bracket actual、generic-template actual、通常の関係/is/述語の項slot、反復等式の全項である。qualified/operator operand、contextual formula入力は既存経路を維持する。型検査、capture、停止性の受理ではなく構文候補のみを提供する。
 単一/複数headのarityと順序をtuple/nested構文へ変換せず保持する。Binderは最弱・右結合で、通常operator解析は別経路とする。本文qua/restrictionは本文内、Binder全体へのqua/application/restrictionは括弧で区別する。新fixtureの|は既存のlocal functor activationから供給する。
-直後のarrowで候補が確定するまでhead探索はevent/diagnosticを出さない。既存semicolon/end/item/statement-keyword境界では括弧内でも探索を止め、未確定prefixとして既存解析に委ねる。確定した不正headは開始位置のMalformedTermExpression1個と既存SkippedTokenによる既知head範囲の回復を持ち、arrow/本文をrecovered Binderへ保持する。本文欠落は区切りを消費せずMissingTermを置く。未確定/不均衡prefixは既存の外側回復に委ねる。constructor actualは既存before-field contextを再帰Binder本文とqualified fallbackへ渡し、本文入口のfield-list openerはMissingTermのために消費しない。templateのidentifier直後のarrowはidentifier/qua fallbackより先に扱い、他のapplication/type/qua順は維持する。条件if/otherwiseとリストcomma/as/to/semicolonは既存hostが所有する。新diagnostic/recovery語彙や広いhost許可規則は追加しない。
+直後のarrowで候補が確定するまでhead探索はevent/diagnosticを出さない。既存semicolon/end/item/statement-keyword境界では括弧内でも探索を止め、未確定prefixとして既存解析に委ねる。確定した不正headは開始位置のMalformedTermExpression1個と既存SkippedTokenによる既知head範囲の回復を持ち、arrow/本文をrecovered Binderへ保持する。本文欠落は区切りを消費せずMissingTermを置く。未確定/不均衡prefixは既存の外側回復に委ねる。constructor actualは既存before-field contextを再帰Binder本文とqualified fallbackへ渡し、本文入口のfield-list openerはMissingTermのために消費しない。bracket payload選択は上記の一般constructor actual境界に従う。条件if/otherwiseとリストcomma/as/to/semicolonは既存hostが所有する。新diagnostic/recovery語彙や広いhost許可規則は追加しない。

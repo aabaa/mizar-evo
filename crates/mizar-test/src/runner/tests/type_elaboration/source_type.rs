@@ -459,6 +459,36 @@ fn task249_exact_selector_does_not_capture_tasks68_through_71() {
     }
 }
 
+#[test]
+fn full_bracket_qua_actuals_do_not_activate_mode_or_structure_semantics() {
+    use super::type_elaboration::source_structure_semantics_detail_keys;
+    use mizar_checker::type_checker::check_source_dependent_mode_types;
+    for (id, old, new, is_mode) in [
+        ("pass_type_elaboration_mode_dependent_of_params_001", "MemberKind of A", "MemberKind[A qua non empty set]", true),
+        ("pass_type_elaboration_struct_dependent_bracket_params_001", "SliceBox[A]", "SliceBox[A qua non empty set]", false),
+    ] {
+        let (case, text) = step5c12_case(id);
+        assert_eq!(text.matches(old).count(), 2);
+        let changed = text.replace(old, new);
+        let changed = format!("definition let x be object; attr EmptyDef: x is empty means x = x; end;\n{changed}");
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(frontend.diagnostics.is_empty(), "{changed}\n{:?}", frontend.diagnostics);
+        let ast = frontend.ast.as_ref().unwrap().clone();
+        for kind in [SurfaceNodeKind::QuaExpression, SurfaceNodeKind::AttributeChain] {
+            assert_eq!(ast.nodes().iter().filter(|node| node.kind == kind).count(), 2);
+        }
+        let (source, typed, symbols) = super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend).unwrap();
+        assert!(source_type_application_output(&ast, source.module().clone(), &symbols).is_none());
+        if is_mode {
+            let error = check_source_dependent_mode_types(&source, &typed, &symbols).unwrap_err();
+            assert_eq!(error, "modes.unsupported_dependent_source_types");
+        } else {
+            let key = "type_elaboration.checker.source_structure_semantics.invalid_payload";
+            assert_eq!(source_structure_semantics_detail_keys(&ast, source.module().clone(), &symbols), vec![key.to_owned()]);
+        }
+    }
+}
+
 fn increment_source_type_form(
     counts: &mut [usize; 4],
     form: mizar_checker::source_type::SourceTypeApplicationForm,
