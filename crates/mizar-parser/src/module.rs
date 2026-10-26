@@ -16362,6 +16362,20 @@ impl Parser {
 
     fn should_parse_bare_attribute_test_body_at(&self, position: usize) -> bool {
         let mut cursor = position;
+        while let Some(plan) = self.plan_complete_attribute_ref_at(cursor) {
+            let after_non = cursor + usize::from(self.is_reserved_word_at(cursor, "non"));
+            let explicit_reference = after_non != cursor
+                || self.parameter_prefix_next_at(after_non).is_some()
+                || self.is_reserved_symbol_at(plan.next_position - 1, ")");
+            if self.is_formula_expression_boundary_at(plan.next_position) {
+                if explicit_reference {
+                    return true;
+                }
+                break;
+            }
+            cursor = plan.next_position;
+        }
+        let mut cursor = position;
         let saw_non = self.is_reserved_word_at(cursor, "non");
         if saw_non {
             cursor += 1;

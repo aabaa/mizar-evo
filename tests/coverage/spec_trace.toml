@@ -2961,6 +2961,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.14.explicit_attribute_chains.parser"
+source = "doc/spec/en/14.formulas.md"
+section = "14.2 Atomic Formulas; 3.3 Type Expressions; 6.2 Attribute Syntax; Appendix A.3/A.13/A.14"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_bare_attribute_chain_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_bare_attribute_chain_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.14.formula_connectives_quantifiers.parser"
 source = "doc/spec/en/14.formulas.md"
 section = "14.1 Formula Grammar; 14.3 Quantified Formulas; Appendix B.3 Formula Operators"

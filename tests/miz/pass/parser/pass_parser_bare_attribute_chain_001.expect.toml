@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_bare_attribute_chain_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.bare_attribute_chain"
+source = "pass_parser_bare_attribute_chain_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.14.explicit_attribute_chains.parser"]
+notes = "Whole explicit-ended bare chains retain ordered attribute refs and ordinary term, non, and parameter-prefix children under generic IsAssertion, including uppercase spellings and formula boundaries. Actual final R/Family heads and ambiguous bare uppercase/empty endings retain the type route. Genuine local declarations and explicit operator fixities supply lexer input; parser-only, without semantic role, arity, inhabitation or proof admission claims."

@@ -26332,7 +26332,7 @@ fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v21"
+            "mizar-parser/surface-ast-v22"
         );
     }
 }
@@ -26580,7 +26580,7 @@ fn expr_type_recovery_cache_storage_and_source_provenance() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v21"
+            "mizar-parser/surface-ast-v22"
         );
     }
 }
@@ -26946,7 +26946,7 @@ fn binder_roots_recovery_cache_storage_and_source_provenance() {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v21"
+            "mizar-parser/surface-ast-v22"
         );
     }
     let checked = super::formula_statement::step5c8_test_frontend("set f = x |-> y |-> ;");
@@ -27054,7 +27054,7 @@ fn binder_host_roots_preserve_list_arguments_algorithm_routes_and_recovery() {
         if id == "pass_parser_binder_term_lists_001" {
             let frontend = task257c4c1_frontend_output(&text, 120);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v10");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27106,7 +27106,7 @@ fn binder_container_values_preserve_fields_generators_and_missing_body_boundarie
             }
             let output = task257c4c1_frontend_output(&text, 121);
             let current = output.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v11");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27348,7 +27348,7 @@ fn binder_mathematical_hosts_preserve_definiens_ownership_and_delimiters() {
             }
             let frontend = task257c4c1_frontend_output(&text, 122);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v13");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27422,7 +27422,7 @@ fn qua_constructor_fields_retain_outer_ownership_through_targets_and_recovery() 
             assert_eq!(ast.node_views().filter(|v| v.kind() == &K::TermReference && &text[v.range().start..v.range().end] == "atom").count(), 5);
             let frontend = task257c4c1_frontend_output(&text, 123);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v14");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27540,7 +27540,7 @@ fn binder_actuals_preserve_type_template_and_outer_field_boundaries() {
             assert!(ast.node_views().any(|v| v.kind() == &K::QuaExpression && v.range().start == whole_start));
             let frontend = task257c4c1_frontend_output(&text, 124);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v15");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27626,7 +27626,7 @@ fn binder_formula_roots_preserve_relations_predicate_loci_and_iterative_steps() 
             assert_eq!(ast.node_views().filter(|v| v.kind() == &K::JustificationClause).count(), 2);
             let frontend = task257c4c1_frontend_output(&text, 125);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v16");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27739,7 +27739,7 @@ fn bracket_actuals_preserve_complete_payloads_and_type_preference() {
         assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range().start == after && !v.is_recovered()));
         let frontend = task257c4c1_frontend_output(&text, 126);
         let current = frontend.cache_keys.ast.as_ref().unwrap();
-        assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+        assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
         let mut retained = current.clone();
         retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v17");
         assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27870,7 +27870,7 @@ fn attribute_arguments_own_complete_unary_terms_before_root_and_qua_type_heads()
     assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range() == range(ast.source_id, after, after + "set after_attribute_ownership = sentinel;".len()) && !v.is_recovered()));
     let frontend = task257c4c1_frontend_output(&text, 127);
     let current = frontend.cache_keys.ast.as_ref().unwrap();
-    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
     let mut retained = current.clone();
     retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v18");
     assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -28078,7 +28078,7 @@ fn attribute_argument_continuation_preserves_order_payloads_and_actual_type_head
     assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range() == range(ast.source_id, after, after + "set after_attribute_continuation = sentinel;".len()) && !v.is_recovered()));
     let frontend = task257c4c1_frontend_output(&text, 128);
     let current = frontend.cache_keys.ast.as_ref().unwrap();
-    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
     let mut retained = current.clone();
     retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v19");
     assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -28409,7 +28409,7 @@ fn attribute_dispatch_preserves_complete_payloads_heads_and_bare_assertions() {
     assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range().start == after && !v.is_recovered()));
     let frontend = task257c4c1_frontend_output(&text, 129);
     let current = frontend.cache_keys.ast.as_ref().unwrap();
-    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v21");
+    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
     let mut retained = current.clone();
     retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v20");
     assert_eq!(current.token_stream_hash, retained.token_stream_hash);
@@ -28499,6 +28499,273 @@ fn attribute_dispatch_recovery_preserves_balanced_malformed_lists_and_successors
     assert_eq!(ast.node_views().filter(|v| v.as_recovery() == Some(SyntaxRecoveryKind::MissingTerm)).count(), 3);
     assert!(ast.node_views().filter_map(|v| v.as_recovery()).all(|kind| kind == SyntaxRecoveryKind::MissingTerm));
     let bytes = ast.canonical_bytes().expect("valid recovered complete attribute dispatch storage");
+    let restored = mizar_syntax::SurfaceAst::from_canonical_bytes(&bytes, ast.source_id).unwrap();
+    assert_eq!(restored.snapshot_text_with_trivia(), ast.snapshot_text_with_trivia());
+}
+
+#[test]
+fn bare_attribute_chains_preserve_explicit_endings_terms_boundaries_and_heads() {
+    use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind as S};
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let case = plan.cases.iter().find(|case| case.id.0 == "pass_parser_bare_attribute_chain_001").unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let output = super::formula_statement::step5c8_test_frontend(&text);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output.ast.unwrap();
+    assert!(ast.node_views().all(|v| !v.is_recovered()));
+    assert!(ast.trivia().skipped_token_ranges().is_empty());
+    for (name, expected) in [
+        ("LowerSimple", [("tagged(x)", "x"), ("linked(y,x)", "y\nx")].as_slice()),
+        ("LowerComplex", &[("tagged(Atom ++ Other)", "Atom ++ Other"), ("linked(~Other,x)", "~Other\nx")]),
+        ("UpperSimple", &[("TaggedUpper(x)", "x")]),
+        ("UpperMixed", &[("TaggedUpper(~Atom)", "~Atom"), ("empty", ""), ("non LinkedUpper(Atom !,x)", "Atom !\nx")]),
+        ("PrefixLast", &[("TaggedUpper(~Atom)", "~Atom"), ("(x,y)-linked", "")]),
+        ("NonLast", &[("tagged(~Atom)", "~Atom"), ("non empty", "")]),
+        ("NumeralPrefixLast", &[("tagged(~Atom)", "~Atom"), ("0-TaggedUpper", "")]),
+        ("BinderLast", &[("tagged(x |-> Atom)", "x |-> Atom"), ("linked((x,y) |-> Other,x)", "(x,y) |-> Other\nx")]),
+        ("NestedLast", &[("tagged(image([x,{y}]))", "image([x,{y}])"), ("LinkedUpper(Box[x](value:p.value),the set)", "Box[x](value:p.value)\nthe set")]),
+        ("QuaCollectionLast", &[("tagged(x qua set)", "x qua set"), ("linked({x where x is set:thesis},y)", "{x where x is set:thesis}\ny")]),
+        ("AndBoundary", &[("Box.TaggedUpper(~Atom)", "~Atom"), ("linked(~Other,x)", "~Other\nx")]),
+        ("GroupOrBoundary", &[("TaggedUpper(~Atom)", "~Atom"), ("linked(~Other,x)", "~Other\nx")]),
+        ("ProofBoundary", &[("TaggedUpper(~Atom)", "~Atom"), ("linked(~Other,x)", "~Other\nx")]),
+    ] {
+        let host_start = text.find(&format!("theorem {name}:")).unwrap();
+        let start = host_start + text[host_start..].find(expected[0].0).unwrap();
+        let spelling = expected.iter().map(|(body, _)| *body).collect::<Vec<_>>().join(" ");
+        let chain = ast.node_views().find(|v| v.kind() == &K::AttributeTestChain && v.range().start == start).unwrap();
+        assert_eq!(chain.range(), range(ast.source_id, start, start + spelling.len()), "{name}");
+        assert_eq!(&text[chain.range().start..chain.range().end], spelling);
+        assert_eq!(chain.children().len(), expected.len());
+        let assertion = ast.node_views().find(|v| v.kind() == &K::IsAssertion && v.children().last() == Some(&chain.id())).unwrap();
+        let subject = ast.node_view(assertion.children()[0]).unwrap();
+        assert_eq!(subject.kind(), &K::TermExpression);
+        assert_eq!(&text[subject.range().start..subject.range().end], "x");
+        assert_eq!(ast.node_view(assertion.children()[1]).unwrap().as_token().unwrap().text.as_ref(), "is");
+        assert_eq!(assertion.children().len(), if name == "AndBoundary" { 4 } else { 3 });
+        assert_eq!(assertion.range().end, chain.range().end);
+        if name == "AndBoundary" { assert_eq!(ast.node_view(assertion.children()[2]).unwrap().as_token().unwrap().text.as_ref(), "not"); }
+        let mut cursor = start;
+        for (id, (body, expected_arguments)) in chain.children().iter().zip(expected) {
+            let attribute = ast.node_view(*id).unwrap();
+            assert_eq!(attribute.kind(), &K::AttributeRef);
+            assert_eq!(attribute.range(), range(ast.source_id, cursor, cursor + body.len()));
+            let children = attribute.children().iter().map(|id| ast.node_view(*id).unwrap()).collect::<Vec<_>>();
+            let arguments = children.iter().filter(|v| v.kind() == &K::TermExpression).collect::<Vec<_>>();
+            assert_eq!(arguments.iter().map(|v| &text[v.range().start..v.range().end]).collect::<Vec<_>>(), expected_arguments.lines().collect::<Vec<_>>(), "{name}: {body}");
+            let symbol = children.iter().find(|v| v.kind() == &K::QualifiedSymbol).unwrap();
+            if body.starts_with("non ") { assert_eq!(children[0].as_token().unwrap().text.as_ref(), "non"); }
+            if *body == "(x,y)-linked" || *body == "0-TaggedUpper" {
+                let prefix = &children[0];
+                assert_eq!(prefix.kind(), &K::ParameterPrefix);
+                let expected_prefix = if body.starts_with('(') { "(x,y)-" } else { "0-" };
+                assert_eq!(prefix.range(), range(ast.source_id, cursor, cursor + expected_prefix.len()));
+                assert_eq!(&text[symbol.range().start..symbol.range().end], if body.starts_with('(') { "linked" } else { "TaggedUpper" });
+            }
+            if body.starts_with("Box.") {
+                assert_eq!(symbol.children().len(), 3);
+                assert_eq!(&text[symbol.range().start..symbol.range().end], "Box.TaggedUpper");
+                assert_eq!(ast.node_view(symbol.children()[1]).unwrap().as_token().unwrap().text.as_ref(), ".");
+            }
+            if !arguments.is_empty() {
+                let open = children.iter().find(|v| v.as_token().is_some_and(|t| t.text.as_ref() == "(")).unwrap();
+                assert_eq!(open.range(), range(ast.source_id, symbol.range().end, symbol.range().end + 1));
+                let close = children.last().unwrap();
+                assert_eq!(close.as_token().unwrap().text.as_ref(), ")");
+                assert_eq!(close.range(), range(ast.source_id, attribute.range().end - 1, attribute.range().end));
+                let commas = children.iter().filter(|v| v.as_token().is_some_and(|t| t.text.as_ref() == ",")).collect::<Vec<_>>();
+                assert_eq!(commas.len(), arguments.len() - 1);
+                for (comma, pair) in commas.iter().zip(arguments.windows(2)) {
+                    assert_eq!(comma.range(), range(ast.source_id, pair[0].range().end, pair[0].range().end + 1));
+                    assert_eq!(comma.range().end, pair[1].range().start);
+                }
+                for argument in arguments {
+                    let term = ast.node_view(argument.children()[0]).unwrap();
+                    let body = &text[argument.range().start..argument.range().end];
+                    let kind = match body {
+                        "~Atom" | "~Other" => S::PrefixExpression, "Atom !" => S::PostfixExpression, "Atom ++ Other" => S::InfixExpression,
+                        "x |-> Atom" | "(x,y) |-> Other" => S::BinderExpression,
+                        "image([x,{y}])" => S::ApplicationTerm, "Box[x](value:p.value)" => S::StructureConstructor,
+                        "the set" => S::ChoiceTerm, "x qua set" => S::QuaExpression,
+                        "{x where x is set:thesis}" => S::SetComprehension, _ => S::TermReference,
+                    };
+                    assert_eq!(term.syntax_kind(), kind, "{name}: {body}");
+                    if let Some(operator) = term.as_prefix_expression() { assert_eq!((operator.spelling.as_ref(), operator.precedence), ("~", 85)); }
+                    if let Some(operator) = term.as_postfix_expression() { assert_eq!((operator.spelling.as_ref(), operator.precedence), ("!", 95)); }
+                    if let Some(operator) = term.as_infix_expression() { assert_eq!((operator.spelling.as_ref(), operator.precedence), ("++", 80)); }
+                    if kind == S::BinderExpression {
+                        let binder_body = ast.node_view(*term.children().last().unwrap()).unwrap();
+                        assert_eq!(&text[binder_body.range().start..binder_body.range().end], if body.starts_with('(') { "Other" } else { "Atom" });
+                    }
+                }
+            }
+            cursor += body.len() + 1;
+        }
+        for (kind, source) in [(K::ApplicationTerm, "[x,{y}]"), (K::SetEnumeration, "{y}"), (K::TypeArguments, "[x]"), (K::FieldArgument, "value:p.value"), (K::SelectorAccess, "p.value")] {
+            if name == "NestedLast" { assert!(ast.node_views().any(|v| v.kind() == &kind && v.range().start >= start && v.range().end <= chain.range().end && &text[v.range().start..v.range().end] == source)); }
+        }
+        if name == "AndBoundary" || name == "GroupOrBoundary" {
+            let connective = if name == "AndBoundary" { "&" } else { "or" };
+            let boundary = chain.range().end + if name == "AndBoundary" { 1 } else { 2 };
+            assert!(ast.token_views().any(|v| v.range() == range(ast.source_id, boundary, boundary + connective.len()) && v.as_token().unwrap().text.as_ref() == connective));
+            assert!(ast.node_views().any(|v| v.kind() == &K::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis) && v.range().start == boundary + connective.len() + 1));
+        }
+        if name == "GroupOrBoundary" {
+            let group = ast.node_views().find(|v| v.kind() == &K::ParenthesizedFormula && v.range().start == assertion.range().start - 1).unwrap();
+            assert_eq!(group.range().end, chain.range().end + 1);
+            assert_eq!(ast.node_view(*group.children().last().unwrap()).unwrap().as_token().unwrap().text.as_ref(), ")");
+        }
+        if name == "ProofBoundary" {
+            let proof = ast.node_views().find(|v| v.kind() == &K::ProofBlock && v.range().start == chain.range().end + 1).unwrap();
+            assert_eq!(&text[proof.range().start..proof.range().end], "proof thus thesis; end");
+        }
+    }
+    for (name, adjectives, head) in [
+        ("TypedRightmost", "TaggedUpper(~Atom) empty linked(~Other,x)", "R"),
+        ("TypedBracket", "TaggedUpper(~Atom)", "Family[x]"),
+        ("TypedOf", "tagged(~Atom)", "Family of x"),
+        ("TypedOver", "TaggedUpper(~Atom)", "Family over x"),
+        ("AmbiguousUpper", "tagged(~Atom)", "TaggedUpper"),
+        ("AmbiguousEmpty", "TaggedUpper(~Atom)", "empty"),
+    ] {
+        let host_start = text.find(&format!("theorem {name}:")).unwrap();
+        let start = host_start + text[host_start..].find(adjectives).unwrap();
+        let expression = ast.node_views().find(|v| v.kind() == &K::TypeExpression && v.range().start == start).unwrap();
+        assert_eq!(expression.children().len(), 2);
+        let chain = ast.node_view(expression.children()[0]).unwrap();
+        let actual_head = ast.node_view(expression.children()[1]).unwrap();
+        assert_eq!(chain.kind(), &K::AttributeChain);
+        assert_eq!(chain.range(), range(ast.source_id, start, start + adjectives.len()));
+        assert_eq!(chain.children().len(), if name == "TypedRightmost" { 3 } else { 1 });
+        assert_eq!(actual_head.kind(), &K::TypeHead);
+        assert_eq!(&text[actual_head.range().start..actual_head.range().end], head);
+        assert_eq!(actual_head.range(), range(ast.source_id, start + adjectives.len() + 1, start + adjectives.len() + 1 + head.len()));
+        assert!(ast.node_views().any(|v| v.kind() == &K::IsAssertion && v.children().last() == Some(&expression.id())));
+    }
+    for host in ast.node_views().filter(|v| v.kind() == &K::TheoremItem) {
+        let mut pending = vec![host.id()];
+        let mut seen = std::collections::HashSet::new();
+        let mut tokens = Vec::new();
+        while let Some(id) = pending.pop() {
+            assert!(seen.insert(id), "duplicate child in bare chain theorem");
+            let node = ast.node_view(id).unwrap();
+            if node.as_token().is_some() { tokens.push(id); }
+            pending.extend(node.children().iter().rev().copied());
+        }
+        assert_eq!(tokens, ast.token_views().filter(|v| v.range().start >= host.range().start && v.range().end <= host.range().end).map(|v| v.id()).collect::<Vec<_>>());
+        assert_eq!(ast.node_view(*host.children().last().unwrap()).unwrap().as_token().unwrap().text.as_ref(), ";");
+    }
+    let after = text.find("set after_bare_attribute_chain = sentinel;").unwrap();
+    assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range() == range(ast.source_id, after, text.trim_end().len()) && !v.is_recovered()));
+    let frontend = task257c4c1_frontend_output(&text, 131);
+    let current = frontend.cache_keys.ast.as_ref().unwrap();
+    assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v22");
+    let mut retained = current.clone();
+    retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v21");
+    assert_eq!(current.token_stream_hash, retained.token_stream_hash);
+    assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
+    assert_ne!(current.stable_hash(), retained.stable_hash());
+    let bytes = ast.canonical_bytes().expect("valid explicit bare chain storage");
+    let restored = mizar_syntax::SurfaceAst::from_canonical_bytes(&bytes, ast.source_id).unwrap();
+    assert_eq!(restored.snapshot_text_with_trivia(), ast.snapshot_text_with_trivia());
+}
+
+#[test]
+fn bare_attribute_chain_recovery_preserves_complete_lists_and_partial_missing_comma() {
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let case = plan.cases.iter().find(|case| case.id.0 == "fail_parser_bare_attribute_chain_001").unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let output = super::formula_statement::step5c8_test_frontend(&text);
+    assert_eq!(output.diagnostics.len(), 6, "{:?}", output.diagnostics);
+    let ast = output.ast.unwrap();
+    let empty_close = text.find("TaggedUpper()").unwrap() + "TaggedUpper(".len();
+    let trailing_close = text.find("TaggedUpper(~Atom,)").unwrap() + "TaggedUpper(~Atom,".len();
+    let partial_start = text.find("TaggedUpper(x R)").unwrap();
+    let radix = partial_start + "TaggedUpper(x ".len();
+    let stray_close = radix + 1;
+    for (diagnostic, (code, offset)) in output.diagnostics.iter().zip([
+        ("malformed_term_expression", empty_close), ("malformed_term_expression", trailing_close),
+        ("malformed_term_expression", radix), ("malformed_term_expression", stray_close),
+        ("missing_semicolon", stray_close), ("unexpected_top_level_token", stray_close),
+    ]) {
+        assert_eq!(diagnostic.code, DiagnosticCode::Syntax(code.into()));
+        assert_eq!(diagnostic.location, DiagnosticLocation::SourceRange(range(ast.source_id, offset, offset + 1)));
+    }
+    assert_eq!(output.diagnostics[2].secondary, vec![mizar_session::SourceAnchor::Range(range(ast.source_id, partial_start + "TaggedUpper".len(), partial_start + "TaggedUpper(".len()))]);
+    for (name, first, close, arguments) in [
+        ("EmptyArguments", "TaggedUpper()", empty_close, ""),
+        ("TrailingComma", "TaggedUpper(~Atom,)", trailing_close, "~Atom"),
+    ] {
+        let start = text.find(first).unwrap();
+        let chain = ast.node_views().find(|v| v.kind() == &K::AttributeTestChain && v.range().start == start).unwrap();
+        assert_eq!(chain.children().len(), 2);
+        assert_eq!(&text[chain.range().start..chain.range().end], format!("{first} linked(~Other,x)"));
+        let attribute = ast.node_view(chain.children()[0]).unwrap();
+        assert_eq!(attribute.kind(), &K::AttributeRef);
+        assert_eq!(attribute.range(), range(ast.source_id, start, close + 1));
+        let children = attribute.children().iter().map(|id| ast.node_view(*id).unwrap()).collect::<Vec<_>>();
+        let missing = children.iter().filter(|v| v.as_recovery() == Some(SyntaxRecoveryKind::MissingTerm)).collect::<Vec<_>>();
+        assert_eq!(missing.len(), 1);
+        assert_eq!(missing[0].range(), range(ast.source_id, close, close));
+        assert!(missing[0].is_recovered());
+        assert_eq!(children.iter().filter(|v| v.kind() == &K::TermExpression).map(|v| &text[v.range().start..v.range().end]).collect::<Vec<_>>(), arguments.lines().collect::<Vec<_>>());
+        assert_eq!(children.last().unwrap().as_token().unwrap().text.as_ref(), ")");
+        assert_eq!(children.last().unwrap().range(), range(ast.source_id, close, close + 1));
+        let second = ast.node_view(chain.children()[1]).unwrap();
+        assert_eq!(second.kind(), &K::AttributeRef);
+        assert_eq!(&text[second.range().start..second.range().end], "linked(~Other,x)");
+        assert_eq!(second.children().iter().map(|id| ast.node_view(*id).unwrap()).filter(|v| v.kind() == &K::TermExpression).map(|v| &text[v.range().start..v.range().end]).collect::<Vec<_>>(), ["~Other", "x"]);
+        assert_eq!(ast.node_view(*second.children().last().unwrap()).unwrap().as_token().unwrap().text.as_ref(), ")");
+        assert!(ast.node_views().any(|v| v.kind() == &K::IsAssertion && v.children().last() == Some(&chain.id())));
+        let host_start = text.find(&format!("theorem {name}:")).unwrap();
+        let host = ast.node_views().find(|v| v.kind() == &K::TheoremItem && v.range().start == host_start).unwrap();
+        assert_eq!(host.range().end, chain.range().end + 1);
+        let mut pending = vec![host.id()];
+        let mut seen = std::collections::HashSet::new();
+        let mut tokens = Vec::new();
+        while let Some(id) = pending.pop() {
+            assert!(seen.insert(id), "duplicate recovered chain child");
+            let node = ast.node_view(id).unwrap();
+            if node.as_token().is_some() { tokens.push(id); }
+            pending.extend(node.children().iter().rev().copied());
+        }
+        assert_eq!(tokens, ast.token_views().filter(|v| v.range().start >= host.range().start && v.range().end <= host.range().end).map(|v| v.id()).collect::<Vec<_>>());
+    }
+    let chain = ast.node_views().find(|v| v.kind() == &K::AttributeTestChain && v.range().start == partial_start).unwrap();
+    assert_eq!(chain.range(), range(ast.source_id, partial_start, stray_close));
+    assert_eq!(chain.children().len(), 2);
+    let first = ast.node_view(chain.children()[0]).unwrap();
+    assert_eq!(first.range(), range(ast.source_id, partial_start, radix - 1));
+    assert_eq!(&text[first.range().start..first.range().end], "TaggedUpper(x");
+    let term = first.children().iter().map(|id| ast.node_view(*id).unwrap()).find(|v| v.kind() == &K::TermExpression).unwrap();
+    assert_eq!(&text[term.range().start..term.range().end], "x");
+    let unmatched = ast.node_view(*first.children().last().unwrap()).unwrap();
+    assert_eq!(unmatched.as_recovery(), Some(SyntaxRecoveryKind::UnmatchedOpeningDelimiter));
+    assert_eq!(unmatched.range(), range(ast.source_id, radix, radix));
+    let second = ast.node_view(chain.children()[1]).unwrap();
+    assert_eq!(second.kind(), &K::AttributeRef);
+    assert_eq!(second.range(), range(ast.source_id, radix, stray_close));
+    assert_eq!(second.children().len(), 1);
+    assert_eq!(ast.node_view(second.children()[0]).unwrap().kind(), &K::QualifiedSymbol);
+    assert_eq!(&text[second.range().start..second.range().end], "R");
+    let assertion = ast.node_views().find(|v| v.kind() == &K::IsAssertion && v.children().last() == Some(&chain.id())).unwrap();
+    assert_eq!(assertion.range().end, stray_close);
+    let suffix = stray_close + ") ".len();
+    assert_eq!(&text[suffix..suffix + "linked".len()], "linked");
+    assert!(ast.node_views().filter(|v| v.kind() == &K::AttributeRef).all(|v| v.range().start != suffix));
+    let skipped = ast.node_views().find(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken) && v.range().start == stray_close).unwrap();
+    assert_eq!(skipped.range(), range(ast.source_id, stray_close, suffix + "linked".len()));
+    assert_eq!(ast.trivia().skipped_token_ranges().len(), 1);
+    assert_eq!(ast.trivia().skipped_token_ranges()[0].range, skipped.range());
+    assert_eq!(ast.node_views().filter(|v| v.as_recovery() == Some(SyntaxRecoveryKind::MissingTerm)).count(), 2);
+    assert!(ast.node_views().all(|v| v.as_recovery() != Some(SyntaxRecoveryKind::MissingTypeExpression)));
+    for name in ["empty_arguments", "trailing_comma", "missing_comma"] {
+        let successor = format!("set after_{name} = sentinel;");
+        let start = text.find(&successor).unwrap();
+        assert!(ast.node_views().filter_map(|v| v.as_set_statement()).any(|v| v.range() == range(ast.source_id, start, start + successor.len()) && !v.is_recovered()));
+    }
+    let bytes = ast.canonical_bytes().expect("valid bounded bare chain recovery storage");
     let restored = mizar_syntax::SurfaceAst::from_canonical_bytes(&bytes, ast.source_id).unwrap();
     assert_eq!(restored.snapshot_text_with_trivia(), ast.snapshot_text_with_trivia());
 }

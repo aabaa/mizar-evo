@@ -1,0 +1,14 @@
+reserve x, sentinel for set;
+definition let n, m, element be set;
+  mode RadixLabel: R is set;
+  func AtomLabel: Atom -> set equals sentinel; func OtherLabel: Other -> set equals sentinel;
+  func PrefixLabel: ~ n -> set equals n;
+  attr UpperLabel: element is n-TaggedUpper means thesis; attr LinkedLabel: element is (n,m)-linked means thesis;
+end;
+prefix_operator("~", 85);
+theorem EmptyArguments: x is TaggedUpper() linked(~Other,x);
+set after_empty_arguments = sentinel;
+theorem TrailingComma: x is TaggedUpper(~Atom,) linked(~Other,x);
+set after_trailing_comma = sentinel;
+theorem MissingComma: x is TaggedUpper(x R) linked(~Other,x);
+set after_missing_comma = sentinel;
