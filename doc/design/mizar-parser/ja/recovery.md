@@ -170,10 +170,10 @@ recovery slice を reopen する。対応する opener を持たない裸の `en
   algorithm または claim semicolon 欠落を回復し、周囲の definition または top-level
   block item を保持する。
 - task 33 の algorithm control-flow parsing は、malformed な `if`、`while`、
-  range / collection `for`、`match`、`otherwise` / `exhaustive`、`break`、
+  range / collection `for`、`match`、`otherwise`、`break`、
   `continue` の形を algorithm statement-list boundary で回復する。nested control-flow
   closer 欠落には `MissingEnd` を使い、malformed head / tail は次の statement を
-  消費せず、最も近い term / formula / skipped-token recovery vocabulary を使う。
+  消費せず、最も近い term / formula / skipped-token recovery vocabulary を使う。case後の不正tailはMalformedFormulaExpressionと既存skipped-tail recoveryでsemicolonまで回復し、閉じないdelimiter内でもstatement/control/item/EOF境界で停止してmatchのcloserを保持する。otherwise省略はdiagnostic/recoveryを生成しない。
 - task 34 の algorithm verification parsing は、重複または順序違反の header clause を
   algorithm body boundary まで skip して recover する。`requires`、`ensures`、loop
   `invariant`、`assert` の formula 欠落には `MissingFormula` を挿入し、空または

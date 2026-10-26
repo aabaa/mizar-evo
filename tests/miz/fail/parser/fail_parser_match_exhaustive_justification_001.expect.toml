@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_match_exhaustive_justification_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.match_otherwise"
+source = "fail_parser_match_exhaustive_justification_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_formula_expression"
+stable_detail_key = "parser.match_otherwise.retired_clause"
+diagnostic_codes = ["malformed_formula_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.match_otherwise.parser"]
+notes = "The retired clause is an unexpected post-case tail, diagnosed once with existing malformed_formula_expression. Preserve skipped spelling, enclosing match/algorithm ends and following return; no legacy compatibility mode."

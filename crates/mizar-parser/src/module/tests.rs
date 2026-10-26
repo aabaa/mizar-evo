@@ -13549,10 +13549,6 @@ fn parser_parses_task33_algorithm_control_flow_surfaces() {
                 (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
-                ("exhaustive", ParserTokenKind::ReservedWord),
-                ("by", ParserTokenKind::ReservedWord),
-                ("Exhaustive", ParserTokenKind::Identifier),
-                (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("match", ParserTokenKind::ReservedWord),
@@ -13564,8 +13560,6 @@ fn parser_parses_task33_algorithm_control_flow_surfaces() {
                 ("continue", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
-                ("exhaustive", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
@@ -13619,7 +13613,7 @@ fn parser_parses_task33_algorithm_control_flow_surfaces() {
     );
     assert_eq!(
         count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
-        3
+        1
     );
     assert_eq!(
         count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::BreakStatement)),
@@ -13677,8 +13671,6 @@ fn parser_recovers_task33_algorithm_control_flow_gaps() {
                 ("match", ParserTokenKind::ReservedWord),
                 ("t", ParserTokenKind::Identifier),
                 ("do", ParserTokenKind::ReservedWord),
-                ("exhaustive", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
@@ -13735,7 +13727,7 @@ fn parser_recovers_task33_algorithm_control_flow_gaps() {
     );
     assert_eq!(
         count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
-        1
+        0
     );
     assert!(
         count_nodes(&ast, |kind| matches!(
@@ -13882,8 +13874,6 @@ fn parser_pins_task33_recovery_diagnostic_payloads() {
             ("match", ParserTokenKind::ReservedWord),
             ("t", ParserTokenKind::Identifier),
             ("do", ParserTokenKind::ReservedWord),
-            ("exhaustive", ParserTokenKind::ReservedWord),
-            (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
@@ -13909,7 +13899,7 @@ fn parser_pins_task33_recovery_diagnostic_payloads() {
         (
             SyntaxDiagnosticCode::MalformedTermExpression,
             "expected match case",
-            nth_token_range(&tokens, "exhaustive", 0),
+            nth_token_range(&tokens, "end", 2),
             "repair the term expression before continuing",
         ),
     ];
@@ -14146,8 +14136,6 @@ fn parser_pins_task33_control_flow_diagnostic_matrix() {
             (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
-            ("exhaustive", ParserTokenKind::ReservedWord),
-            (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
         ],
@@ -14169,8 +14157,6 @@ fn parser_pins_task33_control_flow_diagnostic_matrix() {
             (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
-            ("exhaustive", ParserTokenKind::ReservedWord),
-            (";", ParserTokenKind::ReservedSymbol),
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
         ],
@@ -14180,8 +14166,9 @@ fn parser_pins_task33_control_flow_diagnostic_matrix() {
             2,
         )],
     );
-    assert_task33_algorithm_body_diagnostics_exact(
-        source_id(220),
+    let source_id = source_id(220);
+    let tokens = task33_algorithm_body_tokens(
+        source_id,
         &[
             ("match", ParserTokenKind::ReservedWord),
             ("t", ParserTokenKind::Identifier),
@@ -14196,11 +14183,21 @@ fn parser_pins_task33_control_flow_diagnostic_matrix() {
             ("end", ParserTokenKind::ReservedWord),
             (";", ParserTokenKind::ReservedSymbol),
         ],
-        &[ExpectedParserDiagnostic::formula(
-            "expected `otherwise` or `exhaustive` match ending",
-            "end",
-            1,
-        )],
+    );
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+    assert!(
+        output.diagnostics.is_empty(),
+        "a match may omit its otherwise ending: {:?}",
+        output.diagnostics
+    );
+    assert!(
+        output.ast.is_some(),
+        "a match without otherwise should be accepted"
     );
 }
 
@@ -15092,6 +15089,7 @@ fn assert_task33_control_flow_accessors_and_child_order(ast: &mizar_syntax::Surf
     );
 
     let ending_views = surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding));
+    assert_eq!(ending_views.len(), 1);
     assert!(
         ending_views
             .iter()
@@ -15107,22 +15105,27 @@ fn assert_task33_control_flow_accessors_and_child_order(ast: &mizar_syntax::Surf
         vec!["AlgorithmStatementList"]
     );
 
-    let exhaustive_endings = ending_views
+    let omitted_ending_matches = match_views
         .iter()
         .copied()
-        .filter(|view| view_starts_with_token(*view, "exhaustive"))
+        .filter(|view| {
+            view.child_views()
+                .filter(|child| child.as_match_case().is_some())
+                .count()
+                == 1
+        })
         .collect::<Vec<_>>();
-    assert_eq!(exhaustive_endings.len(), 2);
-    assert!(
-        exhaustive_endings
-            .iter()
-            .any(|view| direct_structural_child_kind_names(*view) == vec!["JustificationClause"])
-    );
-    assert!(
-        exhaustive_endings
-            .iter()
-            .any(|view| direct_structural_child_kind_names(*view).is_empty())
-    );
+    assert_eq!(omitted_ending_matches.len(), 2);
+    for match_view in omitted_ending_matches {
+        assert_eq!(
+            direct_structural_child_kind_names(match_view),
+            vec!["TermExpression", "MatchCase"]
+        );
+        assert_eq!(
+            direct_child_signature(match_view),
+            vec!["match", "TermExpression", "do", "MatchCase", "end", ";"]
+        );
+    }
 }
 
 fn assert_task34_verification_accessors_and_child_order(ast: &mizar_syntax::SurfaceAst) {

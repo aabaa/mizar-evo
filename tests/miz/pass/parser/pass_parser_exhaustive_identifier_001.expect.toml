@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_exhaustive_identifier_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.match_otherwise"
+source = "pass_parser_exhaustive_identifier_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.match_otherwise.parser"]
+notes = "exhaustive is an ordinary identifier in parameters, locals, assignment and match inputs/patterns; omitted otherwise is valid syntax. No typing, capture, implicit-failure execution or terminating-match acceptance."

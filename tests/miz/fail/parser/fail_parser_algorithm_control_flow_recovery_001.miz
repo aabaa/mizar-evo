@@ -13,7 +13,6 @@ definition
       break;
     end;
     match t do
-      exhaustive;
     end;
   end;
 end;

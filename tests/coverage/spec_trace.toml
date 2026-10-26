@@ -4230,6 +4230,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.match_otherwise.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.2.5 AST Pattern Match (`match`)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_exhaustive_identifier_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_match_exhaustive_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_match_exhaustive_justification_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.21.annotations.parser"
 source = "doc/spec/en/21.source_code_annotation_and_atp.md"
 section = "21.2 Library Annotations; 21.3 LaTeX Annotation; 21.4 Proof Hint; 21.5 Proof Debugging; 21.6 Evaluation Directives; Appendix A.21 Annotations"

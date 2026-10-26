@@ -1279,3 +1279,24 @@ fn native_open_buffer_input_preserves_origin_and_rejects_uncertain_coordinates()
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn exhaustive_identifier_is_accepted_in_module_index_components() {
+    let plan = build_plan(vec![workspace_package("algebra", "1.0.0")]);
+    let layout = StaticSourceLayout::new(vec![source_package(
+        "algebra",
+        vec![
+            source_file("src/exhaustive.miz", "exhaustive.miz"),
+            source_file("src/groups/exhaustive.miz", "groups/exhaustive.miz"),
+        ],
+    )]);
+    let index = build_module_index(&plan, &layout, &[]).expect("ordinary identifier module names");
+    assert_eq!(
+        index
+            .modules
+            .iter()
+            .map(|m| m.module_path.as_str())
+            .collect::<Vec<_>>(),
+        ["exhaustive", "groups.exhaustive"]
+    );
+}

@@ -6387,6 +6387,6 @@ Frozen owner contracts and §§13.10/20/22.4.8 govern new test-first reflection 
 Use real stage-specific producer/consumer routes; parser additions can precede blocked typing/MVM/proof/replay producers.
 Tests cover grammar/position, structure/UIDs, valuation/Binder/C, normal return, complete candidate residuals and strict replay provenance.
 Owner modules retain semantic matrix details; this harness owns private runner inputs, observations and activation pacing only.
-Keep protected exhaustive fixtures and existing semantic expectations fixed; separately authorized trace/activation changes require authentic runnable stages. Open requests never count as computation.
+Keep existing semantic expectations fixed; lexical/match retirement grants parser-only credit; separately authorized trace/activation changes require authentic runnable stages. Open requests never count as computation.
 Semantic matrices: [syntax](../../mizar-parser/en/grammar.md#reflected-syntax-input-boundary), [formation](../../mizar-checker/en/typed_ast.md#reflected-syntax-formation), [structure](../../mizar-core/en/core_ir.md#reflected-syntax-handoff),
 [obligations](../../mizar-vc/en/generator.md#reflected-algorithm-obligations), [import/replay](../../mizar-proof/en/policy.md#computation-publication-boundary), [artifacts](../../mizar-artifact/en/verified_artifact.md#computation-provenance-boundary) and [diagnostics](../../mizar-diagnostics/en/registry.md#reflection-diagnostic-adoption).

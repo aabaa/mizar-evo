@@ -1992,8 +1992,7 @@ for_collection_stmt ::= "for" identifier "in" term_expression
 
 match_stmt ::= "match" term_expression "do"
                match_case+
-               ( "otherwise" algo_statement_list "end" ";"
-               | "exhaustive" [ justification ] ";" )
+               [ "otherwise" algo_statement_list "end" ";" ]
                "end" ";" ;
 match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
 
@@ -2005,7 +2004,7 @@ continue_stmt ::= "continue" ";" ;
 `ForCollectionStatement`、`MatchStatement`、`MatchCase`、`MatchEnding`、
 `BreakStatement`、`ContinueStatement` は control-flow の source shape を保持する。
 branch-local `AlgorithmStatementList` と malformed statement tail recovery は周囲の
-control-flow boundary（`else`、`case`、`otherwise`、`exhaustive`、`end`）で停止し、
+control-flow boundary（`else`、`case`、`otherwise`、`end`）で停止し、
 semicolon 欠落 / inner `end` 欠落の recovery が次の branch を飲み込まず所有元の構文へ
 戻れるようにする。
 
@@ -2213,7 +2212,6 @@ expr、Binder、文脈依存RHS/入力、定義ラベル、計算構文は §§3
 構文候補を checker/RESOLVE33 に渡す。parser は terminating 限定ラベル、反射/計算入力の thesis 位置、呼出/引用形式を検査し、期待型、同一性、参照意味は消費側が所有する。
 lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと replay/呼出入力のソース順・回復を保つ。
 テストは expr 型引数、Binder の最弱・右結合/全体 qua、式パターン/RHS、呼出とオプション、replay と terminating ラベルを扱う。不正な expr/Binder head、呼出でない引数、真偽値でない replay、partial ラベルを拒否し、回復も検査する。
-保護された exhaustive 成功 fixture の意図変更が許可されるまで廃止は保留し、追加構文だけで解消扱いにしない。
 
 ## General Constructor Actual Boundary
 

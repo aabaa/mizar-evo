@@ -37,13 +37,11 @@ definition
       case fallback do
         break;
       end;
-      exhaustive by Exhaustive;
     end;
     match unchecked do
       case fallback do
         continue;
       end;
-      exhaustive;
     end;
     return acc;
   end;

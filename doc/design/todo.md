@@ -886,7 +886,7 @@ Active implementation contracts follow their own dependencies; completed AST-SPE
 The [multiple-argument Binder specification](./task_contracts/en/AST-MULTI-BINDER-SPEC.md) fixes the product-domain extension and acceptance requirements for these owners; it adds no implementation activation.
 The [Binder task decomposition](./task_contracts/en/AST-MULTI-BINDER-PLAN.md) assigns MBP-01–09 to the existing owners, adds the explicit Resolver prerequisite and separates provisional formation from proof/adoption. Continue MBP-01 beyond the bounded set/grouped/body-root syntax increment; MBP-03 library-input inventory and MBP-08 descriptor preparation can proceed independently. Differentiation remains a later specification/library task.
 
-1. [~] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — expr types complete; bounded Binder roots complete, remaining hosts/patterns/contextual syntax open and legacy retirement blocked.
+1. [~] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — expr types complete; bounded Binder roots complete, remaining hosts/patterns/contextual syntax open; lexical/match retirement implemented.
 2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
 3. [ ] [AST-TYPE](./task_contracts/en/AST-TYPE.md) — follows syntax and certified library/declaration producers.
 4. [ ] [AST-LOWER](./task_contracts/en/AST-LOWER.md) — follows authentic checked formation.

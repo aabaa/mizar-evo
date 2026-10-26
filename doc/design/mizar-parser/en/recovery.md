@@ -185,11 +185,11 @@ Current behavior:
   claim targets/content, and missing algorithm or claim semicolons while
   preserving the surrounding definition or top-level block item;
 - task-33 algorithm control-flow parsing recovers malformed `if`, `while`,
-  range and collection `for`, `match`, `otherwise`/`exhaustive`, `break`, and
+  range and collection `for`, `match`, `otherwise`, `break`, and
   `continue` shapes at algorithm statement-list boundaries. Missing nested
   control-flow closers use `MissingEnd`; malformed heads and tails use the
   nearest term/formula/skipped-token recovery vocabulary without consuming
-  following statements;
+  following statements. An unexpected post-case tail uses MalformedFormulaExpression and the existing skipped-tail recovery before its semicolon, with statement/control/item/EOF barriers even inside an unclosed delimiter; match closers stay owned by the match. Omitted otherwise creates no diagnostic or recovery;
 - task-34 algorithm verification parsing recovers duplicate or out-of-order
   header clauses by skipping to the algorithm body boundary, inserts
   `MissingFormula` after `requires`, `ensures`, loop `invariant`, and `assert`

@@ -2129,8 +2129,7 @@ for_collection_stmt ::= "for" identifier "in" term_expression
 
 match_stmt ::= "match" term_expression "do"
                match_case+
-               ( "otherwise" algo_statement_list "end" ";"
-               | "exhaustive" [ justification ] ";" )
+               [ "otherwise" algo_statement_list "end" ";" ]
                "end" ";" ;
 match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
 
@@ -2143,7 +2142,7 @@ continue_stmt ::= "continue" ";" ;
 `BreakStatement`, and `ContinueStatement` preserve the control-flow source
 shape. Branch-local `AlgorithmStatementList` parsing and malformed statement
 tail recovery stop at the surrounding control-flow boundary (`else`, `case`,
-`otherwise`, `exhaustive`, or `end`) so missing semicolon / inner `end`
+`otherwise`, or `end`) so missing semicolon / inner `end`
 recovery can return to the owning construct instead of swallowing the next
 branch.
 
@@ -2364,7 +2363,6 @@ kind, public API, or diagnostic vocabulary changes.
 Produce syntax candidates for checker/RESOLVE33; parser enforces terminating-only labels and thesis positions in reflected/computation inputs, plus call/citation forms, while expected types, identity and reference meaning remain consumers' duties.
 Lexer/frontend/syntax vocabulary extends here; optional terminating labels and replay/call inputs need source-ordered nodes and recovery.
 Tests cover nested expr roles, Binder weakest/right association/whole qua, formula patterns/RHS, explicit mixed call/options, replay and terminating labels; reject malformed expr/Binder heads, non-call arguments, non-boolean replay and partial labels, with recovery controls.
-The protected exhaustive pass fixture blocks retirement until its test intent is authorized; additive syntax does not close that conflict.
 
 ## General Constructor Actual Boundary
 

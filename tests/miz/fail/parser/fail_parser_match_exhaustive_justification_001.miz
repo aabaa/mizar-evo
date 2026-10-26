@@ -1,0 +1,10 @@
+definition
+  algorithm retired(t) -> set
+  do
+    match t do
+      case captured do return t; end;
+      exhaustive by Exhaustive;
+    end;
+    return t;
+  end;
+end;

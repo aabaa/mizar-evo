@@ -13,7 +13,6 @@ Classification: source_drift/test_gap for Binder syntax, source identities, cert
 MBP-01 has a bounded set/grouped/body-root syntax increment; remaining host/pattern preparation stays open. MBP-03 can inventory pinned library inputs and MBP-08 can prepare descriptors independently; their acceptance/emission still waits for authentic producers.
 Before implementing a row, freeze its source forms, real producer/consumer route and stage-specific tests under the named existing task; these are slices, not replacement owners or new public APIs.
 MBP-02 is the explicit Resolver prerequisite missing from AST-TYPE's generic declaration dependency; algorithm synonym/citation task RESOLVE33 does not supply Binder scope records.
-Retain AST-PARSE's protected legacy exhaustive fixture blocker; additive Binder work neither requires nor authorizes its retirement.
 
 | Slice | Owner / existing task | Required predecessor or external input | Deliverable / exit and test mapping |
 |---|---|---|---|

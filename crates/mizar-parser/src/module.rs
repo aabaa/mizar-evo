@@ -6485,26 +6485,37 @@ impl Parser {
             recovery_nodes.push(missing);
         }
 
-        if self.is_reserved_word_at(cursor, "otherwise")
-            || self.is_reserved_word_at(cursor, "exhaustive")
-        {
+        if self.is_reserved_word_at(cursor, "otherwise") {
             let ending = self.parse_match_ending_at(cursor);
             cursor = ending.next_position;
             children.push(ending.id);
             recovery_nodes.extend(ending.recovery_nodes);
-        } else {
+        } else if !self.is_algorithm_statement_list_boundary_for_at(
+            cursor,
+            AlgorithmStatementListBoundary::NestedBlock,
+        ) && !self.is_algorithm_statement_start_at(cursor)
+        {
             self.diagnose_malformed_formula_expression(
                 cursor,
-                "expected `otherwise` or `exhaustive` match ending",
+                "unexpected token after match cases",
             );
-            let missing = self.add_missing_statement(cursor);
-            let ending = self.events.emit(SyntaxEvent::Node {
-                kind: SurfaceNodeKind::MatchEnding,
-                range: self.zero_range_at(cursor),
-                children: vec![missing],
-            });
-            children.push(ending);
-            recovery_nodes.push(missing);
+            let tail_start = cursor;
+            while !self.is_algorithm_statement_list_boundary_for_at(
+                cursor,
+                AlgorithmStatementListBoundary::NestedBlock,
+            ) && !self.is_semicolon_at(cursor)
+                && !self.is_algorithm_statement_start_at(cursor)
+            {
+                cursor += 1;
+            }
+            if let Some(recovery) = self.emit_malformed_tail_recovery(tail_start, cursor) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
         }
 
         cursor = self.finish_algorithm_block_end_semicolon(
@@ -6571,41 +6582,19 @@ impl Parser {
 
     fn parse_match_ending_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
-        let mut recovery_nodes = Vec::new();
-        let mut cursor = position + 1;
-
-        if self.is_reserved_word_at(position, "otherwise") {
-            let statements = self.parse_algorithm_statement_list_with_boundary_at(
-                cursor,
-                AlgorithmStatementListBoundary::NestedBlock,
-            );
-            cursor = statements.next_position;
-            children.push(statements.id);
-            recovery_nodes.extend(statements.recovery_nodes);
-            cursor = self.finish_algorithm_block_end_semicolon(
-                position,
-                cursor,
-                &mut children,
-                &mut recovery_nodes,
-            );
-        } else if let Some(justification) =
-            self.parse_definition_content_general_justification_at(cursor, true)
-        {
-            cursor = justification.next_position;
-            children.push(justification.id);
-            recovery_nodes.extend(justification.recovery_nodes);
-            if self.is_semicolon_at(cursor) {
-                children.push(self.token_node_ids[cursor]);
-                cursor += 1;
-            } else {
-                self.diagnose_missing_semicolon(cursor);
-            }
-        } else if self.is_semicolon_at(cursor) {
-            children.push(self.token_node_ids[cursor]);
-            cursor += 1;
-        } else {
-            self.diagnose_missing_semicolon(cursor);
-        }
+        let statements = self.parse_algorithm_statement_list_with_boundary_at(
+            position + 1,
+            AlgorithmStatementListBoundary::NestedBlock,
+        );
+        let mut cursor = statements.next_position;
+        children.push(statements.id);
+        let mut recovery_nodes = statements.recovery_nodes;
+        cursor = self.finish_algorithm_block_end_semicolon(
+            position,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
 
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::MatchEnding,
@@ -15045,7 +15034,6 @@ impl Parser {
             AlgorithmStatementListBoundary::MatchCase => {
                 self.is_reserved_word_at(position, "case")
                     || self.is_reserved_word_at(position, "otherwise")
-                    || self.is_reserved_word_at(position, "exhaustive")
             }
         }
     }
@@ -15054,7 +15042,6 @@ impl Parser {
         self.is_reserved_word_at(position, "else")
             || self.is_reserved_word_at(position, "case")
             || self.is_reserved_word_at(position, "otherwise")
-            || self.is_reserved_word_at(position, "exhaustive")
     }
 
     fn is_algorithm_loop_task34_clause_at(&self, position: usize) -> bool {

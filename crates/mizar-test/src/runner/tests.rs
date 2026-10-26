@@ -26332,7 +26332,7 @@ fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
     }
 }
@@ -26565,7 +26565,7 @@ fn expr_type_recovery_cache_storage_and_source_provenance() {
         let key = output.cache_keys.ast.as_ref().unwrap();
         assert_eq!(
             key.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
     }
 }
@@ -26931,7 +26931,7 @@ fn binder_roots_recovery_cache_storage_and_source_provenance() {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
     }
     let checked = super::formula_statement::step5c8_test_frontend("set f = x |-> y |-> ;");
@@ -27039,7 +27039,7 @@ fn binder_host_roots_preserve_list_arguments_algorithm_routes_and_recovery() {
         if id == "pass_parser_binder_term_lists_001" {
             let frontend = task257c4c1_frontend_output(&text, 120);
             let current = frontend.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v12");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v13");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v10");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27091,7 +27091,7 @@ fn binder_container_values_preserve_fields_generators_and_missing_body_boundarie
             }
             let output = task257c4c1_frontend_output(&text, 121);
             let current = output.cache_keys.ast.as_ref().unwrap();
-            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v12");
+            assert_eq!(current.parser_version.version.as_ref(), "mizar-parser/surface-ast-v13");
             let mut retained = current.clone();
             retained.parser_version = mizar_frontend::parsing::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v11");
             assert_ne!(current.stable_hash(), retained.stable_hash());
@@ -27127,4 +27127,155 @@ fn binder_container_values_preserve_fields_generators_and_missing_body_boundarie
             }
         }
     }
+}
+
+#[test]
+fn exhaustive_retirement_preserves_match_closers_and_identifier_uses() {
+    use mizar_syntax::SurfaceNodeKind as K;
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    for (id, diagnostics) in [
+        ("pass_parser_exhaustive_identifier_001", 0),
+        ("fail_parser_match_exhaustive_001", 1),
+        ("fail_parser_match_exhaustive_justification_001", 1),
+    ] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let checked = super::formula_statement::step5c8_test_frontend(&text);
+        assert_eq!(checked.diagnostics.len(), diagnostics, "{id}: {:?}", checked.diagnostics);
+        let ast = checked.ast.unwrap();
+        assert_eq!(ast.node_views().filter(|v| v.kind() == &K::MatchStatement).count(), 1);
+        assert!(ast.node_views().all(|v| v.kind() != &K::MatchEnding));
+        if diagnostics == 0 {
+            assert!(ast.node_views().all(|v| !v.is_recovered()));
+            let words = ast.token_views().filter(|v| v.as_token().unwrap().text.as_ref() == "exhaustive").collect::<Vec<_>>();
+            assert_eq!(words.len(), text.matches("exhaustive").count());
+            assert!(words.iter().all(|v| v.as_token().unwrap().kind == SurfaceTokenKind::Identifier));
+            let start = text.find("case captured").unwrap();
+            let assignment = start + text[start..].find("exhaustive := seed;").unwrap();
+            assert!(ast.node_views().any(|v| v.kind() == &K::AssignmentStatement && v.range().start == assignment));
+        } else {
+            let start = text.find("exhaustive").unwrap();
+            let semicolon = start + text[start..].find(';').unwrap();
+            let diagnostic = &checked.diagnostics[0];
+            assert_eq!(diagnostic.code, DiagnosticCode::Syntax("malformed_formula_expression".into()));
+            assert_eq!(diagnostic.location, DiagnosticLocation::SourceRange(range(ast.source_id, start, start + 10)));
+            assert!(diagnostic.secondary.is_empty());
+            let skipped = ast.node_views().filter(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken)).collect::<Vec<_>>();
+            assert_eq!(skipped.len(), 1);
+            assert_eq!(skipped[0].range(), range(ast.source_id, start, semicolon));
+            assert!(ast.trivia().skipped_token_ranges().iter().any(|v| v.range == skipped[0].range()));
+            let retained = skipped[0].children().iter().map(|child| ast.node_view(*child).unwrap().as_token().unwrap().text.as_ref()).collect::<String>();
+            assert_eq!(retained, text[start..semicolon].chars().filter(|c| !c.is_whitespace()).collect::<String>());
+            let matched = ast.node_views().find(|v| v.kind() == &K::MatchStatement).unwrap();
+            let children = matched.children();
+            assert_eq!(ast.node_view(children[children.len()-2]).unwrap().as_token().unwrap().text.as_ref(), "end");
+            assert_eq!(ast.node_view(*children.last().unwrap()).unwrap().as_token().unwrap().text.as_ref(), ";");
+            let closer = text.find("end;\n    return t;").unwrap();
+            assert_eq!(matched.range().end, closer + 4);
+            let next_return = text.rfind("return t;").unwrap();
+            assert!(ast.node_views().any(|v| v.kind() == &K::ReturnStatement && v.range().start == next_return && !v.is_recovered()));
+        }
+    }
+    let case = plan.cases.iter().find(|c| c.id.0 == "fail_parser_match_exhaustive_001").unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let head = &original[..original.find("      exhaustive;").unwrap()];
+    for (source, successor) in [
+        (original.replace("exhaustive;", "another_tail;"), "another_tail"),
+        (format!("{head}    return t;\n  end;\nend;\n"), "return t;"),
+        (format!("{head}theorem Survivor: thesis;\n"), "theorem Survivor"),
+        (head.to_owned(), ""),
+    ] {
+        let checked = super::formula_statement::step5c8_test_frontend(&source);
+        let ast = checked.ast.unwrap();
+        assert!(ast.node_views().all(|v| v.kind() != &K::MatchEnding));
+        let syntax = checked.diagnostics.iter().filter_map(|d| match &d.code {
+            DiagnosticCode::Syntax(code) => Some((code.as_ref(), d)),
+            _ => None,
+        }).collect::<Vec<_>>();
+        if successor == "another_tail" {
+            let start = source.find(successor).unwrap();
+            assert_eq!(syntax.len(), 1, "{:?}", checked.diagnostics);
+            assert_eq!(syntax[0].0, "malformed_formula_expression");
+            assert_eq!(syntax[0].1.location, DiagnosticLocation::SourceRange(range(ast.source_id, start, start + successor.len())));
+        } else {
+            let boundary = if successor.is_empty() { source.trim_end().len() } else { source.rfind(successor).unwrap() };
+            let opener = source.find("match t do").unwrap();
+            assert!(syntax.iter().any(|(code, diagnostic)| *code == "missing_end"
+                && matches!(diagnostic.location, DiagnosticLocation::SourceRange(r) if r.start == boundary)
+                && diagnostic.secondary.iter().any(|anchor| matches!(anchor, mizar_session::SourceAnchor::Range(r) if r.start == opener))),
+                "missing match-owned boundary diagnostic: {:?}", checked.diagnostics);
+            // The prepass may also report outer blocks left unmatched by the same input.
+            let item_errors = syntax.iter().filter(|(code,_)| *code == "malformed_formula_expression").collect::<Vec<_>>();
+            assert_eq!(item_errors.len(), usize::from(successor == "theorem Survivor"));
+            for (_, diagnostic) in item_errors {
+                assert_eq!(diagnostic.message.as_ref(), "top-level items are not algorithm statements");
+                assert_eq!(diagnostic.location, DiagnosticLocation::SourceRange(range(ast.source_id, boundary, boundary + 7)));
+            }
+            assert!(syntax.iter().all(|(code,_)| matches!(*code, "missing_end" | "missing_semicolon")
+                || (successor == "theorem Survivor" && *code == "malformed_formula_expression")), "{:?}", checked.diagnostics);
+            if successor == "return t;" {
+                assert!(ast.node_views().any(|v| v.kind() == &K::ReturnStatement && v.range().start == boundary));
+            } else if successor == "theorem Survivor" {
+                let matched = ast.node_views().find(|v| v.kind() == &K::MatchStatement).unwrap();
+                assert!(matched.range().end <= boundary);
+                let item = ast.node_views().find(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken) && v.range().start == boundary).unwrap();
+                assert_eq!(item.range().end, source.trim_end().len() - 1);
+                assert_eq!(item.children().iter().map(|id| ast.node_view(*id).unwrap().as_token().unwrap().text.as_ref()).collect::<String>(), "theoremSurvivor:thesis");
+            }
+        }
+    }
+
+    for opener in ["(", "[", "{"] {
+        let unclosed = original.replace("exhaustive;", &format!("another_tail {opener};"));
+        let checked = super::formula_statement::step5c8_test_frontend(&unclosed);
+        let ast = checked.ast.unwrap();
+        let next_return = unclosed.rfind("return t;").unwrap();
+        assert!(ast.node_views().any(|v| v.kind() == &K::ReturnStatement && v.range().start == next_return),
+            "an unclosed delimiter in invalid post-case material must not consume the successor");
+        let start = unclosed.find("another_tail").unwrap();
+        let semicolon = start + unclosed[start..].find(';').unwrap();
+        assert!(ast.node_views().any(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken)
+            && v.range() == range(ast.source_id, start, semicolon)));
+    }
+
+    for (source, boundary_kind) in [
+        (original.replace("exhaustive;", "another_tail ("), "end"),
+        (format!("{head}    another_tail (\n    return t;\n  end;\nend;\n"), "statement"),
+        (format!("{head}    another_tail (\ntheorem Survivor: thesis;\n"), "item"),
+        (format!("{head}    another_tail ("), "eof"),
+    ] {
+        let checked = super::formula_statement::step5c8_test_frontend(&source);
+        let ast = checked.ast.unwrap();
+        let start = source.find("another_tail").unwrap();
+        let tail_end = start + "another_tail (".len();
+        assert!(ast.node_views().any(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken)
+            && v.range() == range(ast.source_id, start, tail_end)));
+        let boundary = match boundary_kind {
+            "end" => source.find("end;\n    return t;").unwrap(),
+            "statement" => source.rfind("return t;").unwrap(),
+            "item" => source.find("theorem Survivor").unwrap(),
+            _ => source.trim_end().len(),
+        };
+        let matched = ast.node_views().find(|v| v.kind() == &K::MatchStatement).unwrap();
+        assert!(ast.node_views().all(|v| v.kind() != &K::MatchEnding));
+        assert!(checked.diagnostics.iter().any(|d| d.message.as_ref() == "unexpected token after match cases"
+            && d.location == DiagnosticLocation::SourceRange(range(ast.source_id, start, start + "another_tail".len()))));
+        if boundary_kind == "end" {
+            assert_eq!(matched.range().end, boundary + 4);
+        } else {
+            let opener = source.find("match t do").unwrap();
+            assert!(matched.range().end <= boundary);
+            assert!(checked.diagnostics.iter().any(|d| matches!(&d.code, DiagnosticCode::Syntax(code) if code.as_ref() == "missing_end")
+                && matches!(d.location, DiagnosticLocation::SourceRange(r) if r.start == boundary)
+                && d.secondary.iter().any(|a| matches!(a, mizar_session::SourceAnchor::Range(r) if r.start == opener))));
+        }
+        if matches!(boundary_kind, "end" | "statement") {
+            let successor = source.rfind("return t;").unwrap();
+            assert!(ast.node_views().any(|v| v.kind() == &K::ReturnStatement && v.range().start == successor));
+        } else if boundary_kind == "item" {
+            assert!(ast.node_views().any(|v| v.as_recovery() == Some(SyntaxRecoveryKind::SkippedToken) && v.range().start == boundary));
+        }
+    }
+
 }

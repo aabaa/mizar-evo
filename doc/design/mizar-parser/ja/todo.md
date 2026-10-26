@@ -1131,4 +1131,4 @@ cargo test -p mizar-test
     evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
     implementation task は closed。
 
-- [~] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs and legacy retirement open.
+- [~] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs open; lexical/match retirement implemented.

@@ -467,7 +467,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 165 | `ForCollectionStatement` | task-33 algorithm `for x in S [processed V] do ... end;` statement |
 | 166 | `MatchStatement` | task-33 algorithm `match ... do ... end;` statement |
 | 167 | `MatchCase` | task-33 `case pattern do ... end;` branch inside algorithm `match` |
-| 168 | `MatchEnding` | task-33 `otherwise ... end;` or `exhaustive [justification];` match ending |
+| 168 | `MatchEnding` | explicit `otherwise ... end;` match ending; omitted otherwise has no node
 | 169 | `BreakStatement` | task-33 algorithm `break;` statement |
 | 170 | `ContinueStatement` | task-33 algorithm `continue;` statement |
 | 171 | `AlgorithmTerminationClause` | task-34 `terminating` algorithm modifier |
@@ -625,9 +625,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::WhileStatement` | none | `SyntaxKind::WhileStatement` | parser task-33 algorithm while loop, extended by task 34 to own leading `LoopInvariantClause` and `LoopDecreasingClause` children between `do` and the body list |
 | `SurfaceNodeKind::ForRangeStatement` | none | `SyntaxKind::ForRangeStatement` | parser task-33 algorithm range loop, extended by task 34 to own leading `LoopInvariantClause` children between `do` and the body list; `decreasing` is still rejected for `for` loops |
 | `SurfaceNodeKind::ForCollectionStatement` | none | `SyntaxKind::ForCollectionStatement` | parser task-33 algorithm collection loop, extended by task 34 to own leading `LoopInvariantClause` children between `do` and the body list; `decreasing` is still rejected for `for` loops |
-| `SurfaceNodeKind::MatchStatement` | none | `SyntaxKind::MatchStatement` | parser task-33 algorithm structural match; owns `match`, scrutinee `TermExpression`, `do`, one or more `MatchCase` nodes or missing-statement recovery, a `MatchEnding`, and final `end;` / recovery |
+| `SurfaceNodeKind::MatchStatement` | none | `SyntaxKind::MatchStatement` | algorithm structural match; owns `match`, scrutinee `TermExpression`, `do`, one or more `MatchCase` nodes or missing-statement recovery, optional explicit `MatchEnding`, and final `end;` / recovery
 | `SurfaceNodeKind::MatchCase` | none | `SyntaxKind::MatchCase` | parser task-33 `case term_pattern do ... end;` branch; owns the pattern as `TermExpression`, branch statement list, and branch `end;` / recovery |
-| `SurfaceNodeKind::MatchEnding` | none | `SyntaxKind::MatchEnding` | parser task-33 match ending; owns either `otherwise` plus a statement list and `end;`, or `exhaustive` plus optional syntax-level justification and semicolon |
+| `SurfaceNodeKind::MatchEnding` | none | `SyntaxKind::MatchEnding` | explicit `otherwise` plus a statement list and `end;`; no legacy clause or synthesized omitted branch
 | `SurfaceNodeKind::BreakStatement` | none | `SyntaxKind::BreakStatement` | parser task-33 `break;` jump statement; loop-context validity is semantic and not encoded here |
 | `SurfaceNodeKind::ContinueStatement` | none | `SyntaxKind::ContinueStatement` | parser task-33 `continue;` jump statement; loop-context and termination obligations are semantic and not encoded here |
 | `SurfaceNodeKind::AlgorithmTerminationClause` | none | `SyntaxKind::AlgorithmTerminationClause` | parser task-34 `terminating` modifier before `algorithm`; termination proof obligations are semantic and not encoded here |

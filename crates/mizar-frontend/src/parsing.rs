@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v12";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v13";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -793,7 +793,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
     }
 
@@ -845,7 +845,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
         assert_ne!(
             seam.cache_key_version().version.as_ref(),
@@ -1683,7 +1683,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
@@ -1732,7 +1732,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
@@ -1785,11 +1785,81 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v12"
+            "mizar-parser/surface-ast-v13"
         );
         assert_eq!(
             retained.parser_version.version.as_ref(),
             "mizar-parser/surface-ast-v9"
+        );
+        assert_eq!(current.token_stream_hash, retained.token_stream_hash);
+        assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
+        assert_ne!(current.stable_hash(), retained.stable_hash());
+    }
+    #[test]
+    fn real_parser_seam_optional_otherwise_same_tokens_invalidate_v12_cache() {
+        let source_id = source_id(39);
+        let mut offset = 0;
+        let tokens = token_stream(
+            source_id,
+            [
+                (TokenKind::ReservedWord, "definition"),
+                (TokenKind::ReservedWord, "algorithm"),
+                (TokenKind::Identifier, "a"),
+                (TokenKind::ReservedSymbol, "("),
+                (TokenKind::ReservedSymbol, ")"),
+                (TokenKind::ReservedWord, "do"),
+                (TokenKind::ReservedWord, "match"),
+                (TokenKind::Identifier, "x"),
+                (TokenKind::ReservedWord, "do"),
+                (TokenKind::ReservedWord, "case"),
+                (TokenKind::Identifier, "p"),
+                (TokenKind::ReservedWord, "do"),
+                (TokenKind::ReservedWord, "return"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::ReservedWord, "end"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::ReservedWord, "end"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::ReservedWord, "end"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::ReservedWord, "end"),
+                (TokenKind::ReservedSymbol, ";"),
+            ]
+            .into_iter()
+            .map(|(kind, text)| {
+                let start = offset;
+                offset += text.len() + 1;
+                token(source_id, kind, text, start, start + text.len())
+            })
+            .collect(),
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+        let token_hash = Hash::from_bytes([13; Hash::BYTE_LEN]);
+        let current = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            seam.cache_key_version(),
+            &inputs,
+        );
+        let retained = crate::cache_key::SurfaceAstCacheKey::new(
+            token_hash,
+            super::ParserCacheKeyVersion::new("mizar-parser/surface-ast-v12"),
+            &inputs,
+        );
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let ast = output.ast.unwrap();
+        assert!(
+            ast.node_views()
+                .all(|v| v.kind() != &mizar_syntax::SurfaceNodeKind::MatchEnding)
+        );
+        assert_eq!(
+            current.parser_version.version.as_ref(),
+            "mizar-parser/surface-ast-v13"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);

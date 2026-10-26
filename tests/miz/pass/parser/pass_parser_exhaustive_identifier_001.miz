@@ -1,0 +1,18 @@
+definition
+  algorithm parameter_name(exhaustive) -> set
+  do return exhaustive; end;
+  algorithm local_name(seed) -> set
+  do
+    var exhaustive := seed;
+    exhaustive := seed;
+    match exhaustive do
+      case captured do
+        exhaustive := seed;
+      end;
+      case exhaustive do
+        return exhaustive;
+      end;
+    end;
+    return exhaustive;
+  end;
+end;

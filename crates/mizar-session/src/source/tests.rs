@@ -1491,3 +1491,13 @@ impl Drop for PackageFixture {
         let _ = fs::remove_dir_all(&self.base);
     }
 }
+
+#[test]
+fn exhaustive_identifier_is_accepted_in_source_namespace_components() {
+    for source_path in ["src/exhaustive.miz", "src/groups/exhaustive/basic.miz"] {
+        let package = PackageFixture::new();
+        package.write(source_path, "");
+        let normalized = normalize_source_path(package.root(), Path::new(source_path));
+        assert!(normalized.is_ok(), "{source_path}: {normalized:?}");
+    }
+}

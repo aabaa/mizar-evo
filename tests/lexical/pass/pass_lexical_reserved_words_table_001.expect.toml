@@ -252,7 +252,7 @@ span_start = 308
 span_end = 310
 
 [[tokens]]
-kind = "reserved_word"
+kind = "identifier"
 lexeme = "exhaustive"
 span_start = 311
 span_end = 321

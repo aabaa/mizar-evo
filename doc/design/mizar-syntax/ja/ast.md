@@ -453,7 +453,7 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 165 | `ForCollectionStatement` | task-33 の algorithm `for x in S [processed V] do ... end;` statement |
 | 166 | `MatchStatement` | task-33 の algorithm `match ... do ... end;` statement |
 | 167 | `MatchCase` | task-33 の algorithm `case pattern do ... end;` branch |
-| 168 | `MatchEnding` | task-33 の `otherwise ... end;` または `exhaustive [justification];` match ending |
+| 168 | `MatchEnding` | 明示的な `otherwise ... end;` match ending。otherwise省略ではnodeを生成しない
 | 169 | `BreakStatement` | task-33 の algorithm `break;` statement |
 | 170 | `ContinueStatement` | task-33 の algorithm `continue;` statement |
 | 171 | `AlgorithmTerminationClause` | task-34 の `terminating` algorithm modifier |
@@ -611,9 +611,9 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::WhileStatement` | なし | `SyntaxKind::WhileStatement` | parser task 33 の algorithm while loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` / `LoopDecreasingClause` child も所有する |
 | `SurfaceNodeKind::ForRangeStatement` | なし | `SyntaxKind::ForRangeStatement` | parser task 33 の algorithm range loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
 | `SurfaceNodeKind::ForCollectionStatement` | なし | `SyntaxKind::ForCollectionStatement` | parser task 33 の algorithm collection loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
-| `SurfaceNodeKind::MatchStatement` | なし | `SyntaxKind::MatchStatement` | parser task 33 の algorithm structural match。`match`、scrutinee `TermExpression`、`do`、1 個以上の `MatchCase` または missing-statement recovery、`MatchEnding`、final `end;` / recovery を所有する |
+| `SurfaceNodeKind::MatchStatement` | なし | `SyntaxKind::MatchStatement` | algorithm structural match。`match`、scrutinee `TermExpression`、`do`、1個以上の`MatchCase`またはmissing-statement recovery、任意の明示的`MatchEnding`、final `end;` / recoveryを所有する
 | `SurfaceNodeKind::MatchCase` | なし | `SyntaxKind::MatchCase` | parser task 33 の `case term_pattern do ... end;` branch。pattern `TermExpression`、branch statement list、branch `end;` / recovery を所有する |
-| `SurfaceNodeKind::MatchEnding` | なし | `SyntaxKind::MatchEnding` | parser task 33 の match ending。`otherwise` + statement list + `end;`、または `exhaustive` + 任意の syntax-level justification + semicolon を所有する |
+| `SurfaceNodeKind::MatchEnding` | なし | `SyntaxKind::MatchEnding` | 明示的な`otherwise`、statement list、`end;`を所有する。旧clauseと省略branchの合成はない
 | `SurfaceNodeKind::BreakStatement` | なし | `SyntaxKind::BreakStatement` | parser task 33 の `break;` jump statement。loop context validity は意味論で扱い、ここには符号化しない |
 | `SurfaceNodeKind::ContinueStatement` | なし | `SyntaxKind::ContinueStatement` | parser task 33 の `continue;` jump statement。loop context と termination obligation は意味論で扱い、ここには符号化しない |
 | `SurfaceNodeKind::AlgorithmTerminationClause` | なし | `SyntaxKind::AlgorithmTerminationClause` | parser task 34 の `algorithm` 前 `terminating` modifier。termination proof obligation は意味論で扱い、ここには符号化しない |
