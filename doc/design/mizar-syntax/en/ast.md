@@ -520,7 +520,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::VisibleItem` | none | `SyntaxKind::VisibleItem` | parser task-7 top-level visibility wrapper; owns parsed `Annotation` prefix nodes when present, one `VisibilityMarker`, and the current target item node |
 | `SurfaceNodeKind::ReserveItem` | none | `SyntaxKind::ReserveItem` | parser task-8 concrete top-level `reserve_decl` host item; owns the `reserve` token, one `ReserveSegment`, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::ReserveSegment` | none | `SyntaxKind::ReserveSegment` | parser task-8 `identifier_list "for" type_expression`; owns identifier tokens separated by comma tokens, the `for` token, and a `TypeExpression` or missing-type recovery |
-| `SurfaceNodeKind::TypeExpression` | none | `SyntaxKind::TypeExpression` | parser task-8 `attribute_chain type_head`; owns an optional non-empty `AttributeChain` followed by a generic `TypeHead` |
+| `SurfaceNodeKind::TypeExpression` | none | `SyntaxKind::TypeExpression` | parser task-8 `attribute_chain type_head`; owns an optional non-empty `AttributeChain` followed by a generic `TypeHead` or missing-head recovery |
 | `SurfaceNodeKind::AttributeChain` | none | `SyntaxKind::AttributeChain` | parser task-8 non-empty source-ordered sequence of `AttributeRef` nodes |
 | `SurfaceNodeKind::AttributeRef` | none | `SyntaxKind::AttributeRef` | parser task-8 optional `non` token, optional `ParameterPrefix`, syntactic `QualifiedSymbol`, and optional parenthesized term arguments |
 | `SurfaceNodeKind::ParameterPrefix` | none | `SyntaxKind::ParameterPrefix` | parser task-8 attribute parameter prefix, either `parameter "-"` or `"(" parameter_list ")" "-"` |
@@ -772,8 +772,8 @@ Type-expression nodes added for `mizar-parser` task 8 are syntax-only shapes.
 it represents top-level `reserve_decl` only and does not implement local
 statement semantics. `ReserveSegment` preserves identifier-list commas, the
 `for` token, and the following type expression. `TypeExpression` preserves the
-surface split into an optional non-empty `AttributeChain` and a required
-`TypeHead`. Because mode/radix/attribute classification depends on the active
+surface split into an optional non-empty `AttributeChain` and a generic
+`TypeHead`, or zero-width `MissingTypeExpression` after consumed attributes without a head. Because mode/radix/attribute classification depends on the active
 environment, `TypeHead` is deliberately generic: it owns either builtin
 `object`/`set` or a `QualifiedSymbol` and optional `TypeArguments`; it does not
 record whether the head is a mode, structure, or radix type. The parser chooses

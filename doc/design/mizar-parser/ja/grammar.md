@@ -284,7 +284,7 @@ block-local `reserve` shaped statement を syntax error として分類する。
 `ReserveSegment` は source order の identifier / comma token、`for` token、
 `TypeExpression` を所有する。
 
-parser は、任意の non-empty `AttributeChain` と必須の generic `TypeHead` を持つ
+well-formed type は、任意の non-empty `AttributeChain` と必須の generic `TypeHead` を持つ
 `TypeExpression` を送出する。syntactic head が radix type、structure、mode のいずれか、
 また dotted attribute spelling が structure qualifier を含むか namespace segment だけを
 含むかは判断しない。コンストラクタ名形の参照の列を複数の方法で分割できる場合、
@@ -304,6 +304,10 @@ parenthesized identifier / numeral list と `-` である。template-parameter s
 `n-dimensional` のような 1 個の user-symbol spelling を split しない。この点は
 parameter-scope facts と active attribute suffix を扱える後続 parser / lexer task まで
 source drift として分類する。
+
+### Attribute argument consumption
+
+root typeと通常qua targetではpure preflightがnodeを送出せず、commit後は実際の消費cursorで各attribute planを再計算し、rightmost-head条件とfield-stop policyを保つ。各attributeを一度だけparseし、argumentと`AttributeChain` rangeは実際の消費範囲を使う。消費済みtokenを後続attribute/headへ再利用しない。本prerequisiteはunary argument listに限り、複数headのBinderも一個のargumentである。古いlist endpointで分断される複数argument (`tagged(~ Atom, x) R`)と複雑な属性型のbracket/template dispatchはdeferred。attribute消費後にheadがなければ、`AttributeChain`と未消費boundary上のzero-width `MissingTypeExpression`を順に持つ`TypeExpression`を返し、既存`MalformedTypeExpression`を出す。attribute送出後に`None`を返さない。閉じたattributeにはunmatched-close recoveryを付けず、close欠落時は既存attribute recoveryを保つ。diagnostic primary spanはboundary token全体、missing nodeはその開始位置を使う。
 
 `TypeArguments` は `of` / `over` argument list を保持する。task 9 以降、これらの list は
 一時的な term-entry placeholder ではなく primary term の `TermExpression` child を所有する。

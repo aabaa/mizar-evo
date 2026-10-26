@@ -8959,14 +8959,12 @@ impl Parser {
             return None;
         }
 
-        let mut attribute_plans = Vec::new();
         let mut cursor = position;
         while let Some(plan) = self.plan_attribute_ref_at(cursor) {
             if !self.can_form_type_expression_at(plan.next_position) {
                 break;
             }
             cursor = plan.next_position;
-            attribute_plans.push(plan);
         }
 
         if !self.can_start_type_head_at(cursor) {
@@ -8975,13 +8973,18 @@ impl Parser {
 
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
-        if !attribute_plans.is_empty() {
-            let mut attribute_children = Vec::new();
-            for plan in attribute_plans {
-                let attribute = self.parse_attribute_ref_from_plan(plan);
-                attribute_children.push(attribute.id);
-                recovery_nodes.extend(attribute.recovery_nodes);
+        let mut attribute_children = Vec::new();
+        cursor = position;
+        while let Some(plan) = self.plan_attribute_ref_at(cursor) {
+            if !self.can_form_type_expression_at(plan.next_position) {
+                break;
             }
+            let attribute = self.parse_attribute_ref_from_plan(plan);
+            cursor = attribute.next_position;
+            attribute_children.push(attribute.id);
+            recovery_nodes.extend(attribute.recovery_nodes);
+        }
+        if !attribute_children.is_empty() {
             let attribute_range = self.covering_token_range(position, cursor);
             let attribute_chain = self.events.emit(SyntaxEvent::Node {
                 kind: SurfaceNodeKind::AttributeChain,
@@ -8991,10 +8994,16 @@ impl Parser {
             children.push(attribute_chain);
         }
 
-        let head = self.parse_type_head_at(cursor, policy, stop_before_field_list)?;
-        cursor = head.next_position;
-        children.push(head.id);
-        recovery_nodes.extend(head.recovery_nodes);
+        if let Some(head) = self.parse_type_head_at(cursor, policy, stop_before_field_list) {
+            cursor = head.next_position;
+            children.push(head.id);
+            recovery_nodes.extend(head.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected type head after attributes");
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
 
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::TypeExpression,

@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_parser_attribute_argument_ownership_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.attribute_argument_ownership"
+source = "fail_parser_attribute_argument_ownership_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.attribute_argument_ownership.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression", "malformed_type_expression",
+  "malformed_term_expression", "malformed_type_expression",
+  "malformed_term_expression", "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_term_expression", "malformed_type_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.03.attribute_argument_ownership.parser"]
+notes = "Source-first recovery intent: two operator/Binder arguments missing their closing parenthesis retain R as head (one malformed term each); three arguments ending at semicolon retain unmatched-close recovery and a zero-width MissingTypeExpression (one malformed term and one malformed type each). A balanced attribute lacking its head gets one malformed type without unmatched-close recovery. Legacy missing-close and malformed-balanced arguments retain their established one-/two-diagnostic behavior. Each following statement survives. No new diagnostic vocabulary or semantic acceptance credit."

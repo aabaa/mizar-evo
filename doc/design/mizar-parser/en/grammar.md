@@ -299,7 +299,7 @@ the `reserve` token, one `ReserveSegment`, and the terminating semicolon.
 `ReserveSegment` owns source-ordered identifiers and comma tokens, the `for`
 token, and a `TypeExpression`.
 
-The parser emits `TypeExpression` with an optional non-empty `AttributeChain`
+A well-formed `TypeExpression` has an optional non-empty `AttributeChain`
 and a required generic `TypeHead`. It does not decide whether a syntactic head
 is a radix type, structure, or mode, and it does not decide whether a dotted
 attribute spelling contains a structure qualifier or only namespace segments.
@@ -321,6 +321,10 @@ list plus `-`. It does not validate template-parameter scope and does not split
 one whole user-symbol spelling such as `n-dimensional`; that is classified as
 source drift until a later parser/lexer task can consume parameter-scope facts
 and active attribute suffixes.
+
+### Attribute argument consumption
+
+At root types and ordinary qua targets, pure preflight emits no nodes; after commitment, recompute each attribute plan at the actual consuming cursor, retaining the rightmost-head condition and field-stop policy. Parse each attribute once; its arguments and the `AttributeChain` range use actual consumption, so consumed tokens cannot become later attributes or the head. This prerequisite covers unary argument lists, including a Binder with multiple heads as one argument. Multiple arguments split by a stale list endpoint (`tagged(~ Atom, x) R`) and complex attributed-type bracket/template dispatch remain deferred. If consumed attributes leave no head, return a `TypeExpression` containing `AttributeChain` then zero-width `MissingTypeExpression` at the unconsumed boundary, with existing `MalformedTypeExpression`; never return `None` after emitting attributes. A completed attribute close has no unmatched-close recovery; an absent close retains existing attribute recovery. Diagnostic primary spans cover the boundary token, while missing nodes use its start.
 
 `TypeArguments` preserves `of` / `over` argument lists. After task 9 those
 lists own `TermExpression` children for primary terms rather than temporary

@@ -506,7 +506,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::VisibleItem` | なし | `SyntaxKind::VisibleItem` | parser task 7 の top-level visibility wrapper。parsed `Annotation` prefix node があればそれら、1 個の `VisibilityMarker`、現在の target item node を所有する |
 | `SurfaceNodeKind::ReserveItem` | なし | `SyntaxKind::ReserveItem` | parser task 8 の concrete top-level `reserve_decl` host item。`reserve` token、1 個の `ReserveSegment`、任意の malformed-tail recovery、任意の semicolon token を所有する |
 | `SurfaceNodeKind::ReserveSegment` | なし | `SyntaxKind::ReserveSegment` | parser task 8 の `identifier_list "for" type_expression`。comma token で区切られた identifier token、`for` token、`TypeExpression` または missing-type recovery を所有する |
-| `SurfaceNodeKind::TypeExpression` | なし | `SyntaxKind::TypeExpression` | parser task 8 の `attribute_chain type_head`。任意の non-empty `AttributeChain` と generic `TypeHead` を所有する |
+| `SurfaceNodeKind::TypeExpression` | なし | `SyntaxKind::TypeExpression` | parser task 8 の `attribute_chain type_head`。任意の non-empty `AttributeChain` と generic `TypeHead` またはmissing-head recoveryを所有する |
 | `SurfaceNodeKind::AttributeChain` | なし | `SyntaxKind::AttributeChain` | parser task 8 の non-empty `AttributeRef` node 列 |
 | `SurfaceNodeKind::AttributeRef` | なし | `SyntaxKind::AttributeRef` | parser task 8 の任意の `non` token、任意の `ParameterPrefix`、syntactic `QualifiedSymbol`、任意の parenthesized term argument |
 | `SurfaceNodeKind::ParameterPrefix` | なし | `SyntaxKind::ParameterPrefix` | parser task 8 の attribute parameter prefix。`parameter "-"` または `"(" parameter_list ")" "-"` |
@@ -752,7 +752,7 @@ symbol identity、theorem validity、notation validity を判断しない。`Sur
 これは top-level `reserve_decl` だけを表し、local statement-level `reserve` semantics は
 実装しない。`ReserveSegment` は identifier-list の comma、`for` token、後続の
 type expression を保持する。`TypeExpression` は、任意の non-empty `AttributeChain` と
-必須の `TypeHead` という surface split を保持する。mode / radix / attribute の分類は
+`TypeHead`（attribute消費後にheadが欠ける場合はzero-width `MissingTypeExpression`に置き換える）というsurface splitを保持する。mode / radix / attribute の分類は
 active environment に依存するため、`TypeHead` は意図的に generic である。builtin
 `object` / `set` または `QualifiedSymbol` と任意の `TypeArguments` を所有するが、それが
 mode、structure、radix type のいずれかは記録しない。parser は semantic lookup ではなく、

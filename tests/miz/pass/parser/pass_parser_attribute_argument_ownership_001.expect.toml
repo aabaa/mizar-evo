@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_attribute_argument_ownership_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.attribute_argument_ownership"
+source = "pass_parser_attribute_argument_ownership_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.attribute_argument_ownership.parser"]
+notes = "Source-local parameterized attribute, mode, functors and fixity declarations require complete ordinary term argument ownership in root reserve types and ordinary qua targets. Preserve prefix/infix/postfix, selector, unary/multiple Binder, chained attribute suffix and nested-call subtrees, distinct final type heads and the following statement. Parser-only; complex bracket/template type dispatch and all semantic consumers remain deferred."
