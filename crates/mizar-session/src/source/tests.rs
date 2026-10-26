@@ -1132,6 +1132,10 @@ fn source_path_normalization_rejects_reserved_namespace_components() {
         ("src/groups/theorem/basic.miz", "theorem"),
         ("src/step.miz", "step"),
         ("src/groups/step/basic.miz", "step"),
+        ("src/expr.miz", "expr"),
+        ("src/groups/expr/basic.miz", "expr"),
+        ("src/fail.miz", "fail"),
+        ("src/groups/fail/basic.miz", "fail"),
     ] {
         let package = PackageFixture::new();
         package.write(source_path, "");

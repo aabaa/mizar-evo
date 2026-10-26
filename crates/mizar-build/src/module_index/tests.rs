@@ -478,6 +478,10 @@ fn invalid_module_components_are_rejected() {
             source_file("src/bad-name.miz", "bad-name.miz"),
             source_file("src/foo.bar.miz", "foo.bar.miz"),
             source_file("src/foo/bar.miz", "foo/bar.miz"),
+            source_file("src/expr.miz", "expr.miz"),
+            source_file("src/expr/basic.miz", "expr/basic.miz"),
+            source_file("src/fail.miz", "fail.miz"),
+            source_file("src/fail/basic.miz", "fail/basic.miz"),
         ],
     )]);
 
@@ -501,6 +505,21 @@ fn invalid_module_components_are_rejected() {
         }),
         "dotted filenames are invalid before they can collide with directory modules"
     );
+    for (path, component) in [
+        ("src/expr.miz", "expr"),
+        ("src/expr/basic.miz", "expr"),
+        ("src/fail.miz", "fail"),
+        ("src/fail/basic.miz", "fail"),
+    ] {
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| {
+                diagnostic.kind == ModuleIndexDiagnosticKind::InvalidModuleComponent
+                    && diagnostic.normalized_path.as_deref() == Some(path)
+                    && diagnostic.value.as_deref() == Some(component)
+            }),
+            "{path}"
+        );
+    }
 }
 
 #[test]
