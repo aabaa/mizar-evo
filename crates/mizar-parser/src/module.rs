@@ -5964,7 +5964,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, ":=") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_term_expression_at(cursor) {
+            if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -6038,7 +6038,7 @@ impl Parser {
             self.diagnose_malformed_term_expression(cursor, "expected `:=` in assignment");
         }
 
-        if let Some(term) = self.parse_term_expression_at(cursor) {
+        if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             cursor = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -6157,7 +6157,7 @@ impl Parser {
 
         if !self.is_semicolon_at(cursor)
             && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
-            && let Some(term) = self.parse_term_expression_at(cursor)
+            && let Some(term) = self.parse_binder_term_expression_at(cursor)
         {
             cursor = term.next_position;
             children.push(term.id);
@@ -6724,7 +6724,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) -> usize {
-        if let Some(term) = self.parse_term_expression_at(cursor) {
+        if let Some(term) = self.parse_binder_term_expression_at(cursor) {
             let next_position = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -6796,7 +6796,7 @@ impl Parser {
             }
 
             if expecting_term {
-                if let Some(term) = self.parse_term_expression_at(cursor) {
+                if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                     let made_progress = term.next_position > cursor;
                     cursor = term.next_position;
                     children.push(term.id);
@@ -11986,7 +11986,7 @@ impl Parser {
                 continue;
             }
 
-            if let Some(term) = self.parse_term_expression_at(cursor) {
+            if let Some(term) = self.parse_binder_term_expression_at(cursor) {
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
                 cursor = term.next_position;

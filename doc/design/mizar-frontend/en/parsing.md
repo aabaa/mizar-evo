@@ -385,4 +385,4 @@ adaptation APIs remain unchanged; the frontend only forwards the parser result
 and invalidates the previous AST-cache namespace.
 
 ## Bare algorithm failure cache namespace
-Bare fail required namespacev8 and expr types v9. Binder-root parsing requires mizar-parser/surface-ast-v10 for identical caller-supplied ReservedSymbol |-> tokens/parser inputs rejected by v9. Token namespace/key shapes/storage stay unchanged; coordinator token keys already fingerprint the full reserved vocabulary and therefore also invalidate genuine frontend AST keys.
+Bare fail required namespacev8, expr types v9 and Binder set/grouped/body roots v10. Binder list/algorithm-root parsing requires mizar-parser/surface-ast-v11 for identical tokens/parser inputs rejected by v10. Token namespace/key shapes/storage stay unchanged; coordinator token keys already fingerprint the full reserved vocabulary.

@@ -1,0 +1,13 @@
+definition
+  algorithm bad_hosts(t) -> set
+  do
+    const missing := x |-> ;
+    var after_const := t;
+    match t do
+      case (x,x) |-> x do return t; end;
+      otherwise return t; end;
+    end;
+    return x |-> ;
+  end;
+end;
+set after_algorithm = sentinel;

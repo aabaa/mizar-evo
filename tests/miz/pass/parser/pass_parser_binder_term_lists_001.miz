@@ -1,0 +1,14 @@
+deffunc F(a be set, b being set) -> set equals a;
+defpred P(a be set, b being set) means a = b;
+definition
+  let X, p be set;
+  attr Tagged: X is p-tagged means X = X;
+end;
+reserve a for tagged(x |-> x) set;
+set call = F(x |-> x, (x,y) |-> y);
+set split = F(x,y |-> y);
+set nested = F(F(x |-> x,a), z |-> z);
+set selected = r.project(x |-> x, (x,y) |-> y);
+set bracketed = [x |-> x, (x,y) |-> y];
+set enumerated = {x |-> x, (x,y) |-> y};
+theorem Predicate: P(x |-> x, (x,y) |-> y);

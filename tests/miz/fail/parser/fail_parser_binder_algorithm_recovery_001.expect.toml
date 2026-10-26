@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_binder_algorithm_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.binder_host_roots"
+source = "fail_parser_binder_algorithm_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_term_expression"
+stable_detail_key = "parser.binder_host_roots.algorithm"
+diagnostic_codes = ["malformed_term_expression", "malformed_term_expression", "malformed_term_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.13.binder_host_roots.parser"]
+notes = "Missing initializer/return bodies and a repeated-head case each use one existing term diagnostic; preserve algorithm statements, case body and following top-level statement."

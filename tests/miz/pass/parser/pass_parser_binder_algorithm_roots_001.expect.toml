@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_algorithm_roots_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_host_roots"
+source = "pass_parser_binder_algorithm_roots_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_host_roots.parser"]
+notes = "Bare Binder terms in ordinary/ghost initialization and assignment, return, measures, loop inputs and match term patterns. No typing, capture, formation, termination, reflection or runtime acceptance."

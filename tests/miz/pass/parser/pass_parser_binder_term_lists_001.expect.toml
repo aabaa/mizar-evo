@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_term_lists_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_host_roots"
+source = "pass_parser_binder_term_lists_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_host_roots.parser"]
+notes = "Full term-list roots preserve comma separators and Binder arity in attribute, inline predicate, callable, selector, bracket and set-enumeration inputs; F(x,y |-> y) has two arguments. Syntax only."

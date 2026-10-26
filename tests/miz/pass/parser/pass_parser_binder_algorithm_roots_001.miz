@@ -1,0 +1,21 @@
+definition
+  algorithm binder_hosts(t) -> set
+  decreasing x |-> x, (x,y) |-> y
+  do
+    var value := x |-> x;
+    const c := (x,y) |-> x;
+    ghost var memo := x |-> x;
+    ghost const kept := x |-> x;
+    value := (x,y) |-> y;
+    ghost memo := x |-> x;
+    while thesis do decreasing x |-> x; break; end;
+    for i = x |-> x to y |-> y step z |-> z do break; end;
+    for item in x |-> x do break; end;
+    match x |-> x do
+      case x |-> body do return x |-> body; end;
+      case (x,y) |-> body do return (x,y) |-> body; end;
+      otherwise return t; end;
+    end;
+    return x |-> y |-> x;
+  end;
+end;

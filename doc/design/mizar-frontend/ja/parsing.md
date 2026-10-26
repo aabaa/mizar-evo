@@ -262,4 +262,4 @@ adaptation API は不変であり、frontend は parser result をそのまま�
 namespace を無効化する。
 
 ## Bare algorithm failure cache namespace
-bare failはnamespacev8、expr型はv9を必要とした。Binder root構文はv9が拒否した同一ReservedSymbol |-> token/parser inputsに対してmizar-parser/surface-ast-v10を必要とする。token namespace/key shape/storageは不変。coordinator token keyは予約語全体のfingerprintを含むため実Frontend AST keyも失効する。
+bare failはnamespacev8、expr型はv9、Binderのset右辺/括弧内/再帰本文はv10を必要とした。Binder項リスト/algorithm rootはv10が拒否した同一tokens/parser inputsに対してmizar-parser/surface-ast-v11を必要とする。token namespace/key shape/storageは不変で、coordinator token keyは予約語全体のfingerprintを含む。

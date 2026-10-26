@@ -1,0 +1,5 @@
+deffunc F(a be set, b being set) -> set equals a;
+set missing = F(x |-> , after);
+set missing_close = F(a, (x,y) |-> );
+set repeated = F((x,x) |-> x, after);
+set after_list = sentinel;
