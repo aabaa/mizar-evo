@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_binder_container_values_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.binder_container_values"
+source = "pass_parser_binder_container_values_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.13.binder_container_values.parser"]
+notes = "Bare unary/multiple Binder values in local structure defaults, named constructor fields, functional updates and comprehension mappers preserve source order and boundaries. No typing, field compatibility, sethood, formation or runtime credit."

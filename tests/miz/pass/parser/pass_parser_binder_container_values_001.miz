@@ -1,0 +1,11 @@
+definition
+  struct BinderBox where
+    field value -> set := x |-> x;
+    field other -> set := sentinel;
+  end;
+end;
+set constructed = BinderBox(value: (x,y) |-> x, other: sentinel);
+set updated = constructed with (value := x |-> y |-> x, other := sentinel);
+set mapped = {x |-> y where y is set};
+set grouped_mapper = {(x,y) |-> y where z is set};
+set after_containers = sentinel;

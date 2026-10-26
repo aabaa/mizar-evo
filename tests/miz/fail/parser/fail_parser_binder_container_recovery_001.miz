@@ -1,0 +1,12 @@
+definition
+  struct BrokenBinderBox where
+    field value -> set := x |-> ;
+    field other -> set := sentinel;
+  end;
+end;
+set missing_argument = BrokenBinderBox(value: x |-> , other: sentinel);
+set missing_close = BrokenBinderBox(value: x |-> );
+set missing_update = missing_close with (value := x |-> );
+set missing_mapper = {x |-> where y is set};
+set repeated = BrokenBinderBox(value: (x,x) |-> x);
+set after_containers = sentinel;
