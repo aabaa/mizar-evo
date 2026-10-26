@@ -307,7 +307,7 @@ source drift として分類する。
 
 ### Attribute argument consumption
 
-root typeと通常qua targetではpure preflightがnodeを送出せず、commit後は実際の消費cursorで各attribute planを再計算し、rightmost-head条件とfield-stop policyを保つ。各attributeを一度だけparseし、argumentと`AttributeChain` rangeは実際の消費範囲を使う。消費済みtokenを後続attribute/headへ再利用しない。本prerequisiteはunary argument listに限り、複数headのBinderも一個のargumentである。古いlist endpointで分断される複数argument (`tagged(~ Atom, x) R`)と複雑な属性型のbracket/template dispatchはdeferred。attribute消費後にheadがなければ、`AttributeChain`と未消費boundary上のzero-width `MissingTypeExpression`を順に持つ`TypeExpression`を返し、既存`MalformedTypeExpression`を出す。attribute送出後に`None`を返さない。閉じたattributeにはunmatched-close recoveryを付けず、close欠落時は既存attribute recoveryを保つ。diagnostic primary spanはboundary token全体、missing nodeはその開始位置を使う。
+root typeと通常qua targetではpure preflightがnodeを送出せず、commit後は実際の消費cursorで各attribute planを再計算し、rightmost-head条件とfield-stop policyを保つ。各attributeを一度だけparseし、argumentと`AttributeChain` rangeは実際の消費範囲を使う。消費済みtokenを後続attribute/headへ再利用しない。各argumentは完全な通常のtermであり、複数headのBinderも一個のargumentである。argumentが古いrecovery endpointに達してもcommaはlistに属し、消費済みargumentの後で次のargumentを待つ状態だけがendpointを越えて継続できる。comma以外ではrecovery barrierを保つ。複雑な属性型のbracket/template dispatchはdeferred。attribute消費後にheadがなければ、`AttributeChain`と未消費boundary上のzero-width `MissingTypeExpression`を順に持つ`TypeExpression`を返し、既存`MalformedTypeExpression`を出す。attribute送出後に`None`を返さない。閉じたattributeにはunmatched-close recoveryを付けず、close欠落時は既存attribute recoveryを保つ。diagnostic primary spanはboundary token全体、missing nodeはその開始位置を使う。
 
 `TypeArguments` は `of` / `over` argument list を保持する。task 9 以降、これらの list は
 一時的な term-entry placeholder ではなく primary term の `TermExpression` child を所有する。

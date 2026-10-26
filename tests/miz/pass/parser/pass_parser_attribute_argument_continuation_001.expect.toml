@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_attribute_argument_continuation_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.attribute_argument_continuation"
+source = "pass_parser_attribute_argument_continuation_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.attribute_argument_continuation.parser"]
+notes = "Source-local two-/three-parameter attributes and completed functor definitions preceding explicit fixity declarations exercise comma continuation after full ordinary arguments cross a stale planned endpoint. Eleven cases cover complex first/middle/last, infix, postfix, selector, unary/multiple Binder, later nested set/bracket and constructor arguments, plus ordinary qua with a nested-call argument and a non empty suffix. Preserve ordered arguments, actual closing delimiters, the final R head and the following statement. Parser-only; no semantic arity, typing or acceptance credit."

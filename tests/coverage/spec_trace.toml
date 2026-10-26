@@ -553,6 +553,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.attribute_argument_continuation.parser"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Comma-separated attribute term arguments resume past stale recovery endpoints while retaining head/delimiter ownership and legacy recovery; complex bracket dispatch and semantic interpretation remain deferred."
+tests = [
+  "tests/miz/pass/parser/pass_parser_attribute_argument_continuation_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_attribute_argument_continuation_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.attribute_argument_ownership.parser"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"

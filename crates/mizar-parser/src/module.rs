@@ -12029,7 +12029,8 @@ impl Parser {
         }
 
         while cursor < self.request.tokens.len()
-            && stop_position.is_none_or(|stop| cursor < stop)
+            && (stop_position.is_none_or(|stop| cursor < stop)
+                || (expecting_argument && saw_argument))
             && !self.is_reserved_symbol_at(cursor, close_symbol)
             && !self.is_term_argument_list_boundary_at(cursor)
         {
@@ -12062,7 +12063,9 @@ impl Parser {
                 saw_argument = true;
             }
 
-            if stop_position.is_some_and(|stop| cursor >= stop) {
+            if stop_position.is_some_and(|stop| cursor >= stop)
+                && !self.is_reserved_symbol_at(cursor, ",")
+            {
                 break;
             }
             if self.is_reserved_symbol_at(cursor, ",") {
