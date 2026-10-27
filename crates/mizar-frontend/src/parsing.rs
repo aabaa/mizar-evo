@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v27";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v28";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -793,7 +793,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
     }
 
@@ -845,7 +845,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
         assert_ne!(
             seam.cache_key_version().version.as_ref(),
@@ -1683,7 +1683,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
@@ -1732,7 +1732,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);
@@ -1785,7 +1785,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
         assert_eq!(
             retained.parser_version.version.as_ref(),
@@ -1859,7 +1859,7 @@ mod tests {
         );
         assert_eq!(
             current.parser_version.version.as_ref(),
-            "mizar-parser/surface-ast-v27"
+            "mizar-parser/surface-ast-v28"
         );
         assert_eq!(current.token_stream_hash, retained.token_stream_hash);
         assert_eq!(current.parser_inputs_hash, retained.parser_inputs_hash);

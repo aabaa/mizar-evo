@@ -329,7 +329,7 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 41 | `QuaExpression` | task-11 の `term "qua" type_expression` qualification surface |
 | 42 | `PrefixExpression` | task-12 prefix operator expression surface |
 | 43 | `PostfixExpression` | task-12 postfix operator expression surface |
-| 44 | `FormulaExpression` | task 13/14 の formula child 1 個用 wrapper |
+| 44 | `FormulaExpression` | contextual pattern operand を含む task-13/14 の単一 operand formula wrapper |
 | 45 | `BuiltinPredicateApplication` | task-13 の `term_expression builtin_pred term_expression` atomic formula |
 | 46 | `IsAssertion` | task-13 の generic `term_expression "is" ...` assertion |
 | 47 | `AttributeTestChain` | task-13 の attribute-only `is_assertion_body` chain |
@@ -870,6 +870,9 @@ role token、label、colon、`FormulaExpression`、任意の justification ま�
 および enclosing semicolon を所有させる。task 31 は template predicate argument を
 represented theorem / lemma payload の concrete syntax にするため、predicate head が
 template argument を所有するという理由だけで placeholder に残す必要はない。
+
+match pattern の `PrefixFormula` / `BinaryFormula` / group 内の `FormulaExpression` operand は境界付きbare identifierに既存の `TermExpression(TermReference)`を使える。
+capture identity/typeは増やさず、quantified subtreeはopaqueのまま。
 
 `BuiltinPredicateApplication` は left `TermExpression`、built-in predicate token（`in`、
 `=`、`<>`）、right `TermExpression` または `MissingTerm` recovery を所有する。

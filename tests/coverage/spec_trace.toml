@@ -4395,6 +4395,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.match_boolean_operands.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.2.5 and 20.5.3 contextual bare Identifier Boolean pattern operands only; capture identity/type/R2 and match semantics remain deferred"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_match_boolean_operands_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_match_boolean_operands_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.20.match_explicit_formulas.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
 section = "20.2.5 and Appendix A.20 explicit existing formula-pattern parser syntax only; bare Boolean captures, identities/types and match semantics remain deferred"

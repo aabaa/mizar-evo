@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parser_match_boolean_operands_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.match_boolean_operands"
+source = "fail_parser_match_boolean_operands_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_match_boolean_operands"
+stable_detail_key = "parser.match_boolean_operands.recovery"
+diagnostic_codes = ["malformed_formula_expression", "malformed_formula_expression", "malformed_formula_expression"]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.match_boolean_operands.parser"]
+notes = "Only missing conjunction/not operands and an unmatched formula close are malformed. Existing formula diagnostics anchor at branch do while the complete body, valid following case, otherwise, return and final set survive. Deferred valid mathematical, RHS or quantified capture syntax is not classified as invalid."

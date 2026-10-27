@@ -154,10 +154,11 @@ FrontendDependencyFootprint
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
 `TOKEN_STREAM_CACHE_KEY_VERSION` は
-`mizar-frontend/token-stream-cache-key/v3` である。同じ source と imported environment
+`mizar-frontend/token-stream-cache-key/v4` である。同じ source と imported environment
 でも、local notation alias が alias item 完了後に alternative spelling を登録できるため、
 異なる token stream が生成され得る。parser seam version は AST cache key の所有であり、
-ここでは変更しない。
+ここでは変更しない。v4 は同一 input の scope-skeleton diagnostics も無効化する。隣接する
+Word token `do not` は conservative な `Do` block を開かず、key shape/storage は不変である。
 
 `SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、operator fixity entries を含む。各 fixity entry hash は spelling、fixity kind、precedence、その metadata が有効になる source byte offset、fixity kind が infix の場合の associativity を含む。parser-facing operator metadata は選択済み overload root ではなく spelling 単位の notation に付くため、symbol id は hash しない。
 

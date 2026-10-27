@@ -708,6 +708,9 @@ separator や tail は `MalformedFormulaExpression` を報告する。quantified
 list が完全に欠落している場合、task 14 は missing variable segment を合成しない。その入力は
 later binder-recovery task が専用 missing-binder vocabulary を追加するまで concrete formula
 host の外に残す。
+match pattern のみ、predicate priority後の境界付きbare identifierは既存の
+`TermExpression(TermReference)`を使い、zero-argument predicateを作らない。contextは再帰operandとformula全体を囲むbalanced groupへ及ぶ。
+通常formula、grouped atomic comparison、algorithm RHS、quantified interior、`p` / `(p)` / `P(x)` / Binder rootは従来経路を保つ。commaと`do not` predicate tailを優先し、recovery cursor/successorは従来通り。
 
 Task 14 の test は connective precedence と associativity、parenthesized formula
 grouping、非結合 `iff` rejection、repetition token preservation、`thesis` /
@@ -2025,7 +2028,7 @@ conservative な `Do` frame を開き、`match ... otherwise ... end; end;` を�
 block shape として扱う。definition-side やその他 non-algorithm の通常の `otherwise`
 clause は scope frame を開かない。
 
-Match pattern は direct `TermExpression` または明示的に選択された `FormulaExpression` を保持する。parser coverage は明示 formula の subset であり、bare Boolean capture operand は deferred とする。parameterized dispatcher は既存の opaque / ambiguous / Binder route を保ち、pattern probe は `do` で停止する。consumed-range thesis guard は RHS site のみで適用し、missing-pattern / formula recovery は変更しない。 recovery-block の分類は identifier に続く量化 binder/tail prefix を fallback の先読み前に認識し、実際の identifier-in/= loop head の優先順位と他の fallback 動作を維持する。
+Match pattern は direct `TermExpression` または明示的に選択された `FormulaExpression` を保持する。formula operand の構文は [Task 14](#task-14-connectives-and-quantifiers) に従い、曖昧な bare predicate/template head は deferred とする。parameterized dispatcher は既存の opaque / ambiguous / Binder route を保ち、pattern probe は `do` で停止する。consumed-range thesis guard は RHS site のみで適用し、missing-pattern / formula recovery は変更しない。 recovery-block の分類は identifier に続く量化 binder/tail prefix を fallback の先読み前に認識し、実際の identifier-in/= loop head の優先順位と他の fallback 動作を維持する。
 
 ### Task 34: algorithm verification clause
 

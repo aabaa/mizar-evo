@@ -180,10 +180,12 @@ that reuses source-spanned tokens must compose it with source-version or
 source-map identity when exact source ranges matter.
 
 `TOKEN_STREAM_CACHE_KEY_VERSION` is
-`mizar-frontend/token-stream-cache-key/v3`. The namespace separates token
+`mizar-frontend/token-stream-cache-key/v4`. The namespace separates token
 streams that differ because local notation aliases can register an alternative
 spelling after the alias item completes; the parser seam version remains owned
-by the AST cache key.
+by the AST cache key. The v4 namespace also invalidates same-input scope-skeleton
+diagnostics for adjacent Word tokens `do not` that no longer open a conservative
+`Do` block, without changing key shape/storage.
 
 `SurfaceAstCacheKey` combines the token-stream content hash, parser seam cache
 version, parser-input hash, and edition. Parser seams expose their version

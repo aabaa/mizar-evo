@@ -1,0 +1,23 @@
+definition
+  algorithm broken_match_boolean_operands(x,y) -> object do
+    match x do
+      case p & do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+    match x do
+      case not do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+    match x do
+      case (p & q do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+  end;
+end;
+set after_match_boolean_failure = sentinel;

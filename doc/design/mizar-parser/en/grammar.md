@@ -756,6 +756,12 @@ variable segment when the quantified variable list is entirely absent; that
 input stays outside the concrete formula host until a later binder-recovery
 task adds dedicated missing-binder vocabulary.
 
+In match patterns only, after predicate priority, a bounded bare identifier may use existing `TermExpression(TermReference)` without creating a zero-argument predicate.
+Context reaches recursive operands and balanced whole-formula groups. Ordinary
+formulas, grouped atomic comparisons, algorithm RHS and quantified interiors keep
+existing routes; plain roots (`p`, `(p)`, `P(x)`, Binder) stay terms. Comma terminators
+and `do not` predicate tails retain priority; recovery cursors/successors stay unchanged.
+
 Task 14 tests must pin connective precedence and associativity, parenthesized
 formula grouping, non-associative `iff` rejection, repetition-token
 preservation, `thesis` / `contradiction`, universal and existential
@@ -2164,7 +2170,7 @@ matched block shape by opening a conservative `Do` frame for an algorithm-scope
 completed match `case` branch. Definition-side and other non-algorithm
 `otherwise` clauses do not open scope frames.
 
-Match patterns preserve a direct `TermExpression` or explicitly selected `FormulaExpression`; parser coverage is the explicit formula subset, with bare Boolean capture operands deferred. The parameterized dispatcher preserves existing opaque, ambiguous, and Binder routes and stops the pattern probe at `do`. Its consumed-range thesis guard applies only at RHS sites; missing-pattern and formula recovery stay unchanged. Recovery-block classification recognizes identifier-led quantifier binder/tail prefixes before fallback lookahead; actual identifier-in/= loop heads keep priority and other fallback behavior remains unchanged.
+Match patterns preserve a direct `TermExpression` or explicitly selected `FormulaExpression`; formula operand syntax follows [Task 14](#task-14-connectives-and-quantifiers), while ambiguous bare predicate/template heads remain deferred. The parameterized dispatcher preserves existing opaque, ambiguous, and Binder routes and stops the pattern probe at `do`. Its consumed-range thesis guard applies only at RHS sites; missing-pattern and formula recovery stay unchanged. Recovery-block classification recognizes identifier-led quantifier binder/tail prefixes before fallback lookahead; actual identifier-in/= loop heads keep priority and other fallback behavior remains unchanged.
 
 ### Task 34: Algorithm Verification Clauses
 

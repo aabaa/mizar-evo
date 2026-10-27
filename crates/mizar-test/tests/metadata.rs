@@ -6601,6 +6601,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_import_missing_semicolon_001",
             "fail_parser_inline_definitions_recovery_001",
             "fail_parser_justifications_recovery_001",
+            "fail_parser_match_boolean_operands_001",
             "fail_parser_match_exhaustive_001",
             "fail_parser_match_exhaustive_justification_001",
             "fail_parser_match_explicit_formulas_001",
@@ -6681,6 +6682,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_justifications_001",
             "pass_parser_local_dependent_mode_use_001",
             "pass_parser_local_notation_activation_001",
+            "pass_parser_match_boolean_operands_001",
             "pass_parser_match_explicit_formulas_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_mode_definitions_001",
@@ -7226,8 +7228,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 162);
-    assert_eq!(report.passed_count(), 162);
+    assert_eq!(report.results.len(), 164);
+    assert_eq!(report.passed_count(), 164);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10639,8 +10641,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 162"));
-    assert!(stdout.contains("passed: 162"));
+    assert!(stdout.contains("parse-only cases: 164"));
+    assert!(stdout.contains("passed: 164"));
     assert!(stdout.contains("failed: 0"));
 }
 

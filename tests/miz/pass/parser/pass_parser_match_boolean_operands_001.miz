@@ -1,0 +1,30 @@
+definition
+  let x,y be object;
+  pred LocalReadyDef: local_ready means x = x;
+  pred LocalPairDef: x,y local_pair means x = y;
+  algorithm match_boolean_operands(x,y) -> object do
+    match x do
+      case p & q do return x; end;
+      case not p do return x; end;
+      case (p) & q do return x; end;
+      case p & (q or not r) do return x; end;
+      case p & p do return x; end;
+      case p & x = y do return x; end;
+      case P(x) & q do return x; end;
+      case (x) = y do return x; end;
+      case ((x)) = y do return x; end;
+      case (x |-> x) = y do return x; end;
+      case x |-> x = y do return x; end;
+      case p do return x; end; case (p) do return x; end;
+      case P(x) do return x; end;
+      case x |-> x do return x; end; case (x,y) |-> x do return x; end;
+      case p & (for z being object holds z = x) do return x; end;
+      case not local_ready do return x; end;
+      case not (x,y local_pair) do return x; end;
+      case not (x,y do not local_pair) do return x; end;
+      otherwise return y; end;
+    end;
+    return x;
+  end;
+end;
+set after_match_boolean_operands = sentinel;

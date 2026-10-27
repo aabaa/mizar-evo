@@ -343,7 +343,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 41 | `QuaExpression` | task-11 `term "qua" type_expression` qualification surface |
 | 42 | `PrefixExpression` | task-12 prefix operator expression surface |
 | 43 | `PostfixExpression` | task-12 postfix operator expression surface |
-| 44 | `FormulaExpression` | task-13/14 formula wrapper for one formula child |
+| 44 | `FormulaExpression` | task-13/14 single-operand formula wrapper, including contextual pattern operands |
 | 45 | `BuiltinPredicateApplication` | task-13 `term_expression builtin_pred term_expression` atomic formula |
 | 46 | `IsAssertion` | task-13 generic `term_expression "is" ...` assertion |
 | 47 | `AttributeTestChain` | task-13 attribute-only `is_assertion_body` chain |
@@ -906,6 +906,9 @@ role token, label, colon, `FormulaExpression`, optional justification or
 arguments concrete syntax for represented theorem/lemma payloads, so those
 payloads no longer require a placeholder solely because the predicate head owns
 template arguments.
+
+Match-pattern `PrefixFormula` / `BinaryFormula` / grouped `FormulaExpression` operands may use existing
+`TermExpression(TermReference)` for bounded bare identifiers; no capture identity/type or quantified-subtree interpretation is added.
 
 `BuiltinPredicateApplication` owns a left `TermExpression`, the built-in
 predicate token (`in`, `=`, or `<>`), and a right `TermExpression` or

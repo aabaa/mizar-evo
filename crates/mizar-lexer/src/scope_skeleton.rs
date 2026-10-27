@@ -248,6 +248,11 @@ impl ScopeSkeletonBuilder {
                     }
                     "do" => {
                         self.advance();
+                        if self.peek().is_some_and(|next| {
+                            next.kind == ScopeSkeletonTokenKind::Word && next.lexeme == "not"
+                        }) {
+                            continue;
+                        }
                         if !self.attach_algorithm_header_do() {
                             self.open_frame(LexicalBlockKind::Do, token.span.start);
                         }

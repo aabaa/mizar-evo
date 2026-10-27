@@ -79,7 +79,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
   binder statement range のいずれも追加しません。
 - `for`, `ex`, `given` は、復元した文範囲にだけ束縛します。
 - `algorithm ... do ... end` は 1 つの algorithm lexical block です。header の `do` は別の `Do` frame を開きません。
-- アルゴリズムの `for ... do` の束縛子と、省略可能な `processed name` は、後続の `Do` ブロックに束縛します。それ以外の header ではない `do` token も、保守的な `Do` ブロックを開きます。
+- アルゴリズムの `for ... do` の束縛子と、省略可能な `processed name` は、後続の `Do` ブロックに束縛します。それ以外の header ではない `do` token は、隣接する `do not` predicate pair を除き、保守的な `Do` block を開きます。algorithm header の `do` は従来通り `Algorithm` frame に付きます。
 - open algorithm block 内では、`end` または `end;` の直後に現れる `otherwise` が conservative な match-branch heuristic として `Do` block を開きます。これにより branch-local `end;` と final match `end;` の両方が対応できます。definition 側の `otherwise` clause と non-algorithm の `end; otherwise` 形は block を開きません。
 
 スケルトンの事前スキャンは、生スキャンに句読点(punctuation)を事前分割させることを要求してはいけません。束縛リストと item tail の復元に必要な `,`, `;`、括弧、角括弧、波括弧、ブロックを閉じる句読点などを認識するために、`LexemeRun` の内部を調べてよいです。
@@ -90,7 +90,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 1. `RawTokenStream` を、スコープスケルトン専用のトークンに変換します。レイアウト(空白類)は無視します。`LexemeRun` は、識別子の形をした `Word`、カンマ、セミコロン、括弧、角括弧、波括弧、`Other` のランに分割します。それ以外の生トークンの種別は `Other` として扱います。
 2. バイト `0` から始まる合成のルートフレーム、空のブロックスタック、空の `pending_do_bindings` を初期化します。`pending_do_bindings` は、アルゴリズムの `for ... do` 形式の束縛子を後続の `do` ブロックに渡すための一時バッファです。
-3. トークンを左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `struct` は、ブロックを開く語として開いたフレームをプッシュします。`do` token は、pending loop binding がなく開いている algorithm body を始める header `do` でない限り `Do` frame を開きます。その header `do` は `Algorithm` frame に付着します。`inherit` は、statement semicolon または block `end` より前に `where` が現れる場合だけフレームをプッシュし、explicit inheritance block を表しつつ shorthand `inherit ...;` は statement 形の declaration として扱います。`case` は、その文の残りに `do` が含まれない場合だけ証明の分岐としてフレームを開きます。これにより、アルゴリズムの `case ... do` を証明の分岐と誤認しません。`otherwise` は completed algorithm match case（`end; otherwise`）の後に現れる場合だけ conservative な `Do` frame を開き、definition 側の conditional definiens では開きません。`end` はフレームを 1 つポップし、ブロック範囲と字句スコープフレームの両方を記録します。
+3. トークンを左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `struct` は、ブロックを開く語として開いたフレームをプッシュします。`do` token は次の Word token が `not`（predicate pair）なら `Do` frame を開きません。それ以外は、pending loop binding がなく開いている algorithm body を始める header `do` でない限り開きます。その header `do` は `Algorithm` frame に付着します。`inherit` は、statement semicolon または block `end` より前に `where` が現れる場合だけフレームをプッシュし、explicit inheritance block を表しつつ shorthand `inherit ...;` は statement 形の declaration として扱います。`case` は、その文の残りに `do` が含まれない場合だけ証明の分岐としてフレームを開きます。これにより、アルゴリズムの `case ... do` を証明の分岐と誤認しません。`otherwise` は completed algorithm match case（`end; otherwise`）の後に現れる場合だけ conservative な `Do` frame を開き、definition 側の conditional definiens では開きません。`end` はフレームを 1 つポップし、ブロック範囲と字句スコープフレームの両方を記録します。
 4. 束縛子の語は、形状ごとのパーサーに委譲します。`let x, y be ...` の
    ような単純な束縛子リストは、カンマ・セミコロン・停止語までの識別子の形をした
    名前を読みます。`set x = ...` は `name =` の形状を要求します。`take` では、

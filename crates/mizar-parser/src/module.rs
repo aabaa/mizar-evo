@@ -1322,7 +1322,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) -> usize {
-        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
             formula.next_position
@@ -2284,7 +2284,7 @@ impl Parser {
             cursor += 2;
         }
 
-        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             cursor = formula.next_position;
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
@@ -2845,7 +2845,7 @@ impl Parser {
             self.diagnose_malformed_formula_expression(cursor, "expected `:` after theorem label");
         }
 
-        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             cursor = formula.next_position;
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
@@ -4307,7 +4307,7 @@ impl Parser {
                 {
                     children.push(self.token_node_ids[cursor]);
                     cursor += 1;
-                    if let Some(formula) = self.parse_formula_expression_at(cursor) {
+                    if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
                         cursor = formula.next_position;
                         children.push(formula.id);
                         recovery_nodes.extend(formula.recovery_nodes);
@@ -6085,7 +6085,7 @@ impl Parser {
             cursor += 1;
         }
         let rhs = if formula {
-            self.parse_formula_expression_at(position)
+            self.parse_formula_expression_at(position, match_pattern)
         } else {
             self.parse_binder_term_expression_at(position, false)
         }?;
@@ -6360,7 +6360,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+        if let Some(condition) = self.parse_formula_expression_at(cursor, false) {
             cursor = condition.next_position;
             children.push(condition.id);
             recovery_nodes.extend(condition.recovery_nodes);
@@ -6432,7 +6432,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+        if let Some(condition) = self.parse_formula_expression_at(cursor, false) {
             cursor = condition.next_position;
             children.push(condition.id);
             recovery_nodes.extend(condition.recovery_nodes);
@@ -6898,7 +6898,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) -> usize {
-        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             let next_position = formula.next_position;
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
@@ -8502,7 +8502,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
 
-        let first_formula = if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        let first_formula = if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             cursor = formula.next_position;
             formula
         } else {
@@ -8537,7 +8537,7 @@ impl Parser {
             if self.is_reserved_word_at(cursor, "otherwise") {
                 children.push(self.token_node_ids[cursor]);
                 cursor += 1;
-                if let Some(formula) = self.parse_formula_expression_at(cursor) {
+                if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
                     cursor = formula.next_position;
                     children.push(formula.id);
                     recovery_nodes.extend(formula.recovery_nodes);
@@ -8678,7 +8678,7 @@ impl Parser {
             self.diagnose_malformed_formula_expression(cursor, "expected `if` in term case");
         }
 
-        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+        if let Some(condition) = self.parse_formula_expression_at(cursor, false) {
             cursor = condition.next_position;
             children.push(condition.id);
             recovery_nodes.extend(condition.recovery_nodes);
@@ -8701,7 +8701,7 @@ impl Parser {
 
     fn parse_formula_case_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut cursor = position;
-        let value = if let Some(formula) = self.parse_formula_expression_at(cursor) {
+        let value = if let Some(formula) = self.parse_formula_expression_at(cursor, false) {
             cursor = formula.next_position;
             formula
         } else {
@@ -8732,7 +8732,7 @@ impl Parser {
             self.diagnose_malformed_formula_expression(cursor, "expected `if` in formula case");
         }
 
-        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+        if let Some(condition) = self.parse_formula_expression_at(cursor, false) {
             cursor = condition.next_position;
             children.push(condition.id);
             recovery_nodes.extend(condition.recovery_nodes);
@@ -9365,11 +9365,17 @@ impl Parser {
         })
     }
 
-    fn parse_formula_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        if !self.can_start_formula_at(position) {
+    fn parse_formula_expression_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> Option<ParsedTypeNode> {
+        if !(self.can_start_formula_at(position)
+            || pattern_operands && self.is_identifier_at(position))
+        {
             return None;
         }
-        let formula = self.parse_formula_at(position)?;
+        let formula = self.parse_formula_at(position, pattern_operands)?;
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::FormulaExpression,
             range: self.covering_token_range(position, formula.next_position),
@@ -9382,22 +9388,27 @@ impl Parser {
         })
     }
 
-    fn parse_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_formula_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> Option<ParsedTypeNode> {
         if self.is_formula_expression_boundary_at(position) {
             return None;
         }
         if self.is_formula_quantifier_at(position) {
             return self.parse_quantified_formula_at(position);
         }
-        self.parse_formula_binary_at(position, 0)
+        self.parse_formula_binary_at(position, 0, pattern_operands)
     }
 
     fn parse_formula_binary_at(
         &mut self,
         position: usize,
         minimum_binding_power: u32,
+        pattern_operands: bool,
     ) -> Option<ParsedTypeNode> {
-        let mut left = self.parse_formula_prefix_or_primary_at(position)?;
+        let mut left = self.parse_formula_prefix_or_primary_at(position, pattern_operands)?;
         loop {
             let cursor = left.next_position;
             let Some(connective) = self.formula_connective_at(cursor) else {
@@ -9422,23 +9433,26 @@ impl Parser {
             let mut children = vec![left.id];
             children.extend(self.token_node_ids[cursor..operator_end].iter().copied());
             let mut recovery_nodes = left.recovery_nodes;
-            let (right_id, next_position) =
-                match self.parse_formula_right_operand_at(operator_end, connective) {
-                    Some(right) => {
-                        let next_position = right.next_position;
-                        recovery_nodes.extend(right.recovery_nodes);
-                        (right.id, next_position)
-                    }
-                    None => {
-                        self.diagnose_malformed_formula_expression(
-                            operator_end,
-                            "expected formula after connective",
-                        );
-                        let missing = self.add_missing_formula(operator_end);
-                        recovery_nodes.push(missing);
-                        (missing, operator_end)
-                    }
-                };
+            let (right_id, next_position) = match self.parse_formula_right_operand_at(
+                operator_end,
+                connective,
+                pattern_operands,
+            ) {
+                Some(right) => {
+                    let next_position = right.next_position;
+                    recovery_nodes.extend(right.recovery_nodes);
+                    (right.id, next_position)
+                }
+                None => {
+                    self.diagnose_malformed_formula_expression(
+                        operator_end,
+                        "expected formula after connective",
+                    );
+                    let missing = self.add_missing_formula(operator_end);
+                    recovery_nodes.push(missing);
+                    (missing, operator_end)
+                }
+            };
             children.push(right_id);
 
             let id = self.events.emit(SyntaxEvent::Node {
@@ -9462,28 +9476,38 @@ impl Parser {
         &mut self,
         position: usize,
         connective: FormulaConnectiveToken,
+        pattern_operands: bool,
     ) -> Option<ParsedTypeNode> {
         if self.is_formula_quantifier_at(position) {
             self.parse_quantified_formula_at(position)
         } else {
-            self.parse_formula_binary_at(position, connective.right_binding_power)
+            self.parse_formula_binary_at(position, connective.right_binding_power, pattern_operands)
         }
     }
 
-    fn parse_formula_prefix_or_primary_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_formula_prefix_or_primary_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> Option<ParsedTypeNode> {
         if self.is_reserved_word_at(position, "not") {
-            return Some(self.parse_prefix_formula_at(position));
+            return Some(self.parse_prefix_formula_at(position, pattern_operands));
         }
-        if let Some(parenthesized) = self.parse_parenthesized_formula_at(position) {
+        if let Some(parenthesized) = self.parse_parenthesized_formula_at(position, pattern_operands)
+        {
             return Some(parenthesized);
         }
         if let Some(constant) = self.parse_formula_constant_at(position) {
             return Some(constant);
         }
-        self.parse_atomic_formula_at(position)
+        self.parse_atomic_formula_at(position, pattern_operands)
     }
 
-    fn parse_prefix_formula_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_prefix_formula_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> ParsedTypeNode {
         let operand_position = position + 1;
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
@@ -9505,7 +9529,7 @@ impl Parser {
                 }
             }
         } else {
-            match self.parse_formula_prefix_or_primary_at(operand_position) {
+            match self.parse_formula_prefix_or_primary_at(operand_position, pattern_operands) {
                 Some(operand) => {
                     let cursor = operand.next_position;
                     recovery_nodes.extend(operand.recovery_nodes);
@@ -9536,12 +9560,47 @@ impl Parser {
         }
     }
 
-    fn parse_parenthesized_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_parenthesized_formula_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> Option<ParsedTypeNode> {
         if !self.is_reserved_symbol_at(position, "(") {
             return None;
         }
         let inner_position = position + 1;
-        let inner = self.parse_formula_expression_at(inner_position)?;
+        let mut inner_pattern_operands = pattern_operands;
+        if pattern_operands {
+            let mut depth = 1_usize;
+            let mut probe = inner_position;
+            while probe < self.request.tokens.len() {
+                if self.is_semicolon_at(probe)
+                    || self.is_algorithm_statement_list_boundary_at(probe)
+                    || self.is_algorithm_nested_control_boundary_at(probe)
+                    || (self.is_reserved_word_at(probe, "do")
+                        && self.predicate_negation_end_at(probe).is_none())
+                {
+                    break;
+                }
+                if self.is_reserved_symbol_at(probe, "(") {
+                    depth += 1;
+                } else if self.is_reserved_symbol_at(probe, ")") {
+                    depth -= 1;
+                    if depth == 0 {
+                        let after = probe + 1;
+                        inner_pattern_operands = !self.is_reserved_symbol_at(after, ",")
+                            && (self.is_formula_expression_boundary_at(after)
+                                || self.is_algorithm_statement_list_boundary_at(after)
+                                || self.is_algorithm_nested_control_boundary_at(after)
+                                || (self.is_reserved_word_at(after, "do")
+                                    && self.predicate_negation_end_at(after).is_none()));
+                        break;
+                    }
+                }
+                probe += 1;
+            }
+        }
+        let inner = self.parse_formula_expression_at(inner_position, inner_pattern_operands)?;
         let mut children = vec![self.token_node_ids[position], inner.id];
         let mut recovery_nodes = inner.recovery_nodes;
         let mut cursor = inner.next_position;
@@ -9729,7 +9788,7 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
     ) {
         if self.can_start_formula_at(*cursor)
-            && let Some(formula) = self.parse_formula_at(*cursor)
+            && let Some(formula) = self.parse_formula_at(*cursor, false)
         {
             *cursor = formula.next_position;
             children.push(formula.id);
@@ -9745,7 +9804,7 @@ impl Parser {
         message: &'static str,
     ) {
         if self.can_start_formula_at(*cursor)
-            && let Some(formula) = self.parse_formula_at(*cursor)
+            && let Some(formula) = self.parse_formula_at(*cursor, false)
         {
             *cursor = formula.next_position;
             children.push(formula.id);
@@ -9806,7 +9865,11 @@ impl Parser {
         })
     }
 
-    fn parse_atomic_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_atomic_formula_at(
+        &mut self,
+        position: usize,
+        pattern_operands: bool,
+    ) -> Option<ParsedTypeNode> {
         if self.should_try_head_first_predicate_at(position)
             && let Some(predicate) = self.parse_user_predicate_application_at(position)
         {
@@ -9814,6 +9877,19 @@ impl Parser {
         }
         if self.should_try_inline_predicate_at(position) {
             return self.parse_inline_predicate_application_at(position);
+        }
+        let after = position + 1;
+        if pattern_operands
+            && self.is_identifier_at(position)
+            && !self.is_reserved_symbol_at(after, ",")
+            && (self.is_formula_expression_boundary_at(after)
+                || self.is_algorithm_statement_list_boundary_at(after)
+                || self.is_algorithm_nested_control_boundary_at(after)
+                || (self.is_reserved_word_at(after, "do")
+                    && self.predicate_negation_end_at(after).is_none()))
+        {
+            let reference = self.parse_identifier_reference_term_at(position);
+            return Some(self.wrap_term_expression(position, reference));
         }
 
         let left = self.parse_binder_term_expression_at(position, false)?;
@@ -11902,7 +11978,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, ":") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(condition) = self.parse_formula_expression_at(cursor) {
+            if let Some(condition) = self.parse_formula_expression_at(cursor, false) {
                 cursor = condition.next_position;
                 children.push(condition.id);
                 recovery_nodes.extend(condition.recovery_nodes);
@@ -12504,7 +12580,7 @@ impl Parser {
                 .iter()
                 .copied(),
         );
-        let formula = self.parse_formula_expression_at(formula_start)?;
+        let formula = self.parse_formula_expression_at(formula_start, false)?;
         children.push(formula.id);
         recovery_nodes.extend(formula.recovery_nodes);
         let mut cursor = formula.next_position;

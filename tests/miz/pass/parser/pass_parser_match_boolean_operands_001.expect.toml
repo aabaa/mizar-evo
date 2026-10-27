@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_match_boolean_operands_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.match_boolean_operands"
+source = "pass_parser_match_boolean_operands_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.match_boolean_operands.parser"]
+notes = "Bare, repeated, negated and grouped Boolean match operands retain generic reference terms without invented predicate heads. Declared predicate heads, comma-separated postfix terms and do-not negation keep priority; atomic grouped/Binder terms, standalone term roots and opaque quantification retain their original interpretation. Syntax alone grants no capture typing, matching, reflection or semantic acceptance."
