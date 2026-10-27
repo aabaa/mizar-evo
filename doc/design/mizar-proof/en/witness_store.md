@@ -64,10 +64,22 @@ tuple is not enough. The artifact-owned `CommittedWitnessPublicationProof`
 input must bind the witness entry to the committed module artifact entry or
 equivalent committed `VerifiedArtifact` reference set, and must show that the
 manifest `proof_witnesses` array exactly covers the artifact
-`proof_witnesses` collection. Until that artifact-owned token exists, the
-source API keeps the proof token opaque with no public constructor; callers
-must not synthesize matching tuples. Calling `publish_ref` before that
-publication proof exists is an error.
+`proof_witnesses` collection. The token stays opaque; callers cannot synthesize
+matching tuples. The bounded source-theorem constructor below uses the existing
+opaque Artifact commit as origin evidence, rather than accepting public tuples.
+Calling `publish_ref` without committed publication evidence is an error.
+
+`CommittedWitnessPublicationProof::from_source_theorem_manifest_commit` takes an
+actual `ManifestCommit`, root, full module identity and coordinator-expected snapshot.
+Fresh all-flags manifest validation must match the commit hash and whole manifest;
+normal1.1 main validation and exact witness coverage precede concrete source-theorem
+candidate FILE hash/reference validation. Require a nonempty KernelVerified set.
+The expected snapshot is compared with staged provenance by unchanged `publish_ref`;
+it is not a commit snapshot receipt, current-root/source authentication or lease.
+The token retains past validated reachability: fresh construction rechecks files,
+while later mutation does not retroactively alter an existing token or certify reuse.
+Normal main-hash exclusions and identical copied roots remain valid; no exclusive filesystem origin is authenticated.
+Other payload profiles and DischargedBuiltin publication remain unsupported.
 
 `publish_ref` does not invent a new artifact reference after commit. It
 validates that the unpublished reference candidate emitted by `stage` is the
@@ -247,9 +259,9 @@ publish witnesses, upgrade non-trusted statuses, or create trusted
 | Gap | Classification | Handling |
 |---|---|---|
 | `WITNESS10-G001` | `external_dependency_gap` | `mizar-artifact` `ProofWitnessRef` version `2.0` currently accepts only `kernel_verified` formula/substitution evidence. `DischargedBuiltin` witness publication remains unsupported and must not be collapsed. |
-| `WITNESS10-G002` | `deferred` | Artifact manifest commit integration supplies the committed witness publication proof needed by `publish_ref`, including binding to the committed main artifact and exact coverage of `VerifiedArtifact.proof_witnesses`. This spec defines the token/validation contract; it does not write manifests. |
+| `WITNESS10-G002` | `deferred` | The bounded source-theorem candidate route in [State Machine](#state-machine) supplies exact committed coverage; general publication integration remains deferred. This module does not write manifests. |
 | `WITNESS10-G003` | `deferred` | Concrete payload schemas beyond formula/substitution witness bytes remain producer-owned. The store hashes schema identity and bytes but does not interpret backend proof payloads. |
-| `WITNESS11-G001` | `external_dependency_gap` | Task 11 keeps `CommittedWitnessPublicationProof` opaque and externally unconstructible until `mizar-artifact` exposes an artifact-owned committed publication proof token. Internal tests may construct the token; production callers must wait for artifact integration. |
+| `WITNESS11-G001` | `external_dependency_gap` | The opaque Artifact commit enables only the [bounded source-theorem constructor](#state-machine). Other production token profiles remain unavailable; matching public tuples never establish commit origin. |
 | `WITNESS11-G002` | `external_dependency_gap` | Generic caller-metadata admission remains unavailable; [State Machine](#state-machine) owns the bounded checked-token routes. |
 | `WITNESS11-G003` | `deferred` | Task 11 records whether a payload schema requires canonical bytes and rejects empty payloads under that attestation, but byte-level canonicality remains producer-owned until concrete payload schemas expose validators. The witness hash still covers exact bytes and schema identity. |
 | `WITNESS11-G004` | `deferred` | Task 11 preserves `dependency_artifact_fingerprint` as producer-owned provenance. Binding it to committed dependency artifacts and cache validation remains deferred to artifact/cache integration; it must not promote witness status by itself. |

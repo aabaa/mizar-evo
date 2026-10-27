@@ -60,9 +60,20 @@ entry が同じ main `VerifiedArtifact` proof-witness set を参照した後に�
 `CommittedWitnessPublicationProof` input は、witness entry を committed module artifact
 entry または同等の committed `VerifiedArtifact` reference set に bind し、manifest の
 `proof_witnesses` array が artifact の `proof_witnesses` collection をちょうど cover することを
-示さなければならない。その artifact-owned token が存在するまで、source API は proof token
-を public constructor なしの opaque token として保つ。caller は一致する tuple を合成しては
-ならない。その publication proof が存在する前に `publish_ref` を呼ぶと error である。
+示さなければならない。token は opaque のままで、caller による一致 tuple の合成は禁止する。
+下記の限定 source-theorem constructor は公開 tuple でなく既存の opaque Artifact commit を
+origin evidence とする。committed publication evidence なしの `publish_ref` は error となる。
+
+`CommittedWitnessPublicationProof::from_source_theorem_manifest_commit` は実際の
+`ManifestCommit`、root、完全な module identity、coordinator が期待する snapshot を受け取る。
+全 flag を有効にした fresh manifest validation で commit hash と manifest 全体を照合し、
+normal1.1 main と exact witness coverage の検証後、具体的な source-theorem candidate FILE の
+hash/reference を検証する。空でない KernelVerified 集合を要求する。
+期待 snapshot は既存の `publish_ref` が staged provenance と比較する値であり、commit 時の
+snapshot receipt、現在の root/source の認証、lease ではない。token は検証時の過去の到達性を
+保持し、新規構築では file を再検証する。後の変更は既存 token を変えず、reuse を認証しない。
+通常の main hash 除外と同一内容の複製 root は有効であり、排他的な filesystem origin は認証しない。
+他の payload profile と DischargedBuiltin publication は引き続き未対応である。
 
 `publish_ref` は commit 後に新しい artifact reference を発明しない。`stage` が出した
 unpublished reference candidate が committed `VerifiedArtifact` と manifest に記録された
@@ -235,9 +246,9 @@ publish できず、non-trusted status を昇格させられず、trusted `used_
 | Gap | Classification | Handling |
 |---|---|---|
 | `WITNESS10-G001` | `external_dependency_gap` | `mizar-artifact` `ProofWitnessRef` version `2.0` は現在 `kernel_verified` formula/substitution evidence だけを受理する。`DischargedBuiltin` witness publication は unsupported のままであり、collapse してはならない。 |
-| `WITNESS10-G002` | `deferred` | artifact manifest commit integration が、`publish_ref` に必要な committed witness publication proof を供給する。これには committed main artifact への binding と `VerifiedArtifact.proof_witnesses` の exact coverage が含まれる。この spec は token/validation contract を定義するが manifest は書かない。 |
+| `WITNESS10-G002` | `deferred` | [State Machine](#state-machine) の限定 source-theorem candidate 経路が committed exact coverage を供給する。汎用 publication integration は deferred であり、この module は manifest を書かない。 |
 | `WITNESS10-G003` | `deferred` | formula/substitution witness bytes 以外の concrete payload schema は producer-owned のままである。store は schema identity と bytes を hash するが backend proof payload は解釈しない。 |
-| `WITNESS11-G001` | `external_dependency_gap` | task 11 は、`mizar-artifact` が artifact-owned committed publication proof token を公開するまで `CommittedWitnessPublicationProof` を opaque かつ external には construct 不可能に保つ。internal test は token を構築してよいが、production caller は artifact integration を待たなければならない。 |
+| `WITNESS11-G001` | `external_dependency_gap` | opaque Artifact commit は [限定 source-theorem constructor](#state-machine) だけを可能にする。他の production token profile は未提供であり、一致する公開 tuple は commit origin を証明しない。 |
 | `WITNESS11-G002` | `external_dependency_gap` | 汎用 caller-metadata 受入れは未提供。限定された検査済み token の経路は [State Machine](#state-machine) が所有する。 |
 | `WITNESS11-G003` | `deferred` | task 11 は payload schema が canonical bytes を要求するかを記録し、その attestation 下では empty payload を reject するが、byte-level canonicality は concrete payload schema が validator を公開するまで producer-owned のままである。witness hash は引き続き exact bytes と schema identity を覆う。 |
 | `WITNESS11-G004` | `deferred` | task 11 は `dependency_artifact_fingerprint` を producer-owned provenance として保持する。committed dependency artifact と cache validation への binding は artifact/cache integration まで deferred であり、それ単体で witness status を昇格してはならない。 |

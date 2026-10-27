@@ -916,12 +916,118 @@ pub struct CommittedWitnessPublicationProof {
 }
 
 impl CommittedWitnessPublicationProof {
-    /// Test-only constructor standing in for the future artifact-owned commit
-    /// boundary token.
+    /// Validates committed reachability for source-theorem candidate witnesses.
     ///
-    /// Production code intentionally has no public constructor here:
-    /// `mizar-proof` must not treat caller-assembled matching tuples as
-    /// committed manifest reachability.
+    /// Fresh reads must match the opaque commit and every selected witness file.
+    /// `expected_snapshot` is the coordinator's publication expectation, checked
+    /// against staged provenance by `publish_ref`, not a commit snapshot receipt.
+    /// The returned proof retains past validation; it does not attest later file
+    /// integrity, source authentication, or snapshot currentness.
+    pub fn from_source_theorem_manifest_commit(
+        commit: &mizar_artifact::manifest::ManifestCommit,
+        artifact_root: &std::path::Path,
+        module: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+        expected_snapshot: Hash,
+    ) -> Result<Self, String> {
+        use mizar_artifact::{
+            manifest::{ManifestFileReadOptions, read_manifest_file},
+            store::{
+                PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+                read_published_artifact,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, read_verified_artifact,
+            },
+        };
+
+        let manifest = read_manifest_file(
+            artifact_root,
+            ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                validate_development_artifacts: true,
+                expected_manifest_hash: Some(commit.write().artifact_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if &manifest.manifest != commit.manifest() {
+            return Err("committed witness manifest mismatch".to_owned());
+        }
+        let entry = manifest
+            .manifest
+            .modules
+            .iter()
+            .find(|entry| &entry.module == module)
+            .ok_or_else(|| "committed witness module not found".to_owned())?;
+        let path =
+            PublishedArtifactPath::new(&entry.artifact_file).map_err(|error| error.to_string())?;
+        let domain = artifact_hash_domain(
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            entry.artifact_hash.schema_version,
+        );
+        let excluded_paths = artifact_hash_excluded_paths();
+        let read = read_published_artifact(
+            artifact_root,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &excluded_paths,
+                expected_artifact_hash: Some(entry.artifact_hash.digest),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        let artifact = read_verified_artifact(
+            &read.value,
+            VerifiedArtifactReadOptions {
+                artifact_path: Some(path.as_str()),
+                expected_module: Some(&entry.module),
+                expected_interface_hash: Some(entry.interface_hash.digest),
+                expected_implementation_hash: Some(entry.implementation_hash.digest),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if artifact.schema_version != SchemaVersion::new(1, 1) {
+            return Err("committed source theorem main must use schema 1.1".to_owned());
+        }
+        validate_exact_witness_coverage(&artifact.proof_witnesses, &entry.proof_witnesses)
+            .map_err(|error| error.to_string())?;
+        if artifact.proof_witnesses.is_empty()
+            || artifact
+                .proof_witnesses
+                .iter()
+                .any(|witness| witness.proof_status != ArtifactProofStatus::KernelVerified)
+        {
+            return Err("committed source theorem requires KernelVerified witnesses".to_owned());
+        }
+        let domain = artifact_hash_domain(
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+            SchemaVersion::new(1, 0),
+        );
+        for witness in &artifact.proof_witnesses {
+            let path = PublishedArtifactPath::new(&witness.witness_path)
+                .map_err(|error| error.to_string())?;
+            let read = read_published_artifact(
+                artifact_root,
+                &path,
+                PublishedArtifactReadOptions {
+                    artifact_hash_domain: Some(&domain),
+                    hash_excluded_paths: &[],
+                    expected_artifact_hash: Some(witness.witness_artifact_hash.digest),
+                },
+            )
+            .map_err(|error| error.to_string())?;
+            read_source_theorem_witness_file(&read, witness)?;
+        }
+        Ok(Self {
+            committed_main_artifact_hash: entry.artifact_hash.clone(),
+            build_snapshot_fingerprint: expected_snapshot,
+            verified_artifact_witnesses: artifact.proof_witnesses,
+            module_entry: entry.clone(),
+        })
+    }
+
+    /// Test-only constructor for caller-assembled committed coverage controls.
     #[cfg(test)]
     fn for_test(
         module_entry: ModuleArtifactEntry,
