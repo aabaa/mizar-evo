@@ -63339,7 +63339,11 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
         },
     };
     use mizar_atp::problem::*;
-    use mizar_ir::{projection::ProjectionExternalDependencyGap as Gap, storage::CollectInput};
+    use mizar_ir::{
+        identity::NamedInputHash,
+        projection::ProjectionExternalDependencyGap as Gap,
+        storage::{CollectInput, IrSideTables, SchemaVersion},
+    };
     use mizar_proof::policy::VerifierPolicy;
     use mizar_vc::{
         discharge::{ComputationLimit, DischargePolicy},
@@ -63361,6 +63365,52 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
             threshold,
             "",
             |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let mut original_outputs = refs
+                    .iter()
+                    .map(|reference| owner.registry().output_lineage(reference.output()).unwrap())
+                    .collect::<Vec<_>>();
+                let kernel = refs
+                    .iter()
+                    .find(|reference| {
+                        reference.output_kind() == &OutputKind::new("SourceTheoremCandidateCheck")
+                    })
+                    .unwrap();
+                let unlisted = kernel
+                    .lineage()
+                    .parents
+                    .iter()
+                    .filter(|parent| {
+                        original_outputs
+                            .iter()
+                            .all(|output| output.output != **parent)
+                    })
+                    .collect::<Vec<_>>();
+                let [candidate] = unlisted.as_slice() else {
+                    panic!("one genuine inline ATP candidate parent")
+                };
+                let candidate = owner.registry().output_lineage(**candidate).unwrap();
+                assert_eq!(candidate.phase, IrPipelinePhase::new("AtpSolve"));
+                assert_eq!(
+                    candidate.output_kind,
+                    OutputKind::new("SourceTheoremCandidateInputs")
+                );
+                original_outputs.push(candidate);
+                assert_eq!(original_outputs.len(), 14);
+                let protected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: original_outputs
+                        .iter()
+                        .map(|output| output.output)
+                        .collect(),
+                });
+                assert_eq!(
+                    (
+                        protected.outputs_dropped,
+                        protected.protected_outputs,
+                        protected.abandoned_slots_dropped
+                    ),
+                    (0, 14, 0)
+                );
                 let before = (
                     six.clone(),
                     inputs.snapshot.clone(),
@@ -63653,7 +63703,12 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     ]
                 );
                 let actual_root = fixture.root.join("alpha/manifest-actual");
-                let (actual_draft, actual_main, actual_commit, _) = inputs
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("ArtifactCommit"),
+                    OutputKind::new("SourceTheoremArtifactData"),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+                let (actual_draft, actual_main, actual_commit, _, output) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -63706,6 +63761,145 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     witness_bytes
                 );
                 assert_eq!(fs::read_dir(&actual_root).unwrap().count(), 3);
+                let storage = owner.storage();
+                let stored = storage.get(&output).unwrap();
+                assert_eq!(*stored, actual_draft.artifact);
+                assert_eq!(
+                    *stored,
+                    read_verified_artifact(
+                        &main_read.value,
+                        VerifiedArtifactReadOptions {
+                            artifact_path: Some(main_write.path.as_str()),
+                            expected_module: Some(&draft.artifact.module),
+                            expected_interface_hash: Some(draft.artifact.interface_hash),
+                            expected_implementation_hash: Some(draft.artifact.implementation_hash),
+                        }
+                    )
+                    .unwrap()
+                );
+                assert_eq!(output.snapshot(), six.snapshot);
+                assert_eq!(output.phase(), &IrPipelinePhase::new("ArtifactCommit"));
+                assert_eq!(output.work_unit(), &IrWorkUnit::new("\"alpha\":\"main\""));
+                assert_eq!(
+                    output.output_kind(),
+                    &OutputKind::new("SourceTheoremArtifactData")
+                );
+                assert_eq!(output.schema_version(), SchemaVersion::new(1));
+                assert_eq!(
+                    stored.schema_version,
+                    mizar_artifact::store::SchemaVersion::new(1, 1)
+                );
+                assert_eq!(
+                    original_outputs
+                        .iter()
+                        .map(|output| owner.registry().output_lineage(output.output).unwrap())
+                        .collect::<Vec<_>>(),
+                    original_outputs
+                );
+                assert!(
+                    original_outputs
+                        .iter()
+                        .all(|old| old.output != output.output())
+                );
+                let mut parents = six
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref())
+                    .collect::<Vec<_>>();
+                parents.sort_by(|left, right| {
+                    left.content_hash()
+                        .as_bytes()
+                        .cmp(right.content_hash().as_bytes())
+                        .then_with(|| {
+                            left.side_table_hash()
+                                .as_bytes()
+                                .cmp(right.side_table_hash().as_bytes())
+                        })
+                });
+                let mut parent_ids = parents
+                    .iter()
+                    .map(|parent| parent.output())
+                    .collect::<Vec<_>>();
+                parent_ids
+                    .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                assert_eq!(output.lineage().parents, parent_ids);
+                let source_key = source_key(&inputs.snapshot.source_versions[0]);
+                assert_eq!(source_key, six.identities().input_hash());
+                assert_eq!(
+                    output.lineage().named_input_hashes,
+                    [NamedInputHash {
+                        name: "source".into(),
+                        domain: SOURCE_UNIT_CACHE_KEY_VERSION.into(),
+                        digest: source_key,
+                    }]
+                );
+                let field = |hasher: &mut blake3::Hasher, bytes: &[u8]| {
+                    hasher.update(&u64::try_from(bytes.len()).unwrap().to_le_bytes());
+                    hasher.update(bytes);
+                };
+                let semantic = main_domain.hash_input(&value, &excluded).into_bytes();
+                let mut content = blake3::Hasher::new();
+                field(&mut content, b"mizar-ir/publisher-content-hash/v1");
+                field(&mut content, &semantic);
+                content.update(&6u64.to_le_bytes());
+                for parent in parents {
+                    field(&mut content, b"parent_content");
+                    content.update(parent.content_hash().as_bytes());
+                }
+                content.update(&1u64.to_le_bytes());
+                for name in [
+                    "source",
+                    SOURCE_UNIT_CACHE_KEY_VERSION,
+                    "mizar-ir/publisher-named-input-hash/v1",
+                ] {
+                    field(&mut content, name.as_bytes());
+                }
+                content.update(source_key.as_bytes());
+                assert_eq!(
+                    output.content_hash(),
+                    Hash::from_bytes(*content.finalize().as_bytes())
+                );
+                let mut side = blake3::Hasher::new();
+                field(&mut side, b"mizar-ir/publisher-side-table-hash/v1");
+                for category in [
+                    "source_maps",
+                    "diagnostics",
+                    "explanation_refs",
+                    "documentation_attachments",
+                ] {
+                    field(&mut side, category.as_bytes());
+                    side.update(&0u64.to_le_bytes());
+                }
+                assert_eq!(
+                    output.side_table_hash(),
+                    Hash::from_bytes(*side.finalize().as_bytes())
+                );
+                assert_eq!(
+                    *storage.side_tables(&output).unwrap(),
+                    IrSideTables::default()
+                );
+                match *output.placement() {
+                    StoragePlacement::Resident => assert_eq!(threshold, usize::MAX),
+                    StoragePlacement::Blob { blob, len } => {
+                        assert_eq!(threshold, 0);
+                        let mut expected_blob = blake3::Hasher::new();
+                        field(&mut expected_blob, b"mizar-ir/content-blob/v1");
+                        expected_blob.update(&1u32.to_le_bytes());
+                        field(&mut expected_blob, &main_bytes);
+                        assert_eq!(
+                            blob.hash(),
+                            Hash::from_bytes(*expected_blob.finalize().as_bytes())
+                        );
+                        assert_eq!(len, main_bytes.len());
+                    }
+                    _ => unreachable!(),
+                }
+                owner
+                    .validate_current_output(six.snapshot, output.any())
+                    .unwrap();
+                owner
+                    .validate_published_output(six.snapshot, output.any())
+                    .unwrap();
                 assert!(freshness(Some(&guard)));
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
@@ -63732,8 +63926,9 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                 });
                 assert_eq!(
                     (collected.outputs_dropped, collected.abandoned_slots_dropped),
-                    (14, 0)
+                    (15, 0)
                 );
+                assert!(storage.get(&output).is_err());
             },
         );
     }
@@ -63876,6 +64071,13 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                     (&policy, &verifier),
                     (witness, main, &baseline_root),
                 );
+                if case == "repeat" {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("ArtifactCommit"),
+                        OutputKind::new("SourceTheoremArtifactData"),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
                 let actual = inputs.commit_native_theorem_artifact_manifest(
                     &input,
                     selected,
@@ -63913,7 +64115,7 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                 } else {
                     let (baseline, baseline_write, _) = lower.unwrap().unwrap();
                     if case == "repeat" {
-                        let (draft, write, commit, _) = actual.unwrap().unwrap();
+                        let (draft, write, commit, _, _) = actual.unwrap().unwrap();
                         assert_eq!(draft, baseline);
                         assert_eq!(write, baseline_write);
                         let manifest_bytes = fs::read(root.join("artifact-manifest.json")).unwrap();
@@ -63989,7 +64191,16 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                 });
                 assert_eq!(
                     (collected.outputs_dropped, collected.abandoned_slots_dropped),
-                    (if case == "collected" { 0 } else { 14 }, 0)
+                    (
+                        if case == "collected" {
+                            0
+                        } else if case == "repeat" {
+                            15
+                        } else {
+                            14
+                        },
+                        0
+                    )
                 );
             },
         );
@@ -64060,7 +64271,12 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                     )
                     .unwrap();
                 let root = fixture.root.join("alpha/manifest-files");
-                let (draft, write, commit, _) = inputs
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("ArtifactCommit"),
+                    OutputKind::new("SourceTheoremArtifactData"),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+                let (draft, write, commit, _, output) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -64172,6 +64388,13 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                         );
                     }
                 }
+                assert_eq!(*owner.storage().get(&output).unwrap(), draft.artifact);
+                assert_eq!(
+                    owner
+                        .validate_current_output(six.snapshot, output.any())
+                        .is_ok(),
+                    case != "obsolete"
+                );
                 assert_eq!(commit.manifest(), &retained_manifest);
                 assert_eq!(commit.write(), &retained_write);
                 assert_eq!(
@@ -64188,7 +64411,7 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                 });
                 assert_eq!(
                     (collected.outputs_dropped, collected.abandoned_slots_dropped),
-                    (14, 0)
+                    (15, 0)
                 );
             },
         );
@@ -65859,7 +66082,12 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                 assert_eq!(written_draft, projected);
                 assert_eq!(written_stage, staged);
                 let root = fixture.root.join("alpha/committed-witness");
-                let (artifact, main_write, commit, actual_published) = inputs
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("ArtifactCommit"),
+                    OutputKind::new("SourceTheoremArtifactData"),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+                let (artifact, main_write, commit, actual_published, output) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -66026,8 +66254,8 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     .is_err()
                 );
                 let other_root = fixture.root.join("alpha/other-committed-witness");
-                let (other_artifact, _, other_commit, _) = inputs
-                    .commit_native_theorem_artifact_manifest(
+                let (other_artifact, other_main, _) = inputs
+                    .write_native_theorem_artifact_draft(
                         six,
                         owner,
                         vcs.vcs()[0].id,
@@ -66036,6 +66264,30 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                         ("proof-witnesses/other.json", "main.mizir.json", &other_root),
                     )
                     .unwrap()
+                    .unwrap();
+                let mut other_entry = entry.clone();
+                other_entry.artifact_hash.digest = other_main.artifact_hash;
+                other_entry.interface_hash.digest = other_artifact.artifact.interface_hash;
+                other_entry.implementation_hash.digest =
+                    other_artifact.artifact.implementation_hash;
+                other_entry.proof_witnesses = other_artifact
+                    .artifact
+                    .proof_witnesses
+                    .iter()
+                    .map(|witness| ManifestProofWitnessEntry {
+                        obligation_id: witness.obligation_id.clone(),
+                        obligation_fingerprint: witness.obligation_fingerprint.clone(),
+                        witness_path: witness.witness_path.clone(),
+                        witness_artifact_hash: witness.witness_artifact_hash.clone(),
+                    })
+                    .collect();
+                let mut other_seed = commit.manifest().clone();
+                other_seed.artifact_root = "other-committed-witness".into();
+                let mut other_transaction =
+                    ManifestTransaction::begin(&other_root, other_seed, None).unwrap();
+                other_transaction.stage_module(other_entry).unwrap();
+                let other_commit = other_transaction
+                    .commit(ManifestCommitOptions::default())
                     .unwrap();
                 for (wrong_commit, wrong_root) in [(&commit, &other_root), (&other_commit, &root)] {
                     assert!(
@@ -66091,6 +66343,14 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     main_domain.hash(&changed_main, &excluded),
                     main_write.artifact_hash
                 );
+                assert_eq!(
+                    main_domain.hash_input(&changed_main, &excluded),
+                    main_domain.hash_input(
+                        &verified_artifact_json(&artifact.artifact).unwrap(),
+                        &excluded
+                    )
+                );
+                assert_ne!(canonical_json_bytes(&changed_main), main_bytes);
                 fs::write(
                     root.join(main_write.path.as_str()),
                     canonical_json_bytes(&changed_main),
@@ -66292,6 +66552,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                             "{path}, missing={missing}"
                         );
                         assert_eq!(publish_ref(&staged, &proof).unwrap(), published);
+                        assert_eq!(*owner.storage().get(&output).unwrap(), artifact.artifact);
                         fs::write(root.join(path), &original).unwrap();
                         assert_eq!(
                             CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
@@ -66309,6 +66570,360 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                 assert_eq!(
                     fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
                     text.as_bytes()
+                );
+                owner.mark_obsolete(six.snapshot).unwrap();
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                assert!(
+                    owner
+                        .validate_current_output(six.snapshot, output.any())
+                        .is_err()
+                );
+                assert_eq!(*owner.storage().get(&output).unwrap(), artifact.artifact);
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_artifact_ir_preserves_late_denial_and_duplicates() {
+    use mizar_artifact::{
+        manifest::{
+            ManifestCommitOptions, ManifestFileReadOptions, ManifestTransaction, read_manifest_file,
+        },
+        store::{PublishedArtifactReadOptions, artifact_hash_domain, read_published_artifact},
+        verified_artifact::{
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+            artifact_hash_excluded_paths, read_verified_artifact,
+        },
+    };
+    use mizar_atp::problem::*;
+    use mizar_ir::{
+        identity::IdentityError,
+        publisher::PublishError,
+        storage::{CollectInput, StorageError},
+    };
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        witness_store::{CommittedWitnessPublicationProof, publish_ref},
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{PolicyKey, VcSet},
+    };
+    for case in ["denied", "same", "different"] {
+        with_native_theorem_artifact_context(
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            false,
+            usize::MAX,
+            "",
+            |fixture, inputs, six, owner, refs, expected, (inference, typed, metadata, source)| {
+                let mut original_outputs = refs
+                    .iter()
+                    .map(|reference| owner.registry().output_lineage(reference.output()).unwrap())
+                    .collect::<Vec<_>>();
+                let kernel = refs
+                    .iter()
+                    .find(|reference| {
+                        reference.output_kind() == &OutputKind::new("SourceTheoremCandidateCheck")
+                    })
+                    .unwrap();
+                let unlisted = kernel
+                    .lineage()
+                    .parents
+                    .iter()
+                    .filter(|parent| {
+                        original_outputs
+                            .iter()
+                            .all(|output| output.output != **parent)
+                    })
+                    .collect::<Vec<_>>();
+                let [candidate] = unlisted.as_slice() else {
+                    panic!("one genuine inline ATP candidate parent")
+                };
+                let candidate = owner.registry().output_lineage(**candidate).unwrap();
+                assert_eq!(candidate.phase, IrPipelinePhase::new("AtpSolve"));
+                assert_eq!(
+                    candidate.output_kind,
+                    OutputKind::new("SourceTheoremCandidateInputs")
+                );
+                original_outputs.push(candidate);
+                assert_eq!(original_outputs.len(), 14);
+                let protected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: original_outputs
+                        .iter()
+                        .map(|output| output.output)
+                        .collect(),
+                });
+                assert_eq!(
+                    (
+                        protected.outputs_dropped,
+                        protected.protected_outputs,
+                        protected.abandoned_slots_dropped
+                    ),
+                    (0, 14, 0)
+                );
+                let before = (
+                    six.clone(),
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inference.clone(),
+                    typed.clone(),
+                    metadata.clone(),
+                    source.to_owned(),
+                    fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                );
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("explicit"),
+                        max_steps: 64,
+                    },
+                };
+                let verifier = VerifierPolicy::default();
+                let profile = LogicProfile::try_new(
+                    "artifact-source",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Supported,
+                    [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                        .into_iter()
+                        .collect(),
+                )
+                .unwrap();
+                let vc = refs
+                    .iter()
+                    .find(|row| row.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc, vc.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let phase = IrPipelinePhase::new("ArtifactCommit");
+                let kind = OutputKind::new("SourceTheoremArtifactData");
+                let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+                let first_root = fixture.root.join("alpha/artifact-ir-first");
+                let previous = if case == "denied" {
+                    None
+                } else {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        phase.clone(),
+                        kind.clone(),
+                        unit.clone(),
+                    ));
+                    Some(
+                        inputs
+                            .commit_native_theorem_artifact_manifest(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                (
+                                    "proof-witnesses/checked.json",
+                                    "main.mizir.json",
+                                    &first_root,
+                                ),
+                            )
+                            .unwrap()
+                            .unwrap(),
+                    )
+                };
+                if let Some((draft, _, _, _, output)) = &previous {
+                    assert_eq!(draft, expected.as_ref().unwrap().as_ref().unwrap());
+                    assert_eq!(*owner.storage().get(output).unwrap(), draft.artifact);
+                }
+                let previous_files = previous.as_ref().map(|_| {
+                    [
+                        "artifact-manifest.json",
+                        "main.mizir.json",
+                        "proof-witnesses/checked.json",
+                    ]
+                    .map(|path| fs::read(first_root.join(path)).unwrap())
+                });
+                let witness_path = if case == "different" {
+                    "proof-witnesses/other.json"
+                } else {
+                    "proof-witnesses/checked.json"
+                };
+                let lower_root = fixture.root.join("alpha/artifact-ir-lower");
+                let (baseline, baseline_write, staged) = inputs
+                    .write_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, "main.mizir.json", &lower_root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                if case != "different" {
+                    assert_eq!(&baseline, expected.as_ref().unwrap().as_ref().unwrap());
+                }
+                let root = fixture.root.join("alpha/artifact-ir-attempt");
+                let error = inputs
+                    .commit_native_theorem_artifact_manifest(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile, ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, "main.mizir.json", &root),
+                    )
+                    .unwrap_err();
+                let expected_error = match case {
+                    "denied" => PublishError::WorkUnitNotAllowed {
+                        phase,
+                        work_unit: unit,
+                        output_kind: kind,
+                    },
+                    "same" => PublishError::Storage {
+                        error: Box::new(StorageError::OutputAlreadyStored {
+                            output: previous.as_ref().unwrap().4.output(),
+                        }),
+                    },
+                    "different" => PublishError::Identity {
+                        error: Box::new(IdentityError::ConflictingDuplicate {
+                            collection: "phase_outputs",
+                            key: "mizar-ir/phase-output-id/v1:phase=ArtifactCommit,work_unit=\"alpha\":\"main\",output_kind=SourceTheoremArtifactData".into(),
+                        }),
+                    },
+                    _ => unreachable!(),
+                };
+                assert_eq!(error, expected_error.to_string(), "{case}");
+                for path in ["main.mizir.json", witness_path] {
+                    assert_eq!(
+                        fs::read(root.join(path)).unwrap(),
+                        fs::read(lower_root.join(path)).unwrap()
+                    );
+                }
+                let domain = artifact_hash_domain(
+                    VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                    baseline.artifact.schema_version,
+                );
+                let excluded = artifact_hash_excluded_paths();
+                let main = read_published_artifact(
+                    &root,
+                    &baseline_write.path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&domain),
+                        hash_excluded_paths: &excluded,
+                        expected_artifact_hash: Some(baseline_write.artifact_hash),
+                    },
+                )
+                .unwrap();
+                assert_eq!(
+                    read_verified_artifact(
+                        &main.value,
+                        VerifiedArtifactReadOptions {
+                            artifact_path: Some(baseline_write.path.as_str()),
+                            expected_module: Some(&baseline.artifact.module),
+                            expected_interface_hash: Some(baseline.artifact.interface_hash),
+                            expected_implementation_hash: Some(
+                                baseline.artifact.implementation_hash
+                            ),
+                        },
+                    )
+                    .unwrap(),
+                    baseline.artifact
+                );
+                let manifest_bytes = fs::read(root.join("artifact-manifest.json")).unwrap();
+                let read = read_manifest_file(
+                    &root,
+                    ManifestFileReadOptions {
+                        validate_references: true,
+                        validate_witness_files: true,
+                        validate_development_artifacts: true,
+                        expected_manifest_hash: None,
+                    },
+                )
+                .unwrap();
+                assert_eq!(read.manifest.artifact_root, "artifact-ir-attempt");
+                assert_eq!(read.manifest.modules.len(), 1);
+                assert_eq!(
+                    read.manifest.modules[0].artifact_hash.digest,
+                    baseline_write.artifact_hash
+                );
+                let mut transaction =
+                    ManifestTransaction::begin(&root, read.manifest.clone(), None).unwrap();
+                transaction
+                    .stage_module(read.manifest.modules[0].clone())
+                    .unwrap();
+                let commit = transaction
+                    .commit(ManifestCommitOptions::default())
+                    .unwrap();
+                assert_eq!(commit.write().artifact_hash, read.artifact_hash);
+                assert_eq!(
+                    fs::read(root.join("artifact-manifest.json")).unwrap(),
+                    manifest_bytes
+                );
+                let proof = CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                    &commit,
+                    &root,
+                    &baseline.artifact.module,
+                    six.snapshot.fingerprint(),
+                )
+                .unwrap();
+                assert_eq!(
+                    publish_ref(&staged, &proof).unwrap().reference(),
+                    &baseline.artifact.proof_witnesses[0]
+                );
+                if let Some((draft, _, _, _, output)) = &previous {
+                    assert_eq!(*owner.storage().get(output).unwrap(), draft.artifact);
+                    owner
+                        .validate_current_output(six.snapshot, output.any())
+                        .unwrap();
+                    assert_eq!(
+                        [
+                            "artifact-manifest.json",
+                            "main.mizir.json",
+                            "proof-witnesses/checked.json"
+                        ]
+                        .map(|path| fs::read(first_root.join(path)).unwrap()),
+                        previous_files.unwrap()
+                    );
+                    assert_eq!(draft.artifact == baseline.artifact, case == "same");
+                }
+                assert_eq!(
+                    original_outputs
+                        .iter()
+                        .map(|output| owner.registry().output_lineage(output.output).unwrap())
+                        .collect::<Vec<_>>(),
+                    original_outputs
+                );
+                for reference in refs {
+                    owner.storage().validate_handle(reference).unwrap();
+                    owner
+                        .validate_current_output(six.snapshot, reference)
+                        .unwrap();
+                }
+                assert_eq!(
+                    (
+                        six.clone(),
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        inference.clone(),
+                        typed.clone(),
+                        metadata.clone(),
+                        source.to_owned(),
+                        fs::read(fixture.root.join("alpha/src/main.miz")).unwrap(),
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: six.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    (collected.outputs_dropped, collected.abandoned_slots_dropped),
+                    (if case == "denied" { 14 } else { 15 }, 1)
                 );
             },
         );

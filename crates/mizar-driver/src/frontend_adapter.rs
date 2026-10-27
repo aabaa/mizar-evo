@@ -6357,6 +6357,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
     }
 
     /// Commits a genuine source module manifest and publishes its retained staged witness.
+    /// Also seals the committed main as ordinary Artifact data with its six source parents;
+    /// retained data does not confer fresh filesystem or proof-publication authority.
+    #[expect(
+        clippy::type_complexity,
+        reason = "keep the existing committed values and typed artifact data together"
+    )]
     pub fn commit_native_theorem_artifact_manifest(
         self,
         input: &PhaseInput,
@@ -6377,6 +6383,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             mizar_artifact::store::PublishedArtifactWrite,
             mizar_artifact::manifest::ManifestCommit,
             mizar_proof::witness_store::ProofWitnessPublishedRef,
+            mizar_ir::storage::PhaseOutputRef<mizar_artifact::verified_artifact::VerifiedArtifact>,
         )>,
         String,
     > {
@@ -6387,8 +6394,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 ModuleArtifactEntry, PackageIdentity, current_schema_version, read_manifest_file,
             },
             registration_summary::{ArtifactHashClass, ArtifactHashRef},
-            store::PublishedArtifactPath,
-            verified_artifact::VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            store::{
+                PublishedArtifactPath, artifact_hash_domain, canonical_json_bytes,
+                parse_canonical_json_bytes,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
+            },
         };
         let Some((draft, main_write, staged)) = self.write_native_theorem_artifact_draft(
             input, publisher, vc_id, encoding, policies, staging,
@@ -6551,7 +6564,90 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         if !freshness(Some(guard.as_str())) {
             return Err(fail("currentness validation failed"));
         }
-        Ok(Some((draft, main_write, commit, published)))
+        let value = verified_artifact_json(&draft.artifact).map_err(|error| error.to_string())?;
+        let schema_version = draft.artifact.schema_version;
+        let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, schema_version);
+        let excluded = artifact_hash_excluded_paths();
+        let canonical_payload = domain.hash_input(&value, &excluded).into_bytes();
+        let storage_payload = canonical_json_bytes(&value);
+        let identity = draft.artifact.module.clone();
+        let interface_hash = draft.artifact.interface_hash;
+        let implementation_hash = draft.artifact.implementation_hash;
+        let artifact_hash = main_write.artifact_hash;
+        let artifact_path = main_write.path.as_str().to_owned();
+        let phase = IrPipelinePhase::new("ArtifactCommit");
+        let output_kind = OutputKind::new("SourceTheoremArtifactData");
+        let work_unit = input.parent_outputs()[0]
+            .as_output_ref()
+            .work_unit()
+            .clone();
+        if !freshness(Some(guard.as_str())) {
+            return Err(fail("currentness validation failed"));
+        }
+        let artifact_output = publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: draft.artifact.clone(),
+                canonical_payload: Some(canonical_payload),
+                storage_payload: Some(storage_payload),
+                decode: BlobDecoder::new(move |bytes| {
+                    let value = parse_canonical_json_bytes(bytes, &artifact_path)
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    let artifact = read_verified_artifact(
+                        &value,
+                        VerifiedArtifactReadOptions {
+                            artifact_path: Some(&artifact_path),
+                            expected_module: Some(&identity),
+                            expected_interface_hash: Some(interface_hash),
+                            expected_implementation_hash: Some(implementation_hash),
+                        },
+                    )
+                    .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    if artifact.schema_version != schema_version
+                        || domain.hash(&value, &excluded) != artifact_hash
+                    {
+                        return Err(BlobDecodeError::new(
+                            "native theorem artifact stored main hash or schema mismatch",
+                        ));
+                    }
+                    Ok(artifact)
+                }),
+                parents: input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref().clone())
+                    .collect(),
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }],
+                side_tables: IrSideTables::default(),
+                origin: OutputOrigin::PackageSource,
+                target: PublicationTarget::CurrentPackage,
+            })
+            .map_err(|error| error.to_string())?;
+        if !freshness(Some(guard.as_str())) {
+            return Err(fail("currentness validation failed"));
+        }
+        Ok(Some((
+            draft,
+            main_write,
+            commit,
+            published,
+            artifact_output,
+        )))
     }
 
     /// Returns captured algorithm summaries after binding a published Frontend.

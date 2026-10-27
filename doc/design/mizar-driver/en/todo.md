@@ -692,6 +692,8 @@ the owning producers when the paired tasks land.
 
 117. **[Committed source-theorem witness carry](../../task_contracts/en/DRIVER-SOURCE-THEOREM-WITNESS-CARRY.md).** [x]
 
+118. **[Committed theorem Artifact IR data](../../task_contracts/en/DRIVER-COMMITTED-THEOREM-ARTIFACT-IR.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

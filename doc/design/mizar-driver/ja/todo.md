@@ -661,6 +661,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 117. **[コミット済みsource theorem witnessの引き継ぎ](../../task_contracts/ja/DRIVER-SOURCE-THEOREM-WITNESS-CARRY.md).** [x]
 
+118. **[コミット済みtheorem Artifact IR data](../../task_contracts/ja/DRIVER-COMMITTED-THEOREM-ARTIFACT-IR.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
