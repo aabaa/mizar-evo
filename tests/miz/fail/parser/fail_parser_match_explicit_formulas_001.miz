@@ -1,0 +1,29 @@
+definition
+  algorithm broken_match_formulas(x,y) -> object do
+    match x do
+      case do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+    match x do
+      case x = do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+    match x do
+      case not do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+    match x do
+      case (x = y do return x; end;
+      case y = x do return y; end;
+      otherwise return y; end;
+    end;
+    return x;
+  end;
+end;
+set after_match_formula_failure = sentinel;

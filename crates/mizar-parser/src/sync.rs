@@ -186,18 +186,21 @@ fn has_statement_body_marker_before_boundary(cursor: &TokenCursor<'_>) -> bool {
 }
 
 fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
-    if matches!(
-        (cursor.peek(1), cursor.peek(2)),
-        (
-            Some(ParserToken {
-                kind: ParserTokenKind::Identifier,
-                ..
-            }),
-            Some(next)
-        ) if is_reserved_word_token(next, "in")
-            || (next.kind == ParserTokenKind::ReservedSymbol && next.text.as_ref() == "=")
-    ) {
-        return true;
+    if let (Some(identifier), Some(next)) = (cursor.peek(1), cursor.peek(2))
+        && identifier.kind == ParserTokenKind::Identifier
+    {
+        if is_reserved_word_token(next, "in") || is_reserved_symbol_token(next, "=") {
+            return true;
+        }
+        if is_reserved_symbol_token(next, ",")
+            || (next.kind == ParserTokenKind::ReservedWord
+                && matches!(
+                    next.text.as_ref(),
+                    "be" | "being" | "st" | "holds" | "for" | "ex"
+                ))
+        {
+            return false;
+        }
     }
 
     has_statement_body_marker_before_boundary(cursor)

@@ -1,0 +1,21 @@
+definition
+  algorithm match_formulas(x,y) -> object do
+    match x do
+      case x = y do return x; end;
+      case x is object do return x; end;
+      case not (x = y) do return x; end;
+      case ((x = y)) do return x; end;
+      case contradiction do return x; end;
+      case for a being object holds a = x do return x; end;
+      case P(x) & Q(x) do return x; end;
+      case x do assert x = y; return x; end;
+      case P(x) do return x; end;
+      case x |-> x do return x; end;
+      case {x where x is set : x = x} do return x; end;
+      case f({x where x is set : x = x}) do return x; end;
+      otherwise return y; end;
+    end;
+    return x;
+  end;
+end;
+set after_match_formulas = sentinel;

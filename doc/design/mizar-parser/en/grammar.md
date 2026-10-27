@@ -2138,7 +2138,7 @@ match_stmt ::= "match" term_expression "do"
                match_case+
                [ "otherwise" algo_statement_list "end" ";" ]
                "end" ";" ;
-match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
+match_case ::= "case" ( term_expression | formula ) "do" algo_statement_list "end" ";" ;
 
 break_stmt    ::= "break" ";" ;
 continue_stmt ::= "continue" ";" ;
@@ -2163,6 +2163,8 @@ matched block shape by opening a conservative `Do` frame for an algorithm-scope
 `otherwise` that immediately follows `end` or `end;`, the token shape of a
 completed match `case` branch. Definition-side and other non-algorithm
 `otherwise` clauses do not open scope frames.
+
+Match patterns preserve a direct `TermExpression` or explicitly selected `FormulaExpression`; parser coverage is the explicit formula subset, with bare Boolean capture operands deferred. The parameterized dispatcher preserves existing opaque, ambiguous, and Binder routes and stops the pattern probe at `do`. Its consumed-range thesis guard applies only at RHS sites; missing-pattern and formula recovery stay unchanged. Recovery-block classification recognizes identifier-led quantifier binder/tail prefixes before fallback lookahead; actual identifier-in/= loop heads keep priority and other fallback behavior remains unchanged.
 
 ### Task 34: Algorithm Verification Clauses
 

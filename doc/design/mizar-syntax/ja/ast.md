@@ -612,7 +612,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::ForRangeStatement` | なし | `SyntaxKind::ForRangeStatement` | parser task 33 の algorithm range loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
 | `SurfaceNodeKind::ForCollectionStatement` | なし | `SyntaxKind::ForCollectionStatement` | parser task 33 の algorithm collection loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
 | `SurfaceNodeKind::MatchStatement` | なし | `SyntaxKind::MatchStatement` | algorithm structural match。`match`、scrutinee `TermExpression`、`do`、1個以上の`MatchCase`またはmissing-statement recovery、任意の明示的`MatchEnding`、final `end;` / recoveryを所有する
-| `SurfaceNodeKind::MatchCase` | なし | `SyntaxKind::MatchCase` | parser task 33 の `case term_pattern do ... end;` branch。pattern `TermExpression`、branch statement list、branch `end;` / recovery を所有する |
+| `SurfaceNodeKind::MatchCase` | なし | `SyntaxKind::MatchCase` | parser task 33 の `case (term_expression | formula) do ... end;` branch。`case`、direct `TermExpression` または明示的に選択された `FormulaExpression` pattern、`do`、branch statement list、branch `end;` / recovery を所有する。match semantics は含まない |
 | `SurfaceNodeKind::MatchEnding` | なし | `SyntaxKind::MatchEnding` | 明示的な`otherwise`、statement list、`end;`を所有する。旧clauseと省略branchの合成はない
 | `SurfaceNodeKind::BreakStatement` | なし | `SyntaxKind::BreakStatement` | parser task 33 の `break;` jump statement。loop context validity は意味論で扱い、ここには符号化しない |
 | `SurfaceNodeKind::ContinueStatement` | なし | `SyntaxKind::ContinueStatement` | parser task 33 の `continue;` jump statement。loop context と termination obligation は意味論で扱い、ここには符号化しない |

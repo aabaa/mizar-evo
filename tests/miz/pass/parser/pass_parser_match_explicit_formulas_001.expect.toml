@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_match_explicit_formulas_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.match_explicit_formulas"
+source = "pass_parser_match_explicit_formulas_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.match_explicit_formulas.parser"]
+notes = "Ordered explicit formula patterns preserve equality, is, not, grouping, contradiction, quantification and connective structure. Bare, application, Binder and opaque-content controls remain terms. Case do/body/end, otherwise, return and a final set survive; syntax grants no semantic match acceptance or capture/reflection credit. Bare Boolean captures and ambiguous predicate/template heads remain deferred valid syntax requirements."

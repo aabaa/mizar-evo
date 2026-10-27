@@ -6017,7 +6017,11 @@ impl Parser {
         cursor
     }
 
-    fn parse_algorithm_rhs_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_algorithm_term_or_formula_at(
+        &mut self,
+        position: usize,
+        match_pattern: bool,
+    ) -> Option<ParsedTypeNode> {
         let mut head = position;
         while self.is_reserved_symbol_at(head, "(") {
             head += 1;
@@ -6030,6 +6034,7 @@ impl Parser {
         let mut cursor = position;
         while !formula && cursor < self.request.tokens.len() {
             if self.is_semicolon_at(cursor)
+                || (match_pattern && self.is_reserved_word_at(cursor, "do"))
                 || self.is_reserved_word_at(cursor, "as")
                 || self.is_reserved_word_at(cursor, "by")
                 || self.is_reserved_word_at(cursor, "proof")
@@ -6084,7 +6089,8 @@ impl Parser {
         } else {
             self.parse_binder_term_expression_at(position, false)
         }?;
-        if formula
+        if !match_pattern
+            && formula
             && let Some(thesis) = (position..rhs.next_position)
                 .find(|cursor| self.is_reserved_word_at(*cursor, "thesis"))
         {
@@ -6122,7 +6128,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, ":=") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_algorithm_rhs_at(cursor) {
+            if let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false) {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -6196,7 +6202,7 @@ impl Parser {
             self.diagnose_malformed_term_expression(cursor, "expected `:=` in assignment");
         }
 
-        if let Some(term) = self.parse_algorithm_rhs_at(cursor) {
+        if let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false) {
             cursor = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -6315,7 +6321,7 @@ impl Parser {
 
         if !self.is_semicolon_at(cursor)
             && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
-            && let Some(term) = self.parse_algorithm_rhs_at(cursor)
+            && let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false)
         {
             cursor = term.next_position;
             children.push(term.id);
@@ -6700,12 +6706,14 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        cursor = self.parse_required_algorithm_term(
-            cursor,
-            &mut children,
-            &mut recovery_nodes,
-            "expected match case pattern",
-        );
+        if let Some(pattern) = self.parse_algorithm_term_or_formula_at(cursor, true) {
+            cursor = pattern.next_position;
+            children.push(pattern.id);
+            recovery_nodes.extend(pattern.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected match case pattern");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
         cursor = self.expect_algorithm_do_keyword(
             cursor,
             &mut children,

@@ -2001,7 +2001,7 @@ match_stmt ::= "match" term_expression "do"
                match_case+
                [ "otherwise" algo_statement_list "end" ";" ]
                "end" ";" ;
-match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
+match_case ::= "case" ( term_expression | formula ) "do" algo_statement_list "end" ";" ;
 
 break_stmt    ::= "break" ";" ;
 continue_stmt ::= "continue" ";" ;
@@ -2024,6 +2024,8 @@ frontend scope skeleton は、completed match `case` branch の token shape で�
 conservative な `Do` frame を開き、`match ... otherwise ... end; end;` を対応する
 block shape として扱う。definition-side やその他 non-algorithm の通常の `otherwise`
 clause は scope frame を開かない。
+
+Match pattern は direct `TermExpression` または明示的に選択された `FormulaExpression` を保持する。parser coverage は明示 formula の subset であり、bare Boolean capture operand は deferred とする。parameterized dispatcher は既存の opaque / ambiguous / Binder route を保ち、pattern probe は `do` で停止する。consumed-range thesis guard は RHS site のみで適用し、missing-pattern / formula recovery は変更しない。 recovery-block の分類は identifier に続く量化 binder/tail prefix を fallback の先読み前に認識し、実際の identifier-in/= loop head の優先順位と他の fallback 動作を維持する。
 
 ### Task 34: algorithm verification clause
 

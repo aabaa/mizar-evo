@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_parser_match_explicit_formulas_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.match_explicit_formulas"
+source = "fail_parser_match_explicit_formulas_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_match_explicit_formulas"
+stable_detail_key = "parser.match_explicit_formulas.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.match_explicit_formulas.parser"]
+notes = "Missing entire pattern, built-in RHS, negated operand and grouping close retain existing term/formula diagnostics at the branch do. Each malformed branch preserves its complete body and valid following case, otherwise, return and final set. No valid bare Boolean capture or ambiguous predicate/template head is classified as invalid."
