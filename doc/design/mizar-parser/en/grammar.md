@@ -2097,7 +2097,7 @@ shared `as TypeExpression`, and optional syntax-level justifications.
 `AssignmentStatement` represents ordinary and `ghost` assignment to a
 syntactic `Lvalue`, preserving dotted targets without resolving selector or
 namespace roles. `SnapshotStatement` and `ReturnStatement` cover `snapshot`
-and `return`, with returns optionally owning a term and a syntax-level
+and `return`, with returns optionally owning a term or selected formula and a syntax-level
 justification.
 
 Top-level `claim name do ... end;` is represented by `ClaimBlockItem` and may
@@ -2401,3 +2401,7 @@ Exact replay and true/false accept contextual Identifier or UserSymbol tokens on
 ## Terminating Algorithm Label Boundary
 
 Only terminating headers admit a label/colon before the algorithm name as original direct token children. Route name-colon headers and terminating leading-colon/adjacent-name errors through the algorithm consumer; the remaining start predicate follows its old path. Preserve visibility wrappers, template suffixes and unlabelled grammar; keep existing partial malformed-header recovery. Labels grant no citation, promotion, termination or execution credit.
+
+## Algorithm Formula RHS Boundary
+
+Initializers, assignments and returns use existing term parsing unless explicit prefix, builtin/is/connective or transparent grouping evidence selects FormulaExpression. Preserve ambiguous bare/application and Binder terms, opaque nested term contents, binding/justification boundaries and old consuming recovery. Check reserved thesis only within a selected formula's consumed range, using existing MalformedFormulaExpression; later proof/citation syntax is outside that range. Expected-type reflection, boolean evaluation and general predicate/bare-atom interpretation remain deferred; actual bounded scope/type consumers reject formula RHS until owned.

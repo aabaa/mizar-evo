@@ -4217,6 +4217,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.algorithm_formula_rhs.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.1.3, 20.2.6, 20.5.3 and Appendix A.20 explicit formula RHS syntax only; expected-type reflection, boolean evaluation and ambiguous formula forms remain deferred"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_algorithm_formula_rhs_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_algorithm_formula_rhs_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.20.algorithm_verification.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
 section = "20.1 Algorithm Syntax terminating algorithm modifier; 20.2.2 Bounded Loop invariant/decreasing clauses; 20.2.3 Range Loop invariant clauses; 20.2.4 Collection Loop invariant clauses; 20.4 Contracts (`requires`, `ensures`, `assert`); 20.5 Loop Verification; 20.7 Termination Proofs; 20.11 Complete Syntax (EBNF) verification-clause subset"

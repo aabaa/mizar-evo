@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_algorithm_formula_rhs_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithm_formula_rhs"
+source = "pass_parser_algorithm_formula_rhs_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.algorithm_formula_rhs.parser"]
+notes = "Explicit formula syntax in initializer, assignment, and return RHS sites, including ghost declarations, grouping, quantification, Binder comparison, and existing declaration/justification boundaries. Bare/call/Binder and opaque-container term controls stay terms; syntax grants no reflection, typing, evaluation, or proof credit."

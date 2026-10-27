@@ -1,0 +1,19 @@
+definition
+  algorithm broken_rhs(x,y) do
+    var eq := x = ;
+    var after_equality := x;
+    x := not ;
+    var after_prefix := x;
+    return (x = y;
+    var after_group := x;
+    var gaps := not , retained := x;
+    var after_comma := x;
+    x := not thesis;
+    var after_nested_thesis := x;
+    return for a,b being object holds thesis;
+    var after_quantified_thesis := x;
+    return thesis;
+    var after_direct_thesis := x;
+  end;
+end;
+set after_formula_rhs_failure = sentinel;

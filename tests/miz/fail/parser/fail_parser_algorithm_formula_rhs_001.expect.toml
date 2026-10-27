@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_parser_algorithm_formula_rhs_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.algorithm_formula_rhs"
+source = "fail_parser_algorithm_formula_rhs_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_algorithm_formula_rhs"
+stable_detail_key = "parser.algorithm_formula_rhs.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.algorithm_formula_rhs.parser"]
+notes = "Selected formula recovery retains the existing missing equality operand, missing not operand, unmatched grouping, and comma-next-binding behavior. Nested/quantified thesis is rejected in the consumed RHS formula without synthetic recovery; bare thesis retains its old term-route rejection. Every successor declaration and final set statement survives."

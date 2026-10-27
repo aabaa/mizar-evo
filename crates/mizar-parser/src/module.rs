@@ -5956,6 +5956,85 @@ impl Parser {
         cursor
     }
 
+    fn parse_algorithm_rhs_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        let mut head = position;
+        while self.is_reserved_symbol_at(head, "(") {
+            head += 1;
+        }
+        let mut formula = self.is_reserved_word_at(head, "not")
+            || self.is_formula_quantifier_at(head)
+            || self.is_reserved_word_at(head, "contradiction");
+        let mut transparent_parens = head - position;
+        let (mut parens, mut brackets, mut braces) = (0_usize, 0_usize, 0_usize);
+        let mut cursor = position;
+        while !formula && cursor < self.request.tokens.len() {
+            if self.is_semicolon_at(cursor)
+                || self.is_reserved_word_at(cursor, "as")
+                || self.is_reserved_word_at(cursor, "by")
+                || self.is_reserved_word_at(cursor, "proof")
+                || self.is_algorithm_statement_list_boundary_at(cursor)
+                || self.is_algorithm_nested_control_boundary_at(cursor)
+                || (cursor > position && self.is_algorithm_statement_start_at(cursor))
+            {
+                break;
+            }
+            if brackets == 0 && braces == 0 && parens <= transparent_parens {
+                if cursor > head
+                    && (self.is_builtin_predicate_at(cursor)
+                        || self.is_reserved_word_at(cursor, "is")
+                        || self.formula_connective_at(cursor).is_some())
+                {
+                    formula = true;
+                    break;
+                }
+                if parens == 0 && self.is_reserved_symbol_at(cursor, ",") {
+                    break;
+                }
+            }
+            if self.is_reserved_symbol_at(cursor, "(") {
+                parens += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if parens == 0 {
+                    break;
+                }
+                if parens == transparent_parens {
+                    transparent_parens -= 1;
+                }
+                parens -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                brackets += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if brackets == 0 {
+                    break;
+                }
+                brackets -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                braces += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if braces == 0 {
+                    break;
+                }
+                braces -= 1;
+            }
+            cursor += 1;
+        }
+        let rhs = if formula {
+            self.parse_formula_expression_at(position)
+        } else {
+            self.parse_binder_term_expression_at(position, false)
+        }?;
+        if formula
+            && let Some(thesis) = (position..rhs.next_position)
+                .find(|cursor| self.is_reserved_word_at(*cursor, "thesis"))
+        {
+            self.diagnose_malformed_formula_expression(
+                thesis,
+                "`thesis` is restricted to explicit computation inputs",
+            );
+        }
+        Some(rhs)
+    }
+
     fn parse_variable_binding_at(&mut self, position: usize, is_const: bool) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
@@ -5982,7 +6061,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, ":=") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_binder_term_expression_at(cursor, false) {
+            if let Some(term) = self.parse_algorithm_rhs_at(cursor) {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -6056,7 +6135,7 @@ impl Parser {
             self.diagnose_malformed_term_expression(cursor, "expected `:=` in assignment");
         }
 
-        if let Some(term) = self.parse_binder_term_expression_at(cursor, false) {
+        if let Some(term) = self.parse_algorithm_rhs_at(cursor) {
             cursor = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -6175,7 +6254,7 @@ impl Parser {
 
         if !self.is_semicolon_at(cursor)
             && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
-            && let Some(term) = self.parse_binder_term_expression_at(cursor, false)
+            && let Some(term) = self.parse_algorithm_rhs_at(cursor)
         {
             cursor = term.next_position;
             children.push(term.id);

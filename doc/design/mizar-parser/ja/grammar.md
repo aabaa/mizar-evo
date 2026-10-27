@@ -1961,7 +1961,7 @@ assignment、snapshot、return を含む。`VariableDeclaration` は `var`、`co
 `AssignmentStatement` は通常 assignment と `ghost` assignment を syntactic
 `Lvalue` へ表現し、selector / namespace role を解決せず dotted target を保持する。
 `SnapshotStatement` と `ReturnStatement` はそれぞれ `snapshot` と `return` を覆い、
-return は任意で term と syntax-level justification を所有できる。
+return は任意で term または選択された formula と syntax-level justification を所有できる。
 
 Top-level `claim name do ... end;` は `ClaimBlockItem` で表され、theorem / lemma item
 を直接または task 35 の annotation wrapper 経由で含められる。algorithm header /
@@ -2250,3 +2250,7 @@ option 位置だけで厳密な replay と true/false を Identifier または U
 ## Terminating Algorithm Label Boundary
 
 terminating header だけで algorithm 名の前の label/colon を元の direct token child として受理する。 name-colon header と terminating leading-colon/adjacent-name error は algorithm consumer に渡し、それ以外の開始判定は既存経路を保つ。visibility wrapper、template suffix、ラベルなしの文法と既存の部分的 malformed-header recovery を保つ。label は citation・promotion・termination・execution の意味的保証を与えない。
+
+## Algorithm Formula RHS Boundary
+
+initializer・assignment・return は、明示的な prefix、builtin/is/connective または先頭 grouping の根拠が FormulaExpression を選ぶ場合以外は既存の term 解析を使う。曖昧な bare/application と Binder term、opaque な入れ子の term、binding/justification 境界、既存の consuming recovery を保つ。予約語 thesis は選択 formula の実際の消費範囲だけで既存 MalformedFormulaExpression を使って検査し、後続 proof/citation は含めない。expected-type reflection、boolean 評価、一般 predicate/bare-atom の解釈は deferred とし、既存の bounded scope/type consumer は対応まで formula RHS を拒否する。

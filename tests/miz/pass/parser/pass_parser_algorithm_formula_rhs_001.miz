@@ -1,0 +1,23 @@
+definition
+  algorithm formula_rhs(x,y,z) -> object do
+    var eq := x = y, term_tail := z as object by TypeOk;
+    const membership := x is object;
+    ghost var negative := not (x = y);
+    ghost const impossible := contradiction;
+    eq := P(x) & Q(x);
+    ghost negative := ((x = y));
+    var quantified := for a,b being object holds a = b;
+    const exists := ex a being object st a = x;
+    var ambiguous := P, call := P(x);
+    var binder := x |-> x, after_binder := x = y;
+    eq := (x,y) |-> x = y;
+    var opaque := {x where x is set : x = x}, formula_after := x = y;
+    var compared := {x where x is set : x = x} = z;
+    var nested := f({x where x is set : x = x});
+    var bracket := [{x where x is set : x = x}, y];
+    return x = y by ReturnOk;
+    return x = x proof thus thesis; end;
+    var after_returns := z;
+  end;
+end;
+set after_formula_rhs = sentinel;
