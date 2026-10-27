@@ -60017,7 +60017,7 @@ fn native_theorem_artifact_draft_matches_source_rows() {
                     verifier.clone(),
                 );
                 let expected = expected.as_ref().unwrap().as_ref().unwrap();
-                let actual = inputs
+                let (actual, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -60195,7 +60195,7 @@ fn native_theorem_artifact_draft_covers_real_expression_rows() {
                         .collect(),
                 )
                 .unwrap();
-                let actual = inputs
+                let (actual, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -60526,7 +60526,7 @@ fn native_theorem_artifact_draft_preserves_refusals_and_fresh_root() {
                     );
                     assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
                 } else {
-                    let actual = inputs
+                    let (actual, _) = inputs
                         .project_native_theorem_artifact_draft(
                             six,
                             owner,
@@ -60863,7 +60863,7 @@ fn native_theorem_artifact_main_matches_real_draft() {
                 let witness_path = "proof-witnesses/checked.json";
                 let baseline_root = fixture.root.join("baseline-main");
                 let expected = expected.as_ref().unwrap().as_ref().unwrap();
-                let baseline = inputs
+                let (baseline, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -60942,7 +60942,7 @@ fn native_theorem_artifact_main_matches_real_draft() {
                     baseline.artifact
                 );
                 let root = fixture.root.join("actual-main");
-                let (actual, actual_write) = inputs
+                let (actual, actual_write, _) = inputs
                     .write_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -61162,7 +61162,7 @@ fn native_theorem_artifact_main_preserves_refusals() {
                         None
                     );
                 } else {
-                    let baseline = baseline.unwrap();
+                    let (baseline, _) = baseline.unwrap();
                     assert_eq!(&baseline, expected.as_ref().unwrap().as_ref().unwrap());
                     let mut parents = six.parent_outputs().to_vec();
                     parents.pop();
@@ -61357,7 +61357,7 @@ fn native_theorem_artifact_main_preserves_witness_and_fresh_root() {
             );
             let baseline_root = fixture.root.join("baseline-fresh");
             let witness_path = "proof-witnesses/checked.json";
-            let baseline = inputs
+            let (baseline, _) = inputs
                 .project_native_theorem_artifact_draft(
                     six,
                     owner,
@@ -61385,7 +61385,7 @@ fn native_theorem_artifact_main_preserves_witness_and_fresh_root() {
             .enumerate()
             {
                 let alternate_root = fixture.root.join(format!("baseline-collision-{index}"));
-                let alternate = inputs
+                let (alternate, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -61462,7 +61462,7 @@ fn native_theorem_artifact_main_preserves_witness_and_fresh_root() {
                 );
             }
             let root = fixture.root.join("fresh-main");
-            let (actual, _) = inputs
+            let (actual, _, _) = inputs
                 .write_native_theorem_artifact_draft(
                     six,
                     owner,
@@ -61630,7 +61630,7 @@ fn native_theorem_artifact_written_types_match_source_handoffs() {
                             .unwrap(),
                     )
                     .unwrap();
-                let actual = inputs
+                let (actual, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -61973,7 +61973,7 @@ fn native_theorem_artifact_written_types_preserve_raw_roots_and_main() {
                 let root = fixture.root.join("written-main");
                 let path = PublishedArtifactPath::new("resolved/main.mizir.json").unwrap();
                 let witness_path = "proof-witnesses/checked.json";
-                let (actual, written) = inputs
+                let (actual, written, _) = inputs
                     .write_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -62221,7 +62221,7 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                     ("proof-witnesses/checked.json", &root),
                 );
                 if case == "baseline" {
-                    let actual = result.unwrap().unwrap();
+                    let (actual, _) = result.unwrap().unwrap();
                     assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
                     assert_eq!(
                         actual
@@ -62471,7 +62471,7 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                     .unwrap();
                 let root = fixture.root.join("statement-formula");
                 let expected = expected.as_ref().unwrap().as_ref().unwrap();
-                let actual = inputs
+                let (actual, _) = inputs
                     .project_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -62761,7 +62761,7 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                 let root = fixture.root.join("statement-main");
                 let witness_path = "proof-witnesses/checked.json";
                 let main_path = PublishedArtifactPath::new("main.mizir.json").unwrap();
-                let (actual, written) = inputs
+                let (actual, written, _) = inputs
                     .write_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -63082,7 +63082,7 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                     ("proof-witnesses/checked.json", &root),
                 );
                 if case == "baseline" {
-                    let actual = result.unwrap().unwrap();
+                    let (actual, _) = result.unwrap().unwrap();
                     let expected = expected.as_ref().unwrap().as_ref().unwrap();
                     let quantified_id = format!(
                         "source.theorem.quantified.{}",
@@ -63412,7 +63412,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                 let expected = expected.as_ref().unwrap().as_ref().unwrap();
                 let root = fixture.root.join("alpha/manifest-baseline");
                 assert!(!root.exists());
-                let (draft, main_write) = inputs
+                let (draft, main_write, _) = inputs
                     .write_native_theorem_artifact_draft(
                         six,
                         owner,
@@ -63653,7 +63653,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     ]
                 );
                 let actual_root = fixture.root.join("alpha/manifest-actual");
-                let (actual_draft, actual_main, actual_commit) = inputs
+                let (actual_draft, actual_main, actual_commit, _) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -63911,9 +63911,9 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                         assert!(!root.exists());
                     }
                 } else {
-                    let (baseline, baseline_write) = lower.unwrap().unwrap();
+                    let (baseline, baseline_write, _) = lower.unwrap().unwrap();
                     if case == "repeat" {
-                        let (draft, write, commit) = actual.unwrap().unwrap();
+                        let (draft, write, commit, _) = actual.unwrap().unwrap();
                         assert_eq!(draft, baseline);
                         assert_eq!(write, baseline_write);
                         let manifest_bytes = fs::read(root.join("artifact-manifest.json")).unwrap();
@@ -64060,7 +64060,7 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                     )
                     .unwrap();
                 let root = fixture.root.join("alpha/manifest-files");
-                let (draft, write, commit) = inputs
+                let (draft, write, commit, _) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -65830,8 +65830,36 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     staged.provenance().build_snapshot_fingerprint(),
                     inputs.snapshot.id.fingerprint()
                 );
+                let projected_root = fixture.root.join("alpha/projected-witness");
+                let (projected, projected_stage) = inputs
+                    .project_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, &projected_root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(&projected, expected.as_ref().unwrap().as_ref().unwrap());
+                assert_eq!(projected_stage, staged);
+                let written_root = fixture.root.join("alpha/written-witness");
+                let (written_draft, _, written_stage) = inputs
+                    .write_native_theorem_artifact_draft(
+                        six,
+                        owner,
+                        vcs.vcs()[0].id,
+                        (profile.clone(), ConcreteFormat::Tptp),
+                        (&policy, &verifier),
+                        (witness_path, "main.mizir.json", &written_root),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(written_draft, projected);
+                assert_eq!(written_stage, staged);
                 let root = fixture.root.join("alpha/committed-witness");
-                let (artifact, main_write, commit) = inputs
+                let (artifact, main_write, commit, actual_published) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,
@@ -65941,6 +65969,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                 assert_eq!(proof.manifest_witnesses(), entry.proof_witnesses);
                 assert_eq!(proof.build_snapshot_fingerprint(), expected_snapshot);
                 let published = publish_ref(&staged, &proof).unwrap();
+                assert_eq!(actual_published, published);
                 assert_eq!(published.reference(), &reference);
                 assert_eq!(published.provenance(), staged.provenance());
                 assert_eq!(
@@ -65997,7 +66026,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     .is_err()
                 );
                 let other_root = fixture.root.join("alpha/other-committed-witness");
-                let (other_artifact, _, other_commit) = inputs
+                let (other_artifact, _, other_commit, _) = inputs
                     .commit_native_theorem_artifact_manifest(
                         six,
                         owner,

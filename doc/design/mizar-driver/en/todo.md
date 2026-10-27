@@ -690,6 +690,8 @@ the owning producers when the paired tasks land.
 
 116. **[Native algorithm summary publication](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-SUMMARY-PUBLICATION.md).** [x]
 
+117. **[Committed source-theorem witness carry](../../task_contracts/en/DRIVER-SOURCE-THEOREM-WITNESS-CARRY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

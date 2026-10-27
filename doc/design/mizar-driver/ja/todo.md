@@ -659,6 +659,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 116. **[Native algorithm summary publication](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-SUMMARY-PUBLICATION.md).** [x]
 
+117. **[コミット済みsource theorem witnessの引き継ぎ](../../task_contracts/ja/DRIVER-SOURCE-THEOREM-WITNESS-CARRY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

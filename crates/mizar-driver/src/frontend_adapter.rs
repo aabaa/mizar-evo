@@ -5136,7 +5136,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some((selection, (products, file, reference))))
     }
 
-    /// Projects real source rows and staged witness bytes into an unpublished module draft.
+    /// Projects real source rows into an unpublished module draft and retains its staged witness.
     pub fn project_native_theorem_artifact_draft(
         self,
         input: &PhaseInput,
@@ -5151,7 +5151,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             &mizar_proof::policy::VerifierPolicy,
         ),
         staging: (&str, &std::path::Path),
-    ) -> Result<Option<mizar_ir::projection::VerifiedArtifactDraft>, String> {
+    ) -> Result<
+        Option<(
+            mizar_ir::projection::VerifiedArtifactDraft,
+            mizar_proof::witness_store::ProofWitnessStagedRef,
+        )>,
+        String,
+    > {
         use mizar_artifact::{
             module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummary, SourceRangeSummary},
             registration_summary::{ArtifactHashClass, ArtifactHashRef},
@@ -5189,6 +5195,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 project_status,
             },
         };
+        let no_draft = Ok(None);
         let fail = |suffix: &str| format!("native theorem artifact draft {suffix}");
         if input.snapshot != self.snapshot.id {
             return Err(fail("snapshot mismatch"));
@@ -5244,7 +5251,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 &original, publisher, vc_id, encoding, policies, staging.0,
             )?
         else {
-            return Ok(None);
+            return no_draft;
         };
         let version = unique(self.snapshot.source_versions.iter().filter(|version| {
             version.package_id == module.package && version.module_path == module.path
@@ -5254,7 +5261,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .native_source(version)
             .ok_or_else(|| fail("capture binding failed"))?;
         if !matches!(version.origin, SourceOrigin::Disk) {
-            return Ok(None);
+            return no_draft;
         }
         self.validate_native_lock_content()?;
         self.validate_native_config_content()?;
@@ -5263,7 +5270,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !self.snapshot.dependency_artifacts.is_empty()
             || !self.module_index.dependency_summaries.is_empty()
         {
-            return Ok(None);
+            return no_draft;
         }
         let storage = publisher.storage();
         let work_unit = IrWorkUnit::new(format!(
@@ -5322,7 +5329,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .get(&typed_summary)
             .map_err(|error| error.to_string())?;
         let Some(summary) = self.native_theorem_module_summary_candidate(module)? else {
-            return Ok(None);
+            return no_draft;
         };
         if *stored_summary != summary {
             return Err(fail("complete summary mismatch"));
@@ -5331,12 +5338,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !summary.dependency_interfaces.is_empty()
             || summary.exported_symbols.len() > 1
         {
-            return Ok(None);
+            return no_draft;
         }
         let Some((arena, env, inference, typed, metadata)) =
             self.native_theorem_source_metadata(module, "native theorem artifact draft")?
         else {
-            return Ok(None);
+            return no_draft;
         };
         let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
         let check =
@@ -5344,7 +5351,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 &arena, &typed, &scope, &env, &labels, &resolved, None,
             )?;
         let [(owner, owner_visibility)] = check.owners() else {
-            return Ok(None);
+            return no_draft;
         };
         if owner.role != SourceTheoremRole::Theorem
             || owner.status != SourceTheoremStatus::Unmodified
@@ -5355,14 +5362,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !inference.diagnostics().is_empty()
             || !metadata.diagnostics().is_empty()
         {
-            return Ok(None);
+            return no_draft;
         }
         let symbol = env
             .symbols()
             .get(&owner.symbol)
             .ok_or_else(|| fail("checked owner symbol missing"))?;
         if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem {
-            return Ok(None);
+            return no_draft;
         }
         let (visibility, export) = match (
             symbol.visibility(),
@@ -5379,10 +5386,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 mizar_resolve::env::ExportStatus::LocalOnly,
                 [],
             ) => ("private", None),
-            _ => return Ok(None),
+            _ => return no_draft,
         };
         if *owner_visibility != visibility {
-            return Ok(None);
+            return no_draft;
         }
         if owner.symbol.module() != arena.module()
             || owner.source_range.source_id != version.source_id
@@ -5413,18 +5420,18 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err(fail("checked owner export mismatch"));
         }
         let mizar_checker::typed_ast::TypedSiteRef::Node(owner_node) = owner.site else {
-            return Ok(None);
+            return no_draft;
         };
         let mut formula = owner_node;
         let formula_range = loop {
             let Some(node) = typed.nodes().node(formula) else {
-                return Ok(None);
+                return no_draft;
             };
             let Some(original) = node.resolved_node.and_then(|id| arena.arena().node(id)) else {
-                return Ok(None);
+                return no_draft;
             };
             let mizar_session::SourceAnchor::Range(range) = node.anchor else {
-                return Ok(None);
+                return no_draft;
             };
             let original_kind = format!("{:?}", original.kind());
             let kind = original_kind.as_str();
@@ -5435,7 +5442,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         "Proposition" | "FormulaExpression" | "QuantifiedFormula(Universal)"
                     ))
             {
-                return Ok(None);
+                return no_draft;
             }
             if node.kind.as_str() != kind
                 || node.recovery != NodeRecoveryState::Normal
@@ -5450,7 +5457,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 || range.end > owner.source_range.end
                 || (formula == owner_node && range != owner.source_range)
             {
-                return Ok(None);
+                return no_draft;
             }
             if kind == "QuantifiedFormula(Universal)" {
                 break range;
@@ -5462,10 +5469,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     .is_some_and(|child| !child.kind.as_str().starts_with("Token("))
             });
             let Some(child) = children.next() else {
-                return Ok(None);
+                return no_draft;
             };
             if formula != owner_node && children.next().is_some() {
-                return Ok(None);
+                return no_draft;
             }
             if typed
                 .nodes()
@@ -5473,7 +5480,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .and_then(|child| child.resolved_node)
                 .is_none_or(|child| !original.children().contains(&child))
             {
-                return Ok(None);
+                return no_draft;
             }
             formula = child;
         };
@@ -5481,7 +5488,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .source_text
             .get(formula_range.start..formula_range.end)
         else {
-            return Ok(None);
+            return no_draft;
         };
         let statements = vec![StatementMetadata {
             item: owner.symbol.fqn().as_str().to_owned(),
@@ -5514,10 +5521,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             })
             .collect();
         let Some(primary) = typed.source_term() else {
-            return Ok(None);
+            return no_draft;
         };
         let Some(atomic) = typed.source_atomic_formula() else {
-            return Ok(None);
+            return no_draft;
         };
         if metadata.expr_metadata().is_empty()
             || metadata.expr_metadata().len() != primary.terms().len() + atomic.formulas().len()
@@ -5532,7 +5539,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !atomic.predicate_heads().is_empty()
             || !atomic.candidates().is_empty()
         {
-            return Ok(None);
+            return no_draft;
         }
         let mut sites = std::collections::BTreeSet::new();
         for (_, term) in primary.terms().iter() {
@@ -5546,7 +5553,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         row.source_range != term.source_range() || row.final_type.is_none()
                     })
             {
-                return Ok(None);
+                return no_draft;
             }
         }
         for (_, formula) in atomic.formulas().iter() {
@@ -5558,14 +5565,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     .get_by_site(formula.site())
                     .is_none_or(|row| row.source_range != formula.source_range())
             {
-                return Ok(None);
+                return no_draft;
             }
         }
         let mut expressions = Vec::with_capacity(sites.len());
         for (_, row) in metadata.expr_metadata().canonical_iter() {
             let range = row.source_range;
             let Some(node) = typed.nodes().node(row.typed_site.node()) else {
-                return Ok(None);
+                return no_draft;
             };
             if !sites.remove(&row.typed_site)
                 || range.source_id != version.source_id
@@ -5576,14 +5583,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 || !row.diagnostics.is_empty()
                 || range.start >= range.end
             {
-                return Ok(None);
+                return no_draft;
             }
             let Some(surface) = source.source_text.get(range.start..range.end) else {
-                return Ok(None);
+                return no_draft;
             };
             let inferred_type = if let Some(id) = row.final_type {
                 let Some(ty) = inference.normalized_types().get(id) else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 if ty.status != NormalizedTypeStatus::Known
                     || ty.head != TypeHeadRef::BuiltinSet
@@ -5591,7 +5598,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     || !ty.attributes.positive().is_empty()
                     || !ty.attributes.negative().is_empty()
                 {
-                    return Ok(None);
+                    return no_draft;
                 }
                 Some("set".to_owned())
             } else {
@@ -5613,13 +5620,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             });
         }
         if !sites.is_empty() {
-            return Ok(None);
+            return no_draft;
         }
         let Some(written_types) = typed.source_type() else {
-            return Ok(None);
+            return no_draft;
         };
         let Some(context) = typed.source_context() else {
-            return Ok(None);
+            return no_draft;
         };
         if written_types.source_id() != version.source_id
             || written_types.module_id() != arena.module()
@@ -5632,7 +5639,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !written_types.mode_rhs().is_empty()
             || !written_types.structure_members().is_empty()
         {
-            return Ok(None);
+            return no_draft;
         }
         let mut type_sites = std::collections::BTreeSet::new();
         let mut bindings = std::collections::BTreeSet::new();
@@ -5641,10 +5648,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             let range = root.source_range();
             let head_range = root.head_range();
             let Some(node) = typed.nodes().node(root.site().node()) else {
-                return Ok(None);
+                return no_draft;
             };
             let Some(head) = typed.nodes().node(root.head_site().node()) else {
-                return Ok(None);
+                return no_draft;
             };
             if root.source_id() != version.source_id
                 || root.module_id() != arena.module()
@@ -5669,16 +5676,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 || head_range.end > range.end
                 || head_range.start >= head_range.end
             {
-                return Ok(None);
+                return no_draft;
             }
             let Some(surface) = source.source_text.get(range.start..range.end) else {
-                return Ok(None);
+                return no_draft;
             };
             if surface != root.spelling()
                 || source.source_text.get(head_range.start..head_range.end)
                     != Some(root.head_spelling())
             {
-                return Ok(None);
+                return no_draft;
             }
             let mut first: Option<usize> = None;
             let mut root_type = None;
@@ -5697,7 +5704,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                                 && row.source_ordinal == application.source_ordinal()
                         }),
                 ) else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 if !bindings.insert(declaration.binding)
                     || !ordinals.insert(declaration.source_ordinal)
@@ -5705,32 +5712,32 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     || node.links.context != Some(declaration.local_context)
                     || head.links.context != Some(declaration.local_context)
                 {
-                    return Ok(None);
+                    return no_draft;
                 }
                 let Some(declared_node) = typed.nodes().node(declaration.site.node()) else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 if declared_node.typing != TypingState::Successful {
-                    return Ok(None);
+                    return no_draft;
                 }
                 let Some(entry) = declared_node
                     .links
                     .type_entry
                     .and_then(|id| typed.types().get(id))
                 else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 let TypeEntryActual::Known(id) = entry.actual else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 if entry.owner != declaration.site
                     || entry.status != TypeStatus::Known
                     || root_type.is_some_and(|previous| previous != id)
                 {
-                    return Ok(None);
+                    return no_draft;
                 }
                 let Some(ty) = inference.normalized_types().get(id) else {
-                    return Ok(None);
+                    return no_draft;
                 };
                 if ty.status != NormalizedTypeStatus::Known
                     || ty.head != TypeHeadRef::BuiltinSet
@@ -5738,7 +5745,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     || !ty.attributes.positive().is_empty()
                     || !ty.attributes.negative().is_empty()
                 {
-                    return Ok(None);
+                    return no_draft;
                 }
                 root_type = Some(id);
                 first = Some(first.map_or(declaration.source_ordinal, |previous| {
@@ -5746,7 +5753,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 }));
             }
             let Some(first) = first else {
-                return Ok(None);
+                return no_draft;
             };
             expressions.push(ExpressionMetadata {
                 expression_id: format!("source.theorem.type.{first}"),
@@ -5764,10 +5771,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             });
         }
         if bindings.len() != written_types.applications().len() {
-            return Ok(None);
+            return no_draft;
         }
         let Some(node) = typed.nodes().node(formula) else {
-            return Ok(None);
+            return no_draft;
         };
         expressions.push(ExpressionMetadata {
             expression_id: format!("source.theorem.quantified.{}", owner.symbol.fqn().as_str()),
@@ -5791,7 +5798,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())?;
         let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
         let [vc] = vcs.vcs() else {
-            return Ok(None);
+            return no_draft;
         };
         if vc.id != vc_id
             || vc.kind != mizar_vc::vc_ir::VcKind::TheoremProofStep
@@ -5800,7 +5807,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || slice.fingerprint().hash()
                 != projection.reuse_metadata().dependency_slice_fingerprint()
         {
-            return Ok(None);
+            return no_draft;
         }
         let range = vc
             .anchor
@@ -5944,7 +5951,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             unique(core.proofs().iter()),
             unique(core.obligation_seeds().iter()),
         ) else {
-            return Ok(None);
+            return no_draft;
         };
         if core.source_id() != version.source_id
             || core.module_id() != arena.module()
@@ -5962,32 +5969,32 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || proof.source.anchor != item.source.anchor
             || core.source_map().item_sources.get(&item_id) != Some(&item.source)
         {
-            return Ok(None);
+            return no_draft;
         }
         let Some(root) = core.proof_nodes().get(proof.root) else {
-            return Ok(None);
+            return no_draft;
         };
         let CoreProofNodeKind::IntroduceBinder {
             binder: local,
             child,
         } = &root.kind
         else {
-            return Ok(None);
+            return no_draft;
         };
         let Some(terminal) = core.proof_nodes().get(*child) else {
-            return Ok(None);
+            return no_draft;
         };
         let CoreProofNodeKind::TerminalGoal {
             obligation,
             citations,
         } = &terminal.kind
         else {
-            return Ok(None);
+            return no_draft;
         };
         let (Some(goal_id), Some(guard), Some(name)) =
             (seed.goal, local.ty_guard, local.source_name.as_deref())
         else {
-            return Ok(None);
+            return no_draft;
         };
         if *obligation != seed_id
             || !citations.is_empty()
@@ -6003,17 +6010,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || terminal.source.anchor != seed.source.anchor
             || root.source.anchor != local.source.anchor
         {
-            return Ok(None);
+            return no_draft;
         }
         let Some(goal) = core.formulas().get(goal_id) else {
-            return Ok(None);
+            return no_draft;
         };
         let CoreFormulaKind::Equals { left, right } = goal.kind else {
-            return Ok(None);
+            return no_draft;
         };
         let (Some(left_term), Some(right_term)) = (core.terms().get(left), core.terms().get(right))
         else {
-            return Ok(None);
+            return no_draft;
         };
         if left == right
             || left_term.kind != CoreTermKind::Var(local.var)
@@ -6022,7 +6029,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || core.source_map().term_sources.get(&left) != Some(&left_term.source)
             || core.source_map().term_sources.get(&right) != Some(&right_term.source)
         {
-            return Ok(None);
+            return no_draft;
         }
         let (
             CoreSourceAnchor::SourceRange(terminal_range),
@@ -6038,7 +6045,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             &local.source.anchor,
         )
         else {
-            return Ok(None);
+            return no_draft;
         };
         if [
             terminal_range,
@@ -6064,7 +6071,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || goal_range == right_range
             || source.source_text.get(local_range.start..local_range.end) != Some(name)
         {
-            return Ok(None);
+            return no_draft;
         }
         let Some((_, equality)) = unique(
             atomic
@@ -6072,10 +6079,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .iter()
                 .filter(|(_, row)| row.source_range() == *goal_range),
         ) else {
-            return Ok(None);
+            return no_draft;
         };
         let Some(equality_row) = metadata.expr_metadata().get_by_site(equality.site()) else {
-            return Ok(None);
+            return no_draft;
         };
         let mut thesis_ids =
             std::collections::BTreeSet::from([equality_row.expr.as_str().to_owned()]);
@@ -6086,17 +6093,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     .iter()
                     .filter(|(_, row)| row.source_range() == *range),
             ) else {
-                return Ok(None);
+                return no_draft;
             };
             let Some(row) = metadata.expr_metadata().get_by_site(term.site()) else {
-                return Ok(None);
+                return no_draft;
             };
             if !thesis_ids.insert(row.expr.as_str().to_owned()) {
-                return Ok(None);
+                return no_draft;
             }
         }
         if thesis_ids.len() != 3 {
-            return Ok(None);
+            return no_draft;
         }
         let thesis = format!("{name} = {name}");
         for expression in &mut expressions {
@@ -6105,7 +6112,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             }
         }
         if !thesis_ids.is_empty() {
-            return Ok(None);
+            return no_draft;
         }
         for parent in input.parent_outputs() {
             storage
@@ -6240,10 +6247,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_current_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
-        Ok(Some(draft))
+        Ok(Some((draft, staged)))
     }
 
-    /// Writes and reads back a genuine unpublished module draft with normal Artifact owners.
+    /// Writes and reads back a genuine unpublished module draft, retaining its staged witness.
     pub fn write_native_theorem_artifact_draft(
         self,
         input: &PhaseInput,
@@ -6262,6 +6269,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Option<(
             mizar_ir::projection::VerifiedArtifactDraft,
             mizar_artifact::store::PublishedArtifactWrite,
+            mizar_proof::witness_store::ProofWitnessStagedRef,
         )>,
         String,
     > {
@@ -6275,7 +6283,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
             },
         };
-        let Some(draft) = self.project_native_theorem_artifact_draft(
+        let Some((draft, staged)) = self.project_native_theorem_artifact_draft(
             input,
             publisher,
             vc_id,
@@ -6345,10 +6353,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_current_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
-        Ok(Some((draft, written)))
+        Ok(Some((draft, written, staged)))
     }
 
-    /// Commits a genuine source module manifest in its fresh package-local staging root.
+    /// Commits a genuine source module manifest and publishes its retained staged witness.
     pub fn commit_native_theorem_artifact_manifest(
         self,
         input: &PhaseInput,
@@ -6368,6 +6376,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             mizar_ir::projection::VerifiedArtifactDraft,
             mizar_artifact::store::PublishedArtifactWrite,
             mizar_artifact::manifest::ManifestCommit,
+            mizar_proof::witness_store::ProofWitnessPublishedRef,
         )>,
         String,
     > {
@@ -6381,7 +6390,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             store::PublishedArtifactPath,
             verified_artifact::VERIFIED_ARTIFACT_SCHEMA_FAMILY,
         };
-        let Some((draft, main_write)) = self.write_native_theorem_artifact_draft(
+        let Some((draft, main_write, staged)) = self.write_native_theorem_artifact_draft(
             input, publisher, vc_id, encoding, policies, staging,
         )?
         else {
@@ -6530,7 +6539,19 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         if !freshness(Some(guard.as_str())) {
             return Err(fail("currentness validation failed"));
         }
-        Ok(Some((draft, main_write, commit)))
+        let proof =
+            mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                &commit,
+                &root,
+                &draft.artifact.module,
+                input.snapshot.fingerprint(),
+            )?;
+        let published = mizar_proof::witness_store::publish_ref(&staged, &proof)
+            .map_err(|error| error.to_string())?;
+        if !freshness(Some(guard.as_str())) {
+            return Err(fail("currentness validation failed"));
+        }
+        Ok(Some((draft, main_write, commit, published)))
     }
 
     /// Returns captured algorithm summaries after binding a published Frontend.
