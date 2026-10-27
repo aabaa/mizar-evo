@@ -1,0 +1,12 @@
+definition
+  let x be object;
+  public terminating algorithm PublicDef: public_alg(x) -> object do return x; end;
+  private terminating algorithm PrivateDef: hidden() do end;
+  terminating algorithm DefaultDef: default_alg() do end;
+  terminating algorithm unlabelled() do end;
+  algorithm ordinary() do end;
+end;
+definition
+  let T be type;
+  terminating algorithm TemplateDef: templated[T]() do end;
+end;

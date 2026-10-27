@@ -1,0 +1,10 @@
+definition
+  algorithm BadNonterm: partial() do end;
+  algorithm after_nonterminating_label() do end;
+  terminating algorithm MissingName: () do end;
+  algorithm after_missing_name() do end;
+  terminating algorithm : missing_label() do end;
+  algorithm after_missing_label() do end;
+  terminating algorithm MissingColon adjacent() do end;
+  algorithm after_missing_colon() do end;
+end;

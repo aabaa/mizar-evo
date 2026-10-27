@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_terminating_labels_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.terminating_labels"
+source = "pass_parser_terminating_labels_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.terminating_labels.parser"]
+notes = "Public, private, and default-visible labelled terminating algorithms, label/name/template adjacency, and unchanged unlabelled terminating and ordinary controls. Syntax admission grants no termination, promotion, citation, or execution credit."

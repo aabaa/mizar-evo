@@ -2166,7 +2166,7 @@ completed match `case` branch. Definition-side and other non-algorithm
 Task 34 adds parser-visible syntax for Chapter 20 verification clauses:
 
 ```ebnf
-algorithm_def ::= [ "terminating" ] "algorithm" identifier
+algorithm_def ::= ( "terminating" "algorithm" [ identifier ":" ] | "algorithm" ) identifier
                   [ template_loci ] algorithm_parameters [ "->" type_expression ]
                   [ requires_clause ] [ ensures_clause ] [ decreasing_clause ]
                   algorithm_body ";" ;
@@ -2397,3 +2397,7 @@ Probe head boundaries without events/diagnostics until an immediate arrow confir
 ## Computation Replay Syntax Boundary
 
 Exact replay and true/false accept contextual Identifier or UserSymbol tokens only in option position; numeric options retain their existing token classes and numeral values. Preserve source-ordered raw option tokens and existing missing-operand/tail recovery. The steps-only theorem consumer rejects replay options with theorems.source.invalid; effective policy transport, execution and replay evidence remain deferred.
+
+## Terminating Algorithm Label Boundary
+
+Only terminating headers admit a label/colon before the algorithm name as original direct token children. Route name-colon headers and terminating leading-colon/adjacent-name errors through the algorithm consumer; the remaining start predicate follows its old path. Preserve visibility wrappers, template suffixes and unlabelled grammar; keep existing partial malformed-header recovery. Labels grant no citation, promotion, termination or execution credit.

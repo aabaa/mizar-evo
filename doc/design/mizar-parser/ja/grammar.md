@@ -2027,7 +2027,7 @@ clause は scope frame を開かない。
 Task 34 は Chapter 20 の verification clause syntax を parser-visible にする。
 
 ```ebnf
-algorithm_def ::= [ "terminating" ] "algorithm" identifier
+algorithm_def ::= ( "terminating" "algorithm" [ identifier ":" ] | "algorithm" ) identifier
                   [ template_loci ] algorithm_parameters [ "->" type_expression ]
                   [ requires_clause ] [ ensures_clause ] [ decreasing_clause ]
                   algorithm_body ";" ;
@@ -2246,3 +2246,7 @@ Lexerはfailを予約する。message形式はlexical authority決定待ち。�
 ## Computation Replay Syntax Boundary
 
 option 位置だけで厳密な replay と true/false を Identifier または UserSymbol として受理する。数値 option の token class と numeral 値、source 順の raw token、既存の欠落 operand/tail recovery を維持する。steps 専用 theorem consumer は replay option を theorems.source.invalid で拒否し、実効 policy の転送・実行・replay evidence は deferred とする。
+
+## Terminating Algorithm Label Boundary
+
+terminating header だけで algorithm 名の前の label/colon を元の direct token child として受理する。 name-colon header と terminating leading-colon/adjacent-name error は algorithm consumer に渡し、それ以外の開始判定は既存経路を保つ。visibility wrapper、template suffix、ラベルなしの文法と既存の部分的 malformed-header recovery を保つ。label は citation・promotion・termination・execution の意味的保証を与えない。

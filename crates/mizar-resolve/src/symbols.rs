@@ -2420,7 +2420,37 @@ impl<'a> SignatureProjectionExtractor<'a> {
         shell: &DeclarationShell,
         view: SurfaceNodeView<'_>,
     ) -> Option<SymbolDeclarationProjection> {
-        let spelling = identifier_after_keyword(view, "algorithm")?;
+        let mut header = view.child_views();
+        let termination = header.next()?;
+        let spelling = if termination.kind() == &SurfaceNodeKind::AlgorithmTerminationClause
+            && view
+                .child_views()
+                .nth(3)
+                .and_then(|node| node.as_token())
+                .is_some_and(|token| token.text.as_ref() == ":")
+        {
+            let [terminating] = termination.children() else {
+                return None;
+            };
+            let terminating = self.ast.node_view(*terminating)?.as_token()?;
+            let keyword = header.next()?.as_token()?;
+            let label = header.next()?.as_token()?;
+            let colon = header.next()?.as_token()?;
+            let name = header.next()?.as_token()?;
+            if terminating.kind != SurfaceTokenKind::ReservedWord
+                || terminating.text.as_ref() != "terminating"
+                || keyword.kind != SurfaceTokenKind::ReservedWord
+                || keyword.text.as_ref() != "algorithm"
+                || label.kind != SurfaceTokenKind::Identifier
+                || colon.kind != SurfaceTokenKind::ReservedSymbol
+                || name.kind != SurfaceTokenKind::Identifier
+            {
+                return None;
+            }
+            name.text.to_string()
+        } else {
+            identifier_after_keyword(view, "algorithm")?
+        };
         Some(
             SymbolDeclarationProjection::new(
                 shell.id(),

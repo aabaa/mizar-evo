@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_parser_terminating_labels_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.terminating_labels"
+source = "fail_parser_terminating_labels_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_algorithm_definition_label"
+stable_detail_key = "parser.terminating_labels.recovery"
+diagnostic_codes = [
+  "malformed_formula_expression", "malformed_formula_expression", "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression", "malformed_formula_expression", "malformed_term_expression", "malformed_term_expression",
+  "malformed_formula_expression", "malformed_formula_expression", "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.terminating_labels.parser"]
+notes = "Reject labels without terminating, a missing name after a complete label prefix, a colon without a label, and adjacent names without a colon. Preserve legacy partial malformed-header ownership and each following ordinary algorithm; only the complete label prefix with missing name retains normal parameter/body structure."

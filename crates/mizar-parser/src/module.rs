@@ -5302,7 +5302,8 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
 
-        if self.is_reserved_word_at(cursor, "terminating") {
+        let terminating = self.is_reserved_word_at(cursor, "terminating");
+        if terminating {
             let termination = self.parse_algorithm_termination_clause_at(cursor);
             cursor = termination.next_position;
             children.push(termination.id);
@@ -5314,6 +5315,14 @@ impl Parser {
             cursor += 1;
         } else {
             self.diagnose_malformed_formula_expression(cursor, "expected `algorithm` keyword");
+        }
+
+        if terminating
+            && self.is_identifier_at(cursor)
+            && self.is_reserved_symbol_at(cursor + 1, ":")
+        {
+            children.extend_from_slice(&self.token_node_ids[cursor..cursor + 2]);
+            cursor += 2;
         }
 
         if self.is_identifier_at(cursor) {
@@ -14998,11 +15007,19 @@ impl Parser {
         }
 
         let name = algorithm + 1;
+        if algorithm != position && self.is_reserved_symbol_at(name, ":") {
+            return true;
+        }
         if !self.is_identifier_at(name) {
             return false;
         }
 
         let mut cursor = name + 1;
+        if self.is_reserved_symbol_at(cursor, ":")
+            || (algorithm != position && self.is_identifier_at(cursor))
+        {
+            return true;
+        }
         if self.is_reserved_symbol_at(cursor, "(")
             || self.is_reserved_word_at(cursor, "do")
             || self.is_reserved_symbol_at(cursor, "->")
