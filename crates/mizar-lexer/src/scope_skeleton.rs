@@ -652,7 +652,30 @@ impl ScopeSkeletonBuilder {
                     self.advance();
                 }
                 ScopeSkeletonTokenKind::Comma if depth == 0 => {
-                    expected_name = true;
+                    let mut cursor = self.cursor + 1;
+                    expected_name = loop {
+                        let Some(name) = self.tokens.get(cursor) else {
+                            break false;
+                        };
+                        if name.kind != ScopeSkeletonTokenKind::Word || !is_identifier(&name.lexeme)
+                        {
+                            break false;
+                        }
+                        let Some(following) = self.tokens.get(cursor + 1) else {
+                            break false;
+                        };
+                        match following.kind {
+                            ScopeSkeletonTokenKind::Comma => cursor += 2,
+                            ScopeSkeletonTokenKind::Other
+                                if matches!(following.lexeme.as_str(), ":=" | "=") =>
+                            {
+                                break true;
+                            }
+                            ScopeSkeletonTokenKind::Word if following.lexeme == "as" => break true,
+                            ScopeSkeletonTokenKind::Semicolon => break true,
+                            _ => break false,
+                        }
+                    };
                     self.advance();
                 }
                 ScopeSkeletonTokenKind::Word if expected_name && is_identifier(&token.lexeme) => {

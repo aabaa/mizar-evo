@@ -1,0 +1,28 @@
+definition
+  let p,q be expr of boolean;
+  algorithm broken_boolean_operands(p,q) -> expr of boolean do
+    var missing_conjunction := p & ;
+    var after_conjunction := p;
+    ghost var missing_not := not ;
+    var after_not := p;
+    return (p & q;
+    var after_group := p;
+    var missing_binding := p, ;
+    var after_binding := p;
+    const missing_const;
+    var after_const := p;
+    const missing_initializer := ;
+    var after_initializer := p;
+    return not thesis;
+    var after_thesis := p;
+    p := p & q as expr of boolean;
+    var after_assignment_as := p;
+    p := p & q, forbidden_assignment;
+    var after_assignment_comma := p;
+    return p & q as expr of boolean;
+    var after_return_as := p;
+    return p & q, forbidden_return;
+    var after_return_comma := p;
+  end;
+end;
+set after_boolean_failure = sentinel;

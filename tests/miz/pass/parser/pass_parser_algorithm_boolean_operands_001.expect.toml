@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_algorithm_boolean_operands_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithm_boolean_operands"
+source = "pass_parser_algorithm_boolean_operands_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.algorithm_boolean_operands.parser"]
+notes = "Actual expr-of-boolean formals/results exercise existing reference operands only within already-selected formula RHS, all statement hosts, grouped/mixed operands, strict comma tails and shared as/type/justification ownership. Real two/three-term predicate symbols, do-not, complex/container/Binder arguments, grouped comparisons and term roots preserve priority. Syntax grants no reflection, type, evaluation or proof credit; general predicate-ending comma ambiguity stays deferred."

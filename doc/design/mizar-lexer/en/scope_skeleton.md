@@ -102,9 +102,15 @@ The implementation is a conservative single pass over a reduced token stream.
    remains parser-owned. `reconsider` scans the `type_change_list`
    conservatively, records each item-head identifier, and skips optional
    equated right-hand sides until a top-level comma or `as` while tracking
-   parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders
-   scan comma-separated declaration heads while tracking parenthesis depth so
-   initializer tuples do not create extra binders.
+   parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders recognize a later declaration head only
+   when an inline pure probe from a depth-zero comma proves
+   `, WordIdentifier (, WordIdentifier)* (Other := | Other = | Word as | Semicolon)`.
+   `WordIdentifier` requires both `Word` token kind and existing `is_identifier`. The raw-only `=` alternative preserves legacy lexical declaration shapes; it does not change Parser initializer grammar.
+   The probe stops at its first discriminator and never scans initializer, type,
+   or proof text. This keeps late predicate-argument commas from becoming scope
+   bindings and makes no predicate-arity or symbol-identity claim. Malformed EOF
+   or trailing-comma forms may conservatively omit later names under the existing
+   under-approximation policy; parser recovery and diagnostics remain unchanged.
 5. `ghost var` and `ghost const` are treated as algorithm binders. `ghost target := term;` is treated as a non-binding assignment and skipped without a scope diagnostic. Other `ghost` forms produce a recoverable diagnostic and do not invent bindings.
 6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `reconsider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
 7. Before bindings enter a frame, names are deduplicated against existing names in that same lexical scope. Duplicates are ignored with a diagnostic so the skeleton cannot create two competing overrides for the same spelling and range.

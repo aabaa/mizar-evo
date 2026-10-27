@@ -756,11 +756,13 @@ variable segment when the quantified variable list is entirely absent; that
 input stays outside the concrete formula host until a later binder-recovery
 task adds dedicated missing-binder vocabulary.
 
-In match patterns only, after predicate priority, a bounded bare identifier may use existing `TermExpression(TermReference)` without creating a zero-argument predicate.
-Context reaches recursive operands and balanced whole-formula groups. Ordinary
-formulas, grouped atomic comparisons, algorithm RHS and quantified interiors keep
-existing routes; plain roots (`p`, `(p)`, `P(x)`, Binder) stay terms. Comma terminators
-and `do not` predicate tails retain priority; recovery cursors/successors stay unchanged.
+After predicate priority, a bounded bare identifier may use existing `TermExpression(TermReference)`
+in MatchPattern or a selected AlgorithmRhs formula branch, without a raw capture kind. Private `Ordinary/MatchPattern/AlgorithmRhs`
+modes keep mathematical formulas, conditions, and quantifier interiors Ordinary.
+MatchPattern keeps existing recursive/group behavior; AlgorithmRhs reaches only
+recursive operands and balanced groups within selected RHS formulas. Preserve
+standalone bare/grouped/application/Binder roots, grouped atomic comparisons,
+comma/`do not` predicate-tail priority, and recovery cursors/successors.
 
 Task 14 tests must pin connective precedence and associativity, parenthesized
 formula grouping, non-associative `iff` rejection, repetition-token
@@ -2398,7 +2400,7 @@ Spec20.2.6/AppendixA.A20 admit `fail;` in existing algorithm statement lists, ne
 The actual lexer reserves fail. Unsupported message forms await the separate lexical authority decision. Tests use fresh parse-only pass/missing-semicolon/non-algorithm sources, inspect valid successors and source/typed/cache replay, and retain all existing oracles.
 
 ## Expr type syntax
-Chapter3.3/A3: TypeHead preserves `expr`, required `of` and a recursive TypeExpression. Explicit expr-led of/over actuals are type candidates; ordinary value actuals and bounded-type semantic eligibility remain unchanged. Missing of uses MalformedTypeExpression at the next token and keeps a valid operand; a missing operand uses zero-width MissingTypeExpression without consuming its delimiter. Required-type policies and lookahead retain nested types. Placement, covariance, constructor roles and reflection are Checker-owned.
+Chapter 3.3/A3: TypeHead preserves `expr`, required `of` and a recursive TypeExpression. On an explicit `expr of` target only, retain exactly an unqualified `Identifier` token spelled `boolean` with no following dot as the raw target: emit the existing one-token `TypeHead` under a one-token `TypeExpression`, preserving the original range. The expr type-end probe mirrors this exact condition. This does not broaden Chapter 3.3 `builtin_type` (`object` / `set`), shared builtin helpers, ordinary type starts, ordinary Boolean term or template-actual parsing, `UserSymbol` `boolean`, or qualified paths. Raw spelling supplies no type identity, visibility or semantic certification. Explicit expr-led of/over actuals remain type candidates; bounded-type eligibility remains unchanged. Missing `of` and operand recovery, nested required-type policies/lookahead, placement, covariance, constructor roles and reflection retain their existing owners.
 
 ## Binder expression roots
 Chapter13.10/A13 root syntax admits identifier or parenthesized2+ distinct identifier heads, then reserved |-> and a full term body. Binder roots enter set RHS, parentheses, recursive bodies, all existing delimited term lists (attribute/predicate/call/selector/bracket/enumeration), and algorithm term initializers, assignments, returns, loop inputs, measures, match scrutinees and term patterns, plus structure field defaults, named constructor/update values, comprehension mappers, deffunc bodies, named/unnamed take witnesses, reconsider values, both reduction operands and direct/case/otherwise term definiens (functor, redefinition and property equals), of/over constructor actuals, general mode/structure bracket actuals, generic-template actuals, ordinary relation/is/predicate term slots and every iterative-equality term. Qualified/operator operands and contextual formula inputs retain their existing routes; these remain syntax candidates without typing, capture or termination credit.
@@ -2415,7 +2417,7 @@ Only terminating headers admit a label/colon before the algorithm name as origin
 
 ## Algorithm Formula RHS Boundary
 
-Initializers, assignments and returns use existing term parsing unless explicit prefix, builtin/is/connective or transparent grouping evidence selects FormulaExpression. Preserve ambiguous bare/application and Binder terms, opaque nested term contents, binding/justification boundaries and old consuming recovery. Check reserved thesis only within a selected formula's consumed range, using existing MalformedFormulaExpression; later proof/citation syntax is outside that range. Expected-type reflection, boolean evaluation and general predicate/bare-atom interpretation remain deferred; actual bounded scope/type consumers reject formula RHS until owned.
+Initializers, assignments and returns use existing term parsing unless explicit prefix, builtin/is/connective or transparent grouping evidence selects FormulaExpression. On that selected formula branch only, `AlgorithmRhs` may retain a bounded bare Boolean reference as existing `TermExpression(TermReference)` after predicate priority; this adds no capture kind or standalone term-root change. At atomic and parenthesized operands, permit RHS-only `as`, or a comma only when the untouched suffix after the candidate bare reference or matched group exactly matches `, Identifier (, Identifier)* (:= | as | ;)`; stop there without probing an initializer or type. This is not a general formula-tail probe. Preserve ambiguous bare/application and Binder terms, opaque nested term contents, late/qualified/template predicate heads, complex/Binder/container right-term lists, `do not` tail ownership, binding/justification boundaries, and existing consuming recovery for unmatched groups. Check reserved thesis only within a selected formula's consumed range, using existing MalformedFormulaExpression; later proof/citation syntax is outside that range. Expected-type reflection, Boolean evaluation and general predicate interpretation remain deferred; actual bounded scope/type consumers reject formula RHS until owned.
 
 ## Explicit Computation Term Call Boundary
 

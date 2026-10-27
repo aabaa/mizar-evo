@@ -99,9 +99,14 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
    diagnostic も出さずに文末まで回復します。authoritative term syntax は引き続き
    parser の所有です。`reconsider` は `type_change_list` を保守的に走査し、各 item
    先頭の識別子を記録し、任意の等号右辺を括弧・角括弧・波括弧の深さを追跡しながら
-   トップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` /
-   `const` は、括弧の深さを追跡しながらカンマ区切りの宣言ヘッドを読むため、
-   初期化子のタプルが余計な束縛子を作ることはありません。
+   トップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` / `const` は、depth 0 の comma 以降が
+   `, WordIdentifier (, WordIdentifier)* (Other := | Other = | Word as | Semicolon)`を
+   満たす場合だけ後続宣言名を認識します。`WordIdentifier` はtoken kindが
+   `Word`で、既存の`is_identifier`もtrueである必要があります。pure probeは最初の
+   discriminatorで停止し、initializer/type/proof本文は走査しません。raw の `=` は既存の lexical declaration shape を維持する選択肢で、Parser の initializer 文法は変えません。late predicate
+   argument commaをscope bindingにせず、predicate arityやsymbol identityも推論しません。
+   malformed EOF/trailing-commaでは既存のunder-approximation方針に従い後続名を
+   conservatively省略し得ます。parser recoveryとdiagnosticsは変更せずauthoritativeです。
 5. `ghost var` と `ghost const` はアルゴリズムの束縛子として扱います。`ghost target := term;` は束縛しない assignment として扱い、scope diagnostic なしで読み飛ばします。それ以外の `ghost` 形式は、回復可能な診断を出し、束縛を捏造しません。
 6. 束縛の有効範囲は形状ごとに決めます。`reserve` は、入れ子のブロックの外でのみルートフレームに入ります。`for`, `ex`, `given` は文単位のフレームを作ります。`consider`、`reconsider`、ブロック内の `let`、名前付き等号の束縛子、`deffunc`、`defpred`、`var`、`const`、`processed` は、開いているブロックがあれば現在のブロックフレームを拡張し、なければ文単位のフレームにフォールバックします。アルゴリズムの `for ... do` は、束縛子と省略可能な `processed name` を、`pending_do_bindings` 経由で次の `do` ブロックに移します。
 7. 束縛をフレームに入れる前に、同じ字句スコープ内の既存の名前と重複しないか確認します。重複は診断を出して無視します。これにより、同じ綴り/範囲に対して競合する上書きがスケルトン内に作られないようにします。

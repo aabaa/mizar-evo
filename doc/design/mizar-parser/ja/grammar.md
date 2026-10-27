@@ -708,9 +708,8 @@ separator や tail は `MalformedFormulaExpression` を報告する。quantified
 list が完全に欠落している場合、task 14 は missing variable segment を合成しない。その入力は
 later binder-recovery task が専用 missing-binder vocabulary を追加するまで concrete formula
 host の外に残す。
-match pattern のみ、predicate priority後の境界付きbare identifierは既存の
-`TermExpression(TermReference)`を使い、zero-argument predicateを作らない。contextは再帰operandとformula全体を囲むbalanced groupへ及ぶ。
-通常formula、grouped atomic comparison、algorithm RHS、quantified interior、`p` / `(p)` / `P(x)` / Binder rootは従来経路を保つ。commaと`do not` predicate tailを優先し、recovery cursor/successorは従来通り。
+predicate priority後の境界付きbare identifierは、MatchPatternおよび既に選択された
+AlgorithmRhs formula branchで既存の`TermExpression(TermReference)`を使える。新しいraw capture kindは追加しない。privateなOrdinary/MatchPattern/AlgorithmRhs contextでは、数学formula、condition、quantifier interiorはOrdinaryのまま保つ。MatchPatternは既存のrecursive operandとbalanced groupへの挙動を保ち、AlgorithmRhsは選択済みRHS formula内のrecursive operandとbalancedなformula全体のgroupにのみ伝播する。standaloneなbare/grouped/application/Binder term rootの選択、grouped atomic comparison、commaと`do not` predicate tailの優先、recovery cursor/successorを維持する。
 
 Task 14 の test は connective precedence と associativity、parenthesized formula
 grouping、非結合 `iff` rejection、repetition token preservation、`thesis` /
@@ -2244,7 +2243,7 @@ Spec20.2.6/AppendixA.A20の`fail;`を既存algorithm statement list、nested bra
 Lexerはfailを予約する。message形式はlexical authority決定待ち。新規parse-onlyのpass/semicolon欠落/algorithm外source、正常な後続node、型付きview・source/cache replayを検査し、既存oracleは保持する。
 
 ## Expr type syntax
-第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持する。exprで始まるof/over引数のみ型候補とし、通常値引数とbounded-typeの意味上の適格性は維持する。of欠落は次tokenでMalformedTypeExpressionを出し有効な型を保持し、型欠落は区切りを消費せずゼロ幅MissingTypeExpressionを置く。required-type policyとlookaheadを入れ子でも保持する。配置、共変性、constructor role、reflectionはCheckerが所有する。
+第3.3章/A3のTypeHeadは`expr`、必須の`of`、再帰的TypeExpressionを保持します。明示された`expr of`のtargetだけで、後続tokenがdotでない未修飾の`Identifier` `boolean`をraw targetとして保持します。既存の一token `TypeHead`を一token rangeの`TypeExpression`に入れ、expr用type-end probeも同じ条件を認識します。Chapter 3.3の`builtin_type`（`object` / `set`）、shared builtin helper、通常type start、通常のBoolean term/template actual、`UserSymbol` `boolean`、qualified pathは拡張しません。raw spellingはtype identity、visibility、semantic certificationを与えません。expr-led of/over actualとbounded-type eligibility、missing `of` / operand recovery、nested required-type policy/lookahead、配置、共変性、constructor role、reflectionは既存ownerを維持します。
 
 ## Binder expression roots
 第13.10章/A13のroot構文は単一identifierまたは異なる2個以上のidentifierの括弧head、予約記号|->、term本文からなる。Binder入口はset右辺、括弧内、再帰本文、既存の区切り付き項リスト（属性/述語/呼出し/selector/角括弧/列挙）、algorithmの項初期値/代入/return/loop入力/measure/match対象/項pattern、構造体field既定値、名前付きconstructor/update値、comprehension mapper、deffunc本文、名前付き/名前なしtake witness、reconsider値、reduction両項、func/redefine/property equalsのdirect/case/otherwise term definiens、of/over constructor actual、一般mode/structure bracket actual、generic-template actual、通常の関係/is/述語の項slot、反復等式の全項である。qualified/operator operand、contextual formula入力は既存経路を維持する。型検査、capture、停止性の受理ではなく構文候補のみを提供する。
@@ -2261,7 +2260,7 @@ terminating header だけで algorithm 名の前の label/colon を元の direct
 
 ## Algorithm Formula RHS Boundary
 
-initializer・assignment・return は、明示的な prefix、builtin/is/connective または先頭 grouping の根拠が FormulaExpression を選ぶ場合以外は既存の term 解析を使う。曖昧な bare/application と Binder term、opaque な入れ子の term、binding/justification 境界、既存の consuming recovery を保つ。予約語 thesis は選択 formula の実際の消費範囲だけで既存 MalformedFormulaExpression を使って検査し、後続 proof/citation は含めない。expected-type reflection、boolean 評価、一般 predicate/bare-atom の解釈は deferred とし、既存の bounded scope/type consumer は対応まで formula RHS を拒否する。
+initializer・assignment・return は、明示的な prefix、builtin/is/connective または透明な grouping の根拠が FormulaExpression を選ぶ場合以外は既存の term 解析を使う。その選択済みformula branchに限り、AlgorithmRhsはpredicate priority後の境界付きbare Boolean referenceを既存の`TermExpression(TermReference)`として保持できる。capture kindやstandalone term rootの変更はない。atomic/parenthesized operandではRHS専用の`as`、または候補bare referenceまたは対応するgroupの直後の未消費suffixが厳密に`, Identifier (, Identifier)* (:= | as | ;)`の場合だけcomma stopを認め、initializer/typeはprobeしない。これは一般的なformula tail probeではない。曖昧なbare/applicationとBinder term、opaqueな入れ子term、late/qualified/template predicate head、complex/Binder/container right-term list、`do not` tailの所有権、binding/justification境界、unmatched groupの既存consuming recoveryを保つ。予約語thesisは選択formulaの実消費範囲だけで既存`MalformedFormulaExpression`を使って検査し、後続proof/citationは含めない。expected-type reflection、Boolean評価、一般predicate解釈はdeferredとし、実際のbounded scope/type consumerは対応までformula RHSを拒否する。
 
 ## Explicit Computation Term Call Boundary
 

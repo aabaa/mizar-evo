@@ -343,7 +343,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 41 | `QuaExpression` | task-11 `term "qua" type_expression` qualification surface |
 | 42 | `PrefixExpression` | task-12 prefix operator expression surface |
 | 43 | `PostfixExpression` | task-12 postfix operator expression surface |
-| 44 | `FormulaExpression` | task-13/14 single-operand formula wrapper, including contextual pattern operands |
+| 44 | `FormulaExpression` | task-13/14 single-operand formula wrapper, including contextual reference operands |
 | 45 | `BuiltinPredicateApplication` | task-13 `term_expression builtin_pred term_expression` atomic formula |
 | 46 | `IsAssertion` | task-13 generic `term_expression "is" ...` assertion |
 | 47 | `AttributeTestChain` | task-13 attribute-only `is_assertion_body` chain |
@@ -673,7 +673,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 infix Pratt expression shape |
 | `SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator)` | spelling, precedence | `SyntaxKind::PrefixExpression` | task-12 prefix Pratt expression shape |
 | `SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator)` | spelling, precedence | `SyntaxKind::PostfixExpression` | task-12 postfix Pratt expression shape |
-| `SurfaceNodeKind::FormulaExpression` | none | `SyntaxKind::FormulaExpression` | parser task-13/14 formula wrapper; owns exactly one formula child, including atomic formulas, connectives, quantifiers, parenthesized formulas, and formula constants |
+| `SurfaceNodeKind::FormulaExpression` | none | `SyntaxKind::FormulaExpression` | parser task-13/14 formula wrapper; owns exactly one formula or contextual reference operand, including atomic formulas, connectives, quantifiers, parenthesized formulas, and formula constants |
 | `SurfaceNodeKind::BuiltinPredicateApplication` | none | `SyntaxKind::BuiltinPredicateApplication` | parser task-13 built-in `in`, `=`, or `<>` predicate; owns left term, predicate token, and right term or missing-term recovery |
 | `SurfaceNodeKind::IsAssertion` | none | `SyntaxKind::IsAssertion` | parser task-13 generic `is` assertion; owns subject term, `is`, optional `not`, and a type/body child without resolver classification |
 | `SurfaceNodeKind::AttributeTestChain` | none | `SyntaxKind::AttributeTestChain` | parser task-13 attribute-only assertion body; owns one or more task-8 `AttributeRef` children |
@@ -907,7 +907,7 @@ arguments concrete syntax for represented theorem/lemma payloads, so those
 payloads no longer require a placeholder solely because the predicate head owns
 template arguments.
 
-Match-pattern `PrefixFormula` / `BinaryFormula` / grouped `FormulaExpression` operands may use existing
+Match-pattern and selected algorithm-RHS `PrefixFormula` / `BinaryFormula` / grouped `FormulaExpression` operands may use existing
 `TermExpression(TermReference)` for bounded bare identifiers; no capture identity/type or quantified-subtree interpretation is added.
 
 `BuiltinPredicateApplication` owns a left `TermExpression`, the built-in

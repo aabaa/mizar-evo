@@ -1,0 +1,30 @@
+definition
+  let p,q,r,s be expr of boolean;
+  let x,y be object;
+  pred ReadyDef: local_ready means x = x;
+  pred PairDef: x,y local_pair means x = y;
+  pred TripDef: x,y,s local_trip means x = y;
+  algorithm boolean_operands(p,q,r,s,x,y) -> expr of boolean do
+    var bare := p & q; const negative := not p;
+    ghost var repeated := p & p; ghost const grouped := (p) & ((q));
+    bare := p & (q or not r); ghost repeated := not (p & q);
+    var mixed := p & x = y; var inline := P(x) & q; var ready := p & local_ready;
+    var typed := p & q as expr of boolean by TypeOk;
+    var typed_group := not (q) as expr of boolean proof thus thesis; end;
+    var init_tail := p & q, next_init := x = y;
+    var as_tail := p & q, next_as as expr of boolean proof thus thesis; end;
+    var empty_tail := p & q, next_empty;
+    var many_tail := p & q, next_many, last_many := not r;
+    var group_tail := not (q), next_group := x = y;
+    var nested_tail := not ((q)), next_nested as expr of boolean;
+    var pair := not q,r local_pair; var trip := not q,r,s local_trip;
+    var grouped_pair := not (q),r local_pair; var grouped_trip := not ((q)),r,s local_trip;
+    var negated := not q,r do not local_pair; var complex := not q,f(r) local_pair;
+    var container := not q,[r,s] local_pair; var binder_arg := not q,(r,s) |-> r local_pair;
+    var atomic := not (x) = y; var nested_atomic := not ((x)) = y; var binder_atom := not (x |-> x) = y;
+    var term := p; var term_group := (p); var call := P(x); var binder := x |-> x;
+    return p & q by ReturnOk; return not (q) proof thus thesis; end;
+    var after_returns := not p;
+  end;
+end;
+set after_boolean_operands = sentinel;
