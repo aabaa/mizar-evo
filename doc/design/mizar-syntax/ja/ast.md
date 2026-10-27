@@ -514,7 +514,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::TypeArguments` | なし | `SyntaxKind::TypeArguments` | parser task 8 の `of`、`over`、または bracket 構文の type argument wrapper。task 9 は `of`/`over` placeholder を `TermExpression` argument に置き換え、task 11 は bracket `qua_arg` placeholder を `TermExpression` / `QuaExpression` surface に置き換える |
 | `SurfaceNodeKind::TermPlaceholder` | なし | `SyntaxKind::TermPlaceholder` | raw-kind 互換性のために残る parser task 8 の legacy syntax-only term-entry stub。task 11 の parser は bracket `qua_arg` 形に対してこれを生成しない |
 | `SurfaceNodeKind::TermExpression` | なし | `SyntaxKind::TermExpression` | parser task 9 の current term-expression wrapper。primary term、postfix chain、`QuaExpression`、後続 operator expression のいずれか 1 つの current term-shape child を所有する |
-| `SurfaceNodeKind::TermReference` | なし | `SyntaxKind::TermReference` | parser task 9 の term position の identifier token または共有 `QualifiedSymbol`。parenthesized application の前に task 31 の任意の `TemplateArguments` を持てる。semantic classification は持たない |
+| `SurfaceNodeKind::TermReference` | なし | `SyntaxKind::TermReference` | parser task 9 の term position の identifier token または共有 `QualifiedSymbol`、もしくは computation callee の NamespacePath/final-dot/Identifier child。parenthesized application の前に task 31 の任意の `TemplateArguments` を持てる。semantic classification は持たない |
 | `SurfaceNodeKind::NumeralTerm` | なし | `SyntaxKind::NumeralTerm` | parser task 9 の numeral term wrapper |
 | `SurfaceNodeKind::ItTerm` | なし | `SyntaxKind::ItTerm` | parser task 9 の `it` keyword term wrapper |
 | `SurfaceNodeKind::ParenthesizedTerm` | なし | `SyntaxKind::ParenthesizedTerm` | parser task 9 の parenthesized term。`(`、`TermExpression` または `MissingTerm`、任意の `)` を所有する |
@@ -645,7 +645,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::GroupedReference` | なし | `SyntaxKind::GroupedReference` | parser task 17 の grouped citation。`NamespacePath`、`.{`、comma token で区切られた grouped item、任意の delimiter recovery、任意の `}` を所有する |
 | `SurfaceNodeKind::GroupedReferenceItem` | なし | `SyntaxKind::GroupedReferenceItem` | parser task 17 の grouped citation member。1 個の identifier token と任意の task 31 `TemplateArguments` を所有する |
 | `SurfaceNodeKind::BulkReference` | なし | `SyntaxKind::BulkReference` | parser task 17 の bulk citation。`NamespacePath` と compound `.*` token を所有する |
-| `SurfaceNodeKind::ComputationJustification` | なし | `SyntaxKind::ComputationJustification` | parser task 17 の computation proof payload。`computation` token と任意の parenthesized computation-option list を所有する |
+| `SurfaceNodeKind::ComputationJustification` | なし | `SyntaxKind::ComputationJustification` | parser task 17 の computation proof payload。`computation` token と任意の parenthesized な順序付き ComputationOption/ApplicationTerm list を所有する |
 | `SurfaceNodeKind::ComputationOption` | なし | `SyntaxKind::ComputationOption` | parser task 17 の computation option。数値 option 名または contextual `replay`、colon token、numeral または boolean word、もしくは `MissingProofStep` recovery を所有する |
 | `SurfaceNodeKind::SelectorAccess` | なし | `SyntaxKind::SelectorAccess` | parser task 10 の postfix selector access または selector-call surface。syntax-only dot role を保持する |
 | `SurfaceNodeKind::StructureUpdate` | なし | `SyntaxKind::StructureUpdate` | parser task 10 の functional `term "with" "(" field_update_list ")"` update surface |
@@ -990,7 +990,7 @@ local citation は 1 個の identifier token を持つ `Reference` である。
 所有する。`GroupedReferenceItem` はこの増分では 1 個の identifier token を所有する。
 `BulkReference` は `NamespacePath` と compound `.*` token を所有する。
 `ComputationJustification` は `computation` token と、comma token で区切られた任意の
-parenthesized `ComputationOption` child を所有する。各 `ComputationOption` は
+parenthesized `ComputationOption` または明示 `ApplicationTerm` child を所有する。各 `ComputationOption` は
 `steps`/`timeout`/`nest` と numeral、または contextual `replay` と `true`/`false`、および間の colon token を所有する。
 
 Justification node は citation spelling だけを保持する。label resolution、grouped /

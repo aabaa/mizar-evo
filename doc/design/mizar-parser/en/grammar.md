@@ -941,8 +941,11 @@ grouped_reference        ::= namespace_path ".{" grouped_reference_item
 grouped_reference_item   ::= identifier ;
 bulk_reference           ::= namespace_path ".*" ;
 computation_proof        ::= "by" "computation"
-                              [ "(" computation_option
-                                  { "," computation_option } ")" ] ;
+                              [ "(" computation_argument
+                                  { "," computation_argument } ")" ] ;
+computation_argument     ::= computation_option | computation_term_call ;
+computation_term_call    ::= identifier { "." identifier } [ template_arguments ]
+                              "(" [ term_expression { "," term_expression } ] ")" ;
 computation_option       ::= ( "steps" | "timeout" | "nest" )
                               ":" numeral | "replay" ":" ( "true" | "false" ) ;
 let_statement            ::= "let" qualified_variable_segment
@@ -976,7 +979,7 @@ identifier token; the earlier namespace path helper remains semantic-free.
 more `GroupedReferenceItem` children separated by comma tokens, and `}` when
 present. `BulkReference` owns a `NamespacePath` plus the compound `.*` token.
 `ComputationJustification` owns the `computation` token and optional
-parenthesized `ComputationOption` list; each option owns its option keyword,
+parenthesized ordered option/call list; each `ComputationOption` owns its option keyword,
 colon token, and a numeral or contextual replay boolean token.
 
 Task 17 consumes justifications only at canonical hosts that are small enough
@@ -2405,3 +2408,7 @@ Only terminating headers admit a label/colon before the algorithm name as origin
 ## Algorithm Formula RHS Boundary
 
 Initializers, assignments and returns use existing term parsing unless explicit prefix, builtin/is/connective or transparent grouping evidence selects FormulaExpression. Preserve ambiguous bare/application and Binder terms, opaque nested term contents, binding/justification boundaries and old consuming recovery. Check reserved thesis only within a selected formula's consumed range, using existing MalformedFormulaExpression; later proof/citation syntax is outside that range. Expected-type reflection, boolean evaluation and general predicate/bare-atom interpretation remain deferred; actual bounded scope/type consumers reject formula RHS until owned.
+
+## Explicit Computation Term Call Boundary
+
+Identifier-token bare/dotted/template call heads select direct ApplicationTerm children beside existing options. Each application owns its ordinary term arguments; its callee TermReference preserves namespace/final-name/template children. Probe before events, then use actual consuming endpoints and existing partial recovery; preserve old option/tail diagnostics. Calls steps()/replay() are distinct from colon options. The bounded closed-equality theorem profile rejects calls at proof scope with InvalidShape before the unchanged steps-only checker/Core guard; call resolution, contextual formula/label/thesis roles, expected types, execution and evidence remain deferred.

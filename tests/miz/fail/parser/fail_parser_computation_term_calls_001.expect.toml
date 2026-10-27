@@ -1,0 +1,22 @@
+schema_version = 1
+id = "fail_parser_computation_term_calls_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.computation_term_calls"
+source = "fail_parser_computation_term_calls_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_computation_term_call"
+stable_detail_key = "parser.computation_term_calls.recovery"
+diagnostic_codes = [
+  "malformed_justification",
+  "malformed_justification",
+  "malformed_justification",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_justification", "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.computation_term_calls.parser"]
+notes = "Reject a bare top-level call name, a term tail after a whole call, missing computation separators, missing inner terms, and missing inner/outer closes. Preserve existing call/justification diagnostics and recovery ownership, canonical frontend diagnostic ordering, retained call payloads, and every successor set statement."

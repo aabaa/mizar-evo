@@ -1,0 +1,11 @@
+thesis by computation(calc());
+thesis by computation(calc(1,x,f(y),x |-> x,(x,y) |-> y));
+thesis by computation(pkg.calc(x));
+thesis by computation(pkg.tools.calc[set](x));
+thesis by computation(calc[set](x));
+thesis by computation(calc(),other(x),steps: 8,timeout: 20,nest: 3,replay: true);
+thesis by computation(steps: 8,replay: false,calc(x),other());
+thesis by computation(steps(),replay(),steps: 8,replay: true);
+thesis by computation;
+thesis by computation(steps: 8,timeout: 20,nest: 3);
+set after_computation_calls = sentinel;

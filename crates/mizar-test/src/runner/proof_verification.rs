@@ -4946,6 +4946,202 @@ mod term_proof_tests {
     }
 
     #[test]
+    fn step5c14_explicit_computation_calls_preserve_terms_and_fail_in_scope() {
+        use mizar_resolve::{
+            names::{
+                SourceVariableScopeError, SourceVariableScopeInput, SourceVariableScopeResolver,
+            },
+            resolved_ast::SurfaceResolvedArena,
+        };
+        use mizar_syntax::SurfaceNodeKind as K;
+
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::super::formula_statement::STEP5C10_CASES[0].0)
+            .unwrap();
+        let core = step5c14_computation_core("theorem T: 0 = 0 by computation(steps: 8);").unwrap();
+        let (_, proof) = core.proofs().iter().next().unwrap();
+        let node = core.proof_nodes().get(proof.root).unwrap();
+        assert!(
+            matches!(&node.kind, mizar_core::core_ir::CoreProofNodeKind::ComputationGoal { steps, .. } if steps == "8")
+        );
+
+        for (arguments, direct, call, callee, term_args, qualified, templated) in [
+            (
+                "calc(0)",
+                vec!["computation", "(", "calc(0)", ")"],
+                "calc(0)",
+                "calc",
+                vec!["0"],
+                false,
+                false,
+            ),
+            (
+                "calc()",
+                vec!["computation", "(", "calc()", ")"],
+                "calc()",
+                "calc",
+                vec![],
+                false,
+                false,
+            ),
+            (
+                "steps: 8, calc(0)",
+                vec!["computation", "(", "steps: 8", ",", "calc(0)", ")"],
+                "calc(0)",
+                "calc",
+                vec!["0"],
+                false,
+                false,
+            ),
+            (
+                "calc(0), steps: 8",
+                vec!["computation", "(", "calc(0)", ",", "steps: 8", ")"],
+                "calc(0)",
+                "calc",
+                vec!["0"],
+                false,
+                false,
+            ),
+            (
+                "pkg.calc(0)",
+                vec!["computation", "(", "pkg.calc(0)", ")"],
+                "pkg.calc(0)",
+                "pkg.calc",
+                vec!["0"],
+                true,
+                false,
+            ),
+            (
+                "calc[set](0)",
+                vec!["computation", "(", "calc[set](0)", ")"],
+                "calc[set](0)",
+                "calc[set]",
+                vec!["0"],
+                false,
+                true,
+            ),
+        ] {
+            let text = format!("theorem T: 0 = 0 by computation({arguments});");
+            let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{arguments}: {:?}",
+                frontend.diagnostics
+            );
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(
+                ast.node_views()
+                    .all(|node| !node.is_recovered() && node.as_recovery().is_none()),
+                "{arguments}"
+            );
+            let requests = ast
+                .node_views()
+                .filter(|node| matches!(node.kind(), K::ComputationJustification))
+                .collect::<Vec<_>>();
+            assert_eq!(requests.len(), 1, "{arguments}");
+            let request = requests[0];
+            let children = request.child_views().collect::<Vec<_>>();
+            assert_eq!(
+                children
+                    .iter()
+                    .map(|node| &text[node.range().start..node.range().end])
+                    .collect::<Vec<_>>(),
+                direct,
+                "{arguments}"
+            );
+            assert_eq!(
+                children
+                    .iter()
+                    .filter(|node| matches!(node.kind(), K::ApplicationTerm))
+                    .count(),
+                1,
+                "{arguments}"
+            );
+            let application = children
+                .iter()
+                .find(|node| matches!(node.kind(), K::ApplicationTerm))
+                .unwrap();
+            assert_eq!(
+                &text[application.range().start..application.range().end],
+                call
+            );
+            let call_children = application.child_views().collect::<Vec<_>>();
+            assert!(matches!(call_children[0].kind(), K::TermReference));
+            let reference = call_children[0];
+            assert_eq!(
+                &text[reference.range().start..reference.range().end],
+                callee
+            );
+            assert_eq!(
+                reference
+                    .child_views()
+                    .any(|node| matches!(node.kind(), K::NamespacePath)),
+                qualified
+            );
+            if qualified {
+                let parts = reference.child_views().collect::<Vec<_>>();
+                assert!(matches!(parts[0].kind(), K::NamespacePath));
+                assert_eq!(parts[1].as_token().unwrap().text.as_ref(), ".");
+                assert_eq!(parts[2].as_token().unwrap().text.as_ref(), "calc");
+            }
+            assert_eq!(
+                reference
+                    .child_views()
+                    .any(|node| matches!(node.kind(), K::TemplateArguments)),
+                templated
+            );
+            assert_eq!(call_children[1].as_token().unwrap().text.as_ref(), "(");
+            assert_eq!(
+                call_children
+                    .last()
+                    .unwrap()
+                    .as_token()
+                    .unwrap()
+                    .text
+                    .as_ref(),
+                ")"
+            );
+            assert_eq!(
+                call_children[2..call_children.len() - 1]
+                    .iter()
+                    .map(|node| {
+                        assert!(matches!(node.kind(), K::TermExpression));
+                        &text[node.range().start..node.range().end]
+                    })
+                    .collect::<Vec<_>>(),
+                term_args,
+                "{arguments}"
+            );
+
+            let resolver = resolver_symbol_collection(&config.workspace_root, case, ast);
+            assert!(
+                resolver.detail_keys.is_empty(),
+                "{arguments}: {:?}",
+                resolver.detail_keys
+            );
+            let source = SurfaceResolvedArena::lower(ast, &resolver.module).unwrap();
+            let scope_error = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, source.module(), &resolver.env),
+            )
+            .unwrap_err();
+            assert_eq!(
+                scope_error,
+                SourceVariableScopeError::InvalidShape,
+                "{arguments}"
+            );
+            assert_eq!(
+                step5c14_computation_core(&text).unwrap_err(),
+                "InvalidShape",
+                "{arguments}"
+            );
+        }
+    }
+
+    #[test]
     fn step5c14_replay_options_parse_cleanly_but_fail_source_check() {
         use mizar_syntax::SurfaceNodeKind as K;
         for (options, expected, accepted) in [

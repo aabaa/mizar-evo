@@ -881,8 +881,11 @@ grouped_reference        ::= namespace_path ".{" grouped_reference_item
 grouped_reference_item   ::= identifier ;
 bulk_reference           ::= namespace_path ".*" ;
 computation_proof        ::= "by" "computation"
-                              [ "(" computation_option
-                                  { "," computation_option } ")" ] ;
+                              [ "(" computation_argument
+                                  { "," computation_argument } ")" ] ;
+computation_argument     ::= computation_option | computation_term_call ;
+computation_term_call    ::= identifier { "." identifier } [ template_arguments ]
+                              "(" [ term_expression { "," term_expression } ] ")" ;
 computation_option       ::= ( "steps" | "timeout" | "nest" )
                               ":" numeral | "replay" ":" ( "true" | "false" ) ;
 let_statement            ::= "let" qualified_variable_segment
@@ -915,7 +918,7 @@ path helper は semantic-free のままである。`GroupedReference` は `Names
 compound `.{` token、comma token で区切られた 1 個以上の `GroupedReferenceItem`、
 存在する場合の `}` を所有する。`BulkReference` は `NamespacePath` と compound `.*`
 token を所有する。`ComputationJustification` は `computation` token と任意の
-parenthesized `ComputationOption` list を所有し、各 option は option keyword、colon
+parenthesized な順序付き option/call list を所有し、各 `ComputationOption` は option keyword、colon
 token、numeral または contextual replay boolean token を所有する。
 
 Task 17 は、この増分で十分小さく扱える canonical host でだけ justification を消費する。
@@ -2254,3 +2257,7 @@ terminating header だけで algorithm 名の前の label/colon を元の direct
 ## Algorithm Formula RHS Boundary
 
 initializer・assignment・return は、明示的な prefix、builtin/is/connective または先頭 grouping の根拠が FormulaExpression を選ぶ場合以外は既存の term 解析を使う。曖昧な bare/application と Binder term、opaque な入れ子の term、binding/justification 境界、既存の consuming recovery を保つ。予約語 thesis は選択 formula の実際の消費範囲だけで既存 MalformedFormulaExpression を使って検査し、後続 proof/citation は含めない。expected-type reflection、boolean 評価、一般 predicate/bare-atom の解釈は deferred とし、既存の bounded scope/type consumer は対応まで formula RHS を拒否する。
+
+## Explicit Computation Term Call Boundary
+
+Identifier token の bare/dotted/template call head は既存 option と並ぶ direct ApplicationTerm child を選ぶ。各 application は通常の term 引数を持ち、その callee TermReference は namespace/final-name/template child を保持する。event 前に probe し、実際の consuming endpoint と既存の部分 recovery を使い、option/tail の診断は保つ。steps()/replay() は colon option と区別する。bounded な閉じた等式 theorem profile は call を proof scope の InvalidShape で拒否し、その後の steps-only checker/Core guard は不変とする。call 解決、文脈依存 formula/label/thesis role、期待型、実行・evidence は deferred とする。

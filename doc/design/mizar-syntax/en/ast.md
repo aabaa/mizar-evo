@@ -528,7 +528,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::TypeArguments` | none | `SyntaxKind::TypeArguments` | parser task-8 type argument wrapper for `of`, `over`, or bracket syntax; task 9 replaces `of`/`over` placeholders with `TermExpression` arguments, and task 11 replaces bracket `qua_arg` placeholders with `TermExpression` / `QuaExpression` surfaces |
 | `SurfaceNodeKind::TermPlaceholder` | none | `SyntaxKind::TermPlaceholder` | legacy parser task-8 syntax-only term-entry stub retained for raw-kind compatibility; the task-11 parser no longer emits it for bracket `qua_arg` forms |
 | `SurfaceNodeKind::TermExpression` | none | `SyntaxKind::TermExpression` | parser task-9 current term-expression wrapper; owns exactly one current term-shape child, which may be a primary term, postfix chain, `QuaExpression`, or later operator expression |
-| `SurfaceNodeKind::TermReference` | none | `SyntaxKind::TermReference` | parser task-9 identifier token or shared `QualifiedSymbol` in term position, with optional task-31 `TemplateArguments` before parenthesized application and no semantic classification |
+| `SurfaceNodeKind::TermReference` | none | `SyntaxKind::TermReference` | parser task-9 identifier token or shared `QualifiedSymbol`, or computation callee NamespacePath/final-dot/Identifier children, in term position, with optional task-31 `TemplateArguments` before parenthesized application and no semantic classification |
 | `SurfaceNodeKind::NumeralTerm` | none | `SyntaxKind::NumeralTerm` | parser task-9 numeral term wrapper |
 | `SurfaceNodeKind::ItTerm` | none | `SyntaxKind::ItTerm` | parser task-9 `it` keyword term wrapper |
 | `SurfaceNodeKind::ParenthesizedTerm` | none | `SyntaxKind::ParenthesizedTerm` | parser task-9 parenthesized term; owns `(`, a `TermExpression` or `MissingTerm`, and optional `)` |
@@ -659,7 +659,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::GroupedReference` | none | `SyntaxKind::GroupedReference` | parser task-17 grouped citation; owns `NamespacePath`, `.{`, grouped items separated by comma tokens, optional delimiter recovery, and optional `}` |
 | `SurfaceNodeKind::GroupedReferenceItem` | none | `SyntaxKind::GroupedReferenceItem` | parser task-17 grouped citation member; owns one identifier token and optional task-31 `TemplateArguments` |
 | `SurfaceNodeKind::BulkReference` | none | `SyntaxKind::BulkReference` | parser task-17 bulk citation; owns `NamespacePath` plus the compound `.*` token |
-| `SurfaceNodeKind::ComputationJustification` | none | `SyntaxKind::ComputationJustification` | parser task-17 computation proof payload; owns the `computation` token and optional parenthesized computation-option list |
+| `SurfaceNodeKind::ComputationJustification` | none | `SyntaxKind::ComputationJustification` | parser task-17 computation proof payload; owns the `computation` token and optional parenthesized ordered ComputationOption/ApplicationTerm list |
 | `SurfaceNodeKind::ComputationOption` | none | `SyntaxKind::ComputationOption` | parser task-17 computation option; owns a numeric option name or contextual `replay`, a colon token, and a numeral or boolean word, or `MissingProofStep` recovery |
 | `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
 | `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
@@ -1038,7 +1038,7 @@ identifier token. A `GroupedReference` owns a `NamespacePath`, the compound
 tokens, and the closing `}` token when present. `GroupedReferenceItem` owns one
 identifier token in this increment. A `BulkReference` owns a `NamespacePath`
 and the compound `.*` token. `ComputationJustification` owns the `computation`
-token and optional parenthesized `ComputationOption` children separated by
+token and optional parenthesized `ComputationOption` or explicit `ApplicationTerm` children separated by
 comma tokens. Each `ComputationOption` owns `steps`/`timeout`/`nest` plus a numeral, or contextual `replay` plus `true`/`false`, with the intervening colon token.
 
 Justification nodes preserve citation spelling only. They do not resolve

@@ -1825,7 +1825,68 @@ impl Parser {
                     break;
                 }
 
-                if let Some(option) = self.parse_computation_option_at(cursor) {
+                let qualified = if self.is_reserved_symbol_at(cursor + 1, ".") {
+                    self.qualified_reference_plan_at(cursor)
+                } else {
+                    None
+                };
+                let head_end = qualified
+                    .as_ref()
+                    .map_or(cursor + 1, |plan| plan.next_position);
+                let call_opener = if self.is_reserved_symbol_at(head_end, "[") {
+                    self.template_arguments_end_at(head_end).filter(|end| {
+                        (head_end..*end).all(|position| {
+                            !self.is_semicolon_at(position) && !self.is_end_keyword_at(position)
+                        })
+                    })
+                } else {
+                    Some(head_end)
+                };
+                if self.is_identifier_at(cursor)
+                    && call_opener.is_some_and(|opener| self.is_reserved_symbol_at(opener, "("))
+                {
+                    let argument = if let Some(plan) = qualified {
+                        let namespace = self.emit_namespace_path_from_parts(
+                            &plan.namespace_segments,
+                            &plan.namespace_separators,
+                        );
+                        let mut callee_children = vec![
+                            namespace,
+                            self.token_node_ids[plan.final_separator],
+                            self.token_node_ids[plan.final_reference],
+                        ];
+                        let mut callee_recovery = Vec::new();
+                        let mut callee_end = plan.next_position;
+                        if self.is_reserved_symbol_at(callee_end, "[") {
+                            let template = self.parse_template_arguments_at(callee_end);
+                            callee_end = template.next_position;
+                            callee_children.push(template.id);
+                            callee_recovery.extend(template.recovery_nodes);
+                        }
+                        let callee = self.events.emit(SyntaxEvent::Node {
+                            kind: SurfaceNodeKind::TermReference,
+                            range: self.covering_token_range(cursor, callee_end),
+                            children: callee_children,
+                        });
+                        if self.is_reserved_symbol_at(callee_end, "(") {
+                            let mut call = self
+                                .parse_application_term_after_callee(cursor, callee, callee_end);
+                            call.recovery_nodes.extend(callee_recovery);
+                            call
+                        } else {
+                            ParsedTypeNode {
+                                id: callee,
+                                next_position: callee_end,
+                                recovery_nodes: callee_recovery,
+                            }
+                        }
+                    } else {
+                        self.parse_identifier_term_at(cursor)
+                    };
+                    cursor = argument.next_position;
+                    children.push(argument.id);
+                    recovery_nodes.extend(argument.recovery_nodes);
+                } else if let Some(option) = self.parse_computation_option_at(cursor) {
                     cursor = option.next_position;
                     children.push(option.id);
                     recovery_nodes.extend(option.recovery_nodes);

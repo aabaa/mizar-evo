@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_computation_term_calls_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.computation_term_calls"
+source = "pass_parser_computation_term_calls_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.computation_term_calls.parser"]
+notes = "Explicit bare, qualified, and template-bearing identifier calls preserve ordinary term inputs, including nested and Binder terms, beside existing computation options. Call parentheses distinguish steps()/replay() from colon options. Bare computation and numeric options remain controls; syntax grants no semantic call or execution credit."

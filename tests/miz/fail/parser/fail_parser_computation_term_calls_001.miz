@@ -1,0 +1,12 @@
+thesis by computation(calc);
+set after_bare_call = sentinel;
+thesis by computation(calc(x) = y);
+set after_call_tail = sentinel;
+thesis by computation(calc(x) steps: 2);
+set after_missing_separator = sentinel;
+thesis by computation(calc(,x));
+set after_missing_inner_term = sentinel;
+thesis by computation(calc(x,));
+set after_trailing_inner_comma = sentinel;
+thesis by computation(calc(x;
+set after_missing_closes = sentinel;
