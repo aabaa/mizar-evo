@@ -191,9 +191,9 @@ fn dispatch_registry_phase(
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
-                    SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService,
-                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
-                    SourceTheoremOverloadResolutionService,
+                    SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
+                    SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
+                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
@@ -225,7 +225,40 @@ fn dispatch_registry_phase(
                     task.task.unit,
                     mizar_build::task_graph::WorkUnit::EvidenceCandidate { .. }
                 );
-            let kernel_service = registry.descriptors().len() == 13
+            let artifact_task = task.task.kind == mizar_build::task_graph::TaskKind::ArtifactCommit
+                && task.task.phases == [PipelinePhase::ArtifactCommit]
+                && matches!(
+                    task.task.unit,
+                    mizar_build::task_graph::WorkUnit::Module { .. }
+                );
+            let artifact_service = registry.descriptors().len() == 14
+                && registry
+                    .service_for_phase(PipelinePhase::ArtifactCommit)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremArtifactCommitService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && [
+                    (
+                        PipelinePhase::SourceLoad,
+                        std::any::TypeId::of::<SourceLoadService>(),
+                    ),
+                    (
+                        PipelinePhase::Frontend,
+                        std::any::TypeId::of::<FrontendService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, concrete)| {
+                    registry
+                        .service_for_phase(phase)
+                        .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                });
+            let kernel_service = (registry.descriptors().len() == 13 || artifact_service)
                 && registry
                     .service_for_phase(PipelinePhase::KernelCheck)
                     .is_ok_and(|service| {
@@ -264,43 +297,47 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            let typed_profile =
-                (check_and_elaborate || vc_task || discharge_task || atp_task || kernel_task)
-                    && registry
-                        .descriptor_for_phase(PipelinePhase::SourceLoad)
-                        .ok()
-                        == Some(&SourceLoadService.phase())
-                    && registry.descriptor_for_phase(PipelinePhase::Frontend).ok()
-                        == Some(
-                            &FrontendService {
-                                artifact_roots: Vec::new(),
-                            }
-                            .phase(),
-                        )
-                    && [
-                        (
-                            PipelinePhase::ModuleResolve,
-                            SourceTheoremModuleResolverService.phase(),
-                            std::any::TypeId::of::<SourceTheoremModuleResolverService>(),
-                        ),
-                        (
-                            PipelinePhase::SignatureCollection,
-                            SourceTheoremSignatureCollectionService.phase(),
-                            std::any::TypeId::of::<SourceTheoremSignatureCollectionService>(),
-                        ),
-                        (
-                            PipelinePhase::TypeChecking,
-                            SourceTheoremTypeCheckingService.phase(),
-                            std::any::TypeId::of::<SourceTheoremTypeCheckingService>(),
-                        ),
-                    ]
-                    .into_iter()
-                    .all(|(phase, descriptor, concrete)| {
-                        registry.descriptor_for_phase(phase).ok() == Some(&descriptor)
-                            && registry
-                                .service_for_phase(phase)
-                                .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
-                    });
+            let typed_profile = (check_and_elaborate
+                || vc_task
+                || discharge_task
+                || atp_task
+                || kernel_task
+                || artifact_task)
+                && registry
+                    .descriptor_for_phase(PipelinePhase::SourceLoad)
+                    .ok()
+                    == Some(&SourceLoadService.phase())
+                && registry.descriptor_for_phase(PipelinePhase::Frontend).ok()
+                    == Some(
+                        &FrontendService {
+                            artifact_roots: Vec::new(),
+                        }
+                        .phase(),
+                    )
+                && [
+                    (
+                        PipelinePhase::ModuleResolve,
+                        SourceTheoremModuleResolverService.phase(),
+                        std::any::TypeId::of::<SourceTheoremModuleResolverService>(),
+                    ),
+                    (
+                        PipelinePhase::SignatureCollection,
+                        SourceTheoremSignatureCollectionService.phase(),
+                        std::any::TypeId::of::<SourceTheoremSignatureCollectionService>(),
+                    ),
+                    (
+                        PipelinePhase::TypeChecking,
+                        SourceTheoremTypeCheckingService.phase(),
+                        std::any::TypeId::of::<SourceTheoremTypeCheckingService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, descriptor, concrete)| {
+                    registry.descriptor_for_phase(phase).ok() == Some(&descriptor)
+                        && registry
+                            .service_for_phase(phase)
+                            .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                });
             type_prefix = check_and_elaborate
                 && typed_profile
                 && registry.descriptors().len() == 5
@@ -391,10 +428,11 @@ fn dispatch_registry_phase(
                                 .ok()
                                 == Some(&service.phase())
                     })
-                && matches!(
-                    registry.descriptor_for_phase(PipelinePhase::ArtifactCommit),
-                    Err(PhaseRegistryError::MissingPhaseService { .. })
-                );
+                && (artifact_service
+                    || matches!(
+                        registry.descriptor_for_phase(PipelinePhase::ArtifactCommit),
+                        Err(PhaseRegistryError::MissingPhaseService { .. })
+                    ));
             let discharge_profile = vc_profile
                 && (registry.descriptors().len() == 11 || atp_service)
                 && registry
@@ -413,7 +451,12 @@ fn dispatch_registry_phase(
             let discharge_prefix = discharge_task && discharge_profile;
             let atp_prefix = atp_task && discharge_profile && atp_service;
             let kernel_prefix = kernel_task && discharge_profile && atp_service && kernel_service;
-            let candidate_prefix = atp_prefix || kernel_prefix;
+            let artifact_prefix = artifact_task
+                && discharge_profile
+                && atp_service
+                && kernel_service
+                && artifact_service;
+            let candidate_prefix = atp_prefix || kernel_prefix || artifact_prefix;
             vc_group = vc_prefix && check_and_elaborate;
             if !signature_prefix
                 && !type_prefix
@@ -469,6 +512,10 @@ fn dispatch_registry_phase(
                         .clone(),
                     [PipelinePhase::KernelCheck] if kernel_prefix => registry
                         .descriptor_for_phase(PipelinePhase::KernelCheck)
+                        .ok()?
+                        .clone(),
+                    [PipelinePhase::ArtifactCommit] if artifact_prefix => registry
+                        .descriptor_for_phase(PipelinePhase::ArtifactCommit)
                         .ok()?
                         .clone(),
                     [PipelinePhase::ModuleResolve] => {
@@ -655,15 +702,53 @@ fn dispatch_registry_phase(
                             })
                             && (!candidate_prefix
                                 || direct?.lineage().parents.contains(&core.output())))
-                        .then_some((core, preparation))
+                        .then_some((&results[0].output_refs[0], core, preparation))
                     });
-                    let (core, preparation) = dependencies.next()?;
+                    let (summary, core, preparation) = dependencies.next()?;
                     if dependencies.next().is_some() {
                         return None;
                     }
                     let mut parents = vec![core, vc.unwrap_or(preparation)];
                     if candidate_prefix {
                         parents.push(direct?);
+                    }
+                    if artifact_prefix {
+                        let mut kernels = task.task.dependencies.iter().filter_map(|id| {
+                            let [result] = phase_results.get(id)?.as_slice() else {
+                                return None;
+                            };
+                            let [kernel, file] = result.output_refs.as_slice() else {
+                                return None;
+                            };
+                            (result.status == PhaseStatus::Complete
+                                && result.diagnostics.is_empty()
+                                && [
+                                    (kernel, "SourceTheoremCandidateCheck"),
+                                    (file, "SourceTheoremCandidateWitnessFile"),
+                                ]
+                                .into_iter()
+                                .all(|(output, kind)| {
+                                    output.phase() == &IrPhase::new("KernelCheck")
+                                        && output.output_kind() == &OutputKind::new(kind)
+                                        && output.snapshot() == task.snapshot
+                                        && output.work_unit() == &unit
+                                        && output.schema_version()
+                                            == mizar_ir::storage::SchemaVersion::new(1)
+                                        && output.lineage().named_input_hashes == named
+                                })
+                                && kernel.lineage().parents.len() == 4
+                                && [core.output(), vc?.output(), direct?.output()]
+                                    .iter()
+                                    .all(|id| kernel.lineage().parents.contains(id))
+                                && file.lineage().parents == vec![kernel.output()])
+                            .then_some((kernel, file))
+                        });
+                        let (kernel, file) = kernels.next()?;
+                        if kernels.next().is_some() {
+                            return None;
+                        }
+                        parents.insert(0, summary);
+                        parents.extend([kernel, file]);
                     }
                     parents
                 } else if task.task.phases == [PipelinePhase::ModuleResolve]

@@ -947,16 +947,45 @@ impl CompilerDriver {
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremAlgorithmPreparationService,
-                    SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService,
-                    SourceTheoremElaborationService, SourceTheoremModuleResolverService,
-                    SourceTheoremOverloadResolutionService,
+                    SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
+                    SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
+                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
-            let kernel_profile = self.registry.descriptors().len() == 13
+            let artifact_profile = self.registry.descriptors().len() == 14
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::ArtifactCommit)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremArtifactCommitService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && [
+                    (
+                        PipelinePhase::SourceLoad,
+                        std::any::TypeId::of::<SourceLoadService>(),
+                    ),
+                    (
+                        PipelinePhase::Frontend,
+                        std::any::TypeId::of::<FrontendService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, concrete)| {
+                    self.registry
+                        .service_for_phase(phase)
+                        .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                });
+            let kernel_profile = (self.registry.descriptors().len() == 13 || artifact_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::KernelCheck)

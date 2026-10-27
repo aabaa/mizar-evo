@@ -9469,6 +9469,194 @@ impl PhaseService for SourceTheoremCandidateCheckService {
     }
 }
 
+pub(crate) struct SourceTheoremArtifactCommitService {
+    pub(crate) check: SourceTheoremCandidateCheckService,
+    pub(crate) main_path: String,
+    pub(crate) output_parent: String,
+}
+
+impl PhaseService for SourceTheoremArtifactCommitService {
+    fn phase(&self) -> PhaseDescriptor {
+        let check = self.check.phase().schema_version;
+        PhaseDescriptor::new(
+            "SourceTheoremArtifactCommit",
+            PhaseOwner::MizarArtifact,
+            vec![PipelinePhase::ArtifactCommit],
+            format!(
+                "mizar-artifact/source-theorem-artifact-commit/v1;candidate_check={}:{};main_path={}:{}",
+                check.len(),
+                check,
+                self.main_path.len(),
+                self.main_path,
+            ),
+            "SourceTheoremArtifactData",
+        )
+        .expect("source theorem artifact commit descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem artifact commit has no complete dependency footprint"
+                .to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        if self.check.candidate.configuration_tags().is_none() {
+            return blocking();
+        }
+        let Some(prefix) = &self.check.witness_path_prefix else {
+            return blocking();
+        };
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+            || input.parent_outputs().len() != 6
+        {
+            return blocking();
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return blocking();
+        };
+        let Some(version) = unique(inputs.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        })) else {
+            return blocking();
+        };
+        let source_key = source_input_hash(version);
+        if input.identities().input_hash() != source_key {
+            return blocking();
+        }
+        let Some(vc_parent) = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        })) else {
+            return blocking();
+        };
+        let Some(kernel) = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+                && parent.as_output_ref().output_kind()
+                    == &OutputKind::new("SourceTheoremCandidateCheck")
+        })) else {
+            return blocking();
+        };
+        let storage = publisher.storage();
+        let Ok(handle) = storage.typed_handle::<mizar_vc::vc_ir::VcSet>(
+            vc_parent.as_output_ref(),
+            &OutputKind::new("SourceTheoremVC"),
+        ) else {
+            return blocking();
+        };
+        let Ok(vcs) = storage.get(&handle) else {
+            return blocking();
+        };
+        let [vc] = vcs.vcs() else {
+            return blocking();
+        };
+        if storage
+            .typed_handle::<(
+                mizar_kernel::checker::KernelCheckResult,
+                mizar_proof::policy::PolicyDecision,
+            )>(
+                kernel.as_output_ref(),
+                &OutputKind::new("SourceTheoremCandidateCheck"),
+            )
+            .is_err()
+            || [vc_parent, kernel].iter().any(|parent| {
+                publisher
+                    .validate_current_output(input.snapshot, parent.as_output_ref())
+                    .is_err()
+            })
+        {
+            return blocking();
+        }
+        let Some(package) = unique(
+            inputs
+                .build_plan
+                .packages
+                .iter()
+                .filter(|package| package.package_id == module.package),
+        ) else {
+            return blocking();
+        };
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return blocking();
+        };
+        let Ok(package_root) = std::fs::canonicalize(
+            PathBuf::from(inputs.snapshot.workspace_root.as_str()).join(root),
+        ) else {
+            return blocking();
+        };
+        let Ok(parent) = std::fs::canonicalize(package_root.join(&self.output_parent)) else {
+            return blocking();
+        };
+        if !parent.is_dir()
+            || !parent
+                .strip_prefix(&package_root)
+                .is_ok_and(|relative| !relative.as_os_str().is_empty())
+        {
+            return blocking();
+        }
+        let snapshot_hex = input
+            .snapshot
+            .fingerprint()
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let source_hex = source_key
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let root = parent.join(format!("{snapshot_hex}-{source_hex}"));
+        let kernel_hex = kernel
+            .as_output_ref()
+            .content_hash()
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let witness_path = format!("{prefix}/{kernel_hex}.json");
+        match inputs.commit_native_theorem_artifact_manifest(
+            &input,
+            &publisher,
+            vc.id,
+            (
+                self.check.candidate.logic_profile.clone(),
+                self.check.candidate.concrete_format,
+            ),
+            (&self.check.candidate.policy, &self.check.verifier_policy),
+            (&witness_path, &self.main_path, &root),
+        ) {
+            Ok(Some((_, _, _, _, handle))) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {

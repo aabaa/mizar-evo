@@ -523,6 +523,54 @@ impl PhaseRegistryBuilder {
         ))
     }
 
+    pub fn register_source_theorem_artifact_commit(
+        &mut self,
+        discharge_policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+        staging: (String, String, String),
+    ) -> Result<&mut Self, String> {
+        let candidate = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy: discharge_policy,
+            logic_profile,
+            concrete_format,
+        };
+        if candidate.configuration_tags().is_none() {
+            return Err(
+                "unsupported source theorem artifact commit transport configuration".to_owned(),
+            );
+        }
+        if (staging.0 != "proof-witnesses" && !staging.0.starts_with("proof-witnesses/"))
+            || mizar_artifact::store::PublishedArtifactPath::new(format!(
+                "{}/candidate.json",
+                staging.0
+            ))
+            .is_err()
+        {
+            return Err("unsupported source theorem witness path prefix".to_owned());
+        }
+        if !staging.1.ends_with(".mizir.json")
+            || mizar_artifact::store::PublishedArtifactPath::new(&staging.1).is_err()
+        {
+            return Err("unsupported source theorem artifact main path".to_owned());
+        }
+        if mizar_artifact::store::PublishedArtifactPath::new(&staging.2).is_err() {
+            return Err("unsupported source theorem artifact output parent".to_owned());
+        }
+        Ok(self.register(
+            crate::frontend_adapter::SourceTheoremArtifactCommitService {
+                check: crate::frontend_adapter::SourceTheoremCandidateCheckService {
+                    candidate,
+                    verifier_policy,
+                    witness_path_prefix: Some(staging.0),
+                },
+                main_path: staging.1,
+                output_parent: staging.2,
+            },
+        ))
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

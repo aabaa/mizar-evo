@@ -694,6 +694,8 @@ the owning producers when the paired tasks land.
 
 118. **[Committed theorem Artifact IR data](../../task_contracts/en/DRIVER-COMMITTED-THEOREM-ARTIFACT-IR.md).** [x]
 
+119. **[Registered source theorem ArtifactCommit](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ARTIFACT-COMMIT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
