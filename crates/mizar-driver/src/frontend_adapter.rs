@@ -9648,8 +9648,9 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             (&self.check.candidate.policy, &self.check.verifier_policy),
             (&witness_path, &self.main_path, &root),
         ) {
-            Ok(Some((_, _, _, _, handle))) => PhaseResult {
+            Ok(Some((_, _, commit, _, handle))) => PhaseResult {
                 output_refs: vec![handle.erase()],
+                artifact_commit: Some(commit),
                 ..PhaseResult::complete()
             },
             Ok(None) | Err(_) => blocking(),

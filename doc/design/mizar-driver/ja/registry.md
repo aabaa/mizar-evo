@@ -236,8 +236,11 @@ struct PhaseResult {
     diagnostics: Vec<DiagnosticBatch>,
     output_refs: Vec<AnyPhaseOutputRef>,
     cache_observation: Option<PhaseCacheObservation>,
+    artifact_commit: Option<mizar_artifact::manifest::ManifestCommit>,
 }
 ```
+
+公開 `artifact_commit` field は既存 owner operation の transport で、invocation receipt や publication authority ではない。`complete()` と cached SourceLoad/Frontend result は None とする。直接 registry result や caller 設定 field は event 受理を与えず、producer/task/current-output guard は [Driver Artifact Boundary](driver.md#artifact-boundary) が所有する。
 
 `PhaseStatus` は driver/scheduler status projection である:
 

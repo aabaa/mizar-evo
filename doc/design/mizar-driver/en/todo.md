@@ -696,6 +696,8 @@ the owning producers when the paired tasks land.
 
 119. **[Registered source theorem ArtifactCommit](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ARTIFACT-COMMIT.md).** [x]
 
+120. **[Actual ArtifactBoundary commit handoff](../../task_contracts/en/DRIVER-ARTIFACT-BOUNDARY-COMMIT-HANDOFF.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

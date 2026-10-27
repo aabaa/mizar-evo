@@ -156,6 +156,10 @@ event を emit してよい。
 報告した後に限って許される。event は owner-provided artifact identity、content hash、package /
 module identity、manifest transaction status を参照してよい。
 
+[Driver が受理した同call commit](driver.md#artifact-boundary)ごとに既存 ArtifactBoundary を一つ、EventOwner::Artifact で emit する。owner identity は ArtifactHashRef(Artifact, MANIFEST_SCHEMA_FAMILY, 実 manifest schema, 実 commit.write().artifact_hash).to_artifact_hash_string() とし、main/IR hash や Driver hash frame で代用しない。OwnerRecordRef の文字列は過去 owner operation の参照であり、proof/receipt を構成しない。
+順序は lifecycle rank60/kind1、実 TaskFinished SchedulerOrderKey、ArtifactCommit phase、debug module work-unit 表記と owner identity tie-breaker を使う。TaskFinished は deterministic ordering 用で commit 権限ではなく、worker 完了時刻や架空 task id はいずれも与えない。
+通常 events(session) は保存履歴を replay する。後の publisher obsolete や file 損傷だけでは過去 ArtifactBoundary を除去せず、source/file を更新せず、新 event を作らない。既存 watch supersession は suppressed replay から ArtifactBoundary を明示除去する。保存済 Current label と借用 commit は継続的 filesystem/source lease を与えない。
+
 driver は次から `ArtifactBoundary` event を生成してはならない:
 
 - `TaskState::Completed` だけ;

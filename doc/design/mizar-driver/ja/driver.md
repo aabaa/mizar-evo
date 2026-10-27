@@ -78,7 +78,7 @@ Downstream crate はこれらの enum を match するとき wildcard arm を持
 |---|---|---|
 | semantic / proof / artifact / doc phase adapter がすべて利用可能ではない。 | `external_dependency_gap` / `deferred` | submit call は missing owner seam を blocked または unavailable として報告してよい。phase complete と mark してはならない。 |
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
-| real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |
+| general artifact publication token と full phase-15 producer emission は引き続き利用できない。 | `external_dependency_gap` | [Artifact Boundary](#artifact-boundary) が許す実 owner commit だけを転送し、committed-artifact event や manifest publication record を合成しない。 |
 | owner-provided phase input identities、parent output handles、diagnostics/output publisher handles、producer publication tokens が real scheduler-selected dispatch に常に利用できるわけではない。 | `external_dependency_gap` / `deferred` | scheduler-selected dispatch が owner inputs のない task に到達した場合は `BlockedByPhaseDispatchGap` で block する。供給された場合は `mizar-build` の scheduler-selected dispatcher seam を消費し、phase service は `PhaseRegistry` 経由でのみ実行する。 |
 | external file watcher / coalescing owner と LSP build bridge が利用できない。 | `external_dependency_gap` / `deferred` | D-014 は owner-provided changed path と snapshot input を受け取ってよいが、fake file watcher API、source-loading rule、LSP document payload、editor snapshot conversion は作らない。 |
 | `mizar-ir` snapshot replacement は `PhaseOutputPublisher` 経由でのみ利用できる。 | real owner seam が供給された場合のみ real、それ以外は `external_dependency_gap` | D-014 は最初の watch snapshot を current として register し、real publisher が供給され snapshot id が変わる場合だけ `replace_current_snapshot(old, new)` を呼ぶ。same-snapshot replacement は no-op。publisher input がない場合は provisional output handle ではなく分類済み gap。 |
@@ -307,6 +307,10 @@ task graph には phase 15 が含まれるため、driver は `ArtifactCommit` t
 artifact owner seam が real committed result または projection output を返す場合にだけ、
 artifact-boundary handoff を公開してよい。
 
+同期 dispatcher は実 crate-private `SourceTheoremArtifactCommitService` TypeId と実 descriptor が一致し、保護 native capture/current publisher snapshot の ArtifactCommit/[ArtifactCommit]/Module である場合だけ `artifact_commit` を保持する。Complete、無診断、task module/snapshot/ArtifactCommit/schema1 が一致する本物の SourceTheoremArtifactData output 一つと、physical storage/current publication 検証を要求する。payload 型検証は producer の責務に残す。公開 copied commit、metadata 一致、custom/spoof service、cached DATA、Completed は invocation 来歴にならない。未対応/non-Complete carrier は status/diagnostics/output 処理と既存 invalid_phase_result 優先を変えず None にする。
+cache persistence 後の最終収集でも PublicationDecision::Current を要求し、実 scheduled task/module、Artifact DATA/current snapshot/physical handle と lane guard を再検査し、空 output list は受理しない。新たに不適格となった carrier だけを消す。実 scheduler/task/module context と同call commit を private DriverEventDetails 経由で[イベント集約](events.md#artifact-イベント)へ借用し、clone commit container や owner bus を作らない。実 module handoff は全体 Blocked session と共存し得る。
+これらは既存 publication flow の時点検査であり、source/filesystem 再読込、atomic currentness lease、新たな proof/publication authority を与えない。通常 DATA と保持された過去 commit は、それだけで current source や将来 publication を許可しない。
+
 driver は次をしてはならない:
 
 - artifact を自分で serialize する;
@@ -366,7 +370,7 @@ prefix の例外経路では service がない task の ValidatedHit を Unavail
 
 実13serviceの[backend-free check経路](frontend_adapter.md#scheduled-source-theorem-candidate-check)は実設定Kernel型/descriptorとmoduleごとの実Kernel最大1個を要求し、既存D上限を維持する。正確なKernelCheck/[KernelCheck]/EvidenceCandidateだけ既存Atp bridgeと同じDIRECT Complete D/原VC/6行group結合から実CoreVC_Dのseal済3親を得る。元queryはEvidence/3親、実MODULE出力は4親。provider権威/旧profile/欠損service優先を保持し、backend経路KernelはBackendRun欠損で依存block。backend-free DIRECT Dだけ実検査完了し、Artifact/session/source受理cache-statusは未統合のまま。
 
-厳密な14 service の[source theorem ArtifactCommit 経路](frontend_adapter.md#scheduled-source-theorem-artifactcommit)は実設定 Artifact service の型/descriptor を追加要求し、旧2–13 profile と明示 provider の優先を保つ。ArtifactCommit/[ArtifactCommit]/Module だけに既定入力を与え、成功・無診断の6行 CheckAndElaborate の Summary/Core/Preparation、VC→Core/Preparation、直接 D→Core/VC、実 Kernel/FILE dependency result を結合する。Kernel の本物の inline candidate を含む4親と FILE の唯一の Kernel 親を要求し、snapshot/module/schema/認証済 source と current 物理 output が一致する Summary/Core/VC/D/Kernel/FILE だけを seal する。偽 descriptor、余分な service、FILE 欠落は対象外。最終 lane/publisher 検査を維持し、実 task/session status は既存ロジックに従い、Complete から新たな session/publication 権限、source/cache 有効化や artifact event を導かない。
+厳密な14 service の[source theorem ArtifactCommit 経路](frontend_adapter.md#scheduled-source-theorem-artifactcommit)は実設定 Artifact service の型/descriptor を追加要求し、旧2–13 profile と明示 provider の優先を保つ。ArtifactCommit/[ArtifactCommit]/Module だけに既定入力を与え、成功・無診断の6行 CheckAndElaborate の Summary/Core/Preparation、VC→Core/Preparation、直接 D→Core/VC、実 Kernel/FILE dependency result を結合する。Kernel の本物の inline candidate を含む4親と FILE の唯一の Kernel 親を要求し、snapshot/module/schema/認証済 source と current 物理 output が一致する Summary/Core/VC/D/Kernel/FILE だけを seal する。偽 descriptor、余分な service、FILE 欠落は対象外。最終 lane/publisher 検査を維持し、実 task/session status は既存ロジックに従い、Complete 単独から新たな session/publication 権限や source/cache 有効化を導かず、実 owner handoff は [Artifact Boundary](#artifact-boundary) に従う。
 
 ## Import-discovered native diagnostic index
 

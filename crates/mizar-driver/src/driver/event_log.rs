@@ -1,5 +1,5 @@
 use mizar_build::{
-    scheduler::{SchedulerEvent, SchedulerEventKind, TaskStateRecord},
+    scheduler::{SchedulerEvent, SchedulerEventKind, SchedulerOrderKey, TaskStateRecord},
     task_graph::PipelinePhase,
 };
 
@@ -7,7 +7,7 @@ use crate::{
     driver::DriverMissingPhaseService,
     events::{
         BuildEvent, BuildEventIdentity, BuildEventKind, BuildEventOrderKey, BuildEventStream,
-        PlanningEventStatus, TaskEventRef,
+        EventOwner, OwnerRecordRef, PlanningEventStatus, TaskEventRef,
     },
     request::{BuildSession, BuildSessionOutcome, BuildSessionState, PublicationDecision},
 };
@@ -19,6 +19,11 @@ pub(super) struct DriverEventDetails<'a> {
     pub(super) dispatch_gap_phases: &'a [PipelinePhase],
     pub(super) scheduler_events: &'a [SchedulerEvent],
     pub(super) scheduler_task_states: &'a [TaskStateRecord],
+    pub(super) artifact_commits: &'a [(
+        SchedulerOrderKey,
+        String,
+        &'a mizar_artifact::manifest::ManifestCommit,
+    )],
 }
 
 pub(super) fn submission_events(
@@ -98,6 +103,32 @@ pub(super) fn submission_events(
                 task: TaskEventRef::new(task_id, event.kind, task_state),
             },
         ));
+    }
+
+    if publication == PublicationDecision::Current {
+        for (order, work_unit, commit) in details.artifact_commits {
+            let owner_identity = mizar_artifact::registration_summary::ArtifactHashRef::new(
+                mizar_artifact::registration_summary::ArtifactHashClass::Artifact,
+                mizar_artifact::manifest::MANIFEST_SCHEMA_FAMILY,
+                commit.manifest().schema_version,
+                commit.write().artifact_hash,
+            )
+            .to_artifact_hash_string();
+            events.push(BuildEvent::new(
+                identity.clone(),
+                BuildEventOrderKey::new(60, 1)
+                    .with_scheduler_order(*order)
+                    .with_phase(PipelinePhase::ArtifactCommit)
+                    .with_work_unit(work_unit.clone())
+                    .with_owner_order(owner_identity.clone()),
+                BuildEventKind::ArtifactBoundary {
+                    committed: OwnerRecordRef {
+                        owner: EventOwner::Artifact,
+                        identity: owner_identity,
+                    },
+                },
+            ));
+        }
     }
 
     if matches!(publication, PublicationDecision::Suppressed(_)) {

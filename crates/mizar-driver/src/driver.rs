@@ -1364,6 +1364,7 @@ impl CompilerDriver {
                             diagnostics: Vec::new(),
                             output_refs: vec![handle.erase()],
                             cache_observation: None,
+                            artifact_commit: None,
                         }],
                     );
                     cached_sources.push((task.id.clone(), handle.erase(), owner));
@@ -1488,6 +1489,7 @@ impl CompilerDriver {
                             diagnostics: Vec::new(),
                             output_refs: vec![frontend_handle.erase()],
                             cache_observation: None,
+                            artifact_commit: None,
                         }],
                     );
                     cached_sources.push((frontend.id.clone(), frontend_handle.erase(), owner));
@@ -1736,6 +1738,61 @@ impl CompilerDriver {
         driver_scheduler_run.phase_results = phase_results;
         session.finish(outcome);
         let publication_decision = self.lanes.publication_decision(snapshots, &session);
+        let mut artifact_commits = Vec::new();
+        for (task_id, results) in &mut driver_scheduler_run.phase_results {
+            for result in results {
+                if result.artifact_commit.is_none() {
+                    continue;
+                }
+                let eligible = (|| {
+                    use mizar_ir::identity::{OutputKind, PipelinePhase as IrPhase, WorkUnit};
+                    if publication_decision != PublicationDecision::Current {
+                        return None;
+                    }
+                    let task = task_graph.tasks().iter().find(|task| task.id == *task_id)?;
+                    let mizar_build::task_graph::WorkUnit::Module { module } = &task.unit else {
+                        return None;
+                    };
+                    if task.kind != mizar_build::task_graph::TaskKind::ArtifactCommit
+                        || task.phases != [PipelinePhase::ArtifactCommit]
+                    {
+                        return None;
+                    }
+                    let [output] = result.output_refs.as_slice() else {
+                        return None;
+                    };
+                    let work_unit =
+                        format!("{:?}:{:?}", module.package.as_str(), module.path.as_str());
+                    if output.snapshot() != session.captured.snapshot.id
+                        || output.phase() != &IrPhase::new("ArtifactCommit")
+                        || output.output_kind() != &OutputKind::new("SourceTheoremArtifactData")
+                        || output.work_unit() != &WorkUnit::new(&work_unit)
+                        || output.schema_version() != mizar_ir::storage::SchemaVersion::new(1)
+                    {
+                        return None;
+                    }
+                    let publisher = self.output_publisher.as_ref()?;
+                    publisher
+                        .validate_current_output(session.captured.snapshot.id, output)
+                        .ok()?;
+                    publisher.storage().validate_handle(output).ok()?;
+                    let finished = driver_scheduler_run.events.iter().find(|event| {
+                        event.task_id.as_ref() == Some(task_id)
+                            && event.kind
+                                == mizar_build::scheduler::SchedulerEventKind::TaskFinished
+                    })?;
+                    Some((finished.order, work_unit))
+                })();
+                let Some((order, work_unit)) = eligible else {
+                    result.artifact_commit = None;
+                    continue;
+                };
+                // The private dispatcher retained only the same concrete owner's fresh handoff.
+                if let Some(commit) = &result.artifact_commit {
+                    artifact_commits.push((order, work_unit, commit));
+                }
+            }
+        }
         let events = submission_events(
             &session,
             publication_decision,
@@ -1745,6 +1802,7 @@ impl CompilerDriver {
                 dispatch_gap_phases: &dispatch_gap_phases,
                 scheduler_events: &driver_scheduler_run.events,
                 scheduler_task_states: &driver_scheduler_run.task_states,
+                artifact_commits: &artifact_commits,
             },
         );
         for (_, handle, owner) in &cached_sources {

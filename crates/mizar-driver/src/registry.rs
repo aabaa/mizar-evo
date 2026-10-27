@@ -103,6 +103,7 @@ pub struct PhaseResult {
     pub diagnostics: Vec<DiagnosticBatch>,
     pub output_refs: Vec<AnyPhaseOutputRef>,
     pub cache_observation: Option<PhaseCacheObservation>,
+    pub artifact_commit: Option<mizar_artifact::manifest::ManifestCommit>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -363,6 +364,7 @@ impl PhaseResult {
             diagnostics: Vec::new(),
             output_refs: Vec::new(),
             cache_observation: None,
+            artifact_commit: None,
         }
     }
 

@@ -1399,6 +1399,7 @@ impl PhaseService for PublicationFixtureService {
             ],
             output_refs: vec![handle.erase()],
             cache_observation: None,
+            artifact_commit: None,
         }
     }
 }

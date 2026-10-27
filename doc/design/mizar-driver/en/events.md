@@ -173,6 +173,10 @@ real committed result or projection output. The event may reference
 owner-provided artifact identity, content hash, package/module identity, and
 manifest transaction status.
 
+Each [Driver-eligible same-call commit](driver.md#artifact-boundary) emits one existing ArtifactBoundary with EventOwner::Artifact. Its owner identity is ArtifactHashRef(Artifact, MANIFEST_SCHEMA_FAMILY, actual manifest schema, actual commit.write().artifact_hash).to_artifact_hash_string(); main/IR hashes and Driver hash frames are not substitutes. OwnerRecordRef strings reference the past owner operation and construct no proof or receipt.
+Order uses lifecycle rank60/kind1, the actual TaskFinished SchedulerOrderKey, ArtifactCommit phase, debug module work-unit convention and owner identity tie-breaker. TaskFinished supplies deterministic ordering, not commit authority; worker completion time and fabricated task ids supply neither.
+Normal events(session) replays stored history: later publisher obsolescence or file damage does not strip past ArtifactBoundary, refresh source/files or create a new event. Existing watch supersession explicitly removes ArtifactBoundary from its suppressed replay. Neither recorded Current labels nor the borrowed commit grant a continuing filesystem/source lease.
+
 The driver must not produce an `ArtifactBoundary` event from:
 
 - `TaskState::Completed` alone;

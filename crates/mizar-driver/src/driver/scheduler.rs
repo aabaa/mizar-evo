@@ -1124,6 +1124,66 @@ fn dispatch_registry_phase(
                 if status != PhaseStatus::Complete {
                     result.output_refs.clear();
                 }
+                if result.artifact_commit.is_some() {
+                    let eligible = (|| {
+                        use crate::frontend_adapter::SourceTheoremArtifactCommitService;
+                        use mizar_build::task_graph::{TaskKind, WorkUnit};
+                        use mizar_ir::{
+                            identity::{
+                                OutputKind, PipelinePhase as IrPhase, WorkUnit as IrWorkUnit,
+                            },
+                            storage::SchemaVersion,
+                        };
+                        if *phase != PipelinePhase::ArtifactCommit
+                            || task.task.kind != TaskKind::ArtifactCommit
+                            || task.task.phases != [PipelinePhase::ArtifactCommit]
+                            || status != PhaseStatus::Complete
+                            || !result.diagnostics.is_empty()
+                            || !registry.service_for_phase(*phase).is_ok_and(|service| {
+                                std::any::Any::type_id(service)
+                                    == std::any::TypeId::of::<SourceTheoremArtifactCommitService>()
+                                    && &service.phase() == descriptor
+                            })
+                        {
+                            return false;
+                        }
+                        let WorkUnit::Module { module } = &task.task.unit else {
+                            return false;
+                        };
+                        let [output] = result.output_refs.as_slice() else {
+                            return false;
+                        };
+                        let Some(publisher) = publisher else {
+                            return false;
+                        };
+                        if !source_load.is_some_and(|inputs| {
+                            inputs.snapshot.id == task.snapshot
+                                && inputs.captured.is_some_and(|capture| {
+                                    capture.native_sources().is_some()
+                                        && capture.snapshot() == inputs.snapshot
+                                })
+                        }) {
+                            return false;
+                        }
+                        let kind = OutputKind::new("SourceTheoremArtifactData");
+                        output.snapshot() == task.snapshot
+                            && output.phase() == &IrPhase::new("ArtifactCommit")
+                            && output.work_unit()
+                                == &IrWorkUnit::new(format!(
+                                    "{:?}:{:?}",
+                                    module.package.as_str(),
+                                    module.path.as_str()
+                                ))
+                            && output.output_kind() == &kind
+                            && output.schema_version() == SchemaVersion::new(1)
+                            && publisher
+                                .validate_current_output(task.snapshot, output)
+                                .is_ok()
+                    })();
+                    if !eligible {
+                        result.artifact_commit = None;
+                    }
+                }
                 phase_results
                     .entry(task.task.id.clone())
                     .or_default()

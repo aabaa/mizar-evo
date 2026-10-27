@@ -29752,8 +29752,8 @@ fn scheduled_theorem_resolver_requires_current_resources_and_honors_cancellation
 fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
     use mizar_artifact::{
         manifest::{
-            ManifestFileReadOptions, artifact_manifest_json, manifest_hash_domain,
-            read_manifest_file,
+            ManifestCommitOptions, ManifestFileReadOptions, ManifestTransaction,
+            artifact_manifest_json, manifest_hash_domain, read_manifest_file,
         },
         store::{
             PublishedArtifactReadOptions, artifact_hash_domain, canonical_json_bytes,
@@ -29888,6 +29888,12 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
         draft.source_inputs.versions.clear();
         draft.generation = BuildRequestGeneration::new(generation as u64);
+        if backend_free && stage == 6 {
+            draft.origin = BuildRequestOrigin::Watch(mizar_driver::request::WatchRequest {
+                watch_root: draft.workspace_root.clone(),
+                changed_paths: vec![fixture.version.normalized_path.clone()],
+            });
+        }
         input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
             package_id: PackageId::new("alpha"),
             files: vec![
@@ -30202,7 +30208,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         let registry = concrete.build().unwrap();
                         negative.register(ScheduledArtifactServiceForwarder {
                             descriptor: registry.descriptor_for_phase(phase).unwrap().clone(),
-                            registry: std::sync::Mutex::new(registry),
+                            registry: std::sync::Arc::new(std::sync::Mutex::new(registry)),
+                            replay: None,
                         });
                     }
                 }
@@ -30243,9 +30250,10 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             "fixture-output",
                         )
                         .unwrap(),
-                        registry: std::sync::Mutex::new(
+                        registry: std::sync::Arc::new(std::sync::Mutex::new(
                             PhaseRegistryBuilder::new().build().unwrap(),
-                        ),
+                        )),
+                        replay: None,
                     });
                 }
                 let negative = negative.build().unwrap();
@@ -30353,6 +30361,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 assert_eq!(fs::read_dir(&parent_root).unwrap().count(), 0, "{case}");
             }
         }
+        let replay_session = (backend_free && stage == 3).then(|| session.clone());
         let clean = clean_driver
             .submit_captured(session.clone(), &ids, &snapshots, clean_input)
             .unwrap();
@@ -30458,7 +30467,36 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 }
             );
         }
-        assert_eq!(run.phase_results, clean_run.phase_results);
+        assert_eq!(
+            run.phase_results.keys().collect::<Vec<_>>(),
+            clean_run.phase_results.keys().collect::<Vec<_>>()
+        );
+        for (task, rows) in &run.phase_results {
+            let clean_rows = &clean_run.phase_results[task];
+            assert_eq!(rows.len(), clean_rows.len());
+            for (row, clean) in rows.iter().zip(clean_rows) {
+                assert_eq!(
+                    (
+                        row.status,
+                        &row.diagnostics,
+                        &row.output_refs,
+                        row.cache_observation
+                    ),
+                    (
+                        clean.status,
+                        &clean.diagnostics,
+                        &clean.output_refs,
+                        clean.cache_observation
+                    )
+                );
+                if row.output_refs.iter().all(|output| {
+                    output.output_kind() != &OutputKind::new("SourceTheoremArtifactData")
+                }) {
+                    assert!(row.artifact_commit.is_none());
+                    assert!(clean.artifact_commit.is_none());
+                }
+            }
+        }
         assert_eq!(run.task_states, clean_run.task_states);
         for module in ["main", "leaf"] {
             let version = versions
@@ -31870,7 +31908,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             .collect::<String>()
                     );
                     let mut manifest_hashes = Vec::new();
-                    for parent in ["same-artifact-actual", "same-artifact-clean"] {
+                    for (parent, row) in [
+                        ("same-artifact-actual", artifact_row),
+                        (
+                            "same-artifact-clean",
+                            &clean_run.phase_results[&artifact.id][0],
+                        ),
+                    ] {
                         let root = fixture.root.join("alpha").join(parent).join(&child);
                         assert_eq!(
                             fs::read(root.join(main_write.path.as_str())).unwrap(),
@@ -31928,9 +31972,339 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             read.artifact_hash,
                             manifest_hash_domain(read.manifest.schema_version).hash(&json, &[])
                         );
+                        let commit = row.artifact_commit.as_ref().expect("actual owner commit");
+                        assert_eq!(commit.manifest(), &read.manifest);
+                        assert_eq!(commit.write().path, read.path);
+                        assert_eq!(commit.write().artifact_hash, read.artifact_hash);
+                        let mut transaction =
+                            ManifestTransaction::begin(&root, read.manifest.clone(), None).unwrap();
+                        transaction.stage_module(entry.clone()).unwrap();
+                        assert_eq!(
+                            commit,
+                            &transaction
+                                .commit(ManifestCommitOptions::default())
+                                .unwrap()
+                        );
                         manifest_hashes.push(read.artifact_hash);
                     }
                     assert_ne!(manifest_hashes[0], manifest_hashes[1]);
+                    for (producer, submission, row, index) in [
+                        (&driver, &actual, artifact_row, 0),
+                        (
+                            &clean_driver,
+                            &clean,
+                            &clean_run.phase_results[&artifact.id][0],
+                            1,
+                        ),
+                    ] {
+                        let commit = row.artifact_commit.as_ref().unwrap();
+                        let identity = mizar_artifact::registration_summary::ArtifactHashRef::new(
+                            mizar_artifact::registration_summary::ArtifactHashClass::Artifact,
+                            mizar_artifact::manifest::MANIFEST_SCHEMA_FAMILY,
+                            commit.manifest().schema_version,
+                            manifest_hashes[index],
+                        )
+                        .to_artifact_hash_string();
+                        let stream = producer.events(submission.session.id());
+                        let boundaries = stream
+                            .events()
+                            .iter()
+                            .filter(|event| {
+                                matches!(event.kind, BuildEventKind::ArtifactBoundary { .. })
+                            })
+                            .collect::<Vec<_>>();
+                        let [event] = boundaries.as_slice() else {
+                            panic!("one genuine same-call owner boundary")
+                        };
+                        assert_eq!(
+                            event.kind,
+                            BuildEventKind::ArtifactBoundary {
+                                committed: mizar_driver::events::OwnerRecordRef::new(
+                                    mizar_driver::events::EventOwner::Artifact,
+                                    identity.clone()
+                                )
+                            }
+                        );
+                        let finished = submission
+                            .scheduler_run
+                            .as_ref()
+                            .unwrap()
+                            .events
+                            .iter()
+                            .find(|event| {
+                                event.task_id.as_ref() == Some(&artifact.id)
+                                    && event.kind
+                                        == mizar_build::scheduler::SchedulerEventKind::TaskFinished
+                            })
+                            .unwrap();
+                        assert_eq!(
+                            event.order,
+                            mizar_driver::events::BuildEventOrderKey::new(60, 1)
+                                .with_scheduler_order(finished.order)
+                                .with_phase(PipelinePhase::ArtifactCommit)
+                                .with_work_unit(artifact_output.work_unit().as_str())
+                                .with_owner_order(identity)
+                        );
+                        assert_eq!(
+                            event.identity,
+                            mizar_driver::events::BuildEventIdentity {
+                                session: submission.session.id(),
+                                lane: submission.session.request().lane,
+                                generation: submission.session.request().generation,
+                                snapshot: Some(snapshot),
+                                publication: mizar_driver::request::PublicationDecision::Current,
+                            }
+                        );
+                        assert_eq!(producer.events(submission.session.id()), stream);
+                    }
+                    if stage == 3 {
+                        let mut concrete = PhaseRegistryBuilder::new();
+                        concrete
+                            .register_source_load()
+                            .register_frontend(vec![])
+                            .register_source_theorem_module_resolver()
+                            .register_source_theorem_signature_collection()
+                            .register_source_theorem_type_checking()
+                            .register_source_theorem_registration_resolution()
+                            .register_source_theorem_overload_resolution()
+                            .register_source_theorem_elaboration()
+                            .register_source_theorem_algorithm_preparation()
+                            .register_source_theorem_vc_generation(
+                                generation_schema.clone(),
+                                vc_schema.clone(),
+                            )
+                            .register_source_theorem_vc_discharge(policy.clone())
+                            .register_source_theorem_atp_solve(
+                                policy.clone(),
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                            )
+                            .unwrap()
+                            .register_source_theorem_candidate_check_with_witness_files(
+                                policy.clone(),
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                                verifier.clone(),
+                                "proof-witnesses/scheduled".into(),
+                            )
+                            .unwrap()
+                            .register_source_theorem_artifact_commit(
+                                policy.clone(),
+                                profile.clone(),
+                                ConcreteFormat::Tptp,
+                                verifier.clone(),
+                                (
+                                    "proof-witnesses/scheduled".into(),
+                                    "main.mizir.json".into(),
+                                    "same-artifact-actual".into(),
+                                ),
+                            )
+                            .unwrap();
+                        let concrete =
+                            std::sync::Arc::new(std::sync::Mutex::new(concrete.build().unwrap()));
+                        let genuine = run
+                            .phase_results
+                            .values()
+                            .flatten()
+                            .flat_map(|row| row.output_refs.iter())
+                            .collect::<Vec<_>>();
+                        let routes = graph
+                            .tasks()
+                            .iter()
+                            .filter(|task| task.unit == artifact.unit)
+                            .map(|task| {
+                                let first = &run.phase_results[&task.id][0].output_refs[0];
+                                let parents = first
+                                    .lineage()
+                                    .parents
+                                    .iter()
+                                    .map(|id| {
+                                        let parent = genuine
+                                            .iter()
+                                            .find(|parent| parent.output() == *id)
+                                            .unwrap();
+                                        SealedParentOutputHandle::from_published_output(
+                                            &owner,
+                                            snapshot,
+                                            (**parent).clone(),
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect();
+                                (
+                                    task.phases[0],
+                                    PhaseDispatchInputBundle::new(
+                                        snapshot,
+                                        source_key(version),
+                                        vec![],
+                                        parents,
+                                    )
+                                    .unwrap(),
+                                )
+                            })
+                            .collect::<Vec<_>>();
+                        let run_replay_case = |case: &str| {
+                            let mut registry = PhaseRegistryBuilder::new();
+                            for task in graph
+                                .tasks()
+                                .iter()
+                                .filter(|task| task.unit == artifact.unit)
+                            {
+                                for (phase, row) in
+                                    task.phases.iter().zip(&run.phase_results[&task.id])
+                                {
+                                    let mut replay = row.clone();
+                                    if *phase == PipelinePhase::ArtifactCommit {
+                                        if matches!(case, "data-only" | "wrong-phase") {
+                                            replay.artifact_commit = None;
+                                        }
+                                        if case == "no-data" {
+                                            replay.output_refs.clear();
+                                        }
+                                        if case == "blocking" {
+                                            replay.status = PhaseStatus::Blocking;
+                                        }
+                                    } else if *phase == PipelinePhase::VcGenerate
+                                        && case == "wrong-phase"
+                                    {
+                                        replay.artifact_commit =
+                                            artifact_row.artifact_commit.clone();
+                                    }
+                                    let descriptor = concrete
+                                        .lock()
+                                        .unwrap()
+                                        .descriptor_for_phase(*phase)
+                                        .unwrap()
+                                        .clone();
+                                    registry.register(ScheduledArtifactServiceForwarder {
+                                        registry: concrete.clone(),
+                                        descriptor,
+                                        replay: Some(replay),
+                                    });
+                                }
+                            }
+                            let mut replay_driver = CompilerDriver::new(registry.build().unwrap())
+                                .with_output_publisher(owner.clone());
+                            let (_, mut replay_input) = fixture.submit_request(vec![], vec![]);
+                            replay_input.dependency_overlay =
+                                ModuleDependencyOverlay::complete(vec![]);
+                            assert!(replay_input.vc_descriptors.is_empty());
+                            replay_input.phase_dispatch_inputs =
+                                Some(Box::new(RetainedArtifactInputs {
+                                    unit: artifact.unit.clone(),
+                                    inputs: routes.clone(),
+                                }));
+                            if case == "stale" {
+                                owner.mark_obsolete(snapshot).unwrap();
+                            }
+                            let replay = replay_driver
+                                .submit_captured(
+                                    replay_session.as_ref().unwrap().clone(),
+                                    &ids,
+                                    &snapshots,
+                                    replay_input,
+                                )
+                                .unwrap();
+                            if case == "stale" {
+                                assert_eq!(
+                                    replay.session.state(),
+                                    BuildSessionState::Finished(BuildSessionOutcome::Failed)
+                                );
+                                assert!(
+                                    replay
+                                        .scheduler_run
+                                        .as_ref()
+                                        .unwrap()
+                                        .phase_results
+                                        .is_empty()
+                                );
+                                assert!(
+                                    replay_driver
+                                        .events(replay.session.id())
+                                        .events()
+                                        .iter()
+                                        .all(|event| !matches!(
+                                            event.kind,
+                                            BuildEventKind::ArtifactBoundary { .. }
+                                        ))
+                                );
+                                owner.register_current_snapshot(snapshot);
+                                return;
+                            }
+                            assert!(replay.missing_services.is_empty());
+                            assert!(replay.dispatch_gap_phases.is_empty());
+                            assert_eq!(replay.status, DriverSubmissionStatus::SchedulerValidated);
+                            assert_eq!(
+                                replay.session.state(),
+                                BuildSessionState::Finished(if case == "blocking" {
+                                    BuildSessionOutcome::Blocked
+                                } else {
+                                    BuildSessionOutcome::Succeeded
+                                })
+                            );
+                            let replay_graph = replay.task_graph.as_ref().unwrap();
+                            assert!(
+                                replay_graph
+                                    .tasks()
+                                    .iter()
+                                    .all(|task| task.kind != TaskKind::KernelCheck)
+                            );
+                            let task = replay_graph
+                                .tasks()
+                                .iter()
+                                .find(|task| task.kind == TaskKind::ArtifactCommit)
+                                .unwrap();
+                            let run = replay.scheduler_run.as_ref().unwrap();
+                            let [row] = run.phase_results[&task.id].as_slice() else {
+                                panic!("custom producer reached dispatcher acceptance")
+                            };
+                            assert_eq!(
+                                row.status,
+                                if case == "blocking" {
+                                    PhaseStatus::Blocking
+                                } else {
+                                    PhaseStatus::Complete
+                                }
+                            );
+                            assert!(row.diagnostics.is_empty());
+                            assert_eq!(row.cache_observation, Some(probe.observation));
+                            assert_eq!(
+                                row.output_refs,
+                                if matches!(case, "no-data" | "blocking") {
+                                    vec![]
+                                } else {
+                                    artifact_row.output_refs.clone()
+                                }
+                            );
+                            assert!(
+                                run.phase_results
+                                    .values()
+                                    .flatten()
+                                    .all(|row| row.artifact_commit.is_none()),
+                                "{case}"
+                            );
+                            assert!(
+                                replay_driver
+                                    .events(replay.session.id())
+                                    .events()
+                                    .iter()
+                                    .all(|event| !matches!(
+                                        event.kind,
+                                        BuildEventKind::ArtifactBoundary { .. }
+                                    )),
+                                "{case}"
+                            );
+                            owner
+                                .validate_current_output(snapshot, artifact_output)
+                                .unwrap();
+                        };
+                        run_replay_case("copied");
+                        run_replay_case("data-only");
+                        run_replay_case("no-data");
+                        run_replay_case("blocking");
+                        run_replay_case("wrong-phase");
+                        run_replay_case("stale");
+                    }
                     stale_outputs.push(artifact_output.clone());
                     stale_outputs.push(file_output.clone());
                     stale_outputs.push(kernel_output.clone());
@@ -32140,6 +32514,122 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 };
                 previous = Some((owner.clone(), stale_outputs, actual.session.clone(), hashes));
             }
+        }
+        for (producer, submission) in [(&driver, &actual), (&clean_driver, &clean)] {
+            assert_eq!(
+                producer
+                    .events(submission.session.id())
+                    .events()
+                    .iter()
+                    .filter(|event| matches!(event.kind, BuildEventKind::ArtifactBoundary { .. }))
+                    .count(),
+                usize::from(backend_free && stage >= 3)
+            );
+        }
+        if backend_free && stage == 6 {
+            let recorded = driver.events(actual.session.id());
+            let artifact = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::ArtifactCommit && task.unit == units[0])
+                .unwrap();
+            let row = &run.phase_results[&artifact.id][0];
+            let commit = row.artifact_commit.as_ref().unwrap();
+            let root = fixture
+                .root
+                .join("alpha")
+                .join(&commit.manifest().artifact_root);
+            let path = root.join(commit.write().path.as_str());
+            let bytes = fs::read(&path).unwrap();
+            fs::write(&path, b"{").unwrap();
+            assert!(mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(commit, &root, &commit.manifest().modules[0].module, snapshot.fingerprint()).is_err());
+            assert_eq!(driver.events(actual.session.id()), recorded);
+            fs::write(path, bytes).unwrap();
+            owner.mark_obsolete(snapshot).unwrap();
+            assert_eq!(driver.events(actual.session.id()), recorded);
+            assert!(
+                owner
+                    .validate_current_output(snapshot, &row.output_refs[0])
+                    .is_err()
+            );
+            let handle = owner
+                .storage()
+                .typed_handle::<VerifiedArtifact>(
+                    &row.output_refs[0],
+                    row.output_refs[0].output_kind(),
+                )
+                .unwrap();
+            assert_eq!(
+                *owner.storage().get(&handle).unwrap(),
+                read_verified_artifact(
+                    &read_published_artifact(
+                        &root,
+                        &mizar_artifact::store::PublishedArtifactPath::new("main.mizir.json")
+                            .unwrap(),
+                        PublishedArtifactReadOptions::default()
+                    )
+                    .unwrap()
+                    .value,
+                    VerifiedArtifactReadOptions::default(),
+                )
+                .unwrap()
+            );
+            let (mut next, mut next_input) = fixture.submit_request(vec![], vec![]);
+            next.origin = BuildRequestOrigin::Watch(mizar_driver::request::WatchRequest {
+                watch_root: next.workspace_root.clone(),
+                changed_paths: vec![fixture.version.normalized_path.clone()],
+            });
+            next.lane = actual.session.request().lane;
+            next.generation =
+                BuildRequestGeneration::new(actual.session.request().generation.get() + 1);
+            next.source_inputs.versions =
+                actual.session.captured().snapshot().source_versions.clone();
+            next_input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                package_id: PackageId::new("alpha"),
+                files: vec![],
+            }]);
+            let changed = driver
+                .submit_watch_change(
+                    next,
+                    &ids,
+                    &snapshots,
+                    next_input,
+                    mizar_driver::driver::WatchSubmitControl {
+                        previous_session: Some(actual.session.id()),
+                        output_publisher: Some(&owner),
+                        file_watcher: mizar_driver::driver::WatchOwnerSeam::OwnerProvided,
+                        lsp_bridge: mizar_driver::driver::WatchOwnerSeam::OwnerProvided,
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                changed.superseded.as_ref().unwrap().session,
+                actual.session.id()
+            );
+            assert_eq!(
+                driver.session(actual.session.id()).unwrap().state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Superseded)
+            );
+            let suppressed = driver.events(actual.session.id());
+            assert!(
+                suppressed
+                    .events()
+                    .iter()
+                    .all(|event| !matches!(event.kind, BuildEventKind::ArtifactBoundary { .. }))
+            );
+            assert!(
+                suppressed
+                    .events()
+                    .iter()
+                    .any(|event| matches!(event.kind, BuildEventKind::PublicationSuppressed))
+            );
+            assert!(
+                recorded
+                    .events()
+                    .iter()
+                    .any(|event| matches!(event.kind, BuildEventKind::ArtifactBoundary { .. }))
+            );
+            assert_eq!(driver.events(actual.session.id()), suppressed);
         }
     }
 }
@@ -67660,7 +68150,7 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                 };
                 let mut transaction =
                     ManifestTransaction::begin(&baseline_root, seed, None).unwrap();
-                transaction.stage_module(entry.clone()).unwrap();
+                transaction.stage_module(entry).unwrap();
                 let baseline_commit = transaction
                     .commit(ManifestCommitOptions::default())
                     .unwrap();
@@ -67923,16 +68413,19 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                     fs::read(root.join("artifact-manifest.json")).unwrap(),
                     canonical_json_bytes(&manifest_value)
                 );
-                let mut transaction =
-                    ManifestTransaction::begin(&root, expected_manifest, None).unwrap();
-                transaction.stage_module(entry).unwrap();
-                let actual_commit = transaction
-                    .commit(ManifestCommitOptions::default())
-                    .unwrap();
+                let actual_commit = result
+                    .artifact_commit
+                    .as_ref()
+                    .expect("same-call owner commit");
+                assert_eq!(actual_commit.manifest(), &expected_manifest);
+                assert_eq!(
+                    actual_commit.write().path.as_str(),
+                    "artifact-manifest.json"
+                );
                 assert_eq!(actual_commit.write().artifact_hash, manifest_hash);
                 let actual_proof =
                     CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
-                        &actual_commit,
+                        actual_commit,
                         &root,
                         &artifact.module,
                         six.snapshot.fingerprint(),
@@ -68183,6 +68676,7 @@ fn registered_source_theorem_artifact_commit_preserves_refusals() {
                         .unwrap()
                         .result;
                     assert_eq!(first.status, PhaseStatus::Complete);
+                    assert!(first.artifact_commit.is_some());
                     let [output] = first.output_refs.as_slice() else {
                         panic!("one real Artifact output")
                     };
@@ -68269,6 +68763,7 @@ fn registered_source_theorem_artifact_commit_preserves_refusals() {
                     "{case}"
                 );
                 assert!(result.output_refs.is_empty(), "{case}");
+                assert!(result.artifact_commit.is_none(), "{case}");
                 assert!(result.diagnostics.is_empty());
                 let root = fixture.root.join("alpha").join(parent).join(&child);
                 if matches!(case, "denied" | "duplicate") {
@@ -68371,8 +68866,9 @@ fn registered_source_theorem_artifact_commit_preserves_refusals() {
 }
 
 struct ScheduledArtifactServiceForwarder {
-    registry: std::sync::Mutex<mizar_driver::registry::PhaseRegistry>,
+    registry: std::sync::Arc<std::sync::Mutex<mizar_driver::registry::PhaseRegistry>>,
     descriptor: mizar_driver::registry::PhaseDescriptor,
+    replay: Option<mizar_driver::registry::PhaseResult>,
 }
 
 impl mizar_driver::registry::PhaseService for ScheduledArtifactServiceForwarder {
@@ -68398,6 +68894,9 @@ impl mizar_driver::registry::PhaseService for ScheduledArtifactServiceForwarder 
         input: PhaseInput,
         context: mizar_driver::registry::PhaseExecutionContext<'_>,
     ) -> mizar_driver::registry::PhaseResult {
+        if let Some(result) = &self.replay {
+            return result.clone();
+        }
         self.registry
             .lock()
             .unwrap()
@@ -68413,5 +68912,26 @@ impl mizar_driver::registry::PhaseService for ScheduledArtifactServiceForwarder 
             )
             .unwrap()
             .result
+    }
+}
+
+struct RetainedArtifactInputs {
+    unit: WorkUnit,
+    inputs: Vec<(PipelinePhase, PhaseDispatchInputBundle)>,
+}
+
+impl PhaseDispatchInputProvider<BuildTask> for RetainedArtifactInputs {
+    fn dispatch_input_for_task(
+        &self,
+        request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, DispatchInputError> {
+        if request.task().unit != self.unit {
+            return Ok(None);
+        }
+        Ok(self
+            .inputs
+            .iter()
+            .find(|(phase, _)| request.task().phases.first() == Some(phase))
+            .map(|(_, input)| input.clone()))
     }
 }
