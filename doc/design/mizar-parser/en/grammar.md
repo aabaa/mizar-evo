@@ -944,7 +944,7 @@ computation_proof        ::= "by" "computation"
                               [ "(" computation_option
                                   { "," computation_option } ")" ] ;
 computation_option       ::= ( "steps" | "timeout" | "nest" )
-                              ":" numeral ;
+                              ":" numeral | "replay" ":" ( "true" | "false" ) ;
 let_statement            ::= "let" qualified_variable_segment
                               { "," qualified_variable_segment }
                               [ "such" condition_list ]
@@ -977,7 +977,7 @@ more `GroupedReferenceItem` children separated by comma tokens, and `}` when
 present. `BulkReference` owns a `NamespacePath` plus the compound `.*` token.
 `ComputationJustification` owns the `computation` token and optional
 parenthesized `ComputationOption` list; each option owns its option keyword,
-colon token, and numeral token.
+colon token, and a numeral or contextual replay boolean token.
 
 Task 17 consumes justifications only at canonical hosts that are small enough
 for this increment. `let ... by refs;` is upgraded from task-16 placeholder
@@ -2393,3 +2393,7 @@ Chapter3.3/A3: TypeHead preserves `expr`, required `of` and a recursive TypeExpr
 Chapter13.10/A13 root syntax admits identifier or parenthesized2+ distinct identifier heads, then reserved |-> and a full term body. Binder roots enter set RHS, parentheses, recursive bodies, all existing delimited term lists (attribute/predicate/call/selector/bracket/enumeration), and algorithm term initializers, assignments, returns, loop inputs, measures, match scrutinees and term patterns, plus structure field defaults, named constructor/update values, comprehension mappers, deffunc bodies, named/unnamed take witnesses, reconsider values, both reduction operands and direct/case/otherwise term definiens (functor, redefinition and property equals), of/over constructor actuals, general mode/structure bracket actuals, generic-template actuals, ordinary relation/is/predicate term slots and every iterative-equality term. Qualified/operator operands and contextual formula inputs retain their existing routes; these remain syntax candidates without typing, capture or termination credit.
 Preserve unary/multi arity and source order without tuple/nested desugaring. Binder is weakest/right-nested; ordinary operator parsing remains separate, body qua/restriction stays in the body, and whole-Binder qua/application/restriction uses grouping. Existing local functor activation supplies | in the new fixtures.
 Probe head boundaries without events/diagnostics until an immediate arrow confirms the candidate; stop at existing semicolon/end/item/statement-keyword barriers, including inside parentheses, and leave such prefixes unconfirmed for existing parsing. Invalid confirmed head gets one MalformedTermExpression at its start and existing SkippedToken recovery over exactly the known head span; keep arrow/body in a recovered Binder. Missing body inserts MissingTerm at its delimiter without consuming it. Unconfirmed/malformed unbalanced prefixes retain existing enclosing recovery. Constructor actuals carry the existing before-field context through recursive Binder bodies and the qualified fallback; a field-list opener at body entry remains unconsumed for MissingTerm. Bracket payload selection follows the general constructor actual boundary above. Conditional if/otherwise and list comma/as/to/semicolon remain with their existing hosts. No new diagnostic/recovery vocabulary or broad host admission policy.
+
+## Computation Replay Syntax Boundary
+
+Exact replay and true/false accept contextual Identifier or UserSymbol tokens only in option position; numeric options retain their existing token classes and numeral values. Preserve source-ordered raw option tokens and existing missing-operand/tail recovery. The steps-only theorem consumer rejects replay options with theorems.source.invalid; effective policy transport, execution and replay evidence remain deferred.

@@ -1,0 +1,8 @@
+thesis by computation(replay: true);
+thesis by computation(replay: false);
+thesis by computation(steps: 8, replay: true, timeout: 20, nest: 3);
+thesis by computation(replay: false, steps: 8, timeout: 20, nest: 3);
+thesis by computation;
+thesis by computation(steps: 8, timeout: 20, nest: 3);
+set replay = true;
+set false = replay;

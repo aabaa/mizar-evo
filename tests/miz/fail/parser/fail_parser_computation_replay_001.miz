@@ -1,0 +1,12 @@
+thesis by computation(replay: 1);
+set after_replay_numeral = sentinel;
+thesis by computation(replay: maybe);
+set after_replay_identifier = sentinel;
+thesis by computation(replay:);
+set after_replay_close = sentinel;
+thesis by computation(replay:, steps: 2);
+set after_replay_comma = sentinel;
+thesis by computation(steps: true);
+set after_steps_boolean = sentinel;
+thesis by computation(replay: true or false);
+set after_replay_expression = sentinel;

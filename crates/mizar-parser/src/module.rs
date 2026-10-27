@@ -1920,13 +1920,28 @@ impl Parser {
             );
         }
 
-        if self.is_numeral_at(cursor) {
+        let replay = self.request.tokens[position].text.as_ref() == "replay";
+        let valid_value = if replay {
+            self.request.tokens.get(cursor).is_some_and(|token| {
+                matches!(
+                    token.kind,
+                    ParserTokenKind::Identifier | ParserTokenKind::UserSymbol
+                ) && matches!(token.text.as_ref(), "true" | "false")
+            })
+        } else {
+            self.is_numeral_at(cursor)
+        };
+        if valid_value {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
         } else {
             self.diagnose_malformed_justification(
                 cursor,
-                "expected numeral after computation option `:`",
+                if replay {
+                    "expected `true` or `false` after computation option `:`"
+                } else {
+                    "expected numeral after computation option `:`"
+                },
             );
             self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
         }
@@ -14477,6 +14492,10 @@ impl Parser {
                 token.kind,
                 ParserTokenKind::Identifier | ParserTokenKind::ReservedWord
             ) && matches!(token.text.as_ref(), "steps" | "timeout" | "nest")
+                || (matches!(
+                    token.kind,
+                    ParserTokenKind::Identifier | ParserTokenKind::UserSymbol
+                ) && token.text.as_ref() == "replay")
         })
     }
 

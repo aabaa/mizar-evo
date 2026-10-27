@@ -1,0 +1,22 @@
+schema_version = 1
+id = "fail_parser_computation_replay_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.computation_replay"
+source = "fail_parser_computation_replay_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_justification_recovery"
+stable_detail_key = "parser.computation_replay.recovery"
+diagnostic_codes = [
+  "malformed_justification", "malformed_justification",
+  "malformed_justification", "malformed_justification",
+  "malformed_justification",
+  "malformed_justification",
+  "malformed_justification", "malformed_justification",
+  "malformed_justification",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.computation_replay.parser"]
+notes = "Reject numeric, arbitrary identifier, missing, and expression replay values; numeric steps still rejects a boolean. Preserve legacy MissingProofStep anchors, malformed-tail recovery, the steps option after an immediately missing replay value, and every successor set statement."

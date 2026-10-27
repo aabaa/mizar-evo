@@ -4946,6 +4946,60 @@ mod term_proof_tests {
     }
 
     #[test]
+    fn step5c14_replay_options_parse_cleanly_but_fail_source_check() {
+        use mizar_syntax::SurfaceNodeKind as K;
+        for (options, expected, accepted) in [
+            ("steps: 8", vec![vec!["steps", ":", "8"]], true),
+            ("replay: true", vec![vec!["replay", ":", "true"]], false),
+            ("replay: false", vec![vec!["replay", ":", "false"]], false),
+            (
+                "steps: 8, replay: true",
+                vec![vec!["steps", ":", "8"], vec!["replay", ":", "true"]],
+                false,
+            ),
+            (
+                "replay: false, steps: 8",
+                vec![vec!["replay", ":", "false"], vec!["steps", ":", "8"]],
+                false,
+            ),
+        ] {
+            let text = format!("theorem T: 0 = 0 by computation({options});");
+            let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{options}: {:?}",
+                frontend.diagnostics
+            );
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(
+                ast.node_views()
+                    .all(|node| !node.is_recovered() && node.as_recovery().is_none())
+            );
+            let actual = ast
+                .node_views()
+                .filter(|node| matches!(node.kind(), K::ComputationOption))
+                .map(|option| {
+                    option
+                        .child_views()
+                        .map(|child| child.as_token().unwrap().text.as_ref())
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(actual, expected, "{options}");
+            let core = step5c14_computation_core(&text);
+            if accepted {
+                assert!(core.is_ok());
+            } else {
+                assert_eq!(
+                    core.err().as_deref(),
+                    Some("theorems.source.invalid"),
+                    "{options}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn step5c14_computation_rejects_unsupported_source_profiles() {
         for source in [
             "theorem T: 1 = 1 by computation(steps: 8);",

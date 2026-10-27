@@ -4356,6 +4356,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.computation_replay.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.9.2 replay boolean option syntax only; execution and effective replay policy remain deferred"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_computation_replay_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_computation_replay_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.20.match_otherwise.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
 section = "20.2.5 AST Pattern Match (`match`)"

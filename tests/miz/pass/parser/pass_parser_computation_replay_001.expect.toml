@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_computation_replay_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.computation_replay"
+source = "pass_parser_computation_replay_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.computation_replay.parser"]
+notes = "Exact contextual replay boolean words, both option orders with numeric options, unchanged bare and numeric controls, and ordinary replay/true/false identifiers. Syntax admission carries no execution or effective-policy credit."

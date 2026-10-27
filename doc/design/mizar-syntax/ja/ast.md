@@ -365,7 +365,7 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 77 | `GroupedReferenceItem` | task-17 の grouped citation item |
 | 78 | `BulkReference` | task-17 の `namespace_path ".*"` bulk citation |
 | 79 | `ComputationJustification` | task-17 の `by computation(...)` justification payload |
-| 80 | `ComputationOption` | task-17 の `steps` / `timeout` / `nest` computation option |
+| 80 | `ComputationOption` | task-17 の `steps` / `timeout` / `nest` / contextual `replay` computation option |
 | 81 | `ConsiderStatement` | task-18 の `consider ... such that ... by ...` choice statement |
 | 82 | `ReconsiderStatement` | task-18 の `reconsider ... as ... by ...` type-changing statement |
 | 83 | `ReconsiderItem` | task-18 の bare / equated reconsider item |
@@ -646,7 +646,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::GroupedReferenceItem` | なし | `SyntaxKind::GroupedReferenceItem` | parser task 17 の grouped citation member。1 個の identifier token と任意の task 31 `TemplateArguments` を所有する |
 | `SurfaceNodeKind::BulkReference` | なし | `SyntaxKind::BulkReference` | parser task 17 の bulk citation。`NamespacePath` と compound `.*` token を所有する |
 | `SurfaceNodeKind::ComputationJustification` | なし | `SyntaxKind::ComputationJustification` | parser task 17 の computation proof payload。`computation` token と任意の parenthesized computation-option list を所有する |
-| `SurfaceNodeKind::ComputationOption` | なし | `SyntaxKind::ComputationOption` | parser task 17 の computation option。`steps`、`timeout`、`nest` のいずれか、colon token、numeral token または `MissingProofStep` recovery を所有する |
+| `SurfaceNodeKind::ComputationOption` | なし | `SyntaxKind::ComputationOption` | parser task 17 の computation option。数値 option 名または contextual `replay`、colon token、numeral または boolean word、もしくは `MissingProofStep` recovery を所有する |
 | `SurfaceNodeKind::SelectorAccess` | なし | `SyntaxKind::SelectorAccess` | parser task 10 の postfix selector access または selector-call surface。syntax-only dot role を保持する |
 | `SurfaceNodeKind::StructureUpdate` | なし | `SyntaxKind::StructureUpdate` | parser task 10 の functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | なし | `SyntaxKind::FieldUpdate` | parser task 10 の、`StructureUpdate` 内の `selector ":=" term_expression` field update |
@@ -991,11 +991,11 @@ local citation は 1 個の identifier token を持つ `Reference` である。
 `BulkReference` は `NamespacePath` と compound `.*` token を所有する。
 `ComputationJustification` は `computation` token と、comma token で区切られた任意の
 parenthesized `ComputationOption` child を所有する。各 `ComputationOption` は
-`steps`、`timeout`、`nest` のいずれか、colon token、numeral token を所有する。
+`steps`/`timeout`/`nest` と numeral、または contextual `replay` と `true`/`false`、および間の colon token を所有する。
 
 Justification node は citation spelling だけを保持する。label resolution、grouped /
 bulk citation expansion、theorem visibility validation、ATP engine selection、
-computation-option value validation、computation proof replay は行わない。range は最初の
+effective computation policy validation、computation proof replay は行わない。range は最初の
 owned source token から最後の owned source token までである。欠落した reference、
 grouped item、computation option operand は、owning justification node 配下の
 zero-width insertion range を持つ `MissingProofStep` recovery を使う。malformed tail は

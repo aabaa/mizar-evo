@@ -379,7 +379,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 77 | `GroupedReferenceItem` | task-17 grouped citation item |
 | 78 | `BulkReference` | task-17 `namespace_path ".*"` bulk citation |
 | 79 | `ComputationJustification` | task-17 `by computation(...)` justification payload |
-| 80 | `ComputationOption` | task-17 `steps` / `timeout` / `nest` computation option |
+| 80 | `ComputationOption` | task-17 `steps` / `timeout` / `nest` / contextual `replay` computation option |
 | 81 | `ConsiderStatement` | task-18 `consider ... such that ... by ...` choice statement |
 | 82 | `ReconsiderStatement` | task-18 `reconsider ... as ... by ...` type-changing statement |
 | 83 | `ReconsiderItem` | task-18 bare or equated reconsider item |
@@ -660,7 +660,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::GroupedReferenceItem` | none | `SyntaxKind::GroupedReferenceItem` | parser task-17 grouped citation member; owns one identifier token and optional task-31 `TemplateArguments` |
 | `SurfaceNodeKind::BulkReference` | none | `SyntaxKind::BulkReference` | parser task-17 bulk citation; owns `NamespacePath` plus the compound `.*` token |
 | `SurfaceNodeKind::ComputationJustification` | none | `SyntaxKind::ComputationJustification` | parser task-17 computation proof payload; owns the `computation` token and optional parenthesized computation-option list |
-| `SurfaceNodeKind::ComputationOption` | none | `SyntaxKind::ComputationOption` | parser task-17 computation option; owns `steps`, `timeout`, or `nest`, a colon token, and a numeral token or `MissingProofStep` recovery |
+| `SurfaceNodeKind::ComputationOption` | none | `SyntaxKind::ComputationOption` | parser task-17 computation option; owns a numeric option name or contextual `replay`, a colon token, and a numeral or boolean word, or `MissingProofStep` recovery |
 | `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
 | `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | none | `SyntaxKind::FieldUpdate` | parser task-10 `selector ":=" term_expression` field update inside `StructureUpdate` |
@@ -1039,12 +1039,11 @@ tokens, and the closing `}` token when present. `GroupedReferenceItem` owns one
 identifier token in this increment. A `BulkReference` owns a `NamespacePath`
 and the compound `.*` token. `ComputationJustification` owns the `computation`
 token and optional parenthesized `ComputationOption` children separated by
-comma tokens. Each `ComputationOption` owns one of `steps`, `timeout`, or
-`nest`, the colon token, and a numeral token.
+comma tokens. Each `ComputationOption` owns `steps`/`timeout`/`nest` plus a numeral, or contextual `replay` plus `true`/`false`, with the intervening colon token.
 
 Justification nodes preserve citation spelling only. They do not resolve
 labels, expand grouped or bulk citations, validate theorem visibility, select
-ATP engines, validate computation-option values, or replay computation proofs.
+ATP engines, validate effective computation policy, or replay computation proofs.
 Ranges run from the first owned source token through the last owned source
 token. Missing references, grouped items, or computation option operands use
 `MissingProofStep` recovery with a zero-width insertion range under the

@@ -884,7 +884,7 @@ computation_proof        ::= "by" "computation"
                               [ "(" computation_option
                                   { "," computation_option } ")" ] ;
 computation_option       ::= ( "steps" | "timeout" | "nest" )
-                              ":" numeral ;
+                              ":" numeral | "replay" ":" ( "true" | "false" ) ;
 let_statement            ::= "let" qualified_variable_segment
                               { "," qualified_variable_segment }
                               [ "such" condition_list ]
@@ -916,7 +916,7 @@ compound `.{` token、comma token で区切られた 1 個以上の `GroupedRefe
 存在する場合の `}` を所有する。`BulkReference` は `NamespacePath` と compound `.*`
 token を所有する。`ComputationJustification` は `computation` token と任意の
 parenthesized `ComputationOption` list を所有し、各 option は option keyword、colon
-token、numeral token を所有する。
+token、numeral または contextual replay boolean token を所有する。
 
 Task 17 は、この増分で十分小さく扱える canonical host でだけ justification を消費する。
 `let ... by refs;` は task-16 placeholder behavior から `LetStatement` へ更新される。
@@ -2242,3 +2242,7 @@ Lexerはfailを予約する。message形式はlexical authority決定待ち。�
 第13.10章/A13のroot構文は単一identifierまたは異なる2個以上のidentifierの括弧head、予約記号|->、term本文からなる。Binder入口はset右辺、括弧内、再帰本文、既存の区切り付き項リスト（属性/述語/呼出し/selector/角括弧/列挙）、algorithmの項初期値/代入/return/loop入力/measure/match対象/項pattern、構造体field既定値、名前付きconstructor/update値、comprehension mapper、deffunc本文、名前付き/名前なしtake witness、reconsider値、reduction両項、func/redefine/property equalsのdirect/case/otherwise term definiens、of/over constructor actual、一般mode/structure bracket actual、generic-template actual、通常の関係/is/述語の項slot、反復等式の全項である。qualified/operator operand、contextual formula入力は既存経路を維持する。型検査、capture、停止性の受理ではなく構文候補のみを提供する。
 単一/複数headのarityと順序をtuple/nested構文へ変換せず保持する。Binderは最弱・右結合で、通常operator解析は別経路とする。本文qua/restrictionは本文内、Binder全体へのqua/application/restrictionは括弧で区別する。新fixtureの|は既存のlocal functor activationから供給する。
 直後のarrowで候補が確定するまでhead探索はevent/diagnosticを出さない。既存semicolon/end/item/statement-keyword境界では括弧内でも探索を止め、未確定prefixとして既存解析に委ねる。確定した不正headは開始位置のMalformedTermExpression1個と既存SkippedTokenによる既知head範囲の回復を持ち、arrow/本文をrecovered Binderへ保持する。本文欠落は区切りを消費せずMissingTermを置く。未確定/不均衡prefixは既存の外側回復に委ねる。constructor actualは既存before-field contextを再帰Binder本文とqualified fallbackへ渡し、本文入口のfield-list openerはMissingTermのために消費しない。bracket payload選択は上記の一般constructor actual境界に従う。条件if/otherwiseとリストcomma/as/to/semicolonは既存hostが所有する。新diagnostic/recovery語彙や広いhost許可規則は追加しない。
+
+## Computation Replay Syntax Boundary
+
+option 位置だけで厳密な replay と true/false を Identifier または UserSymbol として受理する。数値 option の token class と numeral 値、source 順の raw token、既存の欠落 operand/tail recovery を維持する。steps 専用 theorem consumer は replay option を theorems.source.invalid で拒否し、実効 policy の転送・実行・replay evidence は deferred とする。
