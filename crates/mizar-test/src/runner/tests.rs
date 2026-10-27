@@ -85,10 +85,30 @@ fn step5c11_config() -> DiscoveryConfig {
     }
 }
 
+// Only immutable repository fixtures share a plan; mutable fixture plans stay local.
+fn step5c11_plan() -> &'static crate::harness::TestPlan {
+    static PLAN: std::sync::OnceLock<crate::harness::TestPlan> = std::sync::OnceLock::new();
+    PLAN.get_or_init(|| build_test_plan(&step5c11_config()).unwrap())
+}
+
+#[test]
+fn repository_cases_match_fresh_discovery_and_keep_owned_mutations_local() {
+    let fresh = build_test_plan(&step5c11_config()).unwrap();
+    let selectors: [fn() -> crate::harness::TestCase; 2] =
+        [step5c3_registration_case, step5c13_registration_case];
+    for select in selectors {
+        let mut case = select();
+        let expected = fresh.cases.iter().find(|item| item.id == case.id).unwrap();
+        assert_eq!(&case, expected);
+        case.expectation.tags.push("local-mutation".to_owned());
+        assert_eq!(&select(), expected);
+    }
+}
+
 fn step5c11_source_case(family: &str) -> (crate::harness::TestCase, String) {
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let id = format!("pass_advanced_semantics_{family}_registration_001");
-    let case = plan.cases.into_iter().find(|case| case.id.0 == id).unwrap();
+    let case = plan.cases.iter().find(|case| case.id.0 == id).cloned().unwrap();
     let source = std::fs::read_to_string(&case.source_path).unwrap();
     (case, source)
 }
@@ -635,11 +655,12 @@ fn step5c11_correctness_requests_bind_actual_owners_guards_and_checked_operands(
 }
 
 fn step5c11_false_coherence_case() -> (crate::harness::TestCase, String) {
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "fail_proof_verification_functorial_false_coherence_001")
+        .cloned()
         .unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     (case, text)
@@ -1217,11 +1238,11 @@ fn step5c11_false_coherence_admission_is_exact_and_cannot_fall_back() {
 }
 
 fn step5c13_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == super::STEP5C13_OVERLOAD_IDS[0])
+        .cloned()
         .unwrap()
 }
 
@@ -1784,11 +1805,11 @@ fn step5c13_checks_each_coherently_corrupted_source_callee() {
 
 fn step5c14_static_case(name: &str) -> crate::harness::TestCase {
     let id = format!("fail_type_elaboration_algorithm_{name}_001");
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == id)
+        .cloned()
         .unwrap()
 }
 
@@ -2354,11 +2375,11 @@ fn step5c14_static_admission_is_exact_and_has_no_other_stage_credit() {
 }
 
 fn step5c14_return_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+        .cloned()
         .unwrap()
 }
 
@@ -5772,11 +5793,11 @@ fn step5c6_alias_relation_selects_actual_target_and_rejects_unsupported_sources(
 }
 
 fn step5c14_state_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+        .cloned()
         .unwrap()
 }
 
@@ -6611,11 +6632,11 @@ fn step5c14_state_rejects_corrupt_core_write_formula_and_source_ownership() {
 }
 
 fn step5c11_reduce_case() -> (crate::harness::TestCase, String) {
-    let case = build_test_plan(&step5c11_config())
-        .unwrap()
+    let case = step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "fail_proof_verification_reduce_false_reducibility_001")
+        .cloned()
         .unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     (case, text)
@@ -7133,11 +7154,11 @@ fn step5c11_reduce_runner_requires_the_complete_committed_baseline() {
 }
 
 fn step5c14_claim_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_proof_verification_claim_block_theorem_001")
+        .cloned()
         .unwrap()
 }
 
@@ -8099,11 +8120,11 @@ fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
 }
 
 fn step5c14_assert_failure_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "fail_proof_verification_algorithm_assert_unprovable_001")
+        .cloned()
         .unwrap()
 }
 
@@ -8710,11 +8731,11 @@ fn step5c14_assert_failure_replays_every_vc_field_before_observation() {
 }
 
 fn step5c5_functor_property_case() -> (crate::harness::TestCase, String) {
-    let case = build_test_plan(&step5c11_config())
-        .unwrap()
+    let case = step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_type_elaboration_func_commutativity_property_001")
+        .cloned()
         .unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     (case, text)
@@ -9075,11 +9096,11 @@ fn step5c5_functor_property_rejects_forged_source_typed_and_symbol_inputs() {
 }
 
 fn step5c6_antonym_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_type_elaboration_antonym_predicate_001")
+        .cloned()
         .unwrap()
 }
 
@@ -9502,11 +9523,11 @@ fn step5c6_antonym_authenticates_relations_source_environment_and_both_calls() {
 }
 
 fn step5c3_registration_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config())
-        .unwrap()
+    step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_type_elaboration_argument_attribute_widening_001")
+        .cloned()
         .unwrap()
 }
 
@@ -10840,8 +10861,9 @@ fn step5c3_source_registration_rejects_coherent_core_and_vc_corruption() {
 
 
 fn step5c13_registration_case() -> crate::harness::TestCase {
-    build_test_plan(&step5c11_config()).unwrap().cases.into_iter()
+    step5c11_plan().cases.iter()
         .find(|case| case.id.0 == "fail_advanced_semantics_overload_ambiguous_candidates_001")
+        .cloned()
         .unwrap()
 }
 
@@ -11625,11 +11647,11 @@ fn step5c13_source_registration_rejects_shared_conjunct_and_parent_corruption() 
 }
 
 fn step5c5_dependent_return_case() -> (crate::harness::TestCase, String) {
-    let case = build_test_plan(&step5c11_config())
-        .unwrap()
+    let case = step5c11_plan()
         .cases
-        .into_iter()
+        .iter()
         .find(|case| case.id.0 == "pass_type_elaboration_func_dependent_return_type_001")
+        .cloned()
         .unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     (case, text)
@@ -26194,7 +26216,7 @@ fn bare_algorithm_fail_source_projection_and_annotation_hosts() {
 fn bare_algorithm_fail_frontend_storage_cache_and_source_rebinding() {
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
     use mizar_syntax::SyntaxRecoveryKind;
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let cases = [
         "pass_parser_algorithm_fail_bare_001",
         "fail_parser_algorithm_fail_semicolon_001",
@@ -26495,7 +26517,7 @@ fn expr_type_source_projection_preserves_recursive_heads_and_actual_routes() {
 #[test]
 fn expr_type_recovery_cache_storage_and_source_provenance() {
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let cases = [
         ("pass_parser_expr_types_001", vec![]),
         ("fail_parser_expr_missing_of_001", vec![("object;", 6)]),
@@ -26588,7 +26610,7 @@ fn expr_type_recovery_cache_storage_and_source_provenance() {
 #[test]
 fn binder_roots_preserve_order_precedence_and_grouped_hosts() {
     use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, expected_count) in [
         ("pass_parser_binder_roots_001", 14),
         ("pass_parser_binder_grouped_hosts_001", 9),
@@ -26758,7 +26780,7 @@ fn binder_roots_preserve_order_precedence_and_grouped_hosts() {
 fn binder_roots_recovery_cache_storage_and_source_provenance() {
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation, FrontendOutput};
     use mizar_syntax::SurfaceNodeKind as K;
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (ordinal, (id, boundaries)) in [
         ("pass_parser_binder_roots_001", vec![]),
         ("pass_parser_binder_grouped_hosts_001", vec![]),
@@ -26991,7 +27013,7 @@ fn binder_roots_recovery_cache_storage_and_source_provenance() {
 #[test]
 fn binder_host_roots_preserve_list_arguments_algorithm_routes_and_recovery() {
     use mizar_syntax::SurfaceNodeKind as K;
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics) in [
         ("pass_parser_binder_term_lists_001", 0),
         ("pass_parser_binder_algorithm_roots_001", 0),
@@ -27078,7 +27100,7 @@ fn binder_host_roots_preserve_list_arguments_algorithm_routes_and_recovery() {
 #[test]
 fn binder_container_values_preserve_fields_generators_and_missing_body_boundaries() {
     use mizar_syntax::SurfaceNodeKind as K;
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics) in [
         ("pass_parser_binder_container_values_001", 0),
         ("fail_parser_binder_container_recovery_001", 6),
@@ -27148,7 +27170,7 @@ fn binder_container_values_preserve_fields_generators_and_missing_body_boundarie
 fn exhaustive_retirement_preserves_match_closers_and_identifier_uses() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics) in [
         ("pass_parser_exhaustive_identifier_001", 0),
         ("fail_parser_match_exhaustive_001", 1),
@@ -27299,7 +27321,7 @@ fn exhaustive_retirement_preserves_match_closers_and_identifier_uses() {
 fn binder_mathematical_hosts_preserve_definiens_ownership_and_delimiters() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics) in [
         ("pass_parser_binder_mathematical_hosts_001", 0),
         ("fail_parser_binder_mathematical_recovery_001", 9),
@@ -27384,7 +27406,7 @@ fn binder_mathematical_hosts_preserve_definiens_ownership_and_delimiters() {
 fn qua_constructor_fields_retain_outer_ownership_through_targets_and_recovery() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics, constructors) in [
         ("pass_parser_qua_constructor_fields_001", 0, 5),
         ("fail_parser_qua_constructor_fields_recovery_001", 3, 3),
@@ -27453,7 +27475,7 @@ fn qua_constructor_fields_retain_outer_ownership_through_targets_and_recovery() 
 fn binder_actuals_preserve_type_template_and_outer_field_boundaries() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics, constructors, calls) in [
         ("pass_parser_binder_actuals_001", 0, 5, 5),
         ("fail_parser_binder_actual_recovery_001", 7, 3, 2),
@@ -27576,7 +27598,7 @@ fn binder_actuals_preserve_type_template_and_outer_field_boundaries() {
 fn binder_formula_roots_preserve_relations_predicate_loci_and_iterative_steps() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, diagnostics) in [
         ("pass_parser_binder_formula_roots_001", 0),
         ("fail_parser_binder_formula_recovery_001", 7),
@@ -27663,7 +27685,7 @@ fn binder_formula_roots_preserve_relations_predicate_loci_and_iterative_steps() 
 #[test]
 fn bracket_actuals_preserve_complete_payloads_and_type_preference() {
     use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind as S};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     for (id, names, generic, is_type) in [
         ("pass_parser_bracket_value_actuals_001", &["roots", "tails", "collections", "binders", "operators", "symbol_tails", "constructors", "qualifications", "nested_arguments"][..], "pick", false),
         ("pass_parser_bracket_type_controls_001", &["builtins", "attributes", "expressions", "nesting"][..], "typed", true),
@@ -27750,7 +27772,7 @@ fn bracket_actuals_preserve_complete_payloads_and_type_preference() {
 fn bracket_actual_recovery_retains_actuals_closers_and_outer_fields() {
     use mizar_syntax::SurfaceNodeKind as K;
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan.cases.iter().find(|case| case.id.0 == "fail_parser_bracket_value_recovery_001").unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     let output = super::formula_statement::step5c8_test_frontend(&text);
@@ -27787,7 +27809,7 @@ fn bracket_actual_recovery_retains_actuals_closers_and_outer_fields() {
 #[test]
 fn attribute_arguments_own_complete_unary_terms_before_root_and_qua_type_heads() {
     use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind as S};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan.cases.iter().find(|case| case.id.0 == "pass_parser_attribute_argument_ownership_001").unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     let output = super::formula_statement::step5c8_test_frontend(&text);
@@ -27883,7 +27905,7 @@ fn attribute_arguments_own_complete_unary_terms_before_root_and_qua_type_heads()
 fn attribute_argument_recovery_retains_consumed_terms_heads_and_host_boundaries() {
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
     use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind as S};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan.cases.iter().find(|case| case.id.0 == "fail_parser_attribute_argument_ownership_001").unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     let output = super::formula_statement::step5c8_test_frontend(&text);
@@ -27984,7 +28006,7 @@ fn attribute_argument_recovery_retains_consumed_terms_heads_and_host_boundaries(
 #[test]
 fn attribute_argument_continuation_preserves_order_payloads_and_actual_type_heads() {
     use mizar_syntax::{SurfaceNodeKind as K, SyntaxKind as S};
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan.cases.iter().find(|case| case.id.0 == "pass_parser_attribute_argument_continuation_001").unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     let output = super::formula_statement::step5c8_test_frontend(&text);
@@ -28091,7 +28113,7 @@ fn attribute_argument_continuation_preserves_order_payloads_and_actual_type_head
 fn attribute_argument_continuation_recovery_preserves_holes_heads_and_successors() {
     use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
     use mizar_syntax::SurfaceNodeKind as K;
-    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let plan = step5c11_plan();
     let case = plan.cases.iter().find(|case| case.id.0 == "fail_parser_attribute_argument_continuation_001").unwrap();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     let output = super::formula_statement::step5c8_test_frontend(&text);
