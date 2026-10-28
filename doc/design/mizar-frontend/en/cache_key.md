@@ -180,7 +180,8 @@ that reuses source-spanned tokens must compose it with source-version or
 source-map identity when exact source ranges matter.
 
 `TOKEN_STREAM_CACHE_KEY_VERSION` is
-`mizar-frontend/token-stream-cache-key/v5`. Version 5 retains the v4 reasons: local
+`mizar-frontend/token-stream-cache-key/v6`. Version 6 separates readable
+Mode/Attribute/Structure declaration-head tokenization from v5 and retains the earlier reasons: local
 notation aliases can register an alternative spelling after the alias item
 completes, and adjacent Word tokens `do not` no longer open a conservative `Do`
 block, changing same-input scope-skeleton diagnostics. It also separates

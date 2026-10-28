@@ -11,6 +11,7 @@
    [task contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md)。
 2. [x] **Step 5A.5 / G4** — complete。詳細は
    [task contract](../../task_contracts/ja/STEP5A5-G4-NOTATION-ALIASES.md)。
+3. [x] **[Readable constructor declaration heads](../../task_contracts/ja/LEXER-READABLE-CONSTRUCTOR-DECLARATIONS.md).**
 
 ## Completed Tasks
 

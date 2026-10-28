@@ -1,0 +1,12 @@
+reserve x, n for set;
+
+definition
+  let X,n be set;
+  attr AttrLabel: X is R-module means X = X;
+  attr ParamLabel: X is n-C-star-algebra means X = X;
+  attr OrdinaryAttrLabel: X is ordinary_attribute means X = X;
+end;
+
+theorem ReadableAttributeUse: x is R-module;
+theorem ParameterizedAttributeUse: x is n-C-star-algebra;
+theorem OrdinaryAttributeUse: x is ordinary_attribute;

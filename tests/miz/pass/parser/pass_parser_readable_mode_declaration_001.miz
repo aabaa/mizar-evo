@@ -1,0 +1,7 @@
+definition
+  mode ModeLabel: 1-sorted is set;
+  mode OrdinaryModeLabel: OrdinaryMode is set;
+end;
+
+reserve m for 1-sorted;
+reserve ordinary_m for OrdinaryMode;

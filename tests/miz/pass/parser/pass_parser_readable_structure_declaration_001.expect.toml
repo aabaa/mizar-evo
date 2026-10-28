@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_parser_readable_structure_declaration_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_readable_structure_declaration_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.02.lexical.constructor_names.readable_declaration_heads",
+  "spec.en.05.structures.constructor_names.readable_declaration",
+]
+notes = "Parse-only declaration-head coverage for a multisegment readable structure name, with an ordinary structure control and later type uses. No constructor, field, type, or proof credit."

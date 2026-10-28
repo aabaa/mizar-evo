@@ -79,10 +79,10 @@ expectations must not be weakened to match current behavior.
    implementations, so their omission is a *syntax* rejection
    (`fail_parse_only_mode_property_impl_missing_correctness_001`), not a
    type error.
-4. **param_prefix rejection layer.** Per A.2, an unbound prefix spelling
-   falls back to whole-spelling lexicon matching and is a lexical/parse
-   rejection (`fail_type_elaboration_attr_param_prefix_unbound_001` is
-   classified `parse_only` accordingly despite its historical file name).
+4. **param_prefix fallback.** EN2.5.1/2.5.2 and EN6.2 admit whole-name
+   `k-scaled` when `k` is not in scope. The historical
+   `fail_type_elaboration_attr_param_prefix_unbound_001` instead rejects
+   `k--scaled` for its empty constructor segment at `parse_only`; it grants no grouped-prefix binding credit.
 
 ## Chapter Coverage
 

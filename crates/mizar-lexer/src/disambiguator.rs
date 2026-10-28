@@ -3,8 +3,8 @@ use crate::lexical_environment::{
     UserSymbolKindSet,
 };
 use crate::raw_lexer::{
-    LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
-    is_identifier_start, scan_raw,
+    LexError, RawToken, RawTokenKind, RawTokenStream, is_constructor_name_spelling, is_identifier,
+    is_identifier_continue, is_identifier_start, scan_raw,
 };
 use crate::scope_skeleton::ScopeLexView;
 use crate::source::{SourceRange, SourceSpan};
@@ -871,10 +871,16 @@ impl<'a> Disambiguator<'a> {
             .declared_user_symbols_starting_at(&raw_token.lexeme, cursor, position)
             .into_iter()
             .filter(|candidate| {
-                matches!(
-                    candidate.kind,
-                    UserSymbolKind::Functor | UserSymbolKind::Predicate
-                ) && !is_identifier(&candidate.spelling)
+                let admitted_kind = match candidate.kind {
+                    UserSymbolKind::Functor | UserSymbolKind::Predicate => true,
+                    UserSymbolKind::Mode
+                    | UserSymbolKind::Attribute
+                    | UserSymbolKind::Structure => {
+                        is_constructor_name_spelling(&candidate.spelling)
+                    }
+                    _ => false,
+                };
+                admitted_kind && !is_identifier(&candidate.spelling)
             })
             .collect();
         merge_same_length_user_symbol_candidates(active, declaration_site)

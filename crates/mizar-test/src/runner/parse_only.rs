@@ -347,6 +347,7 @@ pub(in crate::runner) fn step5c3_parse_shape(ast: &SurfaceAst) -> bool {
             "is",
             "k",
             "-",
+            "-",
             "scaled",
             "means",
             "X",

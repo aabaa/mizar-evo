@@ -69,7 +69,7 @@ pub fn disambiguate_with_local_declarations(
 4. `LexemeRun` は内部のバイトカーソルで走査します。文字列必須(string-required)コンテキストでカーソル位置が引用符(quote)から始まる場合、通常の候補選択より先に文字列リテラルを走査します。リテラルは同じ引用符で閉じなければならず、エスケープできるのは `"`, `'`, `\` だけです。不正な文字列は、ランの残りを 1 個の回復トークンとして消費します。
 5. それ以外のカーソル位置では、予約複合記号、アクティブなユーザーシンボル、予約語、識別子構文、数字構文、フォールバックの回復処理から候補を集めます。文字列リテラル候補は文字列必須コンテキストでだけ許可されるため、この通常の候補集合より先に特別扱いします。
 6. 属性の `param_prefix` と、アクティブまたは宣言位置の属性 suffix を分けるハイフンは、`-` がグローバルな予約記号表に含まれていなくても、局所的な予約記号候補として許可します。これにより `n-dimensional`、`(row,col)-size`、`2-ranked` はパーサーの `ParameterPrefix` surface へ分割できます。一方で、通常のハイフン付き constructor 名は、より長いユーザーシンボル候補として保持されます。
-7. 収集済みローカル宣言の正確な `declared_at.start` では、既存の declaration-start query が、句読点形の Functor および Predicate 候補を提供します。これらは最長一致の前にアクティブ候補とマージされます。識別子形の宣言は、その宣言位置では通常の識別子のままです。この宣言位置例外は、他の位置での綴りの有効化、constructor kind の許可、予約記号および `@` の衝突規則の弱化を行いません。
+7. 収集済み `declared_at.start` の正確な位置では、既存 query が非識別子形の Functor/Predicate と、既存 constructor-name validator に通る読みやすい Mode/Attribute/Structure 名を提供します。最長・文脈選択の前に active 候補と merge し、識別子形の自己宣言名は Identifier のままとします。他位置の有効化、prepass の prefix 選択、use-site/keyword/reserved/`@` 規則の変更や Selector/generic Constructor kind の許可は行いません。
 
 選択される候補は、パーサーの期待(parser expectation)とスコープによる上書き(override)規則を適用した後に残る、最長の有効な候補です。
 

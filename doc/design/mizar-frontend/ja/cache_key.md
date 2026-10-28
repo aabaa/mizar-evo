@@ -154,7 +154,8 @@ FrontendDependencyFootprint
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
 `TOKEN_STREAM_CACHE_KEY_VERSION` は
-`mizar-frontend/token-stream-cache-key/v5` です。v5はv4の理由を維持します。local notation
+`mizar-frontend/token-stream-cache-key/v6` です。v6は読みやすいMode/Attribute/Structureの
+宣言名の字句解析をv5から区別し、従来の理由も維持します。local notation
 aliasはalias item完了後にalternative spellingを登録でき、隣接するWord token `do not`は
 conservativeな`Do` blockを開かず同一inputのscope-skeleton diagnosticsを変えます。さらに
 algorithm `var` / `const` comma recognitionは、同じsource/environmentのscope bindingと

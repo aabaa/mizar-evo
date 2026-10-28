@@ -69,6 +69,21 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.02.lexical.constructor_names.readable_declaration_heads"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_readable_attribute_declaration_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_readable_mode_declaration_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_readable_structure_declaration_001.expect.toml",
+]
+notes = "Readable constructor spellings are covered at declaration heads and later parse-only uses. Lexer owner: doc/design/mizar-lexer/en/disambiguator.md#candidate-selection. No semantic, type, or proof credit."
+
+[[requirement]]
 id = "spec.en.02.lexical.dot_disambiguation"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.3 Dot Disambiguation"
@@ -1095,6 +1110,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.constructor_names.readable_declaration"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_readable_structure_declaration_001.expect.toml",
+]
+notes = "Covers the 5.2 struct_def_name constructor_name form with a readable declaration head and later parse-only use. Lexer owner: doc/design/mizar-lexer/en/disambiguator.md#candidate-selection. No constructor, field, or type semantics."
+
+[[requirement]]
 id = "spec.en.05.structures.definition.fields"
 source = "doc/spec/en/05.structures.md"
 section = "5.2 Syntax"
@@ -1328,6 +1356,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attributes.constructor_names.readable_declaration"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_readable_attribute_declaration_001.expect.toml",
+]
+notes = "Covers readable attribute_name values, including a parameter-prefixed declaration and later parse-only uses. Lexer owner: doc/design/mizar-lexer/en/disambiguator.md#candidate-selection. No attribute resolution or type semantics."
+
+[[requirement]]
 id = "spec.en.06.attributes.definition.uniqueness"
 source = "doc/spec/en/06.attributes.md"
 section = "6.1 Definition and Purpose"
@@ -1510,6 +1551,19 @@ coverage = "pass"
 tests = [
   "tests/miz/pass/modes/pass_type_elaboration_mode_attributed_struct_radix_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.07.modes.constructor_names.readable_declaration"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_readable_mode_declaration_001.expect.toml",
+]
+notes = "Covers the readable mode_def_name form and a later parse-only use. Lexer owner: doc/design/mizar-lexer/en/disambiguator.md#candidate-selection. No mode expansion or type semantics."
 
 [[requirement]]
 id = "spec.en.07.modes.dependent.of_parameters"

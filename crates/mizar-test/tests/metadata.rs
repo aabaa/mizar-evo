@@ -6699,6 +6699,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_qua_constructor_fields_001",
             "pass_parser_qua_structure_type_001",
             "pass_parser_qua_terms_001",
+            "pass_parser_readable_attribute_declaration_001",
+            "pass_parser_readable_mode_declaration_001",
+            "pass_parser_readable_structure_declaration_001",
             "pass_parser_reconsider_tails_001",
             "pass_parser_redefinition_notation_001",
             "pass_parser_registrations_001",
@@ -7230,8 +7233,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 166);
-    assert_eq!(report.passed_count(), 166);
+    assert_eq!(report.results.len(), 169);
+    assert_eq!(report.passed_count(), 169);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10643,8 +10646,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 166"));
-    assert!(stdout.contains("passed: 166"));
+    assert!(stdout.contains("parse-only cases: 169"));
+    assert!(stdout.contains("passed: 169"));
     assert!(stdout.contains("failed: 0"));
 }
 

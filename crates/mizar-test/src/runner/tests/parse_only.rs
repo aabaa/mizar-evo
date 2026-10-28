@@ -464,8 +464,19 @@
             task253_ast_from_source_text_with_diagnostic_count(source, 503_200);
         assert!(super::parse_only::step5c3_parse_shape(&ast));
 
+        let whole_name = source.replacen("k--scaled", "k-scaled", 1);
+        for (ordinal, valid) in [
+            whole_name.clone(),
+            whole_name.replacen("let X be set;", "let k be object;\n  let X be set;", 1),
+        ].into_iter().enumerate() {
+            let (valid_ast, _, _, _, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(&valid, 503_204 + ordinal);
+            assert_eq!(diagnostics, 0);
+            assert!(!super::parse_only::step5c3_parse_shape(&valid_ast));
+        }
+
         for (ordinal, mutated) in [
-            source.replacen("k-scaled", "q-scaled", 1),
+            source.replacen("k--scaled", "q--scaled", 1),
             source.replacen("let X be set;", "let k be object;\n  let X be set;", 1),
         ]
         .into_iter()

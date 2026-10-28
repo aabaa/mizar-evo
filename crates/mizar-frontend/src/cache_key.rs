@@ -34,7 +34,7 @@ pub const ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION: &str =
 pub const PARSER_LEXING_PLAN_CACHE_KEY_VERSION: &str =
     "mizar-frontend/parser-lexing-plan/position-sensitive-v1";
 /// Version tag for token-stream cache keys.
-pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v5";
+pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v6";
 /// Version tag for surface-AST cache keys.
 pub const SURFACE_AST_CACHE_KEY_VERSION: &str = "mizar-frontend/surface-ast-cache-key/v1";
 
@@ -971,7 +971,7 @@ mod tests {
     fn token_stream_cache_key_version_is_bumped_for_local_notation_aliases() {
         assert_eq!(
             TOKEN_STREAM_CACHE_KEY_VERSION,
-            "mizar-frontend/token-stream-cache-key/v5"
+            "mizar-frontend/token-stream-cache-key/v6"
         );
 
         let mut current = TokenStreamCacheKey::new(

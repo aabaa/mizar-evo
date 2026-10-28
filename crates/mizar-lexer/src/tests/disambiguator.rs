@@ -462,6 +462,209 @@ fn disambiguate_local_source(
 }
 
 #[test]
+fn disambiguator_admits_collected_readable_constructor_heads() {
+    // EN2.5.2, EN5.2/6.2/7.2: use the genuine prepass, including ordinary heads.
+    for (kind, head, tail, arity) in [
+        (UserSymbolKind::Mode, "mode Label:", "is set;", 0),
+        (
+            UserSymbolKind::Structure,
+            "struct",
+            "where field carrier -> set; end;",
+            0,
+        ),
+        (
+            UserSymbolKind::Attribute,
+            "attr Label: X is",
+            "means X = X;",
+            1,
+        ),
+    ] {
+        for name in ["R-module", "C-star-algebra", "1-sorted", "Ordinary"] {
+            // Numeral-leading attributes retain the existing parameter-prefix role.
+            let spelling = if kind == UserSymbolKind::Attribute && name == "1-sorted" {
+                "sorted"
+            } else {
+                name
+            };
+            for visibility in ["private", "public"] {
+                let source = format!(
+                    "definition let X be set; {visibility} {head} {name} {tail} {spelling}; end; {spelling};"
+                );
+                let (locals, stream) =
+                    disambiguate_local_source(&source, ParserLexContext::general());
+                let declaration = locals
+                    .user_symbols
+                    .iter()
+                    .find(|d| d.spelling == spelling)
+                    .unwrap();
+                assert_eq!(
+                    (declaration.kind, declaration.arity),
+                    (kind, UserSymbolArity::exact(arity))
+                );
+                let tokens = stream
+                    .tokens
+                    .iter()
+                    .filter(|t| t.lexeme == spelling)
+                    .collect::<Vec<_>>();
+                assert_eq!(tokens.len(), 3, "{source}");
+                let own_kind = if name == "Ordinary" {
+                    TokenKind::Identifier
+                } else {
+                    TokenKind::UserSymbol
+                };
+                assert_eq!(
+                    tokens.iter().map(|t| t.kind).collect::<Vec<_>>(),
+                    [own_kind, TokenKind::UserSymbol, TokenKind::UserSymbol],
+                    "{source}"
+                );
+                assert_eq!(tokens[0].span, declaration.declared_at);
+                assert!(
+                    tokens[1..]
+                        .iter()
+                        .all(|t| t.span.start >= declaration.activation_start)
+                );
+                assert_final_token_spans_point_to_lexemes(&source, &stream.tokens);
+                assert!(
+                    stream.diagnostics.is_empty(),
+                    "{source}: {:?}",
+                    stream.diagnostics
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn disambiguator_keeps_readable_constructor_activation_and_context_boundaries() {
+    for (head, tail) in [
+        ("mode Label:", "is R-module;"),
+        ("struct", "where field carrier -> R-module; end;"),
+        ("attr Label: X is", "means X is R-module;"),
+    ] {
+        let source = format!("R-module; {head} R-module {tail} R-module;");
+        let (locals, stream) = disambiguate_local_source(&source, ParserLexContext::general());
+        let declaration = locals
+            .user_symbols
+            .iter()
+            .find(|d| d.spelling == "R-module")
+            .unwrap();
+        let positions = source
+            .match_indices("R-module")
+            .map(|(p, _)| p)
+            .collect::<Vec<_>>();
+        for (index, position) in positions.iter().enumerate() {
+            let token = stream
+                .tokens
+                .iter()
+                .find(|t| t.span.start == *position)
+                .unwrap();
+            assert_eq!(
+                token.kind == TokenKind::UserSymbol,
+                index == 1 || index == 3,
+                "{source}"
+            );
+        }
+        assert_eq!(declaration.declared_at.start, positions[1]);
+        assert!(locals.user_symbols("R-module", positions[0]).is_empty());
+        assert!(locals.user_symbols("R-module", positions[2]).is_empty());
+        assert!(!locals.user_symbols("R-module", positions[3]).is_empty());
+        let context = ParserLexContext::general()
+            .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Predicate));
+        let (_, rejected) = disambiguate_local_source(&source, context);
+        assert!(
+            !rejected
+                .tokens
+                .iter()
+                .any(|t| t.kind == TokenKind::UserSymbol && t.lexeme == "R-module")
+        );
+    }
+}
+
+#[test]
+fn disambiguator_admits_readable_mode_alias_and_attribute_suffix_only_at_selected_heads() {
+    let source = concat!(
+        "definition let n,X be set; mode Base: Original is set; ",
+        "synonym Alias-mode for Original; ",
+        "attr Label: X is n-C-star-algebra means X = X; end; ",
+        "Alias-mode; C-star-algebra;"
+    );
+    let (locals, stream) = disambiguate_local_source(source, ParserLexContext::general());
+    for (name, kind, arity) in [
+        ("Alias-mode", UserSymbolKind::Mode, 0),
+        ("C-star-algebra", UserSymbolKind::Attribute, 1),
+    ] {
+        let declaration = locals
+            .user_symbols
+            .iter()
+            .find(|d| d.spelling == name)
+            .unwrap();
+        assert_eq!(
+            (declaration.kind, declaration.arity),
+            (kind, UserSymbolArity::exact(arity))
+        );
+        let tokens = stream
+            .tokens
+            .iter()
+            .filter(|t| t.lexeme == name)
+            .collect::<Vec<_>>();
+        assert_eq!(tokens.len(), 2);
+        assert!(tokens.iter().all(|t| t.kind == TokenKind::UserSymbol));
+        assert_eq!(tokens[0].span, declaration.declared_at);
+    }
+    assert!(stream.tokens.windows(3).any(|tokens| {
+        tokens
+            .iter()
+            .map(|t| (t.kind, t.lexeme.as_str()))
+            .collect::<Vec<_>>()
+            == [
+                (TokenKind::Identifier, "n"),
+                (TokenKind::ReservedSymbol, "-"),
+                (TokenKind::UserSymbol, "C-star-algebra"),
+            ]
+    }));
+    assert!(stream.diagnostics.is_empty(), "{:?}", stream.diagnostics);
+}
+
+#[test]
+fn disambiguator_rejects_invalid_or_excluded_constructor_declaration_candidates() {
+    let (seed, _) =
+        disambiguate_local_source("mode Label: R-module is set;", ParserLexContext::general());
+    let env = build_lexical_environment(&[], &[]).unwrap();
+    // Manufactured declarations are negative controls only, bypassing registration deliberately.
+    for (spelling, kind) in [
+        ("++", UserSymbolKind::Mode),
+        ("[x]", UserSymbolKind::Structure),
+        ("@bad", UserSymbolKind::Attribute),
+        ("where", UserSymbolKind::Mode),
+        ("R-module", UserSymbolKind::Selector),
+        ("R-module", UserSymbolKind::Constructor),
+    ] {
+        let mut locals = seed.clone();
+        let declaration = &mut locals.user_symbols[0];
+        declaration.spelling = spelling.into();
+        declaration.kind = kind;
+        declaration.declared_at = SourceSpan::new(0, spelling.len());
+        declaration.activation_start = spelling.len() + 1;
+        let raw = scan_raw(spelling).unwrap();
+        let skeleton = build_scope_skeleton(&raw);
+        let stream = disambiguate_with_local_declarations(
+            &raw,
+            &env,
+            &locals,
+            &ParserLexContext::general(),
+            &skeleton,
+        );
+        assert!(
+            !stream
+                .tokens
+                .iter()
+                .any(|t| t.kind == TokenKind::UserSymbol),
+            "{spelling}: {kind:?}"
+        );
+    }
+}
+
+#[test]
 fn disambiguator_admits_punctuation_declarations_at_exact_sites() {
     let source = concat!(
         "func SlashDef: X \\+\\ Y -> set equals X;\n",

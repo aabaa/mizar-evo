@@ -1,0 +1,11 @@
+definition
+  struct C-star-algebra where
+    field carrier -> set;
+  end;
+  struct OrdinaryStructure where
+    field value -> set;
+  end;
+end;
+
+reserve s for C-star-algebra;
+reserve ordinary_s for OrdinaryStructure;

@@ -6,6 +6,54 @@ include!("tests/proof_verification.rs");
 
 include!("tests/parse_only.rs");
 
+#[test]
+fn readable_constructor_heads_reach_genuine_frontend_patterns_and_later_uses() {
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    use mizar_frontend::lexing::TokenKind as L;
+    // EN2.5.2 and EN5.2/6.2/7.2: fresh declarations, with ordinary identifier controls.
+    for (ordinal, (name, kind, text)) in [
+        ("1-sorted", K::ModePattern, "definition mode ModeLabel: 1-sorted is set; end; reserve y for 1-sorted;"),
+        ("R-module", K::StructurePattern, "definition struct R-module where field carrier -> set; end; end; reserve y for R-module;"),
+        ("C-star-algebra", K::AttributePattern, "definition let X be set; attr AttrLabel: X is C-star-algebra means X = X; end; reserve y for C-star-algebra set;"),
+    ].into_iter().enumerate() {
+        for ordinary in [false, true] {
+            let text = if ordinary { text.replace(name, "Ordinary") } else { text.to_owned() };
+            let name = if ordinary { "Ordinary" } else { name };
+            let frontend = task257c4c1_frontend_output(&text, 170 + ordinal);
+            assert_eq!(frontend.cache_keys.tokens.version.as_ref(), "mizar-frontend/token-stream-cache-key/v6");
+            let mut prior_tokens = frontend.cache_keys.tokens.clone();
+            prior_tokens.version = std::sync::Arc::from("mizar-frontend/token-stream-cache-key/v5");
+            assert_ne!(frontend.cache_keys.tokens.stable_hash(), prior_tokens.stable_hash());
+            let current_ast_key = frontend.cache_keys.ast.as_ref().unwrap();
+            assert_eq!(current_ast_key.token_stream_hash, frontend.cache_keys.tokens.stable_hash());
+            assert_eq!(current_ast_key.parser_version.version.as_ref(), mizar_frontend::parsing::MIZAR_PARSER_CACHE_KEY_VERSION);
+            let mut prior_ast = current_ast_key.clone();
+            prior_ast.token_stream_hash = prior_tokens.stable_hash();
+            assert_ne!(current_ast_key.stable_hash(), prior_ast.stable_hash());
+            assert!(frontend.diagnostics.is_empty(), "{text}: {:?}", frontend.diagnostics);
+            assert!(frontend.tokens.diagnostics.is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+            let patterns = ast.node_views().filter(|node| node.kind() == &kind).collect::<Vec<_>>();
+            assert_eq!(patterns.len(), 1);
+            let children = patterns[0].child_views().collect::<Vec<_>>();
+            assert_eq!(children.len(), 1);
+            let token = children[0].as_token().unwrap();
+            assert_eq!((token.kind, token.text.as_ref()), (if ordinary { T::Identifier } else { T::UserSymbol }, name));
+            let positions = text.match_indices(name).map(|(position, _)| position).collect::<Vec<_>>();
+            assert_eq!(positions.len(), 2);
+            assert_eq!(children[0].range(), range(ast.source_id, positions[0], positions[0] + name.len()));
+            for (index, position) in positions.into_iter().enumerate() {
+                let expected = range(ast.source_id, position, position + name.len());
+                let token = frontend.tokens.tokens().iter().find(|token| token.span == expected).unwrap();
+                assert_eq!(token.text.as_ref(), name);
+                assert_eq!(token.kind, if ordinary && index == 0 { L::Identifier } else { L::UserSymbol });
+                assert!(ast.token_views().any(|node| node.range() == expected && node.as_token().is_some_and(|token| token.text.as_ref() == name)));
+            }
+        }
+    }
+}
+
 include!("tests/syntax_smoke.rs");
 
 include!("tests/type_elaboration/source_extraction.rs");
@@ -31146,7 +31194,7 @@ fn match_boolean_operands_preserve_reference_children_and_existing_pattern_roots
     assert_eq!(frontend.cache_keys, repeated.cache_keys);
     assert_eq!(frontend.ast, repeated.ast);
     let token_key = &frontend.cache_keys.tokens;
-    assert_eq!(token_key.version.as_ref(), "mizar-frontend/token-stream-cache-key/v5");
+    assert_eq!(token_key.version.as_ref(), "mizar-frontend/token-stream-cache-key/v6");
     let mut old_token_key = token_key.clone();
     old_token_key.version = "mizar-frontend/token-stream-cache-key/v3".into();
     assert_eq!(token_key.lexical_hash, old_token_key.lexical_hash);
@@ -31568,7 +31616,7 @@ fn algorithm_boolean_operands_preserve_references_predicates_and_declaration_tai
     assert_eq!(frontend.cache_keys, repeated.cache_keys);
     assert_eq!(frontend.ast, repeated.ast);
     let token_key = &frontend.cache_keys.tokens;
-    assert_eq!(token_key.version.as_ref(), "mizar-frontend/token-stream-cache-key/v5");
+    assert_eq!(token_key.version.as_ref(), "mizar-frontend/token-stream-cache-key/v6");
     let mut retained_token = token_key.clone();
     retained_token.version = "mizar-frontend/token-stream-cache-key/v4".into();
     assert_eq!(token_key.lexical_hash, retained_token.lexical_hash);
