@@ -481,8 +481,14 @@ Budgets the reviewer checks against the `volume:` commit line:
 |---|---:|
 | task-contract length, per language | 60 lines |
 | documentation lines added per task, all commits | 200 |
-| documentation added versus production added | 2 : 1 |
+| documentation added versus production added | 2 : 1; test-only exception below |
 | production lines added per task | 300 without a presented plan |
+
+For a task with changes confined to tests, fixtures, test infrastructure outside
+production code, and necessary derived documentation, replace the ratio with a
+60-line derived-documentation cap. Documentation-only tasks are excluded. All
+other frozen scope, contract/ledger, single-owner, authority, review, and
+verification requirements remain unchanged.
 
 ## Documentation Volume Ledger
 
@@ -662,7 +668,7 @@ Score caps:
 | `test_expectation_drift` remains | 79 |
 | required verification failure | 74 |
 | task contract longer than 60 lines in either language | 84 |
-| documentation added exceeds twice production added, or 200 lines per task | 84 |
+| documentation exceeds its applicable ratio or test-only cap, or 200 lines per task | 84 |
 | per-run evidence, scores, digests, or model routing written under `doc/` | 79 |
 | volume and scope review skipped or its findings left unresolved | 79 |
 | unapproved semantic behavior change | 69 |
