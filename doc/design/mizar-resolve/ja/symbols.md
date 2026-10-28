@@ -189,6 +189,8 @@ attribute name を解決し、argument は後続の checker-owned payload extrac
 
 回復を含まず `TemplateLoci` のない通常の述語は、直接 token 全体を「省略可能な左 loci・定義記号1個・省略可能な右 loci」として検査する。comma-list または括弧付き list の識別子 slot 数を、成立する全記号位置の解釈で一致するときだけ収集する。constructor identity は選ばず、外側の let/template inventory は使わない。欠落・回復・未対応形状や template を含む pattern は unknown のままとする。既存 signature/index と上記 identity/lexical-wire の分離を使い、述語使用・binding・proof は検証しない。
 
+`TemplateLoci` のない非 recovery の通常 functor は、省略可能な左右 loci と記号1個の形、および記号・loci・記号の circumfix の両文法を検査する。完全な解釈が存在し全項数が一致するときだけ識別子 slot 数を記録し、全識別子からなる曖昧形は constructor/binding を選ばず unknown を保つ。欠落・回復・未対応形も unknown とする。既存 signature/index と identity/lexical-wire の分離を使い、private functor/predicate key と alias/duplicate policy は独立したまま変更しない。
+
 ## Kind ごとの Signature Shape
 
 | Declaration family | Resolver-owned signature payload |

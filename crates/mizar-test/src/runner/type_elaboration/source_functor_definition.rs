@@ -1036,7 +1036,7 @@ fn exact_resolver_profile(
                     || actual.notation_spelling() != Some(expected)
                     || actual.symbol_kind() != SymbolKind::Functor
                     || actual.definition_kind() != Some(DefinitionKind::Functor)
-                    || actual.arity().is_some()
+                    || actual.arity() != Some(1)
                     || actual.overload_policy() != SymbolOverloadPolicy::Overloadable
             })
     {
@@ -1063,7 +1063,7 @@ fn exact_resolver_profile(
             || definition.visibility() != Visibility::Public
             || !definition.parameters().is_empty()
             || !definition.binders().is_empty()
-            || definition.arity().is_some()
+            || definition.arity() != Some(1)
             || definition.conflict().is_some()
             || symbol.kind() != SymbolKind::Functor
             || symbol.visibility() != Visibility::Public

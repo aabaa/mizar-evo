@@ -612,6 +612,33 @@ fn task_260_independent_row_and_field_corruption_fails_closed() {
         SourceFunctorDefinitionError::InvalidResolverDefinition { index: 1 },
     );
 
+    for index in 0..2 {
+        for arity in [None, Some(0), Some(2), Some(3)] {
+            let mut arities = [Some(1); 2];
+            arities[index] = arity;
+            let (env, _, _, _) = resolver_env(fixture.source, fixture.module.clone(), arities);
+            let error = SourceFunctorDefinitionProducer::build(
+                fixture.input.clone(),
+                &env,
+                &fixture.source_context,
+                &fixture.source_type,
+                &fixture.source_term,
+                None,
+                None,
+                None,
+                Some(&fixture.atomic_formulas),
+                &baseline,
+                &fixture.arena,
+            )
+            .expect_err("Task260 functor definition requires exact resolver arity");
+            assert_eq!(
+                error,
+                SourceFunctorDefinitionError::InvalidResolverDefinition { index },
+                "definition {index} arity {arity:?}"
+            );
+        }
+    }
+
     assert_input_error(
         &fixture,
         &baseline,
@@ -2294,7 +2321,8 @@ fn fixture() -> Fixture {
     let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task260"));
     let arena = task260_arena(source);
     let source_context = task248_context(source, &module);
-    let (env, symbols, definitions, contribution) = resolver_env(source, module.clone());
+    let (env, symbols, definitions, contribution) =
+        resolver_env(source, module.clone(), [Some(1); 2]);
     let source_type_base = SourceTypeProducer::build(
         task249_input(source, module.clone()),
         source_context.binding_env(),
@@ -2658,6 +2686,7 @@ fn definition_block_shell(
 fn resolver_env(
     source: SourceId,
     module: ModuleId,
+    arities: [Option<u32>; 2],
 ) -> (
     SymbolEnv,
     [SymbolId; 2],
@@ -2718,17 +2747,19 @@ fn resolver_env(
             .with_notation_spelling(notation)
             .with_signature(signature.clone()),
         );
-        let definition = indexes.definitions.insert(
-            DefinitionShell::new(
-                symbol.clone(),
-                DefinitionKind::Functor,
-                origin,
-                contribution,
-            )
-            .with_visibility(Visibility::Public)
-            .with_notation_shape(notation)
-            .with_signature(signature),
-        );
+        let mut definition_shell = DefinitionShell::new(
+            symbol.clone(),
+            DefinitionKind::Functor,
+            origin,
+            contribution,
+        )
+        .with_visibility(Visibility::Public)
+        .with_notation_shape(notation)
+        .with_signature(signature);
+        if let Some(arity) = arities[index] {
+            definition_shell = definition_shell.with_arity(arity);
+        }
+        let definition = indexes.definitions.insert(definition_shell);
         assert_eq!(definition.index(), index);
         indexes
             .contributions

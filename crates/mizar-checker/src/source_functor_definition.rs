@@ -1224,7 +1224,7 @@ fn validate_resolver_definitions(
             || definition.visibility() != Visibility::Public
             || !definition.parameters().is_empty()
             || !definition.binders().is_empty()
-            || definition.arity().is_some()
+            || definition.arity() != Some(1)
             || definition.notation_shape() != Some(expected_notations[index])
             || definition.doc_attachment().is_some()
             || definition.contribution() != row.contribution

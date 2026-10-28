@@ -98,10 +98,11 @@ local-source contribution:
 - both are normal, local, exported, overloadable, conflict-free, and belong
   to the single local contribution.
 
-Resolver `parameters`, `binders`, and syntactic arity are empty. Task 260
-must not infer definition parameters, guard ownership, `equals`/`means`
-style, return-type identity, definiens ownership, or correctness association
-from those empty fields or from opaque signature payload text. Those values
+Resolver `parameters` and `binders` stay empty; syntactic arity must be exactly
+one for both written patterns, with unknown/non-one metadata refused. Task 260
+must not infer definition parameters, guard ownership, `equals`/`means` style,
+return-type identity, definiens ownership, or correctness association from this
+metadata or opaque signature payload text. Those values
 come only from the authenticated Surface structure and lower handoffs. The
 resolver does not prove overload uniqueness or definition correctness.
 

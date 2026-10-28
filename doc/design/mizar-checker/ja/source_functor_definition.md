@@ -58,8 +58,9 @@ local contribution 1です。shell 0はblock `104/0..261`、shell 1はequals
 `84/61..118`、shell 2はmeans `95/121..179`。definitionsは
 `task260_equals ( x )` path `[4,0,9,0]`と`task260_means ( y )` path
 `[4,0,9,1]`で、normal/local/exported/overloadable/conflict-freeです。
-resolverのparameters/binders/arityはemptyなので、parameter、guard、style、
-return type、definiens、correctness associationをそこからinferしません。
+resolver の parameters/binders は empty のまま、両 pattern の syntactic arity は
+正確に 1 を要求し、unknown/1 以外は拒否します。parameter、guard、style、
+return type、definiens、correctness association はこの metadata から infer しません。
 
 ## Frozen Lower Bundle
 

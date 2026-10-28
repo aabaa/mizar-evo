@@ -201,6 +201,8 @@ For unrecovered ordinary mode definitions, direct `ModePattern` tokens supply th
 
 For unrecovered ordinary predicates without `TemplateLoci`, validate the complete direct-token pattern as optional left loci, one definition symbol and optional right loci. Count written identifier slots in comma-lists or parenthesized lists only when all valid symbol-position interpretations agree; do not select constructor identity or use enclosing let/template inventories. Missing, recovered or unsupported shapes, including template-bearing patterns, retain unknown arity. Use the existing signature/index propagation and identity/lexical-wire separation above without validating predicate use, bindings or proofs.
 
+For unrecovered ordinary functors without `TemplateLoci`, consider both optional-left/symbol/optional-right loci and symbol/loci/symbol circumfix grammar. Record written identifier-slot arity only if complete interpretations exist and all counts agree; ambiguous all-identifier forms retain unknown, with no constructor or binding selection. Missing, recovered and unsupported forms remain unknown. Existing signature/index and identity/lexical-wire separation apply; private functor/predicate keys and alias/duplicate policy remain independent and unchanged.
+
 ## Per-Kind Signature Shapes
 
 | Declaration family | Resolver-owned signature payload |

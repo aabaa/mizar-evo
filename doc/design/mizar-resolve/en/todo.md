@@ -703,6 +703,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 60. **[Ordinary predicate term-locus arity](../../task_contracts/en/RESOLVE-PREDICATE-TERM-ARITY.md).** [x]
 
+61. **[Ordinary functor term-slot arity](../../task_contracts/en/RESOLVE-FUNCTOR-TERM-ARITY.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

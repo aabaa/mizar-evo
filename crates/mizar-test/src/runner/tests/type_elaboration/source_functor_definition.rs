@@ -483,12 +483,27 @@ fn task260_real_source_surface_resolver_and_lower_bundle_is_exact() {
         ["task260_equals ( x )", "task260_means ( y )"]
     );
     assert_eq!(
+        projections
+            .iter()
+            .map(|projection| projection.arity())
+            .collect::<Vec<_>>(),
+        [Some(1), Some(1)]
+    );
+    assert_eq!(
         (
             symbols.symbols().len(),
             symbols.definitions().len(),
             symbols.contributions().len(),
         ),
         (2, 2, 1)
+    );
+    assert_eq!(
+        symbols
+            .definitions()
+            .iter()
+            .map(|definition| definition.arity())
+            .collect::<Vec<_>>(),
+        [Some(1), Some(1)]
     );
 
     let output = source_functor_definition_output(
@@ -1327,6 +1342,76 @@ fn task260_source_ast_resolver_and_lower_mutations_fail_at_the_owner() {
         .expect("exact source remains selected")
         .expect_err("lower mutation must fail");
         assert!(error.starts_with(owner), "{mutation:?}: {error}");
+    }
+
+    for definition_index in 0..2 {
+        for arity in [None, Some(0), Some(2), Some(3)] {
+            let mut definitions = mizar_resolve::env::DefinitionIndex::default();
+            for original in symbols.definitions().iter() {
+                let mut replacement = mizar_resolve::env::DefinitionShell::new(
+                    original.symbol().clone(),
+                    original.kind(),
+                    original.origin().clone(),
+                    original.contribution(),
+                )
+                .with_visibility(original.visibility())
+                .with_parameters(original.parameters().to_vec())
+                .with_binders(original.binders().to_vec())
+                .with_dependencies(original.dependencies().to_vec());
+                let replacement_arity = if original.id().index() == definition_index {
+                    arity
+                } else {
+                    original.arity()
+                };
+                if let Some(replacement_arity) = replacement_arity {
+                    replacement = replacement.with_arity(replacement_arity);
+                }
+                if let Some(notation_shape) = original.notation_shape() {
+                    replacement = replacement.with_notation_shape(notation_shape);
+                }
+                if let Some(doc_attachment) = original.doc_attachment() {
+                    replacement = replacement.with_doc_attachment(doc_attachment.clone());
+                }
+                if let Some(conflict) = original.conflict() {
+                    replacement = replacement.with_conflict(conflict.clone());
+                }
+                if let Some(signature) = original.signature() {
+                    replacement = replacement.with_signature(signature.clone());
+                }
+                assert_eq!(definitions.insert(replacement), original.id());
+            }
+            let changed = mizar_resolve::env::SymbolEnv::new(
+                module.clone(),
+                mizar_resolve::env::SymbolEnvIndexes {
+                    imports: symbols.imports().clone(),
+                    exports: symbols.exports().clone(),
+                    symbols: symbols.symbols().clone(),
+                    labels: symbols.labels().clone(),
+                    definitions,
+                    overloads: symbols.overloads().clone(),
+                    registrations: symbols.registrations().clone(),
+                    lexical_summaries: symbols.lexical_summaries().clone(),
+                    namespace_graph: symbols.namespace_graph().clone(),
+                    declaration_dependencies: symbols.declaration_dependencies().clone(),
+                    contributions: symbols.contributions().clone(),
+                    module_summaries: symbols.module_summaries().clone(),
+                },
+            );
+            let error = source_functor_definition_output(
+                &ast,
+                module.clone(),
+                &shells,
+                &changed,
+                SOURCE_FUNCTOR_DEFINITION_TEXT,
+            )
+            .expect("exact source remains selected")
+            .expect_err("each Task260 functor requires exact resolver arity");
+            assert_eq!(
+                error,
+                format!("Task260 resolver: functor {definition_index} is not exact"),
+                "definition {definition_index} arity {arity:?}"
+            );
+        }
     }
 
     let first = source_functor_definition_output(

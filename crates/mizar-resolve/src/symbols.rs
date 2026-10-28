@@ -2161,15 +2161,43 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
         let notation = normalized_token_shape(pattern);
         let arity = (|| {
-            if shell.kind() == DeclarationShellKind::PredicateDefinition {
-                if view.kind() != &SurfaceNodeKind::PredicateDefinition
+            let identifier_loci_arity = |loci: &[(SurfaceTokenKind, &str)]| {
+                if loci.is_empty()
+                    || loci.len().is_multiple_of(2)
+                    || !loci.iter().enumerate().all(|(index, (kind, text))| {
+                        if index % 2 == 0 {
+                            *kind == SurfaceTokenKind::Identifier && !text.is_empty()
+                        } else {
+                            *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
+                        }
+                    })
+                {
+                    None
+                } else {
+                    Some(loci.len().div_ceil(2))
+                }
+            };
+            let is_functor = shell.kind() == DeclarationShellKind::FunctorDefinition;
+            if is_functor || shell.kind() == DeclarationShellKind::PredicateDefinition {
+                let (definition_kind, pattern_kind) = if is_functor {
+                    (
+                        SurfaceNodeKind::FunctorDefinition,
+                        SurfaceNodeKind::FunctorPattern,
+                    )
+                } else {
+                    (
+                        SurfaceNodeKind::PredicateDefinition,
+                        SurfaceNodeKind::PredicatePattern,
+                    )
+                };
+                if view.kind() != &definition_kind
                     || shell_context(self.shells, shell).recovered
                     || view.is_recovered()
-                    || pattern.kind() != &SurfaceNodeKind::PredicatePattern
+                    || pattern.kind() != &pattern_kind
                     || pattern.is_recovered()
                     || view
                         .child_views()
-                        .filter(|child| is_predicate_pattern(child.kind()))
+                        .filter(|child| is_pattern(child.kind()))
                         .count()
                         != 1
                 {
@@ -2212,23 +2240,44 @@ impl<'a> SignatureProjectionExtractor<'a> {
                             ] => loci,
                             _ => side,
                         };
-                        if loci.is_empty()
-                            || loci.len() % 2 == 0
-                            || !loci.iter().enumerate().all(|(index, (kind, text))| {
-                                if index % 2 == 0 {
-                                    *kind == SurfaceTokenKind::Identifier && !text.is_empty()
-                                } else {
-                                    *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
-                                }
-                            })
-                        {
+                        let Some(slots) = identifier_loci_arity(loci) else {
                             valid = false;
                             break;
-                        }
-                        arity += loci.len().div_ceil(2);
+                        };
+                        arity += slots;
                     }
                     if valid {
                         let arity = u32::try_from(arity).ok()?;
+                        if count.is_some_and(|previous| previous != arity) {
+                            return None;
+                        }
+                        count = Some(arity);
+                    }
+                }
+                if is_functor
+                    && tokens.len() >= 3
+                    && [&tokens[0], &tokens[tokens.len() - 1]]
+                        .into_iter()
+                        .all(|(kind, text)| {
+                            matches!(
+                                kind,
+                                SurfaceTokenKind::Identifier
+                                    | SurfaceTokenKind::UserSymbol
+                                    | SurfaceTokenKind::LexemeRun
+                            ) && !text.is_empty()
+                        })
+                {
+                    let interior = &tokens[1..tokens.len() - 1];
+                    let loci = match interior {
+                        [
+                            (SurfaceTokenKind::ReservedSymbol, "("),
+                            loci @ ..,
+                            (SurfaceTokenKind::ReservedSymbol, ")"),
+                        ] => loci,
+                        _ => interior,
+                    };
+                    if let Some(slots) = identifier_loci_arity(loci) {
+                        let arity = u32::try_from(slots).ok()?;
                         if count.is_some_and(|previous| previous != arity) {
                             return None;
                         }
@@ -2288,19 +2337,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
                     ] => parameters,
                     _ => return None,
                 };
-                if parameters.is_empty()
-                    || parameters.len() % 2 == 0
-                    || !parameters.iter().enumerate().all(|(index, (kind, text))| {
-                        if index % 2 == 0 {
-                            *kind == SurfaceTokenKind::Identifier && !text.is_empty()
-                        } else {
-                            *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
-                        }
-                    })
-                {
-                    return None;
-                }
-                return u32::try_from(parameters.len().div_ceil(2)).ok();
+                return u32::try_from(identifier_loci_arity(parameters)?).ok();
             }
             if shell.kind() != DeclarationShellKind::AttributeDefinition
                 || view.kind() != &SurfaceNodeKind::AttributeDefinition
