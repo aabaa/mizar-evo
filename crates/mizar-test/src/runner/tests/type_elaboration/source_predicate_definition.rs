@@ -89,6 +89,35 @@ fn step5c5_predicate_semantics_require_authenticated_binary_properties() {
 }
 
 #[test]
+fn task259_real_source_rejects_missing_or_wrong_resolver_predicate_arity() {
+    use mizar_resolve::env::{DefinitionIndex, DefinitionShell, SymbolEnvIndexes};
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(SOURCE_PREDICATE_DEFINITION_TEXT, 259_060);
+    for arity in [None, Some(0), Some(1), Some(3)] {
+        let mut definitions = DefinitionIndex::default();
+        for original in symbols.definitions().iter() {
+            let mut replacement = DefinitionShell::new(original.symbol().clone(), original.kind(), original.origin().clone(), original.contribution())
+                .with_visibility(original.visibility());
+            if let Some(notation) = original.notation_shape() { replacement = replacement.with_notation_shape(notation); }
+            if let Some(signature) = original.signature() { replacement = replacement.with_signature(signature.clone()); }
+            if original.kind() == mizar_resolve::env::DefinitionKind::Predicate {
+                if let Some(arity) = arity { replacement = replacement.with_arity(arity); }
+            } else if let Some(arity) = original.arity() { replacement = replacement.with_arity(arity); }
+            assert_eq!(definitions.insert(replacement), original.id());
+        }
+        let changed = mizar_resolve::env::SymbolEnv::new(module.clone(), SymbolEnvIndexes {
+            imports: symbols.imports().clone(), exports: symbols.exports().clone(), symbols: symbols.symbols().clone(),
+            labels: symbols.labels().clone(), definitions, overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(), lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(), declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions: symbols.contributions().clone(), module_summaries: symbols.module_summaries().clone(),
+        });
+        let error = source_predicate_definition_output(&ast, module.clone(), &shells, &changed, SOURCE_PREDICATE_DEFINITION_TEXT)
+            .expect("exact source remains selected").expect_err("wrong predicate arity must fail closed");
+        assert_eq!(error, "Task259 resolver: predicate projection is not exact", "{arity:?}");
+    }
+}
+
+#[test]
 fn task259_real_source_surface_resolver_and_lower_bundle_is_exact() {
     assert_eq!(
         SOURCE_PREDICATE_DEFINITION_TEXT,
@@ -164,6 +193,10 @@ fn task259_real_source_surface_resolver_and_lower_bundle_is_exact() {
     )
     .extract();
     assert_eq!(projections.len(), 2);
+    let projection = projections.iter().find(|projection| projection.symbol_kind() == mizar_resolve::env::SymbolKind::Predicate).unwrap();
+    assert_eq!(projection.arity(), Some(2));
+    let definition = symbols.definitions().iter().find(|definition| definition.kind() == mizar_resolve::env::DefinitionKind::Predicate).unwrap();
+    assert_eq!(definition.arity(), Some(2));
     assert_eq!(
         (
             symbols.symbols().len(),

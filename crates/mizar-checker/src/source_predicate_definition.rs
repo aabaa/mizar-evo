@@ -1093,7 +1093,7 @@ fn validate_resolver_definition(
         || definition.visibility() != Visibility::Public
         || !definition.parameters().is_empty()
         || !definition.binders().is_empty()
-        || definition.arity().is_some()
+        || definition.arity() != Some(2)
         || definition.notation_shape() != Some("x task259_rel y")
         || definition.doc_attachment().is_some()
         || definition.contribution() != row.contribution

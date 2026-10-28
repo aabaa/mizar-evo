@@ -199,6 +199,8 @@ Known arity participates in existing symbol/signature/export-origin identities, 
 
 For unrecovered ordinary mode definitions, direct `ModePattern` tokens supply the declared parameter-slot arity: a name alone is zero; `of`, `over`, or bracketed nonempty identifier lists count their slots. Missing, recovered or unsupported shapes retain unknown arity. The same value enters existing signature and index fields, with the identity and lexical-wire separation above; it neither counts enclosing let/template inventories nor validates mode use or types.
 
+For unrecovered ordinary predicates without `TemplateLoci`, validate the complete direct-token pattern as optional left loci, one definition symbol and optional right loci. Count written identifier slots in comma-lists or parenthesized lists only when all valid symbol-position interpretations agree; do not select constructor identity or use enclosing let/template inventories. Missing, recovered or unsupported shapes, including template-bearing patterns, retain unknown arity. Use the existing signature/index propagation and identity/lexical-wire separation above without validating predicate use, bindings or proofs.
+
 ## Per-Kind Signature Shapes
 
 | Declaration family | Resolver-owned signature payload |

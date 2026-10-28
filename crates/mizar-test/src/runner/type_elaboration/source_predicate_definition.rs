@@ -866,7 +866,7 @@ fn exact_resolver_profile(
         || definition.visibility() != Visibility::Public
         || !definition.parameters().is_empty()
         || !definition.binders().is_empty()
-        || definition.arity().is_some()
+        || definition.arity() != Some(2)
         || definition.conflict().is_some()
         || symbol.kind() != SymbolKind::Predicate
         || symbol.visibility() != Visibility::Public

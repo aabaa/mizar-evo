@@ -187,6 +187,8 @@ attribute name を解決し、argument は後続の checker-owned payload extrac
 
 回復を含まない通常の mode 定義では、`ModePattern` の直接 token から宣言 parameter-slot arity を収集する。名前だけは 0、`of`・`over`・角括弧の空でない identifier list は slot 数とし、欠落・回復・未対応形状は unknown を維持する。同じ値を既存 signature/index に渡し、上記の identity と lexical wire の分離を保つ。外側の let/template inventory は数えず、mode 使用や型の妥当性は検証しない。
 
+回復を含まず `TemplateLoci` のない通常の述語は、直接 token 全体を「省略可能な左 loci・定義記号1個・省略可能な右 loci」として検査する。comma-list または括弧付き list の識別子 slot 数を、成立する全記号位置の解釈で一致するときだけ収集する。constructor identity は選ばず、外側の let/template inventory は使わない。欠落・回復・未対応形状や template を含む pattern は unknown のままとする。既存 signature/index と上記 identity/lexical-wire の分離を使い、述語使用・binding・proof は検証しない。
+
 ## Kind ごとの Signature Shape
 
 | Declaration family | Resolver-owned signature payload |

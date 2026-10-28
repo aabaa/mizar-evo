@@ -331,6 +331,59 @@ fn task_259_independent_row_and_field_corruption_fails_closed() {
     let fixture = fixture();
     let base = InitialObligationTable::new();
 
+    for arity in [None, Some(0), Some(1), Some(3)] {
+        let (env, symbol, definition, contribution) =
+            resolver_env(fixture.source, fixture.module.clone(), arity);
+        assert_eq!(
+            (&symbol, definition, contribution),
+            (
+                &fixture.input.definitions[0].symbol,
+                fixture.input.definitions[0].definition,
+                fixture.input.definitions[0].contribution,
+            )
+        );
+        assert_eq!(
+            env.symbols().get(&symbol),
+            fixture.env.symbols().get(&symbol)
+        );
+        let actual_predicate = env.definitions().get(definition).unwrap();
+        let original_predicate = fixture.env.definitions().get(definition).unwrap();
+        assert_eq!(
+            (
+                actual_predicate.arity(),
+                actual_predicate.symbol(),
+                actual_predicate.notation_shape(),
+                actual_predicate.origin(),
+                actual_predicate.signature(),
+            ),
+            (
+                arity,
+                original_predicate.symbol(),
+                original_predicate.notation_shape(),
+                original_predicate.origin(),
+                original_predicate.signature(),
+            )
+        );
+        let property = fixture
+            .env
+            .definitions()
+            .iter()
+            .find(|definition| definition.kind() == DefinitionKind::Attribute)
+            .unwrap();
+        assert_eq!(env.definitions().get(property.id()), Some(property));
+        assert_eq!(
+            env.contributions().get(contribution),
+            fixture.env.contributions().get(contribution)
+        );
+        let mut corrupted = fixture.clone();
+        corrupted.env = env;
+        assert_eq!(
+            build_with_input(&corrupted, corrupted.input.clone(), &base).unwrap_err(),
+            SourcePredicateDefinitionError::InvalidResolverDefinition,
+            "{arity:?}"
+        );
+    }
+
     assert_input_rejected(&fixture, &base, |input| input.source_id = other_source_id());
     assert_input_rejected(&fixture, &base, |input| {
         input.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
@@ -1312,7 +1365,7 @@ fn fixture() -> Fixture {
     let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task259"));
     let arena = task259_arena(source);
     let source_context = task248_context(source, &module, TypedSiteRef::Node(MODULE_OWNER), 0, 0);
-    let (env, symbol, definition, contribution) = resolver_env(source, module.clone());
+    let (env, symbol, definition, contribution) = resolver_env(source, module.clone(), Some(2));
     let source_type = SourceTypeProducer::build(
         task249_input(source, module.clone()),
         source_context.binding_env(),
@@ -1448,6 +1501,7 @@ fn definition_block_shell(
 fn resolver_env(
     source: SourceId,
     module: ModuleId,
+    arity: Option<u32>,
 ) -> (SymbolEnv, SymbolId, DefinitionId, SourceContributionId) {
     let origin = SemanticOrigin::new(
         source,
@@ -1484,17 +1538,19 @@ fn resolver_env(
         .with_notation_spelling("x task259_rel y")
         .with_signature(signature.clone()),
     );
-    let definition = indexes.definitions.insert(
-        DefinitionShell::new(
-            symbol.clone(),
-            DefinitionKind::Predicate,
-            origin,
-            contribution,
-        )
-        .with_visibility(Visibility::Public)
-        .with_notation_shape("x task259_rel y")
-        .with_signature(signature),
-    );
+    let definition = DefinitionShell::new(
+        symbol.clone(),
+        DefinitionKind::Predicate,
+        origin,
+        contribution,
+    )
+    .with_visibility(Visibility::Public)
+    .with_notation_shape("x task259_rel y")
+    .with_signature(signature);
+    let definition = indexes.definitions.insert(match arity {
+        Some(arity) => definition.with_arity(arity),
+        None => definition,
+    });
     let property_origin = SemanticOrigin::new(
         source,
         module.clone(),

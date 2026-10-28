@@ -2161,6 +2161,82 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
         let notation = normalized_token_shape(pattern);
         let arity = (|| {
+            if shell.kind() == DeclarationShellKind::PredicateDefinition {
+                if view.kind() != &SurfaceNodeKind::PredicateDefinition
+                    || shell_context(self.shells, shell).recovered
+                    || view.is_recovered()
+                    || pattern.kind() != &SurfaceNodeKind::PredicatePattern
+                    || pattern.is_recovered()
+                    || view
+                        .child_views()
+                        .filter(|child| is_predicate_pattern(child.kind()))
+                        .count()
+                        != 1
+                {
+                    return None;
+                }
+                let tokens = pattern
+                    .child_views()
+                    .map(|child| {
+                        if child.is_recovered() || !child.children().is_empty() {
+                            return None;
+                        }
+                        child
+                            .as_token()
+                            .map(|token| (token.kind, token.text.as_ref()))
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                if tokens.len() != pattern.children().len() {
+                    return None;
+                }
+                let mut count = None;
+                for (head, (kind, text)) in tokens.iter().enumerate() {
+                    if !matches!(
+                        kind,
+                        SurfaceTokenKind::Identifier
+                            | SurfaceTokenKind::UserSymbol
+                            | SurfaceTokenKind::LexemeRun
+                    ) || text.is_empty()
+                    {
+                        continue;
+                    }
+                    let mut arity = 0;
+                    let mut valid = true;
+                    for side in [&tokens[..head], &tokens[head + 1..]] {
+                        let loci = match side {
+                            [] => continue,
+                            [
+                                (SurfaceTokenKind::ReservedSymbol, "("),
+                                loci @ ..,
+                                (SurfaceTokenKind::ReservedSymbol, ")"),
+                            ] => loci,
+                            _ => side,
+                        };
+                        if loci.is_empty()
+                            || loci.len() % 2 == 0
+                            || !loci.iter().enumerate().all(|(index, (kind, text))| {
+                                if index % 2 == 0 {
+                                    *kind == SurfaceTokenKind::Identifier && !text.is_empty()
+                                } else {
+                                    *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
+                                }
+                            })
+                        {
+                            valid = false;
+                            break;
+                        }
+                        arity += loci.len().div_ceil(2);
+                    }
+                    if valid {
+                        let arity = u32::try_from(arity).ok()?;
+                        if count.is_some_and(|previous| previous != arity) {
+                            return None;
+                        }
+                        count = Some(arity);
+                    }
+                }
+                return count;
+            }
             if shell.kind() == DeclarationShellKind::ModeDefinition {
                 if view.kind() != &SurfaceNodeKind::ModeDefinition
                     || shell_context(self.shells, shell).recovered

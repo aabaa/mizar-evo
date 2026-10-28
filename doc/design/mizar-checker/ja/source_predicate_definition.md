@@ -120,10 +120,11 @@ proof済みである、acceptedであるというsemantic evidenceとして再�
 consumeしてはいけません。
 
 `DefinitionParameter` と `AssumptionStatement` にはdeclaration shellがありません。
-predicate resolver definitionのparameter/binder collectionは空でsyntactic arityも
-ありません。Task 259はresolver fieldからarity 2、parameter identity、guard
-ownershipを推測してはいけません。これらはexact private source selectorと、
-別途拡張されたTask-248 handoffだけから得ます。
+predicate resolver definition の parameter/binder collection は空のまま、syntactic
+arity は正確に 2 を要求し unknown/2 以外は拒否します。これは記述された slot の
+確認だけです。Task 259 は resolver metadata から semantic arity、parameter identity、
+guard ownership を導出せず、exact private source selector と拡張された Task-248
+handoff だけから得ます。
 
 ## 必須の別lower prerequisite — 完了
 
@@ -736,7 +737,7 @@ Task 259は次を禁止します。
 - `VcId`、fact、axiom、ATP premise、theorem publication。
 - accepted obligation、accepted definition、semantic truth。
 - overload candidate collection/winner selection。
-- resolverからのsignature parameter、binder identity、arity推論。
+- Resolver metadata からの semantic signature parameter、binder identity、arity の導出。
 - Task 259内での`BindingEnv`再構築またはTask 248 widening。
 - Core IR、Control-Flow IR、VC lowering、artifact、public diagnostic。
 - Task 260または後続のdefinition/property-proof/overload/redefinition/semantic owner。

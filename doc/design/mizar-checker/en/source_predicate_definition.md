@@ -124,10 +124,11 @@ The generic property projection is resolver collection scaffolding only. Task
 is a predicate property, is symmetric, is proved, or is accepted.
 
 `DefinitionParameter` and `AssumptionStatement` have no declaration shells.
-The predicate resolver definition has empty parameter and binder collections
-and no syntactic arity. Task 259 must not infer arity two, parameter identity,
-or guard ownership from resolver fields. Those facts come only from the exact
-private source selector and the separately extended Task-248 handoff.
+The predicate resolver definition keeps empty parameter and binder collections
+and requires syntactic arity exactly two; unknown/non-two metadata is refused.
+This corroborates written slots only. Task 259 must not derive semantic arity,
+parameter identity or guard ownership from resolver metadata: those facts come
+only from the exact private source selector and extended Task-248 handoff.
 
 ## Mandatory Separate Lower Prerequisite — Completed
 
@@ -758,7 +759,7 @@ Task 259 forbids:
 - `VcId`, facts, axioms, ATP premises, or theorem publication;
 - accepted obligation, accepted definition, or semantic truth;
 - overload candidate collection or winner selection;
-- inferring signature parameters, binder identity, or arity from the resolver;
+- deriving semantic signature parameters, binder identity or arity from Resolver metadata;
 - reconstructing `BindingEnv` or widening Task 248 inside Task 259;
 - Core IR, Control-Flow IR, VC lowering, artifacts, or public diagnostics; and
 - Task 260 or any later definition, property-proof, overload, redefinition, or

@@ -3385,6 +3385,7 @@ mod task259_actual {
             )
             .with_visibility(Visibility::Public)
             .with_notation_shape("x task259_rel y")
+            .with_arity(2)
             .with_signature(signature),
         );
         let property_origin = SemanticOrigin::new(

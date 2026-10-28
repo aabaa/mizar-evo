@@ -17395,6 +17395,141 @@ pub(super) fn source_registration_owner_inputs(
 }
 
 #[test]
+fn predicate_term_arity_uses_genuine_complete_direct_patterns() {
+    use mizar_resolve::{declarations::DeclarationShellCollector, env::{SignatureShell, Visibility, ExportStatus},
+        symbols::{SignatureProjectionExtractor, validate_source_symbol_env}};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    // EN9.1/9.7: literal written slots, including ambiguous head assignments and repeated loci.
+    let cases = [("Zero", 0), ("Prefix x", 1), ("x Postfix", 1), ("x Infix y", 2),
+        ("x , y Multi z", 3), ("( x , y ) Left z", 3), ("x Right ( y , z )", 3),
+        ("( x , y ) Both ( z , x )", 4), ("x Repeat x", 2), ("x %% y", 2), ("x Pair", 1)];
+    let mut inputs = Vec::new();
+    for (ordinal, (notation, arity)) in cases.into_iter().enumerate() {
+        for visibility in ["public", "private"] {
+            let text = format!("definition let x,y,z,unused be set; {visibility} pred Decl: {notation} means thesis; end;");
+            let (frontend, source, collected) = source_registration_owner_inputs(&text, "predicate-arity", "main", 0);
+            assert!(frontend.diagnostics.is_empty(), "{notation}: {:?}", frontend.diagnostics);
+            assert!(collected.diagnostics().is_empty(), "{notation}: {:?}", collected.diagnostics());
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+            let patterns = ast.node_views().filter(|node| node.kind() == &K::PredicatePattern).collect::<Vec<_>>();
+            assert_eq!(patterns.len(), 1);
+            let expected = notation.split_whitespace().map(|text| (match text {
+                "(" | ")" | "," => T::ReservedSymbol, "%%" => T::UserSymbol, _ => T::Identifier,
+            }, text)).collect::<Vec<_>>();
+            assert_eq!(patterns[0].child_views().map(|child| {
+                assert!(child.children().is_empty());
+                let token = child.as_token().unwrap(); (token.kind, token.text.as_ref())
+            }).collect::<Vec<_>>(), expected);
+            let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+            let projections = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main")).extract();
+            assert_eq!(projections.len(), 1);
+            inputs.push((ordinal, notation, arity, visibility, text, source, collected, projections));
+        }
+    }
+    // All genuine grammar rows above must pass before the specification-derived arity RED.
+    assert_eq!(inputs.iter().map(|(_,_,_,_,_,_,_,rows)| rows[0].arity()).collect::<Vec<_>>(),
+        inputs.iter().map(|(_,_,arity,_,_,_,_,_)| Some(*arity)).collect::<Vec<_>>());
+    for (ordinal, notation, arity, visibility, text, source, collected, projections) in inputs {
+            let projection = &projections[0];
+            assert_eq!((projection.primary_spelling(), projection.notation_spelling()), (notation, Some(notation)));
+            let symbol = collected.env().symbols().iter().next().unwrap();
+            let definition = collected.env().definitions().by_symbol(symbol.symbol()).unwrap();
+            assert_eq!((definition.arity(), definition.signature(), symbol.signature()),
+                (Some(arity), projection.signature(), projection.signature()));
+            assert_eq!((symbol.visibility(), symbol.export_status()), if visibility == "public" {
+                (Visibility::Public, ExportStatus::Exported)
+            } else { (Visibility::Private, ExportStatus::LocalOnly) });
+            let rows = collected.env().lexical_summaries().visible_candidates(&NamespacePath::new("main"), notation);
+            if notation.contains("%%") && visibility == "public" {
+                assert_eq!(rows.len(), 1);
+                assert_eq!((rows[0].symbol(), rows[0].arity()), (symbol.symbol(), Some(arity)));
+            } else { assert!(rows.is_empty()); }
+            let Some(SignatureShell::Opaque { schema, payload }) = projection.signature() else { panic!("parser signature"); };
+            assert_eq!(schema, "parser-signature-v1");
+            let operand = format!(";arity={arity};");
+            assert!(payload.contains(&operand));
+            validate_source_symbol_env(&source, collected.env()).unwrap();
+            // Reuse one representative to check fresh provenance, replay, trivia, unused lets and module identity.
+            if ordinal == 3 && visibility == "public" {
+                for (edit, module, skip) in [(text.clone(), "main", 0), (format!(":: trivia\n{}", text.replace("pred ", "  pred ")), "main", 0),
+                    (text.replace("unused", "spare,extra"), "main", 0), (text.clone(), "elsewhere", 0), (text.clone(), "main", 7)] {
+                    let (parsed, arena, actual) = source_registration_owner_inputs(&edit, "predicate-arity", module, skip);
+                    assert!(parsed.diagnostics.is_empty() && actual.diagnostics().is_empty());
+                    assert_eq!(actual.env().definitions().iter().next().unwrap().arity(), Some(2));
+                    let current = actual.env().symbols().iter().next().unwrap();
+                    if module == "main" { assert_eq!(current.symbol(), symbol.symbol()); }
+                    else { assert_ne!(current.symbol(), symbol.symbol()); }
+                    if edit == text && skip == 0 && module == "main" { assert_eq!(actual, collected); }
+                    if skip != 0 { assert_ne!(arena.source_id(), source.source_id()); }
+                    validate_source_symbol_env(&arena, actual.env()).unwrap();
+                }
+            }
+    }
+}
+
+#[test]
+fn predicate_term_arity_preserves_genuine_overloads_and_lexical_wire() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_lexer::{ExportedSymbolShape, UserSymbolArity, UserSymbolKind};
+    use mizar_resolve::{declarations::DeclarationShellCollector, env::{Visibility, ExportStatus},
+        symbols::{SignatureProjectionExtractor, validate_source_symbol_env}};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    // Distinct parameter types preserve the existing predicate same-signature conflict policy.
+    let text = concat!("definition let x,y be set; public pred First: x sharedrel y means thesis; ",
+        "private pred HiddenFirst: x hiddenrel y means thesis; end; ",
+        "definition let x,y be object; public pred Second: x sharedrel y means thesis; ",
+        "private pred HiddenSecond: x hiddenrel y means thesis; end;");
+    let frontend = task257c4c1_frontend_output(text, 166);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    let ast = frontend.ast.as_ref().unwrap();
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    assert_eq!(ast.node_views().filter(|node| node.kind() == &K::PredicatePattern)
+        .map(|node| node.child_views().nth(1).unwrap().as_token().unwrap().kind).collect::<Vec<_>>(),
+        [T::Identifier, T::Identifier, T::UserSymbol, T::UserSymbol]);
+    let module = ResolverModuleId::new(frontend.source.package_id.clone(), frontend.source.module_path.clone());
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str())).collect(&module);
+    assert!(collected.diagnostics().is_empty(), "{:?}", collected.diagnostics());
+    let arena = SurfaceResolvedArena::lower(ast, &module).unwrap();
+    validate_source_symbol_env(&arena, collected.env()).unwrap();
+    let groups = collected.env().overloads().iter().collect::<Vec<_>>();
+    assert_eq!(groups.len(), 2);
+    for (notation, visibility, status) in [("x sharedrel y", Visibility::Public, ExportStatus::Exported),
+        ("x hiddenrel y", Visibility::Private, ExportStatus::LocalOnly)] {
+        let group = groups.iter().find(|group| group.key().spelling() == notation).unwrap();
+        assert_eq!((group.key().arity(), group.candidates().len()), (Some(2), 2));
+        for symbol in group.candidates() {
+            let entry = collected.env().symbols().get(symbol).unwrap();
+            assert_eq!((collected.env().definitions().by_symbol(symbol).unwrap().arity(), entry.visibility(), entry.export_status()),
+                (Some(2), visibility, status));
+        }
+        let rows = collected.env().lexical_summaries().visible_candidates(&NamespacePath::new(module.path().as_str()), notation);
+        if visibility == Visibility::Public {
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].arity(), Some(2));
+            assert!(group.candidates().contains(rows[0].symbol()));
+        } else { assert!(rows.is_empty()); }
+    }
+    assert_eq!(frontend.tokens.local_declarations().user_symbols.len(), 4);
+    for local in &frontend.tokens.local_declarations().user_symbols {
+        assert_eq!((local.kind, local.arity), (UserSymbolKind::Predicate, UserSymbolArity::exact(2)));
+    }
+    let pairs = collected.pair_frontend_lexical_declarations(&frontend).unwrap();
+    assert_eq!(pairs.len(), 2);
+    let identity = ModuleSummaryIdentity { package_id: module.package().as_str().into(), package_version: None,
+        lockfile_identity: None, module_path: module.path().as_str().into(), language_edition: "2026".into() };
+    let wire = collected.export_frontend_lexical_contributions(&frontend, &identity).unwrap();
+    assert_eq!(wire.len(), 2);
+    for (symbol, local) in pairs {
+        assert_eq!((symbol.primary_spelling(), local.spelling.as_str()), ("x sharedrel y", "sharedrel"));
+        let payload = wire.iter().find(|entry| entry.key == symbol.symbol().local().as_str()).unwrap();
+        let shape = ExportedSymbolShape::from_canonical_bytes(payload.payload.as_bytes()).unwrap();
+        assert_eq!((shape.spelling.as_str(), shape.kind, shape.arity), ("sharedrel", UserSymbolKind::Predicate, local.arity));
+    }
+}
+
+#[test]
 fn attribute_parameter_arity_uses_genuine_structured_prefix_slots() {
     use mizar_resolve::{declarations::DeclarationShellCollector, symbols::SignatureProjectionExtractor};
     use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
