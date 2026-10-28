@@ -58,8 +58,37 @@ derived artifacts toward `doc/spec` and tests. Agents must not modify
 `doc/spec`, existing `.miz` tests, or test expectations merely to match current
 implementation behavior.
 
-Changing `doc/spec` or existing `.miz` tests is allowed only when the task is
-explicitly a specification or test-intent change.
+Changing `doc/spec` requires an explicitly authorized specification change.
+Existing tests are maintained under the following specification-derived rule.
+
+## Specification-Derived Test Maintenance
+
+Within authorized task scope, agents may correct existing `.miz` and Rust
+tests, expectation files, and snapshots without repeated user approval when
+`doc/spec/en/` determines the required behavior unambiguously. This includes
+incorrect pass/fail or diagnostic expectations and stale identity/hash vectors.
+An old test intent that contradicts an explicit specification clause may be
+corrected with its oracle; the specification remains authoritative.
+
+Before editing, identify the exact clauses, each case's purpose, old/new
+expected results, and the smallest affected fixture/assertion scope. Record
+durable boundaries in the task contract or owner document; keep concrete
+proposals and causal evidence outside `doc/` and reference them in the commit.
+Independent specification and test-intent reviews must confirm the correction
+from the specification, preserving unrelated assertions and required coverage.
+Add trust review for proof, identity, or soundness effects, and independently
+recompute changed hashes from their owning algorithms. Observed implementation
+output alone is never an oracle or authorization to rebaseline.
+
+Apply only the reviewed correction and run the normal affected regressions,
+negative controls, corpus checks, and required long/full verification. Do not
+skip, delete, weaken, or deactivate cases merely to obtain passing results.
+This permission does not authorize specification edits, trace activation,
+coverage promotion, or another policy change.
+
+Stop for ambiguous or contradictory specification requirements, behavior not
+fixed by the specification, an unexplained causal delta, unrelated protected
+metadata, or an explicit user restriction requiring separate approval.
 
 ## Test-First `.miz` Additions
 
@@ -121,6 +150,10 @@ the following hold:
 - the decision is recorded in the paired task contract or owning design
   document and passes the required independent reviews.
 
+Specification-derived test corrections follow
+[Specification-Derived Test Maintenance](#specification-derived-test-maintenance)
+when an old test intent or expected result must change.
+
 When several derived designs remain valid, prefer the option that adds the
 least semantic surface, preserves existing public artifacts, avoids premature
 generalization, and defers unowned semantics explicitly. A bounded derived
@@ -132,9 +165,13 @@ require at least one of the following:
 
 - resolving a `spec_gap` or contradiction by choosing language or proof
   behavior not fixed by current higher-authority artifacts;
-- changing existing `.miz` test intent, expectations, trace status, public
-  diagnostics, parser recovery, or a soundness/acceptance boundary;
-- overriding a `repo_metadata_conflict` or another protected artifact;
+- changing existing test intent or expectations outside
+  [Specification-Derived Test Maintenance](#specification-derived-test-maintenance),
+  trace status, public diagnostics, parser recovery, or a soundness/acceptance
+  boundary;
+- overriding a `repo_metadata_conflict`;
+- overriding another protected artifact outside that reviewed test-maintenance
+  scope;
 - expanding to a materially different task, external system, permission, or
   destructive action not already authorized; or
 - choosing among alternatives whose observable semantic consequences cannot be

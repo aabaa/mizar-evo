@@ -26,8 +26,9 @@ Where the two differ, the protocol wins.
 - End every commit body with `volume: prod +N test +N doc +N` (added lines from
   `git diff --numstat`: non-test `crates/**/src`, tests and `.miz`/`.toml`
   fixtures, `doc/`).
-- Never modify `doc/spec`, existing `.miz` tests, or expectations to match
-  current implementation behavior.
+- Never modify `doc/spec` or tests merely to match implementation behavior.
+  Specification-derived test corrections follow the protocol's
+  [Specification-Derived Test Maintenance](doc/design/autonomous_crate_development.md#specification-derived-test-maintenance).
 
 ## User Invocation
 
