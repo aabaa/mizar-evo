@@ -2161,6 +2161,71 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
         let notation = normalized_token_shape(pattern);
         let arity = (|| {
+            if shell.kind() == DeclarationShellKind::ModeDefinition {
+                if view.kind() != &SurfaceNodeKind::ModeDefinition
+                    || shell_context(self.shells, shell).recovered
+                    || view.is_recovered()
+                    || pattern.kind() != &SurfaceNodeKind::ModePattern
+                    || pattern.is_recovered()
+                    || view
+                        .child_views()
+                        .filter(|child| is_mode_pattern(child.kind()))
+                        .count()
+                        != 1
+                {
+                    return None;
+                }
+                let tokens = pattern
+                    .child_views()
+                    .map(|child| {
+                        if child.is_recovered() || !child.children().is_empty() {
+                            return None;
+                        }
+                        child
+                            .as_token()
+                            .map(|token| (token.kind, token.text.as_ref()))
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                if tokens.len() != pattern.children().len() {
+                    return None;
+                }
+                let [(kind, name), tail @ ..] = tokens.as_slice() else {
+                    return None;
+                };
+                if !matches!(
+                    kind,
+                    SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+                ) || name.is_empty()
+                {
+                    return None;
+                }
+                let parameters = match tail {
+                    [] => return Some(0),
+                    [
+                        (SurfaceTokenKind::ReservedWord, "of" | "over"),
+                        parameters @ ..,
+                    ] => parameters,
+                    [
+                        (SurfaceTokenKind::ReservedSymbol, "["),
+                        parameters @ ..,
+                        (SurfaceTokenKind::ReservedSymbol, "]"),
+                    ] => parameters,
+                    _ => return None,
+                };
+                if parameters.is_empty()
+                    || parameters.len() % 2 == 0
+                    || !parameters.iter().enumerate().all(|(index, (kind, text))| {
+                        if index % 2 == 0 {
+                            *kind == SurfaceTokenKind::Identifier && !text.is_empty()
+                        } else {
+                            *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
+                        }
+                    })
+                {
+                    return None;
+                }
+                return u32::try_from(parameters.len().div_ceil(2)).ok();
+            }
             if shell.kind() != DeclarationShellKind::AttributeDefinition
                 || view.kind() != &SurfaceNodeKind::AttributeDefinition
                 || shell_context(self.shells, shell).recovered

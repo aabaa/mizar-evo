@@ -276,6 +276,7 @@ fn task262_mode_definition_source_consumer_is_exact() {
     .extract();
     assert_eq!(projections.len(), 1);
     assert_eq!(projections[0].primary_spelling(), "Task262Mode [ x , y ]");
+    assert_eq!(projections[0].arity(), Some(2));
     assert_eq!(
         (
             symbols.symbols().len(),
@@ -348,6 +349,7 @@ fn task262_mode_definition_source_consumer_is_exact() {
         .iter()
         .next()
         .expect("resolver definition");
+    assert_eq!(resolver_definition.arity(), Some(2));
     assert_eq!(definition_id.index(), 0);
     assert_eq!(definition.id().index(), 0);
     assert_eq!(definition.symbol(), resolver_definition.symbol());

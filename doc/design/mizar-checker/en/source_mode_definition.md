@@ -146,14 +146,15 @@ contribution:
 - shell 1 is `ModeDefinition`, node/range `49/45..135`, ordinal 1, parent 0;
 - projection primary and notation spelling are exactly
   `Task262Mode [ x , y ]`, with `SymbolKind::Mode`,
-  `DefinitionKind::Mode`, no syntactic arity, and overloadable status;
+  `DefinitionKind::Mode`, syntactic arity exactly two, and overloadable status;
 - definition 0 is normal, local, public/exported, conflict-free, and has
   structural origin path `[4,0,10,0]`; and
 - the single contribution owns that symbol and definition.
 
 The opaque parser signature roles are `ModePattern`, `TypeExpression`, and
-`ModeProperty`. Resolver `parameters`, `binders`, and arity are empty. Task 262
-must not reconstruct parameter declarations or application arguments from
+`ModeProperty`. Resolver `parameters` and `binders` remain empty; arity is
+exactly two for the written `[x,y]` slots. Unknown/non-two metadata is refused.
+Task 262 must not reconstruct parameter declarations or application arguments from
 those empty fields, infer RHS/inhabitation/sethood semantics from opaque
 signature text, or treat resolver success as definition acceptance. The
 authenticated Surface structure and lower handoffs are the only owners of

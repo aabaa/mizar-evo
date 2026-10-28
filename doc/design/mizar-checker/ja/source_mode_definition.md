@@ -142,14 +142,15 @@ contribution 1 個である。
   0 である。
 - projection primary/notation spelling は exact に
   `Task262Mode [ x , y ]`、`SymbolKind::Mode`、`DefinitionKind::Mode`、
-  syntactic arity なし、overloadable である。
+  syntactic arity は正確に 2、overloadable である。
 - definition 0 は normal/local/public/exported/conflict-free、structural
   origin path `[4,0,10,0]` である。
 - single contribution がその symbol と definition を所有する。
 
 opaque parser signature role は `ModePattern`、`TypeExpression`、
-`ModeProperty` である。resolver の `parameters`、`binders`、arity は
-empty である。Task 262 はこの empty field から parameter declaration や
+`ModeProperty` である。resolver の `parameters` と `binders` は empty のまま、
+arity は記述された `[x,y]` の slot 数 2 とする。unknown/2 以外は拒否する。
+Task 262 はこの empty field から parameter declaration や
 application argument を再構築せず、opaque signature text から
 RHS/inhabitation/sethood semantics を推測せず、resolver success を
 definition acceptance と扱わない。association owner は authenticated

@@ -197,6 +197,8 @@ extraction.
 For unrecovered ordinary attribute definitions, structured `AttributePattern`/`ParameterPrefix` supplies the declared extra parameter-slot arity: no prefix is zero, an identifier/numeral atom is one, and a parenthesized list counts its slots, excluding the subject. Missing, recovered or unsupported shapes retain unknown arity. The same value enters existing signature, definition, overload and Resolver lexical-summary fields; it does not validate attribute use or construct Checker arguments.
 Known arity participates in existing symbol/signature/export-origin identities, so replacing unknown invalidates affected derived identities. Existing optional fields and `parser-signature-v1` encode it without a schema change; old unknown values do not become zero or compatible known values. Lexer unary `UserSymbolArity` and exported lexical wire arity remain separate and unchanged.
 
+For unrecovered ordinary mode definitions, direct `ModePattern` tokens supply the declared parameter-slot arity: a name alone is zero; `of`, `over`, or bracketed nonempty identifier lists count their slots. Missing, recovered or unsupported shapes retain unknown arity. The same value enters existing signature and index fields, with the identity and lexical-wire separation above; it neither counts enclosing let/template inventories nor validates mode use or types.
+
 ## Per-Kind Signature Shapes
 
 | Declaration family | Resolver-owned signature payload |

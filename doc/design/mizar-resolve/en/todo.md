@@ -699,6 +699,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 58. **[Declared attribute parameter arity](../../task_contracts/en/RESOLVE-ATTRIBUTE-PARAMETER-ARITY.md).** [x]
 
+59. **[Declared mode parameter arity](../../task_contracts/en/RESOLVE-MODE-PARAMETER-ARITY.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

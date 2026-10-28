@@ -17547,6 +17547,146 @@ fn attribute_parameter_arity_keeps_genuine_frontend_and_wire_lexical_arity_unary
 }
 
 #[test]
+fn mode_parameter_arity_uses_genuine_direct_pattern_slots() {
+    use mizar_resolve::{declarations::DeclarationShellCollector, env::SignatureShell,
+        symbols::{SignatureProjectionExtractor, SymbolCollector, SymbolDeclarationProjection, validate_source_symbol_env}};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    // EN7.2/7.7: literal declared slots exclude the enclosing let inventory.
+    let cases = [("Plain", 0), ("OfOne of x", 1), ("OfTwo of x , y", 2),
+        ("OfThree of x , y , z", 3), ("OverOne over x", 1), ("OverTwo over x , y", 2),
+        ("OverThree over x , y , z", 3), ("BracketOne [ x ]", 1),
+        ("BracketTwo [ x , y ]", 2), ("BracketThree [ x , y , z ]", 3)];
+    let text = format!("definition let x,y,z,unused be set; {} end;", cases.iter().enumerate()
+        .map(|(index, (pattern, _))| format!("mode Decl{index}: {pattern} is set;"))
+        .collect::<Vec<_>>().join(" "));
+    let (frontend, source, collected) = source_registration_owner_inputs(&text, "mode-arity", "main", 0);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    assert!(collected.diagnostics().is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    let patterns = ast.node_views().filter(|node| node.kind() == &K::ModePattern).collect::<Vec<_>>();
+    assert_eq!(patterns.len(), cases.len());
+    // Check genuine parser grammar before the arity oracle: every child is a direct token.
+    for (pattern, (notation, _)) in patterns.iter().zip(cases) {
+        let expected = notation.split_whitespace().map(|text| (match text {
+            "of" | "over" => T::ReservedWord, "[" | "]" | "," => T::ReservedSymbol,
+            _ => T::Identifier,
+        }, text)).collect::<Vec<_>>();
+        assert_eq!(pattern.child_views().map(|child| {
+            assert!(child.children().is_empty());
+            let token = child.as_token().unwrap(); (token.kind, token.text.as_ref())
+        }).collect::<Vec<_>>(), expected);
+    }
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let projections = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main")).extract();
+    assert_eq!(projections.iter().map(|row| row.arity()).collect::<Vec<_>>(),
+        [Some(0), Some(1), Some(2), Some(3), Some(1), Some(2), Some(3), Some(1), Some(2), Some(3)]);
+    let mut old_unknown = Vec::new();
+    for (projection, (notation, arity)) in projections.iter().zip(cases) {
+        assert_eq!((projection.primary_spelling(), projection.notation_spelling()), (notation, Some(notation)));
+        let symbol = collected.env().symbols().iter().find(|row| row.primary_spelling() == notation).unwrap();
+        let definition = collected.env().definitions().by_symbol(symbol.symbol()).unwrap();
+        assert_eq!((definition.arity(), definition.signature(), symbol.signature()),
+            (Some(arity), projection.signature(), projection.signature()));
+        assert!(collected.env().lexical_summaries().visible_candidates(&NamespacePath::new("main"), notation).is_empty());
+        let Some(SignatureShell::Opaque { schema, payload }) = projection.signature() else { panic!("parser signature"); };
+        assert_eq!(schema, "parser-signature-v1");
+        let operand = format!(";arity={arity};");
+        assert!(payload.contains(&operand));
+        // Identity-only reconstruction: omitted private lexical flags confer no source-env authority.
+        old_unknown.push(SymbolDeclarationProjection::new(projection.shell(), projection.namespace().clone(), notation, projection.symbol_kind())
+            .with_definition_kind(projection.definition_kind().unwrap()).with_overload_policy(projection.overload_policy())
+            .with_notation_spelling(notation).with_signature(SignatureShell::Opaque { schema: schema.clone(), payload: payload.replace(&operand, ";arity=_;") }));
+    }
+    assert!(collected.env().overloads().is_empty());
+    let old = SymbolCollector::new(ast.source_id, source.module(), &shells, &old_unknown).collect();
+    for symbol in collected.env().symbols().iter() {
+        let prior = old.env().symbols().iter().find(|row| row.primary_spelling() == symbol.primary_spelling()).unwrap();
+        assert_ne!(prior.symbol(), symbol.symbol());
+        assert_ne!(prior.symbol().fqn(), symbol.symbol().fqn());
+        assert_eq!(old.env().definitions().by_symbol(prior.symbol()).unwrap().arity(), None);
+    }
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    for (edit, module, skip) in [(text.clone(), "main", 0), (format!(":: trivia\n{}", text.replace("mode ", "  mode ")), "main", 0),
+        (text.replace('x', "renamed"), "main", 0), (text.clone(), "elsewhere", 0), (text.clone(), "main", 7)] {
+        let (replay, arena, actual) = source_registration_owner_inputs(&edit, "mode-arity", module, skip);
+        assert!(replay.diagnostics.is_empty() && actual.diagnostics().is_empty());
+        validate_source_symbol_env(&arena, actual.env()).unwrap();
+        let actual_ast = replay.ast.as_ref().unwrap();
+        let actual_shells = DeclarationShellCollector::new(actual_ast, arena.module()).collect();
+        let actual_projections = SignatureProjectionExtractor::new(actual_ast, &actual_shells, NamespacePath::new(module)).extract();
+        for ((original, projection), (_, arity)) in projections.iter().zip(actual_projections).zip(cases) {
+            assert_eq!(projection.arity(), Some(arity));
+            let symbol = actual.env().symbols().iter().find(|row| row.primary_spelling() == projection.primary_spelling()).unwrap();
+            assert_eq!(actual.env().definitions().by_symbol(symbol.symbol()).unwrap().arity(), Some(arity));
+            let prior = collected.env().symbols().iter().find(|row| row.primary_spelling() == original.primary_spelling()).unwrap();
+            if module != "main" || projection.primary_spelling() != original.primary_spelling() { assert_ne!(symbol.symbol(), prior.symbol()); }
+            else { assert_eq!(symbol.symbol(), prior.symbol()); }
+        }
+        if edit == text && skip == 0 && module == "main" { assert_eq!(actual, collected); }
+        if skip != 0 { assert_ne!(arena.source_id(), source.source_id()); }
+    }
+}
+
+#[test]
+fn mode_parameter_arity_preserves_genuine_lexical_wire_and_private_exports() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_lexer::{ExportedSymbolShape, UserSymbolArity, UserSymbolKind};
+    use mizar_resolve::{declarations::DeclarationShellCollector, env::{ExportStatus, Visibility},
+        symbols::{SignatureProjectionExtractor, validate_source_symbol_env}};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    let frontend = task257c4c1_frontend_output(concat!("definition let x,y,z be set; ",
+        "public mode First: Shared [x,y] is set; public mode Second: Shared [x,y] is set; ",
+        "private mode HiddenFirst: Hidden [x,y,z] is set; private mode HiddenSecond: Hidden [x,y,z] is set; end;"), 165);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    let ast = frontend.ast.as_ref().unwrap();
+    let module = ResolverModuleId::new(frontend.source.package_id.clone(), frontend.source.module_path.clone());
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str())).collect(&module);
+    assert!(collected.diagnostics().is_empty());
+    assert_eq!(ast.node_views().filter(|node| node.kind() == &K::ModePattern)
+        .map(|node| node.child_views().next().unwrap().as_token().unwrap().kind).collect::<Vec<_>>(),
+        [T::Identifier, T::UserSymbol, T::Identifier, T::UserSymbol]);
+    let arena = SurfaceResolvedArena::lower(ast, &module).unwrap();
+    validate_source_symbol_env(&arena, collected.env()).unwrap();
+    let groups = collected.env().overloads().iter().collect::<Vec<_>>();
+    assert_eq!(groups.len(), 2);
+    for (spelling, arity, visibility, status) in [("Shared [ x , y ]", 2, Visibility::Public, ExportStatus::Exported),
+        ("Hidden [ x , y , z ]", 3, Visibility::Private, ExportStatus::LocalOnly)] {
+        let group = groups.iter().find(|group| group.key().spelling() == spelling).unwrap();
+        assert_eq!((group.key().arity(), group.candidates().len()), (Some(arity), 2));
+        for symbol in group.candidates() {
+            let definition = collected.env().definitions().by_symbol(symbol).unwrap();
+            let entry = collected.env().symbols().get(symbol).unwrap();
+            assert_eq!((definition.arity(), entry.visibility(), entry.export_status()), (Some(arity), visibility, status));
+        }
+        let rows = collected.env().lexical_summaries().visible_candidates(&NamespacePath::new(module.path().as_str()), spelling);
+        if visibility == Visibility::Public {
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].arity(), Some(2));
+            assert!(group.candidates().contains(rows[0].symbol()));
+        } else { assert!(rows.is_empty()); }
+    }
+    assert_eq!(frontend.tokens.local_declarations().user_symbols.len(), 4);
+    for local in &frontend.tokens.local_declarations().user_symbols {
+        assert_eq!((local.kind, local.arity), (UserSymbolKind::Mode, UserSymbolArity::exact(0)));
+    }
+    let pairs = collected.pair_frontend_lexical_declarations(&frontend).unwrap();
+    assert_eq!(pairs.len(), 2);
+    let identity = ModuleSummaryIdentity { package_id: module.package().as_str().into(), package_version: None,
+        lockfile_identity: None, module_path: module.path().as_str().into(), language_edition: "2026".into() };
+    let wire = collected.export_frontend_lexical_contributions(&frontend, &identity).unwrap();
+    assert_eq!(wire.len(), 2);
+    for (symbol, local) in pairs {
+        assert_eq!((symbol.primary_spelling(), local.spelling.as_str()), ("Shared [ x , y ]", "Shared"));
+        let payload = wire.iter().find(|entry| entry.key == symbol.symbol().local().as_str()).unwrap();
+        let shape = ExportedSymbolShape::from_canonical_bytes(payload.payload.as_bytes()).unwrap();
+        assert_eq!((shape.spelling.as_str(), shape.kind, shape.arity),
+            ("Shared", UserSymbolKind::Mode, UserSymbolArity::exact(0)));
+    }
+}
+
+#[test]
 fn source_registration_owner_exact_frames_bind_actual_single_and_aggregate_symbols() {
     use mizar_resolve::{env::SymbolKind, symbols::{source_registration_owner_payloads as owners,
         validate_source_symbol_env}};

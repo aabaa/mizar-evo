@@ -431,6 +431,30 @@ fn task_262_mode_definition_row_field_corruption_fails_closed() {
 fn task_262_mode_definition_dependency_and_obligation_corruption_fails_closed() {
     let fixture = fixture();
     let baseline = InitialObligationTable::new();
+    for arity in [None, Some(0), Some(1), Some(3)] {
+        let (env, symbol, definition, contribution) =
+            resolver_env(fixture.source, fixture.module.clone(), arity);
+        assert_eq!(
+            (symbol, definition, contribution),
+            (
+                fixture.input.definitions[0].symbol.clone(),
+                fixture.input.definitions[0].definition,
+                fixture.input.definitions[0].contribution
+            )
+        );
+        assert_eq!(
+            SourceModeDefinitionProducer::build(
+                fixture.input.clone(),
+                &env,
+                &fixture.source_context,
+                &fixture.source_type,
+                &baseline,
+                &fixture.arena
+            ),
+            Err(SourceModeDefinitionError::InvalidResolverDefinition { index: 0 }),
+            "arity {arity:?}"
+        );
+    }
     let projection = fixture.projection(&baseline);
     for family in 0..2 {
         let mut corrupt = projection.handoff().clone();
@@ -807,7 +831,7 @@ fn fixture() -> Fixture {
     let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task262"));
     let arena = task262_arena(source);
     let source_context = task248_context(source, &module);
-    let (env, symbol, definition, contribution) = resolver_env(source, module.clone());
+    let (env, symbol, definition, contribution) = resolver_env(source, module.clone(), Some(2));
     let type_base = SourceTypeProducer::build(
         SourceTypeHandoffInput {
             source_id: source,
@@ -963,6 +987,7 @@ fn definition_block_shell(
 fn resolver_env(
     source: SourceId,
     module: ModuleId,
+    arity: Option<u32>,
 ) -> (SymbolEnv, SymbolId, DefinitionId, SourceContributionId) {
     let mut indexes = SymbolEnvIndexes::default();
     let contribution = indexes.contributions.insert(
@@ -1000,12 +1025,15 @@ fn resolver_env(
         .with_notation_spelling(notation)
         .with_signature(signature.clone()),
     );
-    let definition = indexes.definitions.insert(
+    let definition =
         DefinitionShell::new(symbol.clone(), DefinitionKind::Mode, origin, contribution)
             .with_visibility(Visibility::Public)
             .with_notation_shape(notation)
-            .with_signature(signature),
-    );
+            .with_signature(signature);
+    let definition = indexes.definitions.insert(match arity {
+        Some(arity) => definition.with_arity(arity),
+        None => definition,
+    });
     indexes
         .contributions
         .add_symbol(contribution, symbol.clone());

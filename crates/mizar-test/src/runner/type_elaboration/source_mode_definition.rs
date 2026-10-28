@@ -776,7 +776,7 @@ fn exact_resolver_profile(
         || projection.notation_spelling() != Some(spelling)
         || projection.symbol_kind() != SymbolKind::Mode
         || projection.definition_kind() != Some(DefinitionKind::Mode)
-        || projection.arity().is_some()
+        || projection.arity() != Some(2)
         || projection.overload_policy() != SymbolOverloadPolicy::Overloadable
         || projection.signature().is_none()
     {
@@ -796,7 +796,7 @@ fn exact_resolver_profile(
         || definition.visibility() != Visibility::Public
         || !definition.parameters().is_empty()
         || !definition.binders().is_empty()
-        || definition.arity().is_some()
+        || definition.arity() != Some(2)
         || definition.notation_shape() != Some(spelling)
         || definition.conflict().is_some()
         || definition.signature() != symbol.signature()
@@ -878,6 +878,9 @@ fn resolver_env_with_mutation(
                 .with_parameters(original.parameters().to_vec())
                 .with_binders(original.binders().to_vec())
                 .with_dependencies(original.dependencies().to_vec());
+                if let Some(arity) = original.arity() {
+                    rebuilt = rebuilt.with_arity(arity);
+                }
                 if let Some(notation_shape) = original.notation_shape() {
                     rebuilt = rebuilt.with_notation_shape(notation_shape);
                 }

@@ -3183,6 +3183,142 @@ fn attribute_parameter_arity_preserves_old_projection_fields_and_unknown_shapes(
 }
 
 #[test]
+fn mode_parameter_arity_preserves_old_projection_fields_and_unknown_shapes() {
+    use SurfaceNodeKind as K;
+    use SurfaceTokenKind as T;
+    let source = source_id();
+    let module = module_id();
+    for case in 0..25 {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let (spelling, arity) = match case {
+            0 => ("M", Some(0)),
+            1 => ("M of x , y", Some(2)),
+            2 => ("M over x , y , z", Some(3)),
+            3 => ("M [ x ]", Some(1)),
+            4 => ("M [ ]", None),
+            5 => ("M of x ,", None),
+            6 => ("M of 2", None),
+            10 => ("of x", None),
+            17 => ("set of x", None),
+            18 => ("M [ x", None),
+            19 => ("M of , x", None),
+            20 => ("M of x y", None),
+            21 => ("M of", None),
+            22 => ("M + x", None),
+            _ => ("M of x", None),
+        };
+        let tokens = spelling
+            .split_whitespace()
+            .map(|text| {
+                (
+                    match text {
+                        "M" if case == 23 => T::UserSymbol,
+                        "x" if case == 7 => T::UserSymbol,
+                        "of" if case == 16 => T::Identifier,
+                        "of" | "over" | "set" => T::ReservedWord,
+                        "[" | "]" | "," | "+" => T::ReservedSymbol,
+                        "2" => T::Numeral,
+                        _ => T::Identifier,
+                    },
+                    if case == 24 && text == "M" { "" } else { text },
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut parts = token_sequence(&mut builder, source, 10, &tokens);
+        if case == 8 {
+            parts = vec![builder.add_node(K::TermExpression, range(source, 10, 70), parts)];
+        }
+        if case == 11 {
+            parts.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 60, 60),
+                vec![],
+            ));
+        }
+        if case == 15 {
+            parts.push(builder.add_node(K::TermExpression, range(source, 70, 70), vec![]));
+        }
+        let mut declaration_parts = if case == 9 {
+            parts
+        } else {
+            vec![builder.add_node(
+                if case == 23 {
+                    K::PredicatePattern
+                } else {
+                    K::ModePattern
+                },
+                range(source, 10, 90),
+                parts,
+            )]
+        };
+        if case == 14 {
+            let extra = token_sequence(&mut builder, source, 10, &tokens);
+            declaration_parts.push(builder.add_node(K::ModePattern, range(source, 10, 90), extra));
+        }
+        if case == 12 {
+            declaration_parts.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 95, 95),
+                vec![],
+            ));
+        }
+        let declaration =
+            builder.add_node(K::ModeDefinition, range(source, 0, 100), declaration_parts);
+        let mut block_parts = vec![declaration];
+        if case == 13 {
+            block_parts.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 105, 105),
+                vec![],
+            ));
+        }
+        let block = builder.add_node(K::DefinitionBlockItem, range(source, 0, 110), block_parts);
+        let root = finish_module(&mut builder, source, vec![block]);
+        let ast = builder.finish(Some(root), None);
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let projections =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+        assert_eq!(projections.len(), 1, "case {case}");
+        let projection = &projections[0];
+        let view = ast
+            .node_views()
+            .find(|node| node.kind() == &K::ModeDefinition)
+            .unwrap();
+        let pattern = first_child_matching(view, |kind| kind == &K::ModePattern).unwrap_or(view);
+        let notation = normalized_token_shape(pattern);
+        // Independently reconstruct every old field; change only the two frozen operands.
+        let mut expected = SymbolDeclarationProjection::new(
+            projection.shell(),
+            NamespacePath::new("main"),
+            notation.clone(),
+            SymbolKind::Mode,
+        )
+        .with_definition_kind(DefinitionKind::Mode)
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_signature(parser_signature(
+            view,
+            SymbolKind::Mode,
+            DefinitionKind::Mode,
+            Some(&notation),
+            None,
+        ))
+        .with_notation_spelling(notation);
+        if lexer_visible_pattern(pattern) {
+            expected =
+                expected.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
+        }
+        if let Some(arity) = arity {
+            expected.arity = Some(arity);
+            let Some(SignatureShell::Opaque { payload, .. }) = &mut expected.signature else {
+                unreachable!()
+            };
+            *payload = payload.replace(";arity=_;", &format!(";arity={arity};"));
+        }
+        assert_eq!(projection, &expected, "case {case}");
+    }
+}
+
+#[test]
 fn parser_backed_recovered_projection_uses_malformed_signature() {
     let source_id = source_id();
     let mut builder = SurfaceAstBuilder::new(source_id);
