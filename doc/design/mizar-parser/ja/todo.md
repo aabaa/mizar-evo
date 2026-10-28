@@ -1131,4 +1131,7 @@ cargo test -p mizar-test
     evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
     implementation task は closed。
 
+## AST仕様の実装フォローアップ
+
+- [x] [AST-COMPUTATION-CONTEXTUAL-INPUTS](../../task_contracts/ja/AST-COMPUTATION-CONTEXTUAL-INPUTS.md) — 明示的な計算引数の構文と直接のthesis配置。
 - [~] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs open; lexical/match retirement implemented.

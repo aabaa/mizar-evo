@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_computation_contextual_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.computation_contextual_inputs"
+source = "fail_parser_computation_contextual_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_computation_contextual_input"
+stable_detail_key = "parser.computation_contextual_inputs.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.computation_contextual_inputs.parser"]
+notes = "Three selected contextual arguments preserve their right-hand inputs, inner and outer call closes, valid following computation statements, theorem successor and final set: equality missing its right term, not missing its formula, and a label conjunction missing its right formula."

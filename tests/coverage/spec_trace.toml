@@ -4421,6 +4421,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.computation_contextual_inputs.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.1.1 and 20.5.3 explicit computation algorithm_inputs; thesis placement is delegated to 16.5.1; syntax only, with resolution, typing, citation, proof, execution, acceptance and ambiguous naked predicate comma partitions deferred"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_computation_contextual_inputs_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_computation_thesis_placement_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_computation_contextual_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.20.computation_proof.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
 section = "20.9.2 `by computation` Proof Step"

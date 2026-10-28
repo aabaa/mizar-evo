@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_parser_computation_thesis_placement_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.computation_contextual_inputs"
+source = "fail_parser_computation_thesis_placement_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "forbidden_computation_thesis_input"
+stable_detail_key = "parser.computation_contextual_inputs.placement"
+diagnostic_codes = [
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.20.computation_contextual_inputs.parser"]
+notes = "Each of seven consumed thesis arguments outside a directly owned thus/hence by clause reuses MalformedFormulaExpression at thesis: theorem one-line, labelled and unlabelled compact proof statements, then-compact, nested compact, mode sethood, and algorithm return. The nested direct thus thesis is the valid reset control; following statements and final sets remain present."

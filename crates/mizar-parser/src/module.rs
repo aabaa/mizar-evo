@@ -143,6 +143,16 @@ enum FormulaOperandContext {
     Ordinary,
     MatchPattern,
     AlgorithmRhs,
+    ComputationInput,
+    ComputationGroup,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TermListPolicy {
+    Required,
+    Optional,
+    Computation,
+    ConclusionComputation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -610,7 +620,7 @@ impl Parser {
         children.push(proposition.id);
         recovery_nodes.extend(proposition.recovery_nodes);
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) = self.parse_general_justification_at(cursor, true, true) {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -1356,7 +1366,7 @@ impl Parser {
         children.push(proposition.id);
         recovery_nodes.extend(proposition.recovery_nodes);
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) = self.parse_general_justification_at(cursor, true, false) {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -1376,9 +1386,15 @@ impl Parser {
         &mut self,
         position: usize,
         allow_computation: bool,
+        allow_thesis_input: bool,
     ) -> Option<ParsedTypeNode> {
         if self.is_reserved_word_at(position, "by") {
-            Some(self.parse_justification_clause_at(position, allow_computation))
+            Some(self.parse_justification_clause_with_definition_boundary_at(
+                position,
+                allow_computation,
+                false,
+                allow_thesis_input,
+            ))
         } else if self.is_reserved_word_at(position, "proof") {
             Some(self.parse_proof_block_at(position))
         } else {
@@ -1409,6 +1425,7 @@ impl Parser {
             position,
             allow_computation,
             false,
+            false,
         )
     }
 
@@ -1421,6 +1438,7 @@ impl Parser {
             position,
             allow_computation,
             true,
+            false,
         )
     }
 
@@ -1429,6 +1447,7 @@ impl Parser {
         position: usize,
         allow_computation: bool,
         stop_at_definition_content_start: bool,
+        allow_thesis_input: bool,
     ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
@@ -1438,6 +1457,7 @@ impl Parser {
             let computation = self.parse_computation_justification_with_definition_boundary_at(
                 cursor,
                 stop_at_definition_content_start,
+                allow_thesis_input,
             );
             cursor = computation.next_position;
             children.push(computation.id);
@@ -1785,7 +1805,13 @@ impl Parser {
         &mut self,
         position: usize,
         stop_at_definition_content_start: bool,
+        allow_thesis_input: bool,
     ) -> ParsedTypeNode {
+        let input_policy = if allow_thesis_input {
+            TermListPolicy::ConclusionComputation
+        } else {
+            TermListPolicy::Computation
+        };
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
@@ -1878,8 +1904,12 @@ impl Parser {
                             children: callee_children,
                         });
                         if self.is_reserved_symbol_at(callee_end, "(") {
-                            let mut call = self
-                                .parse_application_term_after_callee(cursor, callee, callee_end);
+                            let mut call = self.parse_application_term_after_callee(
+                                cursor,
+                                callee,
+                                callee_end,
+                                input_policy,
+                            );
                             call.recovery_nodes.extend(callee_recovery);
                             call
                         } else {
@@ -1890,7 +1920,17 @@ impl Parser {
                             }
                         }
                     } else {
-                        self.parse_identifier_term_at(cursor)
+                        let callee = self.parse_identifier_reference_term_at(cursor);
+                        if self.is_reserved_symbol_at(callee.next_position, "(") {
+                            self.parse_application_term_after_callee(
+                                cursor,
+                                callee.id,
+                                callee.next_position,
+                                input_policy,
+                            )
+                        } else {
+                            callee
+                        }
                     };
                     cursor = argument.next_position;
                     children.push(argument.id);
@@ -2880,7 +2920,7 @@ impl Parser {
             }
         }
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) = self.parse_general_justification_at(cursor, true, false) {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -6035,7 +6075,7 @@ impl Parser {
     fn parse_algorithm_term_or_formula_at(
         &mut self,
         position: usize,
-        match_pattern: bool,
+        operand_context: FormulaOperandContext,
     ) -> Option<ParsedTypeNode> {
         let mut head = position;
         while self.is_reserved_symbol_at(head, "(") {
@@ -6043,13 +6083,16 @@ impl Parser {
         }
         let mut formula = self.is_reserved_word_at(head, "not")
             || self.is_formula_quantifier_at(head)
-            || self.is_reserved_word_at(head, "contradiction");
+            || self.is_reserved_word_at(head, "contradiction")
+            || (operand_context == FormulaOperandContext::ComputationInput
+                && self.is_reserved_word_at(head, "thesis"));
         let mut transparent_parens = head - position;
         let (mut parens, mut brackets, mut braces) = (0_usize, 0_usize, 0_usize);
         let mut cursor = position;
         while !formula && cursor < self.request.tokens.len() {
             if self.is_semicolon_at(cursor)
-                || (match_pattern && self.is_reserved_word_at(cursor, "do"))
+                || (operand_context == FormulaOperandContext::MatchPattern
+                    && self.is_reserved_word_at(cursor, "do"))
                 || self.is_reserved_word_at(cursor, "as")
                 || self.is_reserved_word_at(cursor, "by")
                 || self.is_reserved_word_at(cursor, "proof")
@@ -6100,18 +6143,11 @@ impl Parser {
             cursor += 1;
         }
         let rhs = if formula {
-            self.parse_formula_expression_at(
-                position,
-                if match_pattern {
-                    FormulaOperandContext::MatchPattern
-                } else {
-                    FormulaOperandContext::AlgorithmRhs
-                },
-            )
+            self.parse_formula_expression_at(position, operand_context)
         } else {
             self.parse_binder_term_expression_at(position, false)
         }?;
-        if !match_pattern
+        if operand_context == FormulaOperandContext::AlgorithmRhs
             && formula
             && let Some(thesis) = (position..rhs.next_position)
                 .find(|cursor| self.is_reserved_word_at(*cursor, "thesis"))
@@ -6150,7 +6186,9 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, ":=") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false) {
+            if let Some(term) =
+                self.parse_algorithm_term_or_formula_at(cursor, FormulaOperandContext::AlgorithmRhs)
+            {
                 cursor = term.next_position;
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
@@ -6224,7 +6262,9 @@ impl Parser {
             self.diagnose_malformed_term_expression(cursor, "expected `:=` in assignment");
         }
 
-        if let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false) {
+        if let Some(term) =
+            self.parse_algorithm_term_or_formula_at(cursor, FormulaOperandContext::AlgorithmRhs)
+        {
             cursor = term.next_position;
             children.push(term.id);
             recovery_nodes.extend(term.recovery_nodes);
@@ -6343,7 +6383,8 @@ impl Parser {
 
         if !self.is_semicolon_at(cursor)
             && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
-            && let Some(term) = self.parse_algorithm_term_or_formula_at(cursor, false)
+            && let Some(term) =
+                self.parse_algorithm_term_or_formula_at(cursor, FormulaOperandContext::AlgorithmRhs)
         {
             cursor = term.next_position;
             children.push(term.id);
@@ -6732,7 +6773,9 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        if let Some(pattern) = self.parse_algorithm_term_or_formula_at(cursor, true) {
+        if let Some(pattern) =
+            self.parse_algorithm_term_or_formula_at(cursor, FormulaOperandContext::MatchPattern)
+        {
             cursor = pattern.next_position;
             children.push(pattern.id);
             recovery_nodes.extend(pattern.recovery_nodes);
@@ -8194,7 +8237,7 @@ impl Parser {
             }
         }
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) = self.parse_general_justification_at(cursor, true, false) {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -9300,7 +9343,7 @@ impl Parser {
             cursor = self.parse_term_list_until(
                 cursor,
                 ")",
-                false,
+                TermListPolicy::Required,
                 Some(plan.next_position),
                 &mut children,
                 &mut recovery_nodes,
@@ -9635,7 +9678,12 @@ impl Parser {
             return None;
         }
         let inner_position = position + 1;
-        let mut inner_operand_context = operand_context;
+        let mut inner_operand_context = match operand_context {
+            FormulaOperandContext::ComputationInput | FormulaOperandContext::ComputationGroup => {
+                FormulaOperandContext::ComputationGroup
+            }
+            _ => operand_context,
+        };
         if operand_context != FormulaOperandContext::Ordinary {
             let mut depth = 1_usize;
             let mut probe = inner_position;
@@ -9678,6 +9726,8 @@ impl Parser {
                             }
                         }
                         let bounded = declaration_tail
+                            || (operand_context == FormulaOperandContext::ComputationInput
+                                && self.is_reserved_symbol_at(after, ","))
                             || (!self.is_reserved_symbol_at(after, ",")
                                 && (self.is_formula_expression_boundary_at(after)
                                     || self.is_algorithm_statement_list_boundary_at(after)
@@ -9686,11 +9736,9 @@ impl Parser {
                                         && self.predicate_negation_end_at(after).is_none())
                                     || (operand_context == FormulaOperandContext::AlgorithmRhs
                                         && self.is_reserved_word_at(after, "as"))));
-                        inner_operand_context = if bounded {
-                            operand_context
-                        } else {
-                            FormulaOperandContext::Ordinary
-                        };
+                        if !bounded {
+                            inner_operand_context = FormulaOperandContext::Ordinary;
+                        }
                         break;
                     }
                 }
@@ -10002,6 +10050,8 @@ impl Parser {
         if operand_context != FormulaOperandContext::Ordinary
             && self.is_identifier_at(position)
             && (declaration_tail
+                || (operand_context == FormulaOperandContext::ComputationInput
+                    && self.is_reserved_symbol_at(after, ","))
                 || (!self.is_reserved_symbol_at(after, ",")
                     && (self.is_formula_expression_boundary_at(after)
                         || self.is_algorithm_statement_list_boundary_at(after)
@@ -10162,7 +10212,7 @@ impl Parser {
         let mut cursor = self.parse_term_list_until(
             opener + 1,
             ")",
-            true,
+            TermListPolicy::Optional,
             None,
             &mut children,
             &mut recovery_nodes,
@@ -11570,6 +11620,7 @@ impl Parser {
                 position,
                 reference.id,
                 reference.next_position,
+                TermListPolicy::Optional,
             )
         } else {
             reference
@@ -11610,6 +11661,7 @@ impl Parser {
                 position,
                 reference.id,
                 reference.next_position,
+                TermListPolicy::Optional,
             ))
         } else {
             Some(reference)
@@ -11739,13 +11791,14 @@ impl Parser {
         start_position: usize,
         callee: SurfaceBuilderNodeId,
         opener: usize,
+        input_policy: TermListPolicy,
     ) -> ParsedTypeNode {
         let mut children = vec![callee, self.token_node_ids[opener]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = self.parse_term_list_until(
             opener + 1,
             ")",
-            true,
+            input_policy,
             None,
             &mut children,
             &mut recovery_nodes,
@@ -11805,7 +11858,7 @@ impl Parser {
             cursor = self.parse_term_list_until(
                 cursor + 1,
                 ")",
-                true,
+                TermListPolicy::Optional,
                 None,
                 &mut children,
                 &mut recovery_nodes,
@@ -11896,7 +11949,7 @@ impl Parser {
         let mut cursor = self.parse_term_list_until(
             position + 1,
             "]",
-            false,
+            TermListPolicy::Required,
             None,
             &mut children,
             &mut recovery_nodes,
@@ -11993,7 +12046,7 @@ impl Parser {
         let mut cursor = self.parse_term_list_until(
             position + 1,
             "}",
-            true,
+            TermListPolicy::Optional,
             None,
             &mut children,
             &mut recovery_nodes,
@@ -12384,11 +12437,12 @@ impl Parser {
         &mut self,
         mut cursor: usize,
         close_symbol: &str,
-        allow_empty: bool,
+        policy: TermListPolicy,
         stop_position: Option<usize>,
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
     ) -> usize {
+        let allow_empty = policy != TermListPolicy::Required;
         let mut expecting_argument = true;
         let mut saw_argument = false;
         if allow_empty && self.is_reserved_symbol_at(cursor, close_symbol) {
@@ -12412,7 +12466,28 @@ impl Parser {
                 continue;
             }
 
-            if let Some(term) = self.parse_binder_term_expression_at(cursor, false) {
+            let input = if matches!(
+                policy,
+                TermListPolicy::Computation | TermListPolicy::ConclusionComputation
+            ) {
+                self.parse_algorithm_term_or_formula_at(
+                    cursor,
+                    FormulaOperandContext::ComputationInput,
+                )
+            } else {
+                self.parse_binder_term_expression_at(cursor, false)
+            };
+            if let Some(term) = input {
+                if policy == TermListPolicy::Computation
+                    && self.events.node_kind(term.id) == Some(&SurfaceNodeKind::FormulaExpression)
+                    && let Some(thesis) = (cursor..term.next_position)
+                        .find(|position| self.is_reserved_word_at(*position, "thesis"))
+                {
+                    self.diagnose_malformed_formula_expression(
+                        thesis,
+                        "`thesis` computation input requires direct `thus` or `hence`",
+                    );
+                }
                 children.push(term.id);
                 recovery_nodes.extend(term.recovery_nodes);
                 cursor = term.next_position;

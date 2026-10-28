@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_computation_contextual_inputs_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.computation_contextual_inputs"
+source = "pass_parser_computation_contextual_inputs_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.20.computation_contextual_inputs.parser"]
+notes = "Genuine expr-of-boolean parameters exercise formula, label and directly owned thesis inputs in explicit computation calls, beside ordinary nested and Binder/qua/container terms, selected grouped predicates, qualified/template and multi-call/options forms. Syntax-only coverage grants no resolution, type, citation, proof, execution or acceptance credit; ambiguous naked predicate comma partitions remain deferred."

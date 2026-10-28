@@ -1,0 +1,30 @@
+definition let e, f be expr of boolean;
+  algorithm inspect(e,f) -> expr of boolean do return e; end;
+end;
+theorem OneLine: thesis by computation(inspect(thesis & thesis, 0 = 0));
+theorem AfterOneLine: thesis;
+theorem Placement: thesis proof
+  let x, y be object;
+  A: x = x by computation(inspect((thesis), 0 = 0));
+  B: x = x;
+  x = x by computation(inspect(not thesis, 0 = 0));
+  C: x = x;
+  then x = x by computation(inspect(thesis, 0 = 0));
+  D: x = x;
+  thus thesis proof
+    x = x by computation(inspect(thesis, 0 = 0));
+    thus thesis by computation(inspect(thesis, 0 = 0));
+  end;
+  E: x = x;
+end;
+set after_thesis_placement = sentinel;
+definition let e, f be expr of boolean;
+  mode D:ComputationMode is set;
+  sethood by computation(inspect(thesis, 0 = 0));
+  mode E:OtherMode is set;
+  algorithm bad_return(e,f) -> expr of boolean do return e by computation(inspect(thesis, f));
+    var after_return := f;
+    return e;
+  end;
+end;
+set after_contextual_placement = sentinel;

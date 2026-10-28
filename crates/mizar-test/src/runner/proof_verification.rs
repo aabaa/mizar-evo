@@ -5142,6 +5142,81 @@ mod term_proof_tests {
     }
 
     #[test]
+    fn contextual_computation_inputs_parse_but_fail_actual_source_scope() {
+        use mizar_resolve::{
+            names::{
+                SourceVariableScopeError as Error, SourceVariableScopeInput as Input,
+                SourceVariableScopeResolver as Resolver,
+            },
+            resolved_ast::SurfaceResolvedArena,
+        };
+        use mizar_syntax::SurfaceNodeKind as K;
+
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::super::formula_statement::STEP5C10_CASES[0].0)
+            .unwrap();
+        for (argument, owner) in [
+            ("0 = 0", None),
+            ("not 0 = 0", None),
+            ("thesis", Some("thus")),
+            ("(thesis)", Some("hence")),
+        ] {
+            let justification = format!("by computation(calc({argument}));");
+            let text = match owner {
+                Some(owner) => {
+                    format!("theorem T: 0 = 0 proof {owner} thesis {justification} end;")
+                }
+                None => format!("theorem T: 0 = 0 {justification}"),
+            };
+            let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{text}: {:?}",
+                frontend.diagnostics
+            );
+            let ast = frontend.ast.as_ref().unwrap();
+            let application = ast
+                .node_views()
+                .filter(|node| matches!(node.kind(), K::ComputationJustification))
+                .flat_map(|node| node.child_views())
+                .find(|node| matches!(node.kind(), K::ApplicationTerm))
+                .unwrap();
+            let formulas = application
+                .child_views()
+                .filter(|node| matches!(node.kind(), K::FormulaExpression))
+                .collect::<Vec<_>>();
+            assert_eq!(formulas.len(), 1, "{text}");
+            assert_eq!(
+                &text[formulas[0].range().start..formulas[0].range().end],
+                argument
+            );
+
+            let resolver = resolver_symbol_collection(&config.workspace_root, case, ast);
+            assert!(
+                resolver.detail_keys.is_empty(),
+                "{text}: {:?}",
+                resolver.detail_keys
+            );
+            let source = SurfaceResolvedArena::lower(ast, &resolver.module).unwrap();
+            let scope = Resolver::resolve_proof_occurrences(Input::new(
+                ast,
+                source.module(),
+                &resolver.env,
+            ));
+            assert_eq!(scope.unwrap_err(), Error::InvalidShape, "{text}");
+            assert_eq!(
+                step5c14_computation_core(&text).unwrap_err(),
+                "InvalidShape",
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
     fn step5c14_replay_options_parse_cleanly_but_fail_source_check() {
         use mizar_syntax::SurfaceNodeKind as K;
         for (options, expected, accepted) in [

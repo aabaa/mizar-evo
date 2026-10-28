@@ -1,7 +1,7 @@
 # Task AST-PARSE: Reflected syntax input preparation
 Canonical language: English; [Japanese pointer](../ja/AST-PARSE.md).
 Status: partial; expr types, bounded Binder roots and lexical/match retirement implemented. Tier: full gates. Primary owner: [mizar-parser](../../mizar-parser/en/00.crate_plan.md). Producer owners: [lexer](../../mizar-lexer/en/00.crate_plan.md), [syntax](../../mizar-syntax/en/00.crate_plan.md), [frontend](../../mizar-frontend/en/00.crate_plan.md).
-Consumers: mizar-checker, mizar-core and mizar-test. Readiness: formula/iterative syntax ready under clarified §13.10; broader bracket/contextual inputs remain separate source_drift/test_gap slices.
+Consumers: mizar-checker, mizar-core and mizar-test. Readiness: unambiguous explicit computation-input candidates and direct thesis placement are implemented; broader ordinary algorithm-input roles and ambiguous predicate partitions remain separate.
 Dependencies: existing lexer/frontend/syntax pipeline; extend its vocabulary and syntax handoff in this slice rather than assume they exist.
 Authority: Chapters [2](../../../spec/en/02.lexical_structure.md#24-reserved-words), [3](../../../spec/en/03.type_system.md#33-type-expressions),
 [13.10](../../../spec/en/13.term_expression.md#1310-function-binder--),

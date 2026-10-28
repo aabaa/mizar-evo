@@ -1,0 +1,16 @@
+definition
+  let e, f be expr of boolean;
+  algorithm inspect(e,f) -> expr of boolean do return e; end;
+end;
+theorem ContextualRecovery: thesis proof
+  let x, y, z be object;
+  A1: x = x;
+  A2: y = y;
+  thus x = x by computation(inspect(x =, x = x));
+  thus x = x by computation(steps: 1);
+  thus x = x by computation(inspect(not , x = x));
+  thus x = x by computation(steps: 1);
+  thus x = x by computation(inspect(A1 &, x = x));
+  thus x = x by computation(steps: 1);
+end;
+set after_contextual_recovery = sentinel;

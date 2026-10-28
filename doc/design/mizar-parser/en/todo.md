@@ -1183,4 +1183,6 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
+- [x] [AST-COMPUTATION-CONTEXTUAL-INPUTS](../../task_contracts/en/AST-COMPUTATION-CONTEXTUAL-INPUTS.md) — explicit contextual computation-input syntax and direct thesis placement.
+
 - [~] [AST-PARSE](../../task_contracts/en/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs open; lexical/match retirement implemented.

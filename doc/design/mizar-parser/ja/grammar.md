@@ -2264,4 +2264,6 @@ initializer・assignment・return は、明示的な prefix、builtin/is/connect
 
 ## Explicit Computation Term Call Boundary
 
-Identifier token の bare/dotted/template call head は既存 option と並ぶ direct ApplicationTerm child を選ぶ。各 application は通常の term 引数を持ち、その callee TermReference は namespace/final-name/template child を保持する。event 前に probe し、実際の consuming endpoint と既存の部分 recovery を使い、option/tail の診断は保つ。steps()/replay() は colon option と区別する。bounded な閉じた等式 theorem profile は call を proof scope の InvalidShape で拒否し、その後の steps-only checker/Core guard は不変とする。call 解決、文脈依存 formula/label/thesis role、期待型、実行・evidence は deferred とする。
+Identifier tokenのbare/dotted/template call headは既存optionと並ぶdirect ApplicationTerm childを選び、callee TermReferenceはnamespace/final-name/template childを保つ。直接の引数は通常のTermExpression、または根拠により選ばれたFormulaExpression候補をソース順で保持する。prefix/builtin/is/connectiveや透明なgroupingを式の根拠とし、曖昧なbare/application候補は項として保持する。裸のuser-predicateのcomma分割と通常のalgorithm入力全般は、無効とはせず延期する。
+
+入力contextはcallのcomma/closerと境界付きBoolean operandを所有し、選択されたgrouped/prefixed formulaのpredicate priorityと、既存RHS/match/通常callの規則を保つ。by節の実際の所有者がthus/henceの場合に限り、消費した文脈入力のthesis（group/compoundも含む）を許可し、proof内の文では許可を設定し直す。禁止位置では、消費した引数ごとの最初のthesis tokenに既存MalformedFormulaExpressionを出す。operand/delimiter recoveryは外側call/optionと後続文を保つ。labelは未解決候補のままとし、期待型・引用・reflection・実行は意味担当に残す。bounded scope profileは全explicit callをInvalidShapeで拒否し、steps-only checker/Core guardを保つ。

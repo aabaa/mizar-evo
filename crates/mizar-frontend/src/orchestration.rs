@@ -2268,7 +2268,7 @@ mod tests {
                 .version
                 .as_ref();
             assert_eq!(parser_version, MIZAR_PARSER_CACHE_KEY_VERSION);
-            assert_eq!(parser_version, "mizar-parser/surface-ast-v29");
+            assert_eq!(parser_version, "mizar-parser/surface-ast-v30");
             assert_ne!(
                 parser_version, "mizar-parser/surface-ast-v5",
                 "the corrected G6 AST must not reuse the historical v5 namespace"
@@ -2322,7 +2322,7 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v29",
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v30",
             "legal omitted justifications must not reuse the historical v6 namespace"
         );
         assert_eq!(output.ast, replay.ast);
@@ -2404,7 +2404,7 @@ mod tests {
                     .parser_version
                     .version
                     .as_ref(),
-                "mizar-parser/surface-ast-v29"
+                "mizar-parser/surface-ast-v30"
             );
             assert_eq!(output.ast, replay.ast);
             assert_eq!(output.diagnostics, replay.diagnostics);
@@ -2452,7 +2452,7 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v29",
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v30",
             "Step 5A.6 parser output semantics must not reuse the v5 AST cache namespace"
         );
     }
@@ -2528,7 +2528,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v29"
+            "mizar-parser/surface-ast-v30"
         );
         assert_eq!(target.ast, target_replay.ast);
         assert_eq!(target.diagnostics, target_replay.diagnostics);
@@ -2587,7 +2587,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v29"
+            "mizar-parser/surface-ast-v30"
         );
         assert_eq!(control.ast, control_replay.ast);
         assert_eq!(control.diagnostics, control_replay.diagnostics);
