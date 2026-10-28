@@ -171,6 +171,8 @@ The exact resolver definition IDs are:
 
 Every row is normal, local, public/exported, non-overloadable,
 conflict-free, and contribution 0 owns all eight symbols and definitions.
+The two Structure rows require syntactic arity `Some(0)`; selector and
+redefinition rows require `None`, with parameters and binders still empty.
 Structure spelling is `Task263Base`/`Task263Derived`; declaration selector and
 redefinition spelling is `carrier`/`marker`. The checker authenticates exact
 symbol/definition/contribution/origin pairs and never reconstructs owner or

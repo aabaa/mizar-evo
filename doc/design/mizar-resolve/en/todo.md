@@ -704,6 +704,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 60. **[Ordinary predicate term-locus arity](../../task_contracts/en/RESOLVE-PREDICATE-TERM-ARITY.md).** [x]
 
 61. **[Ordinary functor term-slot arity](../../task_contracts/en/RESOLVE-FUNCTOR-TERM-ARITY.md).** [x]
+62. **[Declared structure parameter-slot arity](../../task_contracts/en/RESOLVE-STRUCTURE-PARAMETER-ARITY.md).** [x]
 
 ## Crate Close-Out
 

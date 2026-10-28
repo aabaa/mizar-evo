@@ -1738,15 +1738,15 @@ fn task258b3m2b2b2bp_structure_selector_corruption_replay_and_constructor_compat
                 .expect("legacy Task254 handoff")
                 .debug_text()
         ),
-        "0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8"
+        "c639bed526aa345040093d81add290c455c2351984e5ded7391d43cf92feb2d9"
     );
     assert_eq!(
         sha256_text(&legacy.typed_ast.debug_text()),
-        "8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599"
+        "12e8f2e82eccfbced9c3c976f89f884ea335d13e0cd196a202e68ab44e885d99"
     );
     assert_eq!(
         sha256_text(&legacy.resolved.debug_text()),
-        "118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40"
+        "35cfc8144b7ef9780622f3f179c32ec73b15d91c2703673b98ddc48f5e7d7913"
     );
 }
 
@@ -3190,9 +3190,9 @@ fn task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compat
             sha256_text(&legacy.resolved.debug_text()),
         ],
         [
-            "0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8",
-            "8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599",
-            "118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40",
+            "c639bed526aa345040093d81add290c455c2351984e5ded7391d43cf92feb2d9",
+            "12e8f2e82eccfbced9c3c976f89f884ea335d13e0cd196a202e68ab44e885d99",
+            "35cfc8144b7ef9780622f3f179c32ec73b15d91c2703673b98ddc48f5e7d7913",
         ],
         "legacy Task254 debug output must stay byte-exact"
     );
@@ -4116,15 +4116,15 @@ fn task258b3m2b2b2p_structure_constructor_corruption_replay_and_legacy_output_fa
                 .expect("legacy Task254 handoff")
                 .debug_text()
         ),
-        "0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8"
+        "c639bed526aa345040093d81add290c455c2351984e5ded7391d43cf92feb2d9"
     );
     assert_eq!(
         sha256_text(&legacy_first.typed_ast.debug_text()),
-        "8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599"
+        "12e8f2e82eccfbced9c3c976f89f884ea335d13e0cd196a202e68ab44e885d99"
     );
     assert_eq!(
         sha256_text(&legacy_first.resolved.debug_text()),
-        "118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40"
+        "35cfc8144b7ef9780622f3f179c32ec73b15d91c2703673b98ddc48f5e7d7913"
     );
     assert_eq!(
         legacy_first.typed_ast.debug_text(),

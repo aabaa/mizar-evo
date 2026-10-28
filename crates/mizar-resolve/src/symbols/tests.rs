@@ -3319,6 +3319,246 @@ fn mode_parameter_arity_preserves_old_projection_fields_and_unknown_shapes() {
 }
 
 #[test]
+fn structure_parameter_arity_preserves_exact_old_projection_and_unknown_shapes() {
+    use SurfaceNodeKind as K;
+    use SurfaceTokenKind as T;
+    let source = source_id();
+    let module = module_id();
+    for case in 0..41 {
+        let (spelling, arity) = match case {
+            0 => ("S", Some(0)),
+            1 => ("S of x", Some(1)),
+            2 => ("S of x , y", Some(2)),
+            3 => ("S of x , x , x", Some(3)),
+            4 => ("S over x", Some(1)),
+            5 => ("S over x , y", Some(2)),
+            6 => ("S [ x ]", Some(1)),
+            7 => ("S [ x , y ]", Some(2)),
+            8 => ("S [ x , x ]", Some(2)),
+            9 => ("S [ ]", None),
+            10 => ("S of x ,", None),
+            11 => ("S of", None),
+            12 => ("S ( x )", None),
+            13 => ("S [ x", None),
+            14 => ("of x", None),
+            15 => ("set of x", None),
+            16 => ("S of 2", None),
+            17 => ("S of x y", None),
+            18 => ("S of , x", None),
+            32..=35 => ("S of x", Some(1)),
+            36 => ("R-module [ x ]", Some(1)),
+            38 => ("", None),
+            40 => ("R-module", Some(0)),
+            _ => ("S of x", None),
+        };
+        let mut builder = SurfaceAstBuilder::new(source);
+        let tokens = spelling
+            .split_whitespace()
+            .map(|text| {
+                (
+                    match text {
+                        "S" if case == 19 => T::ReservedSymbol,
+                        "x" if case == 20 => T::UserSymbol,
+                        "of" if case == 21 => T::Identifier,
+                        "of" | "over" | "set" => T::ReservedWord,
+                        "[" | "]" | "," | "(" | ")" => T::ReservedSymbol,
+                        "2" => T::Numeral,
+                        "R-module" => T::UserSymbol,
+                        _ => T::Identifier,
+                    },
+                    if (case == 22 && text == "S") || (case == 37 && text == "x") {
+                        ""
+                    } else {
+                        text
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut parts = token_sequence(&mut builder, source, 10, &tokens);
+        if case == 23 || case == 24 {
+            parts = vec![builder.add_node(
+                if case == 23 {
+                    K::TermExpression
+                } else {
+                    K::TemplateLoci
+                },
+                range(source, 10, 70),
+                parts,
+            )];
+        }
+        if case == 25 {
+            parts.push(builder.add_node(K::TermExpression, range(source, 70, 70), vec![]));
+        }
+        if case == 26 {
+            parts[0] = builder.add_recovered_token(T::Identifier, "S", range(source, 10, 11));
+        }
+        if case == 27 {
+            parts.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 70, 70),
+                vec![],
+            ));
+        }
+        let mut decl = if case == 28 {
+            parts
+        } else {
+            vec![builder.add_node(
+                if case == 29 {
+                    K::ModePattern
+                } else {
+                    K::StructurePattern
+                },
+                range(source, 10, 80),
+                parts,
+            )]
+        };
+        if case == 30 {
+            let extra = token_sequence(&mut builder, source, 10, &tokens);
+            decl.push(builder.add_node(K::StructurePattern, range(source, 10, 80), extra));
+        }
+        if case == 31 {
+            decl.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 85, 85),
+                vec![],
+            ));
+        }
+        if case == 32 || case == 33 {
+            let sibling = token_sequence(
+                &mut builder,
+                source,
+                85,
+                &[
+                    (T::Identifier, "unrelated"),
+                    (T::ReservedSymbol, ","),
+                    (T::Identifier, "extra"),
+                ],
+            );
+            decl.push(builder.add_node(
+                if case == 32 {
+                    K::TemplateLoci
+                } else {
+                    K::TermExpression
+                },
+                range(source, 85, 105),
+                sibling,
+            ));
+        }
+        let declaration = builder.add_node(K::StructureDefinition, range(source, 0, 110), decl);
+        let mut block_parts = vec![declaration];
+        if case == 34 || case == 35 {
+            let sibling = token_sequence(
+                &mut builder,
+                source,
+                115,
+                &[
+                    (T::Identifier, "unrelated"),
+                    (T::ReservedSymbol, ","),
+                    (T::Identifier, "extra"),
+                ],
+            );
+            block_parts.push(builder.add_node(
+                if case == 34 {
+                    K::TemplateLoci
+                } else {
+                    K::TermExpression
+                },
+                range(source, 115, 135),
+                sibling,
+            ));
+        }
+        // A recovered ancestor is tested separately from the clean sibling controls.
+        if case == 39 {
+            block_parts.push(builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source, 140, 140),
+                vec![],
+            ));
+        }
+        let block = builder.add_node(K::DefinitionBlockItem, range(source, 0, 150), block_parts);
+        let root = finish_module(&mut builder, source, vec![block]);
+        let ast = builder.finish(Some(root), None);
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let projections =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+        if case == 38 {
+            assert!(projections.is_empty());
+            continue;
+        }
+        assert_eq!(projections.len(), 1, "case {case}");
+        let shell = shells
+            .declarations()
+            .iter()
+            .find(|shell| shell.kind() == DeclarationShellKind::StructureDefinition)
+            .unwrap();
+        let view = ast.node_view(shell.node_id()).unwrap();
+        let pattern = first_child_matching(view, is_structure_pattern).unwrap_or(view);
+        let notation = normalized_token_shape(pattern);
+        // Derive the entire old unknown projection independently, including the private key domain.
+        let mut old = SymbolDeclarationProjection::new(
+            shell.id(),
+            NamespacePath::new("main"),
+            notation.clone(),
+            SymbolKind::Structure,
+        )
+        .with_definition_kind(DefinitionKind::Structure)
+        .with_overload_policy(SymbolOverloadPolicy::NonOverloadable)
+        .with_signature(parser_signature(
+            view,
+            SymbolKind::Structure,
+            DefinitionKind::Structure,
+            Some(&notation),
+            None,
+        ))
+        .with_notation_spelling(notation);
+        if lexer_visible_pattern(pattern) {
+            old = old.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
+        }
+        assert_eq!(old.arity(), None);
+        assert!(old.functor_signature_key.is_none());
+        let mut expected = old.clone();
+        if let Some(arity) = arity {
+            expected.arity = Some(arity);
+            let Some(SignatureShell::Opaque { payload, .. }) = &mut expected.signature else {
+                unreachable!()
+            };
+            *payload = payload.replace(";arity=_;", &format!(";arity={arity};"));
+        }
+        assert_eq!(projections[0], expected, "case {case}");
+        assert_eq!(
+            projections[0].functor_signature_key,
+            old.functor_signature_key
+        );
+        if case == 2 {
+            let before = collect(source, &shells, std::slice::from_ref(&old));
+            let after = collect(source, &shells, &projections);
+            let prior = before.env().symbols().iter().next().unwrap();
+            let current = after.env().symbols().iter().next().unwrap();
+            assert_ne!(prior.symbol(), current.symbol());
+            assert_eq!(
+                before
+                    .env()
+                    .definitions()
+                    .by_symbol(prior.symbol())
+                    .unwrap()
+                    .arity(),
+                None
+            );
+            assert_eq!(
+                after
+                    .env()
+                    .definitions()
+                    .by_symbol(current.symbol())
+                    .unwrap()
+                    .arity(),
+                Some(2)
+            );
+            assert!(after.env().symbols().get(prior.symbol()).is_none());
+        }
+    }
+}
+
+#[test]
 fn functor_term_arity_preserves_exact_old_projection_and_private_key() {
     use SurfaceNodeKind as K;
     use SurfaceTokenKind as T;

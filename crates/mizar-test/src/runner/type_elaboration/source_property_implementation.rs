@@ -806,7 +806,7 @@ fn resolver_profile(
             || row.definition_kind() != Some(expected[index].1)
             || row.primary_spelling() != expected[index].2
             || row.overload_policy() != SymbolOverloadPolicy::NonOverloadable
-            || row.arity().is_some()
+            || row.arity() != (expected[index].1 == DefinitionKind::Structure).then_some(0)
             || row.signature().is_none()
         {
             return Err(format!("Task264 resolver projection {index} changed"));

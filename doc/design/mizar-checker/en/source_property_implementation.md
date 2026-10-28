@@ -130,6 +130,8 @@ one local-source contribution, and zero resolver diagnostics:
   for means and `52/108..188` for equals;
 - definition 0 is structure `Task264Carrier`, definition 1 is selector
   `carrier`, and definition 2 is selector `marker`;
+- the runner authenticates structure row 0 with syntactic arity `Some(0)`
+  and both selector rows with `None`;
 - definition 0 and its symbol share the normal local structure origin
   `13..101/[4,0,11,0]`, and the Task-249PI parameter head must name that
   exact resolver identity rather than a task-local hard-coded FQN;

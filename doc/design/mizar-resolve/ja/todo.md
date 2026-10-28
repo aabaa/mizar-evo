@@ -662,6 +662,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 60. **[Ordinary predicate term-locus arity](../../task_contracts/ja/RESOLVE-PREDICATE-TERM-ARITY.md).** [x]
 
 61. **[Ordinary functor term-slot arity](../../task_contracts/ja/RESOLVE-FUNCTOR-TERM-ARITY.md).** [x]
+62. **[Declared structure parameter-slot arity](../../task_contracts/ja/RESOLVE-STRUCTURE-PARAMETER-ARITY.md).** [x]
 
 ## crate close-out
 

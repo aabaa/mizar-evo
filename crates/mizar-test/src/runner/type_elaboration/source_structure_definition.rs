@@ -538,7 +538,7 @@ fn validate_shells_and_projections(
             || row.definition_kind() != Some(expected[index].1)
             || primary_spelling != expected[index].2
             || row.overload_policy() != SymbolOverloadPolicy::NonOverloadable
-            || row.arity().is_some()
+            || row.arity() != (expected[index].1 == DefinitionKind::Structure).then_some(0)
             || row.signature().is_none()
         {
             return Err(format!("Task263 resolver projection {index} changed"));

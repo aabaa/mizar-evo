@@ -2286,15 +2286,27 @@ impl<'a> SignatureProjectionExtractor<'a> {
                 }
                 return count;
             }
-            if shell.kind() == DeclarationShellKind::ModeDefinition {
-                if view.kind() != &SurfaceNodeKind::ModeDefinition
+            let is_structure = shell.kind() == DeclarationShellKind::StructureDefinition;
+            if is_structure || shell.kind() == DeclarationShellKind::ModeDefinition {
+                let (definition_kind, pattern_kind) = if is_structure {
+                    (
+                        SurfaceNodeKind::StructureDefinition,
+                        SurfaceNodeKind::StructurePattern,
+                    )
+                } else {
+                    (
+                        SurfaceNodeKind::ModeDefinition,
+                        SurfaceNodeKind::ModePattern,
+                    )
+                };
+                if view.kind() != &definition_kind
                     || shell_context(self.shells, shell).recovered
                     || view.is_recovered()
-                    || pattern.kind() != &SurfaceNodeKind::ModePattern
+                    || pattern.kind() != &pattern_kind
                     || pattern.is_recovered()
                     || view
                         .child_views()
-                        .filter(|child| is_mode_pattern(child.kind()))
+                        .filter(|child| is_pattern(child.kind()))
                         .count()
                         != 1
                 {

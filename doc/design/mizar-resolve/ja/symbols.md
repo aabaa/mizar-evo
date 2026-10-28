@@ -191,6 +191,8 @@ attribute name を解決し、argument は後続の checker-owned payload extrac
 
 `TemplateLoci` のない非 recovery の通常 functor は、省略可能な左右 loci と記号1個の形、および記号・loci・記号の circumfix の両文法を検査する。完全な解釈が存在し全項数が一致するときだけ識別子 slot 数を記録し、全識別子からなる曖昧形は constructor/binding を選ばず unknown を保つ。欠落・回復・未対応形も unknown とする。既存 signature/index と identity/lexical-wire の分離を使い、private functor/predicate key と alias/duplicate policy は独立したまま変更しない。
 
+非 recovery の通常構造は、直接 token の完全な name/of/over/bracket パラメータ文法からゼロまたは識別子 slot 数を得る。欠落・回復・未対応形は unknown とし、外側の binding・field・inheritance は数えない。既存 signature/index/identity 伝播と lexical-wire の分離を保ち、selector と redefinition の arity は unknown のままとする。
+
 ## Kind ごとの Signature Shape
 
 | Declaration family | Resolver-owned signature payload |

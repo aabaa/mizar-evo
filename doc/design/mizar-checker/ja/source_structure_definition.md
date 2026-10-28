@@ -110,7 +110,9 @@ redefinition 68、property redefinition 69の順で、source ordinal 0--9を持�
 | property mapping | `Redefinition/Redefinition` | 7 | `279..307` | `[4,0,20,2,22,1]` |
 
 全rowはnormal、local、public/exported、non-overloadable、conflict-free、contribution
-0である。checkerはsymbol/definition/contribution/origin pairをexactに認証し、FQN
+0である。Structure の2 row は構文 arity `Some(0)`、selector/redefinition は
+`None` を要求し、parameters/binders は空のままとする。
+checkerはsymbol/definition/contribution/origin pairをexactに認証し、FQN
 textやopaque signatureからowner/member identityを再構築しない。
 
 ## Frozen lower bundle

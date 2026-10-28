@@ -274,7 +274,7 @@ fn task_263_structure_definition_resolver_and_row_corruption_fail_closed() {
     );
 
     let (stale_effect_env, _) =
-        resolver_env_with_effects(fixture.source, fixture.module.clone(), true);
+        resolver_env_with_effects(fixture.source, fixture.module.clone(), true, None);
     assert_eq!(
         SourceStructureDefinitionProducer::build(
             fixture.input.clone(),
@@ -393,6 +393,59 @@ fn task_263_structure_definition_resolver_and_row_corruption_fail_closed() {
         &fixture.arena,
         SourceStructureDefinitionError::InvalidDefinition { index: 1 },
     );
+}
+
+#[test]
+fn task_263_structure_definition_resolver_arity_is_authenticated_by_role() {
+    let fixture = fixture();
+    let baseline = InitialObligationTable::new();
+    let (_, identities) = resolver_env(fixture.source, fixture.module.clone());
+
+    for (identity_index, row_index) in [(0, 0), (3, 1)] {
+        let definition_index = identities[identity_index].1.index();
+        for arity in [None, Some(1), Some(2), Some(3)] {
+            let (env, _) = resolver_env_with_effects(
+                fixture.source,
+                fixture.module.clone(),
+                false,
+                Some((definition_index, arity)),
+            );
+            assert_eq!(
+                SourceStructureDefinitionProducer::build(
+                    fixture.input.clone(),
+                    &env,
+                    &fixture.source_type,
+                    &baseline,
+                    &fixture.arena,
+                ),
+                Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: row_index }),
+                "structure definition row {row_index} with arity {arity:?}"
+            );
+        }
+    }
+
+    for (identity_index, row_index) in [(1, 2), (2, 3), (4, 4), (5, 5), (6, 6), (7, 7)] {
+        let definition_index = identities[identity_index].1.index();
+        for arity in [0, 1] {
+            let (env, _) = resolver_env_with_effects(
+                fixture.source,
+                fixture.module.clone(),
+                false,
+                Some((definition_index, Some(arity))),
+            );
+            assert_eq!(
+                SourceStructureDefinitionProducer::build(
+                    fixture.input.clone(),
+                    &env,
+                    &fixture.source_type,
+                    &baseline,
+                    &fixture.arena,
+                ),
+                Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: row_index }),
+                "non-structure resolver row {row_index} with arity {arity}"
+            );
+        }
+    }
 }
 
 #[test]
@@ -1151,13 +1204,14 @@ fn fixture() -> Fixture {
 type ResolverIdentity = (SymbolId, DefinitionId, SourceContributionId);
 
 fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, Vec<ResolverIdentity>) {
-    resolver_env_with_effects(source, module, false)
+    resolver_env_with_effects(source, module, false, None)
 }
 
 fn resolver_env_with_effects(
     source: SourceId,
     module: ModuleId,
     stale_effects: bool,
+    arity_override: Option<(usize, Option<u32>)>,
 ) -> (SymbolEnv, Vec<ResolverIdentity>) {
     let mut indexes = SymbolEnvIndexes::default();
     let contribution = indexes.contributions.insert(
@@ -1276,6 +1330,14 @@ fn resolver_env_with_effects(
         let mut shell = DefinitionShell::new(symbol.clone(), definition_kind, origin, contribution)
             .with_visibility(Visibility::Public)
             .with_signature(signature);
+        let arity = match arity_override.filter(|(target, _)| *target == index) {
+            Some((_, arity)) => arity,
+            None if definition_kind == DefinitionKind::Structure => Some(0),
+            None => None,
+        };
+        if let Some(arity) = arity {
+            shell = shell.with_arity(arity);
+        }
         if let Some(notation) = notation {
             shell = shell.with_notation_shape(notation);
         }

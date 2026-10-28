@@ -83,7 +83,8 @@ Resolverは各source exactly shells/symbols/definitions/contributions
 PropertyImplementationです。`marker`はdefinition 2、contribution 0、origin
 `71..94/[4,0,11,0,19,1]`のlocal exported Selectorです。shell 4にはsymbol/
 definition/signature projection/semantic originがありません。definition 0とその
-symbolはnormal local structure origin `13..101/[4,0,11,0]`を共有し、Task-249PI
+symbolはnormal local structure origin `13..101/[4,0,11,0]`を共有します。Runner は
+structure row 0 の構文 arity `Some(0)` と selector 2 row の `None` を認証します。Task-249PI
 parameter headはtask-local fixed FQNではなくこのexact resolver identityを参照します。
 `carrier` symbol/definitionはnormal local sibling origin
 `45..66/[4,0,11,0,18,0]`を共有します。

@@ -203,6 +203,8 @@ For unrecovered ordinary predicates without `TemplateLoci`, validate the complet
 
 For unrecovered ordinary functors without `TemplateLoci`, consider both optional-left/symbol/optional-right loci and symbol/loci/symbol circumfix grammar. Record written identifier-slot arity only if complete interpretations exist and all counts agree; ambiguous all-identifier forms retain unknown, with no constructor or binding selection. Missing, recovered and unsupported forms remain unknown. Existing signature/index and identity/lexical-wire separation apply; private functor/predicate keys and alias/duplicate policy remain independent and unchanged.
 
+For unrecovered ordinary structures, complete direct name/of/over/bracket parameter grammar supplies zero or the written identifier-slot count. Missing, recovered or unsupported shapes retain unknown; enclosing bindings, fields and inheritance do not contribute. Existing signature/index/identity propagation and lexical-wire separation apply, while selector and redefinition arities remain unknown.
+
 ## Per-Kind Signature Shapes
 
 | Declaration family | Resolver-owned signature payload |

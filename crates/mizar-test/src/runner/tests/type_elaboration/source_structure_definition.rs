@@ -21,6 +21,20 @@ fn task263_structure_definition_source_surface_and_resolver_are_exact() {
     assert_eq!(symbols.symbols().len(), 8);
     assert_eq!(symbols.definitions().len(), 8);
     assert_eq!(symbols.contributions().len(), 1);
+    let expected_arities = [Some(0), None, None, Some(0), None, None, None, None];
+    let projections = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+    ).extract();
+    assert_eq!(
+        projections.iter().map(|row| row.arity()).collect::<Vec<_>>(),
+        expected_arities,
+    );
+    let mut definition_arities = symbols.definitions().iter()
+        .map(|row| (row.id().index(), row.arity())).collect::<Vec<_>>();
+    definition_arities.sort_by_key(|(index, _)| *index);
+    assert_eq!(definition_arities, expected_arities.into_iter().enumerate().collect::<Vec<_>>());
     let output = source_structure_definition_output(
         &ast,
         module,
