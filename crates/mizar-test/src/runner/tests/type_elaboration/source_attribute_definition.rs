@@ -215,7 +215,7 @@ fn type_elaboration_runner_transports_exact_source_attribute_definition_payload(
         projection.overload_policy(),
         mizar_resolve::symbols::SymbolOverloadPolicy::Overloadable
     );
-    assert!(projection.arity().is_none());
+    assert_eq!(projection.arity(), Some(0));
     assert!(projection.signature().is_some());
     assert_eq!(
         (

@@ -13635,7 +13635,7 @@ fn source_registration_candidate_inputs_bind_encoding_metadata_identity_and_repl
                 assert_eq!(pair, build(&core, &vcs, vc.id, profile, format).unwrap());
                 if !changed_source && format == ConcreteFormat::Tptp && name == "source-candidate" {
                     // Independently computed from the genuine encoded inputs and normal wire.
-                    assert_eq!(candidate.candidate_id(), "source-registration-v1:9ea2cc0c346ed86ff90a864ce7a35b86fadf56b57fa323a76022a361aaff4c74");
+                    assert_eq!(candidate.candidate_id(), "source-registration-v1:9e611ca6bdc8d1d9c77f7f719bd972233c36cbb72dd6d00d93b275ab4b8ba245");
                 }
                 assert!(identities.insert(candidate.candidate_id().to_owned()));
             }
@@ -17392,6 +17392,158 @@ pub(super) fn source_registration_owner_inputs(
     let collected = SignatureProjectionExtractor::new(ast, &shells,
         NamespacePath::new(module.path().as_str())).collect(&module);
     (frontend, source, collected)
+}
+
+#[test]
+fn attribute_parameter_arity_uses_genuine_structured_prefix_slots() {
+    use mizar_resolve::{declarations::DeclarationShellCollector, symbols::SignatureProjectionExtractor};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    let text = concat!(
+        "definition\n let n,m,x be set;\n",
+        " attr PlainDef: x is plainmarked means thesis;\n",
+        " attr IdentDef: x is n-identmarked means thesis;\n",
+        " attr NumeralDef: x is 2-numeralmarked means thesis;\n",
+        " attr SingleDef: x is (n)-singlemarked means thesis;\n",
+        " attr PairDef: x is (n,2)-pairmarked means thesis;\n",
+        " attr TripleDef: x is (n,2,m)-triplemarked means thesis;\nend;\n",
+    );
+    let (frontend, source, collected) =
+        source_registration_owner_inputs(text, "attribute-arity", "main", 0);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    assert!(collected.diagnostics().is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    let expected: [(&str, &[(T, &str)]); 6] = [
+        ("plainmarked", &[]),
+        ("identmarked", &[(T::Identifier, "n"), (T::ReservedSymbol, "-")]),
+        ("numeralmarked", &[(T::Numeral, "2"), (T::ReservedSymbol, "-")]),
+        ("singlemarked", &[(T::ReservedSymbol, "("), (T::Identifier, "n"), (T::ReservedSymbol, ")"), (T::ReservedSymbol, "-")]),
+        ("pairmarked", &[(T::ReservedSymbol, "("), (T::Identifier, "n"), (T::ReservedSymbol, ","), (T::Numeral, "2"), (T::ReservedSymbol, ")"), (T::ReservedSymbol, "-")]),
+        ("triplemarked", &[(T::ReservedSymbol, "("), (T::Identifier, "n"), (T::ReservedSymbol, ","), (T::Numeral, "2"), (T::ReservedSymbol, ","), (T::Identifier, "m"), (T::ReservedSymbol, ")"), (T::ReservedSymbol, "-")]),
+    ];
+    let patterns = ast.node_views().filter(|node| node.kind() == &K::AttributePattern).collect::<Vec<_>>();
+    assert_eq!(patterns.len(), expected.len());
+    assert_eq!(patterns.iter().map(|pattern| pattern.child_views().last().unwrap().as_token().unwrap().kind).collect::<Vec<_>>(),
+        [T::Identifier, T::UserSymbol, T::UserSymbol, T::UserSymbol, T::UserSymbol, T::UserSymbol]);
+    for (pattern, (name, prefix_tokens)) in patterns.iter().zip(expected) {
+        let children = pattern.child_views().collect::<Vec<_>>();
+        assert_eq!(children.len(), if prefix_tokens.is_empty() { 1 } else { 2 });
+        assert_eq!(children.last().unwrap().as_token().unwrap().text.as_ref(), name);
+        if !prefix_tokens.is_empty() {
+            assert_eq!(children[0].kind(), &K::ParameterPrefix);
+            assert_eq!(children[0].child_views().map(|node| {
+                let token = node.as_token().unwrap();
+                (token.kind, token.text.as_ref())
+            }).collect::<Vec<_>>(), prefix_tokens);
+        }
+    }
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let projections = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main")).extract();
+    assert_eq!(projections.iter().map(|projection| projection.arity()).collect::<Vec<_>>(),
+        [Some(0), Some(1), Some(1), Some(1), Some(2), Some(3)]);
+    use mizar_resolve::{env::SignatureShell, symbols::{SymbolCollector, SymbolDeclarationProjection, validate_source_symbol_env}};
+    let arities = [0, 1, 1, 1, 2, 3];
+    let notations = ["plainmarked", "n - identmarked", "2 - numeralmarked", "( n ) - singlemarked", "( n , 2 ) - pairmarked", "( n , 2 , m ) - triplemarked"];
+    let mut old_unknown = Vec::new();
+    for ((projection, arity), notation) in projections.iter().zip(arities).zip(notations) {
+        assert_eq!(projection.notation_spelling(), Some(notation));
+        let symbol = collected.env().symbols().iter().find(|entry| entry.primary_spelling() == projection.primary_spelling()).unwrap();
+        let definition = collected.env().definitions().by_symbol(symbol.symbol()).unwrap();
+        assert_eq!((definition.arity(), definition.signature(), symbol.signature()),
+            (Some(arity), projection.signature(), projection.signature()));
+        let rows = collected.env().lexical_summaries().visible_candidates(&NamespacePath::new("main"), projection.primary_spelling());
+        if arity == 0 { assert!(rows.is_empty()); }
+        else {
+            assert_eq!(rows.len(), 1);
+            assert_eq!((rows[0].symbol(), rows[0].arity()), (symbol.symbol(), Some(arity)));
+            assert!(collected.env().lexical_summaries().visible_candidates(&NamespacePath::new("main"), notation).is_empty());
+        }
+        let Some(SignatureShell::Opaque { schema, payload }) = projection.signature() else { panic!("parser signature"); };
+        assert_eq!(schema, "parser-signature-v1");
+        let operand = format!(";arity={arity};");
+        assert!(payload.contains(&operand));
+        // Identity-only old projection; lexical flags do not enter symbol identity.
+        old_unknown.push(SymbolDeclarationProjection::new(projection.shell(), projection.namespace().clone(), projection.primary_spelling(), projection.symbol_kind())
+            .with_definition_kind(projection.definition_kind().unwrap()).with_overload_policy(projection.overload_policy())
+            .with_notation_spelling(notation).with_signature(SignatureShell::Opaque { schema: schema.clone(), payload: payload.replace(&operand, ";arity=_;") }));
+    }
+    assert!(collected.env().overloads().is_empty());
+    let old = SymbolCollector::new(ast.source_id, source.module(), &shells, &old_unknown).collect();
+    for symbol in collected.env().symbols().iter() {
+        let prior = old.env().symbols().iter().find(|entry| entry.primary_spelling() == symbol.primary_spelling()).unwrap();
+        assert_ne!(prior.symbol().fqn(), symbol.symbol().fqn());
+        assert_eq!(old.env().definitions().by_symbol(prior.symbol()).unwrap().arity(), None);
+    }
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let overload_text = concat!("definition let n,x,y be set; ",
+        "attr First: x is (n,2)-sharedrank means thesis; attr Second: y is (n,2)-sharedrank means thesis; end;");
+    let (parsed, arena, overloaded) = source_registration_owner_inputs(overload_text, "attribute-arity", "overloaded", 0);
+    assert!(parsed.diagnostics.is_empty() && overloaded.diagnostics().is_empty());
+    let groups = overloaded.env().overloads().iter().collect::<Vec<_>>();
+    assert_eq!(groups.len(), 1);
+    assert_eq!((groups[0].key().spelling(), groups[0].key().arity()), ("( n , 2 ) - sharedrank", Some(2)));
+    assert_eq!(groups[0].candidates().len(), 2);
+    for symbol in groups[0].candidates() {
+        assert_eq!(overloaded.env().definitions().by_symbol(symbol).unwrap().arity(), Some(2));
+    }
+    validate_source_symbol_env(&arena, overloaded.env()).unwrap();
+
+    for (edit, module, skip) in [(text.to_owned(), "main", 0), (format!(":: trivia\n{}", text.replace(" attr ", "    attr ")), "main", 0),
+        (text.replace('x', "subject"), "main", 0), (text.replace('2', "987"), "main", 0), (text.to_owned(), "elsewhere", 0), (text.to_owned(), "main", 7)] {
+        let (replay, arena, actual) = source_registration_owner_inputs(&edit, "attribute-arity", module, skip);
+        assert!(replay.diagnostics.is_empty());
+        assert!(actual.diagnostics().is_empty());
+        validate_source_symbol_env(&arena, actual.env()).unwrap();
+        for (projection, arity) in projections.iter().zip(arities) {
+            let symbol = actual.env().symbols().iter().find(|entry| entry.primary_spelling() == projection.primary_spelling()).unwrap();
+            assert_eq!(actual.env().definitions().by_symbol(symbol.symbol()).unwrap().arity(), Some(arity));
+            let original = collected.env().symbols().iter().find(|entry| entry.primary_spelling() == projection.primary_spelling()).unwrap();
+            if module != "main" { assert_ne!(symbol.symbol(), original.symbol()); }
+            else if edit == text || edit.starts_with(":: trivia") { assert_eq!(symbol.symbol(), original.symbol()); }
+        }
+        if edit == text && skip == 0 && module == "main" { assert_eq!(actual, collected); }
+        if skip != 0 { assert_ne!(arena.source_id(), source.source_id()); }
+    }
+}
+
+#[test]
+fn attribute_parameter_arity_keeps_genuine_frontend_and_wire_lexical_arity_unary() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_lexer::{ExportedSymbolShape, UserSymbolArity, UserSymbolKind};
+    use mizar_resolve::{declarations::DeclarationShellCollector, symbols::SignatureProjectionExtractor};
+    let frontend = task257c4c1_frontend_output(concat!("definition let n,m,x be set; ",
+        "attr Plain: x is arityplain means thesis; attr Pair: x is (n,m)-aritypair means thesis; ",
+        "attr Triple: x is (n,2,m)-aritytriple means thesis; end;"), 164);
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let module = ResolverModuleId::new(frontend.source.package_id.clone(), frontend.source.module_path.clone());
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str())).collect(&module);
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    assert_eq!(ast.node_views().filter(|node| node.kind() == &K::AttributePattern)
+        .map(|node| node.child_views().last().unwrap().as_token().unwrap().kind).collect::<Vec<_>>(),
+        [T::Identifier, T::UserSymbol, T::UserSymbol]);
+    let pairs = collected.pair_frontend_lexical_declarations(&frontend).unwrap();
+    assert_eq!(pairs.len(), 3);
+    let identity = ModuleSummaryIdentity { package_id: module.package().as_str().into(), package_version: None,
+        lockfile_identity: None, module_path: module.path().as_str().into(), language_edition: "2026".into() };
+    let wire = collected.export_frontend_lexical_contributions(&frontend, &identity).unwrap();
+    assert_eq!(wire.len(), 3);
+    for (name, arity) in [("arityplain", 0), ("aritypair", 2), ("aritytriple", 3)] {
+        let (symbol, local) = pairs.iter().find(|(symbol, _)| symbol.primary_spelling() == name).unwrap();
+        assert_eq!((local.kind, local.arity), (UserSymbolKind::Attribute, UserSymbolArity::exact(1)));
+        assert_eq!(collected.env().definitions().by_symbol(symbol.symbol()).unwrap().arity(), Some(arity));
+        let rows = collected.env().lexical_summaries().visible_candidates(&NamespacePath::new(module.path().as_str()), name);
+        if arity == 0 { assert!(rows.is_empty()); }
+        else {
+            assert_eq!(rows.len(), 1);
+            assert_eq!((rows[0].symbol(), rows[0].arity()), (symbol.symbol(), Some(arity)));
+        }
+        let payload = wire.iter().find(|entry| entry.key == symbol.symbol().local().as_str()).unwrap();
+        let shape = ExportedSymbolShape::from_canonical_bytes(payload.payload.as_bytes()).unwrap();
+        assert_eq!((shape.spelling.as_str(), shape.kind, shape.arity),
+            (name, UserSymbolKind::Attribute, UserSymbolArity::exact(1)));
+    }
 }
 
 #[test]

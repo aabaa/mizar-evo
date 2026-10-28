@@ -182,6 +182,9 @@ collection は prefix を checker `AttributeInput` argument へ lower しない�
 exported lexical summary は suffix primary spelling を使う。imported attribute use は
 attribute name を解決し、argument は後続の checker-owned payload extraction で運ぶためである。
 
+非 recovery の通常 attribute definition では構造化 `AttributePattern`/`ParameterPrefix` から主語を除く宣言パラメータ数を収集する。接頭辞なしは0、識別子/数値 atom は1、括弧付き list はスロット数とし、欠落・recovery・未対応構造は unknown を維持する。同じ値を既存 signature/definition/overload/Resolver lexical-summary field に渡すが、attribute use 検証や Checker argument 構築は行わない。
+既知 arity は既存 symbol/signature/export-origin identity に参加するため、unknown からの置換で該当する派生 identity は無効化される。既存 optional field と `parser-signature-v1` で表現でき、schema は変更しない。旧 unknown を0や互換な既知値にはしない。Lexer の単項 `UserSymbolArity` と exported lexical wire arity は別の値として変更しない。
+
 ## Kind ごとの Signature Shape
 
 | Declaration family | Resolver-owned signature payload |

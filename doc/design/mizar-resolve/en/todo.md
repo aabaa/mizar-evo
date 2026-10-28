@@ -697,6 +697,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 56. **[Source algorithm ModuleSummary candidate](../../task_contracts/en/RESOLVE-SOURCE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 57. **[Algorithm ordinary occurrence ownership](../../task_contracts/en/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).** [x]
 
+58. **[Declared attribute parameter arity](../../task_contracts/en/RESOLVE-ATTRIBUTE-PARAMETER-ARITY.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

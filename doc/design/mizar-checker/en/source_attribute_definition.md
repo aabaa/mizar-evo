@@ -116,10 +116,11 @@ definition, and one local-source contribution:
 - its opaque `parser-signature-v1` payload records representation provenance
   only and is never parsed by the checker.
 
-Resolver parameters, binders, and syntactic arity are empty. Task 261 must not
-infer the two context parameters, subject binding, pattern-prefix arity,
-formula root, or correctness status from those empty fields or opaque text.
-The exact private source oracle and lower handoffs own those associations.
+Resolver parameters and binders remain empty; the exact unparameterized pattern
+requires syntactic arity `Some(0)`. Unknown or nonzero arity is rejected. Task 261
+must not infer context parameters, subject binding, formula root or correctness
+from this metadata or opaque text. The exact source oracle and lower handoffs
+retain those associations and the existing source acceptance boundary.
 
 ## Frozen Lower Bundle
 

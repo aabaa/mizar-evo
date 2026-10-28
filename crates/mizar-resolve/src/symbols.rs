@@ -2160,6 +2160,85 @@ impl<'a> SignatureProjectionExtractor<'a> {
             return None;
         }
         let notation = normalized_token_shape(pattern);
+        let arity = (|| {
+            if shell.kind() != DeclarationShellKind::AttributeDefinition
+                || view.kind() != &SurfaceNodeKind::AttributeDefinition
+                || shell_context(self.shells, shell).recovered
+                || view.is_recovered()
+                || pattern.kind() != &SurfaceNodeKind::AttributePattern
+                || pattern.is_recovered()
+                || view
+                    .child_views()
+                    .filter(|child| is_attribute_pattern(child.kind()))
+                    .count()
+                    != 1
+            {
+                return None;
+            }
+            let children = pattern.child_views().collect::<Vec<_>>();
+            if children.len() != pattern.children().len() {
+                return None;
+            }
+            let (name, prefix) = match children.as_slice() {
+                [name] => (*name, None),
+                [prefix, name] if prefix.kind() == &SurfaceNodeKind::ParameterPrefix => {
+                    (*name, Some(*prefix))
+                }
+                _ => return None,
+            };
+            if name.is_recovered()
+                || !name.children().is_empty()
+                || !matches!(name.as_token(), Some(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol) && !token.text.is_empty())
+            {
+                return None;
+            }
+            let Some(prefix) = prefix else {
+                return Some(0);
+            };
+            if prefix.is_recovered() {
+                return None;
+            }
+            let tokens = prefix
+                .child_views()
+                .map(|child| {
+                    if child.is_recovered() || !child.children().is_empty() {
+                        return None;
+                    }
+                    child
+                        .as_token()
+                        .map(|token| (token.kind, token.text.as_ref()))
+                })
+                .collect::<Option<Vec<_>>>()?;
+            if tokens.len() != prefix.children().len() {
+                return None;
+            }
+            let atoms = match tokens.as_slice() {
+                [atom, (SurfaceTokenKind::ReservedSymbol, "-")] => std::slice::from_ref(atom),
+                [
+                    (SurfaceTokenKind::ReservedSymbol, "("),
+                    atoms @ ..,
+                    (SurfaceTokenKind::ReservedSymbol, ")"),
+                    (SurfaceTokenKind::ReservedSymbol, "-"),
+                ] => atoms,
+                _ => return None,
+            };
+            if atoms.is_empty()
+                || atoms.len() % 2 == 0
+                || !atoms.iter().enumerate().all(|(index, (kind, text))| {
+                    if index % 2 == 0 {
+                        matches!(
+                            kind,
+                            SurfaceTokenKind::Identifier | SurfaceTokenKind::Numeral
+                        ) && !text.is_empty()
+                    } else {
+                        *kind == SurfaceTokenKind::ReservedSymbol && *text == ","
+                    }
+                })
+            {
+                return None;
+            }
+            u32::try_from(atoms.len().div_ceil(2)).ok()
+        })();
         let functor_signature_key = match (symbol_kind, definition_kind) {
             (SymbolKind::Functor, DefinitionKind::Functor)
             | (SymbolKind::Predicate, DefinitionKind::Predicate) => {
@@ -2180,8 +2259,11 @@ impl<'a> SignatureProjectionExtractor<'a> {
             symbol_kind,
             definition_kind,
             Some(&notation),
-            None,
+            arity,
         ));
+        if let Some(arity) = arity {
+            projection = projection.with_arity(arity);
+        }
         if let Some(key) = functor_signature_key {
             projection = projection.with_functor_signature_key(key);
         }

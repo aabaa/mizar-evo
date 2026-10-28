@@ -270,8 +270,12 @@ fn source_attribute_definition_rejects_input_and_resolver_corruption() {
         SourceAttributeDefinitionError::InvalidDefiniens { index: 0 },
     );
 
-    let (bad_env, symbol, definition, contribution) =
-        resolver_env_with_path(fixture.source, fixture.module.clone(), vec![4, 0, 7, 1]);
+    let (bad_env, symbol, definition, contribution) = resolver_env_with_path(
+        fixture.source,
+        fixture.module.clone(),
+        vec![4, 0, 7, 1],
+        Some(0),
+    );
     let mut input = fixture.input.clone();
     input.definitions[0].symbol = symbol;
     input.definitions[0].definition = definition;
@@ -288,6 +292,17 @@ fn source_attribute_definition_rejects_input_and_resolver_corruption() {
         ),
         Err(SourceAttributeDefinitionError::InvalidResolverDefinition { index: 0 })
     );
+
+    let source = fixture.source;
+    let module = &fixture.module;
+    for arity in [None, Some(1), Some(2)] {
+        let mut changed = fixture.clone();
+        changed.env = resolver_env_with_path(source, module.clone(), vec![4, 0, 7, 0], arity).0;
+        assert_eq!(
+            changed.build(),
+            Err(SourceAttributeDefinitionError::InvalidResolverDefinition { index: 0 })
+        );
+    }
 
     for error in [
         SourceAttributeDefinitionError::SourceIdentityMismatch,
@@ -583,7 +598,7 @@ fn fixture() -> Fixture {
     let arena = task261_arena(source);
     let source_context = task248_context(source, &module);
     let (env, symbol, definition, contribution) =
-        resolver_env_with_path(source, module.clone(), vec![4, 0, 7, 0]);
+        resolver_env_with_path(source, module.clone(), vec![4, 0, 7, 0], Some(0));
     let source_type = SourceTypeProducer::build(
         task249_input(source, module.clone()),
         source_context.binding_env(),
@@ -710,6 +725,7 @@ fn resolver_env_with_path(
     source: SourceId,
     module: ModuleId,
     path: Vec<u32>,
+    arity: Option<u32>,
 ) -> (SymbolEnv, SymbolId, DefinitionId, SourceContributionId) {
     let origin = SemanticOrigin::new(
         source,
@@ -746,17 +762,19 @@ fn resolver_env_with_path(
         .with_notation_spelling("task261_marked")
         .with_signature(signature.clone()),
     );
-    let definition = indexes.definitions.insert(
-        DefinitionShell::new(
-            symbol.clone(),
-            DefinitionKind::Attribute,
-            origin,
-            contribution,
-        )
-        .with_visibility(Visibility::Public)
-        .with_notation_shape("task261_marked")
-        .with_signature(signature),
-    );
+    let shell = DefinitionShell::new(
+        symbol.clone(),
+        DefinitionKind::Attribute,
+        origin,
+        contribution,
+    )
+    .with_visibility(Visibility::Public)
+    .with_notation_shape("task261_marked")
+    .with_signature(signature);
+    let definition = indexes.definitions.insert(match arity {
+        Some(arity) => shell.with_arity(arity),
+        None => shell,
+    });
     indexes
         .contributions
         .add_symbol(contribution, symbol.clone());

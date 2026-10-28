@@ -93,8 +93,10 @@ exact resolverはshell 2、projection 1、diagnostic 0、attribute symbol/defini
   overloadable/conflict-free、contribution 0。
 - opaque `parser-signature-v1`はrepresentation provenanceだけでcheckerはparseしない。
 
-resolver parameters/binders/arityはemptyです。context parameters、subject、prefix
-arity、formula root、correctnessをempty field/opaque textから推測しません。
+resolver parameters/binders は empty のまま、厳密な無引数 pattern の syntactic arity
+は `Some(0)` を要求し、unknown/非0は拒否します。context parameters、subject、formula root、
+correctness をこの metadata/opaque text から推測せず、exact source oracle/lower handoff
+による関連付けと既存の source acceptance 範囲を維持します。
 
 ## Frozen lower bundle
 

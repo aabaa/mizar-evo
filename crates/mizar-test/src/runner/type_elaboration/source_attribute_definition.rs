@@ -421,7 +421,7 @@ fn exact_resolver_profile(
         || projection.notation_spelling() != Some("task261_marked")
         || projection.symbol_kind() != SymbolKind::Attribute
         || projection.definition_kind() != Some(DefinitionKind::Attribute)
-        || projection.arity().is_some()
+        || projection.arity() != Some(0)
         || projection.overload_policy() != SymbolOverloadPolicy::Overloadable
         || projection.signature().is_none()
     {
@@ -441,7 +441,7 @@ fn exact_resolver_profile(
         || definition.visibility() != Visibility::Public
         || !definition.parameters().is_empty()
         || !definition.binders().is_empty()
-        || definition.arity().is_some()
+        || definition.arity() != Some(0)
         || definition.notation_shape() != Some("task261_marked")
         || definition.conflict().is_some()
         || definition.signature() != symbol.signature()

@@ -2986,6 +2986,7 @@ fn parser_backed_extractor_projects_represented_signature_families() {
         Some("2 - ranked")
     );
 
+    assert_eq!(parameterized_attribute.arity(), None); // Flat tokens are not ParameterPrefix.
     let result = collect(source_id, &shells, &projections);
     assert!(
         result
@@ -3052,6 +3053,133 @@ fn parser_backed_extractor_projects_represented_signature_families() {
             .iter()
             .any(|entry| entry.kind() == RegistrationKind::Reduction)
     );
+}
+
+#[test]
+fn attribute_parameter_arity_preserves_old_projection_fields_and_unknown_shapes() {
+    use SurfaceNodeKind as K;
+    use SurfaceTokenKind as T;
+    let source = source_id();
+    let module = module_id();
+    let attribute = SymbolKind::Attribute;
+    let definition = DefinitionKind::Attribute;
+    let namespace = NamespacePath::new("main");
+    for case in [0, 1, 2, 3, 4, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18] {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let spelling = match case {
+            2 => "",
+            3 => "( ) -",
+            4 => "( n , ) -",
+            7 => "n +",
+            _ => "n -",
+        };
+        let tokens = spelling
+            .split_whitespace()
+            .map(|text| {
+                (
+                    match text {
+                        "n" if case == 8 => T::UserSymbol,
+                        "n" | "m" => T::Identifier,
+                        _ => T::ReservedSymbol,
+                    },
+                    text,
+                )
+            })
+            .collect::<Vec<_>>();
+        let recovery_kind = SyntaxRecoveryKind::MissingTerm;
+        let recovery = (15..=18)
+            .contains(&case)
+            .then(|| builder.add_recovery(recovery_kind, range(source, 60, 60), vec![]));
+        let mut prefix_parts = token_sequence(&mut builder, source, 10, &tokens);
+        if case == 10 {
+            prefix_parts =
+                vec![builder.add_node(K::TermExpression, range(source, 10, 70), prefix_parts)];
+        }
+        if case == 15 {
+            prefix_parts.push(recovery.unwrap());
+        }
+        let mut children = if case == 1 {
+            prefix_parts
+        } else {
+            vec![builder.add_node(K::ParameterPrefix, range(source, 10, 70), prefix_parts)]
+        };
+        let name = builder.add_token(T::UserSymbol, "ranked", range(source, 80, 86));
+        if case == 11 {
+            let second_parts = token_sequence(&mut builder, source, 10, &tokens);
+            children.push(builder.add_node(
+                K::ParameterPrefix,
+                range(source, 10, 70),
+                second_parts,
+            ));
+        }
+        if case != 13 {
+            children.push(name);
+        }
+        if case == 16 {
+            children.push(recovery.unwrap());
+        }
+        let mut decl_parts = if case == 14 {
+            children
+        } else {
+            vec![builder.add_node(K::AttributePattern, range(source, 10, 90), children)]
+        };
+        if case == 17 {
+            decl_parts.push(recovery.unwrap());
+        }
+        let declaration =
+            builder.add_node(K::AttributeDefinition, range(source, 0, 100), decl_parts);
+        let mut block_children = vec![declaration];
+        if case == 18 {
+            block_children.push(recovery.unwrap());
+        }
+        let block = builder.add_node(
+            K::DefinitionBlockItem,
+            range(source, 0, 110),
+            block_children,
+        );
+        let root = finish_module(&mut builder, source, vec![block]);
+        let ast = builder.finish(Some(root), None);
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let projections =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+        assert_eq!(projections.len(), 1, "case {case}");
+        let projection = &projections[0];
+        let view = ast
+            .node_views()
+            .find(|node| node.kind() == &K::AttributeDefinition)
+            .unwrap();
+        let pattern =
+            first_child_matching(view, |kind| kind == &K::AttributePattern).unwrap_or(view);
+        let spelling =
+            preferred_symbol_spelling(pattern).unwrap_or_else(|| normalized_token_shape(pattern));
+        let notation = normalized_token_shape(pattern);
+        let signature = parser_signature(view, attribute, definition, Some(&notation), None);
+        // The frozen old extractor differs only in the two arity operands.
+        let mut old = SymbolDeclarationProjection::new(
+            projection.shell(),
+            namespace.clone(),
+            spelling,
+            attribute,
+        )
+        .with_definition_kind(definition)
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_signature(signature);
+        if !notation.is_empty() {
+            old = old.with_notation_spelling(notation);
+        }
+        if lexer_visible_pattern(pattern) {
+            old = old.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
+        }
+        let mut expected = old;
+        if case == 0 {
+            expected.arity = Some(1);
+            let Some(SignatureShell::Opaque { payload, .. }) = &mut expected.signature else {
+                unreachable!()
+            };
+            *payload = payload.replace(";arity=_;", ";arity=1;");
+        }
+        assert_eq!(projection, &expected, "case {case}");
+    }
 }
 
 #[test]

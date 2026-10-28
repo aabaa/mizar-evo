@@ -655,6 +655,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 56. **[Source algorithm ModuleSummary candidate](../../task_contracts/ja/RESOLVE-SOURCE-ALGORITHM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 57. **[Algorithm ordinary occurrence ownership](../../task_contracts/ja/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).** [x]
 
+58. **[Declared attribute parameter arity](../../task_contracts/ja/RESOLVE-ATTRIBUTE-PARAMETER-ARITY.md).** [x]
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、

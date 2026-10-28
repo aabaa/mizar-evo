@@ -869,7 +869,7 @@ fn validate_resolver_definition(
         || definition.visibility() != Visibility::Public
         || !definition.parameters().is_empty()
         || !definition.binders().is_empty()
-        || definition.arity().is_some()
+        || definition.arity() != Some(0)
         || definition.notation_shape() != Some("task261_marked")
         || definition.doc_attachment().is_some()
         || definition.contribution() != row.contribution
