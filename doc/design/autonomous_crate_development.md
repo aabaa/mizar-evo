@@ -510,6 +510,11 @@ Local test cadence is separate from full/light review tiers; all required
 independent reviews and semantic gates remain in force. Ten changed tasks is
 an initial ceiling on delayed regression detection, not a measured optimum.
 
+For local Cargo compilation, recommend `CARGO_BUILD_JOBS=4` as the default
+(or `-j 4` for individual Cargo commands). Reduce the job count for
+concurrent builds or memory pressure. Build jobs are independent of
+test-runner threads and required test coverage.
+
 - **Each changed task:** run `cargo fmt --check`, the Clippy command in
   `AGENTS.md`, new/changed regression tests, affected unit and corpus checks,
   and a short representative end-to-end check for executable changes.
