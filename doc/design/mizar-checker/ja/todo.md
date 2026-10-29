@@ -34,6 +34,7 @@
 - [x] [Property fixed-width local spelling](../../task_contracts/ja/CHECKER-PROPERTY-LOCAL-SPELLING.md).
 - [x] [Property joint lower relocation](../../task_contracts/ja/TEST-PROPERTY-LOWER-RELOCATION.md).
 - [x] [Functor parameter Type layout](../../task_contracts/ja/CHECKER-FUNCTOR-PARAMETER-TYPE-LAYOUT.md).
+- [x] [Functor joint lower layout](../../task_contracts/ja/TEST-FUNCTOR-JOINT-LOWER-LAYOUT.md).
 
 ## 状態の凡例
 
