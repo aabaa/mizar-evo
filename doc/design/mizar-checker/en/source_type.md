@@ -278,9 +278,15 @@ returns `2/4/0/2`:
 
 The exact base applications are `(binding 0, ordinal 0, root 0)` and
 `(binding 1, ordinal 1, root 1)`. Base expressions 0/1 use node/head sites
-63/62 and 67/66, ranges `22..25` and `38..41`, `Bare`, builtin `set`, normal,
-and spellings/head spellings `set`; the argument and definition-return tables
-are empty. Any other base shape returns `InvalidDefinitionReturnBase`.
+63/62 and 67/66, `Bare`, builtin `set`, normal, and spellings/head spellings `set`;
+the argument and definition-return tables are empty. Each head/root range is the
+same positive current-source three-byte extent. The two extents are ordered and
+nonoverlapping, allowing adjacency, and end before or at the first still-fixed
+return-owner schema start. The original ranges are `22..25` and `38..41`.
+Other base shapes return `InvalidDefinitionReturnBase`; coherent moved bases
+are admitted and can reach the unchanged later return checks. This scalar profile
+authenticates no raw source. Builder and installation use the same predicate;
+return-owner/type coordinates and their error ownership remain unchanged.
 
 Exactly two rows of this normal, argument-free, bare builtin-`set`
 return-expression shape are admitted. Source/module identity must equal the

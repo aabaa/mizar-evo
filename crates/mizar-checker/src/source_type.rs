@@ -2413,8 +2413,6 @@ impl fmt::Display for SourceTypeError {
 
 impl Error for SourceTypeError {}
 
-const TASK_249R_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
-    [(63, 62, 22, 25), (67, 66, 38, 41)];
 const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize, usize); 2] =
     [(84, 61, 118, 80, 79, 105), (95, 121, 179, 87, 86, 163)];
 const TASK_249M_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
@@ -2472,8 +2470,8 @@ fn task_249r_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
     {
         return false;
     }
-    for (index, (site, head_site, start, end)) in TASK_249R_BASE_EXPRESSIONS.into_iter().enumerate()
-    {
+    let mut previous_end = None;
+    for (index, (site, head_site)) in [(63, 62), (67, 66)].into_iter().enumerate() {
         let Some(application) = handoff
             .applications
             .get(SourceTypeApplicationId::new(index))
@@ -2490,11 +2488,18 @@ fn task_249r_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
             || expression.id != SourceTypeExpressionId::new(index)
             || expression.source_id != handoff.source_id
             || expression.module_id != handoff.module_id
-            || expression.source_range != task_249r_range(handoff.source_id, start, end)
+            || !valid_range(handoff.source_id, expression.source_range)
+            || expression
+                .source_range
+                .end
+                .checked_sub(expression.source_range.start)
+                != Some(3)
+            || expression.source_range.end > TASK_249R_DEFINITION_RETURNS[0].1
+            || previous_end.is_some_and(|end| end > expression.source_range.start)
             || !is_node_site(&expression.site, site)
             || expression.spelling != "set"
             || !is_node_site(&expression.head_site, head_site)
-            || expression.head_range != task_249r_range(handoff.source_id, start, end)
+            || expression.head_range != expression.source_range
             || expression.head_spelling != "set"
             || expression.form != SourceTypeApplicationForm::Bare
             || !matches!(expression.head, SourceTypeHead::BuiltinSet)
@@ -2502,6 +2507,7 @@ fn task_249r_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
         {
             return false;
         }
+        previous_end = Some(expression.source_range.end);
     }
     true
 }
@@ -14946,5 +14952,181 @@ mod tests {
             failures.is_empty(),
             "public relocations refused: {failures:?}"
         );
+    }
+
+    #[test]
+    fn task_249r_public_moved_parameter_types_install_and_replay() {
+        let fixture = task_249r_fixture();
+        let original_base = fixture.base.clone();
+        let original_arena = fixture.arena.clone();
+        let original_input = fixture.extension.clone();
+        let exact = SourceTypeDefinitionReturnProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("original public Task249R extension");
+        let mut outcomes = Vec::new();
+        for (label, ranges, reject) in [
+            ("first_only", [(23, 26), (38, 41)], false),
+            ("nonuniform_both", [(23, 26), (40, 43)], false),
+            ("adjacent_endpoint", [(55, 58), (58, 61)], false),
+            ("cross_prefix", [(23, 26), (59, 62)], true),
+            ("short_equal", [(23, 25), (38, 41)], true),
+            ("wide_equal", [(23, 27), (38, 41)], true),
+        ] {
+            let spans = ranges.map(|(start, end)| range(fixture.source, start, end));
+            let bindings = binding_env(fixture.source, &fixture.module, &spans);
+            let symbols = SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default());
+            let nodes = fixture
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    match id.index() {
+                        62 | 63 => node.anchor = SourceAnchor::Range(spans[0]),
+                        66 | 67 => node.anchor = SourceAnchor::Range(spans[1]),
+                        _ => {}
+                    }
+                    node
+                })
+                .collect();
+            let arena = TypedArena::try_new(fixture.arena.root(), nodes)
+                .expect("normal arena for moved parameter types");
+            let input = SourceTypeHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                applications: (0..2)
+                    .map(|index| SourceTypeApplicationInput {
+                        binding: BindingId::new(index),
+                        source_ordinal: index,
+                        root: SourceTypeExpressionId::new(index),
+                    })
+                    .collect(),
+                expressions: [(63, 62), (67, 66)]
+                    .into_iter()
+                    .zip(ranges)
+                    .map(|((site, head), (start, end))| {
+                        task_249r_expression(
+                            fixture.source,
+                            &fixture.module,
+                            site,
+                            head,
+                            start,
+                            end,
+                        )
+                    })
+                    .collect(),
+                arguments: Vec::new(),
+            };
+            let base = SourceTypeProducer::build(input, &bindings, &symbols, &arena)
+                .expect("actual public generic Type construction");
+            let generic_typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                base.clone(),
+                arena.clone(),
+            )
+            .expect("actual public generic Type installation");
+            assert_eq!(generic_typed.source_type(), Some(&base));
+            for (index, span) in spans.into_iter().enumerate() {
+                let application = base
+                    .applications()
+                    .get(SourceTypeApplicationId::new(index))
+                    .unwrap();
+                assert_eq!(application.id(), SourceTypeApplicationId::new(index));
+                assert_eq!(application.binding(), BindingId::new(index));
+                assert_eq!(application.source_ordinal(), index);
+                assert_eq!(application.root(), SourceTypeExpressionId::new(index));
+                let expression = base.expressions().get(application.root()).unwrap();
+                assert_eq!(expression.id(), application.root());
+                assert_eq!(expression.source_range(), span);
+                assert_eq!(expression.head_range(), span);
+                assert_eq!(
+                    bindings
+                        .bindings()
+                        .get(application.binding())
+                        .unwrap()
+                        .type_site,
+                    BindingTypeSite::Source(span)
+                );
+            }
+            let base_before = base.clone();
+            let result = SourceTypeDefinitionReturnProducer::extend(
+                &base,
+                fixture.extension.clone(),
+                &arena,
+            );
+            assert_eq!(base, base_before);
+            if reject {
+                assert_eq!(result, Err(SourceTypeError::InvalidDefinitionReturnBase));
+            } else {
+                outcomes.push((label, base, arena, result));
+            }
+        }
+        assert_eq!(outcomes.len(), 3);
+        let failures = outcomes
+            .iter()
+            .filter_map(|(label, _, _, result)| {
+                result
+                    .as_ref()
+                    .err()
+                    .map(|error| format!("{label}: {error:?}"))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            failures.is_empty(),
+            "public moved-base extensions: {failures:?}"
+        );
+        for (label, base, arena, result) in outcomes {
+            let handoff = result.expect("all public moved-base extensions succeeded");
+            assert_eq!(handoff.source_id(), fixture.source);
+            assert_eq!(handoff.module_id(), &fixture.module);
+            assert_eq!(handoff.applications(), base.applications());
+            assert_eq!(handoff.definition_returns(), exact.definition_returns());
+            for (id, expression) in handoff.expressions().iter() {
+                let expected = if id.index() < 2 { &base } else { &exact };
+                assert_eq!(Some(expression), expected.expressions().get(id));
+            }
+            assert_eq!(
+                handoff,
+                SourceTypeDefinitionReturnProducer::extend(
+                    &base,
+                    fixture.extension.clone(),
+                    &arena,
+                )
+                .expect("deterministic public extension"),
+                "{label}"
+            );
+            let typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                handoff.clone(),
+                arena,
+            )
+            .expect("actual moved Task249R Typed installation");
+            assert_eq!(typed.source_type(), Some(&handoff));
+            assert!(typed.source_context().is_none());
+            assert!(typed.source_functor_definition().is_none());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.initial_obligations().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            let resolved = assemble_empty_resolved(&typed);
+            assert_eq!(resolved.source_type(), Some(&handoff));
+            assert!(resolved.source_context().is_none());
+            assert!(resolved.source_functor_definition().is_none());
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+        }
+        assert_eq!(fixture.base, original_base);
+        assert_eq!(fixture.arena, original_arena);
+        assert_eq!(fixture.extension, original_input);
     }
 }

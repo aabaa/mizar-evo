@@ -188,10 +188,14 @@ expression/head nodes 80/79/range `105..108`/root 2。row 1はnode 95/
 admitし、両方ともnormal、argument-free、`Bare` builtin `set`である。
 
 exact base applicationは`(binding 0, ordinal 0, root 0)` / `(binding 1,
-ordinal 1, root 1)`。base expression 0/1はnode/head 63/62と67/66、range
-`22..25`/`38..41`、`Bare` builtin `set`、normal、spelling/head spelling `set`、
-argument/definition-return emptyである。他のbase shapeは
-`InvalidDefinitionReturnBase`となる。
+ordinal 1, root 1)`。base expression 0/1はnode/head 63/62と67/66、
+head/rootは同一のcurrent-source正幅3byte range、`Bare` builtin `set`、normal、
+両spelling `set`、argument/definition-return emptyである。2rangeはsource順で
+非重複（隣接可）、終端は固定された最初のreturn-owner schema開始以下とする。
+元のrangeは`22..25`/`38..41`。他のbase shapeは`InvalidDefinitionReturnBase`。
+整合する移動baseは受理され、従来の後続return検査へ進む。このscalar profileは
+raw sourceを認証しない。構築と再取り付けは同一predicateを使い、return-owner/
+type座標とエラーの担当段階は変更しない。
 
 source/moduleはbaseと一致し、return ordinal/IDはvector order。definition owner
 rangeはactual same-source arena nodeのexact rangeで、ordered/nonempty/
