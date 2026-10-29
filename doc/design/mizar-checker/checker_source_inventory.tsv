@@ -38,6 +38,6 @@ tests/support/source_attribute_definition_unit.rs	1484	test-support	doc/design/m
 tests/support/source_functor_definition_unit.rs	3847	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
 tests/support/source_mode_definition_unit.rs	1265	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
 tests/support/source_predicate_definition_unit.rs	2579	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
-tests/support/source_property_implementation_unit.rs	2978	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
+tests/support/source_property_implementation_unit.rs	3225	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
 tests/support/source_structure_definition_unit.rs	2868	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none
 tests/support/source_variable_semantics_unit.rs	955	test-support	doc/design/mizar-checker/en/00.crate_plan.md	no	no	keep-test-support	none

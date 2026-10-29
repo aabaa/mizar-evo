@@ -2976,3 +2976,250 @@ fn task_264_public_fixed_width_local_spelling_installs_and_replays() {
         "public local spelling refusals: {failures:?}"
     );
 }
+
+#[test]
+fn task_264_public_nonuniform_lower_relocation_installs_and_replays() {
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let original = fixture(profile);
+        let base = unrelated_baseline(original.source);
+        let original_lower = original.typed_base(base.clone());
+        let mut replays = Vec::new();
+        for _ in 0..2 {
+            let mut f = original.clone();
+            let declaration_range = range(f.source, 126, 127);
+            let written_type_range = range(f.source, 132, 146);
+            let shell = property_shell(f.source, &f.module, profile);
+            let scope = LocalTermScope::new(vec![4]);
+            f.context = SourceBindingContextProducer::build(SourceBindingContextInput {
+                source_id: f.source,
+                module_id: f.module.clone(),
+                module_site: node_site(root_node(profile)),
+                items: vec![SourceItemInput {
+                    shell,
+                    shell_ordinal: 4,
+                    role: SourceItemRole::PropertyImplementation,
+                    module_id: f.module.clone(),
+                    source_range: range(f.source, 108, profile_end(profile)),
+                    parent: None,
+                    visibility: SourceItemVisibility::Unspecified,
+                    site: node_site(owner_node(profile)),
+                    local_scope: Some(scope.clone()),
+                    recovery: SourceItemRecovery::Normal,
+                }],
+                bindings: vec![SourceBindingSiteInput {
+                    shell,
+                    context_owner: SourceBindingContextOwner::Shell(shell),
+                    source_ordinal: 0,
+                    spelling: "M".to_owned(),
+                    declaration_range,
+                    written_type_range,
+                    site: node_site(parameter_node(profile)),
+                    role: SourceBindingSiteRole::DefinitionParameter {
+                        local: LocalTermBinding::new("M", scope.clone(), declaration_range, 0),
+                    },
+                    recovery: BindingRecoveryState::Normal,
+                }],
+            })
+            .expect("relocated public Context")
+            .into_complete()
+            .expect("complete relocated Context")
+            .into_handoff();
+            let type_path = if profile == TestProfile::Means {
+                62
+            } else {
+                44
+            };
+            let moved = [
+                (19, range(f.source, 122, 125)),
+                (20, declaration_range),
+                (21, range(f.source, 128, 130)),
+                (22, written_type_range),
+                (23, range(f.source, 146, 147)),
+                (type_path, written_type_range),
+                (type_path + 1, written_type_range),
+                (type_path + 2, written_type_range),
+                (parameter_node(profile), declaration_range),
+            ];
+            let nodes = original
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    if let Some((_, span)) = moved.iter().find(|(index, _)| *index == id.index()) {
+                        node.anchor = SourceAnchor::Range(*span);
+                    }
+                    node
+                })
+                .collect();
+            f.arena =
+                TypedArena::try_new(original.arena.root(), nodes).expect("relocated normal arena");
+            let mut expressions = original.source_type.expressions().iter().map(|(id, row)| {
+                let span = if id.index() == 0 {
+                    written_type_range
+                } else {
+                    row.source_range()
+                };
+                SourceTypeExpressionInput {
+                    source_id: row.source_id(),
+                    module_id: row.module_id().clone(),
+                    site: row.site().clone(),
+                    source_range: span,
+                    spelling: row.spelling().to_owned(),
+                    head_site: row.head_site().clone(),
+                    head_range: span,
+                    head_spelling: row.head_spelling().to_owned(),
+                    form: row.form(),
+                    head: row.head().clone(),
+                    recovery: row.recovery(),
+                }
+            });
+            let generic = SourceTypeProducer::build(
+                SourceTypeHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    applications: vec![SourceTypeApplicationInput {
+                        binding: BindingId::new(0),
+                        source_ordinal: 0,
+                        root: SourceTypeExpressionId::new(0),
+                    }],
+                    expressions: vec![expressions.next().expect("parameter type")],
+                    arguments: Vec::new(),
+                },
+                f.context.binding_env(),
+                &f.env,
+                &f.arena,
+            )
+            .expect("relocated generic Type against actual Context");
+            f.source_type = SourceTypeStructureMemberProducer::extend_property_implementation(
+                &generic,
+                SourceTypeStructureMemberHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    members: original
+                        .source_type
+                        .structure_members()
+                        .iter()
+                        .zip(expressions)
+                        .map(|((_, member), expression)| SourceTypeStructureMemberInput {
+                            member_site: member.member_site().clone(),
+                            member_range: member.member_range(),
+                            source_ordinal: member.source_ordinal(),
+                            expression,
+                        })
+                        .collect(),
+                },
+                &f.arena,
+            )
+            .expect("actual two-member PI extension");
+            f.terms = primary_terms(f.source, f.module.clone(), profile, &f.context, &f.arena);
+            if profile == TestProfile::Means {
+                f.formula = Some(atomic_formula(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                ));
+            } else {
+                f.structure = Some(structure(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                    false,
+                ));
+            }
+            let declaration = f.context.declarations().iter().next().unwrap().1;
+            let binding = f
+                .context
+                .binding_env()
+                .bindings()
+                .get(declaration.binding)
+                .unwrap();
+            assert_eq!(declaration.declaration_range, declaration_range);
+            assert_eq!(declaration.written_type_range, written_type_range);
+            assert_eq!(declaration.site, node_site(parameter_node(profile)));
+            assert_eq!(binding.declaration_range, declaration_range);
+            assert_eq!(
+                binding.type_site,
+                crate::binding_env::BindingTypeSite::Source(written_type_range)
+            );
+            assert_eq!(
+                binding.identity,
+                crate::binding_env::BinderIdentity::ResolverLocal {
+                    scope,
+                    ordinal: 0,
+                    declaration_range,
+                }
+            );
+            let application = f.source_type.applications().iter().next().unwrap().1;
+            assert_eq!(application.binding(), declaration.binding);
+            assert_eq!(application.root(), SourceTypeExpressionId::new(0));
+            let root = f.source_type.expressions().get(application.root()).unwrap();
+            assert_eq!(root.source_range(), written_type_range);
+            assert_eq!(root.head_range(), written_type_range);
+            assert_eq!(
+                root.head(),
+                original
+                    .source_type
+                    .expressions()
+                    .get(application.root())
+                    .unwrap()
+                    .head()
+            );
+            assert_eq!(
+                f.source_type.structure_members(),
+                original.source_type.structure_members()
+            );
+            for (id, row) in f.source_type.expressions().iter().skip(1) {
+                assert_eq!(Some(row), original.source_type.expressions().get(id));
+            }
+            assert_eq!(f.context.items(), original.context.items());
+            assert_eq!(f.context.context_links(), original.context.context_links());
+            assert_eq!(f.terms, original.terms);
+            assert_eq!(f.formula, original.formula);
+            assert_eq!(f.structure, original.structure);
+            let typed = f.typed_base(base.clone());
+            let resolved = assemble_empty(&typed).expect("joint relocated lower final clone");
+            assert_ne!(
+                resolved,
+                assemble_empty(&f.typed_base(InitialObligationTable::new()))
+                    .expect("empty-baseline lower final clone")
+            );
+            assert_eq!(typed.source_context(), Some(&f.context));
+            assert_eq!(typed.source_type(), Some(&f.source_type));
+            assert_eq!(typed.source_term(), Some(&f.terms));
+            assert_eq!(typed.source_atomic_formula(), f.formula.as_ref());
+            assert_eq!(typed.source_structure(), f.structure.as_ref());
+            assert_eq!(resolved.source_context(), typed.source_context());
+            assert_eq!(resolved.source_type(), typed.source_type());
+            assert_eq!(resolved.source_term(), typed.source_term());
+            assert_eq!(
+                resolved.source_atomic_formula(),
+                typed.source_atomic_formula()
+            );
+            assert_eq!(resolved.source_structure(), typed.source_structure());
+            assert_eq!(typed.initial_obligations(), &base);
+            assert!(!base.is_empty());
+            assert!(typed.source_property_implementation().is_none());
+            assert!(resolved.source_property_implementation().is_none());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+            replays.push((typed, resolved));
+        }
+        assert_eq!(replays[0], replays[1]);
+        assert_eq!(original.typed_base(base), original_lower);
+    }
+}

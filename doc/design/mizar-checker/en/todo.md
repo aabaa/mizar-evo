@@ -35,6 +35,7 @@
 - [x] [SourceType architecture scan](../../task_contracts/en/CHECKER-SOURCE-TYPE-BOUNDARY-SCAN.md).
 
 - [x] [Property fixed-width local spelling](../../task_contracts/en/CHECKER-PROPERTY-LOCAL-SPELLING.md).
+- [x] [Property joint lower relocation](../../task_contracts/en/TEST-PROPERTY-LOWER-RELOCATION.md).
 
 ## Status Legend
 

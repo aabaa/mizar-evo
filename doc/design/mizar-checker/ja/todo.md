@@ -32,6 +32,7 @@
 - [x] [SourceType architecture scan](../../task_contracts/ja/CHECKER-SOURCE-TYPE-BOUNDARY-SCAN.md).
 
 - [x] [Property fixed-width local spelling](../../task_contracts/ja/CHECKER-PROPERTY-LOCAL-SPELLING.md).
+- [x] [Property joint lower relocation](../../task_contracts/ja/TEST-PROPERTY-LOWER-RELOCATION.md).
 
 ## 状態の凡例
 
