@@ -10,6 +10,25 @@ property implementation は subject structure の resolver-authenticated propert
 check する。`equals` は existence/uniqueness を要求せず direct value term を normalize し、
 `means` は `it` を束縛して ordered existence と uniqueness の両 clause を要求する。
 
+## Fixed-width local spelling
+
+upper transport は元の token 座標と spelling frame を維持する。非 trivia byte の
+位置を保ち、既存 gap では同じ byte 幅の space/tab/LF、または三 byte gap の
+空の通常行コメント `::` と LF だけを許す。local text 長は元の範囲幅と一致する。
+spelling 検査には lexer、arena 参照、source provider の証拠を用いない。
+
+各 row は元の段階で自身の text を検査する。parameter、target、definiens、
+correctness は、受理した implementation text の対応 slice と子の段階で照合する。
+Means Atomic は正規化表記 `it = it`、既存の下位検査と fingerprint を維持し、
+Property の物理的 trivia は Atomic にコピーしない。Equals target/selector は
+gapless のまま。Property の物理的な文字列と fingerprint を維持して再検証する。
+先行する下位 installation と元の shape/baseline/resolver/row/Context/lower/Arena
+順序・エラー責務を維持する。
+
+これは渡された local text の整合性であり、任意 trivia、token 移動、raw source
+admission、Property 全体の layout 境界は別の課題である。以下の元ソース、座標、
+arena oracle、意味論・obligation 境界を維持する。
+
 ## Task 264 scope / authority
 
 Task 264はstruct property implementationとinitial correctness obligationの

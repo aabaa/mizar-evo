@@ -2514,3 +2514,465 @@ fn assemble_empty(typed_ast: &TypedAst) -> Result<ResolvedTypedAst, ResolvedType
         statement_proofs: None,
     })
 }
+
+#[test]
+fn task_264_public_fixed_width_local_spelling_installs_and_replays() {
+    let mut failures = Vec::new();
+    let mut attempts = 0;
+    let mut boundaries = 0;
+    let mut controls = 0;
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let original = fixture(profile);
+        let exact = original.projection(&InitialObligationTable::new());
+        let original_lower = original.typed_base(InitialObligationTable::new());
+        assert!(original_lower.source_property_implementation().is_none());
+        for layout in ["implementation_comment", "coherent_tabs", "coherent_lf"] {
+            let mut f = original.clone();
+            f.input.implementations[0].spelling = if layout == "implementation_comment" {
+                original.input.implementations[0]
+                    .spelling
+                    .replacen("\n  ", "::\n", 1)
+            } else {
+                original.input.implementations[0].spelling.replace(
+                    ' ',
+                    if layout == "coherent_tabs" {
+                        "\t"
+                    } else {
+                        "\n"
+                    },
+                )
+            };
+            let owner = f.input.implementations[0].source_range;
+            let text = f.input.implementations[0].spelling.clone();
+            assert_ne!(text, original.input.implementations[0].spelling);
+            for (spelling, span) in [
+                {
+                    let row = &mut f.input.parameters[0];
+                    (&mut row.spelling, row.source_range)
+                },
+                {
+                    let row = &mut f.input.targets[0];
+                    (&mut row.spelling, row.source_range)
+                },
+                {
+                    let row = &mut f.input.definientia[0];
+                    (&mut row.spelling, row.source_range)
+                },
+            ]
+            .into_iter()
+            .chain(
+                f.input
+                    .correctness
+                    .iter_mut()
+                    .map(|row| (&mut row.spelling, row.source_range)),
+            ) {
+                *spelling = text
+                    .get(
+                        span.start.checked_sub(owner.start).unwrap()
+                            ..span.end.checked_sub(owner.start).unwrap(),
+                    )
+                    .expect("child within supplied implementation text")
+                    .to_owned();
+            }
+            for (spelling, span) in [
+                (text.as_str(), owner),
+                (
+                    f.input.parameters[0].spelling.as_str(),
+                    f.input.parameters[0].source_range,
+                ),
+                (
+                    f.input.targets[0].spelling.as_str(),
+                    f.input.targets[0].source_range,
+                ),
+                (
+                    f.input.definientia[0].spelling.as_str(),
+                    f.input.definientia[0].source_range,
+                ),
+            ]
+            .into_iter()
+            .chain(
+                f.input
+                    .correctness
+                    .iter()
+                    .map(|row| (row.spelling.as_str(), row.source_range)),
+            ) {
+                assert_eq!(spelling.len(), span.end.checked_sub(span.start).unwrap());
+                assert_eq!(span.source_id, f.source);
+            }
+            let mut geometry = f.input.clone();
+            geometry.implementations[0].spelling =
+                original.input.implementations[0].spelling.clone();
+            geometry.parameters[0].spelling = original.input.parameters[0].spelling.clone();
+            geometry.targets[0].spelling = original.input.targets[0].spelling.clone();
+            geometry.definientia[0].spelling = original.input.definientia[0].spelling.clone();
+            for (row, old) in geometry
+                .correctness
+                .iter_mut()
+                .zip(&original.input.correctness)
+            {
+                row.spelling = old.spelling.clone();
+            }
+            assert_eq!(geometry, original.input);
+            assert_eq!(f.input.targets[0].spelling, "M.marker");
+            assert_eq!(
+                &f.input.targets[0].symbol,
+                exact.handoff().carrier_identity().property_symbol()
+            );
+            assert_eq!(
+                f.context
+                    .binding_env()
+                    .bindings()
+                    .get(BindingId::new(0))
+                    .unwrap()
+                    .type_site,
+                crate::binding_env::BindingTypeSite::Source(range(f.source, 130, 144))
+            );
+            f.terms = primary_terms(f.source, f.module.clone(), profile, &f.context, &f.arena);
+            assert_eq!(f.terms, original.terms);
+            if profile == TestProfile::Means {
+                f.formula = Some(atomic_formula(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                ));
+                assert_eq!(f.formula, original.formula);
+                let formula = f.formula.as_ref().unwrap();
+                assert_eq!(
+                    formula
+                        .formulas()
+                        .get(SourceAtomicFormulaId::new(0))
+                        .unwrap()
+                        .spelling(),
+                    "it = it"
+                );
+                assert_eq!(
+                    formula.debug_text(),
+                    original.formula.as_ref().unwrap().debug_text()
+                );
+                if layout == "coherent_tabs" {
+                    assert_eq!(f.input.definientia[0].spelling, "it\t=\tit");
+                } else if layout == "coherent_lf" {
+                    assert_eq!(f.input.definientia[0].spelling, "it\n=\nit");
+                }
+            } else {
+                f.structure = Some(structure(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                    false,
+                ));
+                assert_eq!(f.structure, original.structure);
+                assert_eq!(f.input.definientia[0].spelling, "M.carrier");
+            }
+            assert_eq!(f.env, original.env);
+            assert_eq!(f.context, original.context);
+            assert_eq!(f.source_type, original.source_type);
+            assert_eq!(f.arena, original.arena);
+            let lower = f.typed_base(InitialObligationTable::new());
+            assert_eq!(lower.source_context(), Some(&f.context));
+            assert_eq!(lower.source_type(), Some(&f.source_type));
+            assert_eq!(lower.source_term(), Some(&f.terms));
+            assert_eq!(lower.source_atomic_formula(), f.formula.as_ref());
+            assert_eq!(lower.source_structure(), f.structure.as_ref());
+            assert!(lower.initial_obligations().is_empty());
+            assert!(lower.source_property_implementation().is_none());
+            let before = f.clone();
+            if layout == "coherent_lf" {
+                boundaries += 1;
+            } else {
+                attempts += 1;
+            }
+            let result = f.build(&InitialObligationTable::new());
+            assert_eq!(f.env, before.env);
+            assert_eq!(f.context, before.context);
+            assert_eq!(f.source_type, before.source_type);
+            assert_eq!(f.terms, before.terms);
+            assert_eq!(f.formula, before.formula);
+            assert_eq!(f.structure, before.structure);
+            assert_eq!(f.arena, before.arena);
+            let projection = match result {
+                Ok(projection) => projection,
+                Err(error) => {
+                    failures.push(format!("{profile:?}/{layout}: {error:?}"));
+                    continue;
+                }
+            };
+            assert_exact_rows(&f, projection.handoff(), projection.initial_obligations());
+            assert_eq!(projection.handoff().source_id(), f.source);
+            assert_eq!(projection.handoff().module_id(), &f.module);
+            assert_eq!(
+                projection.handoff().carrier_identity(),
+                exact.handoff().carrier_identity()
+            );
+            let fingerprint = projection.handoff().debug_text();
+            let replay = f.projection(&InitialObligationTable::new());
+            assert_eq!(replay.handoff(), projection.handoff());
+            assert_eq!(replay.handoff().debug_text(), fingerprint);
+            assert_ne!(fingerprint, exact.handoff().debug_text());
+            let base = unrelated_baseline(f.source);
+            let base_before = base.clone();
+            let baseline = f.typed_base(base.clone());
+            let projected = f.projection(&base);
+            assert_eq!(base, base_before);
+            assert_eq!(projected.base_initial_obligations(), &base);
+            assert_eq!(
+                projected
+                    .initial_obligations()
+                    .get(InitialObligationId::new(0)),
+                base.get(InitialObligationId::new(0))
+            );
+            assert_eq!(
+                projected.initial_obligations().len(),
+                base.len() + f.input.correctness.len()
+            );
+            for (index, row) in projected.handoff().correctness().iter() {
+                let expected = &f.input.correctness[index.index()];
+                assert_eq!(row.spelling(), expected.spelling);
+                assert_eq!(row.obligation().index(), base.len() + index.index());
+                let obligation = projected
+                    .initial_obligations()
+                    .get(row.obligation())
+                    .unwrap();
+                assert_eq!(obligation.owner, expected.site);
+                assert_eq!(obligation.source_range, expected.source_range);
+                assert_eq!(
+                    obligation.kind,
+                    if index.index() == 0 {
+                        InitialObligationKind::PropertyImplementationExistence
+                    } else {
+                        InitialObligationKind::PropertyImplementationUniqueness
+                    }
+                );
+                assert_eq!(obligation.status, InitialObligationStatus::Pending);
+                assert!(obligation.assumptions.is_empty());
+            }
+            let typed = baseline
+                .clone()
+                .with_source_property_implementation(projected.clone())
+                .expect("physical spelling installs on nonempty unrelated baseline");
+            assert!(baseline.source_property_implementation().is_none());
+            assert_eq!(baseline.initial_obligations(), &base);
+            assert_eq!(
+                typed.source_property_implementation(),
+                Some(projected.handoff())
+            );
+            assert_eq!(typed.initial_obligations(), projected.initial_obligations());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            let resolved = assemble_empty(&typed).expect("actual final clone");
+            assert_eq!(
+                resolved,
+                assemble_empty(&typed).expect("deterministic final clone")
+            );
+            assert_eq!(
+                resolved.source_property_implementation(),
+                typed.source_property_implementation()
+            );
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            let installed_fingerprint = projected.handoff().debug_text();
+            assert_eq!(
+                typed
+                    .debug_text()
+                    .matches(installed_fingerprint.as_str())
+                    .count(),
+                1
+            );
+            assert_eq!(
+                resolved
+                    .debug_text()
+                    .matches(installed_fingerprint.as_str())
+                    .count(),
+                1
+            );
+            if layout != "coherent_tabs" {
+                continue;
+            }
+            let mut cases = vec![
+                ("own_token", 0),
+                ("shifted_positions", 0),
+                ("gap_junk", 0),
+                ("unterminated_comment", 0),
+                ("documentation_marker", 0),
+                ("cr_gap", 0),
+                ("utf8_gap", 0),
+                ("appended_length", 0),
+                ("parameter_parent", 0),
+                ("bad_arena", 0),
+                ("own_before_arena", 0),
+            ];
+            if profile == TestProfile::Means {
+                cases.extend([
+                    ("definiens_parent", 0),
+                    ("correctness_parent", 0),
+                    ("correctness_parent", 1),
+                ]);
+            }
+            for (case, index) in cases {
+                let mut c = f.clone();
+                let expected = match case {
+                    "own_token" | "own_before_arena" => {
+                        c.input.implementations[0].spelling.replace_range(0..1, "x");
+                        SourcePropertyImplementationError::InvalidImplementation { index: 0 }
+                    }
+                    "shifted_positions" => {
+                        let before = c.input.implementations[0].spelling.clone();
+                        let owner = c.input.implementations[0].source_range;
+                        let second = c.input.parameters[0]
+                            .source_range
+                            .end
+                            .checked_sub(owner.start)
+                            .unwrap();
+                        assert_eq!(&before[10..13], "\n\t\t");
+                        assert_eq!(&before[second..second + 3], "\n\t\t");
+                        c.input.implementations[0]
+                            .spelling
+                            .replace_range(second..second + 3, "\n\t");
+                        c.input.implementations[0]
+                            .spelling
+                            .replace_range(10..13, "\n\t\t\t");
+                        let shifted = &c.input.implementations[0].spelling;
+                        assert_eq!(shifted.len(), before.len());
+                        assert!(
+                            before
+                                .bytes()
+                                .filter(|byte| !byte.is_ascii_whitespace())
+                                .eq(shifted.bytes().filter(|byte| !byte.is_ascii_whitespace()))
+                        );
+                        assert_ne!(&shifted[13..16], "let");
+                        SourcePropertyImplementationError::InvalidImplementation { index: 0 }
+                    }
+                    "gap_junk"
+                    | "unterminated_comment"
+                    | "documentation_marker"
+                    | "cr_gap"
+                    | "utf8_gap" => {
+                        let gap = match case {
+                            "gap_junk" => "x\t\n",
+                            "unterminated_comment" => ":: ",
+                            "documentation_marker" => ":::",
+                            "cr_gap" => "\r\t\t",
+                            "utf8_gap" => "\u{2003}",
+                            _ => unreachable!(),
+                        };
+                        assert_eq!(gap.len(), 3);
+                        c.input.implementations[0]
+                            .spelling
+                            .replace_range(10..13, gap);
+                        assert_eq!(
+                            c.input.implementations[0].spelling.len(),
+                            f.input.implementations[0].spelling.len()
+                        );
+                        SourcePropertyImplementationError::InvalidImplementation { index: 0 }
+                    }
+                    "appended_length" => {
+                        c.input.implementations[0].spelling.push(' ');
+                        assert_eq!(
+                            c.input.implementations[0].spelling.len(),
+                            f.input.implementations[0].spelling.len() + 1
+                        );
+                        SourcePropertyImplementationError::InvalidImplementation { index: 0 }
+                    }
+                    "parameter_parent" | "definiens_parent" | "correctness_parent" => {
+                        let (row, span, expected) = match case {
+                            "parameter_parent" => {
+                                let row = &mut c.input.parameters[0];
+                                (
+                                    &mut row.spelling,
+                                    row.source_range,
+                                    SourcePropertyImplementationError::InvalidParameter {
+                                        index: 0,
+                                    },
+                                )
+                            }
+                            "definiens_parent" => {
+                                let row = &mut c.input.definientia[0];
+                                (
+                                    &mut row.spelling,
+                                    row.source_range,
+                                    SourcePropertyImplementationError::InvalidDefiniens {
+                                        index: 0,
+                                    },
+                                )
+                            }
+                            _ => {
+                                let row = &mut c.input.correctness[index];
+                                (
+                                    &mut row.spelling,
+                                    row.source_range,
+                                    SourcePropertyImplementationError::InvalidCorrectness { index },
+                                )
+                            }
+                        };
+                        let old = row.clone();
+                        *row = row.replacen('\t', " ", 1);
+                        assert_ne!(*row, old);
+                        assert_eq!(row.len(), old.len());
+                        assert_eq!(row.replacen(' ', "\t", 1), old);
+                        let parent = &c.input.implementations[0];
+                        assert_ne!(
+                            row.as_str(),
+                            parent
+                                .spelling
+                                .get(
+                                    span.start.checked_sub(parent.source_range.start).unwrap()
+                                        ..span.end.checked_sub(parent.source_range.start).unwrap()
+                                )
+                                .unwrap()
+                        );
+                        expected
+                    }
+                    "bad_arena" => SourcePropertyImplementationError::InvalidArenaOwnership,
+                    _ => unreachable!(),
+                };
+                if matches!(case, "bad_arena" | "own_before_arena") {
+                    c.arena = arena_with_range_override(c.source, profile, None, Some((19, 0, 1)));
+                    let node = c.arena.node(TypedNodeId::new(19)).unwrap();
+                    assert_eq!(node.kind.as_str(), "source.surface.unowned");
+                    assert_eq!(node.anchor, SourceAnchor::Range(range(c.source, 0, 1)));
+                    assert_eq!(node.recovery, NodeRecoveryState::Normal);
+                }
+                assert_eq!(c.formula, original.formula);
+                assert!(
+                    c.typed_base(InitialObligationTable::new())
+                        .source_property_implementation()
+                        .is_none()
+                );
+                let before = c.clone();
+                controls += 1;
+                assert_eq!(
+                    c.build(&InitialObligationTable::new()),
+                    Err(expected),
+                    "{profile:?}/{case}/{index}"
+                );
+                assert_eq!(c.env, before.env);
+                assert_eq!(c.context, before.context);
+                assert_eq!(c.source_type, before.source_type);
+                assert_eq!(c.terms, before.terms);
+                assert_eq!(c.formula, before.formula);
+                assert_eq!(c.structure, before.structure);
+                assert_eq!(c.arena, before.arena);
+            }
+        }
+    }
+    assert_eq!(attempts, 4);
+    assert_eq!(boundaries, 2);
+    assert_eq!(controls, 25);
+    assert!(
+        failures.is_empty(),
+        "public local spelling refusals: {failures:?}"
+    );
+}

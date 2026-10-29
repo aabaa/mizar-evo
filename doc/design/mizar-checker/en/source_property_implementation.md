@@ -10,6 +10,26 @@ subject structure. `equals` normalizes its direct value term without existence o
 obligations. `means` binds `it` and requires both ordered existence and uniqueness clauses before
 the implementation is admitted.
 
+## Fixed-width local spelling
+
+The upper transport keeps the original token coordinates and expected spelling frames.
+Within each frame, nontrivia bytes retain their positions. Existing gaps permit only
+same-width space/tab/LF layout, or the empty ordinary line-comment `::` followed by LF
+in a three-byte gap. Local text length equals its unchanged range width; no lexer,
+arena lookup or source-provider evidence participates in this spelling predicate.
+
+Each row checks its own text at its existing phase. Parameter, target, definiens and
+correctness text also equals the corresponding slice of the admitted implementation
+text, checked at the child phase. Means Atomic retains canonical `it = it` and its
+existing lower checks/fingerprint; Property physical trivia is not copied into Atomic.
+Equals target/selector text remains gapless. Store physical Property strings unchanged
+and replay their fingerprints. Preserve early lower installations and the original
+shape/baseline/resolver/row/Context/lower/Arena order and error ownership.
+
+This is supplied local-text consistency. Arbitrary trivia, moved tokens, raw-source
+admission and the full Property layout boundary remain separate. The original exact
+sources, geometry, arena oracles and semantic-obligation boundaries below are retained.
+
 ## Task 264 Scope And Authority
 
 Checker Task 264 owns one syntax-free, immutable source-to-checker intake for

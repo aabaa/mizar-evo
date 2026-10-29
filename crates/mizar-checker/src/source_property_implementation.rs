@@ -1943,7 +1943,12 @@ fn validate_input(
         || implementation.source_ordinal != 0
         || implementation.context != BindingContextId::new(1)
         || implementation.recovery != SourcePropertyImplementationRecovery::Normal
-        || implementation.spelling != implementation_spelling
+        || !local_spelling_matches(
+            &implementation.spelling,
+            implementation.source_range,
+            implementation_spelling,
+            None,
+        )
         || implementation.parameter != SourcePropertyParameterId::new(0)
         || implementation.target != SourcePropertyTargetId::new(0)
         || implementation.definiens != SourcePropertyDefiniensId::new(0)
@@ -1968,7 +1973,12 @@ fn validate_input(
         || parameter.declaration_range != range(input.source_id, 125, 126)
         || parameter.context != BindingContextId::new(1)
         || parameter.recovery != SourcePropertyImplementationRecovery::Normal
-        || parameter.spelling != "let M be Task264Carrier;"
+        || !local_spelling_matches(
+            &parameter.spelling,
+            parameter.source_range,
+            "let M be Task264Carrier;",
+            Some(implementation),
+        )
     {
         return Err(SourcePropertyImplementationError::InvalidParameter { index: 0 });
     }
@@ -2012,7 +2022,12 @@ fn validate_input(
         || definiens.source_range != range(input.source_id, definiens_range.0, definiens_range.1)
         || definiens.context != BindingContextId::new(1)
         || definiens.recovery != SourcePropertyImplementationRecovery::Normal
-        || definiens.spelling != definiens_spelling
+        || !local_spelling_matches(
+            &definiens.spelling,
+            definiens.source_range,
+            definiens_spelling,
+            Some(implementation),
+        )
     {
         return Err(SourcePropertyImplementationError::InvalidDefiniens { index: 0 });
     }
@@ -2028,6 +2043,46 @@ fn validate_input(
     validate_correctness(profile, input)?;
     validate_arena(profile, input.source_id, arena)?;
     Ok(())
+}
+
+fn local_spelling_matches(
+    spelling: &str,
+    range: SourceRange,
+    expected: &str,
+    parent: Option<&SourcePropertyImplementationInput>,
+) -> bool {
+    if spelling.len() != expected.len() {
+        return false;
+    }
+    let actual = spelling.as_bytes();
+    let expected = expected.as_bytes();
+    let mut offset = 0;
+    while offset < expected.len() {
+        if matches!(expected[offset], b' ' | b'\t' | b'\n') {
+            let start = offset;
+            while offset < expected.len() && matches!(expected[offset], b' ' | b'\t' | b'\n') {
+                offset += 1;
+            }
+            let gap = &actual[start..offset];
+            if !gap.iter().all(|&byte| matches!(byte, b' ' | b'\t' | b'\n')) && gap != b"::\n" {
+                return false;
+            }
+        } else {
+            if actual[offset] != expected[offset] {
+                return false;
+            }
+            offset += 1;
+        }
+    }
+    parent.is_none_or(|parent| {
+        let Some(start) = range.start.checked_sub(parent.source_range.start) else {
+            return false;
+        };
+        let Some(end) = range.end.checked_sub(parent.source_range.start) else {
+            return false;
+        };
+        parent.spelling.get(start..end) == Some(spelling)
+    })
 }
 
 fn validate_context(
@@ -2433,7 +2488,12 @@ fn validate_correctness(
                     || row.justification
                         != SourceAnchor::Range(range(input.source_id, proof_start, proof_end))
                     || row.recovery != SourcePropertyImplementationRecovery::Normal
-                    || row.spelling != spelling
+                    || !local_spelling_matches(
+                        &row.spelling,
+                        row.source_range,
+                        spelling,
+                        Some(&input.implementations[0]),
+                    )
                 {
                     return Err(SourcePropertyImplementationError::InvalidCorrectness { index });
                 }
