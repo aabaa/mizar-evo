@@ -842,71 +842,44 @@ fn source_formula_composition_output_with_mutation_impl(
                     .filter(|child| child.as_token().is_some())
                     .collect::<Vec<_>>();
                 // The closed selectors check their formula, type and operand roles.
-                let count = if let Some(payload) = nested.as_ref() {
-                    let positions: &[usize] = match node.kind() {
-                        K::ReserveItem => &[0, 2],
-                        K::ReserveSegment => &[0, 1],
-                        K::TheoremItem => &[0, 1, 2, 4],
-                        K::QuantifiedFormula(_)
-                            if payload.formula_sites[2].node().index() == node.id().index() =>
-                        {
-                            &[0, 2, 4]
-                        }
-                        K::QuantifiedFormula(_) => &[0, 2],
-                        K::QuantifierVariableSegment
-                            if payload.binder_segment_sites[2].node().index()
-                                == node.id().index() =>
-                        {
-                            &[0]
-                        }
-                        K::QuantifierVariableSegment => &[0, 1],
-                        K::BuiltinPredicateApplication => &[1],
-                        K::TypeHead | K::TermReference => &[0],
-                        K::CompilationUnit
-                        | K::ItemList
-                        | K::FormulaExpression
-                        | K::TermExpression
-                        | K::TypeExpression => &[],
-                        _ => return None,
-                    };
-                    if !children
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(index, child)| child.as_token().map(|_| index))
-                        .eq(positions.iter().copied())
+                let positions: &[usize] = match node.kind() {
+                    K::ReserveItem if nested.is_some() => &[0, 2],
+                    K::ReserveSegment if nested.is_some() => &[0, 1],
+                    K::TheoremItem => &[0, 1, 2, 4],
+                    K::QuantifiedFormula(_)
+                        if nested.as_ref().is_some_and(|payload| {
+                            payload.formula_sites[2].node().index() == node.id().index()
+                        }) =>
                     {
-                        return None;
+                        &[0, 2, 4]
                     }
-                    positions.len()
-                } else {
-                    match node.kind() {
-                        K::TheoremItem => 4,
-                        K::QuantifiedFormula(_)
-                        | K::QuantifierVariableSegment
-                        | K::ParenthesizedFormula => 2,
-                        K::BinaryFormula(operator) => {
-                            if operator.repeated {
-                                3
-                            } else {
-                                1
-                            }
-                        }
-                        K::TermReference => {
-                            if tokens.len() != 1 || tokens[0].as_token()?.kind != T::Identifier {
-                                return None;
-                            }
-                            1
-                        }
-                        K::BuiltinPredicateApplication | K::TypeHead | K::NumeralTerm => 1,
-                        K::CompilationUnit
-                        | K::ItemList
-                        | K::FormulaExpression
-                        | K::TermExpression
-                        | K::TypeExpression => 0,
-                        _ => return None,
+                    K::QuantifiedFormula(_) => &[0, 2],
+                    K::QuantifierVariableSegment
+                        if nested.as_ref().is_some_and(|payload| {
+                            payload.binder_segment_sites[2].node().index() == node.id().index()
+                        }) =>
+                    {
+                        &[0]
                     }
+                    K::QuantifierVariableSegment => &[0, 1],
+                    K::BuiltinPredicateApplication => &[1],
+                    K::BinaryFormula(operator) if operator.repeated => &[1, 2, 3],
+                    K::BinaryFormula(_) => &[1],
+                    K::ParenthesizedFormula => &[0, 2],
+                    K::TypeHead | K::TermReference | K::NumeralTerm => &[0],
+                    K::CompilationUnit
+                    | K::ItemList
+                    | K::FormulaExpression
+                    | K::TermExpression
+                    | K::TypeExpression => &[],
+                    _ => return None,
                 };
-                if tokens.len() != count {
+                if !children
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, child)| child.as_token().map(|_| index))
+                    .eq(positions.iter().copied())
+                {
                     return None;
                 }
                 owned_tokens.extend(tokens.iter().map(|token| token.id()));

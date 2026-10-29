@@ -2712,6 +2712,9 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
     }
     let spelling = token.text.as_ref();
     let type_expression = ast.node(*type_expression_id)?;
+    if !matches!(type_expression.kind, SurfaceNodeKind::TypeExpression) {
+        return None;
+    }
     let type_expression_children = structural_child_ids(ast, type_expression);
     let [type_head_id] = type_expression_children.as_slice() else {
         return None;
@@ -3163,6 +3166,9 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
         return None;
     }
     let type_expression = ast.node(*type_expression_id)?;
+    if !matches!(type_expression.kind, SurfaceNodeKind::TypeExpression) {
+        return None;
+    }
     let type_expression_children = structural_child_ids(ast, type_expression);
     let [type_head_id] = type_expression_children.as_slice() else {
         return None;

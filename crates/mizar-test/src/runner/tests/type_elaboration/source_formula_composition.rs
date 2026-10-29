@@ -3054,39 +3054,161 @@ fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed
 }
 
 #[test]
-fn metamorphic_nested_layout_rejects_coherent_wrong_direct_child_grammar() {
+fn metamorphic_formula_source_rejects_coherent_wrong_direct_child_grammar() {
     use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
 
     let config = step5c11_config();
     let root = &config.workspace_root;
     let plan = build_test_plan(&config).unwrap();
-    let (ordinal, case) = active_type_elaboration_cases(&plan)
-        .enumerate()
-        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
-        .unwrap();
-    let source = std::fs::read_to_string(&case.source_path).unwrap();
-    let frontend = run_frontend(root, case, ordinal).unwrap();
-    assert!(frontend.diagnostics.is_empty());
-    let ast = frontend.ast.as_ref().unwrap();
     let mut failures = Vec::new();
-    for (name, needle, replacement, moved) in [
+    for (family, name, needle, replacement, mut moved, retag_type) in [
         (
+            TASK257B1_CASE,
+            "b1_holds_after_body",
+            "holds x = x",
+            "x = x holds",
+            vec![(0, 5, 6), (6, 7, 0), (8, 9, 2), (10, 11, 4)],
+            false,
+        ),
+        (
+            TASK257B1_CASE,
+            "b1_equals_after_operands",
+            "x = x",
+            "x x =",
+            vec![(2, 3, 4), (4, 5, 2)],
+            false,
+        ),
+        (
+            TASK257B2_CASE,
+            "b2_equals_after_operands",
+            "0 = 0",
+            "0 0 =",
+            vec![(2, 3, 4), (4, 5, 2)],
+            false,
+        ),
+        (
+            TASK257B2_CASE,
+            "b2_iff_after_right",
+            "iff",
+            "",
+            Vec::new(),
+            false,
+        ),
+        (TASK257B1_CASE, "b1_type_wrapper", "", "", Vec::new(), true),
+        (TASK257B2_CASE, "b2_type_wrapper", "", "", Vec::new(), true),
+        (
+            TASK257B3_CASE,
             "outer_st_after_restriction",
             "st x = x ex",
             "x = x st ex",
             vec![(0, 2, 6), (3, 4, 0), (5, 6, 2), (7, 8, 4)],
+            false,
         ),
         (
+            TASK257B3_CASE,
             "equality_operator_after_operands",
             "x = x ex",
             "x x = ex",
             vec![(2, 3, 4), (4, 5, 2)],
+            false,
         ),
     ] {
-        let start = source.find(needle).unwrap();
-        let changed = source.replacen(needle, replacement, 1);
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == family)
+            .unwrap();
+        let source = std::fs::read_to_string(&case.source_path).unwrap();
+        let frontend = run_frontend(root, case, ordinal).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let resolver = resolver_symbol_collection(root, case, ast);
+        assert!(resolver.detail_keys.is_empty());
+        let baseline = source_formula_composition_output_with_source(
+            ast,
+            resolver.module.clone(),
+            &resolver.env,
+            &source,
+        )
+        .expect("original family selects")
+        .expect("genuine original producer transaction");
+        let retag = if retag_type {
+            let site = if family == TASK257B1_CASE {
+                extract_source_formula_quantifier_bound_use(ast, &resolver.module, &resolver.env)
+                    .unwrap()
+                    .binder_type_site
+            } else {
+                extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env)
+                    .unwrap()
+                    .binder_type_site
+            };
+            assert!(matches!(
+                ast.nodes()[site.node().index()].kind,
+                K::TypeExpression
+            ));
+            Some(site.node().index())
+        } else {
+            None
+        };
+        let (start, changed) = if name == "b2_iff_after_right" {
+            let payload =
+                extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env)
+                    .unwrap();
+            let top = payload.formula_sites.iter().map(|site| &ast.nodes()[site.node().index()]).find(|node| matches!(node.kind, K::BinaryFormula(operator) if operator.connective == mizar_syntax::SurfaceFormulaConnective::Iff && !operator.repeated)).unwrap();
+            let structural = top
+                .children
+                .iter()
+                .filter(|id| !matches!(ast.node(**id).unwrap().kind, K::Token(_)))
+                .collect::<Vec<_>>();
+            assert_eq!(structural.len(), 2);
+            let right_id = *structural[1];
+            let right = ast.node(right_id).unwrap();
+            assert!(matches!(right.kind, K::ParenthesizedFormula));
+            assert!(
+                payload
+                    .wrapper_sites
+                    .iter()
+                    .any(|site| site.node().index() == right_id.index())
+            );
+            let operator = top
+                .children
+                .iter()
+                .map(|id| ast.node(*id).unwrap())
+                .find(|node| node.token_text() == Some("iff"))
+                .unwrap();
+            let start = operator.range.start;
+            let right_text = &source[right.range.start..right.range.end];
+            let gap = &source[operator.range.end..right.range.start];
+            let shift = right.range.start - start;
+            moved.extend(
+                ast.token_views()
+                    .filter(|node| {
+                        right.range.start <= node.range().start
+                            && node.range().end <= right.range.end
+                    })
+                    .map(|node| {
+                        (
+                            node.range().start - start,
+                            node.range().end - start,
+                            node.range().start - start - shift,
+                        )
+                    }),
+            );
+            moved.push((0, operator.range.end - start, right_text.len() + gap.len()));
+            let mut changed = source.clone();
+            changed.replace_range(start..right.range.end, &format!("{right_text}{gap}iff"));
+            (start, changed)
+        } else {
+            (
+                source.find(needle).unwrap(),
+                source.replacen(needle, replacement, 1),
+            )
+        };
         assert_eq!(changed.len(), source.len());
-        assert_ne!(changed, source);
+        if retag.is_some() {
+            assert_eq!(changed, source);
+        } else {
+            assert_ne!(changed, source);
+        }
         let mut tokens =
             ast.token_views()
                 .map(|node| {
@@ -3125,7 +3247,11 @@ fn metamorphic_nested_layout_rejects_coherent_wrong_direct_child_grammar() {
             }
             rebuilt[index] = Some(
                 builder.add_node(
-                    node.kind.clone(),
+                    if retag == Some(index) {
+                        K::TermExpression
+                    } else {
+                        node.kind.clone()
+                    },
                     range,
                     children
                         .iter()
@@ -3146,7 +3272,8 @@ fn metamorphic_nested_layout_rejects_coherent_wrong_direct_child_grammar() {
                 mizar_frontend::lexing::TokenKind::Identifier => T::Identifier,
                 mizar_frontend::lexing::TokenKind::ReservedWord => T::ReservedWord,
                 mizar_frontend::lexing::TokenKind::ReservedSymbol => T::ReservedSymbol,
-                _ => panic!("unexpected B3 token"),
+                mizar_frontend::lexing::TokenKind::Numeral => T::Numeral,
+                _ => panic!("unexpected selected formula token"),
             };
             assert_eq!(
                 (
@@ -3198,25 +3325,77 @@ fn metamorphic_nested_layout_rejects_coherent_wrong_direct_child_grammar() {
         assert!(reachable.into_iter().all(|visited| visited));
         let fresh = resolver_symbol_collection(root, case, &forged);
         assert!(fresh.detail_keys.is_empty());
-        assert!(
-            extract_source_formula_nested_quantifier_payload(&forged, &fresh.module, &fresh.env)
-                .is_some(),
-            "selected reordered AST {name}"
-        );
+        let selected = match family {
+            TASK257B1_CASE => {
+                extract_source_formula_quantifier_bound_use(&forged, &fresh.module, &fresh.env)
+                    .is_some()
+            }
+            TASK257B2_CASE => {
+                extract_source_formula_connective_grouping(&forged, &fresh.module, &fresh.env)
+                    .is_some()
+            }
+            _ => {
+                extract_source_formula_nested_quantifier_payload(&forged, &fresh.module, &fresh.env)
+                    .is_some()
+            }
+        };
+        if retag.is_some() {
+            assert_eq!(
+                forged
+                    .token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>(),
+                ast.token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>()
+            );
+            if selected {
+                failures.push((name, "selector Some"));
+            }
+        } else {
+            assert!(selected, "selected reordered AST {name}");
+        }
         match source_formula_composition_output_with_source(
             &forged,
             fresh.module,
             &fresh.env,
             &changed,
         ) {
-            Some(Err(_)) => {}
-            Some(Ok(_)) => failures.push((name, "Some(Ok)")),
-            None => failures.push((name, "None")),
+            Some(Err(_)) if retag.is_none() => {}
+            None if retag.is_some() => {}
+            Some(Ok(output)) => {
+                let profiles = [&baseline, &output].map(|observed| {
+                    let primary = observed.typed_ast.source_term().unwrap();
+                    let atomic = observed.typed_ast.source_atomic_formula().unwrap();
+                    let composite = observed.typed_ast.source_composite_formula().unwrap();
+                    let composition = task257b1_handoff(observed);
+                    (
+                        primary.terms().len(),
+                        primary.references().len(),
+                        primary.numeric_type_requests().len(),
+                        atomic.formulas().len(),
+                        atomic.edges().len(),
+                        atomic.requests().len(),
+                        composite.formulas().len(),
+                        composite.binders().len(),
+                        composite.edges().len(),
+                        composition.atomic_edges().len(),
+                        composition.bound_uses().len(),
+                    )
+                });
+                assert_eq!(
+                    profiles[0], profiles[1],
+                    "actual lower occurrence profiles unchanged for {name}"
+                );
+                failures.push((name, "Some(Ok)"));
+            }
+            Some(Err(_)) => failures.push((name, "Some(Err), expected unsupported AST None")),
+            None => failures.push((name, "None, expected selected source Err")),
         }
     }
     assert!(
         failures.is_empty(),
-        "typed grammar must refuse coherent reordered children: {failures:?}"
+        "typed grammar must refuse coherent malformed handoffs: {failures:?}"
     );
 }
 
