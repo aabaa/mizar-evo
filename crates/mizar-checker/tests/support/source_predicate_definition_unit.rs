@@ -2033,3 +2033,547 @@ fn other_source_id() -> SourceId {
     allocator.next_source_id(snapshot).unwrap();
     allocator.next_source_id(snapshot).unwrap()
 }
+
+#[test]
+fn source_predicate_definition_accepts_coherent_nonuniform_layout_ranges() {
+    use crate::binding_env::{BindingLookupResult, BindingLookupSite};
+
+    let foreign_source = other_source_id();
+    assert_ne!(foreign_source, source_id());
+    for (case, accepted) in [
+        ("normal", true),
+        ("compact", true),
+        ("parameter-slack", true),
+        ("justification-slack", true),
+        ("block-head-capacity", false),
+        ("let-prefix-capacity", false),
+        ("be-capacity", false),
+        ("parameter-tail-capacity", false),
+        ("guard-prefix-capacity", false),
+        ("guard-tail-capacity", false),
+        ("definition-prefix-capacity", false),
+        ("definition-tail-capacity", false),
+        ("property-prefix-capacity", false),
+        ("justification-capacity", false),
+        ("property-tail-capacity", false),
+        ("block-tail-capacity", false),
+        ("guard-equality-capacity", false),
+        ("body-equality-capacity", false),
+        ("declaration-x-width", false),
+        ("declaration-y-width", false),
+        ("set-x-width", false),
+        ("set-y-width", false),
+        ("guard-left-width", false),
+        ("guard-right-width", false),
+        ("body-left-width", false),
+        ("body-right-width", false),
+        ("guard-formula-start", false),
+        ("guard-formula-end", false),
+        ("body-formula-start", false),
+        ("body-formula-end", false),
+        ("parameter-overlap", false),
+        ("guard-overlap", false),
+        ("definition-overlap", false),
+        ("property-overlap", false),
+        ("definition-join", false),
+        ("resolver-origin", false),
+        ("contribution-join", false),
+        ("declaration-join", false),
+        ("written-type-join", false),
+        ("type-site-join", false),
+        ("binding-join", false),
+        ("body-formula-link", false),
+        ("guard-formula-link", false),
+        ("correctness-join", false),
+        ("definition-arena", false),
+        ("property-arena", false),
+        ("context-arena", false),
+        ("parameter-arena", false),
+        ("input-source", false),
+        ("parameter-source", false),
+        ("declaration-source", false),
+        ("guard-source", false),
+        ("definition-source", false),
+        ("property-source", false),
+        ("justification-source", false),
+        ("correctness-source", false),
+        ("parameter-empty", false),
+        ("parameter-reversed", false),
+        ("parameter-overflow", false),
+        ("justification-empty", false),
+        ("justification-reversed", false),
+        ("justification-overflow", false),
+        ("guard-empty", false),
+        ("definition-reversed", false),
+        ("property-overflow", false),
+    ] {
+        let mut fixture = fixture();
+        let source = fixture.source;
+        let module = fixture.module.clone();
+        let relocate = |old: SourceRange| {
+            let (start, end) = match (old.start, old.end) {
+                (0, 164) => (7, 282),
+                (13, 26) => (24, 41),
+                (17, 18) => (29, 30),
+                (22, 25) => (37, 40),
+                (29, 42) => (50, 69),
+                (33, 34) => (55, 56),
+                (38, 41) => (65, 68),
+                (45, 58) => (82, 103),
+                (52, 53) => (91, 92),
+                (56, 57) => (100, 101),
+                (52, 57) => (91, 101),
+                (61, 122) => (121, 204),
+                (116, 117) => (185, 186),
+                (120, 121) => (201, 202),
+                (116, 121) => (185, 202),
+                (125, 159) => (217, 270),
+                (134, 158) => (230, 268),
+                _ => return old,
+            };
+            let (start, end) = match (case, (old.start, old.end)) {
+                ("compact", (0, 164)) => (7, 150),
+                ("compact", (13, 26)) => (18, 31),
+                ("compact", (17, 18)) => (22, 23),
+                ("compact", (22, 25)) => (27, 30),
+                ("compact", (29, 42)) => (31, 44),
+                ("compact", (33, 34)) => (35, 36),
+                ("compact", (38, 41)) => (40, 43),
+                ("compact", (45, 58)) => (44, 55),
+                ("compact", (52, 53)) => (51, 52),
+                ("compact", (56, 57)) => (53, 54),
+                ("compact", (52, 57)) => (51, 54),
+                ("compact", (61, 122)) => (55, 113),
+                ("compact", (116, 117)) => (109, 110),
+                ("compact", (120, 121)) => (111, 112),
+                ("compact", (116, 121)) => (109, 112),
+                ("compact", (125, 159)) => (113, 146),
+                ("compact", (134, 158)) => (122, 145),
+                ("parameter-slack", (13, 26)) => (23, 42),
+                ("justification-slack", (134, 158)) => (231, 269),
+                ("block-head-capacity", (0, 164)) => (14, 282),
+                ("let-prefix-capacity", (13, 26)) => (26, 41),
+                ("be-capacity", (22, 25)) => (33, 36),
+                ("parameter-tail-capacity", (13, 26)) => (24, 40),
+                ("guard-prefix-capacity", (52, 53)) => (88, 89),
+                ("guard-prefix-capacity", (52, 57)) => (88, 101),
+                ("guard-tail-capacity", (45, 58)) => (82, 101),
+                ("definition-prefix-capacity", (116, 117)) => (174, 175),
+                ("definition-prefix-capacity", (116, 121)) => (174, 202),
+                ("definition-tail-capacity", (61, 122)) => (121, 202),
+                ("property-prefix-capacity", (134, 158)) => (225, 268),
+                ("justification-capacity", (134, 158)) => (230, 252),
+                ("property-tail-capacity", (125, 159)) => (217, 268),
+                ("block-tail-capacity", (0, 164)) => (7, 273),
+                ("guard-equality-capacity", (56, 57)) => (92, 93),
+                ("guard-equality-capacity", (52, 57)) => (91, 93),
+                ("body-equality-capacity", (120, 121)) => (186, 187),
+                ("body-equality-capacity", (116, 121)) => (185, 187),
+                ("declaration-x-width", (17, 18)) => (29, 31),
+                ("declaration-y-width", (33, 34)) => (55, 57),
+                ("set-x-width", (22, 25)) => (37, 39),
+                ("set-y-width", (38, 41)) => (65, 67),
+                ("guard-left-width", (52, 53)) => (91, 93),
+                ("guard-right-width", (56, 57)) => (100, 102),
+                ("guard-right-width", (52, 57)) => (91, 102),
+                ("body-left-width", (116, 117)) => (185, 187),
+                ("body-right-width", (120, 121)) => (201, 203),
+                ("body-right-width", (116, 121)) => (185, 203),
+                ("guard-formula-start", (52, 57)) => (90, 101),
+                ("guard-formula-end", (52, 57)) => (91, 102),
+                ("body-formula-start", (116, 121)) => (184, 202),
+                ("body-formula-end", (116, 121)) => (185, 203),
+                ("parameter-overlap", (29, 42)) => (40, 69),
+                ("guard-overlap", (45, 58)) => (68, 103),
+                ("definition-overlap", (61, 122)) => (102, 204),
+                ("property-overlap", (125, 159)) => (203, 270),
+                _ => (start, end),
+            };
+            range(source, start, end)
+        };
+        let arena = TypedArena::try_new(
+            fixture.arena.root(),
+            fixture
+                .arena
+                .iter()
+                .map(|(id, node)| {
+                    let mut node = node.clone();
+                    if let SourceAnchor::Range(old) = &node.anchor {
+                        node.anchor = SourceAnchor::Range(relocate(*old));
+                    }
+                    let mismatched_role = match case {
+                        "definition-arena" => Some(PREDICATE_OWNER),
+                        "property-arena" => Some(PROPERTY_OWNER),
+                        "context-arena" => Some(DEFINITION_OWNER),
+                        "parameter-arena" => Some(PARAMETER_X),
+                        _ => None,
+                    };
+                    if mismatched_role == Some(id) {
+                        let SourceAnchor::Range(range) = &mut node.anchor else {
+                            unreachable!()
+                        };
+                        range.start += 1;
+                    }
+                    node
+                })
+                .collect(),
+        )
+        .expect("nonuniform public role anchors");
+        let item = fixture
+            .source_context
+            .items()
+            .get(crate::source_context::SourceItemId::new(0))
+            .unwrap();
+        let mut indexes = SymbolEnvIndexes::default();
+        let mut contribution_range = relocate(item.source_range);
+        if case == "contribution-join" {
+            contribution_range.end += 1;
+        }
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(contribution_range),
+        );
+        for old in fixture.env.symbols().iter() {
+            let SourceAnchor::Range(old_range) = old.origin().anchor() else {
+                panic!("fixture origin must be a source range")
+            };
+            let mut origin_range = relocate(*old_range);
+            if case == "resolver-origin" && old.kind() == SymbolKind::Predicate {
+                origin_range.start += 1;
+            }
+            let origin = SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(origin_range),
+                old.origin().structural_path().to_vec(),
+            );
+            let mut symbol = SymbolEntry::new(
+                old.symbol().clone(),
+                old.kind(),
+                old.namespace().clone(),
+                old.primary_spelling(),
+                origin,
+                contribution,
+            )
+            .with_visibility(old.visibility())
+            .with_export_status(old.export_status());
+            if let Some(notation) = old.notation_spelling() {
+                symbol = symbol.with_notation_spelling(notation);
+            }
+            if let Some(signature) = old.signature() {
+                symbol = symbol.with_signature(signature.clone());
+            }
+            indexes.symbols.insert(symbol);
+            indexes
+                .contributions
+                .add_symbol(contribution, old.symbol().clone());
+        }
+        let mut definitions = fixture.env.definitions().iter().collect::<Vec<_>>();
+        definitions.sort_by_key(|definition| definition.id());
+        for old in definitions {
+            let SourceAnchor::Range(old_range) = old.origin().anchor() else {
+                panic!("fixture definition origin must be a range")
+            };
+            let mut origin_range = relocate(*old_range);
+            if case == "resolver-origin" && old.kind() == DefinitionKind::Predicate {
+                origin_range.start += 1;
+            }
+            let origin = SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(origin_range),
+                old.origin().structural_path().to_vec(),
+            );
+            let mut definition =
+                DefinitionShell::new(old.symbol().clone(), old.kind(), origin, contribution)
+                    .with_visibility(old.visibility());
+            if let Some(arity) = old.arity() {
+                definition = definition.with_arity(arity);
+            }
+            if let Some(notation) = old.notation_shape() {
+                definition = definition.with_notation_shape(notation);
+            }
+            if let Some(signature) = old.signature() {
+                definition = definition.with_signature(signature.clone());
+            }
+            let id = indexes.definitions.insert(definition);
+            assert_eq!(id, old.id());
+            indexes.contributions.add_definition(contribution, id);
+        }
+        let env = SymbolEnv::new(module.clone(), indexes);
+        let source_context = SourceBindingContextProducer::build(SourceBindingContextInput {
+            source_id: source,
+            module_id: module.clone(),
+            module_site: TypedSiteRef::Node(MODULE_OWNER),
+            items: vec![SourceItemInput {
+                shell: item.shell,
+                shell_ordinal: item.shell_ordinal,
+                role: item.role,
+                module_id: module.clone(),
+                source_range: relocate(item.source_range),
+                parent: item.parent,
+                visibility: item.visibility,
+                site: item.site.clone(),
+                local_scope: item.local_scope.clone(),
+                recovery: item.recovery,
+            }],
+            bindings: fixture
+                .source_context
+                .declarations()
+                .iter()
+                .map(|(_, old)| {
+                    let declaration_range = relocate(old.declaration_range);
+                    SourceBindingSiteInput {
+                        shell: item.shell,
+                        context_owner: SourceBindingContextOwner::Shell(item.shell),
+                        source_ordinal: old.source_ordinal,
+                        spelling: old.spelling.clone(),
+                        declaration_range,
+                        written_type_range: relocate(old.written_type_range),
+                        site: old.site.clone(),
+                        role: SourceBindingSiteRole::DefinitionParameter {
+                            local: LocalTermBinding::new(
+                                old.spelling.clone(),
+                                item.local_scope.clone().unwrap(),
+                                declaration_range,
+                                old.source_ordinal,
+                            ),
+                        },
+                        recovery: BindingRecoveryState::Normal,
+                    }
+                })
+                .collect(),
+        })
+        .unwrap_or_else(|error| panic!("{case}: SourceContext rejected {error:?}"))
+        .into_complete()
+        .expect("complete Context")
+        .into_handoff();
+        let mut type_input = task249_input(source, module.clone());
+        for row in &mut type_input.expressions {
+            row.source_range = relocate(row.source_range);
+            row.head_range = relocate(row.head_range);
+        }
+        if case == "type-site-join" {
+            let row = &mut type_input.expressions[0];
+            std::mem::swap(&mut row.site, &mut row.head_site);
+        }
+        let source_type =
+            SourceTypeProducer::build(type_input, source_context.binding_env(), &env, &arena)
+                .unwrap_or_else(|error| panic!("{case}: Type rejected {error:?}"));
+        let mut term_input = task252_input(source, module.clone());
+        for row in &mut term_input.terms {
+            row.source_range = relocate(row.source_range);
+        }
+        let source_term =
+            SourcePrimaryTermProducer::build(term_input, source_context.binding_env(), &arena)
+                .unwrap_or_else(|error| panic!("{case}: Primary rejected {error:?}"));
+        assert_eq!(
+            (source_term.terms().len(), source_term.references().len()),
+            (4, 4)
+        );
+        for (id, reference) in source_term.references().iter() {
+            let term = source_term.terms().get(reference.term()).unwrap();
+            let old = fixture.source_term.references().get(id).unwrap();
+            let binding = BindingId::new([0, 0, 0, 1][id.index()]);
+            assert_eq!(reference.binding(), binding);
+            assert_eq!(reference.use_ordinal(), old.use_ordinal());
+            assert_eq!(reference.lexical_scope(), old.lexical_scope());
+            assert_eq!(
+                source_context.binding_env().lookup(&BindingLookupSite::new(
+                    term.spelling(),
+                    term.context(),
+                    reference.lexical_scope().cloned(),
+                    reference.use_ordinal()
+                )),
+                Ok(BindingLookupResult::Local(binding))
+            );
+        }
+        let mut atomic_input = task256_input(source, module.clone());
+        for row in &mut atomic_input.formulas {
+            row.source_range = relocate(row.source_range);
+        }
+        let source_atomic_formula = SourceAtomicFormulaProducer::build(
+            atomic_input,
+            source_context.binding_env(),
+            &env,
+            &source_term,
+            None,
+            None,
+            None,
+            &arena,
+        )
+        .unwrap_or_else(|error| panic!("{case}: Atomic rejected {error:?}"));
+        assert_eq!(
+            (
+                source_atomic_formula.formulas().len(),
+                source_atomic_formula.edges().len(),
+                source_atomic_formula.requests().len()
+            ),
+            (2, 4, 4)
+        );
+        let old_definition = &fixture.input.definitions[0];
+        let mut input = task259_input(
+            source,
+            module,
+            old_definition.symbol.clone(),
+            old_definition.definition,
+            contribution,
+        );
+        input.definitions[0].source_range = relocate(input.definitions[0].source_range);
+        for row in &mut input.parameters {
+            row.source_range = relocate(row.source_range);
+            row.declaration_range = relocate(row.declaration_range);
+        }
+        input.guards[0].source_range = relocate(input.guards[0].source_range);
+        input.properties[0].source_range = relocate(input.properties[0].source_range);
+        let SourceAnchor::Range(old_justification) = &input.properties[0].justification else {
+            panic!("fixture justification must be a range")
+        };
+        input.properties[0].justification = SourceAnchor::Range(relocate(*old_justification));
+        let SourceAnchor::Range(old_correctness) = &input.correctness[0].source_anchor else {
+            panic!("fixture correctness must be a range")
+        };
+        input.correctness[0].source_anchor = SourceAnchor::Range(relocate(*old_correctness));
+        match case {
+            "definition-join" => input.definitions[0].source_range.start += 1,
+            "declaration-join" => {
+                input.parameters[0].declaration_range.start += 1;
+                input.parameters[0].declaration_range.end += 1;
+            }
+            "written-type-join" => {
+                input.parameters[0].written_type = SourceTypeApplicationId::new(1)
+            }
+            "binding-join" => input.parameters[1].binding = BindingId::new(0),
+            "body-formula-link" => input.definitions[0].definiens = SourceAtomicFormulaId::new(0),
+            "guard-formula-link" => input.guards[0].formula = SourceAtomicFormulaId::new(1),
+            "correctness-join" => {
+                input.correctness[0].source_anchor = SourceAnchor::Range(range(source, 218, 270))
+            }
+            "input-source" => input.source_id = foreign_source,
+            "parameter-source" => input.parameters[0].source_range.source_id = foreign_source,
+            "declaration-source" => {
+                input.parameters[0].declaration_range.source_id = foreign_source
+            }
+            "guard-source" => input.guards[0].source_range.source_id = foreign_source,
+            "definition-source" => input.definitions[0].source_range.source_id = foreign_source,
+            "property-source" => input.properties[0].source_range.source_id = foreign_source,
+            "justification-source" => {
+                input.properties[0].justification =
+                    SourceAnchor::Range(range(foreign_source, 230, 268))
+            }
+            "correctness-source" => {
+                input.correctness[0].source_anchor =
+                    SourceAnchor::Range(range(foreign_source, 217, 270))
+            }
+            "parameter-empty" => input.parameters[0].source_range = range(source, 24, 24),
+            "parameter-reversed" => input.parameters[0].source_range = range(source, 41, 24),
+            "parameter-overflow" => {
+                input.parameters[0].source_range = range(source, 24, usize::MAX)
+            }
+            "justification-empty" => {
+                input.properties[0].justification = SourceAnchor::Range(range(source, 230, 230))
+            }
+            "justification-reversed" => {
+                input.properties[0].justification = SourceAnchor::Range(range(source, 268, 230))
+            }
+            "justification-overflow" => {
+                input.properties[0].justification =
+                    SourceAnchor::Range(range(source, 230, usize::MAX))
+            }
+            "guard-empty" => input.guards[0].source_range = range(source, 82, 82),
+            "definition-reversed" => input.definitions[0].source_range = range(source, 204, 121),
+            "property-overflow" => input.properties[0].source_range = range(source, usize::MAX, 0),
+            _ => {}
+        }
+        fixture.env = env;
+        fixture.source_context = source_context;
+        fixture.source_type = source_type;
+        fixture.source_term = source_term;
+        fixture.source_atomic_formula = source_atomic_formula;
+        fixture.arena = arena;
+        fixture.input = input;
+        let baseline = baseline_table(&fixture, 2);
+        let untouched = baseline.clone();
+        let result = build_with_input(&fixture, fixture.input.clone(), &baseline);
+        if !accepted {
+            assert!(
+                result.is_err(),
+                "{case}: invalid upper Predicate associations accepted"
+            );
+            assert_eq!(baseline, untouched, "{case}: baseline changed on error");
+            continue;
+        }
+        let projection =
+            result.unwrap_or_else(|error| panic!("{case}: valid Predicate rejected {error:?}"));
+        assert_eq!(baseline, untouched);
+        assert_eq!(projection.base_initial_obligations(), &baseline);
+        assert_eq!(projection.initial_obligations().len(), baseline.len() + 1);
+        for (id, row) in baseline.iter() {
+            assert_eq!(projection.initial_obligations().get(id), Some(row));
+        }
+        let suffix_id = InitialObligationId::new(baseline.len());
+        let suffix = projection.initial_obligations().get(suffix_id).unwrap();
+        let property = projection
+            .handoff()
+            .properties()
+            .get(SourcePredicatePropertyId::new(0))
+            .unwrap();
+        assert_eq!(suffix.owner, *property.site());
+        assert_eq!(suffix.source_range, property.source_range());
+        assert_eq!(
+            suffix.kind,
+            InitialObligationKind::PredicatePropertyCorrectness
+        );
+        assert_eq!(suffix.status, InitialObligationStatus::Pending);
+        assert!(suffix.assumptions.is_empty());
+        assert_eq!(
+            suffix.goal.as_str(),
+            "source.definition.predicate.correctness:property=0"
+        );
+        assert_eq!(
+            suffix.provenance.as_str(),
+            "source.definition.predicate:definition=0:property=0"
+        );
+        assert_eq!(
+            projection
+                .handoff()
+                .correctness()
+                .get(SourcePredicateCorrectnessId::new(0))
+                .unwrap()
+                .obligation(),
+            suffix_id
+        );
+        assert_eq!(
+            projection.handoff().source_context_fingerprint(),
+            fixture.source_context.debug_text()
+        );
+        assert_eq!(
+            projection.handoff().source_type_fingerprint(),
+            fixture.source_type.debug_text()
+        );
+        assert_eq!(
+            projection.handoff().source_term_fingerprint(),
+            fixture.source_term.debug_text()
+        );
+        assert_eq!(
+            projection.handoff().source_atomic_formula_fingerprint(),
+            fixture.source_atomic_formula.debug_text()
+        );
+        let typed = fixture
+            .typed_ast(baseline)
+            .with_source_predicate_definition(projection.clone())
+            .expect("nonuniform Predicate installation");
+        assert_eq!(
+            typed.initial_obligations(),
+            projection.initial_obligations()
+        );
+        let resolved = assemble_empty(&typed).expect("nonuniform Predicate final assembly");
+        assert_eq!(
+            resolved.source_predicate_definition(),
+            Some(projection.handoff())
+        );
+        assert_eq!(resolved.clone(), resolved);
+        assert_eq!(assemble_empty(&typed.clone()).unwrap(), resolved);
+    }
+}

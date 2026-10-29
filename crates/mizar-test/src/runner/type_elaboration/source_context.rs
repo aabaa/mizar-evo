@@ -250,7 +250,11 @@ fn source_two_parameter_definition_context_projection_impl(
     }
     let root =
         root.ok_or_else(|| "two-parameter source binding context root disappeared".to_owned())?;
-    let definition_range = source_range(ast, 0, 164);
+    let definition_range = ast
+        .nodes()
+        .get(67)
+        .ok_or_else(|| "two-parameter source binding context root is not exact".to_owned())?
+        .range;
     test_mutable!(root_recovered = root.recovered);
     test_mutable!(root_range = root.range);
     #[cfg(test)]
@@ -263,7 +267,7 @@ fn source_two_parameter_definition_context_projection_impl(
         }
         _ => {}
     }
-    if root_recovered || root_range != definition_range {
+    if ast.canonical_bytes().is_none() || root_recovered || root_range != definition_range {
         return Err("two-parameter source binding context root is not exact".to_owned());
     }
     test_mutable!(item_list = exact_compilation_item_list(ast));
@@ -323,9 +327,17 @@ fn source_two_parameter_definition_context_projection_impl(
         _ => {}
     }
     if !definition_kind_is_exact
+        || definition.children.windows(2).any(|pair| {
+            ast.node(pair[0])
+                .zip(ast.node(pair[1]))
+                .is_none_or(|(left, right)| left.range.end > right.range.start)
+        })
         || definition_recovered
         || observed_definition_range != definition_range
         || definition_tokens.as_slice() != ["definition", "end", ";"]
+        || observed_definition_range.start != token_range(ast, definition, "definition")?.start
+        || observed_definition_range.end != token_range(ast, definition, ";")?.end
+        || ast.nodes()[1].range.start <= token_range(ast, definition, "definition")?.end
         || !shells.exports().is_empty()
     {
         return Err("two-parameter source binding context definition item is not exact".to_owned());
@@ -372,35 +384,35 @@ fn source_two_parameter_definition_context_projection_impl(
     let parameter_specs = [
         TwoParameterDefinitionParameterSpec {
             node_index: 41,
-            parameter_start: 13,
-            parameter_end: 26,
-            let_start: 13,
-            let_end: 16,
+            parameter_start: ast.nodes()[1].range.start,
+            parameter_end: ast.nodes()[5].range.end,
+            let_start: ast.nodes()[1].range.start,
+            let_end: ast.nodes()[1].range.end,
             spelling: "x",
-            name_start: 17,
-            name_end: 18,
-            be_start: 19,
-            be_end: 21,
-            type_start: 22,
-            type_end: 25,
-            semicolon_start: 25,
-            semicolon_end: 26,
+            name_start: ast.nodes()[2].range.start,
+            name_end: ast.nodes()[2].range.end,
+            be_start: ast.nodes()[3].range.start,
+            be_end: ast.nodes()[3].range.end,
+            type_start: ast.nodes()[4].range.start,
+            type_end: ast.nodes()[4].range.end,
+            semicolon_start: ast.nodes()[5].range.start,
+            semicolon_end: ast.nodes()[5].range.end,
         },
         TwoParameterDefinitionParameterSpec {
             node_index: 45,
-            parameter_start: 29,
-            parameter_end: 42,
-            let_start: 29,
-            let_end: 32,
+            parameter_start: ast.nodes()[6].range.start,
+            parameter_end: ast.nodes()[10].range.end,
+            let_start: ast.nodes()[6].range.start,
+            let_end: ast.nodes()[6].range.end,
             spelling: "y",
-            name_start: 33,
-            name_end: 34,
-            be_start: 35,
-            be_end: 37,
-            type_start: 38,
-            type_end: 41,
-            semicolon_start: 41,
-            semicolon_end: 42,
+            name_start: ast.nodes()[7].range.start,
+            name_end: ast.nodes()[7].range.end,
+            be_start: ast.nodes()[8].range.start,
+            be_end: ast.nodes()[8].range.end,
+            type_start: ast.nodes()[9].range.start,
+            type_end: ast.nodes()[9].range.end,
+            semicolon_start: ast.nodes()[10].range.start,
+            semicolon_end: ast.nodes()[10].range.end,
         },
     ];
     let mut parameters = Vec::with_capacity(2);
@@ -688,12 +700,19 @@ fn extract_two_parameter_definition_parameter(
         _ => {}
     }
     if parameter_node_index != spec.node_index
+        || parameter.children.windows(2).any(|pair| {
+            ast.node(pair[0])
+                .zip(ast.node(pair[1]))
+                .is_none_or(|(left, right)| left.range.end > right.range.start)
+        })
         || !parameter_kind_is_exact
         || parameter_range != source_range(ast, spec.parameter_start, spec.parameter_end)
         || parameter_has_recovery
         || parameter_tokens.as_slice() != ["let", ";"]
         || let_range != source_range(ast, spec.let_start, spec.let_end)
         || semicolon_range != source_range(ast, spec.semicolon_start, spec.semicolon_end)
+        || let_range.end.checked_sub(let_range.start) != Some("let".len())
+        || semicolon_range.end.checked_sub(semicolon_range.start) != Some(";".len())
     {
         return Err(format!(
             "two-parameter source binding context parameter {} is not exact",
@@ -764,10 +783,22 @@ fn extract_two_parameter_definition_parameter(
         _ => {}
     }
     if !segment_kind_is_exact
+        || segment.children.windows(2).any(|pair| {
+            ast.node(pair[0])
+                .zip(ast.node(pair[1]))
+                .is_none_or(|(left, right)| left.range.end > right.range.start)
+        })
         || segment_has_recovery
         || segment_tokens.as_slice() != [spec.spelling, "be"]
         || name_range != source_range(ast, spec.name_start, spec.name_end)
         || be_range != source_range(ast, spec.be_start, spec.be_end)
+        || name_range.end.checked_sub(name_range.start) != Some(spec.spelling.len())
+        || be_range.end.checked_sub(be_range.start) != Some("be".len())
+        || name_range.start <= let_range.end
+        || be_range.start <= name_range.end
+        || spec.type_start <= be_range.end
+        || segment.range.start != name_range.start
+        || segment.range.end != spec.type_end
     {
         return Err(format!(
             "two-parameter source binding context segment {} is not exact",
@@ -819,7 +850,11 @@ fn extract_two_parameter_definition_parameter(
         }) if *index == ordinal => type_children.push(type_children[0]),
         _ => {}
     }
-    if !type_kind_is_exact || type_range != expected_type_range || type_children.len() != 1 {
+    if !type_kind_is_exact
+        || type_range != expected_type_range
+        || type_children.len() != 1
+        || type_range.end.checked_sub(type_range.start) != Some("set".len())
+    {
         return Err(format!(
             "two-parameter source binding context type {} has the wrong shape",
             spec.spelling

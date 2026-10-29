@@ -17,6 +17,17 @@ The module preserves source-item order, resolver shell provenance, distinct
 reserve and definition-parameter identities, local shadowing, and checker
 context links.
 
+## Predicate layout extraction
+
+The existing runner two-parameter extractor uses actual root/block/parameter/token
+ranges, checks owned child envelopes and required word separators, and preserves
+shell/site authentication, callback errors and scope. These word boundaries include
+the definition header and first let. It owns only the two leading parameters:
+excluded guard/pattern/body/proof descendants
+remain unconsumed. Full fixed-family/raw authentication belongs to the
+[Predicate source owner](./source_predicate_definition.md#layout-and-source-responsibility).
+The original offset profiles below retain their historical fixture meaning.
+
 ## Boundary
 
 The generic `build` input is a syntax-free projection; the separate original-source theorem transaction below consumes a neutral resolved arena. Opaque `DeclarationShellId` values

@@ -990,3 +990,796 @@ fn task259_source_binding_core_handoff_with_mutation(
     )
     .expect("Task259 33LB handoff should build")
 }
+
+#[test]
+fn metamorphic_predicate_layout_lexical_stream_matches_genuine_frontend() {
+    let original = task257c4c1_frontend_output(SOURCE_PREDICATE_DEFINITION_TEXT, 259_200);
+    assert!(original.diagnostics.is_empty());
+    let ast = original.ast.as_ref().unwrap();
+    let mut sources = vec![("original", SOURCE_PREDICATE_DEFINITION_TEXT.to_owned())];
+    sources.extend(
+        metamorphic_edits::variants(ast, SOURCE_PREDICATE_DEFINITION_TEXT)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| {
+                (
+                    kind,
+                    metamorphic_edits::apply(SOURCE_PREDICATE_DEFINITION_TEXT, &edits),
+                )
+            }),
+    );
+    assert_eq!(sources.len(), 3);
+    for (ordinal, (layout, source)) in sources.into_iter().enumerate() {
+        let frontend = task257c4c1_frontend_output(&source, 259_201 + ordinal);
+        assert!(frontend.diagnostics.is_empty(), "{layout}");
+        assert!(frontend.tokens.diagnostics.is_empty(), "{layout}");
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(
+            ast.node_views().all(|node| !node.is_recovered()),
+            "{layout}"
+        );
+        assert!(frontend.preprocessed.import_stubs.is_empty());
+        let preprocessed = mizar_lexer::preprocess_source_for_lexing(&source);
+        assert!(preprocessed.diagnostics.is_empty(), "{layout}");
+        assert_eq!(
+            preprocessed.lexical_text,
+            frontend.preprocessed.lexical_text.as_str(),
+            "{layout}"
+        );
+        assert_eq!(
+            preprocessed.preprocess_map, frontend.preprocessed.source_map.preprocess_map,
+            "{layout}"
+        );
+        let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).unwrap();
+        let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let scopes = mizar_lexer::build_scope_skeleton(&raw);
+        let actual = mizar_lexer::disambiguate(
+            &raw,
+            &environment,
+            &mizar_lexer::ParserLexContext::general(),
+            &scopes,
+        );
+        assert!(actual.diagnostics().is_empty(), "{layout}");
+        assert_eq!(actual.tokens().len(), 38, "{layout}");
+        assert_eq!(
+            actual.tokens().len(),
+            frontend.tokens.tokens().len(),
+            "{layout}"
+        );
+        assert_eq!(actual.tokens()[33].kind, mizar_lexer::TokenKind::Numeral);
+        assert_eq!(actual.tokens()[33].lexeme, "1");
+        for (token, native) in actual.tokens().iter().zip(frontend.tokens.tokens()) {
+            let mapped = preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(token.span)
+                .unwrap();
+            assert_eq!(mapped.len(), 1, "{layout}: token split by preprocessing");
+            let span = mizar_session::SourceRange {
+                source_id: ast.source_id,
+                start: mapped[0].start,
+                end: mapped[0].end,
+            };
+            assert_eq!(
+                (token.kind, token.lexeme.as_str(), span),
+                (native.kind, native.text.as_ref(), native.span),
+                "{layout}"
+            );
+            assert_eq!(
+                source.get(span.start..span.end),
+                Some(token.lexeme.as_str()),
+                "{layout}"
+            );
+        }
+    }
+}
+
+#[test]
+fn metamorphic_predicate_layout_transports_actual_source_handoffs() {
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK259_CASE)
+        .unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    assert_eq!(original, SOURCE_PREDICATE_DEFINITION_TEXT);
+    let frontend = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let original_ast = frontend.ast.as_ref().unwrap();
+    let mut sources = vec![("original", original.clone())];
+    sources.extend(
+        metamorphic_edits::variants(original_ast, &original)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| (kind, metamorphic_edits::apply(&original, &edits))),
+    );
+    assert_eq!(sources.len(), 3);
+    sources.extend([
+        ("missing_lf", original.trim_end_matches('\n').to_owned()),
+        ("extra_lf", format!("{original}\n")),
+        ("trailing_comment", format!("{original}:: trailing\n")),
+        ("parameter_comment", original.replacen("x be", "x :: parameter\n be", 1)),
+        ("guard_comment", original.replacen("assume x = x;", "assume x :: guard\n = x;", 1)),
+        ("body_comment", original.replacen("means x = y;", "means x :: body\n = y;", 1)),
+        ("justification_only", original.replacen("symmetry by computation(steps: 1)", "symmetry  by computation(steps:1)", 1)),
+        ("compact", "definition let x be set;let y be set;assume x=x;pred Task259PredicateDefinition:x task259_rel y means x=y;symmetry by computation(steps:1);end;".to_owned()),
+    ]);
+    assert_eq!(sources.len(), 11);
+    let mut failures = Vec::new();
+    let mut baseline_fingerprints: Option<[String; 5]> = None;
+    for (layout, source) in sources {
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+            assert_eq!(frontend.source_text.as_ref(), source);
+            assert!(frontend.diagnostics.is_empty(), "{layout}");
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.canonical_bytes().is_some(), "{layout}");
+            assert!(
+                ast.node_views().all(|node| !node.is_recovered()),
+                "{layout}"
+            );
+            let resolver = resolver_symbol_collection(&config.workspace_root, case, ast);
+            assert!(resolver.detail_keys.is_empty(), "{layout}");
+            let output = source_predicate_definition_output(
+                ast,
+                resolver.module.clone(),
+                &resolver.shells,
+                &resolver.env,
+                &source,
+            );
+            let output = match output {
+                Some(Ok(output)) => output,
+                result => {
+                    let error = format!("{layout}: {result:?}");
+                    assert_ne!(layout, "original", "{error}");
+                    failures.push(error);
+                    return;
+                }
+            };
+            let handoff = output.typed_ast.source_predicate_definition().unwrap();
+            assert_eq!(Some(handoff), output.resolved.source_predicate_definition());
+            let context = output.typed_ast.source_context().unwrap();
+            let types = output.typed_ast.source_type().unwrap();
+            let terms = output.typed_ast.source_term().unwrap();
+            let atomic = output.typed_ast.source_atomic_formula().unwrap();
+            let expected = |index: usize| ast.nodes()[index].range;
+            assert_eq!(
+                (
+                    ast.nodes().len(),
+                    ast.token_nodes().len(),
+                    output.typed_ast.nodes().len()
+                ),
+                (71, 38, 17)
+            );
+            for token in ast.token_views() {
+                let range = token.range();
+                assert_eq!(
+                    source.get(range.start..range.end),
+                    Some(token.as_token().unwrap().text.as_ref())
+                );
+            }
+            for ((id, node), member) in output.typed_ast.nodes().iter().zip([
+                38, 39, 2, 42, 43, 7, 46, 48, 50, 55, 57, 59, 53, 62, 66, 67, 70,
+            ]) {
+                assert_eq!(
+                    node.anchor,
+                    mizar_session::SourceAnchor::Range(expected(member)),
+                    "{layout} anchor{}",
+                    id.index()
+                );
+            }
+            assert_eq!(
+                context.items().iter().next().unwrap().1.source_range,
+                expected(67)
+            );
+            for (index, ((_, declaration), (_, parameter))) in context
+                .declarations()
+                .iter()
+                .zip(handoff.parameters().iter())
+                .enumerate()
+            {
+                let (identifier, type_token, statement) = [(2, 4, 41), (7, 9, 45)][index];
+                assert_eq!(declaration.declaration_range, expected(identifier));
+                assert_eq!(declaration.written_type_range, expected(type_token));
+                assert_eq!(parameter.declaration_range(), expected(identifier));
+                assert_eq!(parameter.source_range(), expected(statement));
+                assert_eq!(parameter.owner().index(), 0);
+                assert_eq!(parameter.site().node().index(), [2, 5][index]);
+                assert_eq!(
+                    (
+                        parameter.ordinal(),
+                        parameter.binding().index(),
+                        parameter.written_type().index()
+                    ),
+                    (index, index, index)
+                );
+                let binding = context
+                    .binding_env()
+                    .bindings()
+                    .get(parameter.binding())
+                    .unwrap();
+                assert_eq!(binding.spelling, ["x", "y"][index]);
+                assert_eq!(
+                    binding.identity,
+                    mizar_checker::binding_env::BinderIdentity::ResolverLocal {
+                        scope: mizar_resolve::names::LocalTermScope::new(vec![0]),
+                        ordinal: index,
+                        declaration_range: expected(identifier),
+                    }
+                );
+                assert_eq!(
+                    (binding.owner_context.index(), binding.visible_after_ordinal),
+                    (1, index)
+                );
+                assert_eq!(
+                    binding.type_site,
+                    mizar_checker::binding_env::BindingTypeSite::Source(expected(type_token))
+                );
+                assert!(binding.captured.identities().is_empty());
+                let application = types.applications().iter().nth(index).unwrap().1;
+                assert_eq!(application.binding(), parameter.binding());
+                let expression = types.expressions().get(application.root()).unwrap();
+                assert_eq!(
+                    (expression.source_range(), expression.head_range()),
+                    (expected(type_token), expected(type_token))
+                );
+            }
+            assert_eq!(
+                (
+                    terms.terms().len(),
+                    terms.references().len(),
+                    terms.numeric_type_requests().len()
+                ),
+                (4, 4, 0)
+            );
+            for (index, (_, reference)) in terms.references().iter().enumerate() {
+                let term = terms.terms().get(reference.term()).unwrap();
+                assert_eq!(term.source_range(), expected([46, 48, 55, 57][index]));
+                assert_eq!(term.spelling(), ["x", "x", "x", "y"][index]);
+                assert_eq!(reference.binding().index(), [0, 0, 0, 1][index]);
+                assert_eq!(reference.use_ordinal(), 2);
+                assert_eq!(term.context().index(), 1);
+                assert_eq!(reference.lexical_scope().unwrap().path(), [0]);
+                assert_eq!(
+                    context
+                        .binding_env()
+                        .lookup(&mizar_checker::binding_env::BindingLookupSite::new(
+                            term.spelling(),
+                            term.context(),
+                            reference.lexical_scope().cloned(),
+                            reference.use_ordinal(),
+                        ))
+                        .unwrap(),
+                    mizar_checker::binding_env::BindingLookupResult::Local(BindingId::new(
+                        [0, 0, 0, 1][index]
+                    ))
+                );
+            }
+            assert_eq!(
+                (
+                    atomic.formulas().len(),
+                    atomic.edges().len(),
+                    atomic.requests().len()
+                ),
+                (2, 4, 4)
+            );
+            for (index, (_, formula)) in atomic.formulas().iter().enumerate() {
+                assert_eq!(formula.source_range(), expected([50, 59][index]));
+            }
+            for (index, ((_, edge), (_, request))) in atomic
+                .edges()
+                .iter()
+                .zip(atomic.requests().iter())
+                .enumerate()
+            {
+                assert_eq!(
+                    (edge.formula().index(), edge.ordinal()),
+                    (index / 2, index % 2)
+                );
+                assert_eq!(request.edge().unwrap().index(), index);
+                assert_eq!(
+                    edge.target(),
+                    mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(
+                        mizar_checker::source_term::SourcePrimaryTermId::new(index)
+                    )
+                );
+            }
+            assert_eq!(
+                (
+                    handoff.definitions().len(),
+                    handoff.parameters().len(),
+                    handoff.guards().len(),
+                    handoff.properties().len(),
+                    handoff.correctness().len()
+                ),
+                (1, 2, 1, 1, 1)
+            );
+            let definition = handoff.definitions().iter().next().unwrap().1;
+            assert_eq!(definition.source_range(), expected(62));
+            assert_eq!(definition.definiens().index(), 1);
+            assert_eq!(
+                (
+                    definition.site().node().index(),
+                    definition.context().index(),
+                    definition.source_ordinal()
+                ),
+                (13, 1, 0)
+            );
+            let actual_definition = resolver
+                .env
+                .definitions()
+                .get(definition.definition())
+                .unwrap();
+            assert_eq!(definition.symbol(), actual_definition.symbol());
+            assert_eq!(definition.origin(), actual_definition.origin());
+            assert_eq!(
+                definition.origin().anchor(),
+                &mizar_session::SourceAnchor::Range(expected(62))
+            );
+            assert_eq!(
+                resolver
+                    .env
+                    .contributions()
+                    .get(definition.contribution())
+                    .unwrap()
+                    .anchor(),
+                &mizar_session::SourceAnchor::Range(expected(67))
+            );
+            let guard = handoff.guards().iter().next().unwrap().1;
+            let property = handoff.properties().iter().next().unwrap().1;
+            let correctness = handoff.correctness().iter().next().unwrap().1;
+            assert_eq!(
+                (
+                    guard.owner().index(),
+                    guard.ordinal(),
+                    guard.formula().index()
+                ),
+                (0, 0, 0)
+            );
+            assert_eq!(guard.source_range(), expected(53));
+            assert_eq!(guard.site().node().index(), 12);
+            assert_eq!(property.source_range(), expected(66));
+            assert_eq!(
+                (
+                    property.site().node().index(),
+                    property.owner().index(),
+                    property.ordinal()
+                ),
+                (14, 0, 0)
+            );
+            assert_eq!(
+                property.justification(),
+                &mizar_session::SourceAnchor::Range(expected(65))
+            );
+            assert_eq!(
+                (
+                    correctness.owner().index(),
+                    correctness.property().index(),
+                    correctness.obligation().index()
+                ),
+                (0, 0, 0)
+            );
+            assert_eq!(
+                correctness.source_anchor(),
+                &mizar_session::SourceAnchor::Range(expected(66))
+            );
+            assert_eq!(
+                [
+                    handoff.source_context_fingerprint(),
+                    handoff.source_type_fingerprint(),
+                    handoff.source_term_fingerprint(),
+                    handoff.source_atomic_formula_fingerprint()
+                ],
+                [
+                    context.debug_text(),
+                    types.debug_text(),
+                    terms.debug_text(),
+                    atomic.debug_text()
+                ]
+            );
+            let fingerprints = [
+                context.debug_text(),
+                types.debug_text(),
+                terms.debug_text(),
+                atomic.debug_text(),
+                handoff.debug_text(),
+            ];
+            if layout == "original" {
+                baseline_fingerprints = Some(fingerprints);
+            } else if layout == "justification_only" {
+                let baseline = baseline_fingerprints.as_ref().unwrap();
+                assert_eq!(&fingerprints[..4], &baseline[..4]);
+                assert_ne!(fingerprints[4], baseline[4]);
+                assert_eq!(source.len(), original.len());
+                for member in [
+                    38, 39, 2, 42, 43, 7, 46, 48, 50, 55, 57, 59, 53, 62, 66, 67, 70,
+                ] {
+                    assert_eq!(expected(member), original_ast.nodes()[member].range);
+                }
+                assert_eq!(
+                    (expected(65).start, expected(65).end),
+                    (
+                        original_ast.nodes()[65].range.start + 1,
+                        original_ast.nodes()[65].range.end
+                    )
+                );
+            } else if [2, 7, 46, 48, 55, 57, 67]
+                .iter()
+                .any(|index| expected(*index) != original_ast.nodes()[*index].range)
+            {
+                assert_ne!(
+                    Some(&fingerprints),
+                    baseline_fingerprints.as_ref(),
+                    "{layout}"
+                );
+            } else {
+                assert_eq!(
+                    Some(&fingerprints),
+                    baseline_fingerprints.as_ref(),
+                    "{layout}"
+                );
+            }
+            if layout == "compact" {
+                assert_eq!(
+                    [
+                        expected(41).start - expected(67).start,
+                        expected(2).start - expected(41).start,
+                        expected(4).start - expected(2).end,
+                        expected(41).end - expected(4).end,
+                        expected(50).start - expected(53).start,
+                        expected(53).end - expected(50).end,
+                        expected(59).start - expected(62).start,
+                        expected(62).end - expected(59).end,
+                        expected(65).start - expected(66).start,
+                        expected(65).end - expected(65).start,
+                        expected(66).end - expected(65).end,
+                        expected(67).end - expected(66).end,
+                        expected(48).start - expected(46).end,
+                    ],
+                    [11, 4, 4, 1, 7, 1, 54, 1, 9, 23, 1, 4, 1]
+                );
+                assert_eq!(
+                    [
+                        expected(7).start - expected(45).start,
+                        expected(9).start - expected(7).end,
+                        expected(45).end - expected(9).end,
+                        expected(57).start - expected(55).end
+                    ],
+                    [4, 4, 1, 1]
+                );
+                assert_eq!(
+                    (
+                        expected(41).end,
+                        expected(45).end,
+                        expected(53).end,
+                        expected(62).end
+                    ),
+                    (
+                        expected(45).start,
+                        expected(53).start,
+                        expected(62).start,
+                        expected(66).start
+                    )
+                );
+            }
+            assert_eq!(output.typed_ast.initial_obligations().len(), 1);
+            let (id, obligation) = output
+                .typed_ast
+                .initial_obligations()
+                .iter()
+                .next()
+                .unwrap();
+            assert_eq!(id.index(), 0);
+            assert_eq!(
+                obligation.kind,
+                mizar_checker::typed_ast::InitialObligationKind::PredicatePropertyCorrectness
+            );
+            assert_eq!(
+                obligation.status,
+                mizar_checker::typed_ast::InitialObligationStatus::Pending
+            );
+            assert_eq!(obligation.owner, *property.site());
+            assert_eq!(obligation.source_range, expected(66));
+            assert!(obligation.assumptions.is_empty());
+            assert_eq!(
+                obligation.goal.as_str(),
+                "source.definition.predicate.correctness:property=0"
+            );
+            assert_eq!(
+                obligation.provenance.as_str(),
+                "source.definition.predicate:definition=0:property=0"
+            );
+            let replay = source_predicate_definition_output(
+                ast,
+                resolver.module.clone(),
+                &resolver.shells,
+                &resolver.env,
+                &source,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+            assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+            assert_eq!(
+                output.typed_ast.clone().source_predicate_definition(),
+                Some(handoff)
+            );
+            assert_eq!(
+                output.resolved.clone().source_predicate_definition(),
+                Some(handoff)
+            );
+            let result = run_type_elaboration_case(
+                &config.workspace_root,
+                &config.workspace_root.join("tests"),
+                case,
+                ordinal,
+            );
+            assert_eq!(result.status, TypeElaborationCaseStatus::Passed, "{layout}");
+            assert!(result.actual_detail_keys.is_empty(), "{layout}");
+        });
+    }
+    assert!(
+        failures.is_empty(),
+        "actual Predicate layout transport failed: {failures:?}"
+    );
+}
+
+#[test]
+fn metamorphic_predicate_layout_distinguishes_source_authentication_and_unsupported_shape() {
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK259_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let module = resolver.module;
+    source_predicate_definition_output(
+        ast,
+        module.clone(),
+        &resolver.shells,
+        &resolver.env,
+        &source,
+    )
+    .expect("normal supported original")
+    .expect("genuine resolver and all lower producers");
+    for trailing in [
+        source.trim_end_matches('\n').to_owned(),
+        format!("{source}\n"),
+        format!("{source}:: trailing\n"),
+    ] {
+        source_predicate_definition_output(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &resolver.env,
+            &trailing,
+        )
+        .expect("unchanged token anchors")
+        .expect("only trailing layout differs");
+    }
+    let mut stale_sources = vec![String::new(), source.replacen("steps: 1", "steps: 2", 1)];
+    stale_sources.extend(
+        metamorphic_edits::variants(ast, &source)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(_, edits)| metamorphic_edits::apply(&source, &edits)),
+    );
+    for raw in stale_sources {
+        let error = source_predicate_definition_output_with_mutation(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &resolver.env,
+            &raw,
+            SourcePredicateDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("supported AST independent of stale raw")
+        .expect_err("raw authentication precedes lower Type failure");
+        assert_eq!(error, "Task259 source association is invalid");
+    }
+    let resolver_error = source_predicate_definition_output_with_mutation(
+        ast,
+        module.clone(),
+        &resolver.shells,
+        &resolver.env,
+        &source.replacen("steps: 1", "steps: 2", 1),
+        SourcePredicateDefinitionRouteMutation::RemoveResolverShell,
+    )
+    .expect("supported AST with bad raw")
+    .expect_err("resolver owner precedes source authentication");
+    assert!(resolver_error.starts_with("Task259 resolver:"));
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&resolver.env);
+    indexes.namespace_graph.insert_node(
+        mizar_resolve::env::NamespaceNodeKind::Segment,
+        Some(module.clone()),
+        "unowned",
+        resolver.env.contributions().iter().next().unwrap().id(),
+    );
+    let changed_env = mizar_resolve::env::SymbolEnv::new(module.clone(), indexes);
+    assert_eq!(changed_env.symbols(), resolver.env.symbols());
+    assert_eq!(changed_env.definitions(), resolver.env.definitions());
+    assert_eq!(changed_env.contributions(), resolver.env.contributions());
+    assert_ne!(changed_env, resolver.env);
+    assert_eq!(
+        source_predicate_definition_output_with_mutation(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &changed_env,
+            &source,
+            SourcePredicateDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("selected original AST")
+        .expect_err("complete replay rejects unowned namespace state before lower Type"),
+        "Task259 source association is invalid"
+    );
+
+    for corruption in 0..2 {
+        let mut changed = source.clone();
+        if corruption == 1 {
+            changed.remove(16);
+        }
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut range = node.range;
+            if corruption == 1 {
+                range.start -= usize::from(range.start > 16);
+                range.end -= usize::from(range.end > 16);
+            }
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            rebuilt.push(match &node.kind {
+                SurfaceNodeKind::Token(token) => builder.add_token(
+                    if corruption == 0 && index == 33 {
+                        SurfaceTokenKind::Identifier
+                    } else {
+                        token.kind
+                    },
+                    token.text.clone(),
+                    range,
+                ),
+                kind => builder.add_node(kind.clone(), range, children),
+            });
+        }
+        let malformed = builder.finish(Some(rebuilt[70]), None);
+        assert_eq!(malformed.nodes().len(), 71);
+        assert!(malformed.canonical_bytes().is_some());
+        assert!(malformed.node_views().all(|node| !node.is_recovered()));
+        let fresh = resolver_symbol_collection(root, case, &malformed);
+        assert!(fresh.detail_keys.is_empty());
+        let output = source_predicate_definition_output_with_mutation(
+            &malformed,
+            module.clone(),
+            &fresh.shells,
+            &fresh.env,
+            &changed,
+            SourcePredicateDefinitionRouteMutation::RemoveTypeExpression,
+        );
+        if corruption == 0 {
+            assert!(output.is_none(), "unsupported Numeral kind {corruption}");
+        } else {
+            assert_eq!(changed.get(13..17), Some("letx"));
+            for token in malformed.token_views() {
+                let range = token.range();
+                assert_eq!(
+                    changed.get(range.start..range.end),
+                    Some(token.as_token().unwrap().text.as_ref())
+                );
+            }
+            assert_eq!(
+                output
+                    .expect("closed graph and coherent token slices remain selected")
+                    .expect_err("genuine lexer refuses merged keyword/binder before lower build"),
+                "Task259 source association is invalid"
+            );
+        }
+    }
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let foreign_root = std::env::temp_dir().join(format!(
+        "mizar-test-predicate-foreign-{}-{nanos}",
+        std::process::id()
+    ));
+    let foreign_path = foreign_root
+        .join("src")
+        .join(case.source_path.file_name().unwrap());
+    std::fs::create_dir_all(foreign_path.parent().unwrap()).unwrap();
+    std::fs::write(&foreign_path, &source).unwrap();
+    let ids = mizar_session::InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(ordinal + 1);
+    mizar_session::SessionIdAllocator::next_source_id(&ids, snapshot).unwrap();
+    let foreign = mizar_frontend::orchestration::Frontend::new(
+        mizar_frontend::source::FrontendSourceLoader::new(mizar_session::DiskSourceLoader::new(
+            &foreign_root,
+        )),
+        ParseOnlyImportProvider,
+        mizar_frontend::parsing::MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot,
+            input: mizar_session::SourceInput {
+                package_id: module.package().clone(),
+                module_path: module.path().clone(),
+                normalized_path: mizar_session::normalize_path(&foreign_root, &foreign_path)
+                    .unwrap(),
+                edition: mizar_session::Edition::new("2026"),
+                origin: mizar_session::SourceOriginInput::Disk { path: foreign_path },
+            },
+        },
+        &ids,
+    )
+    .unwrap();
+    std::fs::remove_dir_all(&foreign_root).unwrap();
+    assert_eq!(foreign.source.source_text.as_ref(), source);
+    assert_eq!(&foreign.source.package_id, module.package());
+    assert_eq!(&foreign.source.module_path, module.path());
+    assert!(foreign.diagnostics.is_empty());
+    let foreign_ast = foreign.ast.as_ref().unwrap();
+    assert!(foreign_ast.canonical_bytes().is_some());
+    assert!(foreign_ast.node_views().all(|node| !node.is_recovered()));
+    assert_ne!(foreign_ast.source_id, ast.source_id);
+    let fresh = resolver_symbol_collection(root, case, foreign_ast);
+    assert!(fresh.detail_keys.is_empty());
+    assert_eq!(fresh.module, module);
+    let positive = source_predicate_definition_output(
+        foreign_ast,
+        module.clone(),
+        &fresh.shells,
+        &fresh.env,
+        &source,
+    )
+    .expect("genuine fresh source remains supported")
+    .expect("matching real current resolver environment");
+    assert_eq!(positive.typed_ast.source_id(), foreign_ast.source_id);
+    let (id, obligation) = positive
+        .typed_ast
+        .initial_obligations()
+        .iter()
+        .next()
+        .unwrap();
+    assert_eq!(id.index(), 0);
+    assert_eq!(positive.typed_ast.initial_obligations().len(), 1);
+    assert_eq!(obligation.source_range, foreign_ast.nodes()[66].range);
+    assert_eq!(
+        obligation.kind,
+        mizar_checker::typed_ast::InitialObligationKind::PredicatePropertyCorrectness
+    );
+    assert_eq!(
+        obligation.status,
+        mizar_checker::typed_ast::InitialObligationStatus::Pending
+    );
+    assert!(obligation.assumptions.is_empty());
+    assert_eq!(
+        positive.typed_ast.source_predicate_definition(),
+        positive.resolved.source_predicate_definition()
+    );
+    for shells in [&resolver.shells, &fresh.shells] {
+        let error = source_predicate_definition_output_with_mutation(
+            foreign_ast,
+            module.clone(),
+            shells,
+            &resolver.env,
+            &source,
+            SourcePredicateDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("supported foreign AST")
+        .expect_err("stale source association before lower Type");
+        assert!(error.starts_with("Task259 resolver:"), "{error}");
+    }
+}

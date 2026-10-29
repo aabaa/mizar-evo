@@ -3288,3 +3288,301 @@ fn task249_definition_env_with_mutation(
         )
     })
 }
+
+#[test]
+fn metamorphic_predicate_layout_transports_fresh_parameter_context() {
+    let (original_ast, _, _, _, diagnostics) =
+        task248_two_parameter_frontend(TASK248_TWO_PARAMETER_SOURCE, 259_300);
+    assert_eq!(diagnostics, 0);
+    let mut sources = vec![("original", TASK248_TWO_PARAMETER_SOURCE.to_owned())];
+    sources.extend(
+        metamorphic_edits::variants(&original_ast, TASK248_TWO_PARAMETER_SOURCE)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| {
+                (
+                    kind,
+                    metamorphic_edits::apply(TASK248_TWO_PARAMETER_SOURCE, &edits),
+                )
+            }),
+    );
+    assert_eq!(sources.len(), 3);
+    let mut failures = Vec::new();
+    for (ordinal, (layout, source)) in sources.into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task248_two_parameter_frontend(&source, 259_301 + ordinal);
+        assert_eq!(diagnostics, 0, "{layout}");
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(
+            ast.node_views().all(|node| !node.is_recovered()),
+            "{layout}"
+        );
+        let definitions =
+            surface_nodes_with_kind(&ast, mizar_syntax::SurfaceNodeKind::DefinitionBlockItem);
+        let [(definition, block)] = definitions.as_slice() else {
+            panic!("one actual definition block");
+        };
+        let declaration_ranges = [ast.nodes()[2].range, ast.nodes()[7].range];
+        for (index, range) in declaration_ranges.iter().enumerate() {
+            assert_eq!(source.get(range.start..range.end), Some(["x", "y"][index]));
+        }
+        let root_range = ast.node(ast.root().unwrap()).unwrap().range;
+        let (nodes, sites) = task248_two_parameter_arena_for_source_with_ranges(
+            ast.source_id,
+            block.range,
+            declaration_ranges,
+            Some(mizar_checker::typed_ast::TypedNodeId::new(3)),
+        );
+        let mut actual_nodes = nodes
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        actual_nodes[3].anchor = mizar_session::SourceAnchor::Range(root_range);
+        let nodes =
+            mizar_checker::typed_ast::TypedArena::try_new(nodes.root(), actual_nodes).unwrap();
+        for ((_, node), range) in nodes.iter().zip([
+            declaration_ranges[0],
+            declaration_ranges[1],
+            block.range,
+            root_range,
+        ]) {
+            assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(range));
+        }
+        match source_two_parameter_definition_context_projection(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            *definition,
+            &nodes,
+            sites,
+        ) {
+            Ok(projection) => {
+                assert_eq!(
+                    projection
+                        .handoff()
+                        .items()
+                        .iter()
+                        .next()
+                        .unwrap()
+                        .1
+                        .source_range,
+                    block.range
+                );
+                for (index, (_, declaration)) in
+                    projection.handoff().declarations().iter().enumerate()
+                {
+                    assert_eq!(declaration.declaration_range, declaration_ranges[index]);
+                    assert_eq!(
+                        declaration.written_type_range,
+                        ast.nodes()[[4, 9][index]].range
+                    );
+                }
+            }
+            Err(error) => {
+                assert_ne!(layout, "original", "original Context prerequisite: {error}");
+                failures.push(format!("{layout}: {error}"));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "fresh Predicate parameter Context layout failed: {failures:?}"
+    );
+}
+
+#[test]
+fn metamorphic_predicate_context_rejects_invalid_parameter_geometry() {
+    let (ast, module, shells, symbols, diagnostics) =
+        task248_two_parameter_frontend(TASK248_TWO_PARAMETER_SOURCE, 259_400);
+    assert_eq!(diagnostics, 0);
+    let definition = task248_two_parameter_definition_node(&ast);
+    let (nodes, sites) = task248_two_parameter_arena(&ast, definition);
+    source_two_parameter_definition_context_projection(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        definition,
+        &nodes,
+        sites,
+    )
+    .expect("genuine original parameter Context baseline");
+    let cases = [
+        "definition_let",
+        "let_name",
+        "name_be",
+        "be_set",
+        "segment_start",
+        "type_outside_parameter",
+    ];
+    assert_eq!(cases.len(), 6);
+    let mut accepted = Vec::new();
+    for label in cases {
+        let word_pair = match label {
+            "definition_let" => Some((0, 1)),
+            "let_name" => Some((1, 2)),
+            "name_be" => Some((2, 3)),
+            "be_set" => Some((3, 4)),
+            _ => None,
+        };
+        let cut = word_pair
+            .map(|(left, right)| ast.nodes()[left].range.end..ast.nodes()[right].range.start);
+        let mut source = TASK248_TWO_PARAMETER_SOURCE.to_owned();
+        if let Some(cut) = &cut {
+            let removed = source.get(cut.clone()).unwrap();
+            assert!(!removed.is_empty());
+            assert!(
+                removed
+                    .bytes()
+                    .all(|byte| matches!(byte, b' ' | b'\n' | b'\t'))
+            );
+            if label != "definition_let" {
+                assert_eq!(removed, " ");
+            }
+            source.replace_range(cut.clone(), "");
+        }
+        let shift = |offset: usize| {
+            cut.as_ref().map_or(offset, |cut| {
+                if offset > cut.start {
+                    offset - cut.len()
+                } else {
+                    offset
+                }
+            })
+        };
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::<SurfaceBuilderNodeId>::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut range = node.range;
+            range.start = shift(range.start);
+            range.end = shift(range.end);
+            if label == "segment_start" && index == 40 {
+                range.start = ast.nodes()[1].range.end;
+            }
+            if label == "type_outside_parameter" && [4, 38, 39].contains(&index) {
+                range.start = ast.nodes()[41].range.end;
+                range.end = range.start + "set".len();
+            }
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            rebuilt.push(match &node.kind {
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), range)
+                }
+                kind => builder.add_node(kind.clone(), range, children),
+            });
+        }
+        let malformed = builder.finish(ast.root().map(|id| rebuilt[id.index()]), None);
+        assert_eq!(malformed.nodes().len(), 71);
+        assert!(malformed.canonical_bytes().is_some(), "{label}");
+        assert!(malformed.node_views().all(|node| !node.is_recovered()));
+        for (node, original) in malformed.nodes().iter().zip(ast.nodes()) {
+            assert_eq!(node.kind, original.kind);
+            assert_eq!(node.children, original.children);
+            assert!(node.range.start < node.range.end);
+            if node.kind != SurfaceNodeKind::Root {
+                assert!(
+                    node.children
+                        .windows(2)
+                        .all(|pair| malformed.node(pair[0]).unwrap().range.end
+                            <= malformed.node(pair[1]).unwrap().range.start)
+                );
+            }
+            if word_pair.is_some() {
+                if let SurfaceNodeKind::Token(token) = &node.kind {
+                    assert_eq!(
+                        source.get(node.range.start..node.range.end),
+                        Some(token.text.as_ref())
+                    );
+                } else {
+                    assert_eq!(
+                        node.range.start,
+                        malformed.node(node.children[0]).unwrap().range.start
+                    );
+                    assert_eq!(
+                        node.range.end,
+                        malformed
+                            .node(*node.children.last().unwrap())
+                            .unwrap()
+                            .range
+                            .end
+                    );
+                }
+            }
+        }
+        let rows = malformed.nodes();
+        for (left, right) in [(0, 1), (1, 2), (2, 3), (3, 4)] {
+            if word_pair == Some((left, right)) {
+                assert_eq!(rows[left].range.end, rows[right].range.start);
+            } else {
+                assert!(rows[left].range.end < rows[right].range.start);
+            }
+        }
+        assert_eq!(rows[4].range.end - rows[4].range.start, 3);
+        assert_eq!(rows[4].range, rows[38].range);
+        assert_eq!(rows[4].range, rows[39].range);
+        if label == "segment_start" {
+            assert!(rows[40].range.start < rows[2].range.start);
+            assert_eq!(rows[40].range.end, rows[39].range.end);
+        } else if label == "type_outside_parameter" {
+            assert_eq!(rows[40].range.start, rows[2].range.start);
+            assert!(rows[40].range.end < rows[39].range.end);
+            assert_eq!(rows[39].range.start, rows[41].range.end);
+        }
+        let fresh_shells =
+            mizar_resolve::declarations::DeclarationShellCollector::new(&malformed, &module)
+                .collect();
+        let fresh_symbols = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            &malformed,
+            &fresh_shells,
+            mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(fresh_symbols.diagnostics().is_empty(), "{label}");
+        let fresh_symbols = fresh_symbols.into_env();
+        let block = malformed.node(definition).unwrap().range;
+        let declarations = [rows[2].range, rows[7].range];
+        let (nodes, sites) = task248_two_parameter_arena_for_source_with_ranges(
+            malformed.source_id,
+            block,
+            declarations,
+            Some(mizar_checker::typed_ast::TypedNodeId::new(3)),
+        );
+        let root_range = malformed.node(malformed.root().unwrap()).unwrap().range;
+        let mut actual_nodes = nodes
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        actual_nodes[3].anchor = mizar_session::SourceAnchor::Range(root_range);
+        let nodes =
+            mizar_checker::typed_ast::TypedArena::try_new(nodes.root(), actual_nodes).unwrap();
+        for ((_, node), range) in
+            nodes
+                .iter()
+                .zip([declarations[0], declarations[1], block, root_range])
+        {
+            assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(range));
+        }
+        if source_two_parameter_definition_context_projection(
+            &malformed,
+            module.clone(),
+            &fresh_shells,
+            &fresh_symbols,
+            definition,
+            &nodes,
+            sites,
+        )
+        .is_ok()
+        {
+            accepted.push(label);
+        }
+    }
+    assert!(
+        accepted.is_empty(),
+        "parameter Context accepted invalid geometry: {accepted:?}"
+    );
+}

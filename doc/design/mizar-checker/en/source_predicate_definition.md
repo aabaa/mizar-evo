@@ -9,6 +9,51 @@ producer, its exact real consumer, and one covered trace backlink. The
 separately committed Task-248 Profile-B dependency remains completed current
 state.
 
+## Layout and source responsibility
+
+The original fixture profiles below remain historical oracles. Ordinary fixed-name
+Predicate layout uses actual source roles without changing their semantic boundary.
+The runner selects the closed normal 71-row kind/text/child graph, then authenticates
+every source token/map and complete genuine shells/signature/environment after
+existing resolver validation and before lower producers. Its separate parameter
+Context extractor retains [parameter-only responsibility](./source_context.md#predicate-layout-extraction).
+Actual AST roles supply every resolver, arena and carried lower/upper range.
+
+The syntax-free checker preserves existing IDs, spellings, recovery, counts,
+contexts, bindings, lower fingerprints, actual arena anchors and resolver joins.
+It checks same-source nonempty ranges, one-byte x/y leaves, three-byte set leaves,
+ordered nonoverlapping members and formula/operand envelopes. Whole parameter
+statement endpoints and the explicit justification have no independent token site;
+coherent permissible slack can pass. Only the runner proves exact raw membership.
+The following checked-subtraction minima express fixed-token capacity, not proof
+content, exact offsets or a source reconstruction. Let B be the block, P a parameter
+statement, d its declaration leaf, T its type, G the guard, A its Atomic formula,
+D the Predicate definition, F its Atomic definiens, Q the property, J its explicit
+justification, and L/R an equality's operand leaves.
+
+| Capacity | Minimum bytes |
+|---|---:|
+| B.start to P0.start (`definition` and word separator) | 11 |
+| P.start to d.start (`let` and word separator) | 4 |
+| d.end to T.start (separators and `be`) | 4 |
+| T.end to P.end (`;`) | 1 |
+| G.start to A.start (`assume` and word separator) | 7 |
+| A.end to G.end (`;`) | 1 |
+| D.start to F.start (fixed label/pattern/means prefix) | 54 |
+| F.end to D.end (`;`) | 1 |
+| Q.start to J.start (`symmetry` and word separator) | 9 |
+| J extent (`by computation(steps:1)`) | 23 |
+| J.end to Q.end (`;`) | 1 |
+| Q.end to B.end (`end;`) | 4 |
+| L.end to R.start (`=`) | 1 |
+
+Adjacent semicolon/next keyword needs no extra separator. The guard remains an
+occurrence link. Projection preserves every baseline obligation row/ID and appends
+one Pending PredicatePropertyCorrectness suffix with the actual property owner/range,
+empty assumptions and existing opaque goal/provenance; installation and final clone
+retain it. Justification geometry does not consume its proof content, execute
+computation, discharge an obligation or publish predicate truth, facts or axioms.
+
 ## Authority, Scope, And Findings
 
 The canonical authority is:

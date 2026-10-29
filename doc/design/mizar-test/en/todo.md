@@ -404,6 +404,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - [x] [Task257B3 middle binder spelling](../../task_contracts/en/TEST-METAMORPHIC-NESTED-MIDDLE-NAME.md).
     - [x] [Task257C1/C3 chain layout](../../task_contracts/en/TEST-METAMORPHIC-CHAIN-LAYOUT.md).
     - [x] [Task261 Attribute layout](../../task_contracts/en/TEST-METAMORPHIC-ATTRIBUTE-LAYOUT.md).
+    - [x] [Task259 Predicate layout](../../task_contracts/en/TEST-METAMORPHIC-PREDICATE-LAYOUT.md).
 
 ## Recommended Verification
 

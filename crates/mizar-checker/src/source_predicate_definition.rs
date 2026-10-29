@@ -854,7 +854,7 @@ impl SourcePredicateDefinitionProducer {
             return Err(SourcePredicateDefinitionError::SourceIdentityMismatch);
         }
         validate_input_shape(&input)?;
-        let origin = validate_resolver_definition(&input, env)?;
+        let origin = validate_resolver_definition(&input, env, source_context)?;
         validate_input_rows(
             &input,
             source_context,
@@ -1060,6 +1060,7 @@ fn validate_input_shape(
 fn validate_resolver_definition(
     input: &SourcePredicateDefinitionHandoffInput,
     env: &SymbolEnv,
+    source_context: &SourceBindingContextHandoff,
 ) -> Result<SemanticOrigin, SourcePredicateDefinitionError> {
     let row = &input.definitions[0];
     let symbol = env
@@ -1074,7 +1075,11 @@ fn validate_resolver_definition(
         .contributions()
         .get(row.contribution)
         .ok_or(SourcePredicateDefinitionError::InvalidResolverDefinition)?;
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, 0, 164));
+    let block = source_context
+        .items()
+        .get(crate::source_context::SourceItemId::new(0))
+        .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?;
+    let expected_anchor = SourceAnchor::Range(block.source_range);
     if row.definition.index() != 0
         || row.symbol.module() != &input.module_id
         || symbol.symbol() != &row.symbol
@@ -1134,8 +1139,40 @@ fn validate_input_rows(
     arena: &TypedArena,
 ) -> Result<(), SourcePredicateDefinitionError> {
     let source = input.source_id;
+    let block_range = source_context
+        .items()
+        .get(crate::source_context::SourceItemId::new(0))
+        .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?
+        .source_range;
     let definition = &input.definitions[0];
-    if definition.source_range != range(source, 61, 122)
+    let guard = &input.guards[0];
+    let property = &input.properties[0];
+    let definiens = source_atomic_formula
+        .formulas()
+        .get(definition.definiens)
+        .ok_or(SourcePredicateDefinitionError::InvalidDefinition { index: 0 })?;
+    if definition.source_range.source_id != source
+        || definition.source_range.start >= definition.source_range.end
+        || guard.source_range.end > definition.source_range.start
+        || definiens
+            .source_range()
+            .start
+            .checked_sub(definition.source_range.start)
+            .is_none_or(|gap| {
+                gap < "pred".len()
+                    + "Task259PredicateDefinition".len()
+                    + ":".len()
+                    + "x".len()
+                    + "task259_rel".len()
+                    + "y".len()
+                    + "means".len()
+                    + 5
+            })
+        || definition
+            .source_range
+            .end
+            .checked_sub(definiens.source_range().end)
+            .is_none_or(|gap| gap < ";".len())
         || definition.source_ordinal != 0
         || definition.recovery != SourcePredicateDefinitionRecovery::Normal
         || definition.spelling != "pred Task259PredicateDefinition: x task259_rel y means x = y;"
@@ -1143,7 +1180,7 @@ fn validate_input_rows(
     {
         return Err(SourcePredicateDefinitionError::InvalidDefinition { index: 0 });
     }
-    let local_context = validate_context_profile(input, source_context)?;
+    let local_context = validate_context_profile(input, source_context, arena)?;
     if !valid_site(
         &definition.site,
         definition.source_range,
@@ -1154,15 +1191,47 @@ fn validate_input_rows(
         return Err(SourcePredicateDefinitionError::InvalidArenaOwnership);
     }
     let context = definition.context;
-    let parameter_ranges = [(13, 26, 17, 18), (29, 42, 33, 34)];
     let parameter_spellings = ["let x be set;", "let y be set;"];
     for (index, row) in input.parameters.iter().enumerate() {
-        let (start, end, declaration_start, declaration_end) = parameter_ranges[index];
+        let written_range = source_context
+            .declarations()
+            .get(crate::source_context::SourceDeclarationId::new(index))
+            .ok_or(SourcePredicateDefinitionError::InvalidParameter { index })?
+            .written_type_range;
         if row.owner != SourcePredicateDefinitionId::new(0)
             || row.ordinal != index
             || row.written_type != SourceTypeApplicationId::new(index)
-            || row.source_range != range(source, start, end)
-            || row.declaration_range != range(source, declaration_start, declaration_end)
+            || row.source_range.source_id != source
+            || row.declaration_range.source_id != source
+            || row
+                .declaration_range
+                .end
+                .checked_sub(row.declaration_range.start)
+                != Some(1)
+            || (index == 0
+                && row
+                    .source_range
+                    .start
+                    .checked_sub(block_range.start)
+                    .is_none_or(|gap| gap < "definition".len() + 1))
+            || row
+                .declaration_range
+                .start
+                .checked_sub(row.source_range.start)
+                .is_none_or(|gap| gap < "let".len() + 1)
+            || written_range
+                .start
+                .checked_sub(row.declaration_range.end)
+                .is_none_or(|gap| gap < "be".len() + 2)
+            || row
+                .source_range
+                .end
+                .checked_sub(written_range.end)
+                .is_none_or(|gap| gap < ";".len())
+            || row.source_range.end > guard.source_range.start
+            || index.checked_sub(1).is_some_and(|previous| {
+                input.parameters[previous].source_range.end > row.source_range.start
+            })
             || row.context != context
             || row.recovery != SourcePredicateDefinitionRecovery::Normal
             || row.spelling != parameter_spellings[index]
@@ -1179,14 +1248,28 @@ fn validate_input_rows(
             return Err(SourcePredicateDefinitionError::InvalidArenaOwnership);
         }
     }
-    validate_type_profile(input, source_type, local_context, arena)?;
+    validate_type_profile(input, source_context, source_type, local_context, arena)?;
     validate_term_and_atomic_profile(input, source_term, source_atomic_formula)?;
 
-    let guard = &input.guards[0];
+    let guard_formula = source_atomic_formula
+        .formulas()
+        .get(guard.formula)
+        .ok_or(SourcePredicateDefinitionError::InvalidGuard { index: 0 })?;
     if guard.owner != SourcePredicateDefinitionId::new(0)
         || guard.ordinal != 0
         || guard.formula != SourceAtomicFormulaId::new(0)
-        || guard.source_range != range(source, 45, 58)
+        || guard.source_range.source_id != source
+        || guard.source_range.start >= guard.source_range.end
+        || guard_formula
+            .source_range()
+            .start
+            .checked_sub(guard.source_range.start)
+            .is_none_or(|gap| gap < "assume".len() + 1)
+        || guard
+            .source_range
+            .end
+            .checked_sub(guard_formula.source_range().end)
+            .is_none_or(|gap| gap < ";".len())
         || guard.context != context
         || guard.recovery != SourcePredicateDefinitionRecovery::Normal
         || guard.spelling != "assume x = x;"
@@ -1202,15 +1285,35 @@ fn validate_input_rows(
     ) {
         return Err(SourcePredicateDefinitionError::InvalidArenaOwnership);
     }
-    let property = &input.properties[0];
+    let SourceAnchor::Range(justification) = &property.justification else {
+        return Err(SourcePredicateDefinitionError::InvalidProperty { index: 0 });
+    };
     if property.owner != SourcePredicateDefinitionId::new(0)
         || property.ordinal != 0
         || property.kind != SourcePredicatePropertyKind::Symmetry
-        || property.source_range != range(source, 125, 159)
-        || property.justification != SourceAnchor::Range(range(source, 134, 158))
+        || property.source_range.source_id != source
+        || property.source_range.start >= property.source_range.end
+        || justification.source_id != source
+        || justification
+            .start
+            .checked_sub(property.source_range.start)
+            .is_none_or(|gap| gap < "symmetry".len() + 1)
+        || justification
+            .end
+            .checked_sub(justification.start)
+            .is_none_or(|width| width < "by".len() + 1 + "computation".len() + "(steps:1)".len())
+        || property
+            .source_range
+            .end
+            .checked_sub(justification.end)
+            .is_none_or(|gap| gap < ";".len())
+        || block_range
+            .end
+            .checked_sub(property.source_range.end)
+            .is_none_or(|gap| gap < "end;".len())
         || property.recovery != SourcePredicateDefinitionRecovery::Normal
         || property.spelling != "symmetry by computation(steps: 1);"
-        || definition.source_range.end >= property.source_range.start
+        || definition.source_range.end > property.source_range.start
     {
         return Err(SourcePredicateDefinitionError::InvalidProperty { index: 0 });
     }
@@ -1227,7 +1330,7 @@ fn validate_input_rows(
     if correctness.owner != SourcePredicateDefinitionId::new(0)
         || correctness.property != SourcePredicatePropertyId::new(0)
         || correctness.ordinal != 0
-        || correctness.source_anchor != SourceAnchor::Range(range(source, 125, 159))
+        || correctness.source_anchor != SourceAnchor::Range(property.source_range)
     {
         return Err(SourcePredicateDefinitionError::InvalidCorrectness { index: 0 });
     }
@@ -1237,6 +1340,7 @@ fn validate_input_rows(
 fn validate_context_profile(
     input: &SourcePredicateDefinitionHandoffInput,
     source_context: &SourceBindingContextHandoff,
+    arena: &TypedArena,
 ) -> Result<LocalTypeContextId, SourcePredicateDefinitionError> {
     let source = input.source_id;
     let definition_context = input.definitions[0].context;
@@ -1269,7 +1373,8 @@ fn validate_context_profile(
     if item.id != crate::source_context::SourceItemId::new(0)
         || item.shell_ordinal != 0
         || item.role != SourceItemRole::DefinitionBlock
-        || item.source_range != range(source, 0, 164)
+        || item.source_range.source_id != source
+        || item.source_range.start >= item.source_range.end
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.local_scope.is_none()
@@ -1289,6 +1394,15 @@ fn validate_context_profile(
     {
         return Err(SourcePredicateDefinitionError::DependencyMismatch);
     }
+    if !valid_site(
+        &item.site,
+        item.source_range,
+        "source.definition",
+        definition_local_context,
+        arena,
+    ) {
+        return Err(SourcePredicateDefinitionError::InvalidArenaOwnership);
+    }
     for (index, row) in input.parameters.iter().enumerate() {
         let declaration = source_context
             .declarations()
@@ -1299,12 +1413,6 @@ fn validate_context_profile(
             || declaration.source_ordinal != index
             || declaration.spelling != if index == 0 { "x" } else { "y" }
             || declaration.declaration_range != row.declaration_range
-            || declaration.written_type_range
-                != if index == 0 {
-                    range(source, 22, 25)
-                } else {
-                    range(source, 38, 41)
-                }
             || declaration.site != row.site
             || !matches!(
                 declaration.role,
@@ -1327,12 +1435,7 @@ fn validate_context_profile(
             || binding.owner_context != definition_context
             || binding.declaration_range != row.declaration_range
             || binding.visible_after_ordinal != index
-            || binding.type_site
-                != BindingTypeSite::Source(if index == 0 {
-                    range(source, 22, 25)
-                } else {
-                    range(source, 38, 41)
-                })
+            || binding.type_site != BindingTypeSite::Source(declaration.written_type_range)
             || binding.status != BindingStatus::Active
             || !binding.captured.identities().is_empty()
             || !binding.diagnostics.is_empty()
@@ -1346,6 +1449,7 @@ fn validate_context_profile(
 
 fn validate_type_profile(
     input: &SourcePredicateDefinitionHandoffInput,
+    source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
     local_context: LocalTypeContextId,
     arena: &TypedArena,
@@ -1366,14 +1470,16 @@ fn validate_type_profile(
             .expressions()
             .get(SourceTypeExpressionId::new(index))
             .ok_or(SourcePredicateDefinitionError::InvalidParameter { index })?;
-        let written_range = if index == 0 {
-            range(source, 22, 25)
-        } else {
-            range(source, 38, 41)
-        };
+        let written_range = source_context
+            .declarations()
+            .get(crate::source_context::SourceDeclarationId::new(index))
+            .ok_or(SourcePredicateDefinitionError::InvalidParameter { index })?
+            .written_type_range;
         let expression_site = TypedSiteRef::Node(TypedNodeId::new(if index == 0 { 1 } else { 4 }));
         let head_site = TypedSiteRef::Node(TypedNodeId::new(if index == 0 { 0 } else { 3 }));
-        if application.binding() != input.parameters[index].binding
+        if written_range.source_id != source
+            || written_range.end.checked_sub(written_range.start) != Some("set".len())
+            || application.binding() != input.parameters[index].binding
             || application.source_ordinal() != index
             || application.root() != SourceTypeExpressionId::new(index)
             || expression.id() != SourceTypeExpressionId::new(index)
@@ -1432,7 +1538,6 @@ fn validate_term_and_atomic_profile(
     }
     let source = input.source_id;
     let context = input.definitions[0].context;
-    let term_ranges = [(52, 53), (56, 57), (116, 117), (120, 121)];
     let term_spellings = ["x", "x", "x", "y"];
     let binding_indexes = [0, 0, 0, 1];
     for index in 0..4 {
@@ -1444,7 +1549,12 @@ fn validate_term_and_atomic_profile(
             .references()
             .get(crate::source_term::SourcePrimaryTermReferenceId::new(index))
             .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?;
-        if term.source_range() != range(source, term_ranges[index].0, term_ranges[index].1)
+        if term.source_range().source_id != source
+            || term
+                .source_range()
+                .end
+                .checked_sub(term.source_range().start)
+                != Some(1)
             || term.source_ordinal() != index
             || term.context() != context
             || term.recovery() != SourcePrimaryTermRecovery::Normal
@@ -1459,23 +1569,33 @@ fn validate_term_and_atomic_profile(
             return Err(SourcePredicateDefinitionError::DependencyMismatch);
         }
     }
-    let formula_ranges = [(52, 57), (116, 121)];
     let formula_spellings = ["x = x", "x = y"];
-    for formula_index in 0..2 {
+    for (formula_index, spelling) in formula_spellings.into_iter().enumerate() {
         let formula = source_atomic_formula
             .formulas()
             .get(SourceAtomicFormulaId::new(formula_index))
             .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?;
-        if formula.source_range()
-            != range(
-                source,
-                formula_ranges[formula_index].0,
-                formula_ranges[formula_index].1,
-            )
+        let left = source_term
+            .terms()
+            .get(SourcePrimaryTermId::new(formula_index * 2))
+            .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?
+            .source_range();
+        let right = source_term
+            .terms()
+            .get(SourcePrimaryTermId::new(formula_index * 2 + 1))
+            .ok_or(SourcePredicateDefinitionError::DependencyMismatch)?
+            .source_range();
+        if formula.source_range().source_id != source
+            || formula.source_range().start != left.start
+            || formula.source_range().end != right.end
+            || right
+                .start
+                .checked_sub(left.end)
+                .is_none_or(|gap| gap < "=".len())
             || formula.source_ordinal() != formula_index
             || formula.context() != context
             || formula.recovery() != SourceAtomicFormulaRecovery::Normal
-            || formula.spelling() != formula_spellings[formula_index]
+            || formula.spelling() != spelling
             || formula.kind() != SourceAtomicFormulaKind::Equality
         {
             return Err(SourcePredicateDefinitionError::DependencyMismatch);
@@ -1731,6 +1851,7 @@ fn valid_site(
     })
 }
 
+#[cfg(test)]
 const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,

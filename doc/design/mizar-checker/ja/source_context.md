@@ -15,6 +15,16 @@ Profile CはChapters 04 §§4.2/4.6、07 §§7.4.1/7.8.2/7.10を使い、Chapter
 moduleはsource-item order、resolver shell provenance、reserve/definition
 parameterのdistinct identity、local shadow、checker context linkを保持する。
 
+## Predicate layout extraction
+
+既存 runner の2引数 extractor は実際の root/block/parameter/token range を使い、
+所有する child の envelope と必須の単語区切りも検証し、shell/site の認証、callback error、
+scope を維持します。単語区切りには definition header と最初の let の間も含みます。
+対象は先頭2 parameter だけで、後続の guard/pattern/body/proof descendant は消費しません。
+固定 family 全体と raw の
+認証は [Predicate source owner](./source_predicate_definition.md#レイアウトとソースの責任)
+が担当します。以下の元 offset profile は履歴上の fixture の意味を保持します。
+
 ## Boundary
 
 generic `build` input は syntax-free projection とし、下記の別 original-source theorem transaction は neutral resolved arena を受け取る。opaque `DeclarationShellId` は

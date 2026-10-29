@@ -8,6 +8,47 @@ correction。以下のfrozen boundaryはsyntax-free producer、exact real consum
 covered trace backlink 1件によって実装済みです。separately committed
 Task-248 Profile-B dependencyはcompleted current stateのままです。
 
+## レイアウトとソースの責任
+
+以下の元 fixture profile は履歴上の oracle として保持します。固定名の通常の
+Predicate layout は意味上の境界を保ち、実際の AST role の range を使用します。
+runner は normal な71行の kind/text/child graph を選択し、既存 resolver 検証後、
+下位 producer 前に全 token/map と実際の shells/signature/environment を照合します。
+別の Context extractor は [parameter だけの責任](./source_context.md#predicate-layout-extraction)
+を維持します。resolver、arena、下位・上位 payload の range は実際の AST から得ます。
+
+syntax-free checker は既存 ID、spelling、recovery、件数、context、binding、下位
+fingerprint、arena anchor、resolver join を維持します。同一 source の非空 range、
+x/y の1 byte、set の3 byte、member の順序・非重複、formula/operand envelope を検証します。
+parameter 文全体の端点と justification には独立した token site がないため、
+整合する許容 slack は受理できます。正確な raw membership は runner の責任です。
+B=block、P=parameter 文、d=宣言、T=type、G=guard、A=guard Atomic、D=Predicate 定義、
+F=definiens Atomic、Q=property、J=明示 justification、L/R=等式の operand とします。
+次の checked subtraction は固定 token の最小容量であり、正確な位置や証明内容を保証しません。
+
+| 容量 | 最小 byte |
+|---|---:|
+| B.start→P0.start (`definition` と単語区切り) | 11 |
+| P.start→d.start (`let` と単語区切り) | 4 |
+| d.end→T.start (区切りと `be`) | 4 |
+| T.end→P.end (`;`) | 1 |
+| G.start→A.start (`assume` と単語区切り) | 7 |
+| A.end→G.end (`;`) | 1 |
+| D.start→F.start (固定 label/pattern/means prefix) | 54 |
+| F.end→D.end (`;`) | 1 |
+| Q.start→J.start (`symmetry` と単語区切り) | 9 |
+| J の幅 (`by computation(steps:1)`) | 23 |
+| J.end→Q.end (`;`) | 1 |
+| Q.end→B.end (`end;`) | 4 |
+| L.end→R.start (`=`) | 1 |
+
+semicolon と次の keyword は隣接可能です。guard は occurrence link のままです。
+projection は baseline obligation の全行・ID を保持し、実際の property owner/range、
+空の assumptions、既存の opaque goal/provenance を持つ Pending PredicatePropertyCorrectness
+を1件だけ末尾に追加します。installation と final clone でも保持します。
+justification の幾何検証は証明内容の消費、computation 実行、obligation の discharge、
+Predicate の真偽・fact・axiom の公開を行いません。
+
 ## Authority、scope、finding
 
 canonical authority は次のとおりです。
