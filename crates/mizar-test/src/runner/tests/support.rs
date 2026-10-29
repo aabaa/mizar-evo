@@ -8037,3 +8037,374 @@
         ))
         .unwrap()
     }
+
+mod metamorphic_guard {
+    use super::metamorphic_edits::{Edit, apply, mapped_range, variants};
+    use crate::runner::*;
+    use mizar_session::{SourceAnchor, SourceRange};
+    use std::collections::{BTreeMap, BTreeSet};
+
+    fn with_source<T>(case: &TestCase, source: &str, run: impl FnOnce() -> T) -> T {
+        shared::METAMORPHIC_SOURCE.with(|slot| {
+            let previous = slot.replace(Some((case.source_path.clone(), source.to_owned())));
+            assert!(previous.is_none());
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run));
+            slot.replace(previous);
+            match result {
+                Ok(result) => result,
+                Err(error) => std::panic::resume_unwind(error),
+            }
+        })
+    }
+
+    fn observe(
+        root: &Path,
+        config: &DiscoveryConfig,
+        case: &TestCase,
+    ) -> (Vec<String>, Vec<SourceRange>) {
+        let frontend = shared::run_frontend(root, case, 0).unwrap();
+        let mut keys = Vec::new();
+        let mut ranges = Vec::new();
+        for diagnostic in &frontend.diagnostics {
+            keys.push(format!(
+                "frontend:{:?}:{:?}",
+                diagnostic.code, diagnostic.class
+            ));
+            match diagnostic.location {
+                mizar_frontend::orchestration::DiagnosticLocation::SourceRange(range) => {
+                    ranges.push(range)
+                }
+                _ => panic!("loaded semantic case has no diagnostic range"),
+            }
+            for secondary in &diagnostic.secondary {
+                // All currently active corpus diagnostics expose ordinary ranges.
+                match secondary {
+                    SourceAnchor::Range(range) => {
+                        keys.push("secondary:range".into());
+                        ranges.push(*range);
+                    }
+                    _ => panic!("new diagnostic anchor kind requires an explicit transport rule"),
+                }
+            }
+        }
+        let Some(ast) = frontend.ast.as_ref() else {
+            keys.push("frontend:no_ast".into());
+            return (keys, ranges);
+        };
+        let resolver = shared::resolver_symbol_collection(root, case, ast);
+        let collected = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &resolver.shells,
+            mizar_resolve::env::NamespacePath::new(resolver.module.path().as_str()),
+        )
+        .collect(&resolver.module);
+        for diagnostic in collected.diagnostics() {
+            keys.push(format!("resolver:{:?}", diagnostic.class()));
+            ranges.push(diagnostic.range());
+        }
+        match case.expectation.stage {
+            Stage::DeclarationSymbol => {
+                let result = run_declaration_symbol_case(root, case, 0);
+                keys.push(format!("declaration:{:?}", result.actual_detail_keys));
+                keys.push("declaration:downstream_locations_unavailable".into());
+            }
+            Stage::TypeElaboration => {
+                let details = type_elaboration_detail_keys(root, case, frontend, &mut None);
+                keys.push(format!("type:{details:?}"));
+                keys.push("type:downstream_locations_unavailable".into());
+            }
+            Stage::FormulaStatement => {
+                let result = run_formula_statement_case(root, case, 0);
+                keys.push(format!("statement:{:?}", result.actual_detail_keys));
+                keys.push("statement:downstream_locations_unavailable".into());
+            }
+            Stage::ProofVerification => {
+                match proof_verification::metamorphic_proof_observation(root, case, 0) {
+                    Ok((observations, locations)) => {
+                        keys.extend(observations);
+                        ranges.extend(locations);
+                    }
+                    Err(error) => {
+                        assert!(
+                            shared::METAMORPHIC_SOURCE.with(|slot| slot.borrow().is_some()),
+                            "original {} has no raw proof observation: {error}",
+                            case.id.0
+                        );
+                        keys.push(format!("proof:{error}"));
+                    }
+                }
+            }
+            Stage::AdvancedSemantics => {
+                let report = run_advanced_semantics_corpus(config).unwrap();
+                let result = report
+                    .results
+                    .iter()
+                    .find(|result| result.id == case.id)
+                    .expect("admitted advanced case");
+                keys.push(format!("advanced:{:?}", result.actual_detail_keys));
+                keys.push("advanced:downstream_locations_unavailable".into());
+            }
+            _ => panic!("new active semantic stage needs a genuine producer route"),
+        }
+        (keys, ranges)
+    }
+
+    fn first_divergence(
+        expected: &(Vec<String>, Vec<SourceRange>),
+        actual: &(Vec<String>, Vec<SourceRange>),
+        edits: &[Edit],
+    ) -> Option<String> {
+        if expected.0 != actual.0 {
+            let index = expected
+                .0
+                .iter()
+                .zip(&actual.0)
+                .position(|(left, right)| left != right)
+                .unwrap_or(expected.0.len().min(actual.0.len()));
+            return Some(format!(
+                "observation {index}: {:?} -> {:?}",
+                expected.0.get(index),
+                actual.0.get(index)
+            ));
+        }
+        let transported = expected
+            .1
+            .iter()
+            .map(|range| mapped_range(*range, edits))
+            .collect::<Vec<_>>();
+        if transported != actual.1 {
+            return Some(format!("ranges: {transported:?} -> {:?}", actual.1));
+        }
+        None
+    }
+
+    #[test]
+    fn source_override_is_case_local_and_restored_after_unwinding() {
+        let config = super::step5c11_config();
+        let plan = build_test_plan(&config).unwrap();
+        let cases = active_type_elaboration_cases(&plan)
+            .take(2)
+            .collect::<Vec<_>>();
+        let source = fs::read_to_string(&cases[0].source_path).unwrap();
+        let other = fs::read_to_string(&cases[1].source_path).unwrap();
+        let variant = format!("\n{source}");
+        with_source(cases[0], &variant, || {
+            assert_eq!(
+                shared::run_frontend(&config.workspace_root, cases[0], 0)
+                    .unwrap()
+                    .source_text
+                    .as_ref(),
+                variant
+            );
+            assert_eq!(
+                shared::run_frontend(&config.workspace_root, cases[1], 0)
+                    .unwrap()
+                    .source_text
+                    .as_ref(),
+                other
+            );
+        });
+        let panic = std::panic::catch_unwind(|| {
+            with_source(cases[0], &variant, || panic!("unwind control"))
+        });
+        assert!(panic.is_err());
+        assert!(shared::METAMORPHIC_SOURCE.with(|slot| slot.borrow().is_none()));
+        assert_eq!(
+            shared::run_frontend(&config.workspace_root, cases[0], 0)
+                .unwrap()
+                .source_text
+                .as_ref(),
+            source
+        );
+    }
+
+    #[test]
+    fn active_semantic_corpus_preserves_applicable_source_variants() {
+        let mut config = super::step5c11_config();
+        config.profile = crate::harness::TestProfile::Full;
+        let root = &config.workspace_root;
+        let plan = build_test_plan(&config).unwrap();
+        assert_eq!(plan.error_count(), 0, "{:?}", plan.diagnostics);
+        let mut admitted = BTreeMap::new();
+        for case in active_declaration_symbol_cases(&plan)
+            .chain(active_type_elaboration_cases(&plan))
+            .chain(active_formula_statement_cases(root, &plan))
+            .chain(active_proof_verification_cases(&plan))
+            .chain(plan.cases.iter().filter(|case| {
+                step5c11_registration_admitted(root, case) || step5c13_overload_admitted(root, case)
+            }))
+        {
+            assert!(
+                admitted.insert(case.id.0.as_str(), case).is_none(),
+                "duplicate semantic route {}",
+                case.id.0
+            );
+        }
+        let tagged = plan
+            .cases
+            .iter()
+            .filter(|case| {
+                case.expectation.tags.iter().any(|tag| {
+                    matches!(
+                        tag.as_str(),
+                        "active_declaration_symbol"
+                            | "active_type_elaboration"
+                            | "active_formula_statement"
+                            | "active_proof_verification"
+                            | "active_advanced_semantics"
+                    )
+                })
+            })
+            .map(|case| case.id.0.as_str())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(admitted.keys().copied().collect::<BTreeSet<_>>(), tagged);
+        assert!(!admitted.is_empty());
+        let mut exceptions = BTreeMap::new();
+        for row in fs::read_to_string(root.join("tests/coverage/metamorphic_exceptions.tsv"))
+            .unwrap()
+            .lines()
+            .filter(|row| !row.starts_with('#'))
+        {
+            let fields = row.split('\t').collect::<Vec<_>>();
+            assert_eq!(fields.len(), 4, "malformed metamorphic exception: {row}");
+            assert!(
+                admitted.contains_key(fields[0]),
+                "inactive exception: {row}"
+            );
+            assert!(matches!(
+                fields[1],
+                "leading_line" | "intertoken_layout" | "rename"
+            ));
+            assert_eq!(
+                fields[2], "TEST-METAMORPHIC-BRIDGE-GENERALIZATION",
+                "exception requires a reviewed producer owner"
+            );
+            assert!(
+                root.join(format!("doc/design/task_contracts/en/{}.md", fields[2]))
+                    .is_file()
+            );
+            assert!(
+                exceptions
+                    .insert(
+                        format!("{}\t{}", fields[0], fields[1]),
+                        fields[3].to_owned()
+                    )
+                    .is_none(),
+                "duplicate exception: {row}"
+            );
+        }
+        let mut divergences = BTreeMap::new();
+        let mut count = 0;
+        let mut rename_not_applicable = Vec::new();
+        for (id, case) in admitted {
+            let source = fs::read_to_string(&case.source_path).unwrap();
+            let frontend = shared::run_frontend(root, case, 0).unwrap();
+            let ast = frontend.ast.as_ref().unwrap();
+            let tests_root = root.join("tests");
+            match case.expectation.stage {
+                Stage::DeclarationSymbol => assert_eq!(
+                    run_declaration_symbol_case(root, case, 0).status,
+                    DeclarationSymbolCaseStatus::Passed,
+                    "original {id}"
+                ),
+                Stage::TypeElaboration => assert_eq!(
+                    run_type_elaboration_case(root, &tests_root, case, 0).status,
+                    TypeElaborationCaseStatus::Passed,
+                    "original {id}"
+                ),
+                Stage::FormulaStatement => assert_eq!(
+                    run_formula_statement_case(root, case, 0).status,
+                    FormulaStatementCaseStatus::Passed,
+                    "original {id}"
+                ),
+                Stage::ProofVerification => assert_eq!(
+                    run_proof_verification_case(root, &tests_root, case, 0).status,
+                    ProofVerificationCaseStatus::Passed,
+                    "original {id}"
+                ),
+                Stage::AdvancedSemantics => assert_eq!(
+                    run_advanced_semantics_corpus(&config)
+                        .unwrap()
+                        .failed_count(),
+                    0
+                ),
+                _ => unreachable!(),
+            }
+            let baseline = observe(root, &config, case);
+            let rewrites = variants(ast, &source);
+            assert!(rewrites.iter().any(|(name, _)| *name == "leading_line"));
+            assert!(
+                rewrites
+                    .iter()
+                    .any(|(name, _)| *name == "intertoken_layout")
+            );
+            if !rewrites.iter().any(|(name, _)| *name == "rename") {
+                rename_not_applicable.push(id);
+            }
+            for (rewrite, edits) in rewrites {
+                let variant = apply(&source, &edits);
+                assert_ne!(source, variant, "{id}/{rewrite}: no-op variant");
+                let expected_tokens = ast
+                    .token_views()
+                    .map(|view| {
+                        let range = mapped_range(view.range(), &edits);
+                        (
+                            view.as_token().unwrap().kind,
+                            variant[range.start..range.end].to_owned(),
+                            range,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                let (token_divergence, actual) = with_source(case, &variant, || {
+                    let frontend = shared::run_frontend(root, case, 0).unwrap();
+                    let tokens = frontend
+                        .ast
+                        .as_ref()
+                        .map(|ast| {
+                            ast.token_views()
+                                .map(|view| {
+                                    (
+                                        view.as_token().unwrap().kind,
+                                        view.as_token().unwrap().text.to_string(),
+                                        view.range(),
+                                    )
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    let divergence = (expected_tokens != tokens).then(|| {
+                        let index = expected_tokens
+                            .iter()
+                            .zip(&tokens)
+                            .position(|(left, right)| left != right)
+                            .unwrap_or(expected_tokens.len().min(tokens.len()));
+                        format!(
+                            "token {index}: {:?} -> {:?}",
+                            expected_tokens.get(index),
+                            tokens.get(index)
+                        )
+                    });
+                    (divergence, observe(root, &config, case))
+                });
+                if let Some(divergence) =
+                    token_divergence.or_else(|| first_divergence(&baseline, &actual, &edits))
+                {
+                    assert!(
+                        divergences
+                            .insert(format!("{id}\t{rewrite}"), divergence)
+                            .is_none()
+                    );
+                }
+                count += 1;
+            }
+            assert_eq!(fs::read_to_string(&case.source_path).unwrap(), source);
+        }
+        eprintln!(
+            "metamorphic variants={count}; rename not applicable (no safely isolated explicit binder or proof-local label): {rename_not_applicable:?}"
+        );
+        assert_eq!(
+            divergences, exceptions,
+            "new, changed or resolved metamorphic defects require owner review; never rebaseline the original corpus"
+        );
+    }
+}

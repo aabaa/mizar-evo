@@ -23,6 +23,11 @@ use crate::path_rules::absolute_from;
 
 use super::ParseOnlyImportProvider;
 
+#[cfg(test)]
+thread_local! {
+    pub(in crate::runner) static METAMORPHIC_SOURCE: std::cell::RefCell<Option<(PathBuf, String)>> = const { std::cell::RefCell::new(None) };
+}
+
 const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
 
 pub(super) fn frontend_detail_keys(
@@ -151,6 +156,13 @@ fn prepare_source_package(
     let source_path = &case.source_path;
     let text = fs::read_to_string(source_path)
         .map_err(|error| format!("failed to read source `{}`: {error}", source_path.display()))?;
+    #[cfg(test)]
+    let text = METAMORPHIC_SOURCE.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .filter(|(path, _)| path == source_path)
+            .map_or(text.clone(), |(_, variant)| variant.clone())
+    });
     let package_root = temp_package_root(ordinal);
     let temp_source = package_root
         .join("src")

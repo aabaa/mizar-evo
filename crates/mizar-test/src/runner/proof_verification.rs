@@ -954,6 +954,369 @@ fn is_step5c4_proof_workspace_member(workspace_root: &Path, case: &TestCase) -> 
     })
 }
 
+fn source_algorithm_vc_output(
+    workspace_root: &Path,
+    case: &TestCase,
+) -> Result<(Option<mizar_core::core_ir::CoreIr>, VcSet), String> {
+    let frontend = run_frontend(workspace_root, case, 0)?;
+    let computation = (case.expectation.domain == "algorithms.computation")
+        .then(|| frontend.ast.clone())
+        .flatten();
+    let claim = (case.expectation.domain == "algorithms.claim")
+        .then(|| frontend.ast.clone())
+        .flatten();
+    let (source, typed, symbols) =
+        super::source_registration_inputs(workspace_root, case, frontend)?;
+    if let Some(ast) = computation {
+        return theorem_ast_output(
+            &ast,
+            source.module(),
+            &symbols,
+            PipelinePhase::VcGeneration,
+            snapshot_id(0),
+            None,
+        )?
+        .1
+        .map(|vcs| (None, vcs))
+        .ok_or_else(|| "computation VC missing".into());
+    }
+    let checked =
+        mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)?;
+    if let Some(ast) = claim {
+        return theorem_ast_output(
+            &ast,
+            source.module(),
+            &symbols,
+            PipelinePhase::VcGeneration,
+            snapshot_id(0),
+            Some(&checked),
+        )?
+        .1
+        .map(|vcs| (None, vcs))
+        .ok_or_else(|| "claim theorem VC missing".into());
+    }
+    let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
+    if case.expectation.domain == "algorithms.ghost" {
+        use mizar_core::control_flow::{ControlFlowStatementPlacement, build_control_flow_ir};
+        use mizar_core::core_ir::CoreAlgorithmStmtKind;
+        let flow_output = build_control_flow_ir(&core);
+        let (_, flow) = flow_output
+            .flows
+            .iter()
+            .next()
+            .ok_or("snapshot flow missing")?;
+        let captures = checked.snapshots().values().collect::<Vec<_>>();
+        let [(_, sealed)] = captures.as_slice() else {
+            return Err("snapshot seal missing".into());
+        };
+        let statements = core
+            .algorithm_statements()
+            .iter()
+            .filter_map(|(id, statement)| {
+                if let CoreAlgorithmStmtKind::Snapshot { name, captures } = &statement.kind {
+                    Some((id, name, captures))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let [(id, name, captured)] = statements.as_slice() else {
+            return Err("snapshot statement missing".into());
+        };
+        let Some(ControlFlowStatementPlacement::Snapshot {
+            context,
+            captures: locals,
+            ..
+        }) = flow.source_map.statement_placements.get(id)
+        else {
+            return Err("snapshot placement missing".into());
+        };
+        if sealed.len() != 2
+            || captured.len() != 2
+            || captured[0] == captured[1]
+            || checked.snapshots().values().next().map(|(name, _)| name) != Some(*name)
+            || !sealed.iter().zip(captured.iter()).all(|(binding, var)| {
+                checked
+                    .bindings()
+                    .bindings()
+                    .get(*binding)
+                    .is_some_and(|binding| {
+                        flow.locals.iter().any(|(_, local)| {
+                            local.binder.var == *var
+                                && local.binder.source.anchor
+                                    == mizar_core::core_ir::CoreSourceAnchor::SourceRange(
+                                        binding.declaration_range,
+                                    )
+                        })
+                    })
+            })
+            || locals.len() != captured.len()
+            || !locals.iter().zip(captured.iter()).all(|(local, var)| {
+                flow.locals
+                    .get(*local)
+                    .is_some_and(|local| local.binder.var == *var)
+            })
+            || flow.contexts.get(*context).is_none_or(|context| {
+                !locals
+                    .iter()
+                    .all(|local| context.definitely_initialized.contains(local))
+            })
+            || flow.ghost_effects.ghost_assignment_effects.len() != 1
+        {
+            return Err("snapshot capture correspondence differed".into());
+        }
+    }
+
+    let profile = if case.expectation.domain == "algorithms.assertions" {
+        "assert-failure"
+    } else if case.expectation.domain == "algorithms.ghost" {
+        "ghost-snapshot"
+    } else if case.expectation.domain == "algorithms.state" {
+        "state"
+    } else {
+        "return"
+    };
+    let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+        &core,
+        snapshot_id(0),
+        &GenerationSchemaVersion::new(format!("mizar-vc-generation-step5c14-{profile}-v1")),
+        &VcSchemaVersion::new(format!("mizar-vc-vcset-step5c14-{profile}-v1")),
+    )?;
+    Ok((Some(core), vcs))
+}
+
+fn source_registration_vc_output(
+    workspace_root: &Path,
+    case: &TestCase,
+    ordinal: usize,
+) -> Result<(mizar_core::core_ir::CoreIr, VcSet), String> {
+    let (source, nodes, symbols) = super::source_registration_inputs(
+        workspace_root,
+        case,
+        run_frontend(workspace_root, case, ordinal)?,
+    )?;
+    let checked = mizar_checker::registration_resolution::check_source_registration_intake(
+        &source, &nodes, &symbols,
+    )?;
+    let core = mizar_core::elaborator::lower_source_functorial_registration(&checked)?;
+    let vcs = generate_core_vcs(&core, snapshot_id(ordinal))?;
+    Ok((core, vcs))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn metamorphic_proof_observation(
+    root: &Path,
+    case: &TestCase,
+    ordinal: usize,
+) -> Result<(Vec<String>, Vec<mizar_session::SourceRange>), String> {
+    use mizar_core::core_ir::CoreSourceAnchor;
+    if !is_active_proof_verification(case) {
+        return Err("inactive proof case".into());
+    }
+    let unavailable = |value: String, route: &str| {
+        (
+            vec![value, format!("ranges=unavailable:{route}")],
+            Vec::new(),
+        )
+    };
+    let mut observation = Vec::new();
+    let vcs = if is_step5c5_phrase_candidate(case) {
+        if !step5c5_phrase_admitted(Some(root), case) {
+            return Err("invalid phrase predicate admission".into());
+        }
+        phrase_theorem_output(root, case, run_frontend(root, case, 0)?)?.1
+    } else if is_step5c14_return_candidate(case) {
+        if !step5c14_return_admitted(Some(root), case) {
+            return Err("invalid algorithm contract admission".into());
+        }
+        let (core, vcs) = source_algorithm_vc_output(root, case)?;
+        if matches!(
+            case.expectation.domain.as_str(),
+            "algorithms.assertions" | "algorithms.contracts"
+        ) {
+            let core = core.as_ref().ok_or("algorithm Core missing")?;
+            if let Some(failed) =
+                mizar_vc::discharge::failed_source_algorithm_assertion(core, &vcs)?
+            {
+                let failed = vcs.vc(failed).ok_or("algorithm failure VC missing")?;
+                let detail = match failed.kind {
+                    mizar_vc::vc_ir::VcKind::AlgorithmAssertion => "algorithms.assert.unprovable",
+                    mizar_vc::vc_ir::VcKind::AlgorithmPostcondition => {
+                        "algorithms.ensures.unprovable"
+                    }
+                    _ => return Err("algorithm failure referred to a different obligation".into()),
+                };
+                observation.push(format!("fail/verification/proof_failure/{detail}"));
+            }
+        }
+        vcs
+    } else if is_step5c11_proof_candidate(case) {
+        if !step5c11_proof_admitted(Some(root), case) {
+            return Err("invalid Step 5C.11 proof admission".into());
+        }
+        let ordinal = if case.id.0 == STEP5C11_PROOF_CASES[1].0 {
+            0
+        } else {
+            ordinal
+        };
+        let (core, vcs) = source_registration_vc_output(root, case, ordinal)?;
+        if mizar_vc::discharge::failed_functorial_coherence(&core, &vcs)?.is_none() {
+            return Err("registration did not produce the expected correctness failure".into());
+        }
+        let detail = if case.id.0 == STEP5C11_PROOF_CASES[1].0 {
+            "clusters.reduce.false_reducibility"
+        } else {
+            "clusters.functorial.false_coherence"
+        };
+        observation.push(format!("fail/verification/proof_failure/{detail}"));
+        vcs
+    } else if is_step5c2_proof_workspace_member(root, case) {
+        let receipt = normalize_structure_case(root, case, ordinal)?;
+        if !receipt.has_zero_residual_vcs() || receipt.residual_vc_count() != 0 {
+            return Err("structure normalization retained residual VCs".into());
+        }
+        return Ok(unavailable(
+            format!("pass/vc_generation/normalized={}", receipt.equality_count()),
+            "structure-receipt",
+        ));
+    } else if case.id.0 == EXACT_TASK180_CASE_ID {
+        generate_case_vc(root, case, ordinal)?
+    } else {
+        let frontend = run_frontend(root, case, ordinal)?;
+        if !frontend.diagnostics.is_empty() {
+            return Err("proof frontend diagnostics".into());
+        }
+        let ast = frontend.ast.ok_or("proof source has no AST")?;
+        let resolver = resolver_symbol_collection(root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            return Err("proof resolver diagnostics".into());
+        }
+        if super::formula_statement::is_step5c10_candidate(case) {
+            if !super::formula_statement::step5_formula_admitted(Some(root), case) {
+                return Err("invalid Step 5C.10 proof admission".into());
+            }
+            let (classes, vcs) = theorem_ast_output(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                case.expectation
+                    .expected_phase
+                    .ok_or("theorem phase missing")?,
+                snapshot_id(ordinal),
+                None,
+            )?;
+            match vcs {
+                Some(vcs) if classes.is_empty() => vcs,
+                None if !classes.is_empty() => {
+                    return Ok(unavailable(
+                        format!("pass/statement_check/policy={classes:?}"),
+                        "theorem-policy",
+                    ));
+                }
+                _ => return Err("theorem phase produced no matching output".into()),
+            }
+        } else if super::formula_statement::is_step5c9_candidate(case) {
+            if !super::formula_statement::step5_formula_admitted(Some(root), case) {
+                return Err("invalid Step 5C.9 proof admission".into());
+            }
+            if super::formula_statement::check_formula_ast_with_organization(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                true,
+            )? {
+                return Err("expected an incomplete source-derived case split".into());
+            }
+            return Ok(unavailable(
+                "fail/verification/proof_failure/theorems.per_cases.incomplete_case_split".into(),
+                "case-completeness",
+            ));
+        } else if step5c7_proof_workspace_member(root, case) {
+            let count = normalize_term_ast(&ast, &resolver.module, &resolver.env)?;
+            if count != 2 {
+                return Err("membership obligations not discharged".into());
+            }
+            return Ok(unavailable(
+                format!("pass/vc_generation/normalized={count}"),
+                "membership-normalization",
+            ));
+        } else if is_step5c4_proof_workspace_member(root, case) {
+            step5c4_mode_sethood_is_unprovable(
+                &ast,
+                &resolver.module,
+                &resolver.shells,
+                &resolver.env,
+            )?;
+            return Ok(unavailable(
+                format!("fail/verification/proof_failure/{STEP5C4_PROOF_DETAIL_KEY}"),
+                "sethood-observation",
+            ));
+        } else {
+            return Err("unhandled active proof case".into());
+        }
+    };
+    if vcs.vcs().is_empty() {
+        return Err("proof route generated no VCs".into());
+    }
+    if observation.is_empty() {
+        observation.push("pass/vc_generation".into());
+    }
+    // VC ordinals and identity hashes may change with source bytes. Pair retained
+    // locations by the stable semantic owner/path/kind instead of those ordinals.
+    let mut ordered = vcs
+        .vcs()
+        .iter()
+        .map(|vc| {
+            (
+                format!(
+                    "{:?}/{:?}/{:?}",
+                    vc.anchor.owner, vc.anchor.local_path, vc.kind
+                ),
+                vc,
+            )
+        })
+        .collect::<Vec<_>>();
+    ordered.sort_by(|left, right| left.0.cmp(&right.0));
+    if ordered.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err("ambiguous semantic VC range pairing".into());
+    }
+    let mut ranges = Vec::new();
+    for (key, vc) in ordered {
+        use mizar_vc::vc_ir::VcStatus;
+        let status = match &vc.status {
+            VcStatus::Open => "open".into(),
+            VcStatus::NeedsAtp => "needs_atp".into(),
+            VcStatus::Discharged { evidence } => format!("discharged/{:?}", evidence.rule),
+            VcStatus::PolicyOpen { policy } => format!("policy_open/{policy:?}"),
+            VcStatus::AssumedByPolicy { policy, .. } => format!("assumed/{policy:?}"),
+            VcStatus::SkippedDueToInvalidInput { reason } => format!("invalid/{reason:?}"),
+            VcStatus::DeferredExternal { reason } => format!("deferred/{reason:?}"),
+            _ => return Err("VC status requires a semantic diagnostic observation".into()),
+        };
+        observation.push(format!("vc={key}/{status}"));
+        for source in std::iter::once(&vc.source.primary).chain(&vc.source.related) {
+            match &source.anchor {
+                CoreSourceAnchor::SourceRange(range) => {
+                    observation.push("source:range".into());
+                    ranges.push(*range);
+                }
+                anchor => observation.push(format!("source:{anchor:?}")),
+            }
+        }
+        observation.push(format!(
+            "anchor_range_present={}",
+            vc.anchor.source_range.is_some()
+        ));
+        if let Some(range) = vc.anchor.source_range {
+            ranges.push(range);
+        }
+    }
+    if ranges.is_empty() {
+        observation.push("ranges=unavailable:vc-output".into());
+    }
+    Ok((observation, ranges))
+}
+
 pub(super) fn run_proof_verification_case(
     workspace_root: &Path,
     tests_root: &Path,
@@ -999,120 +1362,8 @@ pub(super) fn run_proof_verification_case(
                 return Err("invalid algorithm contract admission".into());
             }
             // Snapshot identity is independent of the active corpus ordering.
-            let build = || -> Result<(Option<mizar_core::core_ir::CoreIr>, VcSet), String> {
-                let frontend = run_frontend(workspace_root, case, 0)?;
-                let computation = (case.expectation.domain == "algorithms.computation")
-                    .then(|| frontend.ast.clone())
-                    .flatten();
-                let claim = (case.expectation.domain == "algorithms.claim")
-                    .then(|| frontend.ast.clone())
-                    .flatten();
-                let (source, typed, symbols) =
-                    super::source_registration_inputs(workspace_root, case, frontend)?;
-                if let Some(ast) = computation {
-                    return theorem_ast_output(
-                        &ast,
-                        source.module(),
-                        &symbols,
-                        PipelinePhase::VcGeneration,
-                        snapshot_id(0),
-                        None,
-                    )?
-                    .1
-                    .map(|vcs| (None, vcs))
-                    .ok_or_else(|| "computation VC missing".into());
-                }
-                let checked = mizar_checker::type_checker::check_source_algorithm_types(
-                    &source, &typed, &symbols,
-                )?;
-                if let Some(ast) = claim {
-                    return theorem_ast_output(
-                        &ast,
-                        source.module(),
-                        &symbols,
-                        PipelinePhase::VcGeneration,
-                        snapshot_id(0),
-                        Some(&checked),
-                    )?
-                    .1
-                    .map(|vcs| (None, vcs))
-                    .ok_or_else(|| "claim theorem VC missing".into());
-                }
-                let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
-                if case.expectation.domain == "algorithms.ghost" {
-                    use mizar_core::control_flow::{
-                        ControlFlowStatementPlacement, build_control_flow_ir,
-                    };
-                    use mizar_core::core_ir::CoreAlgorithmStmtKind;
-                    let flow_output = build_control_flow_ir(&core);
-                    let (_, flow) = flow_output
-                        .flows
-                        .iter()
-                        .next()
-                        .ok_or("snapshot flow missing")?;
-                    let captures = checked.snapshots().values().collect::<Vec<_>>();
-                    let [(_, sealed)] = captures.as_slice() else {
-                        return Err("snapshot seal missing".into());
-                    };
-                    let statements = core
-                        .algorithm_statements()
-                        .iter()
-                        .filter_map(|(id, statement)| {
-                            if let CoreAlgorithmStmtKind::Snapshot { name, captures } =
-                                &statement.kind
-                            {
-                                Some((id, name, captures))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>();
-                    let [(id, name, captured)] = statements.as_slice() else {
-                        return Err("snapshot statement missing".into());
-                    };
-                    let Some(ControlFlowStatementPlacement::Snapshot {
-                        context,
-                        captures: locals,
-                        ..
-                    }) = flow.source_map.statement_placements.get(id)
-                    else {
-                        return Err("snapshot placement missing".into());
-                    };
-                    if sealed.len() != 2 || captured.len() != 2 || captured[0] == captured[1]
-                        || checked.snapshots().values().next().map(|(name, _)| name) != Some(*name)
-                        || !sealed.iter().zip(captured.iter()).all(|(binding, var)| {
-                            checked.bindings().bindings().get(*binding).is_some_and(|binding|
-                                flow.locals.iter().any(|(_, local)| local.binder.var == *var
-                                    && local.binder.source.anchor == mizar_core::core_ir::CoreSourceAnchor::SourceRange(binding.declaration_range)))
-                        })
-                        || locals.len() != captured.len()
-                        || !locals.iter().zip(captured.iter()).all(|(local, var)| flow.locals.get(*local).is_some_and(|local| local.binder.var == *var))
-                        || flow.contexts.get(*context).is_none_or(|context| !locals.iter().all(|local| context.definitely_initialized.contains(local)))
-                        || flow.ghost_effects.ghost_assignment_effects.len() != 1
-                    { return Err("snapshot capture correspondence differed".into()); }
-                }
-
-                let profile = if case.expectation.domain == "algorithms.assertions" {
-                    "assert-failure"
-                } else if case.expectation.domain == "algorithms.ghost" {
-                    "ghost-snapshot"
-                } else if case.expectation.domain == "algorithms.state" {
-                    "state"
-                } else {
-                    "return"
-                };
-                let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
-                    &core,
-                    snapshot_id(0),
-                    &GenerationSchemaVersion::new(format!(
-                        "mizar-vc-generation-step5c14-{profile}-v1"
-                    )),
-                    &VcSchemaVersion::new(format!("mizar-vc-vcset-step5c14-{profile}-v1")),
-                )?;
-                Ok((Some(core), vcs))
-            };
-            let (core, first) = build()?;
-            let (replayed_core, second) = build()?;
+            let (core, first) = source_algorithm_vc_output(workspace_root, case)?;
+            let (replayed_core, second) = source_algorithm_vc_output(workspace_root, case)?;
             if core
                 .as_ref()
                 .map(mizar_core::control_flow::build_control_flow_ir)
@@ -1172,23 +1423,9 @@ pub(super) fn run_proof_verification_case(
             }
             let reduction = case.id.0 == STEP5C11_PROOF_CASES[1].0;
             let ordinal = if reduction { 0 } else { ordinal };
-            let build = || -> Result<(_, VcSet), String> {
-                let (source, nodes, symbols) = super::source_registration_inputs(
-                    workspace_root,
-                    case,
-                    run_frontend(workspace_root, case, ordinal)?,
-                )?;
-                let checked =
-                    mizar_checker::registration_resolution::check_source_registration_intake(
-                        &source, &nodes, &symbols,
-                    )?;
-                let core = mizar_core::elaborator::lower_source_functorial_registration(&checked)?;
-                let vcs = generate_core_vcs(&core, snapshot_id(ordinal))?;
-                Ok((core, vcs))
-            };
-            let (core, vcs) = build()?;
+            let (core, vcs) = source_registration_vc_output(workspace_root, case, ordinal)?;
             if reduction {
-                let replay = build()?;
+                let replay = source_registration_vc_output(workspace_root, case, ordinal)?;
                 if core != replay.0 || vcs != replay.1 || vcs.debug_text() != replay.1.debug_text()
                 {
                     return Err("reduction source-to-VC rerun was nondeterministic".into());

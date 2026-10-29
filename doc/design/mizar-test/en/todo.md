@@ -386,12 +386,15 @@ audit-driven additions; broader runner growth remains task 10 pacing.
 
 21. **Corrected-path soundness vocabulary in the required-case registry (kernel F7).** [x]
 22. **Certificate-corpus root naming reconciliation (kernel F8).** [x]
-23. **Metamorphic generalization guard.** [ ]
+23. **Metamorphic generalization guard.** [x]
     - Semantics-preserving variants of every active semantic case. Contract: [QUALITY-METAMORPHIC-GUARD](../../task_contracts/en/QUALITY-METAMORPHIC-GUARD.md).
 24. **Literal source-offset ratchet.** [x]
     - Repository lint against new literal source offsets in production code. Contract: [QUALITY-LITERAL-OFFSET-RATCHET](../../task_contracts/en/QUALITY-LITERAL-OFFSET-RATCHET.md).
 25. **ATP re-proving benchmark.** [ ]
     - Backend success and kernel acceptance rates by condition and class. Contract: [ATPK-BENCHMARK](../../task_contracts/en/ATPK-BENCHMARK.md).
+
+26. **Source bridge generalization.** [ ]
+    - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/en/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
 
 ## Recommended Verification
 

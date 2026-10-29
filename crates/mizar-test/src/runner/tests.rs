@@ -231,6 +231,666 @@ fn step5c11_four_real_sources_create_only_checked_pending_registrations() {
     }
 }
 
+mod metamorphic_edits {
+    use std::collections::HashSet;
+
+    use mizar_session::SourceRange;
+    use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(super) struct Edit {
+        pub(super) start: usize,
+        pub(super) end: usize,
+        pub(super) replacement: String,
+    }
+
+    pub(super) fn variants(ast: &SurfaceAst, text: &str) -> Vec<(&'static str, Vec<Edit>)> {
+        let tokens = verified_tokens(ast, text);
+        let mut out = vec![(
+            "leading_line",
+            vec![Edit {
+                start: 0,
+                end: 0,
+                replacement: "\n".to_owned(),
+            }],
+        )];
+        let gap = tokens.windows(2).find_map(|pair| {
+            let (left, left_kind) = pair[0];
+            let (right, _) = pair[1];
+            if matches!(left_kind, SurfaceTokenKind::AnnotationMarker) || left.end >= right.start {
+                return None;
+            }
+            let gap = text.get(left.end..right.start)?;
+            (!gap.is_empty()
+                && gap
+                    .bytes()
+                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n')))
+            .then_some(left.end)
+        });
+        let gap = gap.unwrap_or_else(|| {
+            panic!("metamorphic generator error: no verified intertoken whitespace gap")
+        });
+        out.push((
+            "intertoken_layout",
+            vec![Edit {
+                start: gap,
+                end: gap,
+                replacement: " :: metamorphic\n".to_owned(),
+            }],
+        ));
+        if let Some(edits) = alpha_rename(ast, text) {
+            out.push(("rename", edits));
+        }
+        out
+    }
+
+    fn verified_tokens(ast: &SurfaceAst, text: &str) -> Vec<(SourceRange, SurfaceTokenKind)> {
+        let mut tokens = ast
+            .token_views()
+            .filter_map(|view| {
+                let token = view.as_token()?;
+                let range = view.range();
+                assert_eq!(
+                    range.source_id, ast.source_id,
+                    "token source identity drift"
+                );
+                assert!(range.start <= range.end, "reversed AST token range");
+                assert_eq!(
+                    text.get(range.start..range.end),
+                    Some(token.text.as_ref()),
+                    "AST token does not match source bytes"
+                );
+                Some((range, token.kind))
+            })
+            .collect::<Vec<_>>();
+        tokens.sort_by_key(|(range, _)| (range.start, range.end));
+        assert!(
+            tokens
+                .windows(2)
+                .all(|pair| pair[0].0.end <= pair[1].0.start),
+            "overlapping AST token ranges"
+        );
+        tokens
+    }
+
+    fn descendants(ast: &SurfaceAst, root: SurfaceNodeId) -> Vec<SurfaceNodeId> {
+        let mut found = Vec::new();
+        let mut pending = vec![root];
+        while let Some(id) = pending.pop() {
+            found.push(id);
+            if let Some(node) = ast.node(id) {
+                pending.extend(node.children.iter().rev().copied());
+            }
+        }
+        found
+    }
+
+    fn alpha_rename(ast: &SurfaceAst, text: &str) -> Option<Vec<Edit>> {
+        if ast.node_views().any(|view| {
+            matches!(
+                view.kind(),
+                SurfaceNodeKind::ImportItem | SurfaceNodeKind::ModuleBranchImport
+            )
+        }) {
+            return None;
+        }
+        let mut parents = vec![None; ast.nodes().len()];
+        let mut ambiguous_parent = vec![false; parents.len()];
+        for (parent_index, node) in ast.nodes().iter().enumerate() {
+            if matches!(node.kind, SurfaceNodeKind::Root) {
+                continue;
+            }
+            for child in &node.children {
+                let slot = &mut parents[child.index()];
+                if slot.replace(parent_index).is_some() {
+                    ambiguous_parent[child.index()] = true;
+                }
+            }
+        }
+        let spellings = ast
+            .token_views()
+            .filter_map(|view| view.as_token().map(|token| token.text.as_ref()))
+            .collect::<HashSet<_>>();
+        for quantified in ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::QuantifiedFormula(_)))
+        {
+            let quantified_id = quantified.id();
+            let subtree = descendants(ast, quantified_id);
+            if subtree
+                .iter()
+                .any(|id| ast.node(*id).is_some_and(|node| node.recovered))
+            {
+                continue;
+            }
+            let segments = ast
+                .node(quantified_id)?
+                .children
+                .iter()
+                .copied()
+                .filter(|id| {
+                    ast.node(*id).is_some_and(|node| {
+                        matches!(node.kind, SurfaceNodeKind::QuantifierVariableSegment)
+                    })
+                })
+                .collect::<Vec<_>>();
+            if segments.len() != 1 {
+                continue;
+            }
+            let segment = segments[0];
+            let segment_node = ast.node(segment)?;
+            let direct_tokens = segment_node
+                .children
+                .iter()
+                .filter_map(|id| ast.node(*id).map(|node| (*id, &node.kind)))
+                .filter_map(|(id, kind)| match kind {
+                    SurfaceNodeKind::Token(token) => Some((id, token.kind, token.text.as_ref())),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            let binders = direct_tokens
+                .iter()
+                .filter(|(_, kind, _)| matches!(kind, SurfaceTokenKind::Identifier))
+                .collect::<Vec<_>>();
+            let typed = direct_tokens
+                .iter()
+                .filter(|(_, _, spelling)| matches!(*spelling, "be" | "being"))
+                .count()
+                == 1
+                && segment_node
+                    .children
+                    .iter()
+                    .filter(|id| {
+                        ast.node(**id).is_some_and(|node| {
+                            matches!(node.kind, SurfaceNodeKind::TypeExpression)
+                        })
+                    })
+                    .count()
+                    == 1;
+            if binders.len() != 1 || !typed {
+                continue;
+            }
+            let binder_id = binders[0].0;
+            let spelling = binders[0].2;
+            if ambiguous_parent[binder_id.index()] {
+                continue;
+            }
+            let children = &ast.node(quantified_id)?.children;
+            let segment_position = children.iter().position(|id| *id == segment)?;
+            let scope = children[segment_position + 1..]
+                .iter()
+                .flat_map(|id| descendants(ast, *id))
+                .collect::<HashSet<_>>();
+            let mut occurrences = vec![binder_id];
+            let mut safe = true;
+            for view in ast.token_views() {
+                let Some(token) = view.as_token() else {
+                    continue;
+                };
+                if token.text.as_ref() != spelling {
+                    continue;
+                }
+                let id = view.id();
+                if id == binder_id {
+                    continue;
+                }
+                let parent = parents[id.index()].and_then(|index| ast.nodes().get(index));
+                let is_bound_use = scope.contains(&id)
+                    && matches!(token.kind, SurfaceTokenKind::Identifier)
+                    && parent
+                        .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::TermReference))
+                    && !ambiguous_parent[id.index()];
+                if is_bound_use {
+                    occurrences.push(id);
+                } else {
+                    safe = false;
+                    break;
+                }
+            }
+            if !safe {
+                continue;
+            }
+            let fresh = (0usize..)
+                .map(|index| format!("metamorphic_bound_variable_{index}"))
+                .find(|candidate| !spellings.contains(candidate.as_str()))?;
+            let mut edits = occurrences
+                .into_iter()
+                .map(|id| {
+                    let range = ast.node(id).expect("token node exists").range;
+                    Edit {
+                        start: range.start,
+                        end: range.end,
+                        replacement: fresh.clone(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            edits.sort_by_key(|edit| edit.start);
+            assert!(
+                edits
+                    .iter()
+                    .all(|edit| text.get(edit.start..edit.end) == Some(spelling)),
+                "rename edit does not cover its AST identifier"
+            );
+            return Some(edits);
+        }
+        proof_label_rename(ast, text, &parents, &ambiguous_parent, &spellings)
+    }
+
+    fn proof_label_rename(
+        ast: &SurfaceAst,
+        text: &str,
+        parents: &[Option<usize>],
+        ambiguous_parent: &[bool],
+        spellings: &HashSet<&str>,
+    ) -> Option<Vec<Edit>> {
+        for statement in ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::CompactStatement))
+        {
+            if statement.is_recovered() {
+                continue;
+            }
+            let propositions = statement
+                .child_views()
+                .filter(|view| matches!(view.kind(), SurfaceNodeKind::Proposition))
+                .collect::<Vec<_>>();
+            if propositions.len() != 1 || propositions[0].is_recovered() {
+                continue;
+            }
+            let children = propositions[0].child_views().collect::<Vec<_>>();
+            if children.len() < 2
+                || children[0].is_recovered()
+                || children[1].is_recovered()
+                || !children[0]
+                    .as_token()
+                    .is_some_and(|token| token.kind == SurfaceTokenKind::Identifier)
+                || !children[1].as_token().is_some_and(|token| {
+                    token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ":"
+                })
+            {
+                continue;
+            }
+            let declaration = children[0].id();
+            if ambiguous_parent[declaration.index()] {
+                continue;
+            }
+            let spelling = children[0].as_token()?.text.as_ref();
+            let proof_index = enclosing_proof_index(ast, declaration, parents)?;
+            if !scope_path_is_safe(ast, declaration, proof_index, parents) {
+                continue;
+            }
+            let proof_id = ast
+                .node_views()
+                .find(|view| view.id().index() == proof_index)?
+                .id();
+            let proof_nodes = descendants(ast, proof_id)
+                .into_iter()
+                .collect::<HashSet<_>>();
+            let mut occurrences = vec![declaration];
+            let mut safe = true;
+            for view in ast.token_views() {
+                let Some(token) = view.as_token() else {
+                    continue;
+                };
+                if token.text.as_ref() != spelling {
+                    continue;
+                }
+                let id = view.id();
+                if id == declaration {
+                    continue;
+                }
+                let in_scope = proof_nodes.contains(&id)
+                    && scope_path_is_safe(ast, id, proof_index, parents)
+                    && view.range().start > statement.range().end;
+                let citation = exact_citation_identifier(ast, id, parents, ambiguous_parent);
+                if in_scope && citation {
+                    occurrences.push(id);
+                } else {
+                    safe = false;
+                    break;
+                }
+            }
+            if !safe {
+                continue;
+            }
+            let fresh = (0usize..)
+                .map(|index| format!("metamorphic_bound_variable_{index}"))
+                .find(|candidate| !spellings.contains(candidate.as_str()))?;
+            let mut edits = occurrences
+                .into_iter()
+                .map(|id| {
+                    let range = ast.node(id).expect("label token node exists").range;
+                    Edit {
+                        start: range.start,
+                        end: range.end,
+                        replacement: fresh.clone(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            edits.sort_by_key(|edit| edit.start);
+            assert!(
+                edits
+                    .iter()
+                    .all(|edit| text.get(edit.start..edit.end) == Some(spelling)),
+                "label edit does not cover its AST identifier"
+            );
+            return Some(edits);
+        }
+        None
+    }
+
+    fn enclosing_proof_index(
+        ast: &SurfaceAst,
+        id: SurfaceNodeId,
+        parents: &[Option<usize>],
+    ) -> Option<usize> {
+        let mut current = id.index();
+        while let Some(parent) = parents.get(current).copied().flatten() {
+            current = parent;
+            if matches!(ast.nodes().get(current)?.kind, SurfaceNodeKind::ProofBlock) {
+                return Some(current);
+            }
+        }
+        None
+    }
+
+    fn scope_path_is_safe(
+        ast: &SurfaceAst,
+        id: SurfaceNodeId,
+        proof_index: usize,
+        parents: &[Option<usize>],
+    ) -> bool {
+        let mut current = id.index();
+        while current != proof_index {
+            let Some(parent) = parents.get(current).copied().flatten() else {
+                return false;
+            };
+            current = parent;
+            if matches!(
+                ast.nodes()[current].kind,
+                SurfaceNodeKind::NowStatement
+                    | SurfaceNodeKind::HerebyStatement
+                    | SurfaceNodeKind::SupposeItem
+                    | SurfaceNodeKind::CaseItem
+                    | SurfaceNodeKind::CaseReasoningStatement
+            ) {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn exact_citation_identifier(
+        ast: &SurfaceAst,
+        id: SurfaceNodeId,
+        parents: &[Option<usize>],
+        ambiguous_parent: &[bool],
+    ) -> bool {
+        if ambiguous_parent[id.index()]
+            || !matches!(ast.nodes()[id.index()].kind, SurfaceNodeKind::Token(_))
+        {
+            return false;
+        }
+        let Some(reference_index) = parents[id.index()] else {
+            return false;
+        };
+        let reference = &ast.nodes()[reference_index];
+        if !matches!(reference.kind, SurfaceNodeKind::Reference)
+            || reference.recovered
+            || reference.children.as_slice() != [id]
+        {
+            return false;
+        }
+        let Some(list_index) = parents[reference_index] else {
+            return false;
+        };
+        let list = &ast.nodes()[list_index];
+        if !matches!(list.kind, SurfaceNodeKind::ReferenceList) || list.recovered {
+            return false;
+        }
+        let Some(justification_index) = parents[list_index] else {
+            return false;
+        };
+        let justification = &ast.nodes()[justification_index];
+        if !matches!(justification.kind, SurfaceNodeKind::JustificationClause)
+            || justification.recovered
+        {
+            return false;
+        }
+        let Some(first_id) = justification.children.first() else {
+            return false;
+        };
+        ast.node(*first_id).is_some_and(|node| matches!(&node.kind, SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "by"))
+    }
+
+    pub(super) fn apply(text: &str, edits: &[Edit]) -> String {
+        let mut edits = edits.to_vec();
+        edits.sort_by_key(|edit| (edit.start, edit.end));
+        let mut output = String::with_capacity(text.len());
+        let mut cursor = 0;
+        for edit in edits {
+            assert!(
+                edit.start >= cursor && edit.start <= edit.end,
+                "overlapping or reversed edits"
+            );
+            output.push_str(
+                text.get(cursor..edit.start)
+                    .expect("edit starts on UTF-8 boundary"),
+            );
+            output.push_str(&edit.replacement);
+            cursor = edit.end;
+        }
+        output.push_str(text.get(cursor..).expect("edit ends on UTF-8 boundary"));
+        output
+    }
+
+    pub(super) fn mapped_range(mut range: SourceRange, edits: &[Edit]) -> SourceRange {
+        if range.start == range.end {
+            let point = map_endpoint(range.start, true, edits);
+            range.start = point;
+            range.end = point;
+        } else {
+            range.start = map_endpoint(range.start, true, edits);
+            range.end = map_endpoint(range.end, false, edits);
+        }
+        range
+    }
+
+    fn map_endpoint(point: usize, start_affinity: bool, edits: &[Edit]) -> usize {
+        let mut edits = edits.to_vec();
+        edits.sort_by_key(|edit| (edit.start, edit.end));
+        let mut shift: isize = 0;
+        for edit in edits {
+            let mapped_start = (edit.start as isize + shift) as usize;
+            if edit.start == edit.end {
+                if point < edit.start {
+                    break;
+                }
+                if point == edit.start {
+                    return mapped_start
+                        + if start_affinity {
+                            edit.replacement.len()
+                        } else {
+                            0
+                        };
+                }
+                shift += edit.replacement.len() as isize;
+            } else {
+                if point < edit.start {
+                    break;
+                }
+                if point <= edit.end {
+                    return if point == edit.end {
+                        mapped_start + edit.replacement.len()
+                    } else {
+                        mapped_start
+                    };
+                }
+                shift += edit.replacement.len() as isize - (edit.end - edit.start) as isize;
+            }
+        }
+        (point as isize + shift) as usize
+    }
+
+    #[test]
+    fn layouts_and_alpha_rename_preserve_unicode_and_token_boundaries() {
+        let source = "@[module_note(\"π\")]\ntheorem T: for x being set holds x = x; :: λ note\n";
+        let ast = super::task257c4c1_frontend_output(source, 620).ast.unwrap();
+        let variants = variants(&ast, source);
+        assert_eq!(variants[0].0, "leading_line");
+        assert_eq!(apply(source, &variants[0].1), format!("\n{source}"));
+        assert_eq!(variants[1].0, "intertoken_layout");
+        let comment_edit = &variants[1].1[0];
+        assert!(source.as_bytes()[comment_edit.start].is_ascii_whitespace());
+        let layout = apply(source, &variants[1].1);
+        assert!(layout.contains("@[module_note(\"π\")]"));
+        assert!(layout.contains(":: λ note"));
+        let rename = variants
+            .iter()
+            .find(|(name, _)| *name == "rename")
+            .expect("explicit, isolated binder is renameable");
+        assert_eq!(rename.1.len(), 3);
+        let renamed = apply(source, &rename.1);
+        assert!(renamed.contains("metamorphic_bound_variable_0"));
+        assert!(renamed.contains("\"π\""));
+        assert!(renamed.contains(":: λ note"));
+    }
+
+    #[test]
+    fn shadowing_and_selector_names_make_alpha_rename_inapplicable() {
+        for source in [
+            "theorem T: for x being set holds (for x being set holds x = x) & x = x;",
+            "theorem T: for x being set holds x.x = x;",
+            "import parser.type_fixtures;\ntheorem T: for x being object holds x = x;",
+        ] {
+            let ast = super::task257c4c1_frontend_output(source, 621).ast.unwrap();
+            assert!(
+                variants(&ast, source)
+                    .iter()
+                    .all(|(name, _)| *name != "rename")
+            );
+        }
+    }
+
+    #[test]
+    fn binderless_duplicate_and_confined_cases_keep_layouts_without_partial_renames() {
+        let sources = [
+            "theorem T: contradiction;",
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../tests/miz/fail/variables/fail_formula_statement_duplicate_generalization_001.miz"
+            )),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../tests/miz/fail/resolve/fail_resolve_proof_label_inner_to_outer_confinement_001.miz"
+            )),
+        ];
+        for (index, source) in sources.into_iter().enumerate() {
+            let ast = super::task257c4c1_frontend_output(source, 622 + index)
+                .ast
+                .unwrap();
+            let variants = variants(&ast, source);
+            assert_eq!(variants.len(), 2, "case {index} must retain both layouts");
+            assert_eq!(variants[0].0, "leading_line");
+            assert_eq!(variants[1].0, "intertoken_layout");
+            assert!(!apply(source, &variants[1].1).is_empty());
+        }
+    }
+
+    #[test]
+    fn isolated_proof_local_label_and_citation_are_renamed_together() {
+        let source = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.miz"
+        ));
+        let ast = super::task257c4c1_frontend_output(source, 626).ast.unwrap();
+        let rename = variants(&ast, source)
+            .into_iter()
+            .find(|(name, _)| *name == "rename")
+            .expect("unique proof-local label has one citation family");
+        assert_eq!(rename.1.len(), 2);
+        let renamed = apply(source, &rename.1);
+        assert_eq!(renamed.matches("metamorphic_bound_variable_0").count(), 2);
+        assert!(renamed.contains("by metamorphic_bound_variable_0;"));
+        assert!(!renamed.contains("by A;"));
+    }
+
+    #[test]
+    fn byte_map_keeps_insertions_outside_neighboring_token_spans() {
+        let source_id = super::source_id(9);
+        let edit = Edit {
+            start: 1,
+            end: 1,
+            replacement: "comment".to_owned(),
+        };
+        assert_eq!(
+            mapped_range(
+                SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 1
+                },
+                std::slice::from_ref(&edit)
+            ),
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 1
+            }
+        );
+        assert_eq!(
+            mapped_range(
+                SourceRange {
+                    source_id,
+                    start: 2,
+                    end: 3
+                },
+                std::slice::from_ref(&edit)
+            ),
+            SourceRange {
+                source_id,
+                start: 9,
+                end: 10
+            }
+        );
+        assert_eq!(
+            mapped_range(
+                SourceRange {
+                    source_id,
+                    start: 1,
+                    end: 1
+                },
+                std::slice::from_ref(&edit)
+            ),
+            SourceRange {
+                source_id,
+                start: 8,
+                end: 8
+            }
+        );
+        let replacement = Edit {
+            start: 2,
+            end: 3,
+            replacement: "fresh_name".to_owned(),
+        };
+        assert_eq!(
+            mapped_range(
+                SourceRange {
+                    source_id,
+                    start: 2,
+                    end: 3
+                },
+                &[replacement]
+            ),
+            SourceRange {
+                source_id,
+                start: 2,
+                end: 12
+            }
+        );
+    }
+}
+
 #[test]
 fn step5c11_source_intake_rejects_wrong_bindings_types_guards_and_correctness() {
     let mutations = [
