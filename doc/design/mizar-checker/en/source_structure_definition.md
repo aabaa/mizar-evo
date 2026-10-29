@@ -5,6 +5,42 @@
 
 This Task 263 transport remains frozen.
 
+## Ordinary Structure layout
+
+The original source/tests and canonical spelling descriptors remain fixture oracles;
+live transport uses relative same-source nonempty geometry at existing role sites.
+Keep all resolver identity/signature/path/arity/effect checks before all definition,
+member, inheritance, mapping/coverage and lower phases; coherence/baseline precede arena.
+Resolver validates its own normal origins, never caller ranges/sites. Each row phase
+joins its range to its authenticated/stored origin; lower joins remain after mappings.
+Stored-origin role/path/identity failures remain Resolver; normal range disagreements
+are the corresponding row error, without stale-side blame. Preserve old exact winners.
+
+Contribution encloses ordered origins; build additionally checks the inheritance
+inside that actual contribution. Installation has no contribution/block snapshot or
+Context: do not invent module-root74 authority or raw block endpoints. Definitions
+contain their ordered members; members contain Set3 RHS/tail; inheritance follows both
+definitions and contains ordered mappings. Require grammar-derived header/closing and
+member/mapping capacities, allowing adjacent completed statements. Canonical descriptor
+lengths and indentation are not coordinates. Generic RHS arena containment stays valid.
+Minimum capacities are token spelling lengths plus necessary word separators:
+block→first structure11; structure→first member25/28; member→Set15/17
+(field/property); Set→member end1; last member/mapping→owner end4;
+inheritance→first mapping49; mapping widths27/28; inheritance→block end4.
+These bound carried envelopes, not unrepresented token locations. Early definition/
+inheritance geometry uses authenticated member/mapping origins, not malformed later
+input rows; their faults remain in their own phases. Equal adjacent owners are allowed.
+Inheritance has no resolver origin: its normal same-source expected slot70, when it
+contains both mappings with header/closing capacity, establishes range congruence at
+the inheritance phase. Otherwise defer arena failure; never claim unique stale-side truth.
+
+Runner selects the fixed native fifty-token family, then authenticates normal75-row
+ownership (including root token aliases), mapped raw tokens and current shell/env replay.
+All102 existing selected refusals stay selected. Layout includes final-LF absence;
+unsupported constructor-name families remain unselected. Scalar public upper geometry
+is not raw membership. Preserve2/4/1/2/0, lower identities, constructor/property distinction,
+all supplied baseline obligations/snapshot and zero appended coherence or semantic credit.
+
 ## Task 263 Scope And Authority
 
 Checker Task 263 owns one syntax-free immutable intake for two ordinary

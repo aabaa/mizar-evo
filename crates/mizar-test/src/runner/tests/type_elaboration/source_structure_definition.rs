@@ -97,16 +97,31 @@ fn task263_structure_definition_lower_payload_and_subtree_corruption_fail_closed
             "mutation {mutation:?} must fail closed"
         );
     }
-    let without_final_lf = SOURCE_STRUCTURE_DEFINITION_TEXT.trim_end_matches('\n');
-    let (wrong_ast, wrong_module, wrong_shells, wrong_symbols) =
-        task253_ast_from_source_text(without_final_lf, 263_002);
+    assert_eq!(SOURCE_STRUCTURE_DEFINITION_TEXT.matches("Task263Base").count(), 2);
+    let unsupported_family = SOURCE_STRUCTURE_DEFINITION_TEXT.replace("Task263Base", "Task263Else");
+    assert_eq!(unsupported_family.len(), SOURCE_STRUCTURE_DEFINITION_TEXT.len());
+    assert_eq!(unsupported_family.matches("Task263Else").count(), 2);
+    assert!(!unsupported_family.contains("Task263Base"));
+    let (wrong_ast, wrong_module, wrong_shells, wrong_symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&unsupported_family, 263_002);
+    assert_eq!(diagnostics, 0);
+    assert!(wrong_ast.canonical_bytes().is_some());
+    assert!(wrong_ast.node_views().all(|node| !node.is_recovered()));
+    assert_eq!(wrong_ast.nodes().len(), 75);
+    assert_eq!(wrong_ast.token_nodes().len(), 50);
+    for index in [2, 34] {
+        let mizar_syntax::SurfaceNodeKind::Token(token) = &wrong_ast.nodes()[index].kind else {
+            panic!("renamed declaration/target must remain a token");
+        };
+        assert_eq!(token.text.as_ref(), "Task263Else");
+    }
     assert!(
         source_structure_definition_output(
             &wrong_ast,
             wrong_module,
             &wrong_shells,
             &wrong_symbols,
-            without_final_lf,
+            &unsupported_family,
         )
         .is_none()
     );
@@ -742,4 +757,459 @@ fn task263_extra_symbol(
             local,
         )),
     )
+}
+
+#[test]
+fn metamorphic_structure_layout_lexical_stream_matches_genuine_frontend() {
+    let original = task257c4c1_frontend_output(SOURCE_STRUCTURE_DEFINITION_TEXT, 263_200);
+    assert!(original.diagnostics.is_empty());
+    let mut sources = vec![("original", SOURCE_STRUCTURE_DEFINITION_TEXT.to_owned())];
+    sources.extend(
+        metamorphic_edits::variants(
+            original.ast.as_ref().unwrap(),
+            SOURCE_STRUCTURE_DEFINITION_TEXT,
+        )
+        .into_iter()
+        .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+        .map(|(kind, edits)| {
+            (
+                kind,
+                metamorphic_edits::apply(SOURCE_STRUCTURE_DEFINITION_TEXT, &edits),
+            )
+        }),
+    );
+    assert_eq!(sources.len(), 3);
+    assert_eq!(sources[1].0, "leading_line");
+    assert_eq!(sources[2].0, "intertoken_layout");
+    sources.push((
+        "missing_final_lf",
+        SOURCE_STRUCTURE_DEFINITION_TEXT
+            .strip_suffix('\n')
+            .unwrap()
+            .to_owned(),
+    ));
+    sources.push((
+        "compact",
+        SOURCE_STRUCTURE_DEFINITION_TEXT.split_whitespace().collect::<Vec<_>>().join(" ")
+            .replace("carrier -> set;", "carrier->set;")
+            .replace("marker -> set;", "marker->set;")
+            .replace("; ", ";"),
+    ));
+    for (ordinal, (layout, source)) in sources.into_iter().enumerate() {
+        let frontend = task257c4c1_frontend_output(&source, 263_201 + ordinal);
+        assert!(frontend.diagnostics.is_empty(), "{layout}");
+        assert!(frontend.tokens.diagnostics.is_empty(), "{layout}");
+        assert!(frontend.preprocessed.import_stubs.is_empty(), "{layout}");
+        assert_eq!(frontend.source.source_text.as_ref(), source, "{layout}");
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(
+            ast.node_views().all(|node| !node.is_recovered()),
+            "{layout}"
+        );
+        assert_eq!(ast.nodes().len(), 75, "{layout}");
+        assert_eq!(ast.root().map(|id| id.index()), Some(74), "{layout}");
+        assert!(ast.expression_root().is_none(), "{layout}");
+        let native = frontend.tokens.tokens();
+        assert_eq!(native.len(), 50, "{layout}");
+        for (index, kind, text) in [
+            (2, mizar_lexer::TokenKind::Identifier, "Task263Base"),
+            (17, mizar_lexer::TokenKind::Identifier, "Task263Derived"),
+            (32, mizar_lexer::TokenKind::UserSymbol, "Task263Derived"),
+            (34, mizar_lexer::TokenKind::UserSymbol, "Task263Base"),
+        ] {
+            assert_eq!(
+                (native[index].kind, native[index].text.as_ref()),
+                (kind, text),
+                "{layout}"
+            );
+        }
+        let preprocessed = mizar_lexer::preprocess_source_for_lexing(&source);
+        assert!(preprocessed.diagnostics.is_empty(), "{layout}");
+        assert_eq!(
+            preprocessed.lexical_text,
+            frontend.preprocessed.lexical_text.as_str(),
+            "{layout}"
+        );
+        assert_eq!(
+            preprocessed.preprocess_map, frontend.preprocessed.source_map.preprocess_map,
+            "{layout}"
+        );
+        let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).unwrap();
+        let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let locals = mizar_lexer::collect_local_lexical_declarations(
+            &raw,
+            mizar_lexer::ModuleId::new(frontend.source.module_path.as_str()),
+        );
+        assert_eq!(&locals, frontend.tokens.local_declarations(), "{layout}");
+        let scopes = mizar_lexer::build_scope_skeleton(&raw);
+        assert!(scopes.diagnostics.is_empty(), "{layout}");
+        let actual = mizar_lexer::disambiguate_with_local_declarations(
+            &raw,
+            &environment,
+            &locals,
+            &mizar_lexer::ParserLexContext::general(),
+            &scopes,
+        );
+        assert!(actual.diagnostics().is_empty(), "{layout}");
+        assert_eq!(actual.tokens().len(), native.len(), "{layout}");
+        for (token, native) in actual.tokens().iter().zip(native) {
+            let mapped = preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(token.span)
+                .unwrap();
+            assert_eq!(mapped.len(), 1, "{layout}: token split by preprocessing");
+            let span = mizar_session::SourceRange {
+                source_id: ast.source_id,
+                start: mapped[0].start,
+                end: mapped[0].end,
+            };
+            assert_eq!(
+                (token.kind, token.lexeme.as_str(), span),
+                (native.kind, native.text.as_ref(), native.span),
+                "{layout}"
+            );
+            assert_eq!(
+                source.get(span.start..span.end),
+                Some(token.lexeme.as_str()),
+                "{layout}"
+            );
+        }
+    }
+}
+
+#[test]
+fn metamorphic_structure_layout_transports_actual_source_handoffs() {
+    let (original_ast, original_module, original_shells, original_symbols) =
+        task253_ast_from_source_text(SOURCE_STRUCTURE_DEFINITION_TEXT, 263_210);
+    let mut sources = vec![("original", SOURCE_STRUCTURE_DEFINITION_TEXT.to_owned())];
+    sources.extend(
+        metamorphic_edits::variants(&original_ast, SOURCE_STRUCTURE_DEFINITION_TEXT)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| {
+                (
+                    kind,
+                    metamorphic_edits::apply(SOURCE_STRUCTURE_DEFINITION_TEXT, &edits),
+                )
+            }),
+    );
+    assert_eq!(sources.len(), 3);
+    sources.push((
+        "missing_final_lf",
+        SOURCE_STRUCTURE_DEFINITION_TEXT
+            .strip_suffix('\n')
+            .unwrap()
+            .to_owned(),
+    ));
+    sources.push((
+        "compact",
+        SOURCE_STRUCTURE_DEFINITION_TEXT.split_whitespace().collect::<Vec<_>>().join(" ")
+            .replace("carrier -> set;", "carrier->set;")
+            .replace("marker -> set;", "marker->set;")
+            .replace("; ", ";"),
+    ));
+    for (ordinal, (layout, source)) in sources.into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 263_211 + ordinal);
+        assert_eq!(diagnostics, 0, "{layout}");
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(
+            ast.node_views().all(|node| !node.is_recovered()),
+            "{layout}"
+        );
+        let output =
+            source_structure_definition_output(&ast, module.clone(), &shells, &symbols, &source)
+                .expect("supported Structure layout must be selected")
+                .expect("actual Structure layout must build");
+        if layout == "compact" {
+            assert_eq!(source.len(), 264);
+            for (site, start, end) in [
+                (71, 0, 264), (57, 11, 80), (65, 80, 152),
+                (53, 36, 55), (56, 55, 76), (61, 108, 127), (64, 127, 148),
+                (52, 51, 54), (55, 72, 75), (60, 123, 126), (63, 144, 147),
+                (70, 152, 260), (68, 201, 228), (69, 228, 256),
+            ] {
+                assert_eq!((ast.nodes()[site].range.start, ast.nodes()[site].range.end), (start, end));
+            }
+        }
+        let typed = &output.typed_ast;
+        let handoff = typed.source_structure_definition().unwrap();
+        let lower = typed.source_type().unwrap();
+        assert_eq!(
+            (
+                handoff.definitions().len(),
+                handoff.members().len(),
+                handoff.inheritances().len(),
+                handoff.mappings().len(),
+                handoff.coherence_requests().len()
+            ),
+            (2, 4, 1, 2, 0)
+        );
+        assert_eq!(
+            (
+                lower.applications().len(),
+                lower.expressions().len(),
+                lower.arguments().len(),
+                lower.definition_returns().len(),
+                lower.mode_rhs().len(),
+                lower.structure_members().len()
+            ),
+            (0, 4, 0, 0, 0, 4)
+        );
+        assert_eq!(handoff.source_type_fingerprint(), lower.debug_text());
+        for ((_, row), site) in handoff.definitions().iter().zip([57, 65]) {
+            assert_eq!(row.source_range(), ast.nodes()[site].range, "{layout}");
+            assert_eq!(
+                row.origin(),
+                symbols
+                    .definitions()
+                    .get(row.definition())
+                    .unwrap()
+                    .origin()
+            );
+            assert_eq!(
+                row.constructor_fields()
+                    .iter()
+                    .map(|id| id.index())
+                    .collect::<Vec<_>>(),
+                vec![row.id().index() * 2]
+            );
+        }
+        for (((_, row), (_, member)), (owner, rhs)) in handoff
+            .members()
+            .iter()
+            .zip(lower.structure_members().iter())
+            .zip([(53, 52), (56, 55), (61, 60), (64, 63)])
+        {
+            assert_eq!(row.source_range(), ast.nodes()[owner].range, "{layout}");
+            assert_eq!(member.member_range(), row.source_range());
+            assert_eq!(row.written_type(), member.id());
+            let expression = lower.expressions().get(member.root()).unwrap();
+            assert_eq!(expression.source_range(), ast.nodes()[rhs].range);
+            assert_eq!(expression.head_range(), expression.source_range());
+            assert_eq!(
+                expression.source_range().end - expression.source_range().start,
+                3
+            );
+            assert_eq!(
+                row.origin(),
+                symbols
+                    .definitions()
+                    .get(row.definition())
+                    .unwrap()
+                    .origin()
+            );
+        }
+        assert_eq!(
+            handoff
+                .inheritances()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .source_range(),
+            ast.nodes()[70].range
+        );
+        for ((_, row), site) in handoff.mappings().iter().zip([68, 69]) {
+            assert_eq!(row.source_range(), ast.nodes()[site].range, "{layout}");
+            assert_eq!(
+                row.origin(),
+                symbols
+                    .definitions()
+                    .get(row.definition())
+                    .unwrap()
+                    .origin()
+            );
+            assert_eq!(
+                row.path().iter().map(|id| id.index()).collect::<Vec<_>>(),
+                vec![0]
+            );
+        }
+        assert_eq!(output.resolved.source_structure_definition(), Some(handoff));
+        assert_eq!(output.resolved.source_type(), Some(lower));
+        assert_eq!(
+            output.resolved.clone().source_structure_definition(),
+            Some(handoff)
+        );
+        assert!(typed.source_context().is_none());
+        assert!(
+            typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty()
+        );
+        assert!(typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+        assert!(
+            output.resolved.checked_formulas().is_empty()
+                && output.resolved.statement_semantics().is_empty()
+                && output.resolved.checked_proofs().is_empty()
+                && output.resolved.cluster_facts().is_empty()
+        );
+        if matches!(layout, "leading_line" | "intertoken_layout") {
+            for result in [
+                source_structure_definition_output(
+                    &original_ast,
+                    original_module.clone(),
+                    &original_shells,
+                    &original_symbols,
+                    &source,
+                ),
+                source_structure_definition_output(
+                    &ast,
+                    module,
+                    &shells,
+                    &symbols,
+                    SOURCE_STRUCTURE_DEFINITION_TEXT,
+                ),
+            ] {
+                assert!(
+                    result
+                        .expect("supported raw family with stale association remains selected")
+                        .is_err(),
+                    "{layout}"
+                );
+            }
+        }
+    }
+    let trivia_equivalent = source_structure_definition_output(
+        &original_ast,
+        original_module,
+        &original_shells,
+        &original_symbols,
+        SOURCE_STRUCTURE_DEFINITION_TEXT.strip_suffix('\n').unwrap(),
+    )
+    .expect("trailing layout does not require a distinct anchored AST")
+    .expect("unchanged token extents and current associations remain valid");
+    assert_eq!(
+        trivia_equivalent.typed_ast.source_structure_definition(),
+        trivia_equivalent.resolved.source_structure_definition()
+    );
+}
+
+#[test]
+fn metamorphic_structure_layout_rejects_coherent_foreign_signatures() {
+    use mizar_resolve::env::{DefinitionShell, SignatureShell, SymbolEnvIndexes};
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_STRUCTURE_DEFINITION_TEXT, 263_220);
+    source_structure_definition_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_STRUCTURE_DEFINITION_TEXT,
+    )
+    .unwrap()
+    .unwrap();
+    let forged_signature = SignatureShell::Opaque {
+        schema: "foreign-structure-layout".to_owned(),
+        payload: "unrelated".to_owned(),
+    };
+    let target = symbols
+        .definitions()
+        .iter()
+        .find(|row| row.id().index() == 0)
+        .unwrap()
+        .symbol()
+        .clone();
+    let mut indexes = SymbolEnvIndexes {
+        imports: symbols.imports().clone(),
+        exports: symbols.exports().clone(),
+        symbols: Default::default(),
+        labels: symbols.labels().clone(),
+        definitions: Default::default(),
+        overloads: symbols.overloads().clone(),
+        registrations: symbols.registrations().clone(),
+        lexical_summaries: symbols.lexical_summaries().clone(),
+        namespace_graph: symbols.namespace_graph().clone(),
+        declaration_dependencies: symbols.declaration_dependencies().clone(),
+        contributions: symbols.contributions().clone(),
+        module_summaries: symbols.module_summaries().clone(),
+    };
+    for old in symbols.symbols().iter() {
+        indexes.symbols.insert(if old.symbol() == &target {
+            old.clone().with_signature(forged_signature.clone())
+        } else {
+            old.clone()
+        });
+    }
+    let mut definitions = symbols.definitions().iter().collect::<Vec<_>>();
+    definitions.sort_by_key(|row| row.id().index());
+    for old in definitions {
+        assert!(
+            old.parameters().is_empty()
+                && old.binders().is_empty()
+                && old.dependencies().is_empty()
+        );
+        assert!(old.doc_attachment().is_none() && old.conflict().is_none());
+        let mut shell = DefinitionShell::new(
+            old.symbol().clone(),
+            old.kind(),
+            old.origin().clone(),
+            old.contribution(),
+        )
+        .with_visibility(old.visibility());
+        if let Some(arity) = old.arity() {
+            shell = shell.with_arity(arity);
+        }
+        if let Some(notation) = old.notation_shape() {
+            shell = shell.with_notation_shape(notation);
+        }
+        if let Some(signature) = old.signature() {
+            shell = shell.with_signature(signature.clone());
+        }
+        if old.symbol() == &target {
+            shell = shell.with_signature(forged_signature.clone());
+        }
+        assert_eq!(indexes.definitions.insert(shell), old.id());
+    }
+    let mut unused_indexes = indexes.clone();
+    unused_indexes.symbols = symbols.symbols().clone();
+    unused_indexes.definitions = symbols.definitions().clone();
+    unused_indexes.namespace_graph.insert_node(
+        mizar_resolve::env::NamespaceNodeKind::Segment,
+        Some(module.clone()),
+        "unused_structure_layout",
+        symbols.contributions().iter().next().unwrap().id(),
+    );
+    let unused = mizar_resolve::env::SymbolEnv::new(module.clone(), unused_indexes);
+    assert_eq!(unused.symbols(), symbols.symbols());
+    assert_eq!(unused.definitions(), symbols.definitions());
+    assert_eq!(unused.contributions(), symbols.contributions());
+    assert_ne!(unused.namespace_graph(), symbols.namespace_graph());
+    let forged = mizar_resolve::env::SymbolEnv::new(module.clone(), indexes);
+    assert_eq!(
+        (
+            forged.symbols().len(),
+            forged.definitions().len(),
+            forged.contributions().len()
+        ),
+        (8, 8, 1)
+    );
+    assert_eq!(forged.contributions(), symbols.contributions());
+    for old in symbols.definitions().iter() {
+        let actual = forged.definitions().get(old.id()).unwrap();
+        assert_eq!(actual.symbol(), old.symbol());
+        assert_eq!(actual.origin(), old.origin());
+        assert_eq!(actual.arity(), old.arity());
+        assert_eq!(actual.kind(), old.kind());
+        assert_eq!(actual.contribution(), old.contribution());
+        assert_eq!(
+            forged.symbols().get(actual.symbol()).unwrap().signature(),
+            actual.signature()
+        );
+        assert_eq!(
+            actual.signature(),
+            if old.symbol() == &target {
+                Some(&forged_signature)
+            } else {
+                old.signature()
+            }
+        );
+    }
+    assert_ne!(forged, symbols);
+    for (case, foreign) in [("matched foreign signatures", &forged), ("unused namespace", &unused)] {
+        assert!(
+            source_structure_definition_output(&ast, module.clone(), &shells, foreign, SOURCE_STRUCTURE_DEFINITION_TEXT)
+                .expect("foreign records must stay in the selected family").is_err(),
+            "{case}",
+        );
+    }
 }

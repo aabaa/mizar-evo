@@ -658,7 +658,7 @@ impl SourceStructureDefinitionHandoff {
         if self.source_type_fingerprint != source_type.debug_text() {
             return Err(SourceStructureDefinitionError::DependencyMismatch);
         }
-        validate_handoff_rows(self, source_type)?;
+        validate_handoff_rows(self, source_type, arena)?;
         if initial_obligations != &self.base_initial_obligations_snapshot
             || initial_obligations.len() != self.base_initial_obligation_count
         {
@@ -778,10 +778,17 @@ impl SourceStructureDefinitionProducer {
         }
         validate_shape(&input)?;
         let (definition_origins, member_origins, mapping_origins) = validate_resolver(&input, env)?;
-        validate_definition_inputs(&input)?;
-        validate_member_inputs(&input)?;
-        validate_inheritance_inputs(&input)?;
-        validate_mapping_inputs(&input)?;
+        validate_definition_inputs(&input, &definition_origins, &member_origins)?;
+        validate_member_inputs(&input, &member_origins)?;
+        let block = env
+            .contributions()
+            .get(input.definitions[0].contribution)
+            .and_then(|row| match row.anchor() {
+                SourceAnchor::Range(range) => Some(*range),
+                _ => None,
+            });
+        validate_inheritance_inputs(&input, &definition_origins, &mapping_origins, arena, block)?;
+        validate_mapping_inputs(&input, &mapping_origins)?;
         validate_lower(source_type, &input)?;
         validate_baseline(base_initial_obligations)?;
         let resolver_identity_snapshot = input
@@ -941,8 +948,6 @@ fn validate_resolver(
             DefinitionKind::Structure,
             "Task263Base",
             Some("Task263Base"),
-            13,
-            98,
             &[4, 0, 11, 0][..],
         ),
         (
@@ -951,15 +956,12 @@ fn validate_resolver(
             DefinitionKind::Structure,
             "Task263Derived",
             Some("Task263Derived"),
-            102,
-            190,
             &[4, 0, 11, 1][..],
         ),
     ];
     let mut definition_origins = Vec::new();
     for (index, row) in input.definitions.iter().enumerate() {
-        let (definition, symbol_kind, definition_kind, spelling, notation, start, end, path) =
-            expected[index];
+        let (definition, symbol_kind, definition_kind, spelling, notation, path) = expected[index];
         definition_origins.push(validate_resolver_row(
             input,
             env,
@@ -971,21 +973,19 @@ fn validate_resolver(
             definition_kind,
             spelling,
             notation,
-            start,
-            end,
             path,
             index,
         )?);
     }
     let member_expected = [
-        (1, "carrier", 42, 63, &[4, 0, 11, 0, 18, 0][..]),
-        (2, "marker", 68, 91, &[4, 0, 11, 0, 19, 1][..]),
-        (4, "carrier", 134, 155, &[4, 0, 11, 1, 18, 0][..]),
-        (5, "marker", 160, 183, &[4, 0, 11, 1, 19, 1][..]),
+        (1, "carrier", &[4, 0, 11, 0, 18, 0][..]),
+        (2, "marker", &[4, 0, 11, 0, 19, 1][..]),
+        (4, "carrier", &[4, 0, 11, 1, 18, 0][..]),
+        (5, "marker", &[4, 0, 11, 1, 19, 1][..]),
     ];
     let mut member_origins = Vec::new();
     for (index, row) in input.members.iter().enumerate() {
-        let (definition, spelling, start, end, path) = member_expected[index];
+        let (definition, spelling, path) = member_expected[index];
         member_origins.push(validate_resolver_row(
             input,
             env,
@@ -997,8 +997,6 @@ fn validate_resolver(
             DefinitionKind::Selector,
             spelling,
             None,
-            start,
-            end,
             path,
             index + 2,
         )?);
@@ -1008,22 +1006,18 @@ fn validate_resolver(
             6,
             "carrier",
             "field carrier from carrier ;",
-            247,
-            274,
             &[4, 0, 20, 2, 21, 0][..],
         ),
         (
             7,
             "marker",
             "property marker from marker ;",
-            279,
-            307,
             &[4, 0, 20, 2, 22, 1][..],
         ),
     ];
     let mut mapping_origins = Vec::new();
     for (index, row) in input.mappings.iter().enumerate() {
-        let (definition, spelling, notation, start, end, path) = mapping_expected[index];
+        let (definition, spelling, notation, path) = mapping_expected[index];
         mapping_origins.push(validate_resolver_row(
             input,
             env,
@@ -1035,8 +1029,6 @@ fn validate_resolver(
             DefinitionKind::Redefinition,
             spelling,
             Some(notation),
-            start,
-            end,
             path,
             index + 6,
         )?);
@@ -1050,7 +1042,6 @@ fn validate_resolver(
             != &(ContributionKind::LocalSource {
                 source_id: input.source_id,
             })
-        || contribution.anchor() != &SourceAnchor::Range(range(input.source_id, 0, 319))
         || contribution.effects().symbols().len() != 8
         || contribution.effects().definitions().len() != 8
         || !contribution.effects().overload_groups().is_empty()
@@ -1062,6 +1053,26 @@ fn validate_resolver(
         || !contribution.effects().imports().is_empty()
         || !contribution.effects().exports().is_empty()
         || !contribution.effects().diagnostics().is_empty()
+    {
+        return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 });
+    }
+    let SourceAnchor::Range(block) = contribution.anchor() else {
+        return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 });
+    };
+    if definition_origins
+        .iter()
+        .chain(&member_origins)
+        .chain(&mapping_origins)
+        .any(|origin| origin_range(origin).is_none_or(|range| !contains_range(*block, range)))
+        || origin_range(&definition_origins[0])
+            .and_then(|first| first.start.checked_sub(block.start))
+            .is_none_or(|gap| gap < 11)
+        || !ordered_origins(&definition_origins)
+        || !ordered_origins(&member_origins)
+        || !ordered_origins(&mapping_origins)
+        || origin_range(&definition_origins[1])
+            .zip(origin_range(&mapping_origins[0]))
+            .is_none_or(|(left, right)| left.end > right.start)
     {
         return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 });
     }
@@ -1081,8 +1092,6 @@ fn validate_resolver_row(
     definition_kind: DefinitionKind,
     spelling: &str,
     notation: Option<&str>,
-    start: usize,
-    end: usize,
     path: &[u32],
     error_index: usize,
 ) -> Result<SemanticOrigin, SourceStructureDefinitionError> {
@@ -1096,7 +1105,6 @@ fn validate_resolver_row(
         .contributions()
         .get(contribution_id)
         .ok_or_else(|| error.clone())?;
-    let expected_origin = SourceAnchor::Range(range(input.source_id, start, end));
     if definition_id.index() != expected_definition
         || contribution_id.index() != 0
         || symbol_id.module() != &input.module_id
@@ -1127,12 +1135,7 @@ fn validate_resolver_row(
         || definition.contribution() != contribution_id
         || definition.conflict().is_some()
         || !definition.dependencies().is_empty()
-        || definition.origin().source_id() != input.source_id
-        || definition.origin().module_id() != &input.module_id
-        || definition.origin().anchor() != &expected_origin
-        || definition.origin().structural_path() != path
-        || definition.origin().import_edge().is_some()
-        || definition.origin().is_recovered()
+        || !normal_origin(definition.origin(), input.source_id, &input.module_id, path)
     {
         return Err(error);
     }
@@ -1141,31 +1144,42 @@ fn validate_resolver_row(
 
 fn validate_definition_inputs(
     input: &SourceStructureDefinitionHandoffInput,
+    origins: &[SemanticOrigin],
+    member_origins: &[SemanticOrigin],
 ) -> Result<(), SourceStructureDefinitionError> {
     let expected = [
         (
             57,
-            13,
-            98,
             0,
             "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;",
             &[0, 1][..],
             &[0][..],
+            25,
         ),
         (
             65,
-            102,
-            190,
             1,
             "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;",
             &[2, 3][..],
             &[2][..],
+            28,
         ),
     ];
     for (index, row) in input.definitions.iter().enumerate() {
-        let (node, start, end, ordinal, spelling, members, fields) = expected[index];
+        let (node, ordinal, spelling, members, fields, prefix) = expected[index];
+        let error = SourceStructureDefinitionError::InvalidDefinition { index };
+        let owner = origin_range(&origins[index]).ok_or_else(|| error.clone())?;
+        let first = origin_range(&member_origins[2 * index]).ok_or_else(|| error.clone())?;
+        let last = origin_range(&member_origins[2 * index + 1]).ok_or_else(|| error.clone())?;
         if row.site != node_site(node)
-            || row.source_range != range(input.source_id, start, end)
+            || row.source_range != owner
+            || !contains_range(owner, first)
+            || !contains_range(owner, last)
+            || first
+                .start
+                .checked_sub(owner.start)
+                .is_none_or(|gap| gap < prefix)
+            || owner.end.checked_sub(last.end).is_none_or(|gap| gap < 4)
             || row.source_ordinal != ordinal
             || row.recovery != SourceStructureDefinitionRecovery::Normal
             || row.spelling != spelling
@@ -1180,7 +1194,7 @@ fn validate_definition_inputs(
                 .map(|id| id.index())
                 .ne(fields.iter().copied())
         {
-            return Err(SourceStructureDefinitionError::InvalidDefinition { index });
+            return Err(error);
         }
     }
     Ok(())
@@ -1188,6 +1202,7 @@ fn validate_definition_inputs(
 
 fn validate_member_inputs(
     input: &SourceStructureDefinitionHandoffInput,
+    origins: &[SemanticOrigin],
 ) -> Result<(), SourceStructureDefinitionError> {
     let expected = [
         (
@@ -1195,8 +1210,6 @@ fn validate_member_inputs(
             0,
             SourceStructureMemberKind::Field,
             53,
-            42,
-            63,
             "field carrier -> set;",
             0,
             Some(0),
@@ -1206,8 +1219,6 @@ fn validate_member_inputs(
             1,
             SourceStructureMemberKind::Property,
             56,
-            68,
-            91,
             "property marker -> set;",
             1,
             None,
@@ -1217,8 +1228,6 @@ fn validate_member_inputs(
             0,
             SourceStructureMemberKind::Field,
             61,
-            134,
-            155,
             "field carrier -> set;",
             2,
             Some(0),
@@ -1228,21 +1237,18 @@ fn validate_member_inputs(
             1,
             SourceStructureMemberKind::Property,
             64,
-            160,
-            183,
             "property marker -> set;",
             3,
             None,
         ),
     ];
     for (index, row) in input.members.iter().enumerate() {
-        let (owner, ordinal, kind, node, start, end, spelling, written_type, constructor) =
-            expected[index];
+        let (owner, ordinal, kind, node, spelling, written_type, constructor) = expected[index];
         if row.owner.index() != owner
             || row.ordinal != ordinal
             || row.kind != kind
             || row.site != node_site(node)
-            || row.source_range != range(input.source_id, start, end)
+            || Some(row.source_range) != origin_range(&origins[index])
             || row.recovery != SourceStructureDefinitionRecovery::Normal
             || row.spelling != spelling
             || row.written_type.index() != written_type
@@ -1256,13 +1262,56 @@ fn validate_member_inputs(
 
 fn validate_inheritance_inputs(
     input: &SourceStructureDefinitionHandoffInput,
+    definition_origins: &[SemanticOrigin],
+    mapping_origins: &[SemanticOrigin],
+    arena: &TypedArena,
+    block: Option<SourceRange>,
 ) -> Result<(), SourceStructureDefinitionError> {
     let row = &input.inheritances[0];
+    let error = SourceStructureDefinitionError::InvalidInheritance { index: 0 };
+    let previous = origin_range(&definition_origins[1]).ok_or_else(|| error.clone())?;
+    let first = origin_range(&mapping_origins[0]).ok_or_else(|| error.clone())?;
+    let last = origin_range(&mapping_origins[1]).ok_or_else(|| error.clone())?;
     if row.child != SourceStructureDefinitionId::new(1)
         || row.parent != SourceStructureDefinitionId::new(0)
         || row.child == row.parent
         || row.site != node_site(70)
-        || row.source_range != range(input.source_id, 194, 314)
+        || previous.end > row.source_range.start
+        || !contains_range(row.source_range, first)
+        || !contains_range(row.source_range, last)
+        || first
+            .start
+            .checked_sub(row.source_range.start)
+            .is_none_or(|gap| gap < 49)
+        || row
+            .source_range
+            .end
+            .checked_sub(last.end)
+            .is_none_or(|gap| gap < 4)
+        || block.is_some_and(|block| {
+            !contains_range(block, row.source_range)
+                || block
+                    .end
+                    .checked_sub(row.source_range.end)
+                    .is_none_or(|gap| gap < 4)
+        })
+        || arena.node(TypedNodeId::new(70)).is_some_and(|node| {
+            node.kind.as_str() == "source.definition.structure.inheritance"
+                && node.recovery == NodeRecoveryState::Normal
+                && match &node.anchor {
+                    SourceAnchor::Range(owner) => {
+                        contains_range(*owner, first)
+                            && contains_range(*owner, last)
+                            && first
+                                .start
+                                .checked_sub(owner.start)
+                                .is_some_and(|gap| gap >= 49)
+                            && owner.end.checked_sub(last.end).is_some_and(|gap| gap >= 4)
+                            && row.source_range != *owner
+                    }
+                    _ => false,
+                }
+        })
         || row.source_ordinal != 0
         || row.recovery != SourceStructureDefinitionRecovery::Normal
         || row.spelling
@@ -1273,13 +1322,14 @@ fn validate_inheritance_inputs(
                 SourceStructureMappingId::new(1),
             ]
     {
-        return Err(SourceStructureDefinitionError::InvalidInheritance { index: 0 });
+        return Err(error);
     }
     Ok(())
 }
 
 fn validate_mapping_inputs(
     input: &SourceStructureDefinitionHandoffInput,
+    origins: &[SemanticOrigin],
 ) -> Result<(), SourceStructureDefinitionError> {
     let expected = [
         (
@@ -1288,8 +1338,6 @@ fn validate_mapping_inputs(
             0,
             0,
             68,
-            247,
-            274,
             "field carrier from carrier;",
         ),
         (
@@ -1298,15 +1346,13 @@ fn validate_mapping_inputs(
             1,
             1,
             69,
-            279,
-            307,
             "property marker from marker;",
         ),
     ];
     let mut parent_coverage = BTreeSet::new();
     let mut view_coverage = BTreeSet::new();
     for (index, row) in input.mappings.iter().enumerate() {
-        let (kind, view, parent, root, node, start, end, spelling) = expected[index];
+        let (kind, view, parent, root, node, spelling) = expected[index];
         if row.inheritance != SourceStructureInheritanceId::new(0)
             || row.ordinal != index
             || row.kind != kind
@@ -1315,7 +1361,12 @@ fn validate_mapping_inputs(
             || row.root_member.index() != root
             || row.path != [SourceStructureInheritanceId::new(0)]
             || row.site != node_site(node)
-            || row.source_range != range(input.source_id, start, end)
+            || Some(row.source_range) != origin_range(&origins[index])
+            || row
+                .source_range
+                .end
+                .checked_sub(row.source_range.start)
+                .is_none_or(|width| width < [27, 28][index])
             || row.recovery != SourceStructureDefinitionRecovery::Normal
             || row.spelling != spelling
             || !parent_coverage.insert(parent)
@@ -1351,15 +1402,8 @@ fn validate_lower(
     {
         return Err(SourceStructureDefinitionError::DependencyMismatch);
     }
-    let expected = [
-        (53, 42, 63, 52, 51, 59, 62),
-        (56, 68, 91, 55, 54, 87, 90),
-        (61, 134, 155, 60, 59, 151, 154),
-        (64, 160, 183, 63, 62, 179, 182),
-    ];
-    for (index, (member_node, member_start, member_end, expression_node, head_node, start, end)) in
-        expected.into_iter().enumerate()
-    {
+    let expected = [(53, 52, 51), (56, 55, 54), (61, 60, 59), (64, 63, 62)];
+    for (index, (member_node, expression_node, head_node)) in expected.into_iter().enumerate() {
         let member = source_type
             .structure_members()
             .get(SourceTypeStructureMemberId::new(index))
@@ -1370,17 +1414,38 @@ fn validate_lower(
             .ok_or(SourceStructureDefinitionError::InvalidMember { index })?;
         if member.id().index() != index
             || member.member_site() != &node_site(member_node)
-            || member.member_range() != range(input.source_id, member_start, member_end)
+            || member.member_range() != input.members[index].source_range
             || member.source_ordinal() != index
             || member.root() != SourceTypeExpressionId::new(index)
             || expression.id() != SourceTypeExpressionId::new(index)
             || expression.source_id() != input.source_id
             || expression.module_id() != &input.module_id
             || expression.site() != &node_site(expression_node)
-            || expression.source_range() != range(input.source_id, start, end)
+            || !contains_range(member.member_range(), expression.source_range())
+            || expression
+                .source_range()
+                .end
+                .checked_sub(expression.source_range().start)
+                != Some(3)
+            || expression
+                .source_range()
+                .start
+                .checked_sub(member.member_range().start)
+                .is_none_or(|gap| {
+                    gap < if input.members[index].kind == SourceStructureMemberKind::Field {
+                        15
+                    } else {
+                        17
+                    }
+                })
+            || member
+                .member_range()
+                .end
+                .checked_sub(expression.source_range().end)
+                .is_none_or(|gap| gap < 1)
             || expression.spelling() != "set"
             || expression.head_site() != &node_site(head_node)
-            || expression.head_range() != range(input.source_id, start, end)
+            || expression.head_range() != expression.source_range()
             || expression.head_spelling() != "set"
             || expression.form() != SourceTypeApplicationForm::Bare
             || expression.head() != &SourceTypeHead::BuiltinSet
@@ -1395,6 +1460,7 @@ fn validate_lower(
 fn validate_handoff_rows(
     handoff: &SourceStructureDefinitionHandoff,
     source_type: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
 ) -> Result<(), SourceStructureDefinitionError> {
     if handoff.definitions.len() != 2
         || handoff.members.len() != 4
@@ -1403,7 +1469,27 @@ fn validate_handoff_rows(
     {
         return Err(SourceStructureDefinitionError::UnsupportedTaskShape);
     }
-    validate_handoff_resolver_rows(handoff)?;
+    let origins: ResolverOrigins = (
+        handoff
+            .definitions
+            .rows
+            .iter()
+            .map(|row| row.origin.clone())
+            .collect(),
+        handoff
+            .members
+            .rows
+            .iter()
+            .map(|row| row.origin.clone())
+            .collect(),
+        handoff
+            .mappings
+            .rows
+            .iter()
+            .map(|row| row.origin.clone())
+            .collect(),
+    );
+    validate_handoff_resolver_rows(handoff, &origins)?;
     validate_dense_ids(handoff)?;
     let input = SourceStructureDefinitionHandoffInput {
         source_id: handoff.source_id,
@@ -1481,10 +1567,10 @@ fn validate_handoff_rows(
             })
             .collect(),
     };
-    validate_definition_inputs(&input)?;
-    validate_member_inputs(&input)?;
-    validate_inheritance_inputs(&input)?;
-    validate_mapping_inputs(&input)?;
+    validate_definition_inputs(&input, &origins.0, &origins.1)?;
+    validate_member_inputs(&input, &origins.1)?;
+    validate_inheritance_inputs(&input, &origins.0, &origins.2, arena, None)?;
+    validate_mapping_inputs(&input, &origins.2)?;
     validate_lower(source_type, &input)?;
     if !handoff.coherence_requests.is_empty() {
         return Err(SourceStructureDefinitionError::InvalidCoherenceRequest { index: 0 });
@@ -1520,53 +1606,39 @@ fn validate_dense_ids(
 
 fn validate_handoff_resolver_rows(
     handoff: &SourceStructureDefinitionHandoff,
+    origins: &ResolverOrigins,
 ) -> Result<(), SourceStructureDefinitionError> {
     if handoff.resolver_identity_snapshot.len() != 8 {
         return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 });
     }
-    let definition_expected = [
-        (0, 13, 98, &[4, 0, 11, 0][..]),
-        (3, 102, 190, &[4, 0, 11, 1][..]),
-    ];
+    let definition_expected = [(0, &[4, 0, 11, 0][..]), (3, &[4, 0, 11, 1][..])];
     for (index, row) in handoff.definitions.rows.iter().enumerate() {
-        let (definition, start, end, path) = definition_expected[index];
+        let (definition, path) = definition_expected[index];
         let identity = &handoff.resolver_identity_snapshot[index];
         if identity != &(row.symbol.clone(), row.definition, row.contribution)
             || row.symbol.module() != &handoff.module_id
             || row.definition.index() != definition
             || row.contribution.index() != 0
-            || !normal_origin(
-                &row.origin,
-                handoff.source_id,
-                &handoff.module_id,
-                range(handoff.source_id, start, end),
-                path,
-            )
+            || !normal_origin(&row.origin, handoff.source_id, &handoff.module_id, path)
         {
             return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index });
         }
     }
 
     let member_expected = [
-        (1, 42, 63, &[4, 0, 11, 0, 18, 0][..]),
-        (2, 68, 91, &[4, 0, 11, 0, 19, 1][..]),
-        (4, 134, 155, &[4, 0, 11, 1, 18, 0][..]),
-        (5, 160, 183, &[4, 0, 11, 1, 19, 1][..]),
+        (1, &[4, 0, 11, 0, 18, 0][..]),
+        (2, &[4, 0, 11, 0, 19, 1][..]),
+        (4, &[4, 0, 11, 1, 18, 0][..]),
+        (5, &[4, 0, 11, 1, 19, 1][..]),
     ];
     for (index, row) in handoff.members.rows.iter().enumerate() {
-        let (definition, start, end, path) = member_expected[index];
+        let (definition, path) = member_expected[index];
         let identity = &handoff.resolver_identity_snapshot[index + 2];
         if identity != &(row.symbol.clone(), row.definition, row.contribution)
             || row.symbol.module() != &handoff.module_id
             || row.definition.index() != definition
             || row.contribution.index() != 0
-            || !normal_origin(
-                &row.origin,
-                handoff.source_id,
-                &handoff.module_id,
-                range(handoff.source_id, start, end),
-                path,
-            )
+            || !normal_origin(&row.origin, handoff.source_id, &handoff.module_id, path)
         {
             return Err(SourceStructureDefinitionError::InvalidResolverDefinition {
                 index: index + 2,
@@ -1575,28 +1647,31 @@ fn validate_handoff_resolver_rows(
     }
 
     let mapping_expected = [
-        (6, 247, 274, &[4, 0, 20, 2, 21, 0][..]),
-        (7, 279, 307, &[4, 0, 20, 2, 22, 1][..]),
+        (6, &[4, 0, 20, 2, 21, 0][..]),
+        (7, &[4, 0, 20, 2, 22, 1][..]),
     ];
     for (index, row) in handoff.mappings.rows.iter().enumerate() {
-        let (definition, start, end, path) = mapping_expected[index];
+        let (definition, path) = mapping_expected[index];
         let identity = &handoff.resolver_identity_snapshot[index + 6];
         if identity != &(row.symbol.clone(), row.definition, row.contribution)
             || row.symbol.module() != &handoff.module_id
             || row.definition.index() != definition
             || row.contribution.index() != 0
-            || !normal_origin(
-                &row.origin,
-                handoff.source_id,
-                &handoff.module_id,
-                range(handoff.source_id, start, end),
-                path,
-            )
+            || !normal_origin(&row.origin, handoff.source_id, &handoff.module_id, path)
         {
             return Err(SourceStructureDefinitionError::InvalidResolverDefinition {
                 index: index + 6,
             });
         }
+    }
+    if !ordered_origins(&origins.0)
+        || !ordered_origins(&origins.1)
+        || !ordered_origins(&origins.2)
+        || origin_range(&origins.0[1])
+            .zip(origin_range(&origins.2[0]))
+            .is_none_or(|(left, right)| left.end > right.start)
+    {
+        return Err(SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 });
     }
     Ok(())
 }
@@ -1605,15 +1680,34 @@ fn normal_origin(
     origin: &SemanticOrigin,
     source_id: SourceId,
     module_id: &ModuleId,
-    source_range: SourceRange,
     structural_path: &[u32],
 ) -> bool {
     origin.source_id() == source_id
         && origin.module_id() == module_id
-        && origin.anchor() == &SourceAnchor::Range(source_range)
+        && origin_range(origin)
+            .is_some_and(|range| range.source_id == source_id && range.start < range.end)
         && origin.structural_path() == structural_path
         && origin.import_edge().is_none()
         && !origin.is_recovered()
+}
+
+fn origin_range(origin: &SemanticOrigin) -> Option<SourceRange> {
+    match origin.anchor() {
+        SourceAnchor::Range(range) => Some(*range),
+        _ => None,
+    }
+}
+
+fn contains_range(owner: SourceRange, member: SourceRange) -> bool {
+    owner.source_id == member.source_id && owner.start <= member.start && member.end <= owner.end
+}
+
+fn ordered_origins(origins: &[SemanticOrigin]) -> bool {
+    origins.windows(2).all(|pair| {
+        origin_range(&pair[0])
+            .zip(origin_range(&pair[1]))
+            .is_some_and(|(left, right)| left.end <= right.start)
+    })
 }
 
 fn validate_baseline(table: &InitialObligationTable) -> Result<(), SourceStructureDefinitionError> {
@@ -1714,13 +1808,6 @@ fn validate_site(
     Ok(())
 }
 
-const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
-}
 const fn node_site(index: usize) -> TypedSiteRef {
     TypedSiteRef::Node(TypedNodeId::new(index))
 }

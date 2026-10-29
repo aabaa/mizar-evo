@@ -2042,3 +2042,827 @@ fn task_249s_public_nonuniform_member_ranges_install_and_replay() {
         "member source order failures: {order_failures:?}"
     );
 }
+
+#[test]
+fn task_263_public_nonuniform_upper_ranges_preserve_real_lower_and_baseline() {
+    let original = fixture();
+    let baseline = unrelated_baseline(original.source, "layout-baseline");
+    assert!(!baseline.is_empty());
+    original
+        .build(&baseline)
+        .expect("original public upper Structure baseline");
+    let mut relocated = original.clone();
+    let source = relocated.source;
+    let block = range(source, 4, 520);
+    let definitions = [range(source, 17, 140), range(source, 160, 290)];
+    let members = [
+        range(source, 50, 72),
+        range(source, 90, 118),
+        range(source, 190, 216),
+        range(source, 230, 260),
+    ];
+    let types = [
+        range(source, 68, 71),
+        range(source, 114, 117),
+        range(source, 212, 215),
+        range(source, 256, 259),
+    ];
+    let inheritance = range(source, 310, 510);
+    let mappings = [range(source, 365, 397), range(source, 405, 440)];
+    for (row, expected) in relocated.input.definitions.iter_mut().zip(definitions) {
+        row.source_range = expected;
+    }
+    for (row, expected) in relocated.input.members.iter_mut().zip(members) {
+        row.source_range = expected;
+    }
+    relocated.input.inheritances[0].source_range = inheritance;
+    for (row, expected) in relocated.input.mappings.iter_mut().zip(mappings) {
+        row.source_range = expected;
+    }
+    let roles = [
+        (51, types[0]),
+        (52, types[0]),
+        (53, members[0]),
+        (54, types[1]),
+        (55, types[1]),
+        (56, members[1]),
+        (57, definitions[0]),
+        (59, types[2]),
+        (60, types[2]),
+        (61, members[2]),
+        (62, types[3]),
+        (63, types[3]),
+        (64, members[3]),
+        (65, definitions[1]),
+        (68, mappings[0]),
+        (69, mappings[1]),
+        (70, inheritance),
+        (74, block),
+    ];
+    let mut nodes = relocated
+        .arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (node, expected) in roles {
+        nodes[node].anchor = SourceAnchor::Range(expected);
+    }
+    relocated.arena =
+        TypedArena::try_new(relocated.arena.root(), nodes).expect("coherent normal public arena");
+    for (node, expected) in roles {
+        let actual = relocated.arena.node(TypedNodeId::new(node)).unwrap();
+        assert_eq!(actual.anchor, SourceAnchor::Range(expected));
+        assert_eq!(actual.recovery, NodeRecoveryState::Normal);
+    }
+    let mut lower_input = source_type_input(source, relocated.module.clone());
+    for (index, row) in lower_input.members.iter_mut().enumerate() {
+        row.member_range = members[index];
+        row.expression.source_range = types[index];
+        row.expression.head_range = types[index];
+        assert_eq!(row.source_ordinal, index);
+        assert_eq!(types[index].end.checked_sub(types[index].start), Some(3));
+        assert!(
+            members[index].start <= types[index].start && types[index].end < members[index].end
+        );
+        for (site, expected) in [
+            (&row.member_site, members[index]),
+            (&row.expression.site, types[index]),
+            (&row.expression.head_site, types[index]),
+        ] {
+            assert_eq!(
+                relocated.arena.node(site.node()).unwrap().anchor,
+                SourceAnchor::Range(expected)
+            );
+        }
+    }
+    assert!(members.windows(2).all(|pair| pair[0].end <= pair[1].start));
+    relocated.source_type = SourceTypeStructureMemberProducer::build(lower_input, &relocated.arena)
+        .expect("genuine relocated four-member Type prerequisite");
+    assert_eq!(
+        (
+            relocated.source_type.applications().len(),
+            relocated.source_type.expressions().len(),
+            relocated.source_type.arguments().len(),
+            relocated.source_type.definition_returns().len(),
+            relocated.source_type.mode_rhs().len(),
+            relocated.source_type.structure_members().len()
+        ),
+        (0, 4, 0, 0, 0, 4)
+    );
+    for (index, (_, member)) in relocated.source_type.structure_members().iter().enumerate() {
+        assert_eq!(
+            (
+                member.id().index(),
+                member.source_ordinal(),
+                member.root().index()
+            ),
+            (index, index, index)
+        );
+        assert_eq!(member.member_range(), members[index]);
+        let expression = relocated
+            .source_type
+            .expressions()
+            .get(member.root())
+            .unwrap();
+        assert_eq!(
+            (expression.source_range(), expression.head_range()),
+            (types[index], types[index])
+        );
+    }
+    let lower_typed = relocated.typed(baseline.clone());
+    assert_eq!(lower_typed.source_type(), Some(&relocated.source_type));
+    assert!(lower_typed.source_structure_definition().is_none());
+    assert_eq!(lower_typed.initial_obligations(), &baseline);
+
+    let mut indexes = SymbolEnvIndexes {
+        imports: original.env.imports().clone(),
+        exports: original.env.exports().clone(),
+        symbols: Default::default(),
+        labels: original.env.labels().clone(),
+        definitions: Default::default(),
+        overloads: original.env.overloads().clone(),
+        registrations: original.env.registrations().clone(),
+        lexical_summaries: original.env.lexical_summaries().clone(),
+        namespace_graph: original.env.namespace_graph().clone(),
+        declaration_dependencies: original.env.declaration_dependencies().clone(),
+        contributions: Default::default(),
+        module_summaries: original.env.module_summaries().clone(),
+    };
+    for old in original.env.contributions().iter() {
+        let id = indexes.contributions.insert(
+            old.module().clone(),
+            old.kind().clone(),
+            SourceAnchor::Range(block),
+        );
+        assert_eq!(id, old.id());
+    }
+    let origin_ranges = [
+        definitions[0],
+        members[0],
+        members[1],
+        definitions[1],
+        members[2],
+        members[3],
+        mappings[0],
+        mappings[1],
+    ];
+    let mut old_definitions = original.env.definitions().iter().collect::<Vec<_>>();
+    old_definitions.sort_by_key(|row| row.id().index());
+    assert_eq!(old_definitions.len(), 8);
+    for old in old_definitions {
+        assert!(!old.origin().is_recovered() && old.origin().import_edge().is_none());
+        let origin = SemanticOrigin::new(
+            old.origin().source_id(),
+            old.origin().module_id().clone(),
+            SourceAnchor::Range(origin_ranges[old.id().index()]),
+            old.origin().structural_path().to_vec(),
+        );
+        let mut shell =
+            DefinitionShell::new(old.symbol().clone(), old.kind(), origin, old.contribution())
+                .with_visibility(old.visibility())
+                .with_parameters(old.parameters().to_vec())
+                .with_binders(old.binders().to_vec())
+                .with_dependencies(old.dependencies().to_vec());
+        if let Some(arity) = old.arity() {
+            shell = shell.with_arity(arity);
+        }
+        if let Some(notation) = old.notation_shape() {
+            shell = shell.with_notation_shape(notation);
+        }
+        if let Some(doc) = old.doc_attachment() {
+            shell = shell.with_doc_attachment(doc.clone());
+        }
+        if let Some(conflict) = old.conflict() {
+            shell = shell.with_conflict(conflict.clone());
+        }
+        if let Some(signature) = old.signature() {
+            shell = shell.with_signature(signature.clone());
+        }
+        let id = indexes.definitions.insert(shell);
+        assert_eq!(id, old.id(), "registered definition IDs stay stable");
+        indexes.contributions.add_definition(old.contribution(), id);
+    }
+    for old in original.env.symbols().iter() {
+        let definition = original
+            .env
+            .definitions()
+            .iter()
+            .find(|row| row.symbol() == old.symbol())
+            .unwrap();
+        assert!(!old.origin().is_recovered() && old.origin().import_edge().is_none());
+        let origin = SemanticOrigin::new(
+            old.origin().source_id(),
+            old.origin().module_id().clone(),
+            SourceAnchor::Range(origin_ranges[definition.id().index()]),
+            old.origin().structural_path().to_vec(),
+        );
+        let mut symbol = SymbolEntry::new(
+            old.symbol().clone(),
+            old.kind(),
+            old.namespace().clone(),
+            old.primary_spelling(),
+            origin,
+            old.contribution(),
+        )
+        .with_visibility(old.visibility())
+        .with_export_status(old.export_status())
+        .with_relations(old.relations().to_vec());
+        if let Some(notation) = old.notation_spelling() {
+            symbol = symbol.with_notation_spelling(notation);
+        }
+        if let Some(signature) = old.signature() {
+            symbol = symbol.with_signature(signature.clone());
+        }
+        indexes.symbols.insert(symbol);
+        indexes
+            .contributions
+            .add_symbol(old.contribution(), old.symbol().clone());
+    }
+    let registered_indexes = indexes.clone();
+    relocated.env = SymbolEnv::new(relocated.module.clone(), indexes);
+    assert_eq!(
+        (
+            relocated.env.symbols().len(),
+            relocated.env.definitions().len(),
+            relocated.env.contributions().len()
+        ),
+        (8, 8, 1)
+    );
+    for old in original.env.definitions().iter() {
+        let actual = relocated.env.definitions().get(old.id()).unwrap();
+        let symbol = relocated.env.symbols().get(actual.symbol()).unwrap();
+        assert_eq!(actual.symbol(), old.symbol());
+        assert_eq!(actual.kind(), old.kind());
+        assert_eq!(actual.arity(), old.arity());
+        assert_eq!(actual.signature(), old.signature());
+        assert_eq!(actual.origin().source_id(), source);
+        assert_eq!(actual.origin().module_id(), &relocated.module);
+        assert_eq!(
+            actual.origin().structural_path(),
+            old.origin().structural_path()
+        );
+        assert_eq!(
+            actual.origin().anchor(),
+            &SourceAnchor::Range(origin_ranges[old.id().index()])
+        );
+        assert_eq!(symbol.origin(), actual.origin());
+        assert_eq!(symbol.signature(), actual.signature());
+    }
+    let contribution = relocated.env.contributions().iter().next().unwrap();
+    let old_contribution = original.env.contributions().get(contribution.id()).unwrap();
+    assert_eq!(contribution.effects(), old_contribution.effects());
+    assert_eq!(
+        (
+            contribution.effects().symbols().len(),
+            contribution.effects().definitions().len()
+        ),
+        (8, 8)
+    );
+    assert_eq!(contribution.anchor(), &SourceAnchor::Range(block));
+    assert_eq!(
+        contribution.kind(),
+        &ContributionKind::LocalSource { source_id: source }
+    );
+    assert_eq!(contribution.module(), &relocated.module);
+    for owned in origin_ranges.into_iter().chain([inheritance]) {
+        assert!(block.start <= owned.start && owned.end <= block.end);
+    }
+    for index in 0..2 {
+        assert!(
+            definitions[index].start <= members[2 * index].start
+                && members[2 * index + 1].end < definitions[index].end
+        );
+    }
+    assert!(definitions[0].end <= definitions[1].start && definitions[1].end <= inheritance.start);
+    assert!(
+        inheritance.start <= mappings[0].start
+            && mappings[0].end <= mappings[1].start
+            && mappings[1].end < inheritance.end
+    );
+    let projection = relocated
+        .build(&baseline)
+        .expect("coherent nonuniform public upper Structure layout");
+    assert_eq!(projection.base_initial_obligations(), &baseline);
+    assert_eq!(projection.initial_obligations(), &baseline);
+    let handoff = projection.handoff();
+    assert_eq!(
+        (
+            handoff.definitions().len(),
+            handoff.members().len(),
+            handoff.inheritances().len(),
+            handoff.mappings().len(),
+            handoff.coherence_requests().len()
+        ),
+        (2, 4, 1, 2, 0)
+    );
+    assert_eq!(
+        handoff.source_type_fingerprint(),
+        relocated.source_type.debug_text()
+    );
+    assert_eq!(handoff.base_initial_obligation_count(), baseline.len());
+    for ((_, row), input) in handoff
+        .definitions()
+        .iter()
+        .zip(&relocated.input.definitions)
+    {
+        assert_eq!(row.source_range(), input.source_range);
+        assert_eq!(
+            row.origin(),
+            relocated
+                .env
+                .definitions()
+                .get(input.definition)
+                .unwrap()
+                .origin()
+        );
+    }
+    for ((_, row), input) in handoff.members().iter().zip(&relocated.input.members) {
+        assert_eq!(row.source_range(), input.source_range);
+        assert_eq!(
+            row.origin(),
+            relocated
+                .env
+                .definitions()
+                .get(input.definition)
+                .unwrap()
+                .origin()
+        );
+    }
+    for ((_, row), input) in handoff.mappings().iter().zip(&relocated.input.mappings) {
+        assert_eq!(row.source_range(), input.source_range);
+        assert_eq!(
+            row.origin(),
+            relocated
+                .env
+                .definitions()
+                .get(input.definition)
+                .unwrap()
+                .origin()
+        );
+    }
+    assert_eq!(
+        handoff
+            .inheritances()
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .source_range(),
+        inheritance
+    );
+    let typed = lower_typed
+        .with_source_structure_definition(projection.clone())
+        .expect("actual upper install with unchanged baseline");
+    assert_eq!(typed.initial_obligations(), &baseline);
+    assert_eq!(typed.source_structure_definition(), Some(handoff));
+    let resolved = assemble_empty(&typed).expect("actual final clone");
+    assert_eq!(resolved.source_structure_definition(), Some(handoff));
+    assert_eq!(
+        resolved.clone().source_structure_definition(),
+        Some(handoff)
+    );
+    assert_eq!(relocated.build(&baseline).unwrap(), projection);
+    assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty());
+    assert!(
+        resolved.checked_formulas().is_empty()
+            && resolved.statement_semantics().is_empty()
+            && resolved.checked_proofs().is_empty()
+            && resolved.cluster_facts().is_empty()
+    );
+    let mut cases = Vec::new();
+    for index in 0..2 {
+        for label in ["d_header", "d_tail", "h_width", "d_origin", "h_origin"] {
+            cases.push((label, index));
+        }
+    }
+    for index in 0..4 {
+        for label in ["m_origin", "m_prefix"] {
+            cases.push((label, index));
+        }
+    }
+    for label in [
+        "i_header",
+        "i_tail",
+        "i_input",
+        "i_arena",
+        "i_recovered",
+        "i_zero",
+        "i_missing",
+        "d_adjacent",
+        "wide_rhs",
+        "no_root",
+        "mapping_before_prefix",
+        "b_prefix",
+        "b_tail",
+        "d_overlap",
+        "h_overlap",
+        "m_overlap",
+        "member_escape",
+    ] {
+        cases.push((label, 0));
+    }
+    assert_eq!(cases.len(), 35);
+    for (label, mut index) in cases {
+        let mut changed = handoff.clone();
+        let mut nodes = relocated
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        let mut root = relocated.arena.root();
+        let mut expected = None;
+        let linked = match label {
+            "d_header" | "d_tail" | "d_origin" | "d_adjacent" | "d_overlap" => {
+                if label == "d_overlap" {
+                    index = 1;
+                }
+                let row = &mut changed.definitions.rows[index];
+                let mut new_range = row.source_range;
+                match label {
+                    "d_header" => new_range.start = members[2 * index].start - [25, 28][index] + 1,
+                    "d_tail" => new_range.end = members[2 * index + 1].end + 3,
+                    "d_adjacent" => new_range.end = definitions[1].start,
+                    "d_overlap" => new_range.start = definitions[0].end - 1,
+                    _ => new_range.start += 1,
+                }
+                if label != "d_adjacent" {
+                    expected = Some(if label == "d_overlap" {
+                        SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 }
+                    } else {
+                        SourceStructureDefinitionError::InvalidDefinition { index }
+                    });
+                }
+                Some((
+                    &mut row.source_range,
+                    &mut row.origin,
+                    row.site.clone(),
+                    new_range,
+                    label != "d_origin",
+                ))
+            }
+            "h_width" | "h_origin" | "h_overlap" => {
+                if label == "h_overlap" {
+                    index = 1;
+                }
+                let row = &mut changed.mappings.rows[index];
+                let mut new_range = row.source_range;
+                match label {
+                    "h_width" => new_range.end = new_range.start + [27, 28][index] - 1,
+                    "h_overlap" => new_range.start = mappings[0].end - 1,
+                    _ => new_range.start += 1,
+                }
+                expected = Some(if label == "h_overlap" {
+                    SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 }
+                } else {
+                    SourceStructureDefinitionError::InvalidMapping { index }
+                });
+                Some((
+                    &mut row.source_range,
+                    &mut row.origin,
+                    row.site.clone(),
+                    new_range,
+                    label != "h_origin",
+                ))
+            }
+            "m_origin" | "m_overlap" | "member_escape" => {
+                if label != "m_origin" {
+                    index = 1;
+                }
+                let row = &mut changed.members.rows[index];
+                let mut new_range = row.source_range;
+                match label {
+                    "m_overlap" => new_range.start = members[0].end - 1,
+                    "member_escape" => new_range.end = definitions[0].end + 1,
+                    _ => new_range.start += 1,
+                }
+                expected = Some(match label {
+                    "m_overlap" => {
+                        SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 }
+                    }
+                    "member_escape" => {
+                        SourceStructureDefinitionError::InvalidDefinition { index: 0 }
+                    }
+                    _ => SourceStructureDefinitionError::InvalidMember { index },
+                });
+                Some((
+                    &mut row.source_range,
+                    &mut row.origin,
+                    row.site.clone(),
+                    new_range,
+                    label != "m_origin",
+                ))
+            }
+            _ => None,
+        };
+        if let Some((row_range, origin, site, new_range, joined)) = linked {
+            assert!(new_range.start < new_range.end);
+            *origin = SemanticOrigin::new(
+                origin.source_id(),
+                origin.module_id().clone(),
+                SourceAnchor::Range(new_range),
+                origin.structural_path().to_vec(),
+            );
+            assert_eq!(origin.source_id(), source);
+            assert_eq!(origin.module_id(), &relocated.module);
+            assert!(!origin.is_recovered() && origin.import_edge().is_none());
+            assert_eq!(origin.anchor(), &SourceAnchor::Range(new_range));
+            if joined {
+                *row_range = new_range;
+                nodes[site.node().index()].anchor = SourceAnchor::Range(new_range);
+                assert_eq!(*row_range, new_range);
+                assert_eq!(nodes[site.node().index()].anchor, *origin.anchor());
+            } else {
+                assert_ne!(*row_range, new_range);
+                match label {
+                    "d_origin" => {
+                        assert!(
+                            new_range.start <= members[2 * index].start
+                                && members[2 * index + 1].end < new_range.end
+                        );
+                    }
+                    "m_origin" => {
+                        assert!(
+                            new_range.start <= types[index].start
+                                && types[index].end < new_range.end
+                        );
+                    }
+                    "h_origin" => {
+                        assert!(
+                            inheritance.start < new_range.start && new_range.end < inheritance.end
+                        );
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        }
+        match label {
+            "i_header" | "i_tail" | "i_input" | "i_arena" => {
+                let mut new_range = inheritance;
+                match label {
+                    "i_header" => new_range.start = mappings[0].start - 48,
+                    "i_tail" => new_range.end = mappings[1].end + 3,
+                    _ => new_range.start += 1,
+                }
+                if label != "i_arena" {
+                    changed.inheritances.rows[0].source_range = new_range;
+                }
+                if label != "i_input" {
+                    nodes[70].anchor = SourceAnchor::Range(new_range);
+                }
+                expected = Some(SourceStructureDefinitionError::InvalidInheritance { index: 0 });
+            }
+            "i_recovered" => {
+                nodes[70].recovery = NodeRecoveryState::Recovered;
+                nodes[70].anchor =
+                    SourceAnchor::Range(range(source, inheritance.start + 1, inheritance.end));
+                assert_eq!(nodes[70].recovery, NodeRecoveryState::Recovered);
+            }
+            "i_zero" => nodes[70].anchor = SourceAnchor::Range(range(source, 0, 1)),
+            "i_missing" => {
+                nodes.truncate(70);
+                root = None;
+            }
+            "wide_rhs" => {
+                for row in &relocated.input.members {
+                    let expression = relocated
+                        .source_type
+                        .expressions()
+                        .get(SourceTypeExpressionId::new(row.written_type.index()))
+                        .unwrap();
+                    let actual = expression.source_range();
+                    for site in [expression.site(), expression.head_site()] {
+                        nodes[site.node().index()].anchor =
+                            SourceAnchor::Range(range(source, actual.start - 1, actual.end + 1));
+                    }
+                }
+            }
+            "no_root" => {
+                root = None;
+                nodes[74] =
+                    TypedNode::new("source.unowned", SourceAnchor::Range(range(source, 0, 1)))
+                        .with_recovery(NodeRecoveryState::Normal);
+            }
+            _ => {}
+        }
+        match label {
+            "d_header" => assert_eq!(
+                members[2 * index].start - changed.definitions.rows[index].source_range.start,
+                [25, 28][index] - 1
+            ),
+            "d_tail" => assert_eq!(
+                changed.definitions.rows[index].source_range.end - members[2 * index + 1].end,
+                3
+            ),
+            "h_width" => assert_eq!(
+                changed.mappings.rows[index].source_range.end
+                    - changed.mappings.rows[index].source_range.start,
+                [27, 28][index] - 1
+            ),
+            "i_header" => assert_eq!(
+                mappings[0].start - changed.inheritances.rows[0].source_range.start,
+                48
+            ),
+            "i_tail" => assert_eq!(
+                changed.inheritances.rows[0].source_range.end - mappings[1].end,
+                3
+            ),
+            "i_input" | "i_arena" | "i_recovered" => {
+                let SourceAnchor::Range(reference) = &nodes[70].anchor else {
+                    unreachable!()
+                };
+                let reference = *reference;
+                assert_ne!(reference, changed.inheritances.rows[0].source_range);
+                for value in [reference, changed.inheritances.rows[0].source_range] {
+                    assert_eq!(value.source_id, source);
+                    assert!(
+                        mappings[0].start - value.start >= 49 && value.end - mappings[1].end >= 4
+                    );
+                }
+            }
+            "d_adjacent" => assert_eq!(
+                changed.definitions.rows[0].source_range.end,
+                changed.definitions.rows[1].source_range.start
+            ),
+            _ => {}
+        }
+        let mut lower = relocated.source_type.clone();
+        if matches!(
+            label,
+            "m_prefix" | "mapping_before_prefix" | "member_escape" | "m_overlap"
+        ) {
+            let mut lower_input = source_type_input(source, relocated.module.clone());
+            for (member_index, row) in lower_input.members.iter_mut().enumerate() {
+                row.member_range = changed.members.rows[member_index].source_range;
+                let mut actual = types[member_index];
+                if matches!(label, "m_prefix" | "mapping_before_prefix") && member_index == index {
+                    actual.start = members[index].start + if index % 2 == 0 { 14 } else { 16 };
+                    actual.end = actual.start + 3;
+                }
+                row.expression.source_range = actual;
+                row.expression.head_range = actual;
+                for site in [&row.expression.site, &row.expression.head_site] {
+                    nodes[site.node().index()].anchor = SourceAnchor::Range(actual);
+                }
+                assert!(
+                    row.member_range.start <= actual.start && actual.end < row.member_range.end
+                );
+                assert_eq!(actual.end - actual.start, 3);
+            }
+            let arena = TypedArena::try_new(root, nodes.clone()).unwrap();
+            let result = SourceTypeStructureMemberProducer::build(lower_input, &arena);
+            if label == "m_overlap" {
+                assert!(
+                    matches!(result, Err(crate::source_type::SourceTypeError::InvalidStructureMember { structure_member }) if structure_member.index() == 1),
+                    "lower correctly refuses the deliberate overlap; upper Resolver remains earlier"
+                );
+            } else {
+                lower = result.expect("real lower succeeds before testing the upper-only geometry");
+                assert_eq!(
+                    (
+                        lower.applications().len(),
+                        lower.expressions().len(),
+                        lower.structure_members().len()
+                    ),
+                    (0, 4, 4)
+                );
+                changed.source_type_fingerprint = lower.debug_text();
+            }
+            if matches!(label, "m_prefix" | "mapping_before_prefix") {
+                let mut fixture = relocated.clone();
+                fixture.source_type = lower;
+                fixture.arena = arena;
+                if label == "mapping_before_prefix" {
+                    fixture.input.mappings[1].path.clear();
+                }
+                let error = if label == "mapping_before_prefix" {
+                    SourceStructureDefinitionError::InvalidMapping { index: 1 }
+                } else {
+                    SourceStructureDefinitionError::InvalidMember { index }
+                };
+                let expression = fixture
+                    .source_type
+                    .expressions()
+                    .get(SourceTypeExpressionId::new(index))
+                    .unwrap();
+                assert_eq!(
+                    expression.source_range().start
+                        - fixture.input.members[index].source_range.start,
+                    if index % 2 == 0 { 14 } else { 16 }
+                );
+                let before_input = fixture.input.clone();
+                let before_lower = fixture.source_type.clone();
+                let before_arena = fixture.arena.clone();
+                assert_eq!(fixture.build(&baseline), Err(error));
+                assert_eq!(fixture.input, before_input);
+                assert_eq!(fixture.source_type, before_lower);
+                assert_eq!(fixture.arena, before_arena);
+                continue;
+            }
+        }
+        if matches!(label, "b_prefix" | "b_tail") {
+            let mut indexes = registered_indexes.clone();
+            indexes.contributions = Default::default();
+            let actual_block = if label == "b_prefix" {
+                range(source, definitions[0].start - 10, block.end)
+            } else {
+                range(source, block.start, inheritance.end + 3)
+            };
+            for old in relocated.env.contributions().iter() {
+                let id = indexes.contributions.insert(
+                    old.module().clone(),
+                    old.kind().clone(),
+                    SourceAnchor::Range(actual_block),
+                );
+                assert_eq!(id, old.id());
+                for symbol in old.effects().symbols() {
+                    indexes.contributions.add_symbol(id, symbol.clone());
+                }
+                for definition in old.effects().definitions() {
+                    indexes.contributions.add_definition(id, *definition);
+                }
+                assert_eq!(
+                    indexes.contributions.get(id).unwrap().effects(),
+                    old.effects()
+                );
+            }
+            let mut fixture = relocated.clone();
+            fixture.env = SymbolEnv::new(relocated.module.clone(), indexes);
+            assert_eq!(fixture.env.symbols(), relocated.env.symbols());
+            assert_eq!(fixture.env.definitions(), relocated.env.definitions());
+            assert_eq!(
+                fixture.env.contributions().iter().next().unwrap().anchor(),
+                &SourceAnchor::Range(actual_block)
+            );
+            let error = if label == "b_prefix" {
+                SourceStructureDefinitionError::InvalidResolverDefinition { index: 0 }
+            } else {
+                SourceStructureDefinitionError::InvalidInheritance { index: 0 }
+            };
+            let before_env = fixture.env.clone();
+            let before_input = fixture.input.clone();
+            assert_eq!(fixture.build(&baseline), Err(error));
+            assert_eq!(fixture.env, before_env);
+            assert_eq!(fixture.input, before_input);
+            continue;
+        }
+        let arena = TypedArena::try_new(root, nodes).unwrap();
+        let before = changed.clone();
+        let lower_before = lower.clone();
+        let arena_before = arena.clone();
+        if matches!(label, "i_recovered" | "i_zero" | "i_missing") {
+            let different_baseline = unrelated_baseline(source, "different-baseline");
+            assert_eq!(different_baseline.len(), baseline.len());
+            assert_ne!(different_baseline, baseline);
+            assert_installation_error(
+                &relocated,
+                &changed,
+                &lower,
+                &baseline,
+                &arena,
+                SourceStructureDefinitionError::InvalidArenaOwnership,
+            );
+            assert_installation_error(
+                &relocated,
+                &changed,
+                &lower,
+                &different_baseline,
+                &arena,
+                SourceStructureDefinitionError::InvalidObligation,
+            );
+            assert_eq!(changed, before, "{label}");
+            assert_eq!(lower, lower_before, "{label}");
+            assert_eq!(arena, arena_before, "{label}");
+            continue;
+        }
+        if let Some(error) = expected {
+            assert_installation_error(&relocated, &changed, &lower, &baseline, &arena, error);
+        } else {
+            changed
+                .validate_installation(source, &relocated.module, &lower, &baseline, &arena)
+                .unwrap_or_else(|error| panic!("{label}: {error:?}"));
+            let mut fixture = relocated.clone();
+            fixture.arena = arena.clone();
+            fixture.source_type = lower.clone();
+            let mut actual_projection = projection.clone();
+            actual_projection.handoff = changed.clone();
+            let typed = fixture
+                .typed(baseline.clone())
+                .with_source_structure_definition(actual_projection)
+                .expect("valid geometry/reference slack installs");
+            assert_eq!(typed.initial_obligations(), &baseline);
+            assert_eq!(typed.source_structure_definition(), Some(&changed));
+            let resolved = assemble_empty(&typed).unwrap();
+            assert_eq!(resolved.source_structure_definition(), Some(&changed));
+            assert_eq!(
+                resolved.clone().source_structure_definition(),
+                Some(&changed)
+            );
+            if label != "d_adjacent" {
+                assert_eq!(&changed, handoff);
+            }
+        }
+        assert_eq!(changed, before, "{label}");
+        assert_eq!(lower, lower_before, "{label}");
+        assert_eq!(arena, arena_before, "{label}");
+    }
+}

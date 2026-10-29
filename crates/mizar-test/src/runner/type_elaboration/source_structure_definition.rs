@@ -28,11 +28,12 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SymbolId},
     symbols::{SignatureProjectionExtractor, SymbolOverloadPolicy},
 };
-use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
 use super::checker_handoff::assemble_empty_resolved_typed_ast;
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STRUCTURE_DEFINITION_TEXT: &str = concat!(
     "definition\n",
     "  struct Task263Base where\n",
@@ -86,111 +87,100 @@ enum ExactSurfaceKind {
 
 struct ExactSurfaceRow {
     kind: ExactSurfaceKind,
-    start: usize,
-    end: usize,
     children: &'static [usize],
 }
 
 macro_rules! token_row {
-    ($kind:ident, $text:literal, $start:literal, $end:literal) => {
+    ($kind:ident, $text:literal) => {
         ExactSurfaceRow {
             kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            start: $start,
-            end: $end,
             children: &[],
         }
     };
 }
 macro_rules! structural_row {
-    ($kind:ident, $start:literal, $end:literal, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow { kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind), start: $start, end: $end, children: &[$($child),*] }
+    ($kind:ident, [$($child:literal),* $(,)?]) => {
+        ExactSurfaceRow { kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind), children: &[$($child),*] }
     };
 }
 
 const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
-    token_row!(ReservedWord, "definition", 0, 10),
-    token_row!(ReservedWord, "struct", 13, 19),
-    token_row!(Identifier, "Task263Base", 20, 31),
-    token_row!(ReservedWord, "where", 32, 37),
-    token_row!(ReservedWord, "field", 42, 47),
-    token_row!(Identifier, "carrier", 48, 55),
-    token_row!(ReservedSymbol, "->", 56, 58),
-    token_row!(ReservedWord, "set", 59, 62),
-    token_row!(ReservedSymbol, ";", 62, 63),
-    token_row!(ReservedWord, "property", 68, 76),
-    token_row!(Identifier, "marker", 77, 83),
-    token_row!(ReservedSymbol, "->", 84, 86),
-    token_row!(ReservedWord, "set", 87, 90),
-    token_row!(ReservedSymbol, ";", 90, 91),
-    token_row!(ReservedWord, "end", 94, 97),
-    token_row!(ReservedSymbol, ";", 97, 98),
-    token_row!(ReservedWord, "struct", 102, 108),
-    token_row!(Identifier, "Task263Derived", 109, 123),
-    token_row!(ReservedWord, "where", 124, 129),
-    token_row!(ReservedWord, "field", 134, 139),
-    token_row!(Identifier, "carrier", 140, 147),
-    token_row!(ReservedSymbol, "->", 148, 150),
-    token_row!(ReservedWord, "set", 151, 154),
-    token_row!(ReservedSymbol, ";", 154, 155),
-    token_row!(ReservedWord, "property", 160, 168),
-    token_row!(Identifier, "marker", 169, 175),
-    token_row!(ReservedSymbol, "->", 176, 178),
-    token_row!(ReservedWord, "set", 179, 182),
-    token_row!(ReservedSymbol, ";", 182, 183),
-    token_row!(ReservedWord, "end", 186, 189),
-    token_row!(ReservedSymbol, ";", 189, 190),
-    token_row!(ReservedWord, "inherit", 194, 201),
-    token_row!(UserSymbol, "Task263Derived", 202, 216),
-    token_row!(ReservedWord, "extends", 217, 224),
-    token_row!(UserSymbol, "Task263Base", 225, 236),
-    token_row!(ReservedWord, "where", 237, 242),
-    token_row!(ReservedWord, "field", 247, 252),
-    token_row!(Identifier, "carrier", 253, 260),
-    token_row!(ReservedWord, "from", 261, 265),
-    token_row!(Identifier, "carrier", 266, 273),
-    token_row!(ReservedSymbol, ";", 273, 274),
-    token_row!(ReservedWord, "property", 279, 287),
-    token_row!(Identifier, "marker", 288, 294),
-    token_row!(ReservedWord, "from", 295, 299),
-    token_row!(Identifier, "marker", 300, 306),
-    token_row!(ReservedSymbol, ";", 306, 307),
-    token_row!(ReservedWord, "end", 310, 313),
-    token_row!(ReservedSymbol, ";", 313, 314),
-    token_row!(ReservedWord, "end", 315, 318),
-    token_row!(ReservedSymbol, ";", 318, 319),
-    structural_row!(StructurePattern, 20, 31, [2]),
-    structural_row!(TypeHead, 59, 62, [7]),
-    structural_row!(TypeExpression, 59, 62, [51]),
-    structural_row!(StructureField, 42, 63, [4, 5, 6, 52, 8]),
-    structural_row!(TypeHead, 87, 90, [12]),
-    structural_row!(TypeExpression, 87, 90, [54]),
-    structural_row!(StructureProperty, 68, 91, [9, 10, 11, 55, 13]),
-    structural_row!(StructureDefinition, 13, 98, [1, 50, 3, 53, 56, 14, 15]),
-    structural_row!(StructurePattern, 109, 123, [17]),
-    structural_row!(TypeHead, 151, 154, [22]),
-    structural_row!(TypeExpression, 151, 154, [59]),
-    structural_row!(StructureField, 134, 155, [19, 20, 21, 60, 23]),
-    structural_row!(TypeHead, 179, 182, [27]),
-    structural_row!(TypeExpression, 179, 182, [62]),
-    structural_row!(StructureProperty, 160, 183, [24, 25, 26, 63, 28]),
-    structural_row!(StructureDefinition, 102, 190, [16, 58, 18, 61, 64, 29, 30]),
-    structural_row!(InheritanceTarget, 202, 216, [32]),
-    structural_row!(InheritanceTarget, 225, 236, [34]),
-    structural_row!(FieldRedefinition, 247, 274, [36, 37, 38, 39, 40]),
-    structural_row!(PropertyRedefinition, 279, 307, [41, 42, 43, 44, 45]),
-    structural_row!(
-        InheritanceDefinition,
-        194,
-        314,
-        [31, 66, 33, 67, 35, 68, 69, 46, 47]
-    ),
-    structural_row!(DefinitionBlockItem, 0, 319, [0, 57, 65, 70, 48, 49]),
-    structural_row!(ItemList, 0, 319, [71]),
-    structural_row!(CompilationUnit, 0, 319, [72]),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "struct"),
+    token_row!(Identifier, "Task263Base"),
+    token_row!(ReservedWord, "where"),
+    token_row!(ReservedWord, "field"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "struct"),
+    token_row!(Identifier, "Task263Derived"),
+    token_row!(ReservedWord, "where"),
+    token_row!(ReservedWord, "field"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "inherit"),
+    token_row!(UserSymbol, "Task263Derived"),
+    token_row!(ReservedWord, "extends"),
+    token_row!(UserSymbol, "Task263Base"),
+    token_row!(ReservedWord, "where"),
+    token_row!(ReservedWord, "field"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedWord, "from"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedWord, "from"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    structural_row!(StructurePattern, [2]),
+    structural_row!(TypeHead, [7]),
+    structural_row!(TypeExpression, [51]),
+    structural_row!(StructureField, [4, 5, 6, 52, 8]),
+    structural_row!(TypeHead, [12]),
+    structural_row!(TypeExpression, [54]),
+    structural_row!(StructureProperty, [9, 10, 11, 55, 13]),
+    structural_row!(StructureDefinition, [1, 50, 3, 53, 56, 14, 15]),
+    structural_row!(StructurePattern, [17]),
+    structural_row!(TypeHead, [22]),
+    structural_row!(TypeExpression, [59]),
+    structural_row!(StructureField, [19, 20, 21, 60, 23]),
+    structural_row!(TypeHead, [27]),
+    structural_row!(TypeExpression, [62]),
+    structural_row!(StructureProperty, [24, 25, 26, 63, 28]),
+    structural_row!(StructureDefinition, [16, 58, 18, 61, 64, 29, 30]),
+    structural_row!(InheritanceTarget, [32]),
+    structural_row!(InheritanceTarget, [34]),
+    structural_row!(FieldRedefinition, [36, 37, 38, 39, 40]),
+    structural_row!(PropertyRedefinition, [41, 42, 43, 44, 45]),
+    structural_row!(InheritanceDefinition, [31, 66, 33, 67, 35, 68, 69, 46, 47]),
+    structural_row!(DefinitionBlockItem, [0, 57, 65, 70, 48, 49]),
+    structural_row!(ItemList, [71]),
+    structural_row!(CompilationUnit, [72]),
     structural_row!(
         Root,
-        0,
-        319,
         [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
             24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
@@ -258,12 +248,71 @@ fn source_structure_definition_output_impl(
     source_text: &str,
     mutation: SourceStructureDefinitionRouteMutation,
 ) -> Option<Result<SourceStructureDefinitionRouteOutput, String>> {
-    if source_text != SOURCE_STRUCTURE_DEFINITION_TEXT
-        || source_text.len() != 320
-        || !source_text.ends_with('\n')
-        || source_text.ends_with("\n\n")
+    let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+    if !preprocessed.diagnostics.is_empty() {
+        return None;
+    }
+    let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+    let lexical_env = mizar_lexer::build_lexical_environment(&[], &[]).ok()?;
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &raw,
+        mizar_lexer::ModuleId::new(module.path().as_str()),
+    );
+    let scopes = mizar_lexer::build_scope_skeleton(&raw);
+    let tokens = mizar_lexer::disambiguate_with_local_declarations(
+        &raw,
+        &lexical_env,
+        &locals,
+        &mizar_lexer::ParserLexContext::general(),
+        &scopes,
+    );
+    if !scopes.diagnostics.is_empty()
+        || !tokens.diagnostics().is_empty()
+        || tokens.tokens().len() != 50
+        || !tokens
+            .tokens()
+            .iter()
+            .zip(&EXACT_SURFACE_PROFILE[..50])
+            .all(|(actual, expected)| {
+                let ExactSurfaceKind::Token(kind, text) = &expected.kind else {
+                    return false;
+                };
+                let kind = match kind {
+                    SurfaceTokenKind::ReservedWord => mizar_lexer::TokenKind::ReservedWord,
+                    SurfaceTokenKind::ReservedSymbol => mizar_lexer::TokenKind::ReservedSymbol,
+                    SurfaceTokenKind::Identifier => mizar_lexer::TokenKind::Identifier,
+                    SurfaceTokenKind::UserSymbol => mizar_lexer::TokenKind::UserSymbol,
+                    _ => return false,
+                };
+                actual.kind() == kind && actual.lexeme() == *text
+            })
     {
         return None;
+    }
+    let source_matches = || -> Option<()> {
+        if ast.canonical_bytes().is_none() || ast.token_nodes().len() != tokens.tokens().len() {
+            return None;
+        }
+        for (actual, supplied) in tokens.tokens().iter().zip(ast.token_views()) {
+            let mapped = preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(actual.span())?;
+            let [range] = mapped.as_slice() else {
+                return None;
+            };
+            let token = supplied.as_token()?;
+            if token.text.as_ref() != actual.lexeme()
+                || supplied.range().start != range.start
+                || supplied.range().end != range.end
+                || source_text.get(range.start..range.end) != Some(actual.lexeme())
+            {
+                return None;
+            }
+        }
+        Some(())
+    };
+    if source_matches().is_none() {
+        return Some(Err("Task263 source association is invalid".to_owned()));
     }
     Some(build_output(ast, module, shells, symbols, mutation))
 }
@@ -280,8 +329,20 @@ fn build_output(
     }
     validate_shells_and_projections(ast, &module, shells, mutation)?;
     let identities = resolver_identities(symbols)?;
-    let arena = task263_arena(ast.source_id, mutation)?;
-    let mut lower_input = source_type_input(ast.source_id, module.clone());
+    let replay_shells =
+        mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+    let replay = SignatureProjectionExtractor::new(
+        ast,
+        &replay_shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    if &replay_shells != shells || !replay.diagnostics().is_empty() || &replay.into_env() != symbols
+    {
+        return Err("Task263 source association is invalid".to_owned());
+    }
+    let arena = task263_arena(ast, mutation)?;
+    let mut lower_input = source_type_input(ast, module.clone());
     if mutation == SourceStructureDefinitionRouteMutation::WrongLowerMember {
         lower_input.members[0].member_site = node_site(56);
     }
@@ -303,7 +364,7 @@ fn build_output(
         diagnostics: TypeDiagnosticTable::new(),
     })
     .map_err(|error| format!("Task249S typed base: {error}"))?;
-    let mut input = checker_input(ast.source_id, module, &identities);
+    let mut input = checker_input(ast, module, &identities);
     match mutation {
         SourceStructureDefinitionRouteMutation::WrongResolverDefinition => {
             input.members[3].definition = input.members[2].definition
@@ -349,86 +410,82 @@ fn surface_profile_is_exact(
     ast: &SurfaceAst,
     mutation: SourceStructureDefinitionRouteMutation,
 ) -> bool {
-    let mut kinds = ast
-        .nodes()
-        .iter()
-        .map(|node| match &node.kind {
-            SurfaceNodeKind::Token(token) => format!("token:{:?}:{:?}", token.kind, token.text),
-            kind => format!("node:{kind:?}"),
-        })
-        .collect::<Vec<_>>();
-    let mut ranges = ast
-        .nodes()
-        .iter()
-        .map(|node| (node.range.start, node.range.end))
-        .collect::<Vec<_>>();
-    let mut recoveries = ast
-        .nodes()
-        .iter()
-        .map(|node| node.recovered)
-        .collect::<Vec<_>>();
-    let mut children = ast
-        .nodes()
-        .iter()
-        .map(|node| {
-            node.children
-                .iter()
-                .map(|child| child.index())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-    let mut root = ast.root().map(SurfaceNodeId::index);
-    match mutation {
-        SourceStructureDefinitionRouteMutation::WrongSurfaceRow(index) => {
-            if let Some(kind) = kinds.get_mut(index) {
-                kind.push('!');
-            }
-        }
-        SourceStructureDefinitionRouteMutation::WrongSurfaceRange(index) => {
-            if let Some(range) = ranges.get_mut(index) {
-                range.1 = range.1.saturating_add(1);
-            }
-        }
-        SourceStructureDefinitionRouteMutation::WrongSurfaceRecovery(index) => {
-            if let Some(recovered) = recoveries.get_mut(index) {
-                *recovered = !*recovered;
-            }
-        }
-        SourceStructureDefinitionRouteMutation::WrongSurfaceChildren(index) => {
-            if let Some(row) = children.get_mut(index) {
-                if row.len() > 1 {
-                    row.rotate_left(1);
-                } else {
-                    row.push(index);
-                }
-            }
-        }
-        SourceStructureDefinitionRouteMutation::WrongSurfaceRoot => root = None,
-        _ => {}
-    }
+    let root = if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRoot {
+        None
+    } else {
+        ast.root().map(SurfaceNodeId::index)
+    };
     root == Some(74)
         && ast.expression_root().is_none()
         && ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
         && ast
             .nodes()
             .iter()
-            .all(|node| node.range.source_id == ast.source_id)
-        && ast
-            .nodes()
-            .iter()
             .enumerate()
             .zip(EXACT_SURFACE_PROFILE)
-            .all(|((index, _), expected)| {
-                let expected_kind = match &expected.kind {
-                    ExactSurfaceKind::Token(kind, text) => {
-                        format!("token:{kind:?}:{text:?}")
+            .all(|((index, node), expected)| {
+                let changed_kind = (mutation
+                    == SourceStructureDefinitionRouteMutation::WrongSurfaceRow(index))
+                .then(|| match &node.kind {
+                    SurfaceNodeKind::Token(actual) => {
+                        let mut token = actual.clone();
+                        token.kind = if token.kind == SurfaceTokenKind::Identifier {
+                            SurfaceTokenKind::ReservedWord
+                        } else {
+                            SurfaceTokenKind::Identifier
+                        };
+                        SurfaceNodeKind::Token(token)
                     }
-                    ExactSurfaceKind::Structural(kind) => format!("node:{kind:?}"),
+                    SurfaceNodeKind::Root => SurfaceNodeKind::CompilationUnit,
+                    _ => SurfaceNodeKind::Root,
+                });
+                let observed_kind = changed_kind.as_ref().unwrap_or(&node.kind);
+                let kind_matches = match (observed_kind, &expected.kind) {
+                    (SurfaceNodeKind::Token(actual), ExactSurfaceKind::Token(kind, text)) => {
+                        actual.kind == *kind && actual.text.as_ref() == *text
+                    }
+                    (actual, ExactSurfaceKind::Structural(kind)) => actual == kind,
+                    _ => false,
                 };
-                kinds[index] == expected_kind
-                    && ranges[index] == (expected.start, expected.end)
-                    && !recoveries[index]
-                    && children[index] == expected.children
+                let mut range = node.range;
+                let mut recovered = node.recovered;
+                let mut children = node
+                    .children
+                    .iter()
+                    .map(|id| id.index())
+                    .collect::<Vec<_>>();
+                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRange(index) {
+                    range.end = range.end.saturating_add(1);
+                }
+                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRecovery(index) {
+                    recovered = !recovered;
+                }
+                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceChildren(index) {
+                    if children.len() > 1 {
+                        children.rotate_left(1);
+                    } else {
+                        children.push(index);
+                    }
+                }
+                kind_matches
+                    && range.start < range.end
+                    && !recovered
+                    && children == expected.children
+                    && (children.is_empty() || {
+                        let first = ast.nodes()[children[0]].range;
+                        let last = ast.nodes()[*children.last().unwrap()].range;
+                        range.start == first.start
+                            && range.end == last.end
+                            && children.iter().all(|child| {
+                                let child = ast.nodes()[*child].range;
+                                range.start <= child.start && child.end <= range.end
+                            })
+                            && (index == 74
+                                || children.windows(2).all(|pair| {
+                                    ast.nodes()[pair[0]].range.end
+                                        <= ast.nodes()[pair[1]].range.start
+                                }))
+                    })
             })
 }
 
@@ -452,18 +509,6 @@ fn validate_shells_and_projections(
         DeclarationShellKind::PropertyRedefinition,
     ];
     let nodes = [71, 57, 53, 56, 65, 61, 64, 70, 68, 69];
-    let ranges = [
-        (0, 319),
-        (13, 98),
-        (42, 63),
-        (68, 91),
-        (102, 190),
-        (134, 155),
-        (160, 183),
-        (194, 314),
-        (247, 274),
-        (279, 307),
-    ];
     let parents = [
         None,
         Some(0),
@@ -490,7 +535,7 @@ fn validate_shells_and_projections(
             || row.kind() != kinds[index]
             || row.node_id().index() != nodes[index]
             || row.parent().map(|id| id.index()) != parents[index]
-            || row.range() != range(ast.source_id, ranges[index].0, ranges[index].1)
+            || row.range() != ast.nodes()[nodes[index]].range
             || row.module() != module
             || row.recovered()
         {
@@ -546,7 +591,6 @@ fn validate_shells_and_projections(
     }
     Ok(())
 }
-
 type ResolverIdentity = (SymbolId, DefinitionId, SourceContributionId);
 
 fn resolver_identities(symbols: &SymbolEnv) -> Result<Vec<ResolverIdentity>, String> {
@@ -568,13 +612,9 @@ fn resolver_identities(symbols: &SymbolEnv) -> Result<Vec<ResolverIdentity>, Str
         .collect()
 }
 
-fn source_type_input(source: SourceId, module: ModuleId) -> SourceTypeStructureMemberHandoffInput {
-    let specs = [
-        (53, 42, 63, 52, 51, 59, 62),
-        (56, 68, 91, 55, 54, 87, 90),
-        (61, 134, 155, 60, 59, 151, 154),
-        (64, 160, 183, 63, 62, 179, 182),
-    ];
+fn source_type_input(ast: &SurfaceAst, module: ModuleId) -> SourceTypeStructureMemberHandoffInput {
+    let source = ast.source_id;
+    let specs = [(53, 52, 51), (56, 55, 54), (61, 60, 59), (64, 63, 62)];
     SourceTypeStructureMemberHandoffInput {
         source_id: source,
         module_id: module.clone(),
@@ -582,26 +622,25 @@ fn source_type_input(source: SourceId, module: ModuleId) -> SourceTypeStructureM
             .into_iter()
             .enumerate()
             .map(
-                |(
-                    source_ordinal,
-                    (member_node, member_start, member_end, expression_node, head_node, start, end),
-                )| SourceTypeStructureMemberInput {
-                    member_site: node_site(member_node),
-                    member_range: range(source, member_start, member_end),
-                    source_ordinal,
-                    expression: SourceTypeExpressionInput {
-                        source_id: source,
-                        module_id: module.clone(),
-                        site: node_site(expression_node),
-                        source_range: range(source, start, end),
-                        spelling: "set".to_owned(),
-                        head_site: node_site(head_node),
-                        head_range: range(source, start, end),
-                        head_spelling: "set".to_owned(),
-                        form: SourceTypeApplicationForm::Bare,
-                        head: SourceTypeHead::BuiltinSet,
-                        recovery: NodeRecoveryState::Normal,
-                    },
+                |(source_ordinal, (member_node, expression_node, head_node))| {
+                    SourceTypeStructureMemberInput {
+                        member_site: node_site(member_node),
+                        member_range: ast.nodes()[member_node].range,
+                        source_ordinal,
+                        expression: SourceTypeExpressionInput {
+                            source_id: source,
+                            module_id: module.clone(),
+                            site: node_site(expression_node),
+                            source_range: ast.nodes()[expression_node].range,
+                            spelling: "set".to_owned(),
+                            head_site: node_site(head_node),
+                            head_range: ast.nodes()[head_node].range,
+                            head_spelling: "set".to_owned(),
+                            form: SourceTypeApplicationForm::Bare,
+                            head: SourceTypeHead::BuiltinSet,
+                            recovery: NodeRecoveryState::Normal,
+                        },
+                    }
                 },
             )
             .collect(),
@@ -609,13 +648,14 @@ fn source_type_input(source: SourceId, module: ModuleId) -> SourceTypeStructureM
 }
 
 fn checker_input(
-    source: SourceId,
+    ast: &SurfaceAst,
     module: ModuleId,
     identities: &[ResolverIdentity],
 ) -> SourceStructureDefinitionHandoffInput {
+    let source = ast.source_id;
     let definitions = vec![
-        SourceStructureDefinitionInput { symbol: identities[0].0.clone(), definition: identities[0].1, contribution: identities[0].2, site: node_site(57), source_range: range(source,13,98), source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(0),SourceStructureMemberId::new(1)], constructor_fields: vec![SourceStructureMemberId::new(0)] },
-        SourceStructureDefinitionInput { symbol: identities[3].0.clone(), definition: identities[3].1, contribution: identities[3].2, site: node_site(65), source_range: range(source,102,190), source_ordinal: 1, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(2),SourceStructureMemberId::new(3)], constructor_fields: vec![SourceStructureMemberId::new(2)] },
+        SourceStructureDefinitionInput { symbol: identities[0].0.clone(), definition: identities[0].1, contribution: identities[0].2, site: node_site(57), source_range: ast.nodes()[57].range, source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(0),SourceStructureMemberId::new(1)], constructor_fields: vec![SourceStructureMemberId::new(0)] },
+        SourceStructureDefinitionInput { symbol: identities[3].0.clone(), definition: identities[3].1, contribution: identities[3].2, site: node_site(65), source_range: ast.nodes()[65].range, source_ordinal: 1, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(2),SourceStructureMemberId::new(3)], constructor_fields: vec![SourceStructureMemberId::new(2)] },
     ];
     let member_specs = [
         (
@@ -624,8 +664,6 @@ fn checker_input(
             0,
             SourceStructureMemberKind::Field,
             53,
-            42,
-            63,
             "field carrier -> set;",
             Some(0),
         ),
@@ -635,8 +673,6 @@ fn checker_input(
             1,
             SourceStructureMemberKind::Property,
             56,
-            68,
-            91,
             "property marker -> set;",
             None,
         ),
@@ -646,8 +682,6 @@ fn checker_input(
             0,
             SourceStructureMemberKind::Field,
             61,
-            134,
-            155,
             "field carrier -> set;",
             Some(0),
         ),
@@ -657,8 +691,6 @@ fn checker_input(
             1,
             SourceStructureMemberKind::Property,
             64,
-            160,
-            183,
             "property marker -> set;",
             None,
         ),
@@ -667,26 +699,25 @@ fn checker_input(
         .into_iter()
         .enumerate()
         .map(
-            |(
-                index,
-                (identity, owner, ordinal, kind, node, start, end, spelling, constructor_ordinal),
-            )| SourceStructureMemberInput {
-                symbol: identities[identity].0.clone(),
-                definition: identities[identity].1,
-                contribution: identities[identity].2,
-                owner: SourceStructureDefinitionId::new(owner),
-                ordinal,
-                kind,
-                site: node_site(node),
-                source_range: range(source, start, end),
-                recovery: SourceStructureDefinitionRecovery::Normal,
-                spelling: spelling.to_owned(),
-                written_type: SourceTypeStructureMemberId::new(index),
-                constructor_ordinal,
+            |(index, (identity, owner, ordinal, kind, node, spelling, constructor_ordinal))| {
+                SourceStructureMemberInput {
+                    symbol: identities[identity].0.clone(),
+                    definition: identities[identity].1,
+                    contribution: identities[identity].2,
+                    owner: SourceStructureDefinitionId::new(owner),
+                    ordinal,
+                    kind,
+                    site: node_site(node),
+                    source_range: ast.nodes()[node].range,
+                    recovery: SourceStructureDefinitionRecovery::Normal,
+                    spelling: spelling.to_owned(),
+                    written_type: SourceTypeStructureMemberId::new(index),
+                    constructor_ordinal,
+                }
             },
         )
         .collect();
-    let inheritances = vec![SourceStructureInheritanceInput { child: SourceStructureDefinitionId::new(1), parent: SourceStructureDefinitionId::new(0), site: node_site(70), source_range: range(source,194,314), source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;".to_owned(), mappings: vec![SourceStructureMappingId::new(0),SourceStructureMappingId::new(1)] }];
+    let inheritances = vec![SourceStructureInheritanceInput { child: SourceStructureDefinitionId::new(1), parent: SourceStructureDefinitionId::new(0), site: node_site(70), source_range: ast.nodes()[70].range, source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;".to_owned(), mappings: vec![SourceStructureMappingId::new(0),SourceStructureMappingId::new(1)] }];
     let mapping_specs = [
         (
             6,
@@ -694,8 +725,6 @@ fn checker_input(
             2,
             0,
             68,
-            247,
-            274,
             "field carrier from carrier;",
         ),
         (
@@ -704,34 +733,30 @@ fn checker_input(
             3,
             1,
             69,
-            279,
-            307,
             "property marker from marker;",
         ),
     ];
     let mappings = mapping_specs
         .into_iter()
         .enumerate()
-        .map(
-            |(index, (identity, kind, view, parent, node, start, end, spelling))| {
-                SourceStructureMappingInput {
-                    symbol: identities[identity].0.clone(),
-                    definition: identities[identity].1,
-                    contribution: identities[identity].2,
-                    inheritance: SourceStructureInheritanceId::new(0),
-                    ordinal: index,
-                    kind,
-                    view_member: SourceStructureMemberId::new(view),
-                    parent_member: SourceStructureMemberId::new(parent),
-                    root_member: SourceStructureMemberId::new(parent),
-                    path: vec![SourceStructureInheritanceId::new(0)],
-                    site: node_site(node),
-                    source_range: range(source, start, end),
-                    recovery: SourceStructureDefinitionRecovery::Normal,
-                    spelling: spelling.to_owned(),
-                }
-            },
-        )
+        .map(|(index, (identity, kind, view, parent, node, spelling))| {
+            SourceStructureMappingInput {
+                symbol: identities[identity].0.clone(),
+                definition: identities[identity].1,
+                contribution: identities[identity].2,
+                inheritance: SourceStructureInheritanceId::new(0),
+                ordinal: index,
+                kind,
+                view_member: SourceStructureMemberId::new(view),
+                parent_member: SourceStructureMemberId::new(parent),
+                root_member: SourceStructureMemberId::new(parent),
+                path: vec![SourceStructureInheritanceId::new(0)],
+                site: node_site(node),
+                source_range: ast.nodes()[node].range,
+                recovery: SourceStructureDefinitionRecovery::Normal,
+                spelling: spelling.to_owned(),
+            }
+        })
         .collect();
     SourceStructureDefinitionHandoffInput {
         source_id: source,
@@ -744,14 +769,14 @@ fn checker_input(
 }
 
 fn task263_arena(
-    source: SourceId,
+    ast: &SurfaceAst,
     mutation: SourceStructureDefinitionRouteMutation,
 ) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
-    for (index, row) in EXACT_SURFACE_PROFILE.iter().enumerate() {
-        let generic = match row.kind {
-            ExactSurfaceKind::Token(_, _) => "source.surface.token",
-            ExactSurfaceKind::Structural(_) => "source.surface.structural",
+    for (index, node) in ast.nodes().iter().enumerate() {
+        let generic = match node.kind {
+            SurfaceNodeKind::Token(_) => "source.surface.token",
+            _ => "source.surface.structural",
         };
         let kind = match index {
             51 | 54 | 59 | 62 => "source.type.head",
@@ -769,10 +794,14 @@ fn task263_arena(
         } else {
             kind
         };
-        let children = row.children.iter().copied().map(TypedNodeId::new).collect();
+        let children = node
+            .children
+            .iter()
+            .map(|id| TypedNodeId::new(id.index()))
+            .collect();
         let actual = builder
             .push(
-                TypedNode::new(kind, SourceAnchor::Range(range(source, row.start, row.end)))
+                TypedNode::new(kind, SourceAnchor::Range(node.range))
                     .with_children(children)
                     .with_typing(TypingState::Unknown)
                     .with_recovery(NodeRecoveryState::Normal),
@@ -824,13 +853,6 @@ fn route_output_is_exact(output: &SourceStructureDefinitionRouteOutput) -> bool 
         && resolved.diagnostics().is_empty()
 }
 
-const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
-}
 const fn node_site(index: usize) -> TypedSiteRef {
     TypedSiteRef::Node(TypedNodeId::new(index))
 }

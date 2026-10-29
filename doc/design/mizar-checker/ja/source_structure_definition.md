@@ -5,6 +5,40 @@
 
 この Task 263 transport は凍結を維持します。
 
+## Ordinary Structure layout
+
+元のソース fixture・既存テストと正規 spelling 記述子は oracle として残す。
+現在の transport は既存 role site の同一 source・非空な相対範囲を使う。
+resolver の identity/signature/path/arity/effects 検査後、全 definition、全 member、
+inheritance、mapping/coverage、lower の順で検証し、coherence/baseline は arena より先。
+resolver は自身の正常な origin を検証し、呼出元の範囲/site とは照合しない。
+各行の段階で authenticated/stored origin と範囲を照合し、lower 照合は mapping の後。
+stored origin の role/path/identity 不正は Resolver、正常な範囲の不一致は対応する
+行エラーとし、どちらが stale かを断定しない。従来の正確な優先順位を保つ。
+
+contribution は順序付き origin を包含し、build は実際の contribution に inheritance
+が収まることも検査する。installation に contribution/block snapshot や Context はない。
+module-root74 の権威や raw block の端点を創作しない。definition は順序付き member、
+member は Set3 RHS と末尾、inheritance は両 definition の後で順序付き mapping を包含。
+文法由来の header/closing/member/mapping 容量を検査し、完結した文の隣接は許す。
+正規記述子の長さや字下げは座標ではない。RHS arena の包含規則を保つ。
+最小容量は token の綴り長と必要な単語区切りから導く。block→最初の struct は11、
+struct→最初の member は25/28、member→Set は field/property ごと15/17、
+Set→member 末尾は1、最後の member/mapping→owner 末尾は4、inheritance→最初の
+mapping は49、mapping 幅は27/28、inheritance→block 末尾は4。これは範囲の容量で、
+未表現 token の位置ではない。先行 definition/inheritance の幾何は認証済み origin を
+使い、後段の不正な入力行を使わない。後段の不正は各段階で扱い、owner の隣接は許す。
+inheritance に resolver origin はない。正常な同一 source の既定 slot70 が両 mapping と
+header/closing 容量を含む場合、inheritance 段階で範囲の一致を検査する。
+それ以外の arena 不正は後段へ送り、stale 側を一意に判定できるとは主張しない。
+
+runner は固定の native50-token family を選択後、root token alias を含む正常75行の
+所有関係、mapped raw token、現在の shell/env replay を認証する。
+既存102件の選択済み拒否は選択を維持。末尾LFなしも layout として扱い、未対応の
+constructor 名 family は非選択。公開上位 API のスカラー幾何は raw 所属の証明ではない。
+2/4/1/2/0、lower identity、constructor/property 区別、全 baseline obligation と snapshot、
+coherence と意味的 credit を追加しない境界を維持する。
+
 ## Task 263 scopeとauthority
 
 Checker Task 263は、2個の通常zero-parameter structure宣言、field/property
