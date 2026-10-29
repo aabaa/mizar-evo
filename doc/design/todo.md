@@ -917,7 +917,7 @@ fitted to. They may run alongside Steps 6-8; the metamorphic guard should run
 early because its result qualifies what the active corpus demonstrates.
 
 1. [ ] mizar-test 23 — [metamorphic generalization guard](./task_contracts/en/QUALITY-METAMORPHIC-GUARD.md).
-2. [ ] mizar-test 24 — [literal source-offset ratchet](./task_contracts/en/QUALITY-LITERAL-OFFSET-RATCHET.md).
+2. [x] mizar-test 24 — [literal source-offset ratchet](./task_contracts/en/QUALITY-LITERAL-OFFSET-RATCHET.md).
 3. [ ] Checker 281 — [exact-profile retirement](./task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md);
    deps items 1-2 and checker Task 258.
 

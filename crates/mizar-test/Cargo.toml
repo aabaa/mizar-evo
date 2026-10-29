@@ -25,6 +25,7 @@ mizar-atp = { path = "../mizar-atp" }
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-kernel = { path = "../mizar-kernel" }
 mizar-lexer = { path = "../mizar-lexer" }
+syn = { version = "2.0.117", features = ["full", "visit"] }
 
 [lints]
 workspace = true

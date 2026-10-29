@@ -3688,3 +3688,2185 @@ fn assert_doc_volume_matcher_vectors() {
     );
     assert_eq!(violations.len(), 2, "{violations:?}");
 }
+
+#[test]
+fn literal_source_offset_counter_uses_whole_endpoint_syntax() {
+    let cases = [
+        ("source id alone", "let _ = SourceId(7);", 0),
+        (
+            "raw range type",
+            "let _ = r#SourceRange { source_id: id, start: 1, end };",
+            1,
+        ),
+        (
+            "raw constructor",
+            "let _ = SourceRange::r#new(id, 1, end);",
+            1,
+        ),
+        (
+            "raw endpoint",
+            "let _ = SourceRange { source_id: id, r#start: 1, end };",
+            1,
+        ),
+        ("raw named array", "let r#expected_ranges = [1];", 1),
+        (
+            "integer source id alone",
+            "let _ = SourceRange::new(12, start, end);",
+            0,
+        ),
+        (
+            "direct struct start",
+            "let _ = SourceRange { source_id: id, start: 4, end };",
+            1,
+        ),
+        (
+            "mixed struct endpoint",
+            "let _ = SourceRange { source_id: id, start, end: 9 };",
+            1,
+        ),
+        (
+            "qualified struct",
+            "let _ = mizar_core::SourceRange { end: 8, source_id: id, start };",
+            1,
+        ),
+        (
+            "constructor start",
+            "let _ = SourceRange::new(id, 5, end);",
+            1,
+        ),
+        (
+            "both constructor endpoints count once",
+            "let _ = SourceRange::new(id, 5, 6);",
+            1,
+        ),
+        (
+            "radix separators suffix groups and negative",
+            "let _ = SourceRange::new(make_id(), (-0x1_0_i32), (1_234usize));",
+            1,
+        ),
+        (
+            "arithmetic and casts are not whole literals",
+            "let _ = SourceRange::new(id, 1 + 2, end as usize);",
+            0,
+        ),
+        (
+            "float is not an integer literal",
+            "let _ = SourceRange::new(id, 1.0, end);",
+            0,
+        ),
+        (
+            "one whole endpoint still counts once",
+            "let _ = SourceRange::new(id, 1 + 2, 3);",
+            1,
+        ),
+        (
+            "independent constructions",
+            "let _ = SourceRange::new(id, 1, end); let _ = SourceRange { source_id: id, start, end: 2 };",
+            2,
+        ),
+    ];
+    for (case, source, expected) in cases {
+        assert_eq!(
+            literal_source_offset_count(&format!("fn body() {{ {source} }}")),
+            Ok(expected),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn literal_source_offset_counter_recognizes_only_local_forward_helpers() {
+    let source = r#"
+        fn forward(source: SourceId, begin: usize, finish: usize) -> SourceRange {
+            SourceRange { source_id: source, start: (begin), end: finish }
+        }
+        fn mirror(source: SourceId, at: usize) -> SourceRange {
+            SourceRange { source_id: source, start: at, end: at }
+        }
+        fn not_sole_tail(source: SourceId, begin: usize, finish: usize) -> SourceRange {
+            let range = SourceRange { source_id: source, start: begin, end: finish };
+            range
+        }
+        fn callers(id: SourceId, begin: usize, finish: usize) {
+            let _ = forward(id, 3, finish);
+            let _ = self::forward(id, begin, 4);
+            let _ = mirror(id, 5);
+            let _ = not_sole_tail(id, 6, 7);
+        }
+    "#;
+    assert_eq!(literal_source_offset_count(source), Ok(3));
+    let conditional = r#"
+        #[cfg(feature = "alt")]
+        fn forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+        #[cfg(not(feature = "alt"))]
+        fn forward(start: usize, end: usize, id: SourceId) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+        fn f(id: SourceId, begin: usize) { let _ = forward(id, begin, 1); }
+    "#;
+    assert_eq!(literal_source_offset_count(conditional), Ok(1));
+    let raw_helper = r#"
+        fn r#forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+        fn f(id: SourceId, begin: usize) { let _ = forward(id, begin, 1); }
+    "#;
+    assert_eq!(literal_source_offset_count(raw_helper), Ok(1));
+    let raw_shadow = r#"
+        fn forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+        fn f(r#forward: Callable, id: SourceId) { let _ = forward(id, 1, 2); }
+    "#;
+    assert!(literal_source_offset_count(raw_shadow).is_err());
+
+    let shadowed_call = r#"
+        fn forward(source: SourceId, begin: usize, finish: usize) -> SourceRange {
+            SourceRange { source_id: source, start: begin, end: finish }
+        }
+        fn caller(id: SourceId) {
+            let forward = opaque_value;
+            let _ = forward(id, 1, 2);
+        }
+    "#;
+    assert!(literal_source_offset_count(shadowed_call).is_err());
+
+    let partial = r#"
+        fn partial(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end: end + 1 }
+        }
+        fn caller() { let _ = partial(id, 7, end); }
+    "#;
+    assert_eq!(literal_source_offset_count(partial), Ok(0));
+
+    let qualified_helper = r#"
+        const fn qualified(source: SourceId, begin: usize, finish: usize) -> crate::SourceRange {
+            return (crate::SourceRange { source_id: source, start: (begin), end: (finish) });
+        }
+    "#;
+    for (call, expected) in [
+        ("fn f() { let _ = qualified(99, 2, end); }", 1),
+        ("fn f() { let _ = qualified(9, begin, end); }", 0),
+        ("fn f() { let _ = object.qualified(id, 3, end); }", 0),
+    ] {
+        let source = format!("{qualified_helper}\n{call}");
+        assert_eq!(literal_source_offset_count(&source), Ok(expected));
+    }
+
+    let module_maps = r#"
+        mod first {
+            fn forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+                SourceRange { source_id: id, start, end }
+            }
+            fn caller() { let _ = forward(id, 1, end); }
+        }
+        mod second {
+            fn forward(_id: SourceId, _start: usize, _end: usize) -> usize { 0 }
+            fn caller() { let _ = forward(id, 2, end); }
+        }
+    "#;
+    assert_eq!(literal_source_offset_count(module_maps), Ok(1));
+
+    let lexical_scopes = r#"
+        fn forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+        fn only_binding(forward: usize) { let _ = forward; }
+        fn qualified_call(forward: impl Fn(SourceId, usize, usize) -> SourceRange, id: SourceId) {
+            let _ = self::forward(id, 1, end);
+        }
+        fn block_local_function() { fn forward(_value: usize) {} forward(1); }
+    "#;
+    assert_eq!(literal_source_offset_count(lexical_scopes), Ok(1));
+
+    let helper = "fn forward(id: SourceId, start: usize, end: usize) -> SourceRange { SourceRange { source_id: id, start, end } }";
+    let shadows = [
+        (
+            "parameter",
+            "fn f(forward: impl Fn(SourceId, usize, usize) -> SourceRange, id: SourceId) { let _ = forward(id, 1, end); }",
+        ),
+        (
+            "closure parameter",
+            "fn f(id: SourceId) { let _ = (|forward| forward(id, 1, end))(value); }",
+        ),
+        (
+            "loop binding",
+            "fn f(id: SourceId) { for forward in values { let _ = forward(id, 1, end); } }",
+        ),
+        (
+            "match binding",
+            "fn f(id: SourceId, value: usize) { match value { forward => { let _ = forward(id, 1, end); } } }",
+        ),
+        (
+            "block import",
+            "fn f(id: SourceId) { use other::forward; let _ = forward(id, 1, end); }",
+        ),
+        (
+            "block const",
+            "fn f(id: SourceId) { const forward: fn(SourceId, usize, usize) -> SourceRange = foreign::forward; let _ = forward(id, 1, end); }",
+        ),
+        (
+            "block static",
+            "fn f(id: SourceId) { static forward: fn(SourceId, usize, usize) -> SourceRange = foreign::forward; let _ = forward(id, 1, end); }",
+        ),
+        (
+            "conditionally enabled block functions",
+            r#"fn f(id: SourceId) {
+                #[cfg(feature = "alt")]
+                fn forward(id: SourceId, start: usize, end: usize) -> SourceRange {
+                    SourceRange { source_id: id, start, end }
+                }
+                #[cfg(not(feature = "alt"))]
+                fn forward(id: SourceId, start: usize, end: usize) -> usize { 0 }
+                let _ = forward(id, 1, end);
+            }"#,
+        ),
+    ];
+    for (case, shadow) in shadows {
+        let source = format!("{helper}\n{shadow}");
+        syn::parse_file(&source).expect("valid helper shadow fixture");
+        assert!(
+            literal_source_offset_count(&source).is_err(),
+            "ambiguous {case} shadow"
+        );
+    }
+    let constructor = format!(
+        "{helper}\nfn f(id: SourceId) {{ struct forward(SourceId, usize, usize); let _ = forward(id, 1, end); }}"
+    );
+    assert_eq!(literal_source_offset_count(&constructor), Ok(0));
+}
+
+#[test]
+fn literal_source_offset_counter_counts_named_arrays_and_value_wrappers() {
+    let source = r#"
+        fn cases(flag: bool, value: usize) {
+            let expected_ranges: [usize; 5] = [2, (3, 4), (value, 5), value, (value, value)];
+            let expected_sites = [(1, 2), (value, 3), value];
+            let unrelated = [4, (5, 6)];
+            let expected_ranges = &({
+                let scratch = [7, 8];
+                let closure = || [9, 10];
+                match flag {
+                    true => [(value, 11)],
+                    false => if flag { [12] } else { [value] },
+                }
+            });
+        }
+    "#;
+    // The first named arrays contribute 3 + 2; the wrapped match/if branches
+    // contribute 2. Scratch, closure, and unrelated arrays contribute 0.
+    assert_eq!(literal_source_offset_count(source), Ok(7));
+    for (source, expected) in [
+        (
+            "fn f(flag: bool) { let expected_ranges = match flag { true => [(1, 2)], false => unreachable!(\"handled above\") }; }",
+            1,
+        ),
+        ("fn f() { let expected_sites = unreachable!(); }", 0),
+        (
+            "fn f(value: usize) { let expected_sites = [(#[cfg(test)] 1, value)]; }",
+            0,
+        ),
+    ] {
+        assert_eq!(literal_source_offset_count(source), Ok(expected));
+    }
+    assert!(
+        literal_source_offset_count(
+            "fn f(message: &str) { let expected_sites = unreachable!(message); }"
+        )
+        .is_err()
+    );
+
+    assert_eq!(
+        literal_source_offset_count("fn f() { let ref expected_sites = [1]; }"),
+        Ok(0)
+    );
+    assert_eq!(
+        literal_source_offset_count("fn f() { let expected_sites @ _ = [1]; }"),
+        Ok(0)
+    );
+
+    for (case, source, expected) in [
+        (
+            "tuple depth",
+            "fn f(v: usize) { let expected_sites = [((1, 2), v)]; }",
+            0,
+        ),
+        (
+            "call arguments",
+            "fn f() { let expected_sites = compute([1, 2]); }",
+            0,
+        ),
+        (
+            "nested named binding",
+            "fn f() { let expected_sites = { let expected_ranges = [1]; [2] }; }",
+            2,
+        ),
+        (
+            "parameter/type positions",
+            "fn f(expected_ranges: [usize; 2]) { let expected_sites: [usize; 1] = value; }",
+            0,
+        ),
+    ] {
+        assert_eq!(literal_source_offset_count(source), Ok(expected), "{case}");
+    }
+    assert_eq!(
+        literal_source_offset_count(
+            "fn f() { let expected_ranges = compute(); let expected_sites = [value, value]; }"
+        ),
+        Ok(0)
+    );
+    assert!(
+        literal_source_offset_count("fn f() { let expected_ranges = opaque_value!(); }").is_err()
+    );
+}
+
+#[test]
+fn literal_source_offset_counter_visits_macro_payloads_not_patterns_or_text() {
+    let source = r##"
+        fn cases(id: SourceId, end: usize) {
+            let _ = vec![SourceRange::new(id, 1, end), SourceRange { source_id: id, start: 2, end }];
+            let _ = vec![SourceRange::new(id, 3, end); 4];
+            let _ = matches!(
+                SourceRange::new(id, 4, end),
+                SourceRange { start: 90, end: 91, .. } if SourceRange::new(id, 5, end).start == 0
+            );
+            assert_eq!(SourceRange::new(id, 6, end).start, 0, "{}", SourceRange::new(id, 7, end).start);
+            let _ = format!("{item:?}", item = SourceRange::new(id, 8, end));
+            println!("{}", SourceRange { source_id: id, start: 9, end }.start);
+            let ordinary = "SourceRange { start: 10, end: 11 }";
+            let raw = r#"SourceRange::new(id, 12, 13)"#;
+            let character = 'x';
+            // SourceRange::new(id, 14, 15)
+            /* SourceRange { start: 16, end: 17 } */
+        }
+    "##;
+    // vec payloads 3, matches scrutinee/guard 2, assert args 2, named format
+    // assignment 1, and println arg 1. Pattern and lexical decoys add 0.
+    assert_eq!(literal_source_offset_count(source), Ok(9));
+    let accepted = [
+        ("assert!", "SourceRange::new(id, 1, end)", 1),
+        (
+            "assert_eq!",
+            "SourceRange::new(id, 1, end), SourceRange::new(id, 2, end)",
+            2,
+        ),
+        (
+            "assert_ne!",
+            "SourceRange::new(id, 1, end), SourceRange::new(id, 2, end)",
+            2,
+        ),
+        ("debug_assert!", "SourceRange::new(id, 1, end)", 1),
+        (
+            "debug_assert_eq!",
+            "SourceRange::new(id, 1, end), SourceRange::new(id, 2, end)",
+            2,
+        ),
+        (
+            "debug_assert_ne!",
+            "SourceRange::new(id, 1, end), SourceRange::new(id, 2, end)",
+            2,
+        ),
+        ("format!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        ("format_args!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        ("print!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        ("println!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        ("eprint!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        ("eprintln!", "\"{:?}\", SourceRange::new(id, 1, end)", 1),
+        (
+            "write!",
+            "writer, \"{:?}\", SourceRange::new(id, 1, end)",
+            1,
+        ),
+        (
+            "writeln!",
+            "writer, \"{:?}\", SourceRange::new(id, 1, end)",
+            1,
+        ),
+    ];
+    for (name, args, expected) in accepted {
+        let source = format!("fn f() {{ {name}({args}); }}");
+        assert_eq!(literal_source_offset_count(&source), Ok(expected), "{name}");
+    }
+    for source in [
+        "fn f() { unknown!(SourceRange); }",
+        "fn f() { unknown!(\"SourceRange::new(id, 1, 2)\"); }",
+        "fn f() { unknown!(r#\"expected_ranges = SourceRange\"#); }",
+    ] {
+        assert_eq!(literal_source_offset_count(source), Ok(0), "{source}");
+    }
+    let helper = "fn forward(id: SourceId, start: usize, end: usize) -> SourceRange { SourceRange { source_id: id, start, end } }";
+    for (case, tokens) in [
+        (
+            "nested helper",
+            "fn f() { unknown!({ ((forward(id, 1, end))) }); }",
+        ),
+        (
+            "named assignment",
+            "fn f() { unknown!({ let expected_ranges = [1]; }); }",
+        ),
+        (
+            "named type",
+            "fn f() { unknown!({ let expected_sites: [usize; 1]; }); }",
+        ),
+    ] {
+        let source = format!("{helper}\n{tokens}");
+        assert!(
+            literal_source_offset_count(&source).is_err(),
+            "unknown macro {case}"
+        );
+    }
+    for source in [
+        "fn f() { unknown!(SourceRange::new(id, 1, end)); }",
+        "fn f() { unknown!(r#SourceRange::r#new(id, 1, end)); }",
+        "fn f() { r#include!(\"missing.rs\"); }",
+        "macro_rules! hidden { () => { SourceRange { source_id: id, start: 1, end: 2 } } }",
+        "fn f() { let expected_ranges = [opaque_value!(); 3]; }",
+        "fn f() { assert!(, SourceRange::new(id, 1, end)); }",
+    ] {
+        assert!(literal_source_offset_count(source).is_err(), "{source}");
+    }
+}
+
+#[test]
+fn literal_source_offset_counter_applies_three_valued_cfg() {
+    let source = r#"
+        #[cfg(test)] fn test_only() { let _ = SourceRange::new(id, 1, 2); }
+        #[cfg(all(test, feature = "optional"))]
+        fn definitely_off() { let _ = SourceRange::new(id, 3, 4); }
+        #[cfg(any(test, feature = "optional"))]
+        fn possibly_on() { let _ = SourceRange::new(id, 5, 6); }
+        #[cfg(not(test))] fn production() { let _ = SourceRange::new(id, 7, 8); }
+        fn local_items() {
+            #[cfg(test)] let _ = SourceRange::new(id, 9, 10);
+            #[cfg(feature = "optional")] let _ = SourceRange::new(id, 11, 12);
+        }
+    "#;
+    // test is false; other predicates are unknown and included unless a false
+    // test conjunct proves the complete cfg false.
+    assert_eq!(literal_source_offset_count(source), Ok(3));
+    assert_eq!(
+        literal_source_offset_count(
+            "#![cfg(test)]\nfn f() { let _ = SourceRange::new(id, 1, 2); }"
+        ),
+        Ok(0)
+    );
+    assert_eq!(
+        literal_source_offset_count(
+            "#![cfg(not(test))]\nfn f() { let _ = SourceRange::new(id, 1, 2); }"
+        ),
+        Ok(1)
+    );
+    assert_eq!(
+        literal_source_offset_count(
+            "fn f() { #[cfg(test)] { let _ = SourceRange::new(id, 1, 2); } #[cfg(feature = \"maybe\")] { let _ = SourceRange::new(id, 3, 4); } }"
+        ),
+        Ok(1)
+    );
+    for (source, expected) in [
+        ("fn f() { #[cfg(test)] include!(\"missing.rs\"); }", 0),
+        (
+            "fn f() { #[cfg(test)] unknown!(SourceRange::new(id, 1, end)); }",
+            0,
+        ),
+        (
+            "fn f() { #[cfg(feature = \"maybe\")] println!(\"{:?}\", SourceRange::new(id, 2, end)); }",
+            1,
+        ),
+    ] {
+        assert_eq!(literal_source_offset_count(source), Ok(expected));
+    }
+}
+
+#[test]
+fn literal_source_offset_workspace_finds_production_sources() {
+    let root = std::env::temp_dir().join(format!(
+        "mizar_literal_offset_manifest_roots_{}",
+        std::process::id()
+    ));
+    remove_dir_if_exists(&root);
+    create_dir(&root.join("crates/demo/src/test_support"));
+    create_dir(&root.join("crates/demo/src/inline"));
+    create_dir(&root.join("crates/demo/src/child"));
+    create_dir(&root.join("crates/demo/src/tree"));
+    create_dir(&root.join("crates/demo/src/fragments"));
+    create_dir(&root.join("crates/mizar-test/src"));
+    write_test_file(
+        &root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/demo\", \"crates/mizar-test\"]\nresolver = \"2\"\n",
+    );
+    write_test_file(
+        &root.join("crates/demo/Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n[[bin]]\nname = \"demo-bin\"\npath = \"src/main.rs\"\n",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/lib.rs"),
+        r#"
+            mod child; mod mizar_test; mod tree;
+            #[path = "../outside.rs"] mod outside;
+            #[path = "../shared.rs"] mod production_shared;
+            #[cfg(test)] #[path = "../shared.rs"] mod test_shared;
+            #[cfg(test)] #[path = "test_support.rs"] mod tests;
+            #[cfg(test)] #[path = "missing_test.rs"] mod absent_test;
+            #[cfg(any(test, feature = "maybe"))] #[path = "../maybe.rs"] mod maybe;
+            mod inline {
+                #[path = "custom.rs"] mod child;
+                fn f() { let _ = SourceRange::new(id, 17, end); }
+                #[cfg(test)] mod gated { fn f() { let _ = SourceRange::new(id, 18, end); } }
+            }
+            #[cfg(test)]
+            mod include_tests {
+                include!("fragments/test_fragments.rs");
+                include!("../shared.rs");
+            }
+            fn root_offset() { let _ = SourceRange::new(id, 1, end); }
+        "#,
+    );
+    write_test_file(
+        &root.join("crates/demo/src/main.rs"),
+        "#[path = \"../shared.rs\"] mod binary_shared; fn main() { let _ = SourceRange::new(id, 2, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/child.rs"),
+        "mod nested; fn f() { let _ = SourceRange::new(id, 3, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/child/nested.rs"),
+        "fn f() { let _ = SourceRange::new(id, 21, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/tree/mod.rs"),
+        "fn f() { let _ = SourceRange::new(id, 22, end); }",
+    );
+    write_test_file(&root.join("crates/demo/src/zero.rs"), "fn no_offset() {}");
+    write_test_file(
+        &root.join("crates/demo/src/fragments/test_fragments.rs"),
+        "fn first_test_fragment() { let _ = SourceRange::new(id, 23, end); } include!(\"test_nested.rs\");",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/fragments/test_nested.rs"),
+        "fn second_test_fragment() { let _ = SourceRange::new(id, 24, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/mizar_test.rs"),
+        "fn f() { let _ = SourceRange::new(id, 4, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/orphan.rs"),
+        "fn f() { let _ = SourceRange::new(id, 5, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/outside.rs"),
+        "fn f() { let _ = SourceRange::new(id, 6, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/shared.rs"),
+        "fn f() { let _ = SourceRange::new(id, 7, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/maybe.rs"),
+        "fn f() { let _ = SourceRange::new(id, 8, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/test_support.rs"),
+        "mod descendant; mod inline { fn f() { let _ = SourceRange::new(id, 9, 10); } } #[cfg(not(test))] #[path = \"test_support/production_after.rs\"] mod production_after; fn f() { let _ = SourceRange::new(id, 11, 12); } include!(\"external_fragment.rs\");",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/descendant.rs"),
+        "fn f() { let _ = SourceRange::new(id, 13, 14); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/test_support/production_after.rs"),
+        "fn f() { let _ = SourceRange::new(id, 15, 16); }",
+    );
+
+    write_test_file(
+        &root.join("crates/demo/src/inline/custom.rs"),
+        "fn f() { let _ = SourceRange::new(id, 19, end); }",
+    );
+    write_test_file(
+        &root.join("crates/mizar-test/Cargo.toml"),
+        "[package]\nname = \"mizar-test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    );
+    write_test_file(
+        &root.join("crates/mizar-test/src/lib.rs"),
+        "fn f() { let _ = SourceRange::new(id, 20, end); }",
+    );
+
+    write_test_file(
+        &root.join("crates/demo/src/external_fragment.rs"),
+        "include!(\"external_nested.rs\"); fn first() { let _ = SourceRange::new(id, 25, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/external_nested.rs"),
+        "fn second() { let _ = SourceRange::new(id, 26, end); }",
+    );
+
+    let actual = literal_source_offset_counts(&root).unwrap();
+    assert_eq!(actual.get("crates/demo/src/zero.rs"), Some(&0));
+    for test_only in [
+        "crates/demo/src/test_support.rs",
+        "crates/demo/src/descendant.rs",
+        "crates/demo/src/test_support/production_after.rs",
+        "crates/demo/src/fragments/test_fragments.rs",
+        "crates/demo/src/fragments/test_nested.rs",
+        "crates/demo/src/external_fragment.rs",
+        "crates/demo/src/external_nested.rs",
+    ] {
+        assert!(
+            !actual.contains_key(test_only),
+            "test-only key leaked: {test_only}"
+        );
+    }
+    let positive = actual
+        .into_iter()
+        .filter(|(_, count)| *count > 0)
+        .collect::<BTreeMap<_, _>>();
+    let expected = BTreeMap::from([
+        ("crates/demo/maybe.rs".to_owned(), 1),
+        ("crates/demo/outside.rs".to_owned(), 1),
+        ("crates/demo/shared.rs".to_owned(), 1),
+        ("crates/demo/src/child.rs".to_owned(), 1),
+        ("crates/demo/src/child/nested.rs".to_owned(), 1),
+        ("crates/demo/src/lib.rs".to_owned(), 2),
+        ("crates/demo/src/inline/custom.rs".to_owned(), 1),
+        ("crates/demo/src/main.rs".to_owned(), 1),
+        ("crates/demo/src/mizar_test.rs".to_owned(), 1),
+        ("crates/demo/src/orphan.rs".to_owned(), 1),
+        ("crates/demo/src/tree/mod.rs".to_owned(), 1),
+        ("crates/mizar-test/src/lib.rs".to_owned(), 1),
+    ]);
+    assert_eq!(positive, expected);
+    remove_dir_if_exists(&root);
+}
+
+#[test]
+fn literal_source_offset_workspace_requires_builtin_test_include_proof() {
+    let root = std::env::temp_dir().join(format!(
+        "mizar_literal_offset_include_proof_{}",
+        std::process::id()
+    ));
+    remove_dir_if_exists(&root);
+    create_dir(&root.join("crates/demo/src"));
+    write_test_file(
+        &root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/demo\"]\nresolver = \"2\"\n",
+    );
+    write_test_file(
+        &root.join("crates/demo/Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n",
+    );
+    write_test_file(
+        &root.join("crates/demo/src/orphan.rs"),
+        "fn orphan() { let _ = SourceRange::new(id, 1, end); }",
+    );
+    write_test_file(
+        &root.join("crates/demo/ambiguous_bindings.rs"),
+        "use crate::foreign::*;",
+    );
+
+    write_test_file(
+        &root.join("crates/demo/src/lib.rs"),
+        r#"
+            mod foreign { pub fn value() {} }
+            #[cfg(test)]
+            mod test_scope {
+                fn local_names() {
+                    use crate::foreign::*;
+                    let include = false;
+                    let _ = include;
+                }
+                fn include() {}
+                use mizar_session::Hash;
+                #[derive(Debug)] struct Ordinary;
+                include!("orphan.rs");
+            }
+        "#,
+    );
+    let ordinary_local_names = literal_source_offset_counts(&root).unwrap();
+    assert!(
+        !ordinary_local_names.contains_key("crates/demo/src/orphan.rs"),
+        "function-local names and an ordinary function do not shadow item include!"
+    );
+
+    let cases = [
+        (
+            "local no-op macro",
+            "",
+            "macro_rules! include { ($path:literal) => {}; }",
+        ),
+        (
+            "renamed macro import",
+            "#[macro_export] macro_rules! renamed_include { ($path:literal) => {}; }",
+            "use crate::renamed_include as include;",
+        ),
+        (
+            "nonliteral test include",
+            "",
+            "include!(concat!(\"or\", \"phan.rs\"));",
+        ),
+        (
+            "qualified test include",
+            "",
+            "std::include!(\"orphan.rs\");",
+        ),
+        (
+            "aliased test include",
+            "",
+            "use std::include as imported_include; imported_include!(\"orphan.rs\");",
+        ),
+        ("module glob", "", "use crate::foreign::*;"),
+        (
+            "macro_use",
+            "",
+            "#[macro_use] mod imported_macros { macro_rules! include { ($path:literal) => {}; } }",
+        ),
+        (
+            "imported built-in-named procedural derive",
+            "",
+            "use custom_derive::Debug; #[derive(Debug)] struct Generated;",
+        ),
+        (
+            "raw imported built-in-named procedural derive",
+            "",
+            "use custom_derive::r#Debug; #[derive(Debug)] struct Generated;",
+        ),
+        (
+            "raw local no-op macro",
+            "",
+            "macro_rules! r#include { ($path:literal) => {}; }",
+        ),
+        (
+            "imported Hash procedural derive",
+            "",
+            "use custom_derive::Hash; #[derive(Hash)] struct Generated;",
+        ),
+        ("opaque item macro", "", "opaque_item!();"),
+        (
+            "custom procedural attribute",
+            "",
+            "#[opaque_attribute] fn generated() {}",
+        ),
+        (
+            "prior included fragment with glob",
+            "",
+            "include!(\"../ambiguous_bindings.rs\");",
+        ),
+    ];
+    for (case, root_items, module_items) in cases {
+        let source = format!(
+            "{root_items}\nmod foreign {{ pub fn value() {{}} }}\n#[cfg(test)] mod test_scope {{ {module_items} include!(\"orphan.rs\"); }}"
+        );
+        write_test_file(&root.join("crates/demo/src/lib.rs"), &source);
+        let actual = literal_source_offset_counts(&root);
+        let orphan_remains_production = actual
+            .as_ref()
+            .ok()
+            .and_then(|counts| counts.get("crates/demo/src/orphan.rs"))
+            .copied()
+            == Some(1);
+        assert!(
+            actual.is_err() || orphan_remains_production,
+            "{case} cannot prove the orphan is test-only"
+        );
+    }
+    remove_dir_if_exists(&root);
+}
+
+#[test]
+fn literal_source_offset_workspace_fails_closed_on_unsupported_inputs() {
+    let invalid_root = std::env::temp_dir().join(format!(
+        "mizar_literal_offset_fail_closed_{}",
+        std::process::id()
+    ));
+    remove_dir_if_exists(&invalid_root);
+    create_dir(&invalid_root.join("crates/demo/src"));
+    write_test_file(
+        &invalid_root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/demo\"]\n",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "#[cfg_attr(feature = \"maybe\", path = \"alternate.rs\")] mod selected;",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/alternate.rs"),
+        "fn alternate() {}",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/selected.rs"),
+        "fn selected() {}",
+    );
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    write_test_file(&invalid_root.join("crates/demo/src/lib.rs"), "fn broken( {");
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    write_test_file(&invalid_root.join("crates/demo/src/lib.rs"), "mod missing;");
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    write_test_file(
+        &invalid_root.join("crates/demo/production_payload.rs"),
+        "fn f() { let _ = SourceRange::new(id, 1, 2); }",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "include!(\"../production_payload.rs\");",
+    );
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "std::include!(\"../production_payload.rs\");",
+    );
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+
+    write_test_file(
+        &invalid_root.join("crates/demo/test_payload.rs"),
+        "fn f() { let _ = SourceRange::new(id, 3, 4); }",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "#[cfg(test)] include!(\"../test_payload.rs\");",
+    );
+    let test_only_include = literal_source_offset_counts(&invalid_root).unwrap();
+    assert_eq!(test_only_include.get("crates/demo/src/lib.rs"), Some(&0));
+    assert!(!test_only_include.contains_key("crates/demo/test_payload.rs"));
+    write_test_file(
+        &invalid_root.join("crates/demo/Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[[bin]]\nname = \"bad-root\"\npath = [\"src/main.rs\"]\n",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/main.rs"),
+        "fn main() { let _ = SourceRange::new(id, 5, 6); }",
+    );
+    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    remove_dir_if_exists(&invalid_root);
+}
+
+#[test]
+fn literal_source_offset_baseline_vectors_and_repository_ratchet() {
+    let actual = BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 3)]);
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path	count\ncrates/demo/src/lib.rs	3\n",
+            &actual
+        )
+        .is_empty()
+    );
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path	count\ncrates/demo/src/lib.rs	4\n",
+            &actual
+        )
+        .is_empty()
+    );
+    let zero_file = BTreeMap::from([
+        ("crates/demo/src/lib.rs".to_owned(), 3),
+        ("crates/demo/src/new.rs".to_owned(), 0),
+    ]);
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path	count\ncrates/demo/src/lib.rs	3\n",
+            &zero_file
+        )
+        .is_empty()
+    );
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path	count\n",
+            &BTreeMap::from([("crates/demo/src/new.rs".to_owned(), 0),])
+        )
+        .is_empty()
+    );
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path	count\ncrates/demo/src/new.rs	1\n",
+            &BTreeMap::from([("crates/demo/src/new.rs".to_owned(), 0),])
+        )
+        .is_empty()
+    );
+
+    for (baseline, current) in [
+        (
+            "path	count\ncrates/demo/src/lib.rs	3\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 4)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/lib.rs	1\n",
+            BTreeMap::from([
+                ("crates/demo/src/lib.rs".to_owned(), 1),
+                ("crates/demo/src/new.rs".to_owned(), 1),
+            ]),
+        ),
+        (
+            "path	count\ncrates/old/src/lib.rs	1\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/lib.rs	0\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 0)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/lib.rs	bad\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/lib.rs	1	extra\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/lib.rs	1\ncrates/demo/src/lib.rs	2\n",
+            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 2)]),
+        ),
+        (
+            "path	count\ncrates/demo/src/z.rs	1\ncrates/demo/src/a.rs	1\n",
+            BTreeMap::from([
+                ("crates/demo/src/a.rs".to_owned(), 1),
+                ("crates/demo/src/z.rs".to_owned(), 1),
+            ]),
+        ),
+        ("wrong	count\n", BTreeMap::new()),
+        ("path	count\n\n", BTreeMap::new()),
+        ("path	count\n# comment\n", BTreeMap::new()),
+    ] {
+        assert!(
+            !literal_source_offset_baseline_violations(baseline, &current).is_empty(),
+            "invalid, stale, unsorted, or over-budget baseline was accepted: {baseline:?}"
+        );
+    }
+
+    let workspace = workspace_root();
+    let baseline =
+        read_to_string(&workspace.join("tests/coverage/literal_source_offset_baseline.tsv"));
+    let current = literal_source_offset_counts(&workspace)
+        .unwrap_or_else(|error| panic!("production source scan failed: {error}"));
+    let violations = literal_source_offset_baseline_violations(&baseline, &current);
+    assert!(
+        violations.is_empty(),
+        "production literal source offsets exceed their reviewed ceilings:\n{}",
+        violations.join("\n")
+    );
+}
+
+fn literal_source_offset_count(source: &str) -> Result<usize, String> {
+    let file = syn::parse_file(source).map_err(|error| error.to_string())?;
+    let mut counter = LiteralOffsetCounter::default();
+    if literal_offset_configuration(&file.attrs)?.0 {
+        counter.module(&file.items);
+    }
+    counter.error.map_or(Ok(counter.count), Err)
+}
+
+fn literal_offset_ident(ident: &syn::Ident) -> String {
+    use syn::ext::IdentExt;
+    ident.unraw().to_string()
+}
+
+fn literal_offset_path_is(path: &syn::Path, name: &str) -> bool {
+    path.get_ident()
+        .is_some_and(|ident| literal_offset_ident(ident) == name)
+}
+
+macro_rules! literal_offset_attrs {
+    ($node:expr, $kind:ident, $($variant:ident),+) => {
+        match $node { $($kind::$variant(node) => &node.attrs,)+ _ => &[] }
+    };
+}
+
+fn literal_offset_cfg(meta: &syn::Meta) -> Result<Option<bool>, String> {
+    use syn::{Meta, Token, punctuated::Punctuated};
+    match meta {
+        Meta::Path(path) => Ok(if literal_offset_path_is(path, "test") {
+            Some(false)
+        } else {
+            None
+        }),
+        Meta::NameValue(_) => Ok(None),
+        Meta::List(list) => {
+            let values = list
+                .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                .map_err(|error| error.to_string())?;
+            let values = values
+                .iter()
+                .map(literal_offset_cfg)
+                .collect::<Result<Vec<_>, _>>()?;
+            if literal_offset_path_is(&list.path, "not") && values.len() == 1 {
+                return Ok(values[0].map(|value| !value));
+            }
+            let all = literal_offset_path_is(&list.path, "all");
+            if !all && !literal_offset_path_is(&list.path, "any") {
+                return Err("unsupported cfg predicate".into());
+            }
+            Ok(if values.contains(&Some(!all)) {
+                Some(!all)
+            } else if values.contains(&None) {
+                None
+            } else {
+                Some(all)
+            })
+        }
+    }
+}
+
+fn literal_offset_configuration(
+    attrs: &[syn::Attribute],
+) -> Result<(bool, Option<String>), String> {
+    fn apply(
+        meta: &syn::Meta,
+        enabled: &mut bool,
+        path: &mut Option<String>,
+        uncertain: bool,
+    ) -> Result<(), String> {
+        use syn::{Meta, Token, punctuated::Punctuated};
+        if literal_offset_path_is(meta.path(), "cfg_attr") {
+            let Meta::List(list) = meta else {
+                return Err("invalid cfg_attr".into());
+            };
+            let args = list
+                .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                .map_err(|error| error.to_string())?;
+            let mut args = args.iter();
+            let condition = literal_offset_cfg(args.next().ok_or("missing cfg_attr condition")?)?;
+            if condition != Some(false) {
+                for attr in args {
+                    apply(attr, enabled, path, uncertain || condition.is_none())?;
+                }
+            }
+        } else if literal_offset_path_is(meta.path(), "cfg") {
+            if uncertain {
+                return Err("unknown cfg_attr affects cfg".into());
+            }
+            let Meta::List(list) = meta else {
+                return Err("invalid cfg".into());
+            };
+            *enabled &= literal_offset_cfg(
+                &list
+                    .parse_args::<Meta>()
+                    .map_err(|error| error.to_string())?,
+            )? != Some(false);
+        } else if literal_offset_path_is(meta.path(), "path") {
+            if uncertain {
+                return Err("unknown cfg_attr affects path".into());
+            }
+            let Meta::NameValue(value) = meta else {
+                return Err("invalid path attribute".into());
+            };
+            let syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(value),
+                ..
+            }) = &value.value
+            else {
+                return Err("unsupported module path attribute".into());
+            };
+            if path.replace(value.value()).is_some() {
+                return Err("duplicate path attribute".into());
+            }
+        }
+        Ok(())
+    }
+    let mut enabled = true;
+    let mut path = None;
+    for attr in attrs {
+        apply(&attr.meta, &mut enabled, &mut path, false)?;
+    }
+    Ok((enabled, path))
+}
+
+fn literal_offset_unwrap(mut expr: &syn::Expr) -> &syn::Expr {
+    loop {
+        expr = match expr {
+            syn::Expr::Paren(value) => &value.expr,
+            syn::Expr::Group(value) => &value.expr,
+            _ => return expr,
+        };
+    }
+}
+fn literal_offset_expr_attrs(expr: &syn::Expr) -> &[syn::Attribute] {
+    use syn::Expr;
+    literal_offset_attrs!(
+        expr, Expr, Array, Assign, Async, Await, Binary, Block, Break, Call, Cast, Closure, Const,
+        Continue, Field, ForLoop, Group, If, Index, Infer, Let, Lit, Loop, Macro, Match,
+        MethodCall, Paren, Path, Range, RawAddr, Reference, Repeat, Return, Struct, Try, TryBlock,
+        Tuple, Unary, Unsafe, While, Yield
+    )
+}
+fn literal_offset_integer(expr: &syn::Expr) -> bool {
+    if !literal_offset_configuration(literal_offset_expr_attrs(expr))
+        .is_ok_and(|(enabled, _)| enabled)
+    {
+        return false;
+    }
+    match expr {
+        syn::Expr::Paren(value) => literal_offset_integer(&value.expr),
+        syn::Expr::Group(value) => literal_offset_integer(&value.expr),
+        syn::Expr::Lit(value) => {
+            matches!(&value.lit, syn::Lit::Int(value) if matches!(value.suffix(), "" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"))
+        }
+        syn::Expr::Unary(value) if matches!(value.op, syn::UnOp::Neg(_)) => {
+            literal_offset_integer(&value.expr)
+        }
+        _ => false,
+    }
+}
+
+fn literal_offset_binding(pat: &syn::Pat) -> Option<String> {
+    match pat {
+        syn::Pat::Ident(value) if value.by_ref.is_none() && value.subpat.is_none() => {
+            Some(literal_offset_ident(&value.ident))
+        }
+        syn::Pat::Type(value) => literal_offset_binding(&value.pat),
+        _ => None,
+    }
+}
+fn literal_offset_bindings(pat: &syn::Pat, names: &mut BTreeSet<String>) {
+    use syn::Pat;
+    match pat {
+        Pat::Ident(value) => {
+            names.insert(literal_offset_ident(&value.ident));
+            if let Some((_, pat)) = &value.subpat {
+                literal_offset_bindings(pat, names);
+            }
+        }
+        Pat::Type(value) => literal_offset_bindings(&value.pat, names),
+        Pat::Reference(value) => literal_offset_bindings(&value.pat, names),
+        Pat::Paren(value) => literal_offset_bindings(&value.pat, names),
+        Pat::Tuple(value) => {
+            for pat in &value.elems {
+                literal_offset_bindings(pat, names);
+            }
+        }
+        Pat::TupleStruct(value) => {
+            for pat in &value.elems {
+                literal_offset_bindings(pat, names);
+            }
+        }
+        Pat::Slice(value) => {
+            for pat in &value.elems {
+                literal_offset_bindings(pat, names);
+            }
+        }
+        Pat::Or(value) => {
+            for pat in &value.cases {
+                literal_offset_bindings(pat, names);
+            }
+        }
+        Pat::Struct(value) => {
+            for field in &value.fields {
+                literal_offset_bindings(&field.pat, names);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[derive(Default)]
+struct LiteralOffsetCounter {
+    count: usize,
+    error: Option<String>,
+    helpers: BTreeMap<String, Vec<usize>>,
+    shadows: Vec<BTreeMap<String, bool>>,
+}
+impl LiteralOffsetCounter {
+    fn enabled(&mut self, attrs: &[syn::Attribute]) -> bool {
+        match literal_offset_configuration(attrs) {
+            Ok((enabled, _)) => enabled && self.error.is_none(),
+            Err(error) => {
+                self.error = Some(error);
+                false
+            }
+        }
+    }
+    fn module(&mut self, items: &[syn::Item]) {
+        use syn::{Expr, Item, ReturnType, Stmt, Type, visit::Visit};
+        let outer = std::mem::take(&mut self.helpers);
+        let shadows = std::mem::take(&mut self.shadows);
+        for item in items {
+            let Item::Fn(function) = item else {
+                continue;
+            };
+            if !self.enabled(&function.attrs) {
+                continue;
+            }
+            let ReturnType::Type(_, result) = &function.sig.output else {
+                continue;
+            };
+            let Type::Path(result) = &**result else {
+                continue;
+            };
+            if result
+                .path
+                .segments
+                .last()
+                .is_none_or(|part| literal_offset_ident(&part.ident) != "SourceRange")
+                || function.block.stmts.len() != 1
+            {
+                continue;
+            }
+            let Stmt::Expr(body, semi) = &function.block.stmts[0] else {
+                continue;
+            };
+            let body = literal_offset_unwrap(body);
+            let body = if let Expr::Return(value) = body {
+                let Some(value) = &value.expr else {
+                    continue;
+                };
+                literal_offset_unwrap(value)
+            } else {
+                if semi.is_some() {
+                    continue;
+                }
+                body
+            };
+            let Expr::Struct(body) = body else {
+                continue;
+            };
+            if body
+                .path
+                .segments
+                .last()
+                .is_none_or(|part| literal_offset_ident(&part.ident) != "SourceRange")
+            {
+                continue;
+            }
+            let params = function
+                .sig
+                .inputs
+                .iter()
+                .map(|arg| match arg {
+                    syn::FnArg::Typed(arg) => match &*arg.pat {
+                        syn::Pat::Ident(value) => Some(literal_offset_ident(&value.ident)),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            let mut endpoints = [None, None];
+            for field in &body.fields {
+                let endpoint = match &field.member {
+                    syn::Member::Named(name) if literal_offset_ident(name) == "start" => 0,
+                    syn::Member::Named(name) if literal_offset_ident(name) == "end" => 1,
+                    _ => continue,
+                };
+                if let Expr::Path(value) = literal_offset_unwrap(&field.expr)
+                    && let Some(name) = value.path.get_ident()
+                    && let Some(index) = params
+                        .iter()
+                        .position(|param| param.as_deref() == Some(&literal_offset_ident(name)))
+                {
+                    endpoints[endpoint] = Some(index);
+                }
+            }
+            if let [Some(start), Some(end)] = endpoints {
+                self.helpers
+                    .entry(literal_offset_ident(&function.sig.ident))
+                    .or_default()
+                    .extend([start, end]);
+            }
+        }
+        for item in items {
+            self.visit_item(item);
+        }
+        self.helpers = outer;
+        self.shadows = shadows;
+    }
+    fn function(&mut self, signature: &syn::Signature, block: &syn::Block) {
+        use syn::visit::Visit;
+        self.shadows.push(BTreeMap::new());
+        for input in &signature.inputs {
+            if let syn::FnArg::Typed(input) = input {
+                self.bind(&input.pat);
+            }
+        }
+        self.visit_block(block);
+        self.shadows.pop();
+    }
+    fn bind(&mut self, pat: &syn::Pat) {
+        if let Some(scope) = self.shadows.last_mut() {
+            let mut names = BTreeSet::new();
+            literal_offset_bindings(pat, &mut names);
+            scope.extend(names.into_iter().map(|name| (name, true)));
+        }
+    }
+    fn named_value(&mut self, expr: &syn::Expr) {
+        use syn::{Expr, Stmt};
+        if !self.enabled(literal_offset_expr_attrs(expr)) {
+            return;
+        }
+        match expr {
+            Expr::Paren(value) => self.named_value(&value.expr),
+            Expr::Group(value) => self.named_value(&value.expr),
+            Expr::Array(array) => {
+                self.count += array
+                    .elems
+                    .iter()
+                    .filter(|element| {
+                        let mut element = *element;
+                        loop {
+                            if !literal_offset_configuration(literal_offset_expr_attrs(element))
+                                .is_ok_and(|(enabled, _)| enabled)
+                            {
+                                return false;
+                            }
+                            match element {
+                                Expr::Paren(value) => element = &value.expr,
+                                Expr::Group(value) => element = &value.expr,
+                                Expr::Tuple(tuple) => {
+                                    return tuple.elems.iter().any(literal_offset_integer);
+                                }
+                                _ => return literal_offset_integer(element),
+                            }
+                        }
+                    })
+                    .count()
+            }
+            Expr::Reference(value) => self.named_value(&value.expr),
+            Expr::Block(value) => {
+                if let Some(Stmt::Expr(tail, None)) = value.block.stmts.last() {
+                    self.named_value(tail);
+                }
+            }
+            Expr::If(value) => {
+                if let Some(Stmt::Expr(tail, None)) = value.then_branch.stmts.last() {
+                    self.named_value(tail);
+                }
+                if let Some((_, branch)) = &value.else_branch {
+                    self.named_value(branch);
+                }
+            }
+            Expr::Match(value) => {
+                for arm in &value.arms {
+                    if self.enabled(&arm.attrs) {
+                        self.named_value(&arm.body);
+                    }
+                }
+            }
+            Expr::Macro(value) if literal_offset_path_is(&value.mac.path, "vec") => {
+                match syn::parse_str::<Expr>(&format!("[{}]", value.mac.tokens)) {
+                    Ok(value) => self.named_value(&value),
+                    Err(error) => self.error = Some(error.to_string()),
+                }
+            }
+            Expr::Macro(value)
+                if literal_offset_path_is(&value.mac.path, "unreachable")
+                    && (value.mac.tokens.is_empty()
+                        || syn::parse2::<syn::LitStr>(value.mac.tokens.clone()).is_ok()) => {}
+            Expr::Macro(_) | Expr::Repeat(_) => {
+                self.error = Some("opaque macro or repeat in named array value".into())
+            }
+            _ => {}
+        }
+    }
+    fn macro_targets(&self, mac: &syn::Macro) -> Result<bool, syn::Error> {
+        use syn::{ext::IdentExt, parse::Parser};
+        fn scan(
+            input: syn::parse::ParseStream<'_>,
+            helpers: &BTreeMap<String, Vec<usize>>,
+        ) -> syn::Result<bool> {
+            let mut found = false;
+            while !input.is_empty() {
+                if input.peek(syn::token::Paren) {
+                    let inside;
+                    syn::parenthesized!(inside in input);
+                    found |= scan(&inside, helpers)?;
+                } else if input.peek(syn::token::Brace) {
+                    let inside;
+                    syn::braced!(inside in input);
+                    found |= scan(&inside, helpers)?;
+                } else if input.peek(syn::token::Bracket) {
+                    let inside;
+                    syn::bracketed!(inside in input);
+                    found |= scan(&inside, helpers)?;
+                } else if input.peek(syn::Ident::peek_any) {
+                    let ident = input.call(syn::Ident::parse_any)?;
+                    let raw_keyword = ident.to_string().starts_with("r#");
+                    let name = literal_offset_ident(&ident);
+                    let look = input.fork();
+                    if name == "SourceRange" {
+                        found |= look.peek(syn::token::Brace);
+                        if look.parse::<syn::Token![::]>().is_ok()
+                            && look
+                                .call(syn::Ident::parse_any)
+                                .is_ok_and(|name| literal_offset_ident(&name) == "new")
+                        {
+                            found |= look.peek(syn::token::Paren);
+                        }
+                    }
+                    found |= helpers.contains_key(&name) && input.peek(syn::token::Paren);
+                    if name == "let" && !raw_keyword {
+                        let _ = look.parse::<syn::Token![mut]>();
+                        if look.call(syn::Ident::parse_any).is_ok_and(|name| {
+                            matches!(
+                                literal_offset_ident(&name).as_str(),
+                                "expected_ranges" | "expected_sites"
+                            )
+                        }) {
+                            found |= look.peek(syn::Token![=]) || look.peek(syn::Token![:]);
+                        }
+                    }
+                } else {
+                    input.step(|cursor| {
+                        cursor
+                            .token_tree()
+                            .map(|(_, next)| ((), next))
+                            .ok_or_else(|| cursor.error("invalid macro tokens"))
+                    })?;
+                }
+            }
+            Ok(found)
+        }
+        (|input: syn::parse::ParseStream<'_>| scan(input, &self.helpers)).parse2(mac.tokens.clone())
+    }
+}
+
+impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        use syn::{Item, visit};
+        if matches!(item, Item::Verbatim(_)) {
+            self.error = Some("unsupported item syntax".into());
+            return;
+        }
+        if self.enabled(literal_offset_attrs!(
+            item,
+            Item,
+            Const,
+            Enum,
+            ExternCrate,
+            Fn,
+            ForeignMod,
+            Impl,
+            Macro,
+            Mod,
+            Static,
+            Struct,
+            Trait,
+            TraitAlias,
+            Type,
+            Union,
+            Use
+        )) {
+            visit::visit_item(self, item);
+        }
+    }
+    fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
+        if let Some((_, items)) = &item.content {
+            self.module(items);
+        }
+    }
+    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
+        self.function(&item.sig, &item.block);
+    }
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        use syn::{ImplItem, visit};
+        if matches!(item, ImplItem::Verbatim(_)) {
+            self.error = Some("unsupported item syntax".into());
+            return;
+        }
+        if self.enabled(literal_offset_attrs!(
+            item, ImplItem, Const, Fn, Type, Macro
+        )) {
+            if let ImplItem::Fn(item) = item {
+                self.function(&item.sig, &item.block);
+            } else {
+                visit::visit_impl_item(self, item);
+            }
+        }
+    }
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        use syn::{TraitItem, visit};
+        if matches!(item, TraitItem::Verbatim(_)) {
+            self.error = Some("unsupported item syntax".into());
+            return;
+        }
+        if self.enabled(literal_offset_attrs!(
+            item, TraitItem, Const, Fn, Type, Macro
+        )) {
+            if let TraitItem::Fn(item) = item {
+                if let Some(block) = &item.default {
+                    self.function(&item.sig, block);
+                }
+            } else {
+                visit::visit_trait_item(self, item);
+            }
+        }
+    }
+    fn visit_stmt_macro(&mut self, statement: &'ast syn::StmtMacro) {
+        if self.enabled(&statement.attrs) {
+            self.visit_macro(&statement.mac);
+        }
+    }
+    fn visit_block(&mut self, block: &'ast syn::Block) {
+        fn imports(tree: &syn::UseTree, names: &mut BTreeMap<String, bool>) {
+            match tree {
+                syn::UseTree::Name(name) => {
+                    names.insert(literal_offset_ident(&name.ident), true);
+                }
+                syn::UseTree::Rename(name) => {
+                    names.insert(literal_offset_ident(&name.rename), true);
+                }
+                syn::UseTree::Path(path) => imports(&path.tree, names),
+                syn::UseTree::Group(group) => {
+                    for item in &group.items {
+                        imports(item, names);
+                    }
+                }
+                syn::UseTree::Glob(_) => {
+                    names.insert("*".into(), true);
+                }
+            }
+        }
+        let mut names = BTreeMap::new();
+        for statement in &block.stmts {
+            if let syn::Stmt::Item(item) = statement {
+                match item {
+                    syn::Item::Fn(item) if self.enabled(&item.attrs) => {
+                        let ambiguous = matches!(&item.sig.output, syn::ReturnType::Type(_, result) if matches!(&**result, syn::Type::Path(path) if path.path.segments.last().is_some_and(|part| literal_offset_ident(&part.ident) == "SourceRange")));
+                        names
+                            .entry(literal_offset_ident(&item.sig.ident))
+                            .and_modify(|possible| *possible |= ambiguous)
+                            .or_insert(ambiguous);
+                    }
+                    syn::Item::Use(item) if self.enabled(&item.attrs) => {
+                        imports(&item.tree, &mut names)
+                    }
+                    syn::Item::Const(item) if self.enabled(&item.attrs) => {
+                        names.insert(literal_offset_ident(&item.ident), true);
+                    }
+                    syn::Item::Static(item) if self.enabled(&item.attrs) => {
+                        names.insert(literal_offset_ident(&item.ident), true);
+                    }
+                    syn::Item::Struct(item)
+                        if self.enabled(&item.attrs)
+                            && matches!(item.fields, syn::Fields::Unnamed(_)) =>
+                    {
+                        names
+                            .entry(literal_offset_ident(&item.ident))
+                            .or_insert(false);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        self.shadows.push(names);
+        syn::visit::visit_block(self, block);
+        self.shadows.pop();
+    }
+    fn visit_local(&mut self, local: &'ast syn::Local) {
+        if !self.enabled(&local.attrs) {
+            return;
+        }
+        if let Some(init) = &local.init {
+            if literal_offset_binding(&local.pat)
+                .is_some_and(|name| name == "expected_ranges" || name == "expected_sites")
+            {
+                self.named_value(&init.expr);
+            }
+            self.visit_expr(&init.expr);
+            if let Some((_, diverge)) = &init.diverge {
+                self.visit_expr(diverge);
+            }
+        }
+        self.bind(&local.pat);
+    }
+    fn visit_field_value(&mut self, field: &'ast syn::FieldValue) {
+        if self.enabled(&field.attrs) {
+            self.visit_expr(&field.expr);
+        }
+    }
+    fn visit_expr(&mut self, expr: &'ast syn::Expr) {
+        use syn::{Expr, visit};
+        if !self.enabled(literal_offset_expr_attrs(expr)) {
+            return;
+        }
+        match expr {
+            Expr::Struct(value) if value.path.segments.last().is_some_and(|part| literal_offset_ident(&part.ident) == "SourceRange")
+                && value.fields.iter().any(|field| {
+                    literal_offset_configuration(&field.attrs).is_ok_and(|(enabled, _)| enabled)
+                        && matches!(&field.member, syn::Member::Named(name) if matches!(literal_offset_ident(name).as_str(), "start" | "end"))
+                        && literal_offset_integer(&field.expr)
+                }) => {
+                self.count += 1;
+            }
+            Expr::Call(call) => {
+                if let Expr::Path(path) = literal_offset_unwrap(&call.func) {
+                    let segments = path.path.segments.iter().map(|part| literal_offset_ident(&part.ident)).collect::<Vec<_>>();
+                    if segments.ends_with(&["SourceRange".into(), "new".into()]) {
+                        if call.args.len() == 3 && call.args.iter().skip(1).any(literal_offset_integer) {
+                            self.count += 1;
+                        }
+                    } else if path.qself.is_none() && path.path.leading_colon.is_none()
+                        && (segments.len() == 1 || (segments.len() == 2 && segments[0] == "self")) {
+                        let name = segments.last().unwrap();
+                        if let Some(positions) = self.helpers.get(name) {
+                            let shadow = if segments.len() == 1 {
+                                self.shadows.iter().rev().find_map(|scope| scope.get(name).or_else(|| scope.get("*")))
+                            } else { None };
+                            if shadow == Some(&true) {
+                                self.error = Some(format!("ambiguous shadowed range helper call: {name}"));
+                            } else if shadow.is_none() && positions.iter().any(|index| call.args.iter().nth(*index).is_some_and(literal_offset_integer)) {
+                                self.count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            Expr::Let(value) => {
+                self.visit_expr(&value.expr);
+                self.bind(&value.pat);
+                return;
+            }
+            Expr::If(value) => {
+                self.shadows.push(BTreeMap::new());
+                self.visit_expr(&value.cond);
+                self.visit_block(&value.then_branch);
+                self.shadows.pop();
+                if let Some((_, branch)) = &value.else_branch { self.visit_expr(branch); }
+                return;
+            }
+            Expr::While(value) => {
+                self.shadows.push(BTreeMap::new());
+                self.visit_expr(&value.cond);
+                self.visit_block(&value.body);
+                self.shadows.pop();
+                return;
+            }
+            Expr::Closure(value) => {
+                self.shadows.push(BTreeMap::new());
+                for pat in &value.inputs { self.bind(pat); }
+                self.visit_expr(&value.body);
+                self.shadows.pop();
+                return;
+            }
+            Expr::ForLoop(value) => {
+                self.visit_expr(&value.expr);
+                self.shadows.push(BTreeMap::new());
+                self.bind(&value.pat);
+                self.visit_block(&value.body);
+                self.shadows.pop();
+                return;
+            }
+            Expr::Match(value) => {
+                self.visit_expr(&value.expr);
+                for arm in &value.arms {
+                    if self.enabled(&arm.attrs) {
+                        self.shadows.push(BTreeMap::new());
+                        self.bind(&arm.pat);
+                        if let Some((_, guard)) = &arm.guard { self.visit_expr(guard); }
+                        self.visit_expr(&arm.body);
+                        self.shadows.pop();
+                    }
+                }
+                return;
+            }
+            Expr::Verbatim(_) => { self.error = Some("unsupported expression syntax".into()); return; }
+            _ => {}
+        }
+        visit::visit_expr(self, expr);
+    }
+    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
+        use syn::{Expr, Pat, Token, parse::Parser, punctuated::Punctuated};
+        let name = literal_offset_ident(&mac.path.segments.last().unwrap().ident);
+        if name == "include" {
+            self.error = Some("production include! is unsupported".into());
+            return;
+        }
+        let parsed = if name == "vec" {
+            syn::parse_str::<Expr>(&format!("[{}]", mac.tokens)).map(|value| vec![value])
+        } else if name == "matches" {
+            (|input: syn::parse::ParseStream<'_>| {
+                let value = input.parse::<Expr>()?;
+                input.parse::<Token![,]>()?;
+                input.call(Pat::parse_multi_with_leading_vert)?;
+                let mut values = vec![value];
+                if input.peek(Token![if]) {
+                    input.parse::<Token![if]>()?;
+                    values.push(input.parse::<Expr>()?);
+                }
+                let _ = input.parse::<Token![,]>();
+                Ok(values)
+            })
+            .parse2(mac.tokens.clone())
+        } else if matches!(
+            name.as_str(),
+            "assert"
+                | "assert_eq"
+                | "assert_ne"
+                | "debug_assert"
+                | "debug_assert_eq"
+                | "debug_assert_ne"
+                | "format"
+                | "format_args"
+                | "print"
+                | "println"
+                | "eprint"
+                | "eprintln"
+                | "write"
+                | "writeln"
+        ) {
+            Punctuated::<Expr, Token![,]>::parse_terminated
+                .parse2(mac.tokens.clone())
+                .map(|values| values.into_iter().collect())
+        } else {
+            if self.macro_targets(mac).unwrap_or(true) {
+                self.error = Some(format!("unsupported target-bearing macro: {name}"));
+            }
+            return;
+        };
+        match parsed {
+            Ok(values) => {
+                for value in &values {
+                    self.visit_expr(value);
+                }
+            }
+            Err(error) => {
+                if self.macro_targets(mac).unwrap_or(true) {
+                    self.error = Some(format!("malformed target-bearing macro {name}: {error}"));
+                }
+            }
+        }
+    }
+}
+
+fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usize>, String> {
+    fn derive_bit(name: &syn::Ident) -> u16 {
+        match literal_offset_ident(name).as_str() {
+            "Debug" => 1,
+            "Clone" => 2,
+            "Copy" => 4,
+            "PartialEq" => 8,
+            "Eq" => 16,
+            "PartialOrd" => 32,
+            "Ord" => 64,
+            "Hash" => 128,
+            "Default" => 256,
+            _ => 0,
+        }
+    }
+    fn import_hazards(tree: &syn::UseTree) -> (bool, u16) {
+        match tree {
+            syn::UseTree::Glob(_) => (true, 0),
+            syn::UseTree::Name(name) => (
+                literal_offset_ident(&name.ident) == "include",
+                derive_bit(&name.ident),
+            ),
+            syn::UseTree::Rename(rename) => (
+                literal_offset_ident(&rename.rename) == "include",
+                derive_bit(&rename.rename),
+            ),
+            syn::UseTree::Path(path) => import_hazards(&path.tree),
+            syn::UseTree::Group(group) => {
+                group.items.iter().fold((false, 0), |(bad, bits), item| {
+                    let (item_bad, item_bits) = import_hazards(item);
+                    (bad || item_bad, bits | item_bits)
+                })
+            }
+        }
+    }
+    fn attribute_hazards(attrs: &[syn::Attribute]) -> (bool, u16) {
+        let mut bad = false;
+        let mut derives = 0;
+        for attr in attrs {
+            let path = attr.path();
+            if literal_offset_path_is(path, "derive") {
+                let syn::Meta::List(list) = &attr.meta else {
+                    return (true, derives);
+                };
+                let parsed = syn::parse::Parser::parse2(
+                    syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated,
+                    list.tokens.clone(),
+                );
+                match parsed {
+                    Ok(paths) => {
+                        for derive in paths {
+                            let bit = derive.get_ident().map_or(0, derive_bit);
+                            bad |= bit == 0;
+                            derives |= bit;
+                        }
+                    }
+                    Err(_) => bad = true,
+                }
+                continue;
+            }
+            let ordinary = matches!(
+                path.get_ident().map(literal_offset_ident).as_deref(),
+                Some(
+                    "cfg"
+                        | "path"
+                        | "test"
+                        | "allow"
+                        | "inline"
+                        | "track_caller"
+                        | "must_use"
+                        | "non_exhaustive"
+                        | "default"
+                        | "macro_export"
+                        | "doc"
+                )
+            );
+            let rustfmt_skip = path.segments.len() == 2
+                && literal_offset_ident(&path.segments[0].ident) == "rustfmt"
+                && literal_offset_ident(&path.segments[1].ident) == "skip";
+            bad |= !(ordinary || rustfmt_skip);
+        }
+        (bad, derives)
+    }
+    fn include_scope(
+        items: &[syn::Item],
+        physical: &Path,
+        possible: bool,
+        visiting: &mut BTreeSet<PathBuf>,
+        includes: &mut Vec<(PathBuf, bool)>,
+        imports: &mut u16,
+        derives: &mut u16,
+    ) -> Result<bool, String> {
+        let mut clean = true;
+        for item in items {
+            let attrs = match item {
+                syn::Item::Const(v) => &v.attrs,
+                syn::Item::Enum(v) => &v.attrs,
+                syn::Item::ExternCrate(v) => &v.attrs,
+                syn::Item::Fn(v) => &v.attrs,
+                syn::Item::ForeignMod(v) => &v.attrs,
+                syn::Item::Impl(v) => &v.attrs,
+                syn::Item::Macro(v) => &v.attrs,
+                syn::Item::Mod(v) => &v.attrs,
+                syn::Item::Static(v) => &v.attrs,
+                syn::Item::Struct(v) => &v.attrs,
+                syn::Item::Trait(v) => &v.attrs,
+                syn::Item::TraitAlias(v) => &v.attrs,
+                syn::Item::Type(v) => &v.attrs,
+                syn::Item::Union(v) => &v.attrs,
+                syn::Item::Use(v) => &v.attrs,
+                _ => {
+                    clean = false;
+                    continue;
+                }
+            };
+            let (bad, used) = attribute_hazards(attrs);
+            clean &= !bad;
+            *derives |= used;
+            match item {
+                syn::Item::Use(item) => {
+                    let (bad, names) = import_hazards(&item.tree);
+                    clean &= !bad;
+                    *imports |= names;
+                }
+                syn::Item::ExternCrate(_) => clean = false,
+                syn::Item::Macro(item) if literal_offset_path_is(&item.mac.path, "macro_rules") => {
+                    clean &= item
+                        .ident
+                        .as_ref()
+                        .is_some_and(|ident| literal_offset_ident(ident) != "include");
+                }
+                syn::Item::Macro(item) if literal_offset_path_is(&item.mac.path, "include") => {
+                    let item_possible = possible && literal_offset_configuration(&item.attrs)?.0;
+                    let Ok(path) = syn::parse2::<syn::LitStr>(item.mac.tokens.clone()) else {
+                        clean = false;
+                        continue;
+                    };
+                    let path = physical.parent().unwrap().join(path.value());
+                    let path = fs::canonicalize(&path)
+                        .map_err(|error| format!("{}: {error}", path.display()))?;
+                    if !visiting.insert(path.clone()) {
+                        return Err(format!("recursive literal include: {}", path.display()));
+                    }
+                    let source = fs::read_to_string(&path)
+                        .map_err(|error| format!("{}: {error}", path.display()))?;
+                    let file = syn::parse_file(&source)
+                        .map_err(|error| format!("{}: {error}", path.display()))?;
+                    let (bad, used) = attribute_hazards(&file.attrs);
+                    clean &= !bad;
+                    *derives |= used;
+                    clean &= include_scope(
+                        &file.items,
+                        &path,
+                        item_possible,
+                        visiting,
+                        includes,
+                        imports,
+                        derives,
+                    )?;
+                    visiting.remove(&path);
+                    includes.push((path, item_possible));
+                }
+                syn::Item::Macro(_) => clean = false,
+                _ => {}
+            }
+        }
+        Ok(clean)
+    }
+    fn edges(
+        items: &[syn::Item],
+        physical: &Path,
+        directory: &Path,
+        path_directory: &Path,
+        possible: bool,
+        scope: (bool, u16, u16),
+        result: &mut Vec<(PathBuf, bool, bool, bool, bool, u16, u16)>,
+    ) -> Result<(), String> {
+        let mut includes = Vec::new();
+        let (inherited_clean, inherited_imports, inherited_derives) = scope;
+        let mut imports = inherited_imports;
+        let mut derives = inherited_derives;
+        let clean = inherited_clean
+            && include_scope(
+                items,
+                physical,
+                possible,
+                &mut BTreeSet::new(),
+                &mut includes,
+                &mut imports,
+                &mut derives,
+            )?;
+        for (path, possible) in includes {
+            result.push((path, possible, true, clean, true, imports, derives));
+        }
+        for item in items {
+            let syn::Item::Mod(module) = item else {
+                continue;
+            };
+            let (enabled, explicit) = literal_offset_configuration(&module.attrs)?;
+            let possible = possible && enabled;
+            if let Some((_, items)) = &module.content {
+                let nested = explicit.map_or_else(
+                    || directory.join(literal_offset_ident(&module.ident)),
+                    |path| path_directory.join(path),
+                );
+                edges(
+                    items,
+                    physical,
+                    &nested,
+                    &nested,
+                    possible,
+                    (clean, imports, derives),
+                    result,
+                )?;
+            } else {
+                let path_loaded = explicit.is_some();
+                let path = if let Some(explicit) = explicit {
+                    path_directory.join(explicit)
+                } else {
+                    let simple =
+                        directory.join(format!("{}.rs", literal_offset_ident(&module.ident)));
+                    let nested = directory
+                        .join(literal_offset_ident(&module.ident))
+                        .join("mod.rs");
+                    match (simple.exists(), nested.exists()) {
+                        (true, false) => simple,
+                        (false, true) => nested,
+                        (false, false) => simple,
+                        _ => return Err(format!("ambiguous module {}", simple.display())),
+                    }
+                };
+                if path.exists() {
+                    result.push((
+                        fs::canonicalize(&path).map_err(|error| error.to_string())?,
+                        possible,
+                        path_loaded,
+                        clean,
+                        false,
+                        imports,
+                        derives,
+                    ));
+                } else {
+                    result.push((path, possible, path_loaded, clean, false, imports, derives));
+                }
+            }
+        }
+        Ok(())
+    }
+    let workspace = fs::canonicalize(workspace).map_err(|error| error.to_string())?;
+    let mut sources = Vec::new();
+    let mut roots = BTreeSet::new();
+    for entry in fs::read_dir(workspace.join("crates")).map_err(|error| error.to_string())? {
+        let crate_path = entry.map_err(|error| error.to_string())?.path();
+        if !crate_path.join("Cargo.toml").exists() {
+            continue;
+        }
+        if crate_path.join("src").exists() {
+            collect_rust_files(&crate_path.join("src"), &mut sources);
+        }
+        for name in ["lib.rs", "main.rs"] {
+            let path = crate_path.join("src").join(name);
+            if path.exists() {
+                roots.insert(fs::canonicalize(path).map_err(|error| error.to_string())?);
+            }
+        }
+        let manifest =
+            fs::read_to_string(crate_path.join("Cargo.toml")).map_err(|error| error.to_string())?;
+        let mut section = String::new();
+        for line in manifest.lines() {
+            if let Some(name) = manifest_section_name(line) {
+                section = name.to_owned();
+            } else if matches!(section.as_str(), "lib" | "bin")
+                && line.trim_start().starts_with("path")
+            {
+                let path =
+                    quoted_assignment(line, "path").ok_or("unsupported production root path")?;
+                roots.insert(
+                    fs::canonicalize(crate_path.join(path)).map_err(|error| error.to_string())?,
+                );
+            }
+        }
+    }
+    let mut pending = sources
+        .iter()
+        .chain(roots.iter())
+        .map(|path| {
+            fs::canonicalize(path)
+                .map(|path| (path, false))
+                .map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut graph = BTreeMap::new();
+    while let Some((path, path_loaded)) = pending.pop() {
+        if graph.contains_key(&(path.clone(), path_loaded)) {
+            continue;
+        }
+        if !path.starts_with(&workspace) {
+            return Err(format!(
+                "unsupported source outside workspace: {}",
+                path.display()
+            ));
+        }
+        let source =
+            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+        let file =
+            syn::parse_file(&source).map_err(|error| format!("{}: {error}", path.display()))?;
+        let enabled = literal_offset_configuration(&file.attrs)?.0;
+        let (attribute_bad, attribute_derives) = attribute_hazards(&file.attrs);
+        let parent = path.parent().unwrap();
+        let directory =
+            if path_loaded || roots.contains(&path) || path.file_name().unwrap() == "mod.rs" {
+                parent.to_path_buf()
+            } else {
+                parent.join(path.file_stem().unwrap())
+            };
+        let mut children = Vec::new();
+        edges(
+            &file.items,
+            &path,
+            &directory,
+            parent,
+            enabled,
+            (!attribute_bad, 0, attribute_derives),
+            &mut children,
+        )?;
+        pending.extend(
+            children
+                .iter()
+                .filter(|(path, _, _, _, _, _, _)| path.exists())
+                .map(|(path, _, path_loaded, _, _, _, _)| (path.clone(), *path_loaded)),
+        );
+        graph.insert((path, path_loaded), (source, enabled, children));
+    }
+    let referenced = graph
+        .values()
+        .flat_map(|(_, _, children)| children.iter().map(|(path, _, _, _, _, _, _)| path.clone()))
+        .collect::<BTreeSet<_>>();
+    let mut queue = roots
+        .into_iter()
+        .chain(
+            sources
+                .into_iter()
+                .map(|path| fs::canonicalize(path).unwrap())
+                .filter(|path| !referenced.contains(path)),
+        )
+        .map(|path| ((path, false), true, true, 0_u16, 0_u16))
+        .collect::<Vec<_>>();
+    let mut reached = BTreeSet::new();
+    loop {
+        while let Some((path, possible, clean, imports, derives)) = queue.pop() {
+            let Some((_, enabled, children)) = graph.get(&path) else {
+                if possible {
+                    return Err(format!("missing production module {}", path.0.display()));
+                }
+                continue;
+            };
+            let possible = possible && *enabled;
+            if !reached.insert((path, possible, clean, imports, derives)) {
+                continue;
+            }
+            queue.extend(children.iter().filter_map(
+                |(path, edge, path_loaded, scope_clean, include, scope_imports, scope_derives)| {
+                    let clean = clean && *scope_clean;
+                    let imports = imports | scope_imports;
+                    let derives = derives | scope_derives;
+                    (!*include || (clean && imports & derives == 0)).then_some((
+                        (path.clone(), *path_loaded),
+                        possible && *edge,
+                        clean,
+                        imports,
+                        derives,
+                    ))
+                },
+            ));
+        }
+        let Some(path) = graph.keys().find(|(path, _)| {
+            !reached
+                .iter()
+                .any(|((reached, _), _, _, _, _)| reached == path)
+        }) else {
+            break;
+        };
+        queue.push((path.clone(), true, true, 0, 0));
+    }
+    let mut counts = BTreeMap::new();
+    for (path, possible, _, _, _) in &reached {
+        if !possible {
+            continue;
+        }
+        let relative = workspace_relative_slash_path(&workspace, &path.0);
+        if let std::collections::btree_map::Entry::Vacant(entry) = counts.entry(relative) {
+            let count = literal_source_offset_count(&graph[path].0)
+                .map_err(|error| format!("{}: {error}", path.0.display()))?;
+            entry.insert(count);
+        }
+    }
+    Ok(counts)
+}
+
+fn literal_source_offset_baseline_violations(
+    baseline: &str,
+    actual: &BTreeMap<String, usize>,
+) -> Vec<String> {
+    let mut violations = Vec::new();
+    let mut lines = baseline.lines();
+    if lines.next() != Some("path\tcount") {
+        return vec!["literal offset baseline requires path<TAB>count header".into()];
+    }
+    let mut rows = BTreeMap::new();
+    let mut previous = "";
+    for line in lines {
+        let fields = line.split('\t').collect::<Vec<_>>();
+        let [path, count] = fields[..] else {
+            violations.push(format!("malformed literal offset baseline row: {line:?}"));
+            continue;
+        };
+        let Ok(count) = count.parse::<usize>() else {
+            violations.push(format!("invalid literal offset count: {line:?}"));
+            continue;
+        };
+        if count == 0
+            || !fields[1].bytes().all(|byte| byte.is_ascii_digit())
+            || path <= previous
+            || !actual.contains_key(path)
+        {
+            violations.push(format!(
+                "zero, unsorted, duplicate or stale literal offset baseline row: {line:?}"
+            ));
+        }
+        previous = path;
+        rows.insert(path, count);
+    }
+    for (path, count) in actual {
+        let ceiling = rows.get(path.as_str()).copied().unwrap_or(0);
+        if *count > ceiling {
+            violations.push(format!(
+                "{path}: {count} literal source offsets exceed ceiling {ceiling}"
+            ));
+        }
+    }
+    violations
+}

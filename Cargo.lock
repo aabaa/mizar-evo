@@ -653,6 +653,7 @@ dependencies = [
  "mizar-session",
  "mizar-syntax",
  "mizar-vc",
+ "syn",
 ]
 
 [[package]]
