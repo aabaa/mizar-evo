@@ -18,12 +18,12 @@ fact、theorem semantics、proof search、Core/CFG/VCを作らない。broader
 connective/quantifier shape、bound use/capture、predicate chain、conditioned
 comprehensionはTasks 257B/257Cに残す。
 
-## Unused-binder source spelling boundary
+## Quantifier binder source spelling boundary
 
-Task257AとTask257B2の未使用束縛変数は元の式形状に限定する。識別子、トークン由来の
+Task257A/B1/B2の束縛変数は元の式形状と実際の名前を保つ。識別子、トークン由来の
 segment表記、局所・拡張binding名の一致、識別子の妥当性と元ソース上の
 バイト範囲を必須とする。syntax-free producerは関連付けを検査し、private
-consumerが元ソースの字句・構造の対応を検査する。Task257B1/B3は固定する。
+consumerが元ソースの字句・構造の対応を検査する。Task257B3は固定する。
 
 ## Public Transaction
 

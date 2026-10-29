@@ -16437,6 +16437,7 @@ fn source_statement_b4a_output_with_source_and_mutation_impl(
     if !exact_task258b4a_surface_profile(ast, source_text) {
         return Some(Err("Task258B4A exact surface identity mismatch".to_owned()));
     }
+    let raw_symbols = symbols;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
         symbols,
@@ -16449,6 +16450,7 @@ fn source_statement_b4a_output_with_source_and_mutation_impl(
     Some(build_source_statement_b4a_output(
         ast,
         module,
+        raw_symbols,
         &symbols,
         source_text,
         mutate,
@@ -16486,6 +16488,7 @@ pub(in crate::runner) fn source_statement_b4a_output_with_resolver_mutation(
     if !exact_task258b4a_surface_profile(ast, source_text) {
         return Some(Err("Task258B4A exact surface identity mismatch".to_owned()));
     }
+    let raw_symbols = symbols;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
         symbols,
@@ -16498,6 +16501,7 @@ pub(in crate::runner) fn source_statement_b4a_output_with_resolver_mutation(
     Some(build_source_statement_b4a_output(
         ast,
         module,
+        raw_symbols,
         &symbols,
         source_text,
         |_| {},
@@ -18275,6 +18279,7 @@ fn build_source_statement_b4b_output(
 fn build_source_statement_b4a_output(
     ast: &SurfaceAst,
     module: ModuleId,
+    raw_symbols: &SymbolEnv,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4ARouteInputs),
@@ -18282,9 +18287,13 @@ fn build_source_statement_b4a_output(
     if source_text != SOURCE_STATEMENT_B4A_TEXT || symbols.module_id() != &module {
         return Err("Task258B4A source or symbol module mismatch".to_owned());
     }
-    let lower =
-        source_formula_composition_output_with_source(ast, module.clone(), symbols, source_text)
-            .ok_or_else(|| "Task258B4A lower Task257B1 route is missing".to_owned())??;
+    let lower = source_formula_composition_output_with_source(
+        ast,
+        module.clone(),
+        raw_symbols,
+        source_text,
+    )
+    .ok_or_else(|| "Task258B4A lower Task257B1 route is missing".to_owned())??;
     let lower_typed = &lower.typed_ast;
     if lower_typed.nodes().len() != 26
         || lower_typed.source_term().is_none()

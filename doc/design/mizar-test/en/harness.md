@@ -3242,6 +3242,15 @@ Five private tests cover the exact real oracle/final ownership, independent
 table corruption with recovery, all-active and lower-family isolation,
 unchanged semantic details, and preinstalled Task-248 rejection.
 
+## Task257B1 binder/use spelling
+
+The bound-use source route carries the declaration and two matching ordinary
+identifier tokens through genuine lookup and combined immutable installation.
+Actual source-bearing output precedes empty semantic details. Source lexical,
+structural and raw environment ownership remain authenticated; B4A passes raw
+symbols to the lower route while retaining enriched symbols for upper label checks.
+Original owner/family, lookup refusals, contexts, counts and transport-only credit stay fixed.
+
 ## Checker Task 257B1 Frozen Runner Boundary
 
 The exact 79-byte pass source is selected in the existing formula extraction

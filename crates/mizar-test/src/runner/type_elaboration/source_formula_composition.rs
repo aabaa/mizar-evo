@@ -719,20 +719,35 @@ fn source_formula_composition_output_with_mutation_impl(
             ast, module, symbols, payload, mutate,
         ));
     }
-    if let Some(payload) = extract_source_formula_quantifier_bound_use(ast, &module, symbols) {
-        return Some(build_task_257b1_output(
-            ast, module, symbols, payload, mutate,
-        ));
-    }
-    let payload = extract_source_formula_connective_grouping(ast, &module, symbols)?;
+    let bound_use = extract_source_formula_quantifier_bound_use(ast, &module, symbols);
+    let grouped = if bound_use.is_none() {
+        Some(extract_source_formula_connective_grouping(
+            ast, &module, symbols,
+        )?)
+    } else {
+        None
+    };
+    let source_error = if bound_use.is_some() {
+        "Task257B1 source association is invalid"
+    } else {
+        "Task257B2 source association is invalid"
+    };
     #[cfg(not(test))]
     if source_text.is_none() {
-        return Some(Err("Task257B2 source association is invalid".to_owned()));
+        return Some(Err(source_error.to_owned()));
     }
     if let Some(source_text) = source_text {
         use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
         let source_matches = || -> Option<()> {
             ast.canonical_bytes()?;
+            let items = super::source_ast::exact_compilation_item_list(ast)?;
+            let children = super::source_ast::structural_child_ids(ast, items);
+            let [theorem] = children.as_slice() else {
+                return None;
+            };
+            if !matches!(ast.node(*theorem)?.kind, K::TheoremItem) {
+                return None;
+            }
             if ast.expression_root().is_some() {
                 return None;
             }
@@ -819,7 +834,7 @@ fn source_formula_composition_output_with_mutation_impl(
                     .iter()
                     .filter(|child| child.as_token().is_some())
                     .collect::<Vec<_>>();
-                // The closed B2 selector already checks each operator, wrapper and numeral role.
+                // The closed selectors check their formula, type and operand roles.
                 let count = match node.kind() {
                     K::TheoremItem => 4,
                     K::QuantifiedFormula(_)
@@ -831,6 +846,12 @@ fn source_formula_composition_output_with_mutation_impl(
                         } else {
                             1
                         }
+                    }
+                    K::TermReference => {
+                        if tokens.len() != 1 || tokens[0].as_token()?.kind != T::Identifier {
+                            return None;
+                        }
+                        1
                     }
                     K::BuiltinPredicateApplication | K::TypeHead | K::NumeralTerm => 1,
                     K::CompilationUnit
@@ -860,11 +881,16 @@ fn source_formula_composition_output_with_mutation_impl(
             (replay.diagnostics().is_empty() && &replay.into_env() == symbols).then_some(())
         };
         if source_matches().is_none() {
-            return Some(Err("Task257B2 source association is invalid".to_owned()));
+            return Some(Err(source_error.to_owned()));
         }
     }
+    if let Some(payload) = bound_use {
+        return Some(build_task_257b1_output(
+            ast, module, symbols, payload, mutate,
+        ));
+    }
     Some(build_task_257b2_output(
-        ast, module, symbols, payload, mutate,
+        ast, module, symbols, grouped?, mutate,
     ))
 }
 
@@ -876,7 +902,7 @@ fn build_task_257b1_output(
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
     let arena = typed_arena(ast, &payload)?;
-    let inputs = route_inputs(ast, module.clone(), &payload);
+    let inputs = route_inputs(ast, module.clone(), &payload)?;
     let base = module_shell(ast, module.clone())?;
     build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
@@ -1010,7 +1036,22 @@ fn route_inputs(
     ast: &SurfaceAst,
     module: ModuleId,
     payload: &SourceFormulaQuantifierBoundUse,
-) -> SourceFormulaCompositionRouteInputs {
+) -> Result<SourceFormulaCompositionRouteInputs, String> {
+    let identifier = ast
+        .nodes()
+        .get(payload.binder_identifier_site.node().index())
+        .ok_or("Task257B1 identifier site is missing")?;
+    let mizar_syntax::SurfaceNodeKind::Token(token) = &identifier.kind else {
+        return Err("Task257B1 identifier token is missing".to_owned());
+    };
+    if identifier.recovered
+        || identifier.range != payload.binder_identifier_range
+        || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+        || !mizar_lexer::is_identifier(&token.text)
+    {
+        return Err("Task257B1 identifier token is invalid".to_owned());
+    }
+    let spelling = token.text.as_ref();
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let composite = SourceCompositeFormulaHandoffInput {
@@ -1036,12 +1077,12 @@ fn route_inputs(
             ordinal: 0,
             segment_site: payload.binder_segment_site.clone(),
             segment_range: payload.binder_segment_range,
-            segment_spelling: "x being".to_owned(),
+            segment_spelling: format!("{spelling} being"),
             identifier_site: payload.binder_identifier_site.clone(),
             identifier_range: payload.binder_identifier_range,
-            identifier_spelling: "x".to_owned(),
+            identifier_spelling: spelling.to_owned(),
             local: LocalTermBinding::new(
-                "x",
+                spelling,
                 LocalTermScope::new(vec![0]),
                 payload.binder_identifier_range,
                 0,
@@ -1085,8 +1126,20 @@ fn route_inputs(
         source_id: ast.source_id,
         module_id: module.clone(),
         terms: vec![
-            variable_term(payload.left_site.clone(), payload.left_range, 0, context1),
-            variable_term(payload.right_site.clone(), payload.right_range, 1, context1),
+            variable_term(
+                payload.left_site.clone(),
+                payload.left_range,
+                0,
+                context1,
+                spelling,
+            ),
+            variable_term(
+                payload.right_site.clone(),
+                payload.right_range,
+                1,
+                context1,
+                spelling,
+            ),
         ],
         references: vec![
             SourcePrimaryTermReferenceInput {
@@ -1111,7 +1164,7 @@ fn route_inputs(
             source_ordinal: 0,
             context: context1,
             recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: "x = x".to_owned(),
+            spelling: format!("{spelling} = {spelling}"),
             kind: SourceAtomicFormulaKind::Equality,
         }],
         wrappers: Vec::new(),
@@ -1181,12 +1234,12 @@ fn route_inputs(
             },
         ],
     };
-    SourceFormulaCompositionRouteInputs {
+    Ok(SourceFormulaCompositionRouteInputs {
         primary,
         atomic,
         composite,
         composition,
-    }
+    })
 }
 
 fn task_257b2_route_inputs(
@@ -1767,6 +1820,7 @@ fn variable_term(
     source_range: mizar_session::SourceRange,
     source_ordinal: usize,
     context: BindingContextId,
+    spelling: &str,
 ) -> SourcePrimaryTermInput {
     SourcePrimaryTermInput {
         site,
@@ -1774,7 +1828,7 @@ fn variable_term(
         source_ordinal,
         context,
         recovery: SourcePrimaryTermRecovery::Normal,
-        spelling: "x".to_owned(),
+        spelling: spelling.to_owned(),
         kind: SourcePrimaryTermKind::VariableReference,
         role: SourcePrimaryTermRole::Value,
         parent: None,

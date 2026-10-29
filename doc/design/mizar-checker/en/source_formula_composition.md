@@ -20,6 +20,14 @@ CoreIr, ControlFlowIr, or VC output. The `BindingEntry::captured` field remains
 empty: it records free-variable capture by closure-like binders, whereas this
 task records ordinary bound occurrences selected by lexical lookup.
 
+## Task257B1 naming and lookup boundary
+
+B1 carries the actual binder name into both bare variable references. Genuine
+PrimaryTerm lookup and composition validation must select the same local binding,
+with the original context, scope, ordinal, declaration identity and empty capture.
+Composition checks both bare-use byte extents; generic PrimaryTerm policy stays
+unchanged. All dependency/transaction shapes and original debug oracles remain fixed.
+
 ## Exact Real Consumer
 
 Implementation adds one specification-derived type-elaboration fixture:

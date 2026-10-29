@@ -19,13 +19,13 @@ Core/CFG/VC output. Broader connective and quantifier shapes, bound uses and
 capture, predicate chains, and conditioned comprehensions remain Tasks 257B
 and 257C.
 
-## Unused-binder source spelling boundary
+## Quantifier binder source spelling boundary
 
-Task257A and Task257B2 retain their original formula families with unused binders.
+Task257A/B1/B2 retain their original formula families and carry actual binder names.
 Identifier, token-derived segment descriptor, local and extended binding names
 must agree, with valid identifier spelling and matching source-owned byte extent.
 The syntax-free producer checks these associations; the private consumer owns
-raw-source lexical and structural authentication. Task257B1/B3 stay fixed.
+raw-source lexical and structural authentication. Task257B3 stays fixed.
 
 ## Public Transaction
 

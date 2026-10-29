@@ -19,6 +19,14 @@ theorem acceptance、proof、CoreIr、ControlFlowIr、VCは作らない。
 free-variable capture用であり、本taskはlexical lookupで選ばれた通常のbound
 occurrenceを別tableへ記録する。
 
+## Task257B1 naming and lookup boundary
+
+B1は実際の束縛変数名を二つの裸の変数参照へ渡す。実際のPrimaryTerm検索と
+composition検証は同じ局所bindingを選び、元のcontext、scope、ordinal、
+宣言identityと空のcaptureを保つ。compositionが二つの参照のバイト範囲を
+検査し、汎用PrimaryTermの規則は維持する。依存・transaction形状と元の
+デバッグ期待値は変更しない。
+
 ## Exact Real Consumer
 
 implementationは次のspec-derived type-elaboration fixtureを1件追加する。

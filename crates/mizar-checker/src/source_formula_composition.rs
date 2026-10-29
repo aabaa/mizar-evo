@@ -2284,7 +2284,12 @@ fn validate_bound_uses(
             || term.kind() != SourcePrimaryTermKind::VariableReference
             || term.role() != SourcePrimaryTermRole::Value
             || term.recovery() != SourcePrimaryTermRecovery::Normal
-            || term.spelling() != "x"
+            || term.spelling() != binder.identifier_spelling()
+            || term
+                .source_range()
+                .end
+                .checked_sub(term.source_range().start)
+                != Some(term.spelling().len())
             || term.context() != binder.body_context()
             || term.parent().is_some()
             || !properly_contains(equality.source_range(), term.source_range())
@@ -11027,6 +11032,389 @@ pub(crate) mod tests {
         assert_eq!(resolved.clone().debug_text(), resolved.debug_text());
         assert!(resolved.checked_formulas().is_empty());
         assert!(resolved.statement_semantics().is_empty());
+    }
+
+    #[test]
+    fn metamorphic_bound_use_lower_names_keep_genuine_lookup_identity() {
+        for spelling in ["y", "bound_variable"] {
+            let fixture = fixture();
+            let delta = spelling.len() - 1;
+            let shifted = |old: SourceRange| {
+                let mut range = old;
+                for boundary in [54, 72, 76] {
+                    range.start += usize::from(old.start > boundary) * delta;
+                    range.end += usize::from(old.end > boundary) * delta;
+                }
+                range
+            };
+            let arena = TypedArena::try_new(
+                fixture.arena.root(),
+                fixture
+                    .arena
+                    .iter()
+                    .map(|(_, node)| {
+                        let mut node = node.clone();
+                        if let SourceAnchor::Range(range) = node.anchor {
+                            node.anchor = SourceAnchor::Range(shifted(range));
+                        }
+                        node
+                    })
+                    .collect(),
+            )
+            .unwrap();
+            let mut input = fixture.composite_input.clone();
+            input.formulas[0].source_range = shifted(input.formulas[0].source_range);
+            let binder = &mut input.binders[0];
+            binder.segment_range = shifted(binder.segment_range);
+            binder.identifier_range = shifted(binder.identifier_range);
+            binder.identifier_spelling = spelling.to_owned();
+            binder.segment_spelling = format!("{spelling} being");
+            binder.local = LocalTermBinding::new(
+                spelling,
+                binder.local.scope().clone(),
+                binder.identifier_range,
+                0,
+            );
+            let declaration = binder.identifier_range;
+            input.type_sites[0].source_range = shifted(input.type_sites[0].source_range);
+            input.type_sites[0].head_range = shifted(input.type_sites[0].head_range);
+            let bindings = SourceCompositeFormulaProducer::extend_bindings(
+                &input,
+                &base_bindings(fixture.source, &fixture.module),
+                &arena,
+            )
+            .expect("coherent B1 binder name");
+            let composite =
+                SourceCompositeFormulaProducer::build(input.clone(), &bindings, &arena).unwrap();
+            for field in 0..4 {
+                let mut inconsistent = input.clone();
+                match field {
+                    0 => inconsistent.binders[0].segment_spelling = "other being".to_owned(),
+                    1 => inconsistent.binders[0].identifier_spelling = "other".to_owned(),
+                    2 => {
+                        inconsistent.binders[0].local = LocalTermBinding::new(
+                            "other",
+                            LocalTermScope::new(vec![0]),
+                            declaration,
+                            0,
+                        )
+                    }
+                    _ => {
+                        inconsistent.binders[0].local = LocalTermBinding::new(
+                            spelling,
+                            LocalTermScope::new(vec![1]),
+                            declaration,
+                            0,
+                        )
+                    }
+                }
+                assert!(
+                    SourceCompositeFormulaProducer::extend_bindings(
+                        &inconsistent,
+                        &base_bindings(fixture.source, &fixture.module),
+                        &arena
+                    )
+                    .is_err()
+                );
+            }
+            for invalid in ["", "for", "bad name", "1x"] {
+                let mut malformed = input.clone();
+                let binder = &mut malformed.binders[0];
+                binder.identifier_spelling = invalid.to_owned();
+                binder.segment_spelling = format!("{invalid} being");
+                binder.identifier_range.end = binder.identifier_range.start + invalid.len();
+                binder.local = LocalTermBinding::new(
+                    invalid,
+                    LocalTermScope::new(vec![0]),
+                    binder.identifier_range,
+                    0,
+                );
+                let extent = binder.identifier_range;
+                let nodes = arena
+                    .iter()
+                    .map(|(id, node)| {
+                        let mut node = node.clone();
+                        if id == TypedNodeId::new(2) {
+                            node.anchor = SourceAnchor::Range(extent);
+                        }
+                        node
+                    })
+                    .collect();
+                let malformed_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                assert!(
+                    SourceCompositeFormulaProducer::extend_bindings(
+                        &malformed,
+                        &base_bindings(fixture.source, &fixture.module),
+                        &malformed_arena
+                    )
+                    .is_err(),
+                    "invalid coherent B1 name {invalid:?}"
+                );
+            }
+            let primary_input = SourcePrimaryTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: fixture
+                    .primary
+                    .terms()
+                    .iter()
+                    .map(|(_, term)| SourcePrimaryTermInput {
+                        site: term.site().clone(),
+                        source_range: shifted(term.source_range()),
+                        source_ordinal: term.source_ordinal(),
+                        context: term.context(),
+                        recovery: term.recovery(),
+                        spelling: spelling.to_owned(),
+                        kind: term.kind(),
+                        role: term.role(),
+                        parent: term.parent(),
+                    })
+                    .collect(),
+                references: fixture
+                    .primary
+                    .references()
+                    .iter()
+                    .map(|(_, reference)| SourcePrimaryTermReferenceInput {
+                        term: reference.term(),
+                        binding: reference.binding(),
+                        role: reference.role(),
+                    })
+                    .collect(),
+                numeric_type_requests: Vec::new(),
+            };
+            let primary =
+                SourcePrimaryTermProducer::build(primary_input.clone(), &bindings, &arena)
+                    .expect("actual renamed Primary lookup");
+            for field in 0..6 {
+                let mut inconsistent = primary_input.clone();
+                match field {
+                    0 => inconsistent.terms[0].spelling = "other".to_owned(),
+                    1 => inconsistent.terms[1].spelling = "other".to_owned(),
+                    2 => inconsistent.terms[0].context = BindingContextId::new(0),
+                    3 => inconsistent.references[0].binding = BindingId::new(1),
+                    4 => inconsistent.source_id = other_source_id(),
+                    _ => inconsistent.terms[0].source_range.source_id = other_source_id(),
+                }
+                assert!(SourcePrimaryTermProducer::build(inconsistent, &bindings, &arena).is_err());
+            }
+            if spelling.len() > 1 {
+                let mut stale_extent = input.clone();
+                stale_extent.binders[0].identifier_range.end = declaration.start + 1;
+                stale_extent.binders[0].local = LocalTermBinding::new(
+                    spelling,
+                    LocalTermScope::new(vec![0]),
+                    stale_extent.binders[0].identifier_range,
+                    0,
+                );
+                let mut nodes = arena
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                nodes[2].anchor = SourceAnchor::Range(stale_extent.binders[0].identifier_range);
+                let stale_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                assert!(
+                    SourceCompositeFormulaProducer::extend_bindings(
+                        &stale_extent,
+                        &base_bindings(fixture.source, &fixture.module),
+                        &stale_arena
+                    )
+                    .is_err()
+                );
+            }
+            let binding = bindings.bindings().get(BindingId::new(0)).unwrap();
+            assert_eq!(binding.spelling, spelling);
+            assert_eq!(
+                binding.identity,
+                BinderIdentity::ResolverLocal {
+                    scope: LocalTermScope::new(vec![0]),
+                    ordinal: 0,
+                    declaration_range: declaration
+                }
+            );
+            assert!(binding.captured.identities().is_empty());
+            assert_eq!(
+                composite
+                    .binders()
+                    .get(SourceQuantifierBinderId::new(0))
+                    .unwrap()
+                    .identifier_spelling(),
+                spelling
+            );
+            for (_, reference) in primary.references().iter() {
+                let term = primary.terms().get(reference.term()).unwrap();
+                assert_eq!(term.spelling(), spelling);
+                assert_eq!(reference.use_ordinal(), 1);
+                assert_eq!(reference.binding(), BindingId::new(0));
+                assert_eq!(
+                    bindings
+                        .lookup(&BindingLookupSite::new(
+                            spelling,
+                            term.context(),
+                            reference.lexical_scope().cloned(),
+                            reference.use_ordinal()
+                        ))
+                        .unwrap(),
+                    BindingLookupResult::Local(BindingId::new(0))
+                );
+                assert!(
+                    matches!(bindings.lookup(&BindingLookupSite::new(spelling, term.context(), reference.lexical_scope().cloned(), 0)), Ok(BindingLookupResult::ForwardReference { candidates, .. }) if candidates == vec![BindingId::new(0)])
+                );
+            }
+            for field in 0..7 {
+                let mut stale = bindings.clone();
+                let binding = stale.binding_mut_for_test(BindingId::new(0)).unwrap();
+                match field {
+                    0 => binding.spelling = "other".to_owned(),
+                    1 => {
+                        binding.identity = BinderIdentity::ResolverLocal {
+                            scope: LocalTermScope::new(vec![0]),
+                            ordinal: 1,
+                            declaration_range: declaration,
+                        }
+                    }
+                    2 => binding.owner_context = BindingContextId::new(0),
+                    3 => {
+                        binding.captured = crate::binding_env::CapturedFreeVariables::new(vec![
+                            binding.identity.clone(),
+                        ])
+                    }
+                    4 => {
+                        binding.identity = BinderIdentity::ResolverLocal {
+                            scope: LocalTermScope::new(vec![1]),
+                            ordinal: 0,
+                            declaration_range: declaration,
+                        }
+                    }
+                    5 => {
+                        binding.identity = BinderIdentity::ResolverLocal {
+                            scope: LocalTermScope::new(vec![0]),
+                            ordinal: 0,
+                            declaration_range: SourceRange {
+                                source_id: other_source_id(),
+                                ..declaration
+                            },
+                        }
+                    }
+                    _ => binding.visible_after_ordinal = 1,
+                }
+                assert!(
+                    SourceCompositeFormulaProducer::build(input.clone(), &stale, &arena).is_err()
+                );
+            }
+            let atomic_input = SourceAtomicFormulaHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                formulas: fixture
+                    .atomic
+                    .formulas()
+                    .iter()
+                    .map(|(_, formula)| SourceAtomicFormulaInput {
+                        site: formula.site().clone(),
+                        source_range: shifted(formula.source_range()),
+                        source_ordinal: formula.source_ordinal(),
+                        context: formula.context(),
+                        recovery: formula.recovery(),
+                        spelling: format!("{spelling} = {spelling}"),
+                        kind: formula.kind(),
+                    })
+                    .collect(),
+                wrappers: Vec::new(),
+                predicate_segments: Vec::new(),
+                predicate_heads: Vec::new(),
+                candidates: Vec::new(),
+                type_sites: Vec::new(),
+                attributes: Vec::new(),
+                edges: fixture
+                    .atomic
+                    .edges()
+                    .iter()
+                    .map(|(_, edge)| SourceAtomicEdgeInput {
+                        formula: edge.formula(),
+                        ordinal: edge.ordinal(),
+                        role: edge.role(),
+                        target: edge.target(),
+                    })
+                    .collect(),
+                requests: (0..2)
+                    .map(|index| SourceAtomicRequestInput {
+                        formula: SourceAtomicFormulaId::new(0),
+                        ordinal: index,
+                        kind: SourceAtomicRequestKind::OperandExpectedType,
+                        edge: Some(SourceAtomicEdgeId::new(index)),
+                        candidate: None,
+                        type_site: None,
+                        attribute: None,
+                    })
+                    .collect(),
+            };
+            for stale_use in 0..3 {
+                if spelling.len() == 1 && stale_use < 2 {
+                    continue;
+                }
+                let mut candidate_input = primary_input.clone();
+                let mut nodes = arena
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                if stale_use < 2 {
+                    let term = &mut candidate_input.terms[stale_use];
+                    term.source_range.end = term.source_range.start + 1;
+                    nodes[term.site.node().index()].anchor = SourceAnchor::Range(term.source_range);
+                }
+                let candidate_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                let candidate_primary = SourcePrimaryTermProducer::build(
+                    candidate_input,
+                    &bindings,
+                    &candidate_arena,
+                )
+                .expect(
+                    "generic Primary accepts coherent associations without a spelling-width policy",
+                );
+                for (_, reference) in candidate_primary.references().iter() {
+                    let term = candidate_primary.terms().get(reference.term()).unwrap();
+                    assert_eq!(
+                        bindings
+                            .lookup(&BindingLookupSite::new(
+                                term.spelling(),
+                                term.context(),
+                                reference.lexical_scope().cloned(),
+                                reference.use_ordinal()
+                            ))
+                            .unwrap(),
+                        BindingLookupResult::Local(BindingId::new(0))
+                    );
+                }
+                let candidate_atomic = SourceAtomicFormulaProducer::build(
+                    atomic_input.clone(),
+                    &bindings,
+                    &SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default()),
+                    &candidate_primary,
+                    None,
+                    None,
+                    None,
+                    &candidate_arena,
+                )
+                .expect("actual atomic dependency remains valid");
+                let result = SourceFormulaCompositionProducer::build(
+                    fixture.input.clone(),
+                    &candidate_primary,
+                    &candidate_atomic,
+                    &composite,
+                    &candidate_arena,
+                );
+                if stale_use == 2 {
+                    assert!(result.is_ok(), "coherent B1 names and both actual widths");
+                } else {
+                    assert_eq!(
+                        result,
+                        Err(SourceFormulaCompositionError::InvalidBoundUse {
+                            bound_use: SourceQuantifierBoundUseId::new(stale_use)
+                        }),
+                        "B1 alone refuses the stale width of operand {stale_use}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

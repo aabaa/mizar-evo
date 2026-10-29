@@ -3101,6 +3101,14 @@ private test 5件はexact real oracle/final ownership、independent table
 corruption後のrecovery、all-active/lower-family isolation、不変semantic detail、
 preinstalled Task-248 rejectionをcoverする。
 
+## Task257B1 binder/use spelling
+
+束縛参照の経路は宣言と一致する二つの通常識別子トークンを、実際の検索と
+combined immutable installationへ渡す。空のsemantic detailに先立ち、実際の
+source-bearing出力を必須とする。字句・構造・元の環境の所属を検査し、B4Aは
+下位へ元のsymbolsを、上位ラベル検査へ付加後のsymbolsを渡す。元のowner/形状、
+検索の拒否、context、件数とtransport-onlyの意味範囲は維持する。
+
 ## Checker Task 257B1 frozen runner boundary
 
 exact 79-byte pass sourceは既存formula extraction ownerでselectし、専用private

@@ -1342,27 +1342,17 @@ fn validate_binder(
         CompositeProfile::Task257B3 => unreachable!("handled above"),
     };
     let universal = &input.formulas[universal_index];
-    let source_spelling = matches!(
-        profile,
-        CompositeProfile::Task257A | CompositeProfile::Task257B2
-    );
-    let spelling = if source_spelling {
-        binder.identifier_spelling.as_str()
-    } else {
-        "x"
-    };
+    let spelling = binder.identifier_spelling.as_str();
     if binder.formula != SourceCompositeFormulaId::new(universal_index)
         || binder.ordinal != 0
         || binder.segment_spelling != format!("{spelling} being")
-        || binder.identifier_spelling != spelling
         || binder.local.spelling() != spelling
-        || (source_spelling
-            && (!mizar_lexer::is_identifier(spelling)
-                || binder
-                    .identifier_range
-                    .end
-                    .checked_sub(binder.identifier_range.start)
-                    != Some(spelling.len())))
+        || !mizar_lexer::is_identifier(spelling)
+        || binder
+            .identifier_range
+            .end
+            .checked_sub(binder.identifier_range.start)
+            != Some(spelling.len())
         || binder.local.scope() != &LocalTermScope::new(vec![0])
         || binder.local.declaration_range() != binder.identifier_range
         || binder.local.visible_after_ordinal() != 0
