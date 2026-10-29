@@ -3105,7 +3105,6 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
     let segment = ast.node(*segment_id)?;
     if !matches!(segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
         || subtree_has_recovery(ast, segment)
-        || direct_token_texts(ast, segment).as_slice() != ["x", "being"]
     {
         return None;
     }
@@ -3113,12 +3112,29 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
     let [type_expression_id] = segment_children.as_slice() else {
         return None;
     };
-    let binder_identifier_id = segment.children.iter().copied().find(|child| {
-        ast.node(*child)
-            .and_then(SurfaceNode::token_text)
-            .is_some_and(|text| text == "x")
-    })?;
-    let binder_identifier = ast.node(binder_identifier_id)?;
+    let segment_tokens = segment
+        .children
+        .iter()
+        .copied()
+        .filter(|child| {
+            ast.node(*child)
+                .is_some_and(|node| node.token_text().is_some())
+        })
+        .collect::<Vec<_>>();
+    let [binder_identifier_id, being_id] = segment_tokens.as_slice() else {
+        return None;
+    };
+    let binder_identifier = ast.node(*binder_identifier_id)?;
+    let SurfaceNodeKind::Token(token) = &binder_identifier.kind else {
+        return None;
+    };
+    if token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+        || !mizar_lexer::is_identifier(&token.text)
+        || !matches!(&ast.node(*being_id)?.kind, SurfaceNodeKind::Token(token)
+            if token.kind == mizar_syntax::SurfaceTokenKind::ReservedWord && token.text.as_ref() == "being")
+    {
+        return None;
+    }
     let type_expression = ast.node(*type_expression_id)?;
     let type_expression_children = structural_child_ids(ast, type_expression);
     let [type_head_id] = type_expression_children.as_slice() else {
@@ -3256,7 +3272,7 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
             .collect::<Option<Vec<_>>>()?,
         binder_segment_site: surface_site(*segment_id),
         binder_segment_range: segment.range,
-        binder_identifier_site: surface_site(binder_identifier_id),
+        binder_identifier_site: surface_site(*binder_identifier_id),
         binder_identifier_range: binder_identifier.range,
         binder_type_site: surface_site(*type_expression_id),
         binder_type_range: type_expression.range,

@@ -354,6 +354,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/ja/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
     - [x] [Proof-label confinement slice](../../task_contracts/ja/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
     - [x] [Unused Task257A binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-UNUSED-BINDER.md).
+    - [x] [Unused Task257B2 binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-GROUPED-UNUSED-BINDER.md).
 
 ## 推奨検証
 

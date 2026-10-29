@@ -240,6 +240,13 @@ sidecarだけにmapする。countはplan `415/381`、type-elaboration `247/235`�
 pass/fail `225/190`、active parse/declaration/type/proof `101/5/194/1`、
 warnings/errors `23/0`。次のdependency-ready formula sliceはTask 257B2である。
 
+## Task257B2 source spelling boundary
+
+グループ化された式の未使用束縛変数は実際のソース名とバイト範囲を四つの
+producerとcombined installationへ渡す。長い名前は実際のanchorと再計算した
+依存fingerprintを変える。元のdebug bytesは元のfixtureを表す。context、
+数値request、wrapper、atomic関連付け、空のbound use/captureは元の関係を保つ。
+
 ## Task 257B2 frozen connective/grouping addendum
 
 Task 257B2はcrate planでfreezeしたexact 166-byte sourceだけについてこの

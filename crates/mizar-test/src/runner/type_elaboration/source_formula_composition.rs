@@ -725,6 +725,144 @@ fn source_formula_composition_output_with_mutation_impl(
         ));
     }
     let payload = extract_source_formula_connective_grouping(ast, &module, symbols)?;
+    #[cfg(not(test))]
+    if source_text.is_none() {
+        return Some(Err("Task257B2 source association is invalid".to_owned()));
+    }
+    if let Some(source_text) = source_text {
+        use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+        let source_matches = || -> Option<()> {
+            ast.canonical_bytes()?;
+            if ast.expression_root().is_some() {
+                return None;
+            }
+            let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+            if !preprocessed.diagnostics.is_empty() {
+                return None;
+            }
+            let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+            let lexical_env = mizar_lexer::build_lexical_environment(&[], &[]).ok()?;
+            let scopes = mizar_lexer::build_scope_skeleton(&raw);
+            let tokens = mizar_lexer::disambiguate(
+                &raw,
+                &lexical_env,
+                &mizar_lexer::ParserLexContext::general(),
+                &scopes,
+            );
+            if !tokens.diagnostics().is_empty() || tokens.tokens().len() != ast.token_nodes().len()
+            {
+                return None;
+            }
+            for (actual, supplied) in tokens.tokens().iter().zip(ast.token_views()) {
+                let token = supplied.as_token()?;
+                let kind = match actual.kind() {
+                    mizar_lexer::TokenKind::Identifier => T::Identifier,
+                    mizar_lexer::TokenKind::ReservedWord => T::ReservedWord,
+                    mizar_lexer::TokenKind::ReservedSymbol => T::ReservedSymbol,
+                    mizar_lexer::TokenKind::Numeral => T::Numeral,
+                    _ => return None,
+                };
+                let ranges = preprocessed
+                    .preprocess_map
+                    .source_ranges_for_lexical(actual.span())?;
+                let [range] = ranges.as_slice() else {
+                    return None;
+                };
+                if token.kind != kind
+                    || token.text.as_ref() != actual.lexeme()
+                    || supplied.range().start != range.start
+                    || supplied.range().end != range.end
+                    || source_text.get(range.start..range.end) != Some(actual.lexeme())
+                {
+                    return None;
+                }
+            }
+            let root = ast.root()?;
+            let mut reachable = vec![false; ast.nodes().len()];
+            let mut pending = vec![root];
+            while let Some(id) = pending.pop() {
+                if std::mem::replace(reachable.get_mut(id.index())?, true) {
+                    continue;
+                }
+                pending.extend(ast.node(id)?.children.iter().copied());
+            }
+            if ast
+                .node_views()
+                .any(|node| !matches!(node.kind(), K::Token(_)) && !reachable[node.id().index()])
+            {
+                return None;
+            }
+            let mut owned_tokens = Vec::new();
+            for node in ast.node_views() {
+                if node.is_recovered()
+                    || node.range().source_id != ast.source_id
+                    || source_text
+                        .get(node.range().start..node.range().end)
+                        .is_none()
+                    || ast.range_contains_child_ranges(node.id()) != Some(true)
+                {
+                    return None;
+                }
+                if matches!(node.kind(), K::Token(_)) || node.id() == root {
+                    continue;
+                }
+                let children = node.child_views().collect::<Vec<_>>();
+                if children
+                    .windows(2)
+                    .any(|pair| pair[0].range().end > pair[1].range().start)
+                    || children.first()?.range().start != node.range().start
+                    || children.last()?.range().end != node.range().end
+                {
+                    return None;
+                }
+                let tokens = children
+                    .iter()
+                    .filter(|child| child.as_token().is_some())
+                    .collect::<Vec<_>>();
+                // The closed B2 selector already checks each operator, wrapper and numeral role.
+                let count = match node.kind() {
+                    K::TheoremItem => 4,
+                    K::QuantifiedFormula(_)
+                    | K::QuantifierVariableSegment
+                    | K::ParenthesizedFormula => 2,
+                    K::BinaryFormula(operator) => {
+                        if operator.repeated {
+                            3
+                        } else {
+                            1
+                        }
+                    }
+                    K::BuiltinPredicateApplication | K::TypeHead | K::NumeralTerm => 1,
+                    K::CompilationUnit
+                    | K::ItemList
+                    | K::FormulaExpression
+                    | K::TermExpression
+                    | K::TypeExpression => 0,
+                    _ => return None,
+                };
+                if tokens.len() != count {
+                    return None;
+                }
+                owned_tokens.extend(tokens.iter().map(|token| token.id()));
+            }
+            owned_tokens.sort();
+            if owned_tokens != ast.token_nodes() {
+                return None;
+            }
+            let shells =
+                mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+            let replay = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            (replay.diagnostics().is_empty() && &replay.into_env() == symbols).then_some(())
+        };
+        if source_matches().is_none() {
+            return Some(Err("Task257B2 source association is invalid".to_owned()));
+        }
+    }
     Some(build_task_257b2_output(
         ast, module, symbols, payload, mutate,
     ))
@@ -1068,6 +1206,21 @@ fn task_257b2_route_inputs(
     {
         return Err("Task257B2 extracted aggregate changed".to_owned());
     }
+    let identifier = ast
+        .nodes()
+        .get(payload.binder_identifier_site.node().index())
+        .ok_or("Task257B2 identifier site is missing")?;
+    let mizar_syntax::SurfaceNodeKind::Token(token) = &identifier.kind else {
+        return Err("Task257B2 identifier token is missing".to_owned());
+    };
+    if identifier.recovered
+        || identifier.range != payload.binder_identifier_range
+        || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+        || !mizar_lexer::is_identifier(&token.text)
+    {
+        return Err("Task257B2 identifier token is invalid".to_owned());
+    }
+    let spelling = token.text.as_ref();
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let formula_specs = [
@@ -1154,12 +1307,12 @@ fn task_257b2_route_inputs(
             ordinal: 0,
             segment_site: payload.binder_segment_site.clone(),
             segment_range: payload.binder_segment_range,
-            segment_spelling: "x being".to_owned(),
+            segment_spelling: format!("{spelling} being"),
             identifier_site: payload.binder_identifier_site.clone(),
             identifier_range: payload.binder_identifier_range,
-            identifier_spelling: "x".to_owned(),
+            identifier_spelling: spelling.to_owned(),
             local: LocalTermBinding::new(
-                "x",
+                spelling,
                 LocalTermScope::new(vec![0]),
                 payload.binder_identifier_range,
                 0,

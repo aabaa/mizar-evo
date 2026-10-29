@@ -259,6 +259,14 @@ type-elaboration `247/235`, pass/fail `225/190`, active
 parse/declaration/type/proof `101/5/194/1`, and warnings/errors `23/0`.
 Task 257B2 is the next dependency-ready formula slice.
 
+## Task257B2 source spelling boundary
+
+The grouped unused binder carries its actual source name and byte extent through
+all four genuine producers and combined installation. Longer names shift actual
+anchors and recomputed dependency fingerprints; original debug bytes describe
+the original fixture. Contexts, numeric requests, wrappers, atomic associations
+and empty bound uses/capture retain their original relationships.
+
 ## Task 257B2 Frozen Connective/Grouping Addendum
 
 Task 257B2 extends this transport only for the exact 166-byte source frozen in

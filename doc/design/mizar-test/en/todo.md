@@ -397,6 +397,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/en/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
     - [x] [Proof-label confinement slice](../../task_contracts/en/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
     - [x] [Unused Task257A binder spelling](../../task_contracts/en/TEST-METAMORPHIC-UNUSED-BINDER.md).
+    - [x] [Unused Task257B2 binder spelling](../../task_contracts/en/TEST-METAMORPHIC-GROUPED-UNUSED-BINDER.md).
 
 ## Recommended Verification
 

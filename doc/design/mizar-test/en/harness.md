@@ -3180,7 +3180,7 @@ The bounded Task257A generalization derives the unused explicit identifier from
 normal source tokens, preserving lexical boundaries, structural membership and
 source ranges. The actual immutable transport retains that spelling in its
 identifier, segment descriptor, local and extended binding rows before the
-original two external-gap observations. Other formula families stay fixed.
+original two external-gap observations. Task257A keeps its original formula family.
 
 ## Checker Task 257A Frozen Runner Boundary
 
@@ -3282,6 +3282,16 @@ all dependency fingerprints, the full literal composition debug rendering,
 and typed/resolved ownership. The isolation, corruption, ownership-partition,
 profile-discriminator, Task-248, and Task-257A rollback cases remain
 executable, and the external result contains no semantic formula output.
+
+## Task257B2 unused-binder spelling
+
+The grouped source route derives its one unused set-binder name from actual
+normal tokens and authenticates lexical, structural and environment ownership.
+Actual source-bearing output must contain the combined immutable handoff before
+empty semantic details can mean success. Original contexts, numeral/equality
+roles, transaction counts and transport-only credit remain fixed.
+The B4B caller supplies raw resolver symbols here; upper statement label
+enrichment remains separately authenticated.
 
 ## Checker Task 257B2 Frozen Harness Boundary
 

@@ -3044,7 +3044,7 @@ overload selectionはfrozen ownerへdeferしたままである。
 Task257Aの限定的一般化は、通常のソーストークンから未使用の明示的識別子を
 取り出し、字句境界・構造上の所属・ソース範囲を検査する。実際のimmutable
 transportは識別子・segment表記・局所および拡張bindingでその名前を保ち、
-元の二つのexternal-gap観測へ渡す。他の式familyは固定する。
+元の二つのexternal-gap観測へ渡す。Task257Aは元の式familyに限定する。
 
 ## Checker Task 257A frozen runner boundary
 
@@ -3138,6 +3138,15 @@ literal composition debug rendering、typed/resolved ownershipをcoverする。
 isolation、corruption、ownership-partition、profile-discriminator、Task-248、
 Task-257A rollback caseはexecutableで、external resultはsemantic formula
 outputを持たない。
+
+## Task257B2 unused-binder spelling
+
+グループ化された式の経路は、唯一の未使用set束縛変数の名前を実際の通常
+トークンから取り出し、字句・構造・環境の所属を検査する。空のsemantic detail
+が成功を表す前に、実際のsource-bearing出力がcombined immutable handoffを
+持つことを必須とする。元のcontext、数値・等式role、transaction件数と
+transport-onlyの意味範囲は維持する。B4B呼び出しは元のresolver symbolsを渡し、
+上位statementのラベル付加は別途検査する。
 
 ## Checker Task 257B2 frozen harness boundary
 

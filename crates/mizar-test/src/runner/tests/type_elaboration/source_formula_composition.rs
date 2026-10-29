@@ -1087,6 +1087,415 @@ fn task257b2_real_route_publishes_exact_profiles_ranges_and_final_ownership() {
 }
 
 #[test]
+fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_details() {
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B2_CASE)
+        .unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    let baseline =
+        extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env).unwrap();
+    let two_binders = original.replacen("for x being set", "for x, y being set", 1);
+    assert_ne!(two_binders, original);
+    metamorphic_guard::with_source(case, &two_binders, || {
+        let frontend = run_frontend(root, case, ordinal).unwrap();
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "two binders are normal syntax outside the selected profile"
+        );
+        assert_eq!(frontend.source_text.as_ref(), two_binders);
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.node_views().all(|view| !view.is_recovered()));
+        let resolver = resolver_symbol_collection(root, case, ast);
+        assert!(
+            extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env)
+                .is_none()
+        );
+    });
+    let baseline_output = source_formula_composition_output_with_source(
+        ast,
+        resolver.module,
+        &resolver.env,
+        &original,
+    )
+    .unwrap()
+    .unwrap();
+    for spelling in ["y", "unused_grouped_binder"] {
+        let source = original.replacen("for x being set", &format!("for {spelling} being set"), 1);
+        assert_ne!(source, original);
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(root, case, ordinal).unwrap();
+            assert!(frontend.diagnostics.is_empty());
+            assert_eq!(frontend.source_text.as_ref(), source);
+            let ast = frontend.ast.as_ref().unwrap();
+            let resolver = resolver_symbol_collection(root, case, ast);
+            assert!(resolver.detail_keys.is_empty());
+            let output = source_formula_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &resolver.env,
+                &source,
+            )
+            .expect("renamed grouped source must select, not skip transport")
+            .expect("actual four-producer transaction");
+            let payload =
+                extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env)
+                    .unwrap();
+            let primary = output.typed_ast.source_term().unwrap();
+            let atomic = output.typed_ast.source_atomic_formula().unwrap();
+            let composite = output.typed_ast.source_composite_formula().unwrap();
+            let composition = task257b1_handoff(&output);
+            let binder = composite
+                .binders()
+                .get(mizar_checker::source_composite_formula::SourceQuantifierBinderId::new(0))
+                .unwrap();
+            assert_eq!(binder.identifier_spelling(), spelling);
+            assert_eq!(binder.segment_spelling(), format!("{spelling} being"));
+            assert_eq!(binder.local().spelling(), spelling);
+            assert_eq!(
+                source.get(binder.identifier_range().start..binder.identifier_range().end),
+                Some(spelling)
+            );
+            assert_eq!(
+                composite
+                    .binding_env()
+                    .bindings()
+                    .get(mizar_checker::binding_env::BindingId::new(0))
+                    .unwrap()
+                    .spelling,
+                spelling
+            );
+            assert_eq!(
+                (
+                    primary.terms().len(),
+                    primary.references().len(),
+                    primary.numeric_type_requests().len(),
+                    atomic.formulas().len(),
+                    atomic.edges().len()
+                ),
+                (16, 0, 16, 8, 16)
+            );
+            assert_eq!(
+                (
+                    composite.formulas().len(),
+                    composite.wrappers().len(),
+                    composite.roots().len(),
+                    composite.binders().len(),
+                    composite.type_sites().len(),
+                    composite.edges().len(),
+                    composite.requests().len()
+                ),
+                (8, 6, 1, 1, 1, 7, 9)
+            );
+            assert_eq!(
+                (
+                    composition.atomic_edges().len(),
+                    composition.bound_uses().len()
+                ),
+                (8, 0)
+            );
+            assert!(
+                primary
+                    .terms()
+                    .iter()
+                    .all(|(_, term)| term.context().index() == 1)
+            );
+            assert!(
+                atomic
+                    .formulas()
+                    .iter()
+                    .all(|(_, formula)| formula.context().index() == 1)
+            );
+            let actual_ranges = composite
+                .formulas()
+                .iter()
+                .map(|(_, row)| row.source_range())
+                .chain(
+                    composite
+                        .wrappers()
+                        .iter()
+                        .map(|(_, row)| row.source_range()),
+                )
+                .chain(primary.terms().iter().map(|(_, row)| row.source_range()))
+                .chain(atomic.formulas().iter().map(|(_, row)| row.source_range()))
+                .collect::<Vec<_>>();
+            let source_ranges = payload
+                .formula_ranges
+                .iter()
+                .chain(&payload.wrapper_ranges)
+                .chain(&payload.numeral_ranges)
+                .chain(&payload.equality_ranges)
+                .copied()
+                .collect::<Vec<_>>();
+            assert_eq!(actual_ranges, source_ranges);
+            for (actual, old) in source_ranges.iter().zip(
+                baseline
+                    .formula_ranges
+                    .iter()
+                    .chain(&baseline.wrapper_ranges)
+                    .chain(&baseline.numeral_ranges)
+                    .chain(&baseline.equality_ranges),
+            ) {
+                let mut shifted = *old;
+                shifted.start += usize::from(old.start > baseline.binder_identifier_range.start)
+                    * (spelling.len() - 1);
+                shifted.end += usize::from(old.end > baseline.binder_identifier_range.start)
+                    * (spelling.len() - 1);
+                assert_eq!(*actual, shifted);
+            }
+            assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(
+                composition.atomic_formula_fingerprint(),
+                atomic.debug_text()
+            );
+            assert_eq!(
+                composition.composite_formula_fingerprint(),
+                composite.debug_text()
+            );
+            let type_site = composite
+                .type_sites()
+                .get(mizar_checker::source_composite_formula::SourceBinderTypeSiteId::new(0))
+                .unwrap();
+            assert_eq!(type_site.source_range(), payload.binder_type_range);
+            assert_eq!(type_site.head_range(), payload.binder_type_head_range);
+            assert_eq!(
+                type_site.source_range().start,
+                baseline.binder_type_range.start + spelling.len() - 1
+            );
+            assert_ne!(
+                composition.composite_formula_fingerprint(),
+                baseline_output
+                    .typed_ast
+                    .source_composite_formula()
+                    .unwrap()
+                    .debug_text()
+            );
+            if spelling.len() > 1 {
+                assert_ne!(
+                    composition.primary_term_fingerprint(),
+                    baseline_output
+                        .typed_ast
+                        .source_term()
+                        .unwrap()
+                        .debug_text()
+                );
+                assert_ne!(
+                    composition.atomic_formula_fingerprint(),
+                    baseline_output
+                        .typed_ast
+                        .source_atomic_formula()
+                        .unwrap()
+                        .debug_text()
+                );
+            }
+            assert_eq!(
+                output.typed_ast.source_formula_composition(),
+                output.resolved.source_formula_composition()
+            );
+            if spelling == "y" {
+                use mizar_session::SessionIdAllocator as _;
+                let ids = mizar_session::InMemorySessionIdAllocator::new();
+                let mut new_source = ids.next_source_id(super::shared::snapshot_id(259)).unwrap();
+                while new_source == ast.source_id {
+                    new_source = ids.next_source_id(super::shared::snapshot_id(259)).unwrap();
+                }
+                for corruption in 0..6 {
+                    let gap = source.find("for ").unwrap() + 3;
+                    let mut changed = source.clone();
+                    if corruption == 0 {
+                        assert_eq!(changed.remove(gap), ' ');
+                    }
+                    if corruption == 1 {
+                        changed.push(';');
+                    }
+                    let source_id = if corruption == 2 {
+                        new_source
+                    } else {
+                        ast.source_id
+                    };
+                    let mut builder = mizar_syntax::SurfaceAstBuilder::new(source_id);
+                    let mut rebuilt = Vec::new();
+                    for (index, node) in ast.nodes().iter().enumerate() {
+                        let mut range = node.range;
+                        range.source_id = source_id;
+                        if corruption == 0 {
+                            range.start -= usize::from(range.start > gap);
+                            range.end -= usize::from(range.end > gap);
+                        }
+                        let mut children: Vec<_> =
+                            node.children.iter().map(|id| rebuilt[id.index()]).collect();
+                        if corruption == 1 && Some(index) == ast.root().map(|id| id.index()) {
+                            children.push(builder.add_token(
+                                mizar_syntax::SurfaceTokenKind::ReservedSymbol,
+                                ";",
+                                mizar_session::SourceRange {
+                                    source_id,
+                                    start: source.len(),
+                                    end: changed.len(),
+                                },
+                            ));
+                            range.end = changed.len();
+                        }
+                        let id = match &node.kind {
+                            mizar_syntax::SurfaceNodeKind::Token(token)
+                                if node.range == payload.binder_identifier_range
+                                    && corruption == 3 =>
+                            {
+                                builder.add_recovered_token(token.kind, token.text.clone(), range)
+                            }
+                            mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(
+                                if node.range == payload.binder_identifier_range && corruption == 4
+                                {
+                                    mizar_syntax::SurfaceTokenKind::ReservedWord
+                                } else {
+                                    token.kind
+                                },
+                                token.text.clone(),
+                                range,
+                            ),
+                            kind => builder.add_node(kind.clone(), range, children),
+                        };
+                        rebuilt.push(id);
+                    }
+                    if corruption == 5 {
+                        let child = payload.formula_sites[1].node().index();
+                        builder.add_node(
+                            mizar_syntax::SurfaceNodeKind::FormulaExpression,
+                            ast.nodes()[child].range,
+                            vec![rebuilt[child]],
+                        );
+                    }
+                    let forged = builder.finish(ast.root().map(|id| rebuilt[id.index()]), None);
+                    assert!(forged.canonical_bytes().is_some());
+                    assert!(forged.node_views().all(|view| forged.range_contains_child_ranges(view.id()) == Some(true)));
+                    assert!(
+                        forged
+                            .token_views()
+                            .all(|view| changed.get(view.range().start..view.range().end)
+                                == view.as_token().map(|token| token.text.as_ref()))
+                    );
+                    let fresh = resolver_symbol_collection(root, case, &forged);
+                    if corruption == 5 {
+                        assert_eq!(changed, source);
+                        assert_eq!(forged.root(), ast.root());
+                        assert_eq!(forged.nodes().len(), ast.nodes().len() + 1);
+                        assert_eq!(forged.token_texts(), ast.token_texts());
+                        let unreachable = forged.node_views().last().unwrap().id();
+                        assert!(
+                            forged
+                                .node_views()
+                                .all(|view| !view.children().contains(&unreachable))
+                        );
+                        assert_eq!(fresh.env, resolver.env);
+                    }
+                    if matches!(corruption, 3 | 4) {
+                        let result = source_formula_composition_output_with_source(
+                            &forged,
+                            fresh.module,
+                            &fresh.env,
+                            &changed,
+                        );
+                        assert!(
+                            !matches!(result, Some(Ok(_))),
+                            "malformed binder token cannot produce transport: {corruption}"
+                        );
+                        continue;
+                    }
+                    assert!(
+                        extract_source_formula_connective_grouping(
+                            &forged,
+                            &fresh.module,
+                            &fresh.env
+                        )
+                        .is_some()
+                    );
+                    if corruption == 1 {
+                        let lexed = task257c4c1_frontend_output(&changed, 259);
+                        assert_eq!(lexed.tokens.tokens().len(), forged.token_nodes().len());
+                        for (actual, supplied) in
+                            lexed.tokens.tokens().iter().zip(forged.token_views())
+                        {
+                            let kind = match actual.kind {
+                                mizar_frontend::lexing::TokenKind::Identifier => {
+                                    mizar_syntax::SurfaceTokenKind::Identifier
+                                }
+                                mizar_frontend::lexing::TokenKind::ReservedWord => {
+                                    mizar_syntax::SurfaceTokenKind::ReservedWord
+                                }
+                                mizar_frontend::lexing::TokenKind::ReservedSymbol => {
+                                    mizar_syntax::SurfaceTokenKind::ReservedSymbol
+                                }
+                                mizar_frontend::lexing::TokenKind::Numeral => {
+                                    mizar_syntax::SurfaceTokenKind::Numeral
+                                }
+                                _ => panic!("unexpected B2 token"),
+                            };
+                            assert_eq!(
+                                (
+                                    kind,
+                                    actual.text.as_ref(),
+                                    actual.span.start,
+                                    actual.span.end
+                                ),
+                                (
+                                    supplied.as_token().unwrap().kind,
+                                    supplied.as_token().unwrap().text.as_ref(),
+                                    supplied.range().start,
+                                    supplied.range().end
+                                )
+                            );
+                        }
+                        let extra = forged.token_views().last().unwrap().id();
+                        assert!(
+                            forged
+                                .node_views()
+                                .filter(|view| Some(view.id()) != forged.root())
+                                .all(|view| !view.children().contains(&extra))
+                        );
+                    }
+                    let symbols = if corruption == 2 {
+                        assert_ne!(forged.source_id, ast.source_id);
+                        assert!(
+                            source_formula_composition_output_with_source(
+                                &forged,
+                                fresh.module.clone(),
+                                &fresh.env,
+                                &changed
+                            )
+                            .expect("matching source/env selected")
+                            .is_ok()
+                        );
+                        &resolver.env
+                    } else {
+                        &fresh.env
+                    };
+                    assert!(
+                        source_formula_composition_output_with_source(
+                            &forged,
+                            fresh.module,
+                            symbols,
+                            &changed
+                        )
+                        .expect("source auth refusal must retain selected error, not skip")
+                        .is_err(),
+                        "source authentication: {corruption}"
+                    );
+                }
+            }
+            let result = run_type_elaboration_case(root, &root.join("tests"), case, ordinal);
+            assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+            assert!(result.actual_detail_keys.is_empty());
+        });
+    }
+}
+
+#[test]
 fn task257b2_formula_wrapper_and_atomic_edges_are_exact() {
     let (ast, module, symbols) = task252_real_ast(TASK257B2_CASE);
     let output = source_formula_composition_output(&ast, module, &symbols)
@@ -1363,7 +1772,7 @@ fn task257b2_source_selector_near_miss_matrix_remains_unselected() {
             "AnotherFormulaConnectiveGroupingBoundary",
             1,
         ),
-        EXACT.replacen("for x being set", "for y being set", 1),
+        EXACT.replacen("for x being set", "for x, y being set", 1),
         EXACT.replacen("being set", "being object", 1),
         EXACT.replacen("0 = 0 & ... & 0 = 3", "0 = 3 & ... & 0 = 0", 1),
         EXACT.replacen("0 = 0 & 0 = 0", "0 = 0 & 0 = 0 & 0 = 0", 1),
@@ -2606,12 +3015,16 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         "Task257B1 route remains reachable after C3 preflight"
     );
     let (b2_ast, b2_module, b2_symbols) = task252_real_ast(TASK257B2_CASE);
+    let b2_source = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../tests/miz/pass/types/pass_type_elaboration_formula_connective_grouping_payload_001.miz",
+    ))
+    .expect("original B2 source");
     assert_eq!(
         source_formula_composition_transport_detail_keys(
             &b2_ast,
             b2_module,
             &b2_symbols,
-            "",
+            &b2_source,
         ),
         Some(Vec::new()),
         "Task257B2 route remains reachable after C3 preflight"
