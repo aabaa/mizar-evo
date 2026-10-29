@@ -32,6 +32,8 @@
 
 - [x] [Original-source theorem visibility](../../task_contracts/en/CHECKER-SOURCE-THEOREM-VISIBILITY.md).
 
+- [x] [SourceType architecture scan](../../task_contracts/en/CHECKER-SOURCE-TYPE-BOUNDARY-SCAN.md).
+
 ## Status Legend
 
 - [ ] not started

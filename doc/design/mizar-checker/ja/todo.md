@@ -29,6 +29,8 @@
 
 - [x] [元ソース定理の可視性](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-VISIBILITY.md).
 
+- [x] [SourceType architecture scan](../../task_contracts/ja/CHECKER-SOURCE-TYPE-BOUNDARY-SCAN.md).
+
 ## 状態の凡例
 
 - [ ] 未着手

@@ -14469,7 +14469,10 @@ mod tests {
             concat!("Proof", "Context"),
         ] {
             assert!(
-                !source[..source.find("#[cfg(test)]").expect("test module")].contains(forbidden),
+                !source[..source
+                    .find("#[cfg(test)]\nmod tests {")
+                    .expect("test module")]
+                    .contains(forbidden),
                 "source type handoff exposes {forbidden}"
             );
         }
