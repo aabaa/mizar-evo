@@ -1079,3 +1079,485 @@ fn step5c6_synonym_mismatch_requires_actual_unique_target_and_loci() {
         None
     );
 }
+
+const PROOF_LABEL_CONFINEMENT_DETAIL: &str = "declaration_symbol.label.proof_scope_confinement";
+const PROOF_LABEL_INPUT_DETAIL: &str = "declaration_symbol.label.proof_scope_input";
+
+#[test]
+fn task_metamorphic_label_confinement_runs_fresh_layout_and_rename_sources() {
+    let (workspace_root, plan) = step5c6_plan();
+    for id in [
+        "fail_resolve_proof_label_inner_to_outer_confinement_001",
+        "fail_resolve_proof_label_sibling_confinement_001",
+    ] {
+        let (ordinal, case) = super::active_declaration_symbol_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == id)
+            .expect("admitted proof-label confinement case");
+        let original = run_frontend(&workspace_root, case, ordinal).expect("original frontend");
+        assert!(original.diagnostics.is_empty());
+        let source = original.source_text.to_string();
+        let ast = original.ast.as_ref().expect("original AST");
+        let variants = metamorphic_edits::variants(ast, &source);
+        assert_eq!(
+            variants.iter().map(|(name, _)| *name).collect::<Vec<_>>(),
+            ["leading_line", "intertoken_layout"],
+            "guard variants for out-of-scope labels: {id}"
+        );
+
+        let mut sources = vec![("original", source.clone())];
+        sources.extend(
+            variants
+                .into_iter()
+                .map(|(name, edits)| (name, metamorphic_edits::apply(&source, &edits))),
+        );
+        let focused_rename = {
+            let fresh = "MetamorphicProofLabelFresh";
+            let mut ranges = ast
+                .token_views()
+                .filter_map(|view| {
+                    let token = view.as_token()?;
+                    (token.kind == mizar_syntax::SurfaceTokenKind::Identifier
+                        && token.text.as_ref() == "A")
+                        .then_some(view.range())
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(ranges.len(), 2, "one declaration and one citation token");
+            assert!(!ast.token_views().any(|view| {
+                view.as_token()
+                    .is_some_and(|token| token.text.as_ref() == fresh)
+            }));
+            ranges.sort_by_key(|range| (range.start, range.end));
+            let mut renamed = source.clone();
+            for range in ranges.iter().rev() {
+                assert_eq!(range.source_id, ast.source_id);
+                assert_eq!(source.get(range.start..range.end), Some("A"));
+                renamed.replace_range(range.start..range.end, fresh);
+            }
+            renamed
+        };
+        sources.push(("focused_label_rename", focused_rename));
+        sources.push(("trailing_newline", format!("{source}\n")));
+        for (variant_name, variant) in sources {
+            if variant_name == "original" {
+                assert_eq!(variant, source);
+            } else {
+                assert_ne!(variant, source, "{id}/{variant_name} must edit source");
+            }
+            if variant_name == "intertoken_layout" {
+                assert!(variant.contains(":: metamorphic\n"));
+            }
+            let result = metamorphic_guard::with_source(case, &variant, || {
+                let result = super::declaration_symbol::run_declaration_symbol_case(
+                    &workspace_root,
+                    case,
+                    ordinal,
+                );
+                let frontend =
+                    run_frontend(&workspace_root, case, ordinal).expect("fresh variant frontend");
+                assert_eq!(frontend.source_text.as_ref(), variant);
+                assert!(frontend.diagnostics.is_empty(), "{variant_name}");
+                let ast = frontend.ast.as_ref().expect("fresh variant AST");
+                let resolver = resolver_symbol_collection(&workspace_root, case, ast);
+                assert!(resolver.detail_keys.is_empty(), "{variant_name}");
+
+                let contribution = resolver
+                    .env
+                    .contributions()
+                    .iter()
+                    .next()
+                    .expect("actual local source contribution");
+                let resolved =
+                    mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver.module)
+                        .expect("actual resolved surface");
+                let collected = mizar_resolve::labels::ProofLabelSourceCollector::new(
+                    ast,
+                    &resolver.module,
+                    mizar_resolve::env::NamespacePath::new(resolver.module.path().as_str()),
+                    contribution.id(),
+                    &resolved,
+                )
+                .expect("actual proof-label collector")
+                .collect()
+                .expect("actual proof-label rows");
+                let [label] = collected.projections() else {
+                    panic!("one actual local label");
+                };
+                let [reference] = collected.references() else {
+                    panic!("one actual citation");
+                };
+                let declaration = label.declaration_range();
+                let citation = reference.site().range();
+                assert_eq!(declaration.source_id, ast.source_id);
+                assert_eq!(citation.source_id, ast.source_id);
+                assert_eq!(
+                    variant.get(declaration.start..declaration.end),
+                    Some(label.primary_spelling())
+                );
+                assert_eq!(
+                    variant.get(citation.start..citation.end),
+                    Some(reference.site().spelling())
+                );
+                assert_eq!(label.primary_spelling(), reference.site().spelling());
+                assert_eq!(label.visibility(), mizar_resolve::env::Visibility::Private);
+                assert_eq!(
+                    label.export_status(),
+                    mizar_resolve::env::ExportStatus::LocalOnly
+                );
+                if variant_name == "focused_label_rename" {
+                    assert_ne!(label.primary_spelling(), "A");
+                } else {
+                    assert_eq!(label.primary_spelling(), "A");
+                }
+                assert!(declaration.end < citation.start);
+                result
+            });
+            assert_eq!(
+                result.status,
+                super::DeclarationSymbolCaseStatus::Passed,
+                "{id}/{variant_name}"
+            );
+            assert_eq!(
+                result.actual_detail_keys,
+                [PROOF_LABEL_CONFINEMENT_DETAIL],
+                "{id}/{variant_name}"
+            );
+            assert!(result.actual_payload_keys.is_empty());
+        }
+    }
+}
+
+#[test]
+fn task_metamorphic_label_confinement_rejects_raw_identity_and_recovery_mutations() {
+    let (workspace_root, plan) = step5c6_plan();
+    let (ordinal, case) = super::active_declaration_symbol_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == "fail_resolve_proof_label_inner_to_outer_confinement_001")
+        .expect("admitted inner-to-outer case");
+    let frontend = run_frontend(&workspace_root, case, ordinal).expect("original frontend");
+    let source = frontend.source_text.to_string();
+    let ast = frontend.ast.as_ref().expect("original AST");
+    let resolver = resolver_symbol_collection(&workspace_root, case, ast);
+    let detail = |source: &str,
+                  ast: &SurfaceAst,
+                  module: &mizar_resolve::resolved_ast::ModuleId,
+                  env: &mizar_resolve::env::SymbolEnv| {
+        super::declaration_symbol::source_proof_label_confinement_detail(source, ast, module, env)
+    };
+    assert_eq!(
+        detail(&source, ast, &resolver.module, &resolver.env),
+        Some(PROOF_LABEL_CONFINEMENT_DETAIL)
+    );
+    assert_eq!(
+        detail(&format!("\n{source}"), ast, &resolver.module, &resolver.env),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+    let malformed = source.replacen("A: thesis proof", "A thesis proof", 1);
+    assert_ne!(malformed, source);
+    assert_eq!(
+        detail(&malformed, ast, &resolver.module, &resolver.env),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+
+    let double_spaced = source.replacen("theorem ", "theorem  ", 1);
+    let (spaced_ast, spaced_resolver) =
+        metamorphic_guard::with_source(case, &double_spaced, || {
+            let frontend =
+                run_frontend(&workspace_root, case, ordinal).expect("two-space frontend");
+            assert_eq!(frontend.source_text.as_ref(), double_spaced);
+            assert!(frontend.diagnostics.is_empty());
+            let ast = frontend.ast.expect("two-space AST");
+            let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+            assert!(resolver.detail_keys.is_empty());
+            (ast, resolver)
+        });
+    assert_eq!(
+        detail(
+            &double_spaced,
+            &spaced_ast,
+            &spaced_resolver.module,
+            &spaced_resolver.env
+        ),
+        Some(PROOF_LABEL_CONFINEMENT_DETAIL)
+    );
+    let mut token_ranges = spaced_ast
+        .token_views()
+        .map(|token| token.range())
+        .collect::<Vec<_>>();
+    token_ranges.sort_by_key(|range| (range.start, range.end));
+    let gap = token_ranges
+        .windows(2)
+        .find_map(|pair| {
+            (double_spaced.get(pair[0].end..pair[1].start) == Some("  "))
+                .then_some(pair[0].end..pair[1].start)
+        })
+        .expect("real token pair separated by exactly two spaces");
+    let line_end = double_spaced[gap.end..]
+        .find('\n')
+        .map(|offset| gap.end + offset)
+        .expect("comment terminator newline");
+    assert!(
+        token_ranges
+            .iter()
+            .any(|range| { range.start == gap.end && range.end <= line_end }),
+        "comment must cover the next parsed token"
+    );
+    let mut commented = double_spaced.clone();
+    commented.replace_range(gap.clone(), "::");
+    assert_eq!(commented.len(), double_spaced.len());
+    assert_eq!(
+        detail(
+            &commented,
+            &spaced_ast,
+            &spaced_resolver.module,
+            &spaced_resolver.env
+        ),
+        Some(PROOF_LABEL_INPUT_DETAIL),
+        "raw comment bytes must not reuse the pre-comment AST"
+    );
+
+    let recovered = rebuild_surface_ast_recovering_first_token_in_kind(
+        ast,
+        mizar_syntax::SurfaceNodeKind::CompactStatement,
+    );
+    assert_eq!(
+        detail(&source, &recovered, &resolver.module, &resolver.env),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+
+    for (corrupt_formula, missing_token, merged_words) in [
+        (false, false, false),
+        (true, false, false),
+        (false, true, false),
+        (false, false, true),
+    ] {
+        let root_index = ast.root().expect("source root").index();
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut children: Vec<_> = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            if missing_token
+                && matches!(node.kind, mizar_syntax::SurfaceNodeKind::FormulaConstant(_))
+            {
+                children.clear();
+            }
+            let mut range = node.range;
+            if !corrupt_formula && !missing_token && !merged_words && index == root_index {
+                range.end = range.start + 1;
+            }
+            if merged_words {
+                assert_eq!(source.get(7..8), Some(" "));
+                range.start -= usize::from(range.start > 7);
+                range.end -= usize::from(range.end > 7);
+            }
+            let id = match &node.kind {
+                mizar_syntax::SurfaceNodeKind::Token(token) if node.recovered => {
+                    builder.add_recovered_token(token.kind, token.text.clone(), range)
+                }
+                mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(
+                    token.kind,
+                    if corrupt_formula && token.text.as_ref() == "thesis" {
+                        "object".into()
+                    } else {
+                        token.text.clone()
+                    },
+                    range,
+                ),
+                mizar_syntax::SurfaceNodeKind::ErrorRecovery(kind) => {
+                    builder.add_recovery(*kind, range, children)
+                }
+                kind => builder.add_node(kind.clone(), range, children),
+            };
+            rebuilt.push(id);
+        }
+        let malformed_range = builder.finish(
+            ast.root().map(|root| rebuilt[root.index()]),
+            ast.expression_root().map(|root| rebuilt[root.index()]),
+        );
+        let malformed_root = malformed_range.root().expect("mutated source root");
+        assert_eq!(malformed_range.nodes().len(), ast.nodes().len());
+        if corrupt_formula || missing_token || merged_words {
+            let changed_source = if corrupt_formula {
+                source.replace("thesis", "object")
+            } else if merged_words {
+                let mut merged = source.clone();
+                merged.remove(7);
+                assert!(merged.starts_with("theoremProofLabel"));
+                merged
+            } else {
+                source.clone()
+            };
+            assert_eq!(
+                changed_source.len() + usize::from(merged_words),
+                source.len()
+            );
+            if corrupt_formula {
+                assert_ne!(malformed_range.token_texts(), ast.token_texts());
+            } else {
+                assert_eq!(malformed_range.token_texts(), ast.token_texts());
+            }
+            assert!(malformed_range.canonical_bytes().is_some());
+            assert!(malformed_range.node_views().all(|node| {
+                malformed_range.range_contains_child_ranges(node.id()) == Some(true)
+            }));
+            assert!(malformed_range.token_views().all(|node| {
+                let range = node.range();
+                changed_source.get(range.start..range.end)
+                    == node.as_token().map(|t| t.text.as_ref())
+            }));
+            let forged_resolver =
+                resolver_symbol_collection(&workspace_root, case, &malformed_range);
+            assert!(forged_resolver.detail_keys.is_empty());
+            assert_eq!(
+                detail(
+                    &changed_source,
+                    &malformed_range,
+                    &forged_resolver.module,
+                    &forged_resolver.env
+                ),
+                Some(PROOF_LABEL_INPUT_DETAIL),
+                "typed thesis formula must authenticate its actual token"
+            );
+            continue;
+        }
+        assert_eq!(malformed_range.token_texts(), ast.token_texts());
+        assert!(malformed_range.canonical_bytes().is_some());
+        assert_eq!(
+            malformed_range.range_contains_child_ranges(malformed_root),
+            Some(false)
+        );
+        let malformed_root_range = malformed_range.node(malformed_root).unwrap().range;
+        assert!(
+            source
+                .get(malformed_root_range.start..malformed_root_range.end)
+                .is_some()
+        );
+        let semantic_counts = |ast: &SurfaceAst| {
+            [
+                mizar_syntax::SurfaceNodeKind::TheoremItem,
+                mizar_syntax::SurfaceNodeKind::CompactStatement,
+                mizar_syntax::SurfaceNodeKind::Reference,
+            ]
+            .map(|kind| ast.node_views().filter(|node| node.kind() == &kind).count())
+        };
+        assert_eq!(semantic_counts(&malformed_range), semantic_counts(ast));
+        assert_eq!(
+            detail(&source, &malformed_range, &resolver.module, &resolver.env),
+            Some(PROOF_LABEL_INPUT_DETAIL),
+            "valid canonical storage with a non-contained structural range must fail closed"
+        );
+    }
+
+    let ids = mizar_session::InMemorySessionIdAllocator::new();
+    let mut foreign_source = ids
+        .next_source_id(super::shared::snapshot_id(0xf1))
+        .expect("foreign source id");
+    while foreign_source == ast.source_id {
+        foreign_source = ids
+            .next_source_id(super::shared::snapshot_id(0xf1))
+            .expect("distinct foreign source id");
+    }
+    assert_ne!(foreign_source, ast.source_id);
+    let mut foreign_ast = ast.clone();
+    foreign_ast.source_id = foreign_source;
+    assert_eq!(
+        detail(&source, &foreign_ast, &resolver.module, &resolver.env),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+
+    let foreign_module = mizar_resolve::resolved_ast::ModuleId::new(
+        mizar_session::PackageId::new("foreign-proof-label"),
+        mizar_session::ModulePath::new("foreign.proof_label"),
+    );
+    assert_eq!(
+        detail(&source, ast, &foreign_module, &resolver.env),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+
+    let contribution = resolver
+        .env
+        .contributions()
+        .iter()
+        .next()
+        .expect("local contribution");
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&resolver.env);
+    indexes.contributions = Default::default();
+    indexes.contributions.insert(
+        resolver.module.clone(),
+        mizar_resolve::env::ContributionKind::LocalSource {
+            source_id: foreign_source,
+        },
+        contribution.anchor().clone(),
+    );
+    let foreign_contribution = mizar_resolve::env::SymbolEnv::new(resolver.module.clone(), indexes);
+    assert_eq!(
+        detail(&source, ast, &resolver.module, &foreign_contribution),
+        Some(PROOF_LABEL_INPUT_DETAIL)
+    );
+}
+
+#[test]
+fn task_metamorphic_label_confinement_does_not_classify_other_reference_relations() {
+    let (workspace_root, plan) = step5c6_plan();
+    let (ordinal, case) = super::active_declaration_symbol_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == "fail_resolve_proof_label_inner_to_outer_confinement_001")
+        .expect("admitted inner-to-outer case");
+    let source = std::fs::read_to_string(&case.source_path).expect("original source");
+    let old_local = "  thus thesis proof\n    A: thesis proof\n      thus thesis;\n    end;\n    thus thesis;\n  end;\n  thus thesis by A;\n";
+    let replacement = |new: &str| {
+        let changed = source.replacen(old_local, new, 1);
+        assert_ne!(changed, source, "control must change source");
+        changed
+    };
+    let visible = replacement("  A: thesis proof\n    thus thesis;\n  end;\n  thus thesis by A;\n");
+    let forward = replacement("  thus thesis by A;\n  A: thesis proof\n    thus thesis;\n  end;\n");
+    let wrong = source.replacen("by A;", "by B;", 1);
+    let unknown = source.replacen("by A;", "by MissingLabel;", 1);
+    assert_ne!(wrong, source);
+    assert_ne!(unknown, source);
+    let multiple_labels = source.replacen(
+        "    end;\n    thus thesis;\n",
+        "    end;\n    B: thesis;\n    thus thesis;\n",
+        1,
+    );
+    assert_ne!(multiple_labels, source);
+    let extra_conclusion_label = source.replacen("thus thesis by A;", "thus B: thesis by A;", 1);
+    assert_ne!(extra_conclusion_label, source);
+    let imported = format!("import parser.type_fixtures;\n{source}");
+    let multiple_owners = format!("{source}{source}");
+    for (label, changed, unaffected) in [
+        ("wrong reference", wrong, true),
+        ("unknown reference", unknown, true),
+        ("visible reference", visible, true),
+        ("forward reference", forward, true),
+        ("multiple labels", multiple_labels, false),
+        ("extra conclusion label", extra_conclusion_label, false),
+        ("import", imported, false),
+        ("multiple owners", multiple_owners, false),
+    ] {
+        let detail = metamorphic_guard::with_source(case, &changed, || {
+            let frontend =
+                run_frontend(&workspace_root, case, ordinal).expect("fresh label frontend");
+            assert_eq!(frontend.source_text.as_ref(), changed);
+            assert!(frontend.diagnostics.is_empty(), "fresh source must parse");
+            let ast = frontend.ast.as_ref().expect("fresh label AST");
+            let resolver = resolver_symbol_collection(&workspace_root, case, ast);
+            super::declaration_symbol::source_proof_label_confinement_detail(
+                &changed,
+                ast,
+                &resolver.module,
+                &resolver.env,
+            )
+        });
+        if unaffected {
+            assert_eq!(detail, None, "{label}");
+        } else {
+            assert_ne!(detail, Some(PROOF_LABEL_CONFINEMENT_DETAIL), "{label}");
+        }
+    }
+}

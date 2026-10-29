@@ -8044,7 +8044,7 @@ mod metamorphic_guard {
     use mizar_session::{SourceAnchor, SourceRange};
     use std::collections::{BTreeMap, BTreeSet};
 
-    fn with_source<T>(case: &TestCase, source: &str, run: impl FnOnce() -> T) -> T {
+    pub(super) fn with_source<T>(case: &TestCase, source: &str, run: impl FnOnce() -> T) -> T {
         shared::METAMORPHIC_SOURCE.with(|slot| {
             let previous = slot.replace(Some((case.source_path.clone(), source.to_owned())));
             assert!(previous.is_none());

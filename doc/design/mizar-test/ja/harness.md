@@ -4807,6 +4807,17 @@ resolver resultがすべて
 expectation fieldはrouteをselectできず、replay/orderはdeterministicで、
 earlier active declaration-symbol 5 caseのresultも維持される。
 
+## Proof-label confinement generalization
+
+現行の宣言・記号経路は、内側から外側と兄弟間の閉域違反を構造で選ぶ。
+import なし、定理・局所証明ラベル・単純引用が各一つの通常ソースに限る。
+source/AST、module、局所 contribution を認証し、実際の収集行と Resolver の
+対応する Unresolved 結果から閉域違反を得る。名前・範囲・順序はソース由来とする。
+トークン範囲外の末尾 trivia は許容し、AST からファイル全体のバイト同一性を推測しない。
+可視・未知・前方参照・回復済み・別ソースの入力を閉域違反として扱わない。
+先行 B5C の厳密プロファイルは履歴的なテスト専用オラクルとして保持し、
+本番経路の選択には使わない。元のコーパス・認定条件・公開診断は変更しない。
+
 ## Checker Task 259 Frozen Runner Route
 
 future type-elaboration leafはexact 165-byte sourceとnormal

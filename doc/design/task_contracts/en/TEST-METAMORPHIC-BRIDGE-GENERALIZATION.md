@@ -1,6 +1,6 @@
 # Task TEST-METAMORPHIC-BRIDGE-GENERALIZATION: generalize source bridge extraction
 Canonical language: English; [Japanese pointer](../ja/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
-Status: planned. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: resolver/checker/Core corpus routes.
+Status: in progress. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: resolver/checker/Core corpus routes.
 Dependencies: the metamorphic guard and authenticated producer handoffs for each affected bridge.
 Readiness: inventory each bridge before implementation; missing producer support stays explicitly blocked.
 Authority: specification §§2.2/2.9, 4.6, 15.10; unchanged active `.miz` cases and expectations.

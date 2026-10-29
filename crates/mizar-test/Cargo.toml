@@ -13,6 +13,7 @@ path = "src/lib.rs"
 mizar-checker = { path = "../mizar-checker" }
 mizar-core = { path = "../mizar-core" }
 mizar-frontend = { path = "../mizar-frontend" }
+mizar-lexer = { path = "../mizar-lexer" }
 mizar-proof = { path = "../mizar-proof" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
@@ -24,7 +25,6 @@ mizar-doc = { path = "../mizar-doc" }
 mizar-atp = { path = "../mizar-atp" }
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-kernel = { path = "../mizar-kernel" }
-mizar-lexer = { path = "../mizar-lexer" }
 syn = { version = "2.0.117", features = ["full", "visit"] }
 
 [lints]

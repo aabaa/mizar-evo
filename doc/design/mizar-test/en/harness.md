@@ -5088,6 +5088,19 @@ only `declaration_symbol.label.proof_scope_input`. Expectation fields cannot
 select the route, replay/order is deterministic, and all five earlier active
 declaration-symbol cases retain their results.
 
+## Proof-label confinement generalization
+
+The live declaration-symbol route selects the two normal inner-to-outer and
+sibling confinement topologies structurally, with no imports and one theorem,
+local proof label and simple citation. Source/AST, module and local contribution
+must authenticate; actual collected rows and the resolver's matching Unresolved
+result supply confinement. Names, ranges and ordinals are source-derived.
+Trailing trivia beyond token extents is permitted; exact raw-file identity is not inferred.
+Visible, unknown, forward, recovered and foreign inputs cannot acquire the
+confinement key. Earlier B5C exact profiles remain historical test-only oracles;
+they do not select production execution. Original corpus/admission and public
+diagnostics remain unchanged.
+
 ## Checker Task 259 Frozen Runner Route
 
 The future type-elaboration leaf selects only the exact 165-byte source and

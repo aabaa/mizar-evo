@@ -352,6 +352,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
 
 26. **Source bridge generalization.** [ ]
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/ja/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
+    - [x] [Proof-label confinement slice](../../task_contracts/ja/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
 
 ## 推奨検証
 

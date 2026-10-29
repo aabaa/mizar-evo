@@ -1,24 +1,30 @@
 use std::fs;
 use std::path::Path;
 
+#[cfg(test)]
+use mizar_resolve::env::SourceContributionId;
 use mizar_resolve::env::{
-    ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SourceContributionId, SymbolEnv,
-    SymbolKind, Visibility,
+    ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind,
+    Visibility,
 };
 use mizar_resolve::imports::{ImportPathCandidate, ImportPathFailureClass, ImportPathResolver};
+#[cfg(test)]
+use mizar_resolve::labels::{LabelProjection, LabelReferenceCandidate, LabelResolutionResult};
 use mizar_resolve::labels::{
-    LabelProjection, LabelProjectionSource, LabelReferenceCandidate, LabelReferenceScope,
-    LabelResolutionResult, LabelResolver, ProofLabelSourceCollector,
+    LabelProjectionSource, LabelReferenceScope, LabelResolver, ProofLabelSourceCollector,
 };
 use mizar_resolve::module_index::{
     IndexedModuleId, ModuleIndexEntry, ModuleIndexInput, ModuleIndexLocation,
     WorkspaceStubModuleIndexProvider,
 };
 use mizar_resolve::resolved_ast::{
-    LabelExpectation, LabelKind, LabelOriginPath, LabelResolution, ModuleId, RecoveryState,
-    ReferenceSite, SemanticOrigin, SurfaceResolvedArena,
+    LabelExpectation, LabelKind, LabelResolution, ModuleId, RecoveryState, SurfaceResolvedArena,
 };
-use mizar_session::{Edition, ModulePath, PackageId, SourceAnchor, SourceId, SourceRange};
+#[cfg(test)]
+use mizar_resolve::resolved_ast::{LabelOriginPath, ReferenceSite, SemanticOrigin};
+use mizar_session::{Edition, ModulePath, PackageId, SourceAnchor};
+#[cfg(test)]
+use mizar_session::{SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
 
 use crate::diagnostic::ValidationDiagnostic;
@@ -206,16 +212,18 @@ fn declaration_symbol_observation(
     if super::is_module_semantics_candidate(case) {
         return module_semantics_observation(workspace_root, &ast, &resolver);
     }
-    let proof_label_profile = proof_label_confinement_profile(&output.source_text, &ast);
-    if let Some(profile) = proof_label_profile {
-        let detail_key = if resolver.detail_keys.is_empty()
-            && case.expectation.diagnostic_codes.is_empty()
-            && proof_label_confinement_matches(profile, &ast, &resolver.module, &resolver.env)
-        {
-            PROOF_LABEL_SCOPE_CONFINEMENT_DETAIL
-        } else {
-            PROOF_LABEL_SCOPE_INPUT_DETAIL
-        };
+    if let Some(detail) = source_proof_label_confinement_detail(
+        &output.source_text,
+        &ast,
+        &resolver.module,
+        &resolver.env,
+    ) {
+        let detail_key =
+            if resolver.detail_keys.is_empty() && case.expectation.diagnostic_codes.is_empty() {
+                detail
+            } else {
+                PROOF_LABEL_SCOPE_INPUT_DETAIL
+            };
         return DeclarationSymbolObservation {
             detail_keys: vec![detail_key.to_owned()],
             payload_keys: Vec::new(),
@@ -478,10 +486,328 @@ const PROOF_LABEL_SCOPE_INPUT_DETAIL: &str = "declaration_symbol.label.proof_sco
 const PROOF_LABEL_SCOPE_CONFINEMENT_DETAIL: &str =
     "declaration_symbol.label.proof_scope_confinement";
 
+pub(in crate::runner) fn source_proof_label_confinement_detail(
+    source_text: &str,
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    env: &SymbolEnv,
+) -> Option<&'static str> {
+    use SurfaceNodeKind::{
+        CompactStatement, CompilationUnit, ConclusionStatement, FormulaConstant, FormulaExpression,
+        ItemList, JustificationClause, ProofBlock, Proposition, Reference, ReferenceList, Root,
+        TheoremItem,
+    };
+    use mizar_resolve::declarations::DeclarationShellCollector;
+    use mizar_resolve::symbols::SignatureProjectionExtractor;
+    use mizar_syntax::SurfaceFormulaConstant::Thesis;
+    let count =
+        |kind: &SurfaceNodeKind| ast.nodes().iter().filter(|node| &node.kind == kind).count();
+    if count(&TheoremItem) != 1
+        || count(&CompactStatement) != 1
+        || count(&Reference) != 1
+        || count(&SurfaceNodeKind::ImportItem) != 0
+    {
+        return None;
+    }
+    let input = Some(PROOF_LABEL_SCOPE_INPUT_DETAIL);
+    if ast.canonical_bytes().is_none()
+        || ast.expression_root().is_some()
+        || ast.node_views().any(|node| {
+            node.is_recovered()
+                || node.range().source_id != ast.source_id
+                || source_text
+                    .get(node.range().start..node.range().end)
+                    .is_none()
+                || ast.range_contains_child_ranges(node.id()) != Some(true)
+        })
+    {
+        return input;
+    }
+    let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+    if !preprocessed.diagnostics.is_empty() {
+        return input;
+    }
+    let Ok(raw) = mizar_lexer::scan_raw(&preprocessed.lexical_text) else {
+        return input;
+    };
+    let Ok(lexical_env) = mizar_lexer::build_lexical_environment(&[], &[]) else {
+        return input;
+    };
+    let scopes = mizar_lexer::build_scope_skeleton(&raw);
+    let tokens = mizar_lexer::disambiguate(
+        &raw,
+        &lexical_env,
+        &mizar_lexer::ParserLexContext::general(),
+        &scopes,
+    );
+    if !tokens.diagnostics().is_empty() || tokens.tokens().len() != ast.token_nodes().len() {
+        return input;
+    }
+    for (actual, supplied) in tokens.tokens().iter().zip(ast.token_views()) {
+        let Some(supplied_token) = supplied.as_token() else {
+            return input;
+        };
+        let kind = match actual.kind() {
+            mizar_lexer::TokenKind::Identifier => mizar_syntax::SurfaceTokenKind::Identifier,
+            mizar_lexer::TokenKind::ReservedWord => mizar_syntax::SurfaceTokenKind::ReservedWord,
+            mizar_lexer::TokenKind::ReservedSymbol => {
+                mizar_syntax::SurfaceTokenKind::ReservedSymbol
+            }
+            _ => return input,
+        };
+        let Some(ranges) = preprocessed
+            .preprocess_map
+            .source_ranges_for_lexical(actual.span())
+        else {
+            return input;
+        };
+        let [range] = ranges.as_slice() else {
+            return input;
+        };
+        if supplied_token.kind != kind
+            || supplied_token.text.as_ref() != actual.lexeme()
+            || supplied.range().start != range.start
+            || supplied.range().end != range.end
+            || source_text.get(range.start..range.end) != Some(actual.lexeme())
+        {
+            return input;
+        }
+    }
+    let prefix = [
+        (Root, 1),
+        (CompilationUnit, 1),
+        (ItemList, 1),
+        (TheoremItem, 2),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (ProofBlock, 2),
+        (ConclusionStatement, 2),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (ProofBlock, 2),
+        (CompactStatement, 2),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (ProofBlock, 1),
+        (ConclusionStatement, 1),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (ConclusionStatement, 1),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+    ];
+    let citation = [
+        (ConclusionStatement, 2),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (JustificationClause, 1),
+        (ReferenceList, 1),
+        (Reference, 0),
+    ];
+    let sibling = [
+        (ConclusionStatement, 2),
+        (Proposition, 1),
+        (FormulaExpression, 1),
+        (FormulaConstant(Thesis), 0),
+        (ProofBlock, 1),
+    ];
+    let mut topology = Vec::new();
+    let mut pending = vec![ast.root()?];
+    while let Some(id) = pending.pop() {
+        let node = ast.node(id)?;
+        let children = structural_child_ids(ast, node);
+        topology.push((node.kind.clone(), children.len()));
+        pending.extend(children.into_iter().rev());
+    }
+    if !topology.starts_with(&prefix) {
+        return None;
+    }
+    let tail = &topology[prefix.len()..];
+    if tail != citation && !(tail.starts_with(&sibling) && tail[sibling.len()..] == citation) {
+        return None;
+    }
+    use mizar_syntax::SurfaceTokenKind::{ReservedSymbol, ReservedWord};
+    let mut owned_tokens = Vec::new();
+    let mut labelled_propositions = 0;
+    for node in ast
+        .node_views()
+        .filter(|node| !matches!(node.kind(), Root | SurfaceNodeKind::Token(_)))
+    {
+        let children = node.child_views().collect::<Vec<_>>();
+        if children
+            .windows(2)
+            .any(|pair| pair[0].range().end > pair[1].range().start)
+            || children
+                .first()
+                .zip(children.last())
+                .is_none_or(|(first, last)| {
+                    first.range().start != node.range().start
+                        || last.range().end != node.range().end
+                })
+        {
+            return input;
+        }
+        let tokens = children
+            .iter()
+            .filter_map(|child| child.as_token())
+            .collect::<Vec<_>>();
+        owned_tokens.extend(
+            children
+                .iter()
+                .filter(|child| child.as_token().is_some())
+                .map(|child| child.id()),
+        );
+        let token_is = |index: usize, kind, text: &str| {
+            tokens
+                .get(index)
+                .is_some_and(|token| token.kind == kind && token.text.as_ref() == text)
+        };
+        // The collector authenticates owner/proof/label/by/reference markers;
+        // these counts and the remaining leaf/statement roles close their membership.
+        let normal = match node.kind() {
+            FormulaConstant(Thesis) => tokens.len() == 1 && token_is(0, ReservedWord, "thesis"),
+            ConclusionStatement => {
+                tokens.len() == 2
+                    && token_is(0, ReservedWord, "thus")
+                    && token_is(1, ReservedSymbol, ";")
+            }
+            TheoremItem => tokens.len() == 4 && token_is(3, ReservedSymbol, ";"),
+            CompactStatement => tokens.len() == 1 && token_is(0, ReservedSymbol, ";"),
+            ProofBlock => tokens.len() == 2,
+            Proposition => {
+                labelled_propositions += usize::from(tokens.len() == 2);
+                tokens.is_empty() || tokens.len() == 2
+            }
+            JustificationClause | Reference => tokens.len() == 1,
+            CompilationUnit | ItemList | FormulaExpression | ReferenceList => tokens.is_empty(),
+            _ => false,
+        };
+        if !normal {
+            return input;
+        }
+    }
+    owned_tokens.sort();
+    if owned_tokens != ast.token_nodes() || labelled_propositions != 1 {
+        return input;
+    }
+    let namespace = NamespacePath::new(module.path().as_str());
+    let shells = DeclarationShellCollector::new(ast, module).collect();
+    let replay = SignatureProjectionExtractor::new(ast, &shells, namespace.clone()).collect(module);
+    if !replay.diagnostics().is_empty() || &replay.into_env() != env {
+        return input;
+    }
+    let contributions = env.contributions().iter().collect::<Vec<_>>();
+    let [contribution] = contributions.as_slice() else {
+        return input;
+    };
+    if contribution.module() != module
+        || !matches!(contribution.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id)
+    {
+        return input;
+    }
+    let Ok(resolved) = SurfaceResolvedArena::lower(ast, module) else {
+        return input;
+    };
+    let Ok(collector) = ProofLabelSourceCollector::new(
+        ast,
+        module,
+        namespace.clone(),
+        contribution.id(),
+        &resolved,
+    ) else {
+        return input;
+    };
+    let Ok(collection) = collector.collect() else {
+        return input;
+    };
+    let [projection] = collection.projections() else {
+        return input;
+    };
+    let [reference] = collection.references() else {
+        return input;
+    };
+    if projection.primary_spelling() != reference.site().spelling() {
+        return None;
+    }
+    let LabelProjectionSource::CurrentModule {
+        visible_after_ordinal,
+        proof_scope: Some(_),
+    } = projection.source()
+    else {
+        return input;
+    };
+    if *visible_after_ordinal >= reference.ordinal() {
+        return None;
+    }
+    if projection.kind() != LabelKind::ProofStep
+        || projection.visibility() != Visibility::Private
+        || projection.export_status() != ExportStatus::LocalOnly
+        || projection.module() != module
+        || projection.namespace() != &namespace
+        || projection.contribution() != contribution.id()
+        || projection.origin().source_id() != ast.source_id
+        || projection.origin().module_id() != module
+        || projection.origin().anchor() != &SourceAnchor::Range(projection.declaration_range())
+        || projection.origin().is_recovered()
+        || reference.origin().is_recovered()
+        || reference.origin().source_id() != ast.source_id
+        || reference.origin().module_id() != module
+        || reference.origin().anchor() != &SourceAnchor::Range(reference.site().range())
+        || reference.expectation() != LabelExpectation::ProofOrTheorem
+        || !matches!(
+            reference.scope(),
+            LabelReferenceScope::Unqualified {
+                proof_scope: Some(_)
+            }
+        )
+    {
+        return input;
+    }
+    let result = LabelResolver::new(collection.projections()).resolve(
+        module,
+        &namespace,
+        collection.references(),
+    );
+    let [id] = result.ids() else {
+        return input;
+    };
+    let Some(entry) = result.table().get(*id) else {
+        return input;
+    };
+    if result.index().len() != 1
+        || result.table().len() != 1
+        || !result.diagnostics().is_empty()
+        || entry.site() != reference.site()
+        || entry.origin() != reference.origin()
+        || entry.recovery() != RecoveryState::Normal
+    {
+        return input;
+    }
+    match entry.resolution() {
+        LabelResolution::Unresolved(unresolved)
+            if unresolved.spelling() == reference.site().spelling()
+                && unresolved.range() == reference.site().range()
+                && unresolved.expectation() == reference.expectation() =>
+        {
+            Some(PROOF_LABEL_SCOPE_CONFINEMENT_DETAIL)
+        }
+        LabelResolution::Resolved(_) => None,
+        _ => input,
+    }
+}
+
+#[cfg(test)]
 const PROOF_LABEL_INNER_TO_OUTER_SOURCE: &str = "theorem ProofLabelInnerToOuterConfinement: thesis proof\n  thus thesis proof\n    A: thesis proof\n      thus thesis;\n    end;\n    thus thesis;\n  end;\n  thus thesis by A;\nend;\n";
+#[cfg(test)]
 const PROOF_LABEL_SIBLING_SOURCE: &str = "theorem ProofLabelSiblingConfinement: thesis proof\n  thus thesis proof\n    A: thesis proof\n      thus thesis;\n    end;\n    thus thesis;\n  end;\n  thus thesis proof\n    thus thesis by A;\n  end;\nend;\n";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelConfinementProfile {
     node_count: usize,
     root: usize,
@@ -499,6 +825,7 @@ struct ProofLabelConfinementProfile {
     reference_path: &'static [u32],
 }
 
+#[cfg(test)]
 const PROOF_LABEL_INNER_TO_OUTER_PROFILE: ProofLabelConfinementProfile =
     ProofLabelConfinementProfile {
         node_count: 61,
@@ -517,6 +844,7 @@ const PROOF_LABEL_INNER_TO_OUTER_PROFILE: ProofLabelConfinementProfile =
         reference_path: &[57, 55, 52],
     };
 
+#[cfg(test)]
 const PROOF_LABEL_SIBLING_PROFILE: ProofLabelConfinementProfile = ProofLabelConfinementProfile {
     node_count: 71,
     root: 70,
@@ -534,6 +862,7 @@ const PROOF_LABEL_SIBLING_PROFILE: ProofLabelConfinementProfile = ProofLabelConf
     reference_path: &[67, 63, 60],
 };
 
+#[cfg(test)]
 fn proof_label_confinement_profile(
     source_text: &str,
     ast: &SurfaceAst,
@@ -564,6 +893,7 @@ fn proof_label_confinement_profile(
     Some(profile)
 }
 
+#[cfg(test)]
 fn proof_label_dense_profile_hash(ast: &SurfaceAst) -> u64 {
     const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
@@ -626,87 +956,8 @@ pub(super) fn proof_label_confinement_profile_for_test(
     proof_label_confinement_profile(source_text, ast).is_some()
 }
 
-fn proof_label_confinement_matches(
-    profile: &ProofLabelConfinementProfile,
-    ast: &SurfaceAst,
-    module: &ModuleId,
-    env: &SymbolEnv,
-) -> bool {
-    let input = ProofLabelInputProfile::from_env(env);
-    if !input.matches(ast.source_id, module) {
-        return false;
-    }
-
-    let Some(contribution) = env.contributions().iter().next() else {
-        return false;
-    };
-    if contribution.id().index() != 0
-        || contribution.module() != module
-        || !matches!(
-            contribution.kind(),
-            ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
-        )
-    {
-        return false;
-    }
-
-    let namespace = NamespacePath::new(module.path().as_str());
-    let Ok(resolved) = SurfaceResolvedArena::lower(ast, module) else {
-        return false;
-    };
-    if resolved.validate_against(ast, module).is_err() {
-        return false;
-    }
-    let Ok(collector) = ProofLabelSourceCollector::new(
-        ast,
-        module,
-        namespace.clone(),
-        contribution.id(),
-        &resolved,
-    ) else {
-        return false;
-    };
-    let Ok(collection) = collector.collect() else {
-        return false;
-    };
-    let [projection] = collection.projections() else {
-        return false;
-    };
-    let [reference] = collection.references() else {
-        return false;
-    };
-    if !proof_label_projection_matches(
-        profile,
-        ast.source_id,
-        module,
-        &namespace,
-        contribution.id(),
-        projection,
-    ) || !proof_label_reference_matches(profile, ast.source_id, module, reference)
-    {
-        return false;
-    }
-
-    let result = LabelResolver::new(collection.projections()).resolve(
-        module,
-        &namespace,
-        collection.references(),
-    );
-    proof_label_resolution_matches(
-        ProofLabelResolutionExpectation {
-            profile,
-            source_id: ast.source_id,
-            module,
-            namespace: &namespace,
-            contribution: contribution.id(),
-            projection,
-            reference,
-        },
-        &result,
-    )
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelInputProfile {
     env_module: ModuleId,
     symbol_count: usize,
@@ -717,6 +968,7 @@ struct ProofLabelInputProfile {
     contributions: Vec<ProofLabelContributionProfile>,
 }
 
+#[cfg(test)]
 impl ProofLabelInputProfile {
     fn from_env(env: &SymbolEnv) -> Self {
         Self {
@@ -765,6 +1017,7 @@ impl ProofLabelInputProfile {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelContributionProfile {
     id: usize,
     module: ModuleId,
@@ -772,6 +1025,7 @@ struct ProofLabelContributionProfile {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 enum ProofLabelContributionKind {
     Local(SourceId),
     Imported(SourceId),
@@ -1102,6 +1356,7 @@ const fn proof_label_reference_mutation(mutation: ProofLabelConfinementMutation)
             | ProofLabelConfinementMutation::ReferenceFailedNamespace
     )
 }
+#[cfg(test)]
 fn proof_label_projection_matches(
     profile: &ProofLabelConfinementProfile,
     source_id: SourceId,
@@ -1140,6 +1395,7 @@ fn proof_label_projection_matches(
         )
 }
 
+#[cfg(test)]
 fn proof_label_reference_matches(
     profile: &ProofLabelConfinementProfile,
     source_id: SourceId,
@@ -1167,6 +1423,7 @@ fn proof_label_reference_matches(
         )
 }
 
+#[cfg(test)]
 struct ProofLabelResolutionExpectation<'a> {
     profile: &'a ProofLabelConfinementProfile,
     source_id: SourceId,
@@ -1178,6 +1435,7 @@ struct ProofLabelResolutionExpectation<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelResolutionObservation {
     ids: Vec<usize>,
     index_len: usize,
@@ -1189,6 +1447,7 @@ struct ProofLabelResolutionObservation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelIndexObservation {
     origin_path: LabelOriginPath,
     kind: LabelKind,
@@ -1202,6 +1461,7 @@ struct ProofLabelIndexObservation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct ProofLabelTableObservation {
     site: ReferenceSite,
     origin: SemanticOrigin,
@@ -1210,6 +1470,7 @@ struct ProofLabelTableObservation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 enum ProofLabelResolutionOutcome {
     Resolved,
     Ambiguous,
@@ -1221,6 +1482,7 @@ enum ProofLabelResolutionOutcome {
     Unknown,
 }
 
+#[cfg(test)]
 impl ProofLabelResolutionObservation {
     fn from_result(result: &LabelResolutionResult) -> Self {
         let ids = result.ids().iter().map(|id| id.index()).collect();
@@ -1272,6 +1534,7 @@ impl ProofLabelResolutionObservation {
     }
 }
 
+#[cfg(test)]
 fn proof_label_resolution_matches(
     expected: ProofLabelResolutionExpectation<'_>,
     result: &LabelResolutionResult,
@@ -1280,6 +1543,7 @@ fn proof_label_resolution_matches(
     proof_label_resolution_observation_matches(expected, &observation)
 }
 
+#[cfg(test)]
 fn proof_label_resolution_observation_matches(
     expected: ProofLabelResolutionExpectation<'_>,
     observation: &ProofLabelResolutionObservation,
@@ -1471,6 +1735,7 @@ fn proof_label_resolution_matches_with_mutation_for_test(
     proof_label_resolution_observation_matches(expected, &observation)
 }
 
+#[cfg(test)]
 fn semantic_origin_matches(
     origin: &SemanticOrigin,
     source_id: SourceId,
@@ -1713,6 +1978,7 @@ fn second_contribution_id(
     )
 }
 
+#[cfg(test)]
 fn proof_label_origin_path(
     profile: &ProofLabelConfinementProfile,
     module: &ModuleId,
@@ -1730,6 +1996,7 @@ fn proof_label_origin_path(
     )
 }
 
+#[cfg(test)]
 const fn source_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,

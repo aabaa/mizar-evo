@@ -1,8 +1,4 @@
 # case	rewrite	owner_task	first_divergence
-fail_resolve_proof_label_inner_to_outer_confinement_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("declaration:[\"declaration_symbol.label.proof_scope_confinement\"]") -> Some("declaration:[]")
-fail_resolve_proof_label_inner_to_outer_confinement_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("declaration:[\"declaration_symbol.label.proof_scope_confinement\"]") -> Some("declaration:[]")
-fail_resolve_proof_label_sibling_confinement_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("declaration:[\"declaration_symbol.label.proof_scope_confinement\"]") -> Some("declaration:[]")
-fail_resolve_proof_label_sibling_confinement_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("declaration:[\"declaration_symbol.label.proof_scope_confinement\"]") -> Some("declaration:[]")
 fail_type_elaboration_formula_connective_quantifier_gap_001	rename	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[\"type_elaboration.checker.checker.formula.external.formula_payload\", \"type_elaboration.checker.checker.formula.external.quantifier_payload\"]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_attribute_definition_payload_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_attribute_definition_payload_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
