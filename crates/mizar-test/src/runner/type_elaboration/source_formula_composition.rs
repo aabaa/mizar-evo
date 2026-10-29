@@ -1576,9 +1576,25 @@ fn task_257b3_route_inputs(
         || payload.equality_ranges.len() != 3
         || payload.term_sites.len() != 6
         || payload.term_ranges.len() != 6
-        || payload.term_spellings.as_slice() != ["x", "x", "r", "y", "x", "r"]
     {
         return Err("Task257B3 extracted aggregate changed".to_owned());
+    }
+    let identifier = ast
+        .nodes()
+        .get(payload.binder_identifier_sites[1].node().index())
+        .ok_or("Task257B3 middle identifier site is missing")?;
+    let SurfaceNodeKind::Token(token) = &identifier.kind else {
+        return Err("Task257B3 middle identifier token is missing".to_owned());
+    };
+    if identifier.recovered
+        || identifier.range != payload.binder_identifier_ranges[1]
+        || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+    {
+        return Err("Task257B3 middle identifier token is invalid".to_owned());
+    }
+    let middle_name = token.text.as_ref();
+    if payload.term_spellings.as_slice() != ["x", "x", "r", middle_name, "x", "r"] {
+        return Err("Task257B3 middle bound use changed".to_owned());
     }
     let contexts = [
         BindingContextId::new(0),
@@ -1603,7 +1619,12 @@ fn task_257b3_route_inputs(
         kind,
     })
     .collect();
-    let binder_spellings = [("x being", "x"), ("y being", "y"), ("r", "r")];
+    let middle_segment = format!("{middle_name} being");
+    let binder_spellings = [
+        ("x being", "x"),
+        (middle_segment.as_str(), middle_name),
+        ("r", "r"),
+    ];
     let binder_scopes = [vec![0], vec![0, 0], vec![0, 0, 0]];
     let binders = binder_spellings
         .into_iter()
@@ -1736,7 +1757,8 @@ fn task_257b3_route_inputs(
         numeric_type_requests: Vec::new(),
     };
 
-    let equality_spellings = ["x = x", "r = y", "x = r"];
+    let middle_equality = format!("r = {middle_name}");
+    let equality_spellings = ["x = x", middle_equality.as_str(), "x = r"];
     let equality_contexts = [contexts[1], contexts[3], contexts[3]];
     let atomic_formulas = equality_spellings
         .into_iter()

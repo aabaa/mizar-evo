@@ -3343,12 +3343,13 @@ profile/association corruption and valid replay, A/B1 preservation, and final
 typed/resolved ownership are executable tests. No semantic output or theorem
 credit is produced.
 
-## Task257B3 source layout
+## Task257B3 source names and layout
 
 The B3 source-bearing route authenticates lexical tokens, actual ranges, exact
 reserve/theorem structure and the replayed raw declaration environment before
-real immutable composition. Its internal selector is AST-only. Layout and
-comments may vary; x/y/r identities and all six lookup roles stay fixed.
+real immutable composition. Its internal selector is AST-only. Layout/comments
+and the middle existential name with its one use may vary. Fixed x/r and all six
+lookup binding IDs/roles stay unchanged; colliding names are outside this family.
 B4C retains its exact dormant selector, using raw symbols below its enriched
 statement environment. Original source fingerprints and semantic boundaries remain.
 

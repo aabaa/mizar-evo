@@ -28,6 +28,13 @@ with the original context, scope, ordinal, declaration identity and empty captur
 Composition checks both bare-use byte extents; generic PrimaryTerm policy stays
 unchanged. All dependency/transaction shapes and original debug oracles remain fixed.
 
+## Task257B3 middle-name boundary
+
+B3 carries its middle existential name into its sole bare use and equality descriptor.
+Composite owns declaration width; Composition owns this use width after genuine
+Primary lookup. Fixed x/r, all six binding winners, scopes and empty capture stay;
+generic PrimaryTerm width policy and the original debug oracles remain unchanged.
+
 ## Exact Real Consumer
 
 Implementation adds one specification-derived type-elaboration fixture:

@@ -3192,12 +3192,13 @@ selector isolation、source near-miss、profile/association corruptionとvalid
 replay、A/B1 preservation、final typed/resolved ownershipをtestする。semantic
 output/theorem creditは生成しない。
 
-## Task257B3 ソースのレイアウト
+## Task257B3 ソースの名前とレイアウト
 
 B3 のソース付き経路は、字句・実際の範囲・正確な reserve/theorem 構造と
 再構築した元の宣言環境を検証してから、実際の不変な合成を行う。
-内部セレクタは AST のみを扱う。空白・コメントは変更できるが、
-x/y/r の識別情報と6参照の検索役割は固定する。B4C は休眠中の厳密な
+内部セレクタは AST のみを扱う。空白・コメントと、中間の存在変数名および
+その唯一の参照は変更できる。固定のx/rと6参照のbinding ID・検索役割を保ち、
+名前が衝突する場合はこの式族の対象外とする。B4C は休眠中の厳密な
 選択条件を維持し、上位の拡張環境と下位の元環境を分けて渡す。
 元ソースの指紋と意味論上の境界は維持する。
 

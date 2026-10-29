@@ -25,7 +25,9 @@ Task257A/B1/B2 retain their original formula families and carry actual binder na
 Identifier, token-derived segment descriptor, local and extended binding names
 must agree, with valid identifier spelling and matching source-owned byte extent.
 The syntax-free producer checks these associations; the private consumer owns
-raw-source lexical and structural authentication. Task257B3 stays fixed.
+raw-source lexical and structural authentication. Task257B3 also carries its middle
+existential binder name with a checked declaration extent; outer x and reserved/inner
+r names and all three binding IDs/scopes remain fixed.
 
 ## Public Transaction
 

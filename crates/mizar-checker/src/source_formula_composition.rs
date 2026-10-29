@@ -1877,7 +1877,8 @@ fn validate_task_257b3_dependency_profiles(
         return Err(SourceFormulaCompositionError::InvalidAggregate);
     }
 
-    let term_spellings = ["x", "x", "r", "y", "x", "r"];
+    let middle_name = binders[1].identifier_spelling();
+    let term_spellings = ["x", "x", "r", middle_name, "x", "r"];
     let term_contexts = [1, 1, 3, 3, 3, 3];
     let term_bindings = [1, 1, 3, 2, 1, 3];
     let use_ordinals = [2, 2, 4, 4, 4, 4];
@@ -1916,7 +1917,8 @@ fn validate_task_257b3_dependency_profiles(
         }
     }
 
-    let equality_spellings = ["x = x", "r = y", "x = r"];
+    let middle_equality = format!("r = {middle_name}");
+    let equality_spellings = ["x = x", middle_equality.as_str(), "x = r"];
     let equality_contexts = [1, 3, 3];
     for formula_index in 0..3 {
         let formula = atomic_formulas
@@ -2370,6 +2372,12 @@ fn validate_task_257b3_bound_uses(
             || term.role() != SourcePrimaryTermRole::Value
             || term.recovery() != SourcePrimaryTermRecovery::Normal
             || term.spelling() != binder.identifier_spelling()
+            || (row.binder == SourceQuantifierBinderId::new(1)
+                && term
+                    .source_range()
+                    .end
+                    .checked_sub(term.source_range().start)
+                    != Some(term.spelling().len()))
             || term.parent().is_some()
             || !properly_contains(owner.source_range(), term.source_range())
             || reference.term() != row.term
@@ -10715,6 +10723,275 @@ pub(crate) mod tests {
         );
         assert!(first.debug_text().contains("role=universal-restriction"));
         assert!(first.debug_text().contains("body-edge=2"));
+    }
+
+    #[test]
+    fn metamorphic_nested_middle_name_lower_extents_keep_genuine_lookup_ownership() {
+        use crate::source_composite_formula::SourceCompositeFormulaError;
+
+        for spelling in ["z", "middle_variable"] {
+            let fixture = task_257b3_fixture();
+            let original = crate::source_composite_formula::tests::task_257b3_composite_fixture();
+            assert_eq!(original.source, fixture.source);
+            assert_eq!(original.module, fixture.module);
+            let declaration = original.input.binders[1].identifier_range;
+            let use_range = fixture.primary_input.terms[3].source_range;
+            let shifted = |old: SourceRange| {
+                let mut range = old;
+                for boundary in [declaration.start, use_range.start] {
+                    range.start += usize::from(old.start > boundary) * (spelling.len() - 1);
+                    range.end += usize::from(old.end > boundary) * (spelling.len() - 1);
+                }
+                range
+            };
+            let arena = TypedArena::try_new(
+                fixture.arena.root(),
+                fixture
+                    .arena
+                    .iter()
+                    .map(|(_, node)| {
+                        let mut node = node.clone();
+                        if let SourceAnchor::Range(range) = node.anchor {
+                            node.anchor = SourceAnchor::Range(shifted(range));
+                        }
+                        node
+                    })
+                    .collect(),
+            )
+            .unwrap();
+            let mut input = original.input.clone();
+            for formula in &mut input.formulas {
+                formula.source_range = shifted(formula.source_range);
+            }
+            input.binders[1].identifier_spelling = spelling.to_owned();
+            input.binders[1].segment_spelling = format!("{spelling} being");
+            for binder in &mut input.binders {
+                binder.segment_range = shifted(binder.segment_range);
+                binder.identifier_range = shifted(binder.identifier_range);
+                binder.local = LocalTermBinding::new(
+                    binder.identifier_spelling.clone(),
+                    binder.local.scope().clone(),
+                    binder.identifier_range,
+                    binder.local.visible_after_ordinal(),
+                );
+            }
+            for site in &mut input.type_sites {
+                site.source_range = shifted(site.source_range);
+                site.head_range = shifted(site.head_range);
+            }
+            let bindings =
+                SourceCompositeFormulaProducer::extend_bindings(&input, &original.base, &arena)
+                    .expect("coherent fresh middle declaration must publish");
+            let composite =
+                SourceCompositeFormulaProducer::build(input.clone(), &bindings, &arena).unwrap();
+            assert_eq!(composite.binding_env(), &bindings);
+            let mut primary_input = fixture.primary_input.clone();
+            for term in &mut primary_input.terms {
+                term.source_range = shifted(term.source_range);
+            }
+            primary_input.terms[3].spelling = spelling.to_owned();
+            let mut atomic_input = fixture.atomic_input.clone();
+            for formula in &mut atomic_input.formulas {
+                formula.source_range = shifted(formula.source_range);
+            }
+            atomic_input.formulas[1].spelling = format!("r = {spelling}");
+
+            if spelling.len() > 1 {
+                let start = input.binders[1].identifier_range.start;
+                for (name, end) in [
+                    (spelling, start + 1),
+                    (spelling, start - 1),
+                    (spelling, usize::MAX),
+                    ("", start),
+                    ("for", start + 3),
+                    ("bad name", start + 8),
+                    ("1x", start + 2),
+                    ("x", start + 1),
+                    ("r", start + 1),
+                ] {
+                    let mut malformed = input.clone();
+                    let binder = &mut malformed.binders[1];
+                    binder.identifier_spelling = name.to_owned();
+                    binder.segment_spelling = format!("{name} being");
+                    binder.identifier_range.end = end;
+                    binder.local = LocalTermBinding::new(
+                        name,
+                        binder.local.scope().clone(),
+                        binder.identifier_range,
+                        2,
+                    );
+                    let extent = binder.identifier_range;
+                    let identifier = binder.identifier_site.node();
+                    let nodes = arena
+                        .iter()
+                        .map(|(id, node)| {
+                            let mut node = node.clone();
+                            if id == identifier {
+                                node.anchor = SourceAnchor::Range(extent);
+                            }
+                            node
+                        })
+                        .collect();
+                    let malformed_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                    assert_eq!(
+                        SourceCompositeFormulaProducer::extend_bindings(
+                            &malformed,
+                            &original.base,
+                            &malformed_arena
+                        )
+                        .unwrap_err(),
+                        SourceCompositeFormulaError::InvalidBinder {
+                            binder: SourceQuantifierBinderId::new(1)
+                        },
+                        "coherent invalid declaration extent/name or unsupported x/r capture collision {name:?}/{end}"
+                    );
+                }
+            }
+            for field in 0..4 {
+                let mut inconsistent = input.clone();
+                let binder = &mut inconsistent.binders[1];
+                let different = "q".repeat(spelling.len());
+                match field {
+                    0 => binder.segment_spelling = format!("{different} being"),
+                    1 => binder.identifier_spelling = different,
+                    2 => {
+                        binder.local = LocalTermBinding::new(
+                            different,
+                            binder.local.scope().clone(),
+                            binder.identifier_range,
+                            2,
+                        )
+                    }
+                    _ => {
+                        binder.local = LocalTermBinding::new(
+                            spelling,
+                            LocalTermScope::new(vec![0]),
+                            binder.identifier_range,
+                            2,
+                        )
+                    }
+                }
+                assert_eq!(
+                    SourceCompositeFormulaProducer::extend_bindings(
+                        &inconsistent,
+                        &original.base,
+                        &arena
+                    )
+                    .unwrap_err(),
+                    SourceCompositeFormulaError::InvalidBinder {
+                        binder: SourceQuantifierBinderId::new(1)
+                    }
+                );
+            }
+
+            let mut installed = None;
+            for stale_use in [false, true, false] {
+                if stale_use && spelling.len() == 1 {
+                    continue;
+                }
+                let mut candidate = primary_input.clone();
+                let mut nodes = arena
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                if stale_use {
+                    candidate.terms[3].source_range.end = candidate.terms[3].source_range.start + 1;
+                    nodes[candidate.terms[3].site.node().index()].anchor =
+                        SourceAnchor::Range(candidate.terms[3].source_range);
+                }
+                let candidate_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                let primary =
+                    SourcePrimaryTermProducer::build(candidate, &bindings, &candidate_arena)
+                        .expect(
+                            "genuine Generic Primary lookup must succeed before B3 width policy",
+                        );
+                let reference = primary
+                    .references()
+                    .get(SourcePrimaryTermReferenceId::new(3))
+                    .unwrap();
+                let term = primary.terms().get(reference.term()).unwrap();
+                assert_eq!(term.spelling(), spelling);
+                assert_eq!(term.context(), BindingContextId::new(3));
+                assert_eq!(reference.binding(), BindingId::new(2));
+                assert_eq!(reference.lexical_scope().unwrap().path(), [0, 0, 0]);
+                assert_eq!(reference.use_ordinal(), 4);
+                assert_eq!(
+                    bindings
+                        .lookup(&BindingLookupSite::new(
+                            spelling,
+                            term.context(),
+                            reference.lexical_scope().cloned(),
+                            reference.use_ordinal()
+                        ))
+                        .unwrap(),
+                    BindingLookupResult::Local(BindingId::new(2))
+                );
+                let atomic = SourceAtomicFormulaProducer::build(
+                    atomic_input.clone(),
+                    &bindings,
+                    &SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default()),
+                    &primary,
+                    None,
+                    None,
+                    None,
+                    &candidate_arena,
+                )
+                .expect("real Atomic dependency must succeed before B3 width policy");
+                assert_eq!(
+                    atomic
+                        .formulas()
+                        .get(SourceAtomicFormulaId::new(1))
+                        .unwrap()
+                        .spelling(),
+                    format!("r = {spelling}")
+                );
+                let result = SourceFormulaCompositionProducer::build(
+                    fixture.input.clone(),
+                    &primary,
+                    &atomic,
+                    &composite,
+                    &candidate_arena,
+                );
+                if stale_use {
+                    assert_eq!(
+                        result.unwrap_err(),
+                        SourceFormulaCompositionError::InvalidBoundUse {
+                            bound_use: SourceQuantifierBoundUseId::new(3)
+                        }
+                    );
+                    continue;
+                }
+                let composition =
+                    result.expect("coherent actual middle declaration and use widths");
+                assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!(
+                    composition.atomic_formula_fingerprint(),
+                    atomic.debug_text()
+                );
+                assert_eq!(
+                    composition.composite_formula_fingerprint(),
+                    composite.debug_text()
+                );
+                let typed =
+                    empty_typed_ast(fixture.source, fixture.module.clone(), candidate_arena)
+                        .with_source_term(primary)
+                        .unwrap()
+                        .with_source_atomic_formula(atomic)
+                        .unwrap()
+                        .with_source_formula_composition(composite.clone(), composition.clone())
+                        .expect("combined immutable publication");
+                let resolved = assemble_empty_resolved(&typed).unwrap();
+                assert_eq!(resolved.source_formula_composition(), Some(&composition));
+                assert!(typed.facts().is_empty());
+                assert!(resolved.checked_formulas().is_empty());
+                if let Some((previous_typed, previous_resolved)) = &installed {
+                    assert_eq!(&typed, previous_typed);
+                    assert_eq!(&resolved, previous_resolved);
+                } else {
+                    installed = Some((typed, resolved));
+                }
+            }
+        }
     }
 
     #[test]

@@ -1395,9 +1395,24 @@ fn validate_task_257b3_binders(
     arena: &TypedArena,
     sites: &mut BTreeSet<TypedSiteRef>,
 ) -> Result<(), SourceCompositeFormulaError> {
+    let middle = &input.binders[1];
+    let middle_name = middle.identifier_spelling.as_str();
+    if !mizar_lexer::is_identifier(middle_name)
+        || matches!(middle_name, "x" | "r")
+        || middle
+            .identifier_range
+            .end
+            .checked_sub(middle.identifier_range.start)
+            != Some(middle_name.len())
+    {
+        return Err(SourceCompositeFormulaError::InvalidBinder {
+            binder: SourceQuantifierBinderId::new(1),
+        });
+    }
+    let middle_segment = format!("{middle_name} being");
     let expected = [
         ("x being", "x", &[0_u32][..], 1, 1),
-        ("y being", "y", &[0_u32, 0][..], 2, 2),
+        (middle_segment.as_str(), middle_name, &[0_u32, 0][..], 2, 2),
         ("r", "r", &[0_u32, 0, 0][..], 3, 3),
     ];
     for (index, (binder, (segment_spelling, identifier_spelling, scope, ordinal, binding))) in

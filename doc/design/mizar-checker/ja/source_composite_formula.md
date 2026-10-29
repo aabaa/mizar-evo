@@ -23,7 +23,8 @@ comprehensionはTasks 257B/257Cに残す。
 Task257A/B1/B2の束縛変数は元の式形状と実際の名前を保つ。識別子、トークン由来の
 segment表記、局所・拡張binding名の一致、識別子の妥当性と元ソース上の
 バイト範囲を必須とする。syntax-free producerは関連付けを検査し、private
-consumerが元ソースの字句・構造の対応を検査する。Task257B3は固定する。
+consumerが元ソースの字句・構造の対応を検査する。Task257B3も中間の存在変数名と
+検証した宣言範囲を保持する。外側x、reserveと内側rの名前、三つのbinding ID・scopeは固定する。
 
 ## Public Transaction
 

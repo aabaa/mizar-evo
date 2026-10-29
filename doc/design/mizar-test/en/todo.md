@@ -401,6 +401,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - [x] [Task257B1 bound-use spelling](../../task_contracts/en/TEST-METAMORPHIC-BOUND-USE.md).
     - [x] [Task257B3 nested layout](../../task_contracts/en/TEST-METAMORPHIC-NESTED-LAYOUT.md).
     - [x] [B1/B2 source grammar authentication](../../task_contracts/en/TEST-METAMORPHIC-FORMULA-GRAMMAR.md).
+    - [x] [Task257B3 middle binder spelling](../../task_contracts/en/TEST-METAMORPHIC-NESTED-MIDDLE-NAME.md).
 
 ## Recommended Verification
 

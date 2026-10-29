@@ -2453,6 +2453,92 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
 }
 
 #[test]
+fn metamorphic_nested_middle_name_generator_targets_two_actual_y_occurrences() {
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let payload =
+        extract_source_formula_nested_quantifier_payload(ast, &resolver.module, &resolver.env)
+            .unwrap();
+    source_formula_composition_output_with_source(
+        ast,
+        resolver.module.clone(),
+        &resolver.env,
+        &source,
+    )
+    .expect("original B3 selects")
+    .expect("actual original B3 producer transaction");
+    let (_, edits) = metamorphic_edits::variants(ast, &source)
+        .into_iter()
+        .find(|(name, _)| *name == "rename")
+        .expect("actual B3 generator rename");
+    assert_eq!(
+        edits.len(),
+        2,
+        "review scope before changing any producer if generator target differs"
+    );
+    assert!(edits[0].end <= edits[1].start);
+    for (edit, range) in edits
+        .iter()
+        .zip([payload.binder_identifier_ranges[1], payload.term_ranges[3]])
+    {
+        assert_eq!(
+            (edit.start, edit.end),
+            (range.start, range.end),
+            "actual generator must target only middle declaration/use"
+        );
+        assert_eq!(source.get(edit.start..edit.end), Some("y"));
+        assert_eq!(edit.replacement, edits[0].replacement);
+    }
+    let name = &edits[0].replacement;
+    assert!(mizar_lexer::is_identifier(name));
+    assert!(!matches!(name.as_str(), "x" | "r"));
+    assert!(
+        ast.token_views()
+            .all(|node| node.as_token().unwrap().text.as_ref() != name)
+    );
+    let generated = metamorphic_edits::apply(&source, &edits);
+    assert_eq!(
+        generated,
+        format!(
+            "{}{}{}{}{}",
+            &source[..edits[0].start],
+            name,
+            &source[edits[0].end..edits[1].start],
+            name,
+            &source[edits[1].end..]
+        )
+    );
+    metamorphic_guard::with_source(case, &generated, || {
+        let frontend = run_frontend(root, case, ordinal).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        assert_eq!(frontend.source_text.as_ref(), generated);
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.node_views().all(|node| !node.is_recovered()));
+        let resolver = resolver_symbol_collection(root, case, ast);
+        assert!(resolver.detail_keys.is_empty());
+        source_formula_composition_output_with_source(
+            ast,
+            resolver.module,
+            &resolver.env,
+            &generated,
+        )
+        .expect("actual generated middle rename must select, not skip")
+        .expect("actual generated middle rename producer transaction");
+    });
+}
+
+#[test]
 fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities() {
     use mizar_checker::binding_env::{
         BinderIdentity, BindingContextOwner, BindingId, BindingLookupResult, BindingLookupSite,
@@ -2485,14 +2571,57 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
     )
     .unwrap()
     .unwrap();
-    let mut failures = Vec::new();
-    for (layout, source) in [
-        ("leading_line", format!("\n{original}")),
-        ("intertoken_layout", original.replace(' ', "\t \n ")),
-        ("comment", original.replacen("set; ", "set; :: layout\n", 1)),
-        ("zero_lf", original.trim_end_matches('\n').to_owned()),
-        ("triple_lf", format!("{original}\n\n")),
+    let (_, generated_edits) = metamorphic_edits::variants(baseline_ast, &original)
+        .into_iter()
+        .find(|(name, _)| *name == "rename")
+        .unwrap();
+    let mut variants = vec![
+        ("leading_line", format!("\n{original}"), "y".to_owned()),
+        (
+            "intertoken_layout",
+            original.replace(' ', "\t \n "),
+            "y".to_owned(),
+        ),
+        (
+            "comment",
+            original.replacen("set; ", "set; :: layout\n", 1),
+            "y".to_owned(),
+        ),
+        (
+            "zero_lf",
+            original.trim_end_matches('\n').to_owned(),
+            "y".to_owned(),
+        ),
+        ("triple_lf", format!("{original}\n\n"), "y".to_owned()),
+        (
+            "generated_middle",
+            metamorphic_edits::apply(&original, &generated_edits),
+            generated_edits[0].replacement.clone(),
+        ),
+    ];
+    for (label, middle) in [
+        ("short_middle", "z"),
+        ("long_middle", "middle_variable"),
+        ("outer_capture", "x"),
+        ("inner_shadow", "r"),
     ] {
+        let edits = [
+            previous.binder_identifier_ranges[1],
+            previous.term_ranges[3],
+        ]
+        .map(|range| metamorphic_edits::Edit {
+            start: range.start,
+            end: range.end,
+            replacement: middle.to_owned(),
+        });
+        variants.push((
+            label,
+            metamorphic_edits::apply(&original, &edits),
+            middle.to_owned(),
+        ));
+    }
+    let mut failures = Vec::new();
+    for (layout, source, middle) in variants {
         metamorphic_guard::with_source(case, &source, || {
             let frontend = run_frontend(root, case, ordinal).unwrap();
             assert!(frontend.diagnostics.is_empty(), "{layout}");
@@ -2501,12 +2630,26 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
             assert!(ast.node_views().all(|node| !node.is_recovered()));
             let resolver = resolver_symbol_collection(root, case, ast);
             assert!(resolver.detail_keys.is_empty(), "{layout}");
-            let output = match source_formula_composition_output_with_source(
+            let observed = source_formula_composition_output_with_source(
                 ast,
                 resolver.module.clone(),
                 &resolver.env,
                 &source,
-            ) {
+            );
+            if matches!(middle.as_str(), "x" | "r") {
+                assert!(
+                    extract_source_formula_nested_quantifier_payload(
+                        ast,
+                        &resolver.module,
+                        &resolver.env
+                    )
+                    .is_none(),
+                    "unsupported capture profile {layout}"
+                );
+                assert!(observed.is_none());
+                return;
+            }
+            let output = match observed {
                 Some(Ok(output)) => output,
                 other => {
                     failures.push(format!("{layout}: {other:?}"));
@@ -2523,7 +2666,20 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
             let tokens = ast.token_views().collect::<Vec<_>>();
             assert_eq!(tokens.len(), old_tokens.len());
             for (old, actual) in old_tokens.iter().zip(&tokens) {
-                assert_eq!(old.as_token(), actual.as_token());
+                let old_token = old.as_token().unwrap();
+                let actual_token = actual.as_token().unwrap();
+                let spelling = if [
+                    previous.binder_identifier_ranges[1],
+                    previous.term_ranges[3],
+                ]
+                .contains(&old.range())
+                {
+                    middle.as_str()
+                } else {
+                    old_token.text.as_ref()
+                };
+                assert_eq!(old_token.kind, actual_token.kind);
+                assert_eq!(actual_token.text.as_ref(), spelling);
                 let range = actual.range();
                 assert_eq!(
                     source.get(range.start..range.end),
@@ -2632,7 +2788,7 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     payload.binder_identifier_ranges[index - 1]
                 };
                 assert_eq!(binding.declaration_range, declaration);
-                assert_eq!(binding.spelling, ["r", "x", "y", "r"][index]);
+                assert_eq!(binding.spelling, ["r", "x", middle.as_str(), "r"][index]);
                 assert_eq!(binding.owner_context.index(), index);
                 assert_eq!(binding.visible_after_ordinal, index);
                 assert_eq!(
@@ -2680,7 +2836,10 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
             for (id, reference) in primary.references().iter() {
                 let index = id.index();
                 let term = primary.terms().get(reference.term()).unwrap();
-                assert_eq!(term.spelling(), ["x", "x", "r", "y", "x", "r"][index]);
+                assert_eq!(
+                    term.spelling(),
+                    ["x", "x", "r", middle.as_str(), "x", "r"][index]
+                );
                 assert_eq!(term.source_range(), payload.term_ranges[index]);
                 assert_eq!(
                     source.get(term.source_range().start..term.source_range().end),
@@ -2730,7 +2889,34 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                 composition.composite_formula_fingerprint(),
                 composite.debug_text()
             );
-            if matches!(layout, "leading_line" | "intertoken_layout" | "comment") {
+            assert_eq!(
+                atomic.formulas().iter().nth(1).unwrap().1.spelling(),
+                format!("r = {middle}")
+            );
+            for (id, binder) in composite.binders().iter() {
+                assert_eq!(
+                    binder.identifier_range(),
+                    payload.binder_identifier_ranges[id.index()]
+                );
+                assert_eq!(
+                    binder.identifier_spelling(),
+                    ["x", middle.as_str(), "r"][id.index()]
+                );
+                assert_eq!(
+                    binder.identifier_range().end - binder.identifier_range().start,
+                    binder.identifier_spelling().len()
+                );
+                assert_eq!(
+                    binder.segment_spelling(),
+                    if id.index() == 2 {
+                        "r".to_owned()
+                    } else {
+                        format!("{} being", binder.identifier_spelling())
+                    }
+                );
+                assert_eq!(binder.local().spelling(), binder.identifier_spelling());
+            }
+            if middle != "y" || matches!(layout, "leading_line" | "intertoken_layout" | "comment") {
                 assert_ne!(
                     composition.primary_term_fingerprint(),
                     baseline.typed_ast.source_term().unwrap().debug_text()

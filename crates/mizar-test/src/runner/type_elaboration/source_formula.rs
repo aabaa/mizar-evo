@@ -2916,8 +2916,24 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
 
     let (x_identifier_id, x_type_id, x_type_head_id) =
         exact_explicit_quantifier_segment(ast, *x_segment_id, "x", module, symbols)?;
+    let middle_segment = ast.node(*y_segment_id)?;
+    let middle_identifier = middle_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| node.token_text().is_some())?;
+    let SurfaceNodeKind::Token(token) = &middle_identifier.kind else {
+        return None;
+    };
+    if token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+        || !mizar_lexer::is_identifier(&token.text)
+        || matches!(token.text.as_ref(), "x" | "r")
+    {
+        return None;
+    }
+    let middle_name = token.text.as_ref();
     let (y_identifier_id, y_type_id, y_type_head_id) =
-        exact_explicit_quantifier_segment(ast, *y_segment_id, "y", module, symbols)?;
+        exact_explicit_quantifier_segment(ast, *y_segment_id, middle_name, module, symbols)?;
     let r_segment = ast.node(*r_segment_id)?;
     if !matches!(r_segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
         || direct_token_texts(ast, r_segment).as_slice() != ["r"]
@@ -2936,7 +2952,7 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
     }
 
     let equality_ids = [*outer_restriction_id, *inner_restriction_id, *body_id];
-    let expected_terms = [("x", "x"), ("r", "y"), ("x", "r")];
+    let expected_terms = [("x", "x"), ("r", middle_name), ("x", "r")];
     let mut term_sites = Vec::with_capacity(6);
     let mut term_ranges = Vec::with_capacity(6);
     let mut term_spellings = Vec::with_capacity(6);

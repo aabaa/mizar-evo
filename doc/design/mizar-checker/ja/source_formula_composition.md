@@ -27,6 +27,12 @@ composition検証は同じ局所bindingを選び、元のcontext、scope、ordin
 検査し、汎用PrimaryTermの規則は維持する。依存・transaction形状と元の
 デバッグ期待値は変更しない。
 
+## Task257B3 中間変数名の境界
+
+B3は中間の存在変数名を唯一の裸の参照と等式表記へ渡す。Compositeが宣言幅を、
+Compositionが実際のPrimary検索後にその参照幅を検査する。固定のx/r、6参照の
+束縛先、scopeと空のcaptureを保ち、汎用PrimaryTermの幅規則と元のdebug期待値は維持する。
+
 ## Exact Real Consumer
 
 implementationは次のspec-derived type-elaboration fixtureを1件追加する。
