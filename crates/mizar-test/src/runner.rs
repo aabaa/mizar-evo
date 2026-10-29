@@ -3064,9 +3064,12 @@ fn type_elaboration_detail_keys(
     ) {
         return keys;
     }
-    if let Some(keys) =
-        source_composite_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
-    {
+    if let Some(keys) = source_composite_formula_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &symbols,
+        &source_text,
+    ) {
         return keys;
     }
     if let Some(keys) = source_atomic_formula_transport_detail_keys(

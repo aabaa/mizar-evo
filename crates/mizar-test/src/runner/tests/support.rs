@@ -5911,7 +5911,14 @@
             builder,
             source_id,
             offset,
-            SurfaceTokenKind::Identifier,
+            if matches!(
+                spec.corruption,
+                FormulaConnectiveQuantifierCorruption::SegmentToken
+            ) {
+                SurfaceTokenKind::ReservedWord
+            } else {
+                SurfaceTokenKind::Identifier
+            },
             if matches!(
                 spec.corruption,
                 FormulaConnectiveQuantifierCorruption::SegmentToken

@@ -3174,6 +3174,14 @@ general type and attribute graphs, semantic facts/truth, conditioned
 comprehensions, inline/templates, and overload selection remain deferred to
 their frozen owners.
 
+## Task257A unused-binder spelling
+
+The bounded Task257A generalization derives the unused explicit identifier from
+normal source tokens, preserving lexical boundaries, structural membership and
+source ranges. The actual immutable transport retains that spelling in its
+identifier, segment descriptor, local and extended binding rows before the
+original two external-gap observations. Other formula families stay fixed.
+
 ## Checker Task 257A Frozen Runner Boundary
 
 Checker Tasks 257A-C here are checker producer slices, not the completed

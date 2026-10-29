@@ -396,6 +396,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
 26. **Source bridge generalization.** [ ]
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/en/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
     - [x] [Proof-label confinement slice](../../task_contracts/en/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
+    - [x] [Unused Task257A binder spelling](../../task_contracts/en/TEST-METAMORPHIC-UNUSED-BINDER.md).
 
 ## Recommended Verification
 

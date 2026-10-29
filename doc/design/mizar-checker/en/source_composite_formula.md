@@ -19,6 +19,14 @@ Core/CFG/VC output. Broader connective and quantifier shapes, bound uses and
 capture, predicate chains, and conditioned comprehensions remain Tasks 257B
 and 257C.
 
+## Task257A source spelling boundary
+
+The bounded unused-binder generalization retains the original formula family.
+Identifier, token-derived segment descriptor, local and extended binding names
+must agree, with valid identifier spelling and matching source-owned byte extent.
+The syntax-free producer checks these associations; the private consumer owns
+raw-source lexical and structural authentication. Task257B1/B2/B3 stay fixed.
+
 ## Public Transaction
 
 `SourceCompositeFormulaHandoffInput` carries seven dense vectors in the frozen
@@ -58,7 +66,7 @@ canonical external-gap diagnostics. Context 1 is a normal expression child
 owned by `BindingContextOwner::SourceFormula`, anchored to the universal
 range, with `LocalTermScope([0])`. It owns and exposes binding 0 only.
 
-Binding 0 is the source-derived `x` quantifier binder with a resolver-local
+In the original fixture, binding 0 is the source-derived `x` quantifier binder with a resolver-local
 identity, declaration range `78..79`, visible-after ordinal 0, and written
 type site `Source(86..89)`. The binder row retains its segment and identifier
 sites and links body context 1 and type-site 0. The type-site row is evaluated
@@ -69,7 +77,7 @@ builtin `set`. No Task-248 `SourceBindingContextHandoff` is fabricated.
 
 Validation authenticates source/module identity, the exact base and extended
 binding environments, dense row order, source ranges and typed-arena keys,
-canonical spellings, normal recovery, a single complete tree, the unique
+canonical roles and consistent binder spellings, normal recovery, a single complete tree, the unique
 context transition, binder scope and identity, type association, and all
 request associations. Task 257B1 supersedes the former Task-257A-only
 synthetic-wrapper admission: both currently admitted exact profiles require

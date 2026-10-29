@@ -3039,6 +3039,13 @@ payload、tagは変更しない。predicate chain/operator/binder、general type
 attribute graph、semantic fact/truth、conditioned comprehension、inline/template、
 overload selectionはfrozen ownerへdeferしたままである。
 
+## Task257A unused-binder spelling
+
+Task257Aの限定的一般化は、通常のソーストークンから未使用の明示的識別子を
+取り出し、字句境界・構造上の所属・ソース範囲を検査する。実際のimmutable
+transportは識別子・segment表記・局所および拡張bindingでその名前を保ち、
+元の二つのexternal-gap観測へ渡す。他の式familyは固定する。
+
 ## Checker Task 257A frozen runner boundary
 
 ここでのChecker Tasks 257A-Cはchecker producer sliceで、本文中の完了済み

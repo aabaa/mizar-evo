@@ -18,6 +18,13 @@ fact、theorem semantics、proof search、Core/CFG/VCを作らない。broader
 connective/quantifier shape、bound use/capture、predicate chain、conditioned
 comprehensionはTasks 257B/257Cに残す。
 
+## Task257A source spelling boundary
+
+未使用束縛変数の一般化は元の式形状に限定する。識別子、トークン由来の
+segment表記、局所・拡張binding名の一致、識別子の妥当性と元ソース上の
+バイト範囲を必須とする。syntax-free producerは関連付けを検査し、private
+consumerが元ソースの字句・構造の対応を検査する。Task257B1/B2/B3は固定する。
+
 ## Public Transaction
 
 `SourceCompositeFormulaHandoffInput`はformula、transparent wrapper、root、
@@ -55,7 +62,7 @@ diagnostic 4件からextendする。context 1はuniversal rangeでanchorされ�
 `BindingContextOwner::SourceFormula` ownershipのnormal expression childで、
 `LocalTermScope([0])`を持ちbinding 0だけをown/visibleにする。
 
-binding 0はresolver-local identity、declaration range `78..79`、
+元のfixtureではbinding 0はresolver-local identity、declaration range `78..79`、
 visible-after ordinal 0、written type site `Source(86..89)`を持つsource-derived
 `x` quantifier binderである。binder rowはsegment/identifier siteを保持し、
 body context 1/type-site 0をlinkする。type-site rowはcontext 0で評価され、
@@ -65,7 +72,7 @@ builtin `set`のwritten `TypeExpression`/`TypeHead` siteを保持する。Task-2
 ## Validation And Ownership
 
 validationはsource/module identity、exact base/extended binding environment、
-dense order、source range/typed-arena key、canonical spelling、normal recovery、
+dense order、source range/typed-arena key、canonical roleとbinder表記の整合、normal recovery、
 single complete tree、unique context transition、binder scope/identity、
 type association、全request associationをauthenticateする。Task 257B1は従来の
 Task-257A-only synthetic-wrapper admissionをsupersedeし、現在acceptする2つの

@@ -1342,11 +1342,23 @@ fn validate_binder(
         CompositeProfile::Task257B3 => unreachable!("handled above"),
     };
     let universal = &input.formulas[universal_index];
+    let spelling = if profile == CompositeProfile::Task257A {
+        binder.identifier_spelling.as_str()
+    } else {
+        "x"
+    };
     if binder.formula != SourceCompositeFormulaId::new(universal_index)
         || binder.ordinal != 0
-        || binder.segment_spelling != "x being"
-        || binder.identifier_spelling != "x"
-        || binder.local.spelling() != "x"
+        || binder.segment_spelling != format!("{spelling} being")
+        || binder.identifier_spelling != spelling
+        || binder.local.spelling() != spelling
+        || (profile == CompositeProfile::Task257A
+            && (!mizar_lexer::is_identifier(spelling)
+                || binder
+                    .identifier_range
+                    .end
+                    .checked_sub(binder.identifier_range.start)
+                    != Some(spelling.len())))
         || binder.local.scope() != &LocalTermScope::new(vec![0])
         || binder.local.declaration_range() != binder.identifier_range
         || binder.local.visible_after_ordinal() != 0
@@ -1885,7 +1897,7 @@ fn validate_extended_bindings(
         || body.bindings != [BindingId::new(0)]
         || body.visible_bindings != [BindingId::new(0)]
         || body.recovery != BindingContextRecovery::Normal
-        || binding.spelling != "x"
+        || binding.spelling != binder.identifier_spelling
         || binding.kind != BindingKind::QuantifierBinder
         || binding.identity
             != (BinderIdentity::ResolverLocal {
@@ -2923,6 +2935,125 @@ pub(crate) mod tests {
         let mut input = fixture.input.clone();
         mutate(&mut input);
         assert!(build_task_257b2(fixture, input).is_err());
+    }
+
+    #[test]
+    fn task_257a_unused_binder_names_preserve_associations_and_reject_invalid_names() {
+        for (spelling, valid) in [
+            ("y", true),
+            ("unused_v", true),
+            ("Name_2'", true),
+            ("", false),
+            ("for", false),
+            ("bad name", false),
+            ("1x", false),
+            ("x-y", false),
+        ] {
+            let mut fixture = fixture();
+            let binder = &mut fixture.input.binders[0];
+            binder.identifier_spelling = spelling.to_owned();
+            binder.segment_spelling = format!("{spelling} being");
+            binder.identifier_range.end = binder.identifier_range.start + spelling.len();
+            binder.local = LocalTermBinding::new(
+                spelling,
+                binder.local.scope().clone(),
+                binder.identifier_range,
+                binder.local.visible_after_ordinal(),
+            );
+            let identifier_range = binder.identifier_range;
+            fixture.arena = TypedArena::try_new(
+                fixture.arena.root(),
+                fixture
+                    .arena
+                    .iter()
+                    .map(|(id, node)| {
+                        let mut node = node.clone();
+                        if id == TypedNodeId::new(6) {
+                            node.anchor = SourceAnchor::Range(identifier_range);
+                        }
+                        node
+                    })
+                    .collect(),
+            )
+            .expect("matching identifier extent");
+            let result = SourceCompositeFormulaProducer::extend_bindings(
+                &fixture.input,
+                &fixture.base,
+                &fixture.arena,
+            );
+            if !valid {
+                assert!(result.is_err(), "invalid identifier {spelling:?}");
+                continue;
+            }
+            let extended = result.expect("coherent unused identifier");
+            assert_eq!(
+                extended.bindings().get(BindingId::new(0)).unwrap().spelling,
+                spelling
+            );
+            let handoff = SourceCompositeFormulaProducer::build(
+                fixture.input.clone(),
+                &extended,
+                &fixture.arena,
+            )
+            .expect("actual immutable handoff");
+            let binder = handoff
+                .binders()
+                .get(SourceQuantifierBinderId::new(0))
+                .unwrap();
+            assert_eq!(binder.identifier_spelling(), spelling);
+            assert_eq!(binder.segment_spelling(), format!("{spelling} being"));
+            assert_eq!(binder.local().spelling(), spelling);
+            assert_eq!(binder.identifier_range(), identifier_range);
+            let typed = empty_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                fixture.arena.clone(),
+            )
+            .with_source_composite_formula(handoff.clone())
+            .expect("installed ownership");
+            assert_eq!(typed.source_composite_formula(), Some(&handoff));
+            for field in 0..3 {
+                assert_input_rejected(&fixture, |input| match field {
+                    0 => input.binders[0].segment_spelling = "other being".to_owned(),
+                    1 => input.binders[0].identifier_spelling = "other".to_owned(),
+                    _ => {
+                        input.binders[0].local = LocalTermBinding::new(
+                            "other",
+                            LocalTermScope::new(vec![0]),
+                            identifier_range,
+                            0,
+                        )
+                    }
+                });
+            }
+            let mut wrong_extended = extended.clone();
+            wrong_extended
+                .binding_mut_for_test(BindingId::new(0))
+                .unwrap()
+                .spelling = "other".to_owned();
+            assert!(
+                SourceCompositeFormulaProducer::build(
+                    fixture.input.clone(),
+                    &wrong_extended,
+                    &fixture.arena,
+                )
+                .is_err()
+            );
+        }
+        let mut fixture = fixture();
+        let binder = &mut fixture.input.binders[0];
+        binder.identifier_spelling = "unused_v".to_owned();
+        binder.segment_spelling = "unused_v being".to_owned();
+        binder.local = LocalTermBinding::new(
+            "unused_v",
+            LocalTermScope::new(vec![0]),
+            binder.identifier_range,
+            0,
+        );
+        assert!(
+            build(&fixture, fixture.input.clone()).is_err(),
+            "coherent names cannot retain the old one-byte identifier extent"
+        );
     }
 
     #[test]
