@@ -545,16 +545,39 @@ committing; keep run evidence outside `doc/`. Report intermediate tasks as
 Reuse another run, including CI, only for the same tested tree and applicable
 conditions; unrelated concurrent edits require isolation or renewed checks.
 
-Starting commands from the workspace root:
+Select function and cost independently with
+`bash tests/check.sh <scope> [quick|standard|heavy]` from the workspace root.
+Only the combinations below are supported. Omitted cost keeps existing
+commands compatible: `resolver` and `evidence` mean `heavy`; all others mean
+`standard`. Prefer an explicit cost in new task plans.
 
-| Scope | Command | Selected tests |
-|---|---|---|
-| Documentation | `bash tests/check.sh docs` | contract/documentation lints |
-| Local parser/AST | `bash tests/check.sh parser` | syntax/parser/frontend tests, parse-only and syntax-smoke corpus, short Driver publication case |
-| Verifier | `bash tests/check.sh verifier` | checker/kernel/proof/VC tests, proof-verification corpus, Driver positive/refusal cases |
-| Incremental resolution | `bash tests/check.sh resolver` | resolver edit-versus-clean matrix |
-| Evidence identity/policy | `bash tests/check.sh evidence` | metadata policy/snapshot and witness participant/name-byte matrices |
-| Full regression | `bash tests/check.sh full` | unfiltered `cargo test` |
+| Scope | `quick` | `standard` | `heavy` |
+|---|---|---|---|
+| `docs` | — | contract/documentation lints | — |
+| `parser` | syntax/parser/frontend library tests | all three crates, parse-only/syntax-smoke corpus, short Driver publication | — |
+| `verifier` | checker/kernel/proof/VC library tests | all four crates, proof-verification corpus, Driver positive/refusal cases | — |
+| `resolver` | resolver library tests | resolver crate, declaration-symbol corpus, genuine Driver binding/refusal cases | edit-versus-clean matrix |
+| `evidence` | — | single metadata wire/Kernel agreement and mixed/unsupported/denied inputs | snapshot/policy and participant/name-byte matrices |
+| `declaration`, `type`, `formula` | — | corresponding declaration-symbol, type-elaboration, or formula-statement corpus | — |
+| `cache` | — | cache crate, native lookup/rebinding, changed-input misses and binding/currentness refusals | — |
+| `full` | — | unfiltered `cargo test` | — |
+
+`quick` is for edit-loop feedback, not task completion. `standard` sets are
+functional starting sets, not coverage certificates. `heavy` selects additional
+matrices only: it does not include `standard`. Cost labels describe selection
+breadth, not a time guarantee; measure build and execution time separately on
+identified trees and keep measurements outside `doc/`.
+
+Before implementation, record affected functions, selected checks, and which
+heavy obligations run or defer in existing task evidence. A changed obligation
+requires its heavy matrix immediately regardless of cost; a matching dependency
+or the word "identity" alone does not require unrelated matrices or full tests.
+Defer only bounded, unaffected obligations, naming the group, reason and its
+periodic/integration deadline under the rules above. New/changed regressions
+and unclassified affected tests must run explicitly; unknown impact requires
+full. Record the trigger for each full run, rather than treating a task boundary
+as one. Reuse checks already covered on the same tree under the evidence rules;
+corpus commands and extra assertions still need their own applicable evidence.
 
 Changes to verification policy or test selection require `full` immediately.
 These are starting sets. Before implementation, add change-specific regressions,

@@ -83,6 +83,9 @@ Its operational summary is:
   including ledger/link checks. Executable changes need a short end-to-end check.
   Run fmt/Clippy above each changed task; reuse evidence only with unchanged
   relevant inputs and execution conditions.
+- Select function and cost separately using the protocol command table. Quick
+  checks are edit-loop feedback; heavy groups are additional, not cumulative.
+  Record deferred groups/reasons/deadlines and the trigger for each full run.
 - Run affected long tests immediately. Verification-policy/selection changes
   or unbounded impact require full `cargo test` immediately.
 - Count all repository-changing tasks, including docs. Full must pass before
