@@ -11,6 +11,20 @@ Chapters 03 §§3.2-3.3、05 §§5.2/5.6、07 §§7.2-7.3/7.6、08 §§8.1/8.3�
 12 §§12.3/12.5/12.6.1/12.7、18 §§18.1/18.2.2、Appendix Aである。
 bounded audit ownerはMC-G014、MC-G016、MC-G020である。
 
+## Standalone structure-member layout
+
+元の Task249S table は fixture oracle として保持します。4 member path は同一 source の
+非空 owner/RHS、順序通りで重ならない owner (隣接可)、Set3で等しい head/expression range、
+containment、末尾 semicolon 容量を
+既存 role site と照合します。Env/Context、member 名/kind、token、source 長の証拠はなく、
+raw membership の証明ではありません。
+
+phase は Empty、Cardinality、全 Row、全 Site、Unsupported の順です。Row は normal で
+同一 source、非空、RHS と末尾容量を含む expected slot との一致を要求し、両方向の不一致を
+InvalidStructureMember とします。古い側は判断せず、その他の owner 不正は Site に送ります。
+後続 Row/Site が先行 Site/Unsupported より優先します。installation でも再検証し、元の
+debug と249PI/249R/249Mを保ちます。Structure 意味論や exception は解決しません。
+
 ## Boundary And Model
 
 moduleは`SurfaceAst`、`SurfaceNodeId`、`SyntaxKind`を受け取らない。

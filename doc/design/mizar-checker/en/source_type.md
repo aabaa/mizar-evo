@@ -11,6 +11,21 @@ authority is Chapters 03 §§3.2-3.3, 05 §§5.2/5.6, 07 §§7.2-7.3/7.6, 08
 §§8.1/8.3, 12 §§12.3/12.5/12.6.1/12.7, 18 §§18.1/18.2.2, and Appendix A.
 The bounded audit owners are MC-G014, MC-G016, and MC-G020.
 
+## Standalone structure-member layout
+
+The original Task249S table remains a fixture oracle. Its four-member path checks
+same-source nonempty owner/RHS associations, ordered disjoint owners (adjacency
+allowed), Set3/equal head-expression ranges,
+containment and trailing-semicolon capacity at existing role sites. No Env/Context,
+member name/kind, token or source-length evidence is available; this is not raw proof.
+
+Phases remain Empty, Cardinality, all Rows, all Sites, Unsupported. In Row, compare
+owner ranges only against normal same-source nonempty expected slots containing the
+RHS with trailing capacity. Mismatch in either direction is InvalidStructureMember,
+without stale-side blame. Defer other owner failures to Site; later Row/Site still
+beats earlier Site/Unsupported. Installation repeats validation; retain original debug
+and 249PI/249R/249M. This prerequisite resolves no Structure semantics or exception.
+
 ## Boundary And Model
 
 The module accepts no `SurfaceAst`, `SurfaceNodeId`, or `SyntaxKind`. One

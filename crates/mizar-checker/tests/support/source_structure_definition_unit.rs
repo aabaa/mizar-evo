@@ -1562,3 +1562,483 @@ const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
 const fn node_site(index: usize) -> TypedSiteRef {
     TypedSiteRef::Node(TypedNodeId::new(index))
 }
+
+#[test]
+fn task_249s_public_nonuniform_member_ranges_install_and_replay() {
+    use crate::source_type::{SourceTypeError, SourceTypeStructureMemberId};
+    let source = source_id();
+    let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task263"));
+    let original_input = source_type_input(source, module.clone());
+    let original_arena = task263_arena(source);
+    let original =
+        SourceTypeStructureMemberProducer::build(original_input.clone(), &original_arena)
+            .expect("original public Task249S baseline");
+    let mut input = original_input;
+    let mut nodes = original_arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (member, (start, end, type_start, type_end)) in input.members.iter_mut().zip([
+        (43, 65, 61, 64),
+        (70, 95, 91, 94),
+        (137, 159, 155, 158),
+        (164, 188, 184, 187),
+    ]) {
+        member.member_range = range(source, start, end);
+        member.expression.source_range = range(source, type_start, type_end);
+        member.expression.head_range = member.expression.source_range;
+        for (site, expected) in [
+            (&member.member_site, member.member_range),
+            (&member.expression.site, member.expression.source_range),
+            (&member.expression.head_site, member.expression.head_range),
+        ] {
+            nodes[site.node().index()].anchor = SourceAnchor::Range(expected);
+        }
+    }
+    let arena =
+        TypedArena::try_new(original_arena.root(), nodes).expect("coherent actual relocated arena");
+    assert_eq!(input.members.len(), 4);
+    for (index, member) in input.members.iter().enumerate() {
+        assert_eq!(member.source_ordinal, index);
+        assert_eq!(member.expression.source_id, source);
+        assert_eq!(member.expression.module_id, module);
+        assert_eq!(member.expression.recovery, NodeRecoveryState::Normal);
+        assert_eq!(member.expression.form, SourceTypeApplicationForm::Bare);
+        assert_eq!(member.expression.head, SourceTypeHead::BuiltinSet);
+        assert_eq!(
+            (
+                member.expression.spelling.as_str(),
+                member.expression.head_spelling.as_str()
+            ),
+            ("set", "set")
+        );
+        assert_eq!(
+            member
+                .expression
+                .source_range
+                .end
+                .checked_sub(member.expression.source_range.start),
+            Some(3)
+        );
+        assert_eq!(member.expression.head_range, member.expression.source_range);
+        assert!(member.member_range.start <= member.expression.source_range.start);
+        assert!(member.expression.source_range.end < member.member_range.end);
+        for (site, expected) in [
+            (&member.member_site, member.member_range),
+            (&member.expression.site, member.expression.source_range),
+            (&member.expression.head_site, member.expression.head_range),
+        ] {
+            let node = arena.node(site.node()).unwrap();
+            assert_eq!(node.anchor, SourceAnchor::Range(expected));
+            assert_eq!(node.recovery, NodeRecoveryState::Normal);
+        }
+    }
+    assert!(
+        input
+            .members
+            .windows(2)
+            .all(|pair| pair[0].member_range.end <= pair[1].member_range.start)
+    );
+    let relocated_input = input;
+    let relocated_arena = arena;
+    let foreign = other_source_id();
+    assert_ne!(foreign, source);
+    let mut cases = vec![
+        ("relocated", 0, None),
+        ("wide_expression_head", 0, None),
+        ("owner_prefix_slack", 0, None),
+        ("member_adjacent", 0, None),
+    ];
+    for index in 0..4 {
+        for label in [
+            "normal_arena_owner",
+            "input_owner",
+            "tail_zero",
+            "type_width",
+            "head_root",
+            "input_empty",
+            "input_reversed",
+            "input_foreign",
+        ] {
+            cases.push((
+                label,
+                index,
+                Some(SourceTypeError::InvalidStructureMember {
+                    structure_member: SourceTypeStructureMemberId::new(index),
+                }),
+            ));
+        }
+        for label in [
+            "owner_empty",
+            "owner_recovered",
+            "owner_missing",
+            "owner_foreign",
+            "owner_zero",
+        ] {
+            cases.push((
+                label,
+                index,
+                Some(SourceTypeError::InvalidStructureMemberSite {
+                    structure_member: SourceTypeStructureMemberId::new(index),
+                }),
+            ));
+        }
+    }
+    for label in [
+        "later_normal_over_recovered",
+        "later_normal_over_role",
+        "later_normal_over_unsupported",
+        "later_intrinsic_over_bad_slot",
+        "member_overlap",
+        "member_reverse",
+        "overlap_over_recovered",
+        "overlap_over_unsupported",
+    ] {
+        cases.push((
+            label,
+            1,
+            Some(SourceTypeError::InvalidStructureMember {
+                structure_member: SourceTypeStructureMemberId::new(1),
+            }),
+        ));
+    }
+    cases.push((
+        "later_site_over_unsupported",
+        1,
+        Some(SourceTypeError::InvalidStructureMemberSite {
+            structure_member: SourceTypeStructureMemberId::new(1),
+        }),
+    ));
+    assert_eq!(cases.len(), 65);
+    let mut order_failures = Vec::new();
+    let mut relocated_handoff: Option<SourceTypeApplicationHandoff> = None;
+    for (label, index, expected_error) in cases {
+        let mut input = relocated_input.clone();
+        let mut nodes = relocated_arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        let owner_slot = input.members[index].member_site.node().index();
+        let mut root = relocated_arena.root();
+        match label {
+            "relocated" => {}
+            "member_adjacent"
+            | "member_overlap"
+            | "overlap_over_recovered"
+            | "overlap_over_unsupported" => {
+                input.members[1].member_range.start =
+                    input.members[0].member_range.end - usize::from(label != "member_adjacent");
+                nodes[input.members[1].member_site.node().index()].anchor =
+                    SourceAnchor::Range(input.members[1].member_range);
+            }
+            "member_reverse" => {
+                let first = (
+                    input.members[0].member_range,
+                    input.members[0].expression.source_range,
+                    input.members[0].expression.head_range,
+                );
+                let second = (
+                    input.members[1].member_range,
+                    input.members[1].expression.source_range,
+                    input.members[1].expression.head_range,
+                );
+                for (member, (owner, expression, head)) in
+                    input.members[..2].iter_mut().zip([second, first])
+                {
+                    member.member_range = owner;
+                    member.expression.source_range = expression;
+                    member.expression.head_range = head;
+                    for (site, expected) in [
+                        (&member.member_site, owner),
+                        (&member.expression.site, expression),
+                        (&member.expression.head_site, head),
+                    ] {
+                        nodes[site.node().index()].anchor = SourceAnchor::Range(expected);
+                    }
+                }
+            }
+            "wide_expression_head" => {
+                for member in &input.members {
+                    let widened = range(
+                        source,
+                        member.expression.source_range.start - 1,
+                        member.expression.source_range.end + 1,
+                    );
+                    for site in [&member.expression.site, &member.expression.head_site] {
+                        nodes[site.node().index()].anchor = SourceAnchor::Range(widened);
+                    }
+                }
+            }
+            "owner_prefix_slack" => {
+                for member in &mut input.members {
+                    member.member_range.start -= 1;
+                    nodes[member.member_site.node().index()].anchor =
+                        SourceAnchor::Range(member.member_range);
+                }
+            }
+            "normal_arena_owner"
+            | "later_normal_over_recovered"
+            | "later_normal_over_role"
+            | "later_normal_over_unsupported" => {
+                let owner = input.members[index].member_range;
+                nodes[owner_slot].anchor =
+                    SourceAnchor::Range(range(source, owner.start - 1, owner.end));
+            }
+            "input_owner" => input.members[index].member_range.start -= 1,
+            "owner_empty" => {
+                let start = input.members[index].member_range.start;
+                nodes[owner_slot].anchor = SourceAnchor::Range(range(source, start, start));
+            }
+            "owner_recovered" | "later_site_over_unsupported" => {
+                nodes[owner_slot].recovery = NodeRecoveryState::Recovered
+            }
+            "owner_missing" => {
+                nodes.truncate(owner_slot);
+                root = None;
+            }
+            "owner_foreign" => {
+                let mut owner = input.members[index].member_range;
+                owner.source_id = foreign;
+                nodes[owner_slot].anchor = SourceAnchor::Range(owner);
+            }
+            "owner_zero" => nodes[owner_slot].anchor = SourceAnchor::Range(range(source, 0, 1)),
+            "tail_zero" => {
+                input.members[index].member_range.end =
+                    input.members[index].expression.source_range.end;
+                nodes[owner_slot].anchor = SourceAnchor::Range(input.members[index].member_range);
+            }
+            "type_width" => {
+                input.members[index].expression.source_range.start -= 1;
+                input.members[index].expression.head_range =
+                    input.members[index].expression.source_range;
+            }
+            "head_root" => input.members[index].expression.head_range.start -= 1,
+            "input_empty" => {
+                input.members[index].member_range.end = input.members[index].member_range.start
+            }
+            "input_reversed" => {
+                input.members[index].member_range.end = input.members[index].member_range.start - 1
+            }
+            "input_foreign" => input.members[index].member_range.source_id = foreign,
+            "later_intrinsic_over_bad_slot" => {
+                input.members[index].source_ordinal += 1;
+                nodes[input.members[0].member_site.node().index()].anchor =
+                    SourceAnchor::Range(range(source, 0, 1));
+            }
+            _ => unreachable!("all explicit cases handled"),
+        }
+        match label {
+            "later_normal_over_recovered" | "overlap_over_recovered" => {
+                nodes[input.members[0].member_site.node().index()].recovery =
+                    NodeRecoveryState::Recovered
+            }
+            "later_normal_over_role" => {
+                input.members[0].member_site = TypedSiteRef::Role {
+                    node: input.members[0].member_site.node(),
+                    role: crate::typed_ast::TypeRole::new("member"),
+                }
+            }
+            "later_normal_over_unsupported"
+            | "later_site_over_unsupported"
+            | "overlap_over_unsupported" => {
+                input.members[0].expression.form = SourceTypeApplicationForm::Of
+            }
+            _ => {}
+        }
+        let arena = TypedArena::try_new(root, nodes).expect("actual public case arena");
+        let order_probe = matches!(
+            label,
+            "member_adjacent"
+                | "member_overlap"
+                | "member_reverse"
+                | "overlap_over_recovered"
+                | "overlap_over_unsupported"
+        );
+        if order_probe {
+            for (row_index, member) in input.members.iter().enumerate() {
+                assert_eq!(member.source_ordinal, row_index);
+                assert_eq!(
+                    (
+                        member.member_range.source_id,
+                        member.expression.source_id,
+                        member.expression.source_range.source_id
+                    ),
+                    (source, source, source)
+                );
+                assert_eq!(member.expression.module_id, module);
+                assert_eq!(member.expression.head_range, member.expression.source_range);
+                assert_eq!(
+                    member.expression.source_range.end - member.expression.source_range.start,
+                    3
+                );
+                assert!(member.member_range.start <= member.expression.source_range.start);
+                assert!(member.expression.source_range.end < member.member_range.end);
+                assert_eq!(
+                    member.expression.form,
+                    if label == "overlap_over_unsupported" && row_index == 0 {
+                        SourceTypeApplicationForm::Of
+                    } else {
+                        SourceTypeApplicationForm::Bare
+                    }
+                );
+                assert_eq!(member.expression.head, SourceTypeHead::BuiltinSet);
+                assert_eq!(
+                    (
+                        member.expression.spelling.as_str(),
+                        member.expression.head_spelling.as_str()
+                    ),
+                    ("set", "set")
+                );
+                for (site, expected) in [
+                    (&member.member_site, member.member_range),
+                    (&member.expression.site, member.expression.source_range),
+                    (&member.expression.head_site, member.expression.head_range),
+                ] {
+                    let node = arena.node(site.node()).unwrap();
+                    assert_eq!(node.anchor, SourceAnchor::Range(expected));
+                    assert_eq!(
+                        node.recovery,
+                        if label == "overlap_over_recovered"
+                            && row_index == 0
+                            && site == &member.member_site
+                        {
+                            NodeRecoveryState::Recovered
+                        } else {
+                            NodeRecoveryState::Normal
+                        }
+                    );
+                }
+            }
+            if label == "member_adjacent" {
+                assert_eq!(
+                    input.members[0].member_range.end,
+                    input.members[1].member_range.start
+                );
+            } else {
+                assert!(input.members[0].member_range.end > input.members[1].member_range.start);
+            }
+        }
+        let input_before = input.clone();
+        let arena_before = arena.clone();
+        let result = SourceTypeStructureMemberProducer::build(input.clone(), &arena);
+        assert_eq!(input, input_before, "{label} row{index}");
+        assert_eq!(arena, arena_before, "{label} row{index}");
+        if let Some(expected) = expected_error {
+            if order_probe {
+                if result != Err(expected) {
+                    order_failures.push(format!("{label}: {result:?}"));
+                }
+            } else {
+                assert_eq!(result, Err(expected), "{label} row{index}");
+            }
+            if arena != relocated_arena {
+                assert!(
+                    relocated_handoff
+                        .as_ref()
+                        .unwrap()
+                        .validate_installation(source, &module, &arena)
+                        .is_err(),
+                    "installation {label} row{index}"
+                );
+            }
+            continue;
+        }
+        let handoff = result.unwrap_or_else(|error| panic!("{label}: {error:?}"));
+        if label == "relocated" {
+            relocated_handoff = Some(handoff.clone());
+        } else if label == "wide_expression_head" {
+            assert_eq!(Some(&handoff), relocated_handoff.as_ref());
+        } else {
+            assert_ne!(Some(&handoff), relocated_handoff.as_ref());
+        }
+        assert_eq!(
+            (
+                handoff.applications().len(),
+                handoff.expressions().len(),
+                handoff.arguments().len(),
+                handoff.definition_returns().len(),
+                handoff.mode_rhs().len(),
+                handoff.structure_members().len()
+            ),
+            (0, 4, 0, 0, 0, 4)
+        );
+        for (index, ((id, row), member)) in handoff
+            .structure_members()
+            .iter()
+            .zip(&input.members)
+            .enumerate()
+        {
+            assert_eq!(
+                (
+                    id.index(),
+                    row.id().index(),
+                    row.source_ordinal(),
+                    row.root().index()
+                ),
+                (index, index, index, index)
+            );
+            assert_eq!(row.member_site(), &member.member_site);
+            assert_eq!(row.member_range(), member.member_range);
+            let expression = handoff.expressions().get(row.root()).unwrap();
+            assert_eq!(expression.source_id(), source);
+            assert_eq!(expression.module_id(), &module);
+            assert_eq!(expression.site(), &member.expression.site);
+            assert_eq!(expression.source_range(), member.expression.source_range);
+            assert_eq!(expression.head_site(), &member.expression.head_site);
+            assert_eq!(expression.head_range(), member.expression.head_range);
+        }
+        let fingerprint = handoff.debug_text();
+        assert_ne!(fingerprint, original.debug_text());
+        assert_eq!(
+            SourceTypeStructureMemberProducer::build(input.clone(), &arena).unwrap(),
+            handoff
+        );
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module.clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: Some(handoff.clone()),
+            source_attribute: None,
+            nodes: arena,
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("actual relocated Type installation");
+        assert_eq!(typed.source_type(), Some(&handoff));
+        assert!(typed.source_structure_definition().is_none());
+        assert_eq!(typed.clone().source_type(), Some(&handoff));
+        assert!(
+            typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty()
+        );
+        assert!(typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+        let resolved = assemble_empty(&typed).expect("actual relocated final clone");
+        assert_eq!(resolved.source_type(), Some(&handoff));
+        assert!(resolved.source_structure_definition().is_none());
+        assert!(
+            resolved.expr_metadata().is_empty()
+                && resolved.inserted_coercions().is_empty()
+                && resolved.cluster_facts().is_empty()
+                && resolved.diagnostics().is_empty()
+        );
+        assert_eq!(resolved.clone().source_type(), Some(&handoff));
+        assert!(
+            resolved.checked_formulas().is_empty()
+                && resolved.statement_semantics().is_empty()
+                && resolved.checked_proofs().is_empty()
+        );
+        assert_eq!(typed.debug_text().matches(fingerprint.as_str()).count(), 1);
+        assert_eq!(
+            resolved.debug_text().matches(fingerprint.as_str()).count(),
+            1
+        );
+    }
+    assert!(
+        order_failures.is_empty(),
+        "member source order failures: {order_failures:?}"
+    );
+}

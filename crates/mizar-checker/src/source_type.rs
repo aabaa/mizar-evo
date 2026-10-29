@@ -2421,12 +2421,15 @@ const TASK_249M_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
     [(35, 34, 22, 25), (39, 38, 38, 41)];
 const TASK_249M_MODE_RHS: (usize, usize, usize, usize, usize, usize, usize) =
     (49, 45, 135, 44, 43, 95, 98);
+#[cfg(test)]
 const TASK_249S_STRUCTURE_MEMBERS: [(usize, usize, usize, usize, usize, usize, usize); 4] = [
     (53, 42, 63, 52, 51, 59, 62),
     (56, 68, 91, 55, 54, 87, 90),
     (61, 134, 155, 60, 59, 151, 154),
     (64, 160, 183, 63, 62, 179, 182),
 ];
+const TASK_249S_STRUCTURE_MEMBER_SITES: [(usize, usize, usize); 4] =
+    [(53, 52, 51), (56, 55, 54), (61, 60, 59), (64, 63, 62)];
 const TASK_249PI_MEANS_PARAMETER_SITES: (usize, usize) = (63, 64);
 const TASK_249PI_EQUALS_PARAMETER_SITES: (usize, usize) = (45, 46);
 type Task249PiStructureMemberProfile = [(usize, usize, usize, usize, usize, usize, usize); 2];
@@ -3113,9 +3116,7 @@ fn validate_task_249s_structure_member_handoff(
         });
     }
 
-    for (index, (_, member_start, member_end, _, _, start, end)) in
-        TASK_249S_STRUCTURE_MEMBERS.into_iter().enumerate()
-    {
+    for (index, (member_node, _, _)) in TASK_249S_STRUCTURE_MEMBER_SITES.into_iter().enumerate() {
         let id = SourceTypeStructureMemberId::new(index);
         let root = SourceTypeExpressionId::new(index);
         let Some(member) = handoff.structure_members.get(id) else {
@@ -3131,14 +3132,39 @@ fn validate_task_249s_structure_member_handoff(
         if member.id != id
             || member.source_ordinal != index
             || member.root != root
-            || member.member_range != task_249s_range(handoff.source_id, member_start, member_end)
+            || index.checked_sub(1).is_some_and(|previous| {
+                handoff.structure_members.entries[previous].member_range.end
+                    > member.member_range.start
+            })
             || !valid_range(handoff.source_id, member.member_range)
             || !range_contains(member.member_range, expression.source_range)
             || expression.id != root
             || expression.source_id != handoff.source_id
             || expression.module_id != handoff.module_id
-            || expression.source_range != task_249s_range(handoff.source_id, start, end)
-            || expression.head_range != task_249s_range(handoff.source_id, start, end)
+            || expression.head_range != expression.source_range
+            || expression
+                .source_range
+                .end
+                .checked_sub(expression.source_range.start)
+                != Some("set".len())
+            || member
+                .member_range
+                .end
+                .checked_sub(expression.source_range.end)
+                .is_none_or(|tail| tail < ";".len())
+            || arena
+                .node(TypedNodeId::new(member_node))
+                .is_some_and(|node| {
+                    node.recovery == NodeRecoveryState::Normal
+                        && source_range(&node.anchor).is_some_and(|owner| {
+                            range_contains(owner, expression.source_range)
+                                && owner
+                                    .end
+                                    .checked_sub(expression.source_range.end)
+                                    .is_some_and(|tail| tail >= ";".len())
+                                && member.member_range != owner
+                        })
+                })
         {
             return Err(SourceTypeError::InvalidStructureMember {
                 structure_member: id,
@@ -3147,8 +3173,8 @@ fn validate_task_249s_structure_member_handoff(
     }
 
     let mut sites = BTreeSet::new();
-    for (index, (member_node, _, _, expression_node, head_node, _, _)) in
-        TASK_249S_STRUCTURE_MEMBERS.into_iter().enumerate()
+    for (index, (member_node, expression_node, head_node)) in
+        TASK_249S_STRUCTURE_MEMBER_SITES.into_iter().enumerate()
     {
         let id = SourceTypeStructureMemberId::new(index);
         let root = SourceTypeExpressionId::new(index);
@@ -3196,7 +3222,7 @@ fn validate_task_249s_structure_member_handoff(
         })?;
     }
 
-    for index in 0..TASK_249S_STRUCTURE_MEMBERS.len() {
+    for index in 0..TASK_249S_STRUCTURE_MEMBER_SITES.len() {
         let id = SourceTypeStructureMemberId::new(index);
         let root = SourceTypeExpressionId::new(index);
         let Some(expression) = handoff.expressions.get(root) else {
@@ -3234,14 +3260,6 @@ fn validate_structure_member_owner_site(
         return Err(SourceTypeError::InvalidStructureMemberSite { structure_member });
     }
     Ok(())
-}
-
-fn task_249s_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
