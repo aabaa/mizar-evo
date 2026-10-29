@@ -25,6 +25,26 @@ InvalidStructureMember とします。古い側は判断せず、その他の ow
 後続 Row/Site が先行 Site/Unsupported より優先します。installation でも再検証し、元の
 debug と249PI/249R/249Mを保ちます。Structure 意味論や exception は解決しません。
 
+## Property member Type layout
+
+Task249PI のリテラル表は元の fixture oracle として残す。両プロフィールで、
+既存 parameter site、幅14の同一 head/root 範囲、正常 Bare Task264Carrier、
+すでに認証された実際の SymbolId/contribution0 を維持する。extension に Env/Context は
+渡らず、シンボルの認証は generic base 生成の責務。1/3/0/0/0/2、binding0/root0、
+追加 roots1/2 と member ID/ordinal の密な順序を維持する。
+
+同一 source の非空な owner 二範囲は順序付き・非重複で、同一 head/RHS の Set3 と
+末尾容量1を含み、base 型使用より前にある。隣接は許す。固定 Means/Equals の必要な
+スカラー順序であり、一般言語規則や member と symbol/宣言の所属証明ではない。
+name/kind/header/token/raw の情報は利用できない。
+
+AlreadyPresent、Empty、Cardinality、Environment、Base、全 Rows、全 Sites、
+全 Unsupported の順序を保つ。Row は、同一 source・正常な既定 EXPECTED owner slot が
+RHS と末尾容量を含む場合だけ範囲を照合する。正常な不一致は両方向とも
+InvalidStructureMember とし stale 側を断定しない。他の参照不正は全 Row の後の Site へ。
+base 不正は InvalidBase のまま。parameter/RHS arena の包含規則、元の debug/oracle、
+249S/249R/249M/259 分離を保ち、この前提修正で例外・意味・obligation credit を解決しない。
+
 ## Boundary And Model
 
 moduleは`SurfaceAst`、`SurfaceNodeId`、`SyntaxKind`を受け取らない。

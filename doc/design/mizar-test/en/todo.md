@@ -407,6 +407,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - [x] [Task259 Predicate layout](../../task_contracts/en/TEST-METAMORPHIC-PREDICATE-LAYOUT.md).
     - [x] [Task249S standalone member Type layout](../../task_contracts/en/TEST-METAMORPHIC-STRUCTURE-TYPE-LAYOUT.md).
     - [x] [Task263 ordinary Structure layout](../../task_contracts/en/TEST-METAMORPHIC-STRUCTURE-LAYOUT.md).
+    - [x] [Task249PI property member Type layout](../../task_contracts/en/TEST-METAMORPHIC-PROPERTY-TYPE-LAYOUT.md).
 
 ## Recommended Verification
 

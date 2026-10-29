@@ -2432,11 +2432,19 @@ const TASK_249S_STRUCTURE_MEMBER_SITES: [(usize, usize, usize); 4] =
     [(53, 52, 51), (56, 55, 54), (61, 60, 59), (64, 63, 62)];
 const TASK_249PI_MEANS_PARAMETER_SITES: (usize, usize) = (63, 64);
 const TASK_249PI_EQUALS_PARAMETER_SITES: (usize, usize) = (45, 46);
+#[cfg(test)]
 type Task249PiStructureMemberProfile = [(usize, usize, usize, usize, usize, usize, usize); 2];
+#[cfg(test)]
 const TASK_249PI_MEANS_STRUCTURE_MEMBERS: Task249PiStructureMemberProfile =
     [(56, 45, 66, 55, 54, 62, 65), (59, 71, 94, 58, 57, 90, 93)];
+#[cfg(test)]
 const TASK_249PI_EQUALS_STRUCTURE_MEMBERS: Task249PiStructureMemberProfile =
     [(38, 45, 66, 37, 36, 62, 65), (41, 71, 94, 40, 39, 90, 93)];
+
+const TASK_249PI_MEANS_STRUCTURE_MEMBER_SITES: [(usize, usize, usize); 2] =
+    [(56, 55, 54), (59, 58, 57)];
+const TASK_249PI_EQUALS_STRUCTURE_MEMBER_SITES: [(usize, usize, usize); 2] =
+    [(38, 37, 36), (41, 40, 39)];
 
 fn validate_definition_return_base(
     base: &SourceTypeApplicationHandoff,
@@ -2896,8 +2904,13 @@ fn task_249pi_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool
         && expression.id == SourceTypeExpressionId::new(0)
         && expression.source_id == handoff.source_id
         && expression.module_id == handoff.module_id
-        && expression.source_range == task_249pi_range(handoff.source_id, 130, 144)
-        && expression.head_range == task_249pi_range(handoff.source_id, 130, 144)
+        && valid_range(handoff.source_id, expression.source_range)
+        && expression.head_range == expression.source_range
+        && expression
+            .source_range
+            .end
+            .checked_sub(expression.source_range.start)
+            == Some("Task264Carrier".len())
         && sites_match
         && expression.spelling == "Task264Carrier"
         && expression.head_spelling == "Task264Carrier"
@@ -2908,14 +2921,14 @@ fn task_249pi_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool
 
 fn task_249pi_structure_member_profile(
     handoff: &SourceTypeApplicationHandoff,
-) -> Option<&'static Task249PiStructureMemberProfile> {
+) -> Option<&'static [(usize, usize, usize); 2]> {
     let expression = handoff.expressions.get(SourceTypeExpressionId::new(0))?;
     match (
         expression.site.node().index(),
         expression.head_site.node().index(),
     ) {
-        TASK_249PI_MEANS_PARAMETER_SITES => Some(&TASK_249PI_MEANS_STRUCTURE_MEMBERS),
-        TASK_249PI_EQUALS_PARAMETER_SITES => Some(&TASK_249PI_EQUALS_STRUCTURE_MEMBERS),
+        TASK_249PI_MEANS_PARAMETER_SITES => Some(&TASK_249PI_MEANS_STRUCTURE_MEMBER_SITES),
+        TASK_249PI_EQUALS_PARAMETER_SITES => Some(&TASK_249PI_EQUALS_STRUCTURE_MEMBER_SITES),
         _ => None,
     }
 }
@@ -2934,9 +2947,11 @@ fn validate_task_249pi_structure_member_handoff(
         return Err(SourceTypeError::InvalidStructureMemberBase);
     };
 
-    for (index, (_, member_start, member_end, _, _, start, end)) in
-        profile.iter().copied().enumerate()
-    {
+    let parameter = handoff
+        .expressions
+        .get(SourceTypeExpressionId::new(0))
+        .expect("Task 249PI base shape checked");
+    for (index, (member_node, _, _)) in profile.iter().copied().enumerate() {
         let id = SourceTypeStructureMemberId::new(index);
         let root = SourceTypeExpressionId::new(index + 1);
         let Some(member) = handoff.structure_members.get(id) else {
@@ -2952,14 +2967,40 @@ fn validate_task_249pi_structure_member_handoff(
         if member.id != id
             || member.source_ordinal != index
             || member.root != root
-            || member.member_range != task_249pi_range(handoff.source_id, member_start, member_end)
+            || index.checked_sub(1).is_some_and(|previous| {
+                handoff.structure_members.entries[previous].member_range.end
+                    > member.member_range.start
+            })
+            || member.member_range.end > parameter.source_range.start
             || !valid_range(handoff.source_id, member.member_range)
             || !range_contains(member.member_range, expression.source_range)
             || expression.id != root
             || expression.source_id != handoff.source_id
             || expression.module_id != handoff.module_id
-            || expression.source_range != task_249pi_range(handoff.source_id, start, end)
-            || expression.head_range != task_249pi_range(handoff.source_id, start, end)
+            || expression.head_range != expression.source_range
+            || expression
+                .source_range
+                .end
+                .checked_sub(expression.source_range.start)
+                != Some("set".len())
+            || member
+                .member_range
+                .end
+                .checked_sub(expression.source_range.end)
+                .is_none_or(|tail| tail < ";".len())
+            || arena
+                .node(TypedNodeId::new(member_node))
+                .is_some_and(|node| {
+                    node.recovery == NodeRecoveryState::Normal
+                        && source_range(&node.anchor).is_some_and(|owner| {
+                            range_contains(owner, expression.source_range)
+                                && owner
+                                    .end
+                                    .checked_sub(expression.source_range.end)
+                                    .is_some_and(|tail| tail >= ";".len())
+                                && member.member_range != owner
+                        })
+                })
         {
             return Err(SourceTypeError::InvalidStructureMember {
                 structure_member: id,
@@ -2967,14 +3008,8 @@ fn validate_task_249pi_structure_member_handoff(
         }
     }
 
-    let parameter = handoff
-        .expressions
-        .get(SourceTypeExpressionId::new(0))
-        .expect("Task 249PI base shape checked");
     let mut sites = BTreeSet::from([parameter.site.clone(), parameter.head_site.clone()]);
-    for (index, (member_node, _, _, expression_node, head_node, _, _)) in
-        profile.iter().copied().enumerate()
-    {
+    for (index, (member_node, expression_node, head_node)) in profile.iter().copied().enumerate() {
         let id = SourceTypeStructureMemberId::new(index);
         let root = SourceTypeExpressionId::new(index + 1);
         let member = handoff
@@ -3048,14 +3083,6 @@ fn task_249pi_base_shape_matches_with_extension(handoff: &SourceTypeApplicationH
     base.expressions.entries.truncate(1);
     base.structure_members.entries.clear();
     task_249pi_base_shape_matches(&base)
-}
-
-fn task_249pi_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn validate_structure_member_handoff(
@@ -14446,5 +14473,475 @@ mod tests {
                 "source type handoff exposes {forbidden}"
             );
         }
+    }
+
+    #[test]
+    fn task_249pi_public_nonuniform_base_and_member_ranges_install_and_replay() {
+        let mut failures = Vec::new();
+        let mut attempts = 0;
+        let mut controls = 0;
+        for profile in [Task249PiProfile::Means, Task249PiProfile::Equals] {
+            let fixture = task_249pi_fixture(profile);
+            let original_base = fixture.base.clone();
+            SourceTypeStructureMemberProducer::extend_property_implementation(
+                &fixture.base,
+                fixture.extension.clone(),
+                &fixture.arena,
+            )
+            .expect("original public Task249PI extension");
+            assert_eq!(fixture.base, original_base);
+            let (parameter_sites, members) = match profile {
+                Task249PiProfile::Means => (
+                    TASK_249PI_MEANS_PARAMETER_SITES,
+                    TASK_249PI_MEANS_STRUCTURE_MEMBERS,
+                ),
+                Task249PiProfile::Equals => (
+                    TASK_249PI_EQUALS_PARAMETER_SITES,
+                    TASK_249PI_EQUALS_STRUCTURE_MEMBERS,
+                ),
+            };
+            for (stage, parameter_start) in [("members_only", 130), ("base_and_members", 156)] {
+                let cases = if stage == "members_only" {
+                    vec![("relocated", 0)]
+                } else {
+                    vec![
+                        ("relocated", 0),
+                        ("base_width13", 0),
+                        ("base_width15", 0),
+                        ("base_unequal_head", 0),
+                        ("input_owner", 0),
+                        ("input_owner", 1),
+                        ("arena_owner", 0),
+                        ("arena_owner", 1),
+                        ("recovered_owner", 0),
+                        ("recovered_owner", 1),
+                        ("invalid_owner", 0),
+                        ("invalid_owner", 1),
+                        ("zero_tail", 0),
+                        ("zero_tail", 1),
+                        ("rhs_width4", 0),
+                        ("rhs_width4", 1),
+                        ("past_use", 0),
+                        ("past_use", 1),
+                        ("overlap", 1),
+                        ("reverse", 1),
+                        ("adjacent_members", 1),
+                        ("adjacent_use", 1),
+                        ("containing", 0),
+                        ("row_over_recovered", 1),
+                        ("row_over_unsupported", 1),
+                        ("site_over_unsupported", 1),
+                    ]
+                };
+                for (case, index) in cases {
+                    let width = match case {
+                        "base_width13" => 13,
+                        "base_width15" => 15,
+                        _ => 14,
+                    };
+                    let parameter_range =
+                        range(fixture.source, parameter_start, parameter_start + width);
+                    let (symbols, symbol, contribution) =
+                        task_249pi_symbol_env(fixture.source, &fixture.module, profile);
+                    assert_eq!(contribution.index(), 0);
+                    let parameter_head = SourceTypeHead::Symbol {
+                        symbol,
+                        contribution,
+                    };
+                    let mut input = SourceTypeHandoffInput {
+                        source_id: fixture.source,
+                        module_id: fixture.module.clone(),
+                        applications: vec![SourceTypeApplicationInput {
+                            binding: BindingId::new(0),
+                            source_ordinal: 0,
+                            root: SourceTypeExpressionId::new(0),
+                        }],
+                        expressions: vec![SourceTypeExpressionInput {
+                            source_id: fixture.source,
+                            module_id: fixture.module.clone(),
+                            site: node_site(parameter_sites.0),
+                            source_range: parameter_range,
+                            spelling: "Task264Carrier".to_owned(),
+                            head_site: node_site(parameter_sites.1),
+                            head_range: parameter_range,
+                            head_spelling: "Task264Carrier".to_owned(),
+                            form: SourceTypeApplicationForm::Bare,
+                            head: parameter_head.clone(),
+                            recovery: NodeRecoveryState::Normal,
+                        }],
+                        arguments: Vec::new(),
+                    };
+                    if case == "base_unequal_head" {
+                        input.expressions[0].head_range.end -= 1;
+                        assert_ne!(
+                            input.expressions[0].source_range,
+                            input.expressions[0].head_range
+                        );
+                    }
+                    let bindings = binding_env(fixture.source, &fixture.module, &[parameter_range]);
+                    assert_eq!(
+                        bindings
+                            .bindings()
+                            .get(BindingId::new(0))
+                            .expect("binding0")
+                            .type_site,
+                        BindingTypeSite::Source(parameter_range)
+                    );
+                    let mut extension = fixture.extension.clone();
+                    for (member, (start, end, type_start, type_end)) in extension
+                        .members
+                        .iter_mut()
+                        .zip([(46, 69, 65, 68), (72, 97, 93, 96)])
+                    {
+                        member.member_range = range(fixture.source, start, end);
+                        member.expression.source_range =
+                            range(fixture.source, type_start, type_end);
+                        member.expression.head_range = member.expression.source_range;
+                    }
+                    match case {
+                        "input_owner" => extension.members[index].member_range.start -= 1,
+                        "zero_tail" => {
+                            extension.members[index].member_range.end =
+                                extension.members[index].expression.source_range.end
+                        }
+                        "rhs_width4" => {
+                            extension.members[index].expression.source_range.start -= 1;
+                            extension.members[index].expression.head_range =
+                                extension.members[index].expression.source_range;
+                        }
+                        "past_use" => {
+                            extension.members[index].member_range.end = parameter_range.start + 1
+                        }
+                        "overlap" => {
+                            extension.members[1].member_range.start =
+                                extension.members[0].member_range.end - 1
+                        }
+                        "reverse" => {
+                            let ranges = extension
+                                .members
+                                .iter()
+                                .map(|member| (member.member_range, member.expression.source_range))
+                                .collect::<Vec<_>>();
+                            for (member, (owner, rhs)) in
+                                extension.members.iter_mut().zip(ranges.into_iter().rev())
+                            {
+                                member.member_range = owner;
+                                member.expression.source_range = rhs;
+                                member.expression.head_range = rhs;
+                            }
+                        }
+                        "adjacent_members" => {
+                            extension.members[1].member_range.start =
+                                extension.members[0].member_range.end
+                        }
+                        "adjacent_use" => {
+                            extension.members[1].member_range.end = parameter_range.start
+                        }
+                        _ => {}
+                    }
+                    if matches!(case, "row_over_unsupported" | "site_over_unsupported") {
+                        extension.members[0].expression.form = SourceTypeApplicationForm::Of;
+                    }
+                    let mut anchors = vec![
+                        (parameter_sites.0, parameter_range),
+                        (parameter_sites.1, input.expressions[0].head_range),
+                    ];
+                    for (member_index, member) in extension.members.iter().enumerate() {
+                        assert_eq!(member.source_ordinal, member_index);
+                        assert_eq!(member.member_site, node_site(members[member_index].0));
+                        assert_eq!(member.expression.site, node_site(members[member_index].3));
+                        assert_eq!(
+                            member.expression.head_site,
+                            node_site(members[member_index].4)
+                        );
+                        let rhs = member.expression.source_range;
+                        assert_eq!(member.expression.head_range, rhs);
+                        assert_eq!(
+                            rhs.end - rhs.start,
+                            if case == "rhs_width4" && member_index == index {
+                                4
+                            } else {
+                                3
+                            }
+                        );
+                        assert!(
+                            member.member_range.start <= rhs.start
+                                && rhs.end <= member.member_range.end
+                        );
+                        assert_eq!(
+                            member.member_range.end == rhs.end,
+                            case == "zero_tail" && member_index == index
+                        );
+                        assert_eq!(
+                            member.member_range.end > parameter_range.start,
+                            case == "past_use" && member_index == index
+                        );
+                        anchors.extend([
+                            (members[member_index].0, member.member_range),
+                            (members[member_index].3, rhs),
+                            (members[member_index].4, rhs),
+                        ]);
+                    }
+                    assert_eq!(
+                        extension.members[0].member_range.end
+                            > extension.members[1].member_range.start,
+                        matches!(case, "overlap" | "reverse") || (case == "past_use" && index == 0)
+                    );
+                    if case == "adjacent_members" {
+                        assert_eq!(
+                            extension.members[0].member_range.end,
+                            extension.members[1].member_range.start
+                        );
+                    }
+                    if case == "adjacent_use" {
+                        assert_eq!(extension.members[1].member_range.end, parameter_range.start);
+                    }
+                    assert_eq!(anchors.len(), 8);
+                    let mut nodes = fixture
+                        .arena
+                        .iter()
+                        .map(|(id, node)| {
+                            let mut node = node.clone();
+                            if let Some((_, source_range)) =
+                                anchors.iter().find(|(site, _)| *site == id.index())
+                            {
+                                node.anchor = SourceAnchor::Range(*source_range);
+                            }
+                            node
+                        })
+                        .collect::<Vec<_>>();
+                    for (site, source_range) in &anchors {
+                        assert_eq!(nodes[*site].anchor, SourceAnchor::Range(*source_range));
+                        assert_eq!(nodes[*site].recovery, NodeRecoveryState::Normal);
+                    }
+                    if case == "input_owner" {
+                        let mut owner = extension.members[index].member_range;
+                        owner.start += 1;
+                        nodes[members[index].0].anchor = SourceAnchor::Range(owner);
+                    }
+                    for member_index in 0..2 {
+                        let mismatch = (matches!(case, "arena_owner" | "recovered_owner")
+                            && member_index == index)
+                            || (case == "row_over_recovered")
+                            || (case == "row_over_unsupported" && member_index == 1)
+                            || (case == "site_over_unsupported" && member_index == 1);
+                        if mismatch {
+                            let mut owner = extension.members[member_index].member_range;
+                            owner.start -= 1;
+                            assert_ne!(owner, extension.members[member_index].member_range);
+                            assert!(
+                                owner.start
+                                    <= extension.members[member_index]
+                                        .expression
+                                        .source_range
+                                        .start
+                            );
+                            assert!(
+                                extension.members[member_index].expression.source_range.end
+                                    < owner.end
+                            );
+                            nodes[members[member_index].0].anchor = SourceAnchor::Range(owner);
+                        }
+                        let recovered = (case == "recovered_owner" && member_index == index)
+                            || (case == "row_over_recovered" && member_index == 0)
+                            || (case == "site_over_unsupported" && member_index == 1);
+                        if recovered {
+                            nodes[members[member_index].0].recovery = NodeRecoveryState::Recovered;
+                        }
+                    }
+                    if case == "invalid_owner" {
+                        nodes[members[index].0].anchor =
+                            SourceAnchor::Range(range(fixture.source, 0, 1));
+                    }
+                    if case == "containing" {
+                        for site in [
+                            parameter_sites.0,
+                            parameter_sites.1,
+                            members[0].3,
+                            members[0].4,
+                            members[1].3,
+                            members[1].4,
+                        ] {
+                            let SourceAnchor::Range(mut owner) = nodes[site].anchor.clone() else {
+                                panic!("range anchor")
+                            };
+                            owner.start -= 1;
+                            owner.end += 1;
+                            nodes[site].anchor = SourceAnchor::Range(owner);
+                        }
+                    }
+                    let arena = TypedArena::try_new(fixture.arena.root(), nodes)
+                        .expect("coherent public arena");
+                    let base =
+                        SourceTypeProducer::build(input.clone(), &bindings, &symbols, &arena)
+                            .expect("genuine generic base at current parameter range");
+                    assert_eq!(base.source_id(), fixture.source);
+                    assert_eq!(base.module_id(), &fixture.module);
+                    assert_eq!(
+                        (
+                            base.applications().len(),
+                            base.expressions().len(),
+                            base.arguments().len()
+                        ),
+                        (1, 1, 0)
+                    );
+                    let application = base
+                        .applications()
+                        .get(SourceTypeApplicationId::new(0))
+                        .expect("application0");
+                    assert_eq!(
+                        (
+                            application.binding().index(),
+                            application.source_ordinal(),
+                            application.root().index()
+                        ),
+                        (0, 0, 0)
+                    );
+                    let parameter = base
+                        .expressions()
+                        .get(SourceTypeExpressionId::new(0))
+                        .expect("parameter root0");
+                    assert_eq!(parameter.source_range(), parameter_range);
+                    assert_eq!(parameter.head_range(), input.expressions[0].head_range);
+                    assert_eq!(parameter_range.end - parameter_range.start, width);
+                    assert_eq!(parameter.head(), &parameter_head);
+                    let before = (base.clone(), extension.clone(), arena.clone());
+                    let expected = match case {
+                        "base_width13" | "base_width15" | "base_unequal_head" => {
+                            Some(SourceTypeError::InvalidStructureMemberBase)
+                        }
+                        "recovered_owner" | "invalid_owner" | "site_over_unsupported" => {
+                            Some(SourceTypeError::InvalidStructureMemberSite {
+                                structure_member: SourceTypeStructureMemberId::new(index),
+                            })
+                        }
+                        "input_owner"
+                        | "arena_owner"
+                        | "zero_tail"
+                        | "rhs_width4"
+                        | "past_use"
+                        | "overlap"
+                        | "reverse"
+                        | "row_over_recovered"
+                        | "row_over_unsupported" => Some(SourceTypeError::InvalidStructureMember {
+                            structure_member: SourceTypeStructureMemberId::new(index),
+                        }),
+                        "relocated" | "adjacent_members" | "adjacent_use" | "containing" => None,
+                        _ => panic!("unknown control"),
+                    };
+                    if case == "relocated" {
+                        attempts += 1;
+                    } else {
+                        controls += 1;
+                    }
+                    let result = SourceTypeStructureMemberProducer::extend_property_implementation(
+                        &base,
+                        extension.clone(),
+                        &arena,
+                    );
+                    assert_eq!(
+                        (&base, &extension, &arena),
+                        (&before.0, &before.1, &before.2)
+                    );
+                    if let Some(expected) = expected {
+                        assert_eq!(result, Err(expected), "{profile:?}/{case}/{index}");
+                        continue;
+                    }
+                    let handoff = match result {
+                        Ok(handoff) => handoff,
+                        Err(error) => {
+                            failures.push(format!("{profile:?}/{stage}/{case}: {error:?}"));
+                            continue;
+                        }
+                    };
+                    assert_eq!(
+                        (
+                            handoff.applications().len(),
+                            handoff.expressions().len(),
+                            handoff.arguments().len(),
+                            handoff.definition_returns().len(),
+                            handoff.mode_rhs().len(),
+                            handoff.structure_members().len()
+                        ),
+                        (1, 3, 0, 0, 0, 2)
+                    );
+                    assert_eq!(handoff.source_id(), fixture.source);
+                    assert_eq!(handoff.module_id(), &fixture.module);
+                    assert_eq!(handoff.applications(), base.applications());
+                    assert_eq!(
+                        handoff.expressions().get(SourceTypeExpressionId::new(0)),
+                        Some(parameter)
+                    );
+                    for (id, row) in handoff.structure_members().iter() {
+                        let index = id.index();
+                        let expected = &extension.members[index];
+                        assert_eq!(
+                            (row.id().index(), row.source_ordinal(), row.root().index()),
+                            (index, index, index + 1)
+                        );
+                        assert_eq!(row.member_site(), &expected.member_site);
+                        assert_eq!(row.member_range(), expected.member_range);
+                        let expression = handoff
+                            .expressions()
+                            .get(row.root())
+                            .expect("appended member root");
+                        assert_eq!(expression.source_id(), fixture.source);
+                        assert_eq!(expression.module_id(), &fixture.module);
+                        assert_eq!(expression.site(), &expected.expression.site);
+                        assert_eq!(expression.head_site(), &expected.expression.head_site);
+                        assert_eq!(expression.source_range(), expected.expression.source_range);
+                        assert_eq!(expression.head_range(), expected.expression.head_range);
+                        assert_eq!(expression.head(), &SourceTypeHead::BuiltinSet);
+                    }
+                    let fingerprint = handoff.debug_text();
+                    let replay = SourceTypeStructureMemberProducer::extend_property_implementation(
+                        &base,
+                        extension.clone(),
+                        &arena,
+                    )
+                    .expect("public extension replay");
+                    assert_eq!(replay, handoff);
+                    assert_eq!(replay.debug_text(), fingerprint);
+                    assert_eq!(
+                        (&base, &extension, &arena),
+                        (&before.0, &before.1, &before.2)
+                    );
+                    let typed = task_249r_typed_ast(
+                        fixture.source,
+                        fixture.module.clone(),
+                        handoff.clone(),
+                        arena,
+                    )
+                    .expect("actual typed installation");
+                    assert_eq!(typed.source_type(), Some(&handoff));
+                    assert!(typed.types().is_empty());
+                    assert!(typed.facts().is_empty());
+                    assert!(typed.coercions().is_empty());
+                    assert!(typed.initial_obligations().is_empty());
+                    assert!(typed.diagnostics().is_empty());
+                    assert_eq!(typed.debug_text().matches(fingerprint.as_str()).count(), 1);
+                    let resolved = assemble_empty_resolved(&typed);
+                    assert_eq!(resolved, assemble_empty_resolved(&typed));
+                    assert_eq!(resolved.source_type(), Some(&handoff));
+                    assert!(resolved.expr_metadata().is_empty());
+                    assert!(resolved.inserted_coercions().is_empty());
+                    assert!(resolved.cluster_facts().is_empty());
+                    assert!(resolved.checked_formulas().is_empty());
+                    assert!(resolved.statement_semantics().is_empty());
+                    assert!(resolved.checked_proofs().is_empty());
+                    assert!(resolved.diagnostics().is_empty());
+                    assert_eq!(
+                        resolved.debug_text().matches(fingerprint.as_str()).count(),
+                        1
+                    );
+                }
+            }
+        }
+        assert_eq!(attempts, 4);
+        assert_eq!(controls, 50);
+        assert!(
+            failures.is_empty(),
+            "public relocations refused: {failures:?}"
+        );
     }
 }

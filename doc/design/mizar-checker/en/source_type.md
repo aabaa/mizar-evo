@@ -26,6 +26,27 @@ without stale-side blame. Defer other owner failures to Site; later Row/Site sti
 beats earlier Site/Unsupported. Installation repeats validation; retain original debug
 and 249PI/249R/249M. This prerequisite resolves no Structure semantics or exception.
 
+## Property member Type layout
+
+Task249PI's literal tables remain original-fixture oracles. Both profiles require a
+normal Bare Task264Carrier base with equal head/root ranges of width14, existing
+parameter sites and the actual previously authenticated SymbolId/contribution0.
+Extension receives no Env/Context; generic base production owns symbol authenticity.
+Keep1/3/0/0/0/2, binding0/root0, appended roots1/2 and dense member IDs/ordinals.
+
+The two positive same-source owner ranges are ordered/disjoint, contain Set3/equal
+head/RHS ranges with trailing capacity1 and precede the base type use. Adjacency is
+allowed; this is necessary scalar order of the fixed Means/Equals profiles, not generic
+language or member-to-symbol/declaration proof. No name/kind/header/token/raw evidence.
+
+Preserve AlreadyPresent, Empty, Cardinality, Environment, Base, all Rows, all Sites,
+all Unsupported. In Row, compare against the fixed EXPECTED normal same-source owner
+slot only when it contains the RHS with trailing capacity. Both normal disagreement
+directions are InvalidStructureMember without stale-side blame; other references defer
+Site after all rows. Base faults remain InvalidBase. Keep generic containing parameter/
+RHS arena anchors, old debug/oracles and 249S/249R/249M/259 isolation; no exception or
+semantic/obligation credit is resolved by this prerequisite.
+
 ## Boundary And Model
 
 The module accepts no `SurfaceAst`, `SurfaceNodeId`, or `SyntaxKind`. One
