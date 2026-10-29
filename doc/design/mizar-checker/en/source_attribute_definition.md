@@ -6,6 +6,41 @@
 Status: implemented Checker Task 261 source-transport boundary. The frozen
 contract is active for exactly one pass consumer and one covered trace row.
 
+## Layout and source responsibility
+
+The ordinary fixed-name family admits token-preserving layout. Its runner selects
+the closed normal Surface graph and authenticates complete real lexing/maps and
+replayed shells/environment after existing resolver validation, before lower builds.
+Actual AST roles supply every range; original descriptors and binding identities stay.
+The checker validates syntax-free carried associations, leaf widths and capacity.
+The runner owns exact subject-token and whole parameter-statement membership;
+subject shares the definition site, and statement endpoints have no separate site.
+Permissible coherent slack remains valid. Stale carried joins, widths and envelopes
+are rejected. Fixed byte coordinates and exact-byte runner statements below record
+the original fixture; they do not constrain every layout.
+
+Let B/D be block/attribute ranges, P each whole parameter statement, d its declared
+identifier, T its set type, S the subject, F the definiens, and L/R its operands.
+Keep d/S/L/R width1 and T width3, same-source nonempty ranges, ordered containment,
+all context/type/term/Atomic/resolver joins and immutable fingerprints/install checks.
+Checked endpoint differences retain these minimum byte capacities:
+
+| Interval | Minimum |
+|---|---:|
+| B.start to P0.start | 11 |
+| P.start to d.start | 4 |
+| d.end to T.start | 4 |
+| T.end to P.end | 1 |
+| D.start to S.start | 32 |
+| S.end to F.start | 25 |
+| F.end to D.end | 1 |
+| D.end to B.end | 4 |
+| L.end to R.start | 1 |
+
+These bounds reserve fixed keywords/label/notation/punctuation and required word
+separators; they identify available capacity, not raw token positions. Aggregate
+widths vary. Initial obligations and all semantic publication boundaries stay intact.
+
 ## Authority, Classification, And Scope
 
 Checker Task 261 owns one syntax-free immutable intake for an ordinary,

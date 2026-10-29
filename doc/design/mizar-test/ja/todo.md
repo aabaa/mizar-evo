@@ -360,6 +360,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
     - [x] [B1/B2 source grammar authentication](../../task_contracts/ja/TEST-METAMORPHIC-FORMULA-GRAMMAR.md).
     - [x] [Task257B3 middle binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-NESTED-MIDDLE-NAME.md).
     - [x] [Task257C1/C3 chain layout](../../task_contracts/ja/TEST-METAMORPHIC-CHAIN-LAYOUT.md).
+    - [x] [Task261 Attribute layout](../../task_contracts/ja/TEST-METAMORPHIC-ATTRIBUTE-LAYOUT.md).
 
 ## 推奨検証
 

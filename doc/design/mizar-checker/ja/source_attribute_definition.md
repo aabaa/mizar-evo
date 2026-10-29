@@ -6,6 +6,34 @@
 Status: Checker Task 261 implemented source-transport boundary。frozen contractは
 exactly one pass consumer/one covered trace rowとしてactiveです。
 
+## Layout and source responsibility
+
+固定名の通常属性経路はトークンを保つレイアウトを扱う。runnerはnormalな閉じたSurface graphを選択し、
+既存resolver検証の後、下位生成の前に実字句列・map・再収集したshell/environment全体を照合する。
+範囲は実ASTから取得し、元の正規表記とbinding identityを保つ。checkerは構文を含まない対応・幅・容量を
+検証する。subjectはdefinition siteを共有し、parameter文端点に独立siteはないため、実トークン・文範囲の
+一致はrunnerが担う。許容範囲内の一貫した余白は有効で、対応・幅・包囲関係の不一致は拒否する。
+以下の固定座標とexact-byte記述は元fixtureの記録であり、全レイアウトへの制約ではない。
+
+B/Dはblock/attribute、Pはparameter文全体、dは宣言identifier、Tはset型、Sはsubject、Fはdefiniens、
+L/Rはそのoperand範囲を表す。d/S/L/Rの幅1、Tの幅3、同一source・非空・順序・包囲関係、全下位joinと
+fingerprint/install検証を保つ。checked端点差分の最小byte容量は次のとおり。
+
+| 区間 | 最小 |
+|---|---:|
+| B.startからP0.start | 11 |
+| P.startからd.start | 4 |
+| d.endからT.start | 4 |
+| T.endからP.end | 1 |
+| D.startからS.start | 32 |
+| S.endからF.start | 25 |
+| F.endからD.end | 1 |
+| D.endからB.end | 4 |
+| L.endからR.start | 1 |
+
+これは固定keyword/label/notation/句読点と語間区切りの容量であり、実トークン位置の証明ではない。
+全体幅は変動し、initial obligationと意味出力の境界は維持する。
+
 ## Authority、classification、scope
 
 Task 261はordinary unparameterized `attr ... means ...` definition 1件の

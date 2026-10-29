@@ -517,10 +517,12 @@ fn source_attribute_definition_route_rejects_source_resolver_and_lower_corruptio
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_010);
     for (ordinal, near_source) in [
-        SOURCE_ATTRIBUTE_DEFINITION_TEXT
-            .trim_end_matches('\n')
-            .to_owned(),
-        format!("{SOURCE_ATTRIBUTE_DEFINITION_TEXT}\n"),
+        format!("reserve z for set;\n{SOURCE_ATTRIBUTE_DEFINITION_TEXT}"),
+        SOURCE_ATTRIBUTE_DEFINITION_TEXT.replacen(
+            "  let x be set;\n  let y be set;",
+            "  let x, y be set;",
+            1,
+        ),
         SOURCE_ATTRIBUTE_DEFINITION_TEXT.replace("let y be set;", "let z be set;"),
         SOURCE_ATTRIBUTE_DEFINITION_TEXT.replace("Task261AttributeDefinition", "Task261OtherDef"),
         SOURCE_ATTRIBUTE_DEFINITION_TEXT.replace("task261_marked", "task261_other"),
@@ -529,8 +531,40 @@ fn source_attribute_definition_route_rejects_source_resolver_and_lower_corruptio
     .into_iter()
     .enumerate()
     {
-        let (near_ast, near_module, near_shells, near_symbols) =
-            task253_ast_from_source_text(&near_source, 261_020 + ordinal);
+        let (near_ast, near_module, near_shells, near_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&near_source, 261_020 + ordinal);
+        if ordinal < 2 {
+            assert_eq!(diagnostics, 0, "unsupported normal topology {ordinal}");
+            assert!(near_ast.canonical_bytes().is_some());
+            assert!(near_ast.node_views().all(|node| !node.is_recovered()));
+            if ordinal == 0 {
+                let items = near_ast
+                    .nodes()
+                    .iter()
+                    .filter(|node| node.kind == SurfaceNodeKind::ItemList)
+                    .collect::<Vec<_>>();
+                assert_eq!(items.len(), 1);
+                assert_eq!(
+                    items[0].children.iter().map(|id| &near_ast.node(*id).unwrap().kind).collect::<Vec<_>>(),
+                    [&SurfaceNodeKind::ReserveItem, &SurfaceNodeKind::DefinitionBlockItem],
+                );
+            } else {
+                let parameters = near_ast
+                    .nodes()
+                    .iter()
+                    .filter(|node| node.kind == SurfaceNodeKind::DefinitionParameter)
+                    .collect::<Vec<_>>();
+                assert_eq!(parameters.len(), 1);
+                let parameter = parameters[0].range;
+                assert_eq!(
+                    near_ast.token_views()
+                        .filter(|node| parameter.start <= node.range().start && node.range().end <= parameter.end)
+                        .map(|node| node.as_token().unwrap().text.as_ref())
+                        .collect::<Vec<_>>(),
+                    ["let", "x", ",", "y", "be", "set", ";"],
+                );
+            }
+        }
         assert!(
             source_attribute_definition_output(
                 &near_ast,
@@ -1507,4 +1541,462 @@ fn task261_source_binding_core_handoff_with_mutation(
         source_context.binding_env().clone(),
     )
     .expect("Task261 33LB handoff should build")
+}
+
+#[test]
+fn metamorphic_attribute_layout_lexical_stream_matches_genuine_frontend() {
+    let original = task257c4c1_frontend_output(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_200);
+    assert!(original.diagnostics.is_empty());
+    let ast = original.ast.as_ref().unwrap();
+    let mut sources = vec![("original", SOURCE_ATTRIBUTE_DEFINITION_TEXT.to_owned())];
+    sources.extend(
+        metamorphic_edits::variants(ast, SOURCE_ATTRIBUTE_DEFINITION_TEXT)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| (kind, metamorphic_edits::apply(SOURCE_ATTRIBUTE_DEFINITION_TEXT, &edits))),
+    );
+    assert_eq!(sources.len(), 3);
+    for (ordinal, (layout, source)) in sources.into_iter().enumerate() {
+        let frontend = task257c4c1_frontend_output(&source, 261_201 + ordinal);
+        assert!(frontend.diagnostics.is_empty(), "{layout}");
+        assert!(frontend.tokens.diagnostics.is_empty(), "{layout}");
+        let ast = frontend.ast.as_ref().unwrap();
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(ast.node_views().all(|node| !node.is_recovered()), "{layout}");
+        assert!(frontend.preprocessed.import_stubs.is_empty());
+        let preprocessed = mizar_lexer::preprocess_source_for_lexing(&source);
+        assert!(preprocessed.diagnostics.is_empty(), "{layout}");
+        assert_eq!(preprocessed.lexical_text, frontend.preprocessed.lexical_text.as_str(), "{layout}");
+        assert_eq!(preprocessed.preprocess_map, frontend.preprocessed.source_map.preprocess_map, "{layout}");
+        let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).unwrap();
+        let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let scopes = mizar_lexer::build_scope_skeleton(&raw);
+        let actual = mizar_lexer::disambiguate(
+            &raw,
+            &environment,
+            &mizar_lexer::ParserLexContext::general(),
+            &scopes,
+        );
+        assert!(actual.diagnostics().is_empty(), "{layout}");
+        assert_eq!(actual.tokens().len(), frontend.tokens.tokens().len(), "{layout}");
+        for (token, native) in actual.tokens().iter().zip(frontend.tokens.tokens()) {
+            let mapped = preprocessed.preprocess_map.source_ranges_for_lexical(token.span).unwrap();
+            assert_eq!(mapped.len(), 1, "{layout}: token split by preprocessing");
+            let span = task261_range(ast.source_id, mapped[0].start, mapped[0].end);
+            assert_eq!((token.kind, token.lexeme.as_str(), span), (native.kind, native.text.as_ref(), native.span), "{layout}");
+            assert_eq!(source.get(span.start..span.end), Some(token.lexeme.as_str()), "{layout}");
+        }
+    }
+}
+
+#[test]
+fn metamorphic_attribute_layout_transports_actual_source_handoffs() {
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK261_CASE)
+        .unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    assert_eq!(original, SOURCE_ATTRIBUTE_DEFINITION_TEXT);
+    let frontend = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let original_ast = frontend.ast.as_ref().unwrap();
+    let mut sources = vec![("original", original.clone())];
+    sources.extend(
+        metamorphic_edits::variants(original_ast, &original)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .map(|(kind, edits)| (kind, metamorphic_edits::apply(&original, &edits))),
+    );
+    assert_eq!(sources.len(), 3);
+    sources.extend([
+        ("missing_lf", original.trim_end_matches('\n').to_owned()),
+        ("extra_lf", format!("{original}\n")),
+        ("trailing_comment", format!("{original}:: trailing trivia\n")),
+        ("parameter_comment", original.replacen("x be", "x :: binding\n be", 1)),
+        ("equality_comment", original.replacen("x = y", "x :: equality\n = y", 1)),
+        ("subject_only", original.replacen(": x is", ":x  is", 1)),
+        ("compact", "definition let x be set;let y be set;attr Task261AttributeDefinition:x is task261_marked means x=y;end;".to_owned()),
+    ]);
+    let mut failures = Vec::new();
+    let mut baseline_fingerprints = None;
+    for (layout, source) in sources {
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+            assert_eq!(frontend.source_text.as_ref(), source);
+            assert!(frontend.diagnostics.is_empty(), "{layout}");
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.canonical_bytes().is_some(), "{layout}");
+            assert!(ast.node_views().all(|node| !node.is_recovered()), "{layout}");
+            let resolver = resolver_symbol_collection(&config.workspace_root, case, ast);
+            assert!(resolver.detail_keys.is_empty(), "{layout}");
+            let output = source_attribute_definition_output(
+                ast,
+                resolver.module.clone(),
+                &resolver.shells,
+                &resolver.env,
+                &source,
+            );
+            match output {
+                Some(Ok(output)) => {
+                    let handoff = output.typed_ast.source_attribute_definition().expect("actual Attribute handoff");
+                    assert_eq!(Some(handoff), output.resolved.source_attribute_definition());
+                    let context = output.typed_ast.source_context().unwrap();
+                    let types = output.typed_ast.source_type().unwrap();
+                    let terms = output.typed_ast.source_term().unwrap();
+                    let atomic = output.typed_ast.source_atomic_formula().unwrap();
+                    let expected = |index: usize| ast.nodes()[index].range;
+                    assert_eq!(ast.nodes().len(), TASK261_EXPECTED_SURFACE_ROWS.len());
+                    for (index, (node, row)) in ast.nodes().iter().zip(TASK261_EXPECTED_SURFACE_ROWS).enumerate() {
+                        assert_eq!(node.children.iter().map(|child| child.index()).collect::<Vec<_>>(), row.children);
+                        match (&node.kind, &row.kind) {
+                            (SurfaceNodeKind::Token(token), Task261ExpectedSurfaceKind::Token(kind, text)) => {
+                                assert_eq!((token.kind, token.text.as_ref()), (*kind, *text));
+                                assert_eq!(source.get(node.range.start..node.range.end), Some(*text));
+                            }
+                            (kind, Task261ExpectedSurfaceKind::Structural(expected)) => assert_eq!(kind, expected),
+                            kinds => panic!("{layout} row{index}: {kinds:?}"),
+                        }
+                    }
+                    for (id, node) in output.typed_ast.nodes().iter() {
+                        let member = match id.index() { 27 => 2, 31 => 7, index => index };
+                        assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(expected(member)), "{layout} anchor{}", id.index());
+                    }
+                    assert_eq!(context.items().iter().next().unwrap().1.source_range, expected(41));
+                    for (index, ((_, declaration), (_, parameter))) in context.declarations().iter().zip(handoff.parameters().iter()).enumerate() {
+                        let (identifier, type_token, statement) = [(2, 4, 27), (7, 9, 31)][index];
+                        assert_eq!(declaration.declaration_range, expected(identifier));
+                        assert_eq!(declaration.written_type_range, expected(type_token));
+                        assert_eq!(parameter.declaration_range(), expected(identifier));
+                        assert_eq!(parameter.source_range(), expected(statement));
+                        assert_eq!(parameter.binding().index(), index);
+                        assert_eq!(parameter.written_type().index(), index);
+                        let binding = context.binding_env().bindings().get(parameter.binding()).unwrap();
+                        assert_eq!(binding.spelling, ["x", "y"][index]);
+                        assert_eq!(binding.identity, mizar_checker::binding_env::BinderIdentity::ResolverLocal {
+                            scope: mizar_resolve::names::LocalTermScope::new(vec![0]),
+                            ordinal: index,
+                            declaration_range: expected(identifier),
+                        });
+                        assert_eq!(binding.owner_context.index(), 1);
+                        assert_eq!(binding.visible_after_ordinal, index);
+                        assert_eq!(binding.type_site, mizar_checker::binding_env::BindingTypeSite::Source(expected(type_token)));
+                        assert!(binding.captured.identities().is_empty());
+                        let application = types.applications().iter().nth(index).unwrap().1;
+                        assert_eq!(application.binding(), parameter.binding());
+                        let expression = types.expressions().get(application.root()).unwrap();
+                        assert_eq!(expression.source_range(), expected(type_token));
+                        assert_eq!(expression.head_range(), expected(type_token));
+                    }
+                    for (index, (_, reference)) in terms.references().iter().enumerate() {
+                        let term = terms.terms().get(reference.term()).unwrap();
+                        assert_eq!(term.source_range(), expected([33, 35][index]));
+                        assert_eq!(term.spelling(), ["x", "y"][index]);
+                        assert_eq!(reference.binding().index(), index);
+                        assert_eq!(reference.use_ordinal(), 2);
+                        assert_eq!(reference.lexical_scope().unwrap().path(), [0]);
+                        assert_eq!(context.binding_env().lookup(&mizar_checker::binding_env::BindingLookupSite::new(
+                            term.spelling(), term.context(), reference.lexical_scope().cloned(), reference.use_ordinal()
+                        )).unwrap(), mizar_checker::binding_env::BindingLookupResult::Local(BindingId::new(index)));
+                    }
+                    assert_eq!(atomic.formulas().iter().next().unwrap().1.source_range(), expected(37));
+                    assert_eq!((atomic.edges().len(), atomic.requests().len()), (2, 2));
+                    for (index, (_, edge)) in atomic.edges().iter().enumerate() {
+                        assert_eq!(edge.ordinal(), index);
+                        assert_eq!(edge.formula().index(), 0);
+                        assert_eq!(atomic.requests().iter().nth(index).unwrap().1.edge().unwrap().index(), index);
+                    }
+                    let definition = handoff.definitions().iter().next().unwrap().1;
+                    assert_eq!(definition.source_range(), expected(40));
+                    assert_eq!(definition.origin().anchor(), &mizar_session::SourceAnchor::Range(expected(40)));
+                    let actual_definition = resolver.env.definitions().get(definition.definition()).unwrap();
+                    assert_eq!(definition.symbol(), actual_definition.symbol());
+                    assert_eq!(definition.origin(), actual_definition.origin());
+                    assert_eq!(resolver.env.contributions().get(definition.contribution()).unwrap().anchor(), &mizar_session::SourceAnchor::Range(expected(41)));
+                    let subject = handoff.subjects().iter().next().unwrap().1;
+                    let definiens = handoff.definientia().iter().next().unwrap().1;
+                    assert_eq!(subject.source_range(), expected(14));
+                    assert_eq!(definiens.source_range(), expected(39));
+                    assert_eq!([handoff.source_context_fingerprint(), handoff.source_type_fingerprint(), handoff.source_term_fingerprint(), handoff.source_atomic_formula_fingerprint()],
+                        [context.debug_text(), types.debug_text(), terms.debug_text(), atomic.debug_text()]);
+                    let fingerprints = [context.debug_text(), types.debug_text(), terms.debug_text(), atomic.debug_text(), handoff.debug_text()];
+                    if layout == "original" { baseline_fingerprints = Some(fingerprints); }
+                    else if [2, 7, 14, 33, 35, 41].iter().any(|index| expected(*index) != original_ast.nodes()[*index].range) {
+                        assert_ne!(Some(&fingerprints), baseline_fingerprints.as_ref(), "{layout}");
+                    } else { assert_eq!(Some(&fingerprints), baseline_fingerprints.as_ref(), "{layout}"); }
+                    if layout == "subject_only" {
+                        assert_eq!(source.len(), original.len());
+                        for index in 0..45 {
+                            assert_eq!(expected(index), if index == 14 { task261_range(ast.source_id, 77, 78) } else { original_ast.nodes()[index].range });
+                        }
+                    }
+                    if layout == "compact" {
+                        assert_eq!([
+                            expected(27).start - expected(41).start,
+                            expected(2).start - expected(27).start,
+                            expected(4).start - expected(2).end,
+                            expected(27).end - expected(4).end,
+                            expected(14).start - expected(40).start,
+                            expected(37).start - expected(14).end,
+                            expected(40).end - expected(37).end,
+                            expected(41).end - expected(40).end,
+                            expected(35).start - expected(33).end,
+                        ], [11, 4, 4, 1, 32, 25, 1, 4, 1]);
+                    }
+                    let replay = source_attribute_definition_output(ast, resolver.module.clone(), &resolver.shells, &resolver.env, &source).unwrap().unwrap();
+                    assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+                    assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+                    assert_eq!(output.typed_ast.clone().source_attribute_definition(), Some(handoff));
+                    assert!(output.typed_ast.initial_obligations().is_empty());
+                    let result = run_type_elaboration_case(&config.workspace_root, &config.workspace_root.join("tests"), case, ordinal);
+                    assert_eq!(result.status, TypeElaborationCaseStatus::Passed, "{layout}");
+                    assert!(result.actual_detail_keys.is_empty(), "{layout}");
+                }
+                result => {
+                    let error = format!("{layout}: {result:?}");
+                    assert_ne!(layout, "original", "{error}");
+                    failures.push(error);
+                }
+            }
+        });
+    }
+    assert!(failures.is_empty(), "actual Attribute layout transport failed: {failures:?}");
+}
+
+#[test]
+fn metamorphic_attribute_layout_distinguishes_source_authentication_and_unsupported_shape() {
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK261_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let module = resolver.module;
+    source_attribute_definition_output(
+        ast,
+        module.clone(),
+        &resolver.shells,
+        &resolver.env,
+        &source,
+    )
+    .expect("normal supported original")
+    .expect("genuine resolver and all lower producers");
+    for trailing in [
+        source.trim_end_matches('\n').to_owned(),
+        format!("{source}\n"),
+        format!("{source}:: trailing\n"),
+    ] {
+        source_attribute_definition_output(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &resolver.env,
+            &trailing,
+        )
+        .expect("unchanged token anchors")
+        .expect("only trailing layout differs");
+    }
+    for raw in [
+        String::new(),
+        format!("\n{source}"),
+        format!("{source}set"),
+        source.replacen("x = y", "x = x", 1),
+    ] {
+        let error = source_attribute_definition_output_with_mutation(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &resolver.env,
+            &raw,
+            SourceAttributeDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("supported AST independent of stale raw")
+        .expect_err("raw authentication precedes lower Type failure");
+        assert_eq!(error, "Task261 source association is invalid");
+    }
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&resolver.env);
+    indexes.namespace_graph.insert_node(
+        mizar_resolve::env::NamespaceNodeKind::Segment,
+        Some(module.clone()),
+        "unowned",
+        resolver.env.contributions().iter().next().unwrap().id(),
+    );
+    let changed_env = mizar_resolve::env::SymbolEnv::new(module.clone(), indexes);
+    assert_eq!(changed_env.symbols(), resolver.env.symbols());
+    assert_eq!(changed_env.definitions(), resolver.env.definitions());
+    assert_eq!(changed_env.contributions(), resolver.env.contributions());
+    assert_ne!(changed_env, resolver.env);
+    assert_eq!(
+        source_attribute_definition_output_with_mutation(
+            ast,
+            module.clone(),
+            &resolver.shells,
+            &changed_env,
+            &source,
+            SourceAttributeDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("selected original AST")
+        .expect_err("complete replay rejects unowned namespace state before lower Type"),
+        "Task261 source association is invalid"
+    );
+
+    for corruption in 0..3 {
+        let mut changed = source.clone();
+        if corruption == 2 {
+            changed.remove(16);
+        }
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut range = node.range;
+            if corruption == 2 {
+                range.start -= usize::from(range.start > 16);
+                range.end -= usize::from(range.end > 16);
+            }
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            rebuilt.push(match &node.kind {
+                SurfaceNodeKind::Token(token) => builder.add_token(
+                    if corruption == 0 && index == 2 {
+                        SurfaceTokenKind::ReservedWord
+                    } else {
+                        token.kind
+                    },
+                    token.text.clone(),
+                    range,
+                ),
+                kind => builder.add_node(kind.clone(), range, children),
+            });
+        }
+        if corruption == 1 {
+            builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                ast.nodes()[37].range,
+                vec![rebuilt[37]],
+            );
+        }
+        let malformed = builder.finish(Some(rebuilt[44]), None);
+        assert!(malformed.canonical_bytes().is_some());
+        assert!(malformed.node_views().all(|node| !node.is_recovered()));
+        let fresh = resolver_symbol_collection(root, case, &malformed);
+        assert!(fresh.detail_keys.is_empty());
+        let output = source_attribute_definition_output_with_mutation(
+            &malformed,
+            module.clone(),
+            &fresh.shells,
+            &fresh.env,
+            &changed,
+            SourceAttributeDefinitionRouteMutation::RemoveTypeExpression,
+        );
+        if corruption < 2 {
+            assert!(
+                output.is_none(),
+                "unsupported fixed token kind/unreachable role {corruption}"
+            );
+        } else {
+            assert_eq!(changed.get(13..17), Some("letx"));
+            for token in malformed.token_views() {
+                let range = token.range();
+                assert_eq!(
+                    changed.get(range.start..range.end),
+                    Some(token.as_token().unwrap().text.as_ref())
+                );
+            }
+            assert_eq!(
+                output
+                    .expect("closed graph and coherent token slices remain selected")
+                    .expect_err("genuine lexer refuses merged keyword/binder before lower build"),
+                "Task261 source association is invalid"
+            );
+        }
+    }
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let foreign_root = std::env::temp_dir().join(format!(
+        "mizar-test-attribute-foreign-{}-{nanos}",
+        std::process::id()
+    ));
+    let foreign_path = foreign_root
+        .join("src")
+        .join(case.source_path.file_name().unwrap());
+    std::fs::create_dir_all(foreign_path.parent().unwrap()).unwrap();
+    std::fs::write(&foreign_path, &source).unwrap();
+    let ids = mizar_session::InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(ordinal + 1);
+    mizar_session::SessionIdAllocator::next_source_id(&ids, snapshot).unwrap();
+    let foreign = mizar_frontend::orchestration::Frontend::new(
+        mizar_frontend::source::FrontendSourceLoader::new(mizar_session::DiskSourceLoader::new(
+            &foreign_root,
+        )),
+        ParseOnlyImportProvider,
+        mizar_frontend::parsing::MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot,
+            input: mizar_session::SourceInput {
+                package_id: module.package().clone(),
+                module_path: module.path().clone(),
+                normalized_path: mizar_session::normalize_path(&foreign_root, &foreign_path)
+                    .unwrap(),
+                edition: mizar_session::Edition::new("2026"),
+                origin: mizar_session::SourceOriginInput::Disk { path: foreign_path },
+            },
+        },
+        &ids,
+    )
+    .unwrap();
+    std::fs::remove_dir_all(&foreign_root).unwrap();
+    assert_eq!(foreign.source.source_text.as_ref(), source);
+    assert_eq!(&foreign.source.package_id, module.package());
+    assert_eq!(&foreign.source.module_path, module.path());
+    assert!(foreign.diagnostics.is_empty());
+    let foreign_ast = foreign.ast.as_ref().unwrap();
+    assert!(foreign_ast.canonical_bytes().is_some());
+    assert!(foreign_ast.node_views().all(|node| !node.is_recovered()));
+    assert_ne!(foreign_ast.source_id, ast.source_id);
+    let fresh = resolver_symbol_collection(root, case, foreign_ast);
+    assert!(fresh.detail_keys.is_empty());
+    assert_eq!(fresh.module, module);
+    let positive = source_attribute_definition_output(
+        foreign_ast,
+        module.clone(),
+        &fresh.shells,
+        &fresh.env,
+        &source,
+    )
+    .expect("genuine fresh source remains supported")
+    .expect("matching real current resolver environment");
+    assert_eq!(positive.typed_ast.source_id(), foreign_ast.source_id);
+    assert_eq!(
+        positive.typed_ast.source_attribute_definition(),
+        positive.resolved.source_attribute_definition()
+    );
+    for shells in [&resolver.shells, &fresh.shells] {
+        let error = source_attribute_definition_output_with_mutation(
+            foreign_ast,
+            module.clone(),
+            shells,
+            &resolver.env,
+            &source,
+            SourceAttributeDefinitionRouteMutation::RemoveTypeExpression,
+        )
+        .expect("supported foreign AST")
+        .expect_err("stale source association before lower Type");
+        assert!(error.starts_with("Task261 resolver:"), "{error}");
+    }
 }

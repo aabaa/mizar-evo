@@ -663,7 +663,7 @@ impl SourceAttributeDefinitionProducer {
             return Err(SourceAttributeDefinitionError::SourceIdentityMismatch);
         }
         validate_input_shape(&input)?;
-        let origin = validate_resolver_definition(&input, env)?;
+        let origin = validate_resolver_definition(&input, env, source_context)?;
         validate_input_rows(
             &input,
             source_context,
@@ -832,6 +832,7 @@ fn validate_input_shape(
 fn validate_resolver_definition(
     input: &SourceAttributeDefinitionHandoffInput,
     env: &SymbolEnv,
+    source_context: &SourceBindingContextHandoff,
 ) -> Result<SemanticOrigin, SourceAttributeDefinitionError> {
     if env.symbols().len() != 1 || env.definitions().len() != 1 || env.contributions().len() != 1 {
         return Err(SourceAttributeDefinitionError::InvalidResolverDefinition { index: 0 });
@@ -849,7 +850,11 @@ fn validate_resolver_definition(
         .contributions()
         .get(row.contribution)
         .ok_or(SourceAttributeDefinitionError::InvalidResolverDefinition { index: 0 })?;
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, 0, 115));
+    let block = source_context
+        .items()
+        .get(SourceItemId::new(0))
+        .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?;
+    let expected_anchor = SourceAnchor::Range(block.source_range);
     if row.definition.index() != 0
         || row.contribution.index() != 0
         || row.symbol.module() != &input.module_id
@@ -914,9 +919,20 @@ fn validate_input_rows(
     let source = input.source_id;
     let context = BindingContextId::new(1);
     let local_context = validate_context_profile(input, source_context, arena)?;
+    let block_range = source_context
+        .items()
+        .get(SourceItemId::new(0))
+        .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?
+        .source_range;
     let definition = &input.definitions[0];
     if definition.site != TypedSiteRef::Node(TypedNodeId::new(40))
-        || definition.source_range != range(source, 45, 110)
+        || definition.source_range.source_id != source
+        || definition.source_range.start >= definition.source_range.end
+        || block_range.start >= definition.source_range.start
+        || block_range
+            .end
+            .checked_sub(definition.source_range.end)
+            .is_none_or(|gap| gap < "end;".len())
         || definition.source_ordinal != 0
         || definition.context != context
         || definition.recovery != SourceAttributeDefinitionRecovery::Normal
@@ -936,18 +952,50 @@ fn validate_input_rows(
     ) {
         return Err(SourceAttributeDefinitionError::InvalidArenaOwnership);
     }
-    let parameter_ranges = [(13, 26, 17, 18), (29, 42, 33, 34)];
     let parameter_sites = [27, 31];
     let parameter_spellings = ["let x be set;", "let y be set;"];
     for (index, row) in input.parameters.iter().enumerate() {
-        let (start, end, declaration_start, declaration_end) = parameter_ranges[index];
+        let written_range = source_context
+            .declarations()
+            .get(SourceDeclarationId::new(index))
+            .ok_or(SourceAttributeDefinitionError::InvalidParameter { index })?
+            .written_type_range;
         if row.owner != SourceAttributeDefinitionId::new(0)
             || row.ordinal != index
             || row.binding != BindingId::new(index)
             || row.written_type != SourceTypeApplicationId::new(index)
             || row.site != TypedSiteRef::Node(TypedNodeId::new(parameter_sites[index]))
-            || row.source_range != range(source, start, end)
-            || row.declaration_range != range(source, declaration_start, declaration_end)
+            || row.source_range.source_id != source
+            || row.declaration_range.source_id != source
+            || row
+                .declaration_range
+                .end
+                .checked_sub(row.declaration_range.start)
+                != Some(1)
+            || (index == 0
+                && row
+                    .source_range
+                    .start
+                    .checked_sub(block_range.start)
+                    .is_none_or(|gap| gap < "definition".len() + 1))
+            || row
+                .declaration_range
+                .start
+                .checked_sub(row.source_range.start)
+                .is_none_or(|gap| gap < "let".len() + 1)
+            || written_range
+                .start
+                .checked_sub(row.declaration_range.end)
+                .is_none_or(|gap| gap < "be".len() + 2)
+            || row
+                .source_range
+                .end
+                .checked_sub(written_range.end)
+                .is_none_or(|gap| gap < ";".len())
+            || row.source_range.end > definition.source_range.start
+            || index.checked_sub(1).is_some_and(|previous| {
+                input.parameters[previous].source_range.end > row.source_range.start
+            })
             || row.context != context
             || row.recovery != SourceAttributeDefinitionRecovery::Normal
             || row.spelling != parameter_spellings[index]
@@ -964,14 +1012,31 @@ fn validate_input_rows(
             return Err(SourceAttributeDefinitionError::InvalidArenaOwnership);
         }
     }
-    validate_type_profile(input, source_type, local_context, arena)?;
+    validate_type_profile(input, source_context, source_type, local_context, arena)?;
     validate_term_and_atomic_profile(input, source_term, source_atomic_formula)?;
 
     let subject = &input.subjects[0];
     if subject.owner != SourceAttributeDefinitionId::new(0)
         || subject.binding != BindingId::new(0)
         || subject.site != definition.site
-        || subject.source_range != range(source, 78, 79)
+        || subject.source_range.source_id != source
+        || subject
+            .source_range
+            .end
+            .checked_sub(subject.source_range.start)
+            != Some(1)
+        || subject
+            .source_range
+            .start
+            .checked_sub(definition.source_range.start)
+            .is_none_or(|gap| {
+                gap < "attr".len() + 1 + "Task261AttributeDefinition".len() + ":".len()
+            })
+        || input.definientia[0]
+            .source_range
+            .start
+            .checked_sub(subject.source_range.end)
+            .is_none_or(|gap| gap < "is".len() + "task261_marked".len() + "means".len() + 4)
         || subject.context != context
         || subject.recovery != SourceAttributeDefinitionRecovery::Normal
         || subject.spelling != "x"
@@ -995,7 +1060,13 @@ fn validate_input_rows(
         || definiens.ordinal != 0
         || definiens.formula != SourceAtomicFormulaId::new(0)
         || definiens.site != TypedSiteRef::Node(TypedNodeId::new(39))
-        || definiens.source_range != range(source, 104, 109)
+        || definiens.source_range.source_id != source
+        || definiens.source_range.start >= definiens.source_range.end
+        || definition
+            .source_range
+            .end
+            .checked_sub(definiens.source_range.end)
+            .is_none_or(|gap| gap < ";".len())
         || definiens.context != context
         || definiens.recovery != SourceAttributeDefinitionRecovery::Normal
         || definiens.spelling != "x = y"
@@ -1051,7 +1122,8 @@ fn validate_context_profile(
         || item.shell.index() != 0
         || item.shell_ordinal != 0
         || item.role != SourceItemRole::DefinitionBlock
-        || item.source_range != range(source, 0, 115)
+        || item.source_range.source_id != source
+        || item.source_range.start >= item.source_range.end
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.site != TypedSiteRef::Node(TypedNodeId::new(41))
@@ -1085,17 +1157,12 @@ fn validate_context_profile(
             .declarations()
             .get(SourceDeclarationId::new(index))
             .ok_or(SourceAttributeDefinitionError::InvalidParameter { index })?;
-        let written_range = if index == 0 {
-            range(source, 22, 25)
-        } else {
-            range(source, 38, 41)
-        };
+        let written_range = declaration.written_type_range;
         if declaration.item != item.id
             || declaration.binding != row.binding
             || declaration.source_ordinal != index
             || declaration.spelling != if index == 0 { "x" } else { "y" }
             || declaration.declaration_range != row.declaration_range
-            || declaration.written_type_range != written_range
             || declaration.site != row.site
             || !matches!(
                 declaration.role,
@@ -1132,6 +1199,7 @@ fn validate_context_profile(
 
 fn validate_type_profile(
     input: &SourceAttributeDefinitionHandoffInput,
+    source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
     local_context: LocalTypeContextId,
     arena: &TypedArena,
@@ -1144,7 +1212,6 @@ fn validate_type_profile(
     }
     let expression_sites = [25, 29];
     let head_sites = [24, 28];
-    let ranges = [(22, 25), (38, 41)];
     for index in 0..2 {
         let application = source_type
             .applications()
@@ -1154,10 +1221,16 @@ fn validate_type_profile(
             .expressions()
             .get(SourceTypeExpressionId::new(index))
             .ok_or(SourceAttributeDefinitionError::InvalidParameter { index })?;
-        let written_range = range(input.source_id, ranges[index].0, ranges[index].1);
+        let written_range = source_context
+            .declarations()
+            .get(SourceDeclarationId::new(index))
+            .ok_or(SourceAttributeDefinitionError::InvalidParameter { index })?
+            .written_type_range;
         let expression_site = TypedSiteRef::Node(TypedNodeId::new(expression_sites[index]));
         let head_site = TypedSiteRef::Node(TypedNodeId::new(head_sites[index]));
-        if application.binding() != input.parameters[index].binding
+        if written_range.source_id != input.source_id
+            || written_range.end.checked_sub(written_range.start) != Some(3)
+            || application.binding() != input.parameters[index].binding
             || application.source_ordinal() != index
             || application.root() != SourceTypeExpressionId::new(index)
             || expression.id() != SourceTypeExpressionId::new(index)
@@ -1215,7 +1288,6 @@ fn validate_term_and_atomic_profile(
         return Err(SourceAttributeDefinitionError::DependencyMismatch);
     }
     let term_sites = [33, 35];
-    let term_ranges = [(104, 105), (108, 109)];
     let term_spellings = ["x", "y"];
     for index in 0..2 {
         let term = source_term
@@ -1227,8 +1299,12 @@ fn validate_term_and_atomic_profile(
             .get(SourcePrimaryTermReferenceId::new(index))
             .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?;
         if term.site() != &TypedSiteRef::Node(TypedNodeId::new(term_sites[index]))
-            || term.source_range()
-                != range(input.source_id, term_ranges[index].0, term_ranges[index].1)
+            || term.source_range().source_id != input.source_id
+            || term
+                .source_range()
+                .end
+                .checked_sub(term.source_range().start)
+                != Some(1)
             || term.source_ordinal() != index
             || term.context() != BindingContextId::new(1)
             || term.recovery() != SourcePrimaryTermRecovery::Normal
@@ -1243,12 +1319,28 @@ fn validate_term_and_atomic_profile(
             return Err(SourceAttributeDefinitionError::DependencyMismatch);
         }
     }
+    let left = source_term
+        .terms()
+        .get(SourcePrimaryTermId::new(0))
+        .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?
+        .source_range();
+    let right = source_term
+        .terms()
+        .get(SourcePrimaryTermId::new(1))
+        .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?
+        .source_range();
     let formula = source_atomic_formula
         .formulas()
         .get(SourceAtomicFormulaId::new(0))
         .ok_or(SourceAttributeDefinitionError::DependencyMismatch)?;
     if formula.site() != &TypedSiteRef::Node(TypedNodeId::new(37))
-        || formula.source_range() != range(input.source_id, 104, 109)
+        || formula.source_range() != input.definientia[0].source_range
+        || formula.source_range().start != left.start
+        || formula.source_range().end != right.end
+        || right
+            .start
+            .checked_sub(left.end)
+            .is_none_or(|gap| gap < "=".len())
         || formula.source_ordinal() != 0
         || formula.context() != BindingContextId::new(1)
         || formula.recovery() != SourceAtomicFormulaRecovery::Normal
@@ -1472,6 +1564,7 @@ fn valid_site(
     })
 }
 
+#[cfg(test)]
 const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
