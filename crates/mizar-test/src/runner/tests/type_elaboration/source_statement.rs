@@ -29410,16 +29410,25 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
             .is_none(),
             "near miss {ordinal} must not reach B4C"
         );
-        assert!(
-            source_formula_composition_output_with_source(
-                &near_ast,
-                near_module,
-                &near_symbols,
-                &near_miss,
-            )
-            .is_none(),
-            "near miss {ordinal} must not reach Task257B3"
+        let lower = source_formula_composition_output_with_source(
+            &near_ast,
+            near_module,
+            &near_symbols,
+            &near_miss,
         );
+        if ordinal < 2 {
+            let lower = lower
+                .expect("layout still selects lower B3")
+                .expect("genuine lower layout transport");
+            assert!(lower.typed_ast.source_statement().is_none());
+            assert!(lower.typed_ast.source_composite_formula().is_some());
+            assert!(lower.typed_ast.source_formula_composition().is_some());
+        } else {
+            assert!(
+                lower.is_none(),
+                "near miss {ordinal} must not reach Task257B3"
+            );
+        }
     }
 
     let (b4a_ast, b4a_module, b4a_symbols, b4a) = task258b4a_output(266_720);

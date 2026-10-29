@@ -1,8 +1,6 @@
 # case	rewrite	owner_task	first_divergence
 pass_type_elaboration_attribute_definition_payload_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_attribute_definition_payload_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
-pass_type_elaboration_formula_nested_quantifier_payload_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
-pass_type_elaboration_formula_nested_quantifier_payload_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_formula_nested_quantifier_payload_001	rename	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_formula_predicate_chain_segment_payload_001	intertoken_layout	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")
 pass_type_elaboration_formula_predicate_chain_segment_payload_001	leading_line	TEST-METAMORPHIC-BRIDGE-GENERALIZATION	observation 0: Some("type:[]") -> Some("type:[\"type_elaboration.external_dependency.ast_payload_extraction\"]")

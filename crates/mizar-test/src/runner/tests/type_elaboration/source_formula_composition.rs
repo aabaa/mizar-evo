@@ -1356,8 +1356,7 @@ fn task257b_selectors_are_exclusive_and_do_not_capture_task257a() {
         extract_source_formula_nested_quantifier_payload(
             &task257a_ast,
             &task257a_module,
-            &task257a_symbols,
-            "",
+            &task257a_symbols
         )
         .is_none()
     );
@@ -1366,14 +1365,10 @@ fn task257b_selectors_are_exclusive_and_do_not_capture_task257a() {
             .is_none()
     );
     let (ast, module, symbols) = task252_real_ast(TASK257B1_CASE);
-    assert!(
-        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, "").is_none()
-    );
+    assert!(extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none());
     assert!(source_composite_formula_output(&ast, module, &symbols).is_none());
     let (ast, module, symbols) = task252_real_ast(TASK257B2_CASE);
-    assert!(
-        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, "").is_none()
-    );
+    assert!(extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none());
     assert!(
         source_formula_composition_output(&ast, module, &symbols)
             .expect("Task 257B2 remains selected")
@@ -2299,9 +2294,8 @@ fn task257b2_source_selector_near_miss_matrix_remains_unselected() {
 #[test]
 fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownership() {
     let (ast, module, symbols) = task252_real_ast(TASK257B3_CASE);
-    let payload =
-        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, TASK257B3_SOURCE)
-            .expect("Task 257B3 selector payload");
+    let payload = extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols)
+        .expect("Task 257B3 selector payload");
     assert_eq!(
         payload
             .formula_ranges
@@ -2459,6 +2453,774 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
 }
 
 #[test]
+fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities() {
+    use mizar_checker::binding_env::{
+        BinderIdentity, BindingContextOwner, BindingId, BindingLookupResult, BindingLookupSite,
+        BindingTypeSite,
+    };
+    use mizar_resolve::names::LocalTermScope;
+
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
+        .unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let baseline_frontend = run_frontend(root, case, ordinal).unwrap();
+    let baseline_ast = baseline_frontend.ast.as_ref().unwrap();
+    let baseline_resolver = resolver_symbol_collection(root, case, baseline_ast);
+    let previous = extract_source_formula_nested_quantifier_payload(
+        baseline_ast,
+        &baseline_resolver.module,
+        &baseline_resolver.env,
+    )
+    .unwrap();
+    let baseline = source_formula_composition_output_with_source(
+        baseline_ast,
+        baseline_resolver.module.clone(),
+        &baseline_resolver.env,
+        &original,
+    )
+    .unwrap()
+    .unwrap();
+    let mut failures = Vec::new();
+    for (layout, source) in [
+        ("leading_line", format!("\n{original}")),
+        ("intertoken_layout", original.replace(' ', "\t \n ")),
+        ("comment", original.replacen("set; ", "set; :: layout\n", 1)),
+        ("zero_lf", original.trim_end_matches('\n').to_owned()),
+        ("triple_lf", format!("{original}\n\n")),
+    ] {
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(root, case, ordinal).unwrap();
+            assert!(frontend.diagnostics.is_empty(), "{layout}");
+            assert_eq!(frontend.source_text.as_ref(), source);
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+            let resolver = resolver_symbol_collection(root, case, ast);
+            assert!(resolver.detail_keys.is_empty(), "{layout}");
+            let output = match source_formula_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &resolver.env,
+                &source,
+            ) {
+                Some(Ok(output)) => output,
+                other => {
+                    failures.push(format!("{layout}: {other:?}"));
+                    return;
+                }
+            };
+            let payload = extract_source_formula_nested_quantifier_payload(
+                ast,
+                &resolver.module,
+                &resolver.env,
+            )
+            .expect("actual selected B3 payload");
+            let old_tokens = baseline_ast.token_views().collect::<Vec<_>>();
+            let tokens = ast.token_views().collect::<Vec<_>>();
+            assert_eq!(tokens.len(), old_tokens.len());
+            for (old, actual) in old_tokens.iter().zip(&tokens) {
+                assert_eq!(old.as_token(), actual.as_token());
+                let range = actual.range();
+                assert_eq!(
+                    source.get(range.start..range.end),
+                    actual.as_token().map(|token| token.text.as_ref())
+                );
+            }
+            let shifted = |old: mizar_session::SourceRange| mizar_session::SourceRange {
+                source_id: ast.source_id,
+                start: old_tokens
+                    .iter()
+                    .zip(&tokens)
+                    .find(|(token, _)| token.range().start == old.start)
+                    .unwrap()
+                    .1
+                    .range()
+                    .start,
+                end: old_tokens
+                    .iter()
+                    .zip(&tokens)
+                    .find(|(token, _)| token.range().end == old.end)
+                    .unwrap()
+                    .1
+                    .range()
+                    .end,
+            };
+            let ranges = payload
+                .formula_ranges
+                .iter()
+                .chain(&payload.binder_segment_ranges)
+                .chain(&payload.binder_identifier_ranges)
+                .chain(&payload.binder_type_ranges)
+                .chain(&payload.binder_type_head_ranges)
+                .chain(&payload.equality_ranges)
+                .chain(&payload.term_ranges)
+                .collect::<Vec<_>>();
+            let old_ranges = previous
+                .formula_ranges
+                .iter()
+                .chain(&previous.binder_segment_ranges)
+                .chain(&previous.binder_identifier_ranges)
+                .chain(&previous.binder_type_ranges)
+                .chain(&previous.binder_type_head_ranges)
+                .chain(&previous.equality_ranges)
+                .chain(&previous.term_ranges);
+            for (actual, old) in ranges.iter().zip(old_ranges) {
+                assert_eq!(**actual, shifted(*old), "{layout}");
+            }
+            let sites = payload
+                .formula_sites
+                .iter()
+                .chain(&payload.binder_segment_sites)
+                .chain(&payload.binder_identifier_sites)
+                .chain(&payload.binder_type_sites)
+                .chain(&payload.binder_type_head_sites)
+                .chain(&payload.equality_sites)
+                .chain(&payload.term_sites);
+            for (site, range) in sites.zip(ranges) {
+                assert_eq!(ast.nodes()[site.node().index()].range, *range);
+            }
+            let reserve = &payload.reserve.bindings()[0];
+            assert_eq!(
+                reserve.binding_range,
+                shifted(previous.reserve.bindings()[0].binding_range)
+            );
+            assert_eq!(
+                reserve.type_range,
+                shifted(previous.reserve.bindings()[0].type_range)
+            );
+            assert_eq!(
+                source.get(reserve.binding_range.start..reserve.binding_range.end),
+                Some("r")
+            );
+            assert_eq!(
+                source.get(reserve.type_range.start..reserve.type_range.end),
+                Some("set")
+            );
+            assert_eq!(payload.binder_type_ranges[2], reserve.type_range);
+            let primary = output.typed_ast.source_term().unwrap();
+            let atomic = output.typed_ast.source_atomic_formula().unwrap();
+            let composite = output.typed_ast.source_composite_formula().unwrap();
+            let composition = task257b1_handoff(&output);
+            assert_eq!(
+                (
+                    primary.terms().len(),
+                    primary.references().len(),
+                    composite.binders().len()
+                ),
+                (6, 6, 3)
+            );
+            let bindings = composite.binding_env();
+            assert_eq!(
+                (
+                    bindings.contexts().len(),
+                    bindings.bindings().len(),
+                    bindings.diagnostics().len(),
+                    composition.atomic_edges().len(),
+                    composition.bound_uses().len()
+                ),
+                (4, 4, 0, 3, 6)
+            );
+            for (id, binding) in bindings.bindings().iter() {
+                let index = id.index();
+                let declaration = if index == 0 {
+                    reserve.binding_range
+                } else {
+                    payload.binder_identifier_ranges[index - 1]
+                };
+                assert_eq!(binding.declaration_range, declaration);
+                assert_eq!(binding.spelling, ["r", "x", "y", "r"][index]);
+                assert_eq!(binding.owner_context.index(), index);
+                assert_eq!(binding.visible_after_ordinal, index);
+                assert_eq!(
+                    binding.type_site,
+                    BindingTypeSite::Source(if index == 0 {
+                        reserve.type_range
+                    } else {
+                        payload.binder_type_ranges[index - 1]
+                    })
+                );
+                assert!(binding.captured.identities().is_empty());
+                let identity = if index == 0 {
+                    BinderIdentity::ReservedVariable {
+                        spelling: "r".to_owned(),
+                        declaration_range: declaration,
+                    }
+                } else {
+                    BinderIdentity::ResolverLocal {
+                        scope: LocalTermScope::new(vec![0; index]),
+                        ordinal: index,
+                        declaration_range: declaration,
+                    }
+                };
+                assert_eq!(binding.identity, identity);
+            }
+            for (id, context) in bindings.contexts().iter() {
+                let index = id.index();
+                assert_eq!(
+                    context.visible_bindings,
+                    (0..=index).map(BindingId::new).collect::<Vec<_>>()
+                );
+                if index > 0 {
+                    assert_eq!(
+                        context.owner,
+                        BindingContextOwner::SourceFormula {
+                            source_range: payload.formula_ranges[index - 1]
+                        }
+                    );
+                    assert_eq!(
+                        context.lexical_scope.as_ref().unwrap().path(),
+                        vec![0; index]
+                    );
+                }
+            }
+            for (id, reference) in primary.references().iter() {
+                let index = id.index();
+                let term = primary.terms().get(reference.term()).unwrap();
+                assert_eq!(term.spelling(), ["x", "x", "r", "y", "x", "r"][index]);
+                assert_eq!(term.source_range(), payload.term_ranges[index]);
+                assert_eq!(
+                    source.get(term.source_range().start..term.source_range().end),
+                    Some(term.spelling())
+                );
+                assert_eq!(term.context().index(), if index < 2 { 1 } else { 3 });
+                assert_eq!(reference.binding().index(), [1, 1, 3, 2, 1, 3][index]);
+                assert_eq!(reference.use_ordinal(), if index < 2 { 2 } else { 4 });
+                assert_eq!(
+                    reference.lexical_scope().unwrap().path(),
+                    vec![0; if index < 2 { 1 } else { 3 }]
+                );
+                assert_eq!(
+                    bindings
+                        .lookup(&BindingLookupSite::new(
+                            term.spelling(),
+                            term.context(),
+                            reference.lexical_scope().cloned(),
+                            reference.use_ordinal()
+                        ))
+                        .unwrap(),
+                    BindingLookupResult::Local(BindingId::new([1, 1, 3, 2, 1, 3][index]))
+                );
+            }
+            assert_eq!(
+                atomic
+                    .formulas()
+                    .iter()
+                    .map(|(_, formula)| formula.source_range())
+                    .collect::<Vec<_>>(),
+                payload.equality_ranges
+            );
+            assert_eq!(
+                composite
+                    .formulas()
+                    .iter()
+                    .map(|(_, formula)| formula.source_range())
+                    .collect::<Vec<_>>(),
+                payload.formula_ranges
+            );
+            assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(
+                composition.atomic_formula_fingerprint(),
+                atomic.debug_text()
+            );
+            assert_eq!(
+                composition.composite_formula_fingerprint(),
+                composite.debug_text()
+            );
+            if matches!(layout, "leading_line" | "intertoken_layout" | "comment") {
+                assert_ne!(
+                    composition.primary_term_fingerprint(),
+                    baseline.typed_ast.source_term().unwrap().debug_text()
+                );
+                assert_ne!(
+                    composition.atomic_formula_fingerprint(),
+                    baseline
+                        .typed_ast
+                        .source_atomic_formula()
+                        .unwrap()
+                        .debug_text()
+                );
+                assert_ne!(
+                    composition.composite_formula_fingerprint(),
+                    baseline
+                        .typed_ast
+                        .source_composite_formula()
+                        .unwrap()
+                        .debug_text()
+                );
+            }
+            assert_eq!(
+                output.typed_ast.source_formula_composition(),
+                output.resolved.source_formula_composition()
+            );
+            assert_eq!(
+                output.typed_ast.source_composite_formula(),
+                output.resolved.source_composite_formula()
+            );
+            assert!(output.typed_ast.source_statement().is_none());
+            assert!(output.typed_ast.source_context().is_none());
+            assert!(output.typed_ast.types().is_empty());
+            assert!(output.typed_ast.facts().is_empty());
+            assert!(output.resolved.checked_formulas().is_empty());
+            assert!(output.resolved.statement_semantics().is_empty());
+            let replay = source_formula_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &resolver.env,
+                &source,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(replay.typed_ast, output.typed_ast);
+            assert_eq!(replay.resolved, output.resolved);
+            let result = run_type_elaboration_case(root, &root.join("tests"), case, ordinal);
+            assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+            assert!(result.actual_detail_keys.is_empty());
+        });
+    }
+    assert!(
+        failures.is_empty(),
+        "actual B3 layout output must be Some(Ok): {failures:?}"
+    );
+}
+
+#[test]
+fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed() {
+    use mizar_session::SessionIdAllocator as _;
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let payload =
+        extract_source_formula_nested_quantifier_payload(ast, &resolver.module, &resolver.env)
+            .unwrap();
+    for trailing in [
+        source.trim_end_matches('\n').to_owned(),
+        format!("{source}\n\n"),
+        format!("{source}:: trailing trivia\n"),
+    ] {
+        assert!(
+            source_formula_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &resolver.env,
+                &trailing
+            )
+            .expect("same actual token anchors")
+            .is_ok()
+        );
+    }
+    for stale in [
+        format!("\n{source}"),
+        source.replacen("theorem ", "theorem  ", 1),
+        source.replacen("x = x ex", "x :: = x\nex", 1),
+    ] {
+        assert!(
+            source_formula_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &resolver.env,
+                &stale
+            )
+            .expect("selected AST with stale substantive token association")
+            .is_err()
+        );
+    }
+    let ids = mizar_session::InMemorySessionIdAllocator::new();
+    let mut foreign_source = ids.next_source_id(super::shared::snapshot_id(260)).unwrap();
+    while foreign_source == ast.source_id {
+        foreign_source = ids.next_source_id(super::shared::snapshot_id(260)).unwrap();
+    }
+    let outer = payload.formula_sites[0].node().index();
+    let formula_wrapper = ast
+        .nodes()
+        .iter()
+        .position(|node| {
+            matches!(node.kind, K::FormulaExpression)
+                && node.children.iter().any(|child| child.index() == outer)
+        })
+        .unwrap();
+    let wrappers = [
+        formula_wrapper,
+        payload.binder_type_sites[2].node().index(),
+        payload.binder_type_sites[0].node().index(),
+        payload.binder_type_sites[1].node().index(),
+    ];
+    for corruption in 0..10 {
+        let mut changed = source.clone();
+        let gap = source.find("reserve ").unwrap() + "reserve".len();
+        if corruption == 0 {
+            assert_eq!(changed.remove(gap), ' ');
+        }
+        if corruption == 1 {
+            changed.push(';');
+        }
+        let source_id = if corruption == 3 {
+            foreign_source
+        } else {
+            ast.source_id
+        };
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(source_id);
+        let mut rebuilt = Vec::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut range = node.range;
+            range.source_id = source_id;
+            if corruption == 0 {
+                range.start -= usize::from(range.start > gap);
+                range.end -= usize::from(range.end > gap);
+            }
+            let mut children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect::<Vec<_>>();
+            if corruption == 1 && Some(index) == ast.root().map(|id| id.index()) {
+                children.push(builder.add_token(
+                    T::ReservedSymbol,
+                    ";",
+                    mizar_session::SourceRange {
+                        source_id,
+                        start: source.len(),
+                        end: changed.len(),
+                    },
+                ));
+                range.end = changed.len();
+            }
+            let kind = if corruption >= 6 && index == wrappers[corruption - 6] {
+                K::TermExpression
+            } else if corruption == 5 && index == outer {
+                K::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Existential)
+            } else {
+                node.kind.clone()
+            };
+            let id = match kind {
+                K::Token(token) => builder.add_token(
+                    if corruption == 4 && token.text.as_ref() == "reserve" {
+                        T::Identifier
+                    } else {
+                        token.kind
+                    },
+                    token.text,
+                    range,
+                ),
+                kind => builder.add_node(kind, range, children),
+            };
+            rebuilt.push(id);
+        }
+        if corruption == 2 {
+            builder.add_node(
+                K::FormulaExpression,
+                ast.nodes()[outer].range,
+                vec![rebuilt[outer]],
+            );
+        }
+        let forged = builder.finish(ast.root().map(|id| rebuilt[id.index()]), None);
+        assert!(forged.canonical_bytes().is_some());
+        assert!(forged.node_views().all(|node| !node.is_recovered()
+            && forged.range_contains_child_ranges(node.id()) == Some(true)));
+        assert!(
+            forged
+                .token_views()
+                .all(|node| changed.get(node.range().start..node.range().end)
+                    == node.as_token().map(|token| token.text.as_ref()))
+        );
+        let fresh = resolver_symbol_collection(root, case, &forged);
+        assert!(fresh.detail_keys.is_empty());
+        if corruption >= 5 {
+            assert_eq!(changed, source);
+            if corruption == 6 {
+                assert_ne!(
+                    fresh.env, resolver.env,
+                    "genuine signature replay retains the changed theorem-wrapper role"
+                );
+            } else {
+                assert_eq!(fresh.env, resolver.env);
+            }
+            assert_eq!(
+                forged
+                    .token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>(),
+                ast.token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>(),
+                "genuine unchanged lexing/range premise for typed role {corruption}"
+            );
+            assert!(
+                extract_source_formula_nested_quantifier_payload(
+                    &forged,
+                    &fresh.module,
+                    &fresh.env
+                )
+                .is_none(),
+                "unsupported typed role {corruption}"
+            );
+            assert!(
+                source_formula_composition_output_with_source(
+                    &forged,
+                    fresh.module,
+                    &fresh.env,
+                    &changed
+                )
+                .is_none()
+            );
+            continue;
+        }
+        assert!(
+            extract_source_formula_nested_quantifier_payload(&forged, &fresh.module, &fresh.env)
+                .is_some(),
+            "selected AST association {corruption}"
+        );
+        if corruption == 1 {
+            let lexed = task257c4c1_frontend_output(&changed, 260);
+            assert_eq!(lexed.tokens.tokens().len(), forged.token_nodes().len());
+            for (actual, supplied) in lexed.tokens.tokens().iter().zip(forged.token_views()) {
+                let kind = match actual.kind {
+                    mizar_frontend::lexing::TokenKind::Identifier => T::Identifier,
+                    mizar_frontend::lexing::TokenKind::ReservedWord => T::ReservedWord,
+                    mizar_frontend::lexing::TokenKind::ReservedSymbol => T::ReservedSymbol,
+                    _ => panic!("unexpected B3 token"),
+                };
+                assert_eq!(
+                    (
+                        kind,
+                        actual.text.as_ref(),
+                        actual.span.start,
+                        actual.span.end
+                    ),
+                    (
+                        supplied.as_token().unwrap().kind,
+                        supplied.as_token().unwrap().text.as_ref(),
+                        supplied.range().start,
+                        supplied.range().end
+                    )
+                );
+            }
+            let extra = forged.token_views().last().unwrap().id();
+            assert!(
+                forged
+                    .node_views()
+                    .filter(|node| Some(node.id()) != forged.root())
+                    .all(|node| !node.children().contains(&extra))
+            );
+        }
+        if corruption == 2 {
+            let unreachable = forged.node_views().last().unwrap().id();
+            assert_eq!(forged.nodes().len(), ast.nodes().len() + 1);
+            assert_eq!(forged.root(), ast.root());
+            assert!(
+                forged
+                    .node_views()
+                    .all(|node| !node.children().contains(&unreachable))
+            );
+        }
+        let symbols = if corruption == 3 {
+            assert_ne!(forged.source_id, ast.source_id);
+            assert!(
+                source_formula_composition_output_with_source(
+                    &forged,
+                    fresh.module.clone(),
+                    &fresh.env,
+                    &changed
+                )
+                .expect("coherent foreign source/env selected")
+                .is_ok()
+            );
+            &resolver.env
+        } else {
+            &fresh.env
+        };
+        assert!(
+            source_formula_composition_output_with_source(&forged, fresh.module, symbols, &changed)
+                .expect("selected malformed raw association must not skip")
+                .is_err(),
+            "actual source authentication {corruption}"
+        );
+    }
+}
+
+#[test]
+fn metamorphic_nested_layout_rejects_coherent_wrong_direct_child_grammar() {
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let mut failures = Vec::new();
+    for (name, needle, replacement, moved) in [
+        (
+            "outer_st_after_restriction",
+            "st x = x ex",
+            "x = x st ex",
+            vec![(0, 2, 6), (3, 4, 0), (5, 6, 2), (7, 8, 4)],
+        ),
+        (
+            "equality_operator_after_operands",
+            "x = x ex",
+            "x x = ex",
+            vec![(2, 3, 4), (4, 5, 2)],
+        ),
+    ] {
+        let start = source.find(needle).unwrap();
+        let changed = source.replacen(needle, replacement, 1);
+        assert_eq!(changed.len(), source.len());
+        assert_ne!(changed, source);
+        let mut tokens =
+            ast.token_views()
+                .map(|node| {
+                    let mut range = node.range();
+                    if let Some((from, end, to)) = moved.iter().find(|(from, end, _)| {
+                        range.start == start + from && range.end == start + end
+                    }) {
+                        range.start = start + to;
+                        range.end = range.start + end - from;
+                    }
+                    (node.id(), node.as_token().unwrap().clone(), range)
+                })
+                .collect::<Vec<_>>();
+        tokens.sort_by_key(|(_, _, range)| range.start);
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = vec![None; ast.nodes().len()];
+        let mut ranges = ast
+            .nodes()
+            .iter()
+            .map(|node| node.range)
+            .collect::<Vec<_>>();
+        for (old, token, range) in tokens {
+            rebuilt[old.index()] = Some(builder.add_token(token.kind, token.text, range));
+            ranges[old.index()] = range;
+        }
+        for (index, node) in ast.nodes().iter().enumerate() {
+            if matches!(node.kind, K::Token(_)) {
+                continue;
+            }
+            let mut children = node.children.clone();
+            let mut range = node.range;
+            if Some(index) != ast.root().map(|id| id.index()) {
+                children.sort_by_key(|child| ranges[child.index()].start);
+                range.start = ranges[children.first().unwrap().index()].start;
+                range.end = ranges[children.last().unwrap().index()].end;
+            }
+            rebuilt[index] = Some(
+                builder.add_node(
+                    node.kind.clone(),
+                    range,
+                    children
+                        .iter()
+                        .map(|child| rebuilt[child.index()].unwrap())
+                        .collect(),
+                ),
+            );
+            ranges[index] = range;
+        }
+        let forged = builder.finish(ast.root().map(|id| rebuilt[id.index()].unwrap()), None);
+        assert!(forged.canonical_bytes().is_some());
+        assert!(forged.node_views().all(|node| !node.is_recovered()
+            && forged.range_contains_child_ranges(node.id()) == Some(true)));
+        let lexed = task257c4c1_frontend_output(&changed, 261);
+        assert_eq!(lexed.tokens.tokens().len(), forged.token_nodes().len());
+        for (actual, supplied) in lexed.tokens.tokens().iter().zip(forged.token_views()) {
+            let kind = match actual.kind {
+                mizar_frontend::lexing::TokenKind::Identifier => T::Identifier,
+                mizar_frontend::lexing::TokenKind::ReservedWord => T::ReservedWord,
+                mizar_frontend::lexing::TokenKind::ReservedSymbol => T::ReservedSymbol,
+                _ => panic!("unexpected B3 token"),
+            };
+            assert_eq!(
+                (
+                    kind,
+                    actual.text.as_ref(),
+                    actual.span.start,
+                    actual.span.end
+                ),
+                (
+                    supplied.as_token().unwrap().kind,
+                    supplied.as_token().unwrap().text.as_ref(),
+                    supplied.range().start,
+                    supplied.range().end
+                )
+            );
+            assert_eq!(
+                changed.get(supplied.range().start..supplied.range().end),
+                Some(actual.text.as_ref())
+            );
+        }
+        let mut owners = Vec::new();
+        for node in forged
+            .node_views()
+            .filter(|node| !matches!(node.kind(), K::Token(_)) && Some(node.id()) != forged.root())
+        {
+            let children = node.child_views().collect::<Vec<_>>();
+            assert!(
+                children
+                    .windows(2)
+                    .all(|pair| pair[0].range().end <= pair[1].range().start)
+            );
+            owners.extend(
+                children
+                    .iter()
+                    .filter(|child| child.as_token().is_some())
+                    .map(|child| child.id()),
+            );
+        }
+        owners.sort();
+        assert_eq!(owners, forged.token_nodes());
+        let mut reachable = vec![false; forged.nodes().len()];
+        let mut pending = vec![forged.root().unwrap()];
+        while let Some(id) = pending.pop() {
+            if std::mem::replace(&mut reachable[id.index()], true) {
+                continue;
+            }
+            pending.extend(forged.node(id).unwrap().children.iter().copied());
+        }
+        assert!(reachable.into_iter().all(|visited| visited));
+        let fresh = resolver_symbol_collection(root, case, &forged);
+        assert!(fresh.detail_keys.is_empty());
+        assert!(
+            extract_source_formula_nested_quantifier_payload(&forged, &fresh.module, &fresh.env)
+                .is_some(),
+            "selected reordered AST {name}"
+        );
+        match source_formula_composition_output_with_source(
+            &forged,
+            fresh.module,
+            &fresh.env,
+            &changed,
+        ) {
+            Some(Err(_)) => {}
+            Some(Ok(_)) => failures.push((name, "Some(Ok)")),
+            None => failures.push((name, "None")),
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "typed grammar must refuse coherent reordered children: {failures:?}"
+    );
+}
+
+#[test]
 fn task257b3_private_double_lf_alias_preserves_exact_lower_transaction() {
     assert_eq!(TASK257B3_SOURCE.len(), 138);
     assert_eq!(TASK257B3_PRIVATE_SOURCE.len(), 139);
@@ -2490,23 +3252,25 @@ fn task257b3_private_double_lf_alias_preserves_exact_lower_transaction() {
         (66, Some(65))
     );
     assert!(
-        extract_source_formula_nested_quantifier_payload(
+        source_formula_composition_output_with_source(
             &active_ast,
-            &active_module,
+            active_module.clone(),
             &active_symbols,
             TASK257B3_PRIVATE_SOURCE,
         )
-        .is_some(),
+        .expect("cross-source active AST selector")
+        .is_ok(),
         "the authorized two-LF alias must match the whitespace-equivalent active AST"
     );
     assert!(
-        extract_source_formula_nested_quantifier_payload(
+        source_formula_composition_output_with_source(
             &private_ast,
-            &private_module,
+            private_module.clone(),
             &private_symbols,
             TASK257B3_SOURCE,
         )
-        .is_some(),
+        .expect("cross-source private AST selector")
+        .is_ok(),
         "the authorized active identity must match the whitespace-equivalent private AST"
     );
 
@@ -2626,43 +3390,54 @@ fn task257b3_private_double_lf_alias_preserves_exact_lower_transaction() {
 }
 
 #[test]
-fn task257b3_selector_accepts_only_authorized_lf_counts_and_rejects_spoofs() {
-    let zero_lf = TASK257B3_SOURCE
-        .strip_suffix('\n')
-        .expect("active source final LF");
-    let triple_lf = format!("{TASK257B3_PRIVATE_SOURCE}\n");
+fn task257b3_selector_rejects_unsupported_atoms_and_source_spoofs() {
     let (valid_ast, valid_module, _, valid_symbols) =
         task253_ast_from_source_text(TASK257B3_SOURCE, 21_200);
-
-    for source in [zero_lf, triple_lf.as_str()] {
-        assert!(
-            extract_source_formula_nested_quantifier_payload(
-                &valid_ast,
-                &valid_module,
-                &valid_symbols,
-                source,
-            )
+    assert!(
+        extract_source_formula_nested_quantifier_payload(&valid_ast, &valid_module, &valid_symbols)
+            .is_some()
+    );
+    assert!(
+        source_formula_composition_output(&valid_ast, valid_module.clone(), &valid_symbols)
             .is_none(),
-            "invalid source paired with a valid AST must remain rejected"
-        );
+        "B3 requires actual source Some"
+    );
+    assert!(
+        source_formula_composition_output_with_source(
+            &valid_ast,
+            valid_module.clone(),
+            &valid_symbols,
+            ""
+        )
+        .expect("selected B3 with empty raw source")
+        .is_err()
+    );
+    for source in [
+        TASK257B3_SOURCE.replacen("x = x ex", "x <> x ex", 1),
+        TASK257B3_SOURCE.replacen("r = y holds", "r <> y holds", 1),
+    ] {
         assert!(
             source_formula_composition_output_with_source(
                 &valid_ast,
                 valid_module.clone(),
                 &valid_symbols,
-                source,
+                &source,
             )
-            .is_none(),
-            "invalid LF count unexpectedly reached the producer"
+            .expect("selected valid AST with mismatched substantive source")
+            .is_err(),
+            "substantive source mismatch must fail raw authentication"
         );
 
-        let (ast, module, _, symbols) = task253_ast_from_source_text(source, 21_201);
+        let (ast, module, _, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 21_201);
+        assert_eq!(diagnostics, 0);
+        assert!(ast.node_views().all(|node| !node.is_recovered()));
         assert!(
-            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, source)
-                .is_none()
+            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none()
         );
         assert!(
-            source_formula_composition_output_with_source(&ast, module, &symbols, source).is_none()
+            source_formula_composition_output_with_source(&ast, module, &symbols, &source)
+                .is_none()
         );
     }
 
@@ -2680,13 +3455,7 @@ fn task257b3_selector_accepts_only_authorized_lf_counts_and_rejects_spoofs() {
             task253_ast_from_source_text(&spoof, 21_300 + ordinal);
         for authorized_source in [TASK257B3_SOURCE, TASK257B3_PRIVATE_SOURCE] {
             assert!(
-                extract_source_formula_nested_quantifier_payload(
-                    &ast,
-                    &module,
-                    &symbols,
-                    authorized_source,
-                )
-                .is_none(),
+                extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none(),
                 "authorized bytes must not authenticate a spoofed AST"
             );
             assert!(
@@ -2962,9 +3731,9 @@ fn task257b3_corruption_matrix_fails_closed_and_valid_replay_recovers() {
 #[test]
 fn task257b3_source_selector_near_miss_matrix_remains_unselected() {
     let near_misses = [
-        TASK257B3_SOURCE.trim_end_matches('\n').to_owned(),
-        TASK257B3_SOURCE.replacen("reserve r for set; ", "reserve r for set;\n", 1),
-        TASK257B3_SOURCE.replacen("reserve r for set; ", "reserve r for set;  ", 1),
+        TASK257B3_SOURCE.replacen("for x being set", "for x, z being set", 1),
+        TASK257B3_SOURCE.replacen("ex y being set", "ex y, z being set", 1),
+        TASK257B3_SOURCE.replacen("holds x = r;", "holds for z being set holds x = r;", 1),
         TASK257B3_SOURCE.replacen("reserve r for set; ", "", 1),
         TASK257B3_SOURCE.replacen("reserve r", "reserve s", 1),
         TASK257B3_SOURCE.replacen("reserve r for set", "reserve r for object", 1),
@@ -3016,10 +3785,14 @@ fn task257b3_source_selector_near_miss_matrix_remains_unselected() {
         "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: { x where x is set : thesis } = y;\n".to_owned(),
     ];
     for (ordinal, source) in near_misses.into_iter().enumerate() {
-        let (ast, module, _, symbols) = task253_ast_from_source_text(&source, 21_000 + ordinal);
+        let (ast, module, _, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 21_000 + ordinal);
+        if ordinal < 3 {
+            assert_eq!(diagnostics, 0, "normal unsupported shape {ordinal}");
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+        }
         assert!(
-            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, &source)
-                .is_none(),
+            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none(),
             "near miss {ordinal} unexpectedly selected"
         );
         assert!(
@@ -3042,15 +3815,7 @@ fn task257b3_recovered_source_tree_is_rejected_before_production() {
         )),
         "the malformed recovery probe must contain a recovery node"
     );
-    assert!(
-        extract_source_formula_nested_quantifier_payload(
-            &ast,
-            &module,
-            &symbols,
-            recovered_source,
-        )
-        .is_none()
-    );
+    assert!(extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols).is_none());
     assert!(
         source_formula_composition_output_with_source(
             &ast,

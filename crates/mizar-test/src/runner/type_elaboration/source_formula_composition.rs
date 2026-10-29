@@ -712,22 +712,23 @@ fn source_formula_composition_output_with_mutation_impl(
     source_text: Option<&str>,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
-    if let Some(payload) = source_text.and_then(|source_text| {
-        extract_source_formula_nested_quantifier_payload(ast, &module, symbols, source_text)
-    }) {
-        return Some(build_task_257b3_output(
-            ast, module, symbols, payload, mutate,
-        ));
-    }
-    let bound_use = extract_source_formula_quantifier_bound_use(ast, &module, symbols);
-    let grouped = if bound_use.is_none() {
+    let nested = source_text
+        .and_then(|_| extract_source_formula_nested_quantifier_payload(ast, &module, symbols));
+    let bound_use = if nested.is_none() {
+        extract_source_formula_quantifier_bound_use(ast, &module, symbols)
+    } else {
+        None
+    };
+    let grouped = if nested.is_none() && bound_use.is_none() {
         Some(extract_source_formula_connective_grouping(
             ast, &module, symbols,
         )?)
     } else {
         None
     };
-    let source_error = if bound_use.is_some() {
+    let source_error = if nested.is_some() {
+        "Task257B3 source association is invalid"
+    } else if bound_use.is_some() {
         "Task257B1 source association is invalid"
     } else {
         "Task257B2 source association is invalid"
@@ -742,10 +743,16 @@ fn source_formula_composition_output_with_mutation_impl(
             ast.canonical_bytes()?;
             let items = super::source_ast::exact_compilation_item_list(ast)?;
             let children = super::source_ast::structural_child_ids(ast, items);
-            let [theorem] = children.as_slice() else {
-                return None;
+            let theorem = match children.as_slice() {
+                [reserve, theorem]
+                    if nested.is_some() && matches!(ast.node(*reserve)?.kind, K::ReserveItem) =>
+                {
+                    *theorem
+                }
+                [theorem] if nested.is_none() => *theorem,
+                _ => return None,
             };
-            if !matches!(ast.node(*theorem)?.kind, K::TheoremItem) {
+            if !matches!(ast.node(theorem)?.kind, K::TheoremItem) {
                 return None;
             }
             if ast.expression_root().is_some() {
@@ -835,31 +842,69 @@ fn source_formula_composition_output_with_mutation_impl(
                     .filter(|child| child.as_token().is_some())
                     .collect::<Vec<_>>();
                 // The closed selectors check their formula, type and operand roles.
-                let count = match node.kind() {
-                    K::TheoremItem => 4,
-                    K::QuantifiedFormula(_)
-                    | K::QuantifierVariableSegment
-                    | K::ParenthesizedFormula => 2,
-                    K::BinaryFormula(operator) => {
-                        if operator.repeated {
-                            3
-                        } else {
+                let count = if let Some(payload) = nested.as_ref() {
+                    let positions: &[usize] = match node.kind() {
+                        K::ReserveItem => &[0, 2],
+                        K::ReserveSegment => &[0, 1],
+                        K::TheoremItem => &[0, 1, 2, 4],
+                        K::QuantifiedFormula(_)
+                            if payload.formula_sites[2].node().index() == node.id().index() =>
+                        {
+                            &[0, 2, 4]
+                        }
+                        K::QuantifiedFormula(_) => &[0, 2],
+                        K::QuantifierVariableSegment
+                            if payload.binder_segment_sites[2].node().index()
+                                == node.id().index() =>
+                        {
+                            &[0]
+                        }
+                        K::QuantifierVariableSegment => &[0, 1],
+                        K::BuiltinPredicateApplication => &[1],
+                        K::TypeHead | K::TermReference => &[0],
+                        K::CompilationUnit
+                        | K::ItemList
+                        | K::FormulaExpression
+                        | K::TermExpression
+                        | K::TypeExpression => &[],
+                        _ => return None,
+                    };
+                    if !children
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(index, child)| child.as_token().map(|_| index))
+                        .eq(positions.iter().copied())
+                    {
+                        return None;
+                    }
+                    positions.len()
+                } else {
+                    match node.kind() {
+                        K::TheoremItem => 4,
+                        K::QuantifiedFormula(_)
+                        | K::QuantifierVariableSegment
+                        | K::ParenthesizedFormula => 2,
+                        K::BinaryFormula(operator) => {
+                            if operator.repeated {
+                                3
+                            } else {
+                                1
+                            }
+                        }
+                        K::TermReference => {
+                            if tokens.len() != 1 || tokens[0].as_token()?.kind != T::Identifier {
+                                return None;
+                            }
                             1
                         }
+                        K::BuiltinPredicateApplication | K::TypeHead | K::NumeralTerm => 1,
+                        K::CompilationUnit
+                        | K::ItemList
+                        | K::FormulaExpression
+                        | K::TermExpression
+                        | K::TypeExpression => 0,
+                        _ => return None,
                     }
-                    K::TermReference => {
-                        if tokens.len() != 1 || tokens[0].as_token()?.kind != T::Identifier {
-                            return None;
-                        }
-                        1
-                    }
-                    K::BuiltinPredicateApplication | K::TypeHead | K::NumeralTerm => 1,
-                    K::CompilationUnit
-                    | K::ItemList
-                    | K::FormulaExpression
-                    | K::TermExpression
-                    | K::TypeExpression => 0,
-                    _ => return None,
                 };
                 if tokens.len() != count {
                     return None;
@@ -883,6 +928,11 @@ fn source_formula_composition_output_with_mutation_impl(
         if source_matches().is_none() {
             return Some(Err(source_error.to_owned()));
         }
+    }
+    if let Some(payload) = nested {
+        return Some(build_task_257b3_output(
+            ast, module, symbols, payload, mutate,
+        ));
     }
     if let Some(payload) = bound_use {
         return Some(build_task_257b1_output(

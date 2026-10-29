@@ -356,6 +356,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
     - [x] [Unused Task257A binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-UNUSED-BINDER.md).
     - [x] [Unused Task257B2 binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-GROUPED-UNUSED-BINDER.md).
     - [x] [Task257B1 bound-use spelling](../../task_contracts/ja/TEST-METAMORPHIC-BOUND-USE.md).
+    - [x] [Task257B3 nested layout](../../task_contracts/ja/TEST-METAMORPHIC-NESTED-LAYOUT.md).
 
 ## 推奨検証
 

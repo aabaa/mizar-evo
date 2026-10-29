@@ -3343,6 +3343,15 @@ profile/association corruption and valid replay, A/B1 preservation, and final
 typed/resolved ownership are executable tests. No semantic output or theorem
 credit is produced.
 
+## Task257B3 source layout
+
+The B3 source-bearing route authenticates lexical tokens, actual ranges, exact
+reserve/theorem structure and the replayed raw declaration environment before
+real immutable composition. Its internal selector is AST-only. Layout and
+comments may vary; x/y/r identities and all six lookup roles stay fixed.
+B4C retains its exact dormant selector, using raw symbols below its enriched
+statement environment. Original source fingerprints and semantic boundaries remain.
+
 ## Checker Task 257B3 Frozen Harness Boundary
 
 The existing private formula-composition leaf may later select only

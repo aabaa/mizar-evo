@@ -27,8 +27,6 @@ use super::source_reserve::{
     source_mode_symbol_spelling,
 };
 
-const SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
-const SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD_PRIVATE_ALIAS: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n\n";
 const SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD: &str = "import parser.type_fixtures;\ntheorem FormulaPredicateChainPayloadBoundary: 1 divides 2 does not divides 3;\n";
 
 #[derive(Debug)]
@@ -2782,13 +2780,7 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
     symbols: &SymbolEnv,
-    source_text: &str,
 ) -> Option<SourceFormulaNestedQuantifierPayload> {
-    if source_text != SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD
-        && source_text != SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD_PRIVATE_ALIAS
-    {
-        return None;
-    }
     if ast
         .nodes()
         .iter()
@@ -2870,6 +2862,9 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
         return None;
     };
     let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
     let formula_expression_children = structural_child_ids(ast, formula_expression);
     let [outer_id] = formula_expression_children.as_slice() else {
         return None;
@@ -3050,6 +3045,9 @@ fn exact_explicit_quantifier_segment(
         return None;
     };
     let type_node = ast.node(*type_id)?;
+    if !matches!(type_node.kind, SurfaceNodeKind::TypeExpression) {
+        return None;
+    }
     let type_children = structural_child_ids(ast, type_node);
     let [head_id] = type_children.as_slice() else {
         return None;
