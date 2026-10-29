@@ -777,10 +777,924 @@ fn task256_transport_keeps_all_eight_external_detail_vectors_owned_by_existing_r
 }
 
 #[test]
+fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundary() {
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C1_CASE)
+        .unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let (old_ast, old_module, old_symbols) = task252_real_ast(TASK257C1_CASE);
+    let previous =
+        extract_source_imported_predicate_chain_formula(&old_ast, &old_module, &old_symbols)
+            .unwrap();
+    for (layout, source) in [
+        ("leading_line", format!("\n{original}")),
+        ("intertoken_layout", original.replace(' ', "\t  ")),
+        (
+            "import_comment",
+            original.replacen(
+                "parser.type_fixtures",
+                "parser :: path trivia\n . type_fixtures",
+                1,
+            ),
+        ),
+        (
+            "theorem_double_space",
+            original.replacen("theorem ", "theorem  ", 1),
+        ),
+        ("missing_lf", original.trim_end_matches('\n').to_owned()),
+        ("trailing_trivia", format!("{original}\n:: trailing\n")),
+        (
+            "polarity_comment",
+            original.replacen("does not", "does :: polarity\n not", 1),
+        ),
+    ] {
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(root, case, ordinal).unwrap();
+            assert!(frontend.diagnostics.is_empty(), "{layout}");
+            assert_eq!(frontend.source_text.as_ref(), source);
+            let ast = frontend.ast.as_ref().unwrap();
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+            let resolver = resolver_symbol_collection(root, case, ast);
+            assert!(resolver.detail_keys.is_empty());
+            let symbols =
+                augment_type_elaboration_import_summaries(ast, &resolver.module, resolver.env);
+            let lower = source_atomic_formula_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &symbols,
+                &source,
+            )
+            .expect("actual layout selects Atomic chain")
+            .expect("actual Atomic chain transaction");
+            let output = source_predicate_chain_composition_output_with_source(
+                ast,
+                resolver.module.clone(),
+                &symbols,
+                &source,
+            )
+            .expect("actual layout selects C3")
+            .expect("actual C3 transaction");
+            let payload =
+                extract_source_imported_predicate_chain_formula(ast, &resolver.module, &symbols)
+                    .unwrap();
+            let old_tokens = old_ast.token_views().collect::<Vec<_>>();
+            let tokens = ast.token_views().collect::<Vec<_>>();
+            assert_eq!(old_tokens.len(), tokens.len());
+            for (old, actual) in old_tokens.iter().zip(&tokens) {
+                assert_eq!(old.as_token(), actual.as_token());
+                assert_eq!(
+                    source.get(actual.range().start..actual.range().end),
+                    actual.as_token().map(|token| token.text.as_ref())
+                );
+            }
+            let shifted = |old: mizar_session::SourceRange| mizar_session::SourceRange {
+                source_id: ast.source_id,
+                start: old_tokens
+                    .iter()
+                    .zip(&tokens)
+                    .find(|(token, _)| token.range().start == old.start)
+                    .unwrap()
+                    .1
+                    .range()
+                    .start,
+                end: old_tokens
+                    .iter()
+                    .zip(&tokens)
+                    .find(|(token, _)| token.range().end == old.end)
+                    .unwrap()
+                    .1
+                    .range()
+                    .end,
+            };
+            for (actual, old) in [
+                (payload.formula_range, previous.formula_range),
+                (payload.verb_range, previous.verb_range),
+                (payload.not_range, previous.not_range),
+            ]
+            .into_iter()
+            .chain(
+                payload
+                    .segment_ranges
+                    .into_iter()
+                    .zip(previous.segment_ranges),
+            )
+            .chain(payload.head_ranges.into_iter().zip(previous.head_ranges))
+            .chain(payload.term_ranges.into_iter().zip(previous.term_ranges))
+            {
+                assert_eq!(actual, shifted(old), "{layout}");
+            }
+            for kind in [
+                mizar_syntax::SurfaceNodeKind::ImportItem,
+                mizar_syntax::SurfaceNodeKind::ImportAliasDecl,
+                mizar_syntax::SurfaceNodeKind::ModulePath,
+            ] {
+                let old = old_ast
+                    .nodes()
+                    .iter()
+                    .find(|node| node.kind == kind)
+                    .unwrap();
+                let actual = ast.nodes().iter().find(|node| node.kind == kind).unwrap();
+                assert_eq!(actual.range, shifted(old.range));
+            }
+            let primary = output.typed_ast.source_term().unwrap();
+            let atomic = output.typed_ast.source_atomic_formula().unwrap();
+            let composition = output
+                .typed_ast
+                .source_predicate_chain_composition()
+                .unwrap();
+            assert_eq!(lower.typed_ast.source_term(), Some(primary));
+            assert_eq!(lower.typed_ast.source_atomic_formula(), Some(atomic));
+            assert_eq!(
+                (
+                    primary.terms().len(),
+                    primary.references().len(),
+                    primary.numeric_type_requests().len()
+                ),
+                (3, 0, 3)
+            );
+            assert_eq!(
+                primary
+                    .terms()
+                    .iter()
+                    .map(|(_, term)| term.source_range())
+                    .collect::<Vec<_>>(),
+                payload.term_ranges
+            );
+            assert_eq!(
+                atomic
+                    .predicate_segments()
+                    .iter()
+                    .map(|(_, segment)| segment.source_range())
+                    .collect::<Vec<_>>(),
+                payload.segment_ranges
+            );
+            assert_eq!(
+                atomic
+                    .predicate_heads()
+                    .iter()
+                    .map(|(_, head)| head.source_range())
+                    .collect::<Vec<_>>(),
+                payload.head_ranges
+            );
+            assert_eq!(
+                atomic.formulas().iter().next().unwrap().1.source_range(),
+                payload.formula_range
+            );
+            assert_eq!(
+                atomic.formulas().iter().next().unwrap().1.spelling(),
+                "1 divides 2 does not divides 3"
+            );
+            for (index, (_, term)) in primary.terms().iter().enumerate() {
+                assert_eq!(
+                    source.get(term.source_range().start..term.source_range().end),
+                    Some(["1", "2", "3"][index])
+                );
+            }
+            let candidates = atomic.candidates().iter().collect::<Vec<_>>();
+            assert_eq!(candidates.len(), 2);
+            assert_eq!(candidates[0].1.symbol(), candidates[1].1.symbol());
+            assert_eq!(
+                candidates[0].1.contribution(),
+                candidates[1].1.contribution()
+            );
+            assert_eq!(candidates[0].1.symbol(), &payload.predicate_symbol);
+            let entry = symbols.symbols().get(candidates[0].1.symbol()).unwrap();
+            let contribution = symbols
+                .contributions()
+                .get(candidates[0].1.contribution())
+                .unwrap();
+            let import = ast
+                .nodes()
+                .iter()
+                .find(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::ImportAliasDecl))
+                .unwrap();
+            assert_eq!(
+                entry.symbol().module().path().as_str(),
+                "parser.type_fixtures"
+            );
+            assert_eq!(entry.origin().source_id(), ast.source_id);
+            assert_eq!(
+                entry.origin().anchor(),
+                &mizar_session::SourceAnchor::Range(import.range)
+            );
+            assert_eq!(
+                contribution.anchor(),
+                &mizar_session::SourceAnchor::Range(import.range)
+            );
+            assert!(
+                matches!(contribution.kind(), mizar_resolve::env::ContributionKind::ImportedSource { source_id } if *source_id == ast.source_id)
+            );
+            for (_, head) in atomic.predicate_heads().iter() {
+                assert_eq!((head.left_arity(), head.right_arity()), (1, 1));
+                assert_eq!(
+                    source.get(head.source_range().start..head.source_range().end),
+                    Some("divides")
+                );
+            }
+            let negative = atomic.predicate_segments().iter().nth(1).unwrap().1;
+            let mizar_checker::source_atomic_formula::SourcePredicateSegmentPolarityInput::Negative { verb_range, not_range, .. } = negative.polarity() else { panic!("actual does-not segment"); };
+            assert_eq!(
+                (*verb_range, *not_range),
+                (payload.verb_range, payload.not_range)
+            );
+            assert_eq!(source.get(verb_range.start..verb_range.end), Some("does"));
+            assert_eq!(source.get(not_range.start..not_range.end), Some("not"));
+            assert_eq!(atomic.edges().iter().filter(|(_, edge)| edge.role() == mizar_checker::source_atomic_formula::SourceAtomicEdgeRole::PredicateChainBoundary).map(|(_, edge)| edge.target()).collect::<Vec<_>>(), [mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(1))]);
+            assert_eq!(
+                (
+                    composition.conjunctions().len(),
+                    composition.negations().len()
+                ),
+                (1, 1)
+            );
+            assert_eq!(
+                composition
+                    .conjunctions()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1
+                    .boundary()
+                    .index(),
+                1
+            );
+            assert_eq!(
+                composition
+                    .negations()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1
+                    .segment()
+                    .index(),
+                1
+            );
+            assert_eq!(atomic.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(
+                composition.atomic_formula_fingerprint(),
+                atomic.debug_text()
+            );
+            assert_eq!(
+                output.typed_ast.source_predicate_chain_composition(),
+                output.resolved.source_predicate_chain_composition()
+            );
+            assert!(output.typed_ast.facts().is_empty());
+            assert!(output.resolved.checked_formulas().is_empty());
+            assert!(output.resolved.statement_semantics().is_empty());
+            let replay = source_predicate_chain_composition_output_with_source(
+                ast,
+                resolver.module,
+                &symbols,
+                &source,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(output.typed_ast, replay.typed_ast);
+            assert_eq!(output.resolved, replay.resolved);
+            let result = run_type_elaboration_case(root, &root.join("tests"), case, ordinal);
+            assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+            assert!(result.actual_detail_keys.is_empty());
+        });
+    }
+}
+
+#[test]
+fn metamorphic_chain_layout_native_seed_matches_loaded_frontend() {
+    use mizar_frontend::lexical_env::{
+        LexicalEnvironmentRequest, LexicalSummaryProvider, ResolvedImportEntry,
+        build_active_lexical_environment,
+    };
+    for source in [
+        TASK257C1_SOURCE.to_owned(),
+        format!("\n{TASK257C1_SOURCE}"),
+        TASK257C1_SOURCE.replacen(
+            "parser.type_fixtures",
+            "parser :: path trivia\n . type_fixtures",
+            1,
+        ),
+    ] {
+        let frontend = task257c4c1_frontend_output(&source, 264);
+        assert!(frontend.diagnostics.is_empty());
+        let request = LexicalEnvironmentRequest {
+            source_id: frontend.source.source_id,
+            import_stubs: &frontend.preprocessed.import_stubs,
+            edition: frontend.source.edition.clone(),
+        };
+        let native = ParseOnlyImportProvider.resolve_imports(&request).unwrap();
+        assert!(native.diagnostics.is_empty());
+        let preprocessed = mizar_lexer::preprocess_source_for_lexing(&source);
+        assert!(preprocessed.diagnostics.is_empty());
+        assert_eq!(
+            preprocessed.lexical_text,
+            frontend.preprocessed.lexical_text.as_str()
+        );
+        let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).unwrap();
+        let prelude = mizar_lexer::scan_import_prelude(&raw);
+        assert!(prelude.diagnostics.is_empty());
+        assert_eq!(prelude.imports.len(), request.import_stubs.len());
+        let mapped = |span| {
+            let ranges = preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(span)
+                .unwrap();
+            mizar_session::SourceRange {
+                source_id: frontend.source.source_id,
+                start: ranges.first().unwrap().start,
+                end: ranges.last().unwrap().end,
+            }
+        };
+        for (actual, supplied) in prelude.imports.iter().zip(request.import_stubs) {
+            assert!(actual.alias.is_none() && supplied.alias.is_none());
+            assert!(actual.path.relative.is_none() && supplied.path.relative.is_none());
+            assert_eq!(actual.path.spelling, supplied.path.spelling.as_ref());
+            assert_eq!(mapped(actual.span), supplied.span);
+            assert_eq!(mapped(actual.path.span), supplied.path.span);
+            assert_eq!(
+                actual
+                    .path
+                    .components
+                    .iter()
+                    .map(|part| part.spelling.as_str())
+                    .collect::<Vec<_>>(),
+                supplied
+                    .path
+                    .components
+                    .iter()
+                    .map(|part| part.as_ref())
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(
+                actual
+                    .path
+                    .source_segments
+                    .iter()
+                    .copied()
+                    .map(&mapped)
+                    .collect::<Vec<_>>(),
+                supplied.path.source_segments
+            );
+            for component in &actual.path.components {
+                let range = mapped(component.span);
+                assert_eq!(
+                    source.get(range.start..range.end),
+                    Some(component.spelling.as_str())
+                );
+            }
+        }
+        let imports = prelude
+            .imports
+            .iter()
+            .map(|import| mizar_lexer::ResolvedImport {
+                module_id: mizar_lexer::ModuleId::new(import.path.spelling.as_str()),
+            })
+            .collect::<Vec<_>>();
+        let summaries = imports
+            .iter()
+            .enumerate()
+            .map(|(ordinal, import)| mizar_lexer::ModuleLexicalSummary {
+                module_id: import.module_id.clone(),
+                exported_symbols: super::import_fixtures::parse_only_fixture_symbols(
+                    &import.module_id,
+                ),
+                fingerprint: mizar_lexer::LexicalSummaryFingerprint::new((ordinal as u64) + 1),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            native.imports,
+            prelude
+                .imports
+                .iter()
+                .zip(&imports)
+                .enumerate()
+                .map(|(ordinal, (raw, import))| ResolvedImportEntry {
+                    stub_ordinal: ordinal,
+                    stub_span: mapped(raw.span),
+                    import: import.clone()
+                })
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            native.summaries, summaries,
+            "complete exports/ranks/arity/operator metadata and summary fingerprints"
+        );
+        let direct = mizar_lexer::build_lexical_environment(&imports, &summaries).unwrap();
+        let native_environment =
+            build_active_lexical_environment(&request, &ParseOnlyImportProvider).unwrap();
+        assert!(native_environment.diagnostics.is_empty());
+        assert_eq!(direct, native_environment.environment);
+        let scopes = mizar_lexer::build_scope_skeleton(&raw);
+        let tokens = mizar_lexer::disambiguate(
+            &raw,
+            &direct,
+            &mizar_lexer::ParserLexContext::general(),
+            &scopes,
+        );
+        assert!(tokens.diagnostics().is_empty());
+        assert_eq!(tokens.tokens().len(), frontend.tokens.tokens().len());
+        for (actual, expected) in tokens.tokens().iter().zip(frontend.tokens.tokens()) {
+            assert_eq!(
+                (actual.kind(), actual.lexeme(), mapped(actual.span())),
+                (expected.kind, expected.text.as_ref(), expected.span)
+            );
+        }
+        let heads = tokens
+            .tokens()
+            .iter()
+            .filter(|token| token.lexeme() == "divides")
+            .collect::<Vec<_>>();
+        assert_eq!(heads.len(), 2);
+        assert!(
+            heads
+                .iter()
+                .all(|token| token.kind() == mizar_lexer::TokenKind::UserSymbol)
+        );
+    }
+}
+
+#[test]
+fn metamorphic_chain_layout_distinguishes_selected_errors_and_unsupported_members() {
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+    let config = step5c11_config();
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C1_CASE)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = run_frontend(root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.as_ref().unwrap();
+    let resolver = resolver_symbol_collection(root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let module = resolver.module;
+    let symbols = augment_type_elaboration_import_summaries(ast, &module, resolver.env);
+    let payload = extract_source_imported_predicate_chain_formula(ast, &module, &symbols).unwrap();
+    let mut cases = Vec::new();
+    for (name, changed) in [
+        ("empty_raw", String::new()),
+        (
+            "stale_intertoken",
+            source.replacen("theorem ", "theorem  ", 1),
+        ),
+        (
+            "hidden_not",
+            source.replacen("does not", "does :: not\n", 1),
+        ),
+        (
+            "malformed_import",
+            source.replacen("parser.type_fixtures", "parser type_fixtures.", 1),
+        ),
+    ] {
+        cases.push((name, ast.clone(), symbols.clone(), changed, true));
+    }
+    for trailing in [
+        source.trim_end_matches('\n').to_owned(),
+        format!("{source}:: trailing\n"),
+    ] {
+        assert!(
+            source_atomic_formula_output_with_source(ast, module.clone(), &symbols, &trailing)
+                .expect("unchanged actual trailing token anchors")
+                .is_ok()
+        );
+        assert!(
+            source_predicate_chain_composition_output_with_source(
+                ast,
+                module.clone(),
+                &symbols,
+                &trailing
+            )
+            .expect("C3 trailing trivia alias")
+            .is_ok()
+        );
+    }
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let foreign_root = std::env::temp_dir().join(format!(
+        "mizar-test-chain-foreign-{}-{nanos}",
+        std::process::id()
+    ));
+    let foreign_path = foreign_root
+        .join("src")
+        .join(case.source_path.file_name().unwrap());
+    std::fs::create_dir_all(foreign_path.parent().unwrap()).unwrap();
+    std::fs::write(&foreign_path, &source).unwrap();
+    let ids = mizar_session::InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(ordinal + 1);
+    mizar_session::SessionIdAllocator::next_source_id(&ids, snapshot).unwrap();
+    let foreign = mizar_frontend::orchestration::Frontend::new(
+        mizar_frontend::source::FrontendSourceLoader::new(mizar_session::DiskSourceLoader::new(
+            &foreign_root,
+        )),
+        ParseOnlyImportProvider,
+        mizar_frontend::parsing::MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot,
+            input: mizar_session::SourceInput {
+                package_id: module.package().clone(),
+                module_path: module.path().clone(),
+                normalized_path: mizar_session::normalize_path(&foreign_root, &foreign_path)
+                    .unwrap(),
+                edition: mizar_session::Edition::new("2026"),
+                origin: mizar_session::SourceOriginInput::Disk { path: foreign_path },
+            },
+        },
+        &ids,
+    )
+    .unwrap();
+    std::fs::remove_dir_all(&foreign_root).unwrap();
+    assert_eq!(foreign.source.source_text.as_ref(), source);
+    assert_eq!(&foreign.source.package_id, module.package());
+    assert_eq!(&foreign.source.module_path, module.path());
+    assert!(foreign.diagnostics.is_empty());
+    let foreign_ast = foreign.ast.as_ref().unwrap();
+    assert_ne!(foreign_ast.source_id, ast.source_id);
+    let fresh = resolver_symbol_collection(root, case, foreign_ast);
+    assert!(fresh.detail_keys.is_empty());
+    assert_eq!(fresh.module, module);
+    let fresh_symbols = augment_type_elaboration_import_summaries(foreign_ast, &module, fresh.env);
+    let foreign_lower = source_atomic_formula_output_with_source(
+        foreign_ast,
+        module.clone(),
+        &fresh_symbols,
+        &source,
+    )
+    .expect("genuinely loaded foreign SourceId selects")
+    .expect("fresh actual augmented environment");
+    assert_eq!(foreign_lower.typed_ast.source_id(), foreign_ast.source_id);
+    let foreign_upper = source_predicate_chain_composition_output_with_source(
+        foreign_ast,
+        module.clone(),
+        &fresh_symbols,
+        &source,
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(
+        foreign_upper.typed_ast.source_term(),
+        foreign_lower.typed_ast.source_term()
+    );
+    cases.push((
+        "stale_foreign_env",
+        foreign_ast.clone(),
+        symbols.clone(),
+        source.clone(),
+        true,
+    ));
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+    indexes.contributions.insert(
+        module.clone(),
+        mizar_resolve::env::ContributionKind::LocalSource {
+            source_id: ast.source_id,
+        },
+        mizar_session::SourceAnchor::Range(ast.node(ast.root().unwrap()).unwrap().range),
+    );
+    cases.push((
+        "unowned_full_env_contribution",
+        ast.clone(),
+        mizar_resolve::env::SymbolEnv::new(module.clone(), indexes),
+        source.clone(),
+        true,
+    ));
+    let divides = symbols.symbols().get(&payload.predicate_symbol).unwrap();
+    let local = symbols
+        .contributions()
+        .iter()
+        .find(|entry| {
+            matches!(
+                entry.kind(),
+                mizar_resolve::env::ContributionKind::LocalSource { .. }
+            )
+        })
+        .unwrap()
+        .id();
+    for corruption in 0..4 {
+        let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+        indexes.symbols = Default::default();
+        for entry in symbols.symbols().iter() {
+            if entry.symbol() != divides.symbol() {
+                indexes.symbols.insert(entry.clone());
+                continue;
+            }
+            match corruption {
+                0 => {}
+                1 => {
+                    indexes.symbols.insert(entry.clone());
+                    indexes.symbols.insert(entry.clone());
+                }
+                _ => indexes.symbols.insert(
+                    mizar_resolve::env::SymbolEntry::new(
+                        entry.symbol().clone(),
+                        if corruption == 2 {
+                            mizar_resolve::env::SymbolKind::Functor
+                        } else {
+                            entry.kind()
+                        },
+                        entry.namespace().clone(),
+                        entry.primary_spelling(),
+                        entry.origin().clone(),
+                        if corruption == 3 {
+                            local
+                        } else {
+                            entry.contribution()
+                        },
+                    )
+                    .with_visibility(entry.visibility())
+                    .with_export_status(entry.export_status()),
+                ),
+            }
+        }
+        cases.push((
+            [
+                "missing_divides",
+                "ambiguous_divides",
+                "wrong_divides_kind",
+                "wrong_divides_provenance",
+            ][corruption],
+            ast.clone(),
+            mizar_resolve::env::SymbolEnv::new(module.clone(), indexes),
+            source.clone(),
+            false,
+        ));
+    }
+    let formula = payload.formula_site.node().index();
+    let formula_wrapper = ast
+        .nodes()
+        .iter()
+        .position(|node| {
+            matches!(node.kind, K::FormulaExpression)
+                && node.children.iter().any(|child| child.index() == formula)
+        })
+        .unwrap();
+    let term = payload.term_sites[0].node().index();
+    let term_wrapper = ast
+        .nodes()
+        .iter()
+        .position(|node| {
+            matches!(node.kind, K::TermExpression)
+                && node.children.iter().any(|child| child.index() == term)
+        })
+        .unwrap();
+    for corruption in 0..8 {
+        let mut changed = source.clone();
+        if corruption == 1 {
+            changed.push(';');
+        }
+        let start = source.find("does not divides 3").unwrap();
+        if corruption == 7 {
+            changed.replace_range(
+                start..start + "does not divides 3".len(),
+                "divides does not 3",
+            );
+        }
+        let mut tokens = ast
+            .token_views()
+            .map(|node| {
+                let mut range = node.range();
+                if corruption == 7 {
+                    for (from, end, to) in [(0, 4, 8), (5, 8, 13), (9, 16, 0)] {
+                        if range.start == start + from && range.end == start + end {
+                            range.start = start + to;
+                            range.end = range.start + end - from;
+                            break;
+                        }
+                    }
+                }
+                (node.id(), node.as_token().unwrap().clone(), range)
+            })
+            .collect::<Vec<_>>();
+        tokens.sort_by_key(|(_, _, range)| range.start);
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = vec![None; ast.nodes().len()];
+        let mut ranges = ast
+            .nodes()
+            .iter()
+            .map(|node| node.range)
+            .collect::<Vec<_>>();
+        let mut global = Vec::new();
+        for (id, token, range) in tokens {
+            let target = range == payload.head_ranges[0];
+            let token_id = if corruption == 3 && target {
+                builder.add_recovered_token(token.kind, token.text, range)
+            } else {
+                builder.add_token(
+                    if corruption == 0 && target {
+                        T::Identifier
+                    } else {
+                        token.kind
+                    },
+                    token.text,
+                    range,
+                )
+            };
+            rebuilt[id.index()] = Some(token_id);
+            ranges[id.index()] = range;
+            global.push(token_id);
+        }
+        for (index, node) in ast.nodes().iter().enumerate() {
+            if matches!(node.kind, K::Token(_)) {
+                continue;
+            }
+            let mut children = node.children.clone();
+            children.sort_by_key(|child| ranges[child.index()].start);
+            let mut range = node.range;
+            let children = if Some(index) == ast.root().map(|id| id.index()) {
+                if corruption == 1 {
+                    global.push(builder.add_token(
+                        T::ReservedSymbol,
+                        ";",
+                        mizar_session::SourceRange {
+                            source_id: ast.source_id,
+                            start: source.len(),
+                            end: changed.len(),
+                        },
+                    ));
+                    range.end = changed.len();
+                }
+                let compilation = node
+                    .children
+                    .iter()
+                    .find(|child| matches!(ast.node(**child).unwrap().kind, K::CompilationUnit))
+                    .unwrap();
+                global
+                    .iter()
+                    .copied()
+                    .chain([rebuilt[compilation.index()].unwrap()])
+                    .collect()
+            } else {
+                range.start = ranges[children.first().unwrap().index()].start;
+                range.end = ranges[children.last().unwrap().index()].end;
+                children
+                    .iter()
+                    .map(|child| rebuilt[child.index()].unwrap())
+                    .collect()
+            };
+            let kind = if corruption == 4 && index == formula_wrapper {
+                K::TermExpression
+            } else if (corruption == 5 && index == formula)
+                || (corruption == 6 && index == term_wrapper)
+            {
+                K::FormulaExpression
+            } else {
+                node.kind.clone()
+            };
+            rebuilt[index] = Some(builder.add_node(kind, range, children));
+            ranges[index] = range;
+        }
+        if corruption == 2 {
+            builder.add_node(
+                K::TermExpression,
+                ast.nodes()[term].range,
+                vec![rebuilt[term].unwrap()],
+            );
+        }
+        let forged = builder.finish(ast.root().map(|id| rebuilt[id.index()].unwrap()), None);
+        assert!(forged.canonical_bytes().is_some());
+        assert!(
+            forged
+                .node_views()
+                .all(|node| forged.range_contains_child_ranges(node.id()) == Some(true))
+        );
+        if corruption != 3 {
+            assert!(forged.node_views().all(|node| !node.is_recovered()));
+        }
+        let lexed = task257c4c1_frontend_output(&changed, 265);
+        assert!(lexed.tokens.diagnostics.is_empty());
+        assert_eq!(lexed.tokens.tokens().len(), forged.token_nodes().len());
+        for (actual, supplied) in lexed.tokens.tokens().iter().zip(forged.token_views()) {
+            let kind = match actual.kind {
+                mizar_frontend::lexing::TokenKind::Identifier => T::Identifier,
+                mizar_frontend::lexing::TokenKind::ReservedWord => T::ReservedWord,
+                mizar_frontend::lexing::TokenKind::ReservedSymbol => T::ReservedSymbol,
+                mizar_frontend::lexing::TokenKind::Numeral => T::Numeral,
+                mizar_frontend::lexing::TokenKind::UserSymbol => T::UserSymbol,
+                _ => panic!("unexpected actual chain token"),
+            };
+            assert_eq!(
+                (actual.text.as_ref(), actual.span.start, actual.span.end),
+                (
+                    supplied.as_token().unwrap().text.as_ref(),
+                    supplied.range().start,
+                    supplied.range().end
+                )
+            );
+            assert_eq!(
+                changed.get(supplied.range().start..supplied.range().end),
+                Some(actual.text.as_ref())
+            );
+            if corruption == 0 && supplied.range() == payload.head_ranges[0] {
+                assert_eq!(
+                    (kind, supplied.as_token().unwrap().kind),
+                    (T::UserSymbol, T::Identifier)
+                );
+            } else {
+                assert_eq!(kind, supplied.as_token().unwrap().kind);
+            }
+        }
+        let mut owners = Vec::new();
+        for node in forged
+            .node_views()
+            .filter(|node| !matches!(node.kind(), K::Token(_)) && Some(node.id()) != forged.root())
+        {
+            let children = node.child_views().collect::<Vec<_>>();
+            assert!(
+                children
+                    .windows(2)
+                    .all(|pair| pair[0].range().end <= pair[1].range().start)
+            );
+            owners.extend(
+                children
+                    .iter()
+                    .filter(|child| child.as_token().is_some())
+                    .map(|child| child.id()),
+            );
+        }
+        owners.sort();
+        if corruption == 1 {
+            assert_eq!(owners.len() + 1, forged.token_nodes().len());
+        } else {
+            assert_eq!(owners, forged.token_nodes());
+        }
+        let mut reachable = vec![false; forged.nodes().len()];
+        let mut pending = vec![forged.root().unwrap()];
+        while let Some(id) = pending.pop() {
+            if !std::mem::replace(&mut reachable[id.index()], true) {
+                pending.extend(forged.node(id).unwrap().children.iter().copied());
+            }
+        }
+        assert_eq!(
+            reachable.iter().filter(|visited| !**visited).count(),
+            usize::from(corruption == 2)
+        );
+        let fresh = resolver_symbol_collection(root, case, &forged);
+        if matches!(corruption, 0 | 1 | 2 | 7) {
+            assert!(fresh.detail_keys.is_empty());
+        }
+        let env = augment_type_elaboration_import_summaries(&forged, &module, fresh.env);
+        cases.push((
+            [
+                "wrong_user_symbol_kind",
+                "global_only_token",
+                "unreachable_role",
+                "recovered_head",
+                "wrong_theorem_wrapper",
+                "wrong_application_role",
+                "wrong_term_wrapper",
+                "does_not_after_head",
+            ][corruption],
+            forged,
+            env,
+            changed,
+            matches!(corruption, 0 | 1 | 2 | 7),
+        ));
+    }
+    for (name, ast, env, raw, selected) in cases {
+        assert_eq!(
+            extract_source_imported_predicate_chain_formula(&ast, &module, &env).is_some(),
+            selected,
+            "actual selection prerequisite {name}"
+        );
+        let lower = source_atomic_formula_output_with_source_and_mutation(
+            &ast,
+            module.clone(),
+            &env,
+            &raw,
+            |_| panic!("source seal must refuse {name} before Atomic producer"),
+        );
+        let upper =
+            source_predicate_chain_composition_output_with_source(&ast, module.clone(), &env, &raw);
+        if selected {
+            let error = lower
+                .expect("selected source error, never skip")
+                .expect_err("actual raw/full-env seal refusal");
+            assert_eq!(
+                upper
+                    .expect("C3 preserves selected error")
+                    .expect_err("C3 must not publish"),
+                error,
+                "same Atomic error propagated for {name}"
+            );
+        } else {
+            assert!(lower.is_none(), "unsupported prerequisite {name}");
+            assert!(upper.is_none(), "unsupported C3 prerequisite {name}");
+        }
+    }
+}
+
+#[test]
 fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
     let (ast, module, symbols) = task252_real_ast(TASK257C1_CASE);
     let payload =
-        extract_source_imported_predicate_chain_formula(&ast, &module, &symbols, TASK257C1_SOURCE)
+        extract_source_imported_predicate_chain_formula(&ast, &module, &symbols)
             .expect("Task 257C1 exact selector payload");
     assert_eq!((payload.formula_range.start, payload.formula_range.end), (75, 105));
     assert_eq!(
@@ -982,7 +1896,7 @@ fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
     );
     assert!(
         source_atomic_formula_output(&ast, first.typed_ast.module_id().clone(), &symbols).is_none(),
-        "Task 257C1 must require its frozen exact source-text guard"
+        "Task 257C1 must require actual source input"
     );
 }
 
@@ -1049,12 +1963,12 @@ fn task257c1_corruption_fails_atomically_and_valid_clone_recovers() {
 fn task257c1_source_selector_is_exact_and_active_corpus_adds_only_one_route() {
     let near_misses = [
         (
-            "missing final LF",
-            TASK257C1_SOURCE.trim_end_matches('\n').to_owned(),
+            "changed left numeral",
+            TASK257C1_SOURCE.replacen("1 divides 2", "10 divides 2", 1),
         ),
         (
-            "whitespace-only change",
-            TASK257C1_SOURCE.replacen("theorem ", "theorem  ", 1),
+            "changed middle numeral",
+            TASK257C1_SOURCE.replacen("1 divides 2", "1 divides 20", 1),
         ),
         (
             "changed label",
@@ -1202,11 +2116,15 @@ fn task257c1_source_selector_is_exact_and_active_corpus_adds_only_one_route() {
         ),
     ];
     for (ordinal, (label, source)) in near_misses.into_iter().enumerate() {
-        let (ast, module, _, symbols) =
-            task253_ast_from_source_text(&source, 22_000 + ordinal);
+        let (ast, module, _, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 22_000 + ordinal);
+        if ordinal < 2 {
+            assert_eq!(diagnostics, 0, "normal unsupported numeral {label}");
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+        }
         let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
         assert!(
-            extract_source_imported_predicate_chain_formula(&ast, &module, &symbols, &source)
+            extract_source_imported_predicate_chain_formula(&ast, &module, &symbols)
                 .is_none(),
             "{label} unexpectedly selected"
         );
@@ -1217,10 +2135,11 @@ fn task257c1_source_selector_is_exact_and_active_corpus_adds_only_one_route() {
     }
 
     let (exact_ast, exact_module, exact_symbols) = task252_real_ast(TASK257C1_CASE);
+    assert!(extract_source_imported_predicate_chain_formula(&exact_ast, &exact_module, &exact_symbols).is_some());
     for (label, loaded_text) in [
         (
-            "exact AST with missing final LF",
-            TASK257C1_SOURCE.trim_end_matches('\n').to_owned(),
+            "exact AST with stale leading layout",
+            format!("\n{TASK257C1_SOURCE}"),
         ),
         (
             "exact AST with mismatched loaded text",
@@ -1228,25 +2147,16 @@ fn task257c1_source_selector_is_exact_and_active_corpus_adds_only_one_route() {
         ),
     ] {
         assert!(
-            extract_source_imported_predicate_chain_formula(
-                &exact_ast,
-                &exact_module,
-                &exact_symbols,
-                &loaded_text,
-            )
-            .is_none(),
-            "{label}"
-        );
-        assert!(
             source_atomic_formula_output_with_source(
                 &exact_ast,
                 exact_module.clone(),
                 &exact_symbols,
                 &loaded_text,
             )
-            .is_none(),
+            .expect("selected chain raw mismatch").is_err(),
             "{label}"
         );
+        assert!(source_predicate_chain_composition_output_with_source(&exact_ast, exact_module.clone(), &exact_symbols, &loaded_text).expect("C3 propagates selected Atomic error").is_err(), "{label}");
     }
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))

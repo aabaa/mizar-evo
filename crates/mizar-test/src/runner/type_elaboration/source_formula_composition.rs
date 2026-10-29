@@ -323,7 +323,7 @@ fn source_predicate_chain_composition_output_with_mutation_impl(
     source_text: &str,
     mutate: impl FnOnce(&mut SourcePredicateChainCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
-    extract_source_imported_predicate_chain_formula(ast, &module, symbols, source_text)?;
+    extract_source_imported_predicate_chain_formula(ast, &module, symbols)?;
     let lower =
         source_atomic_formula_output_with_source(ast, module.clone(), symbols, source_text)?;
     Some(lower.and_then(|lower| build_task_257c3_output(ast, module, lower.typed_ast, mutate)))

@@ -3231,6 +3231,14 @@ coverする。selectorはloaded source textを受け取り、final LF込みfroze
 138 bytesを要求する。missing-final-LFとwhitespace-only variantを独立に
 rejectする。
 
+## Task257C1/C3 のソースレイアウト
+
+ソース付きチェーン経路はAtomicで実インポート字句列と再収集・拡充した環境全体を照合し、
+トークンを保つ空白・コメント配置を受け入れる。ASTのみの選択後の不一致はC3へエラーとして
+伝播し、必須インポート記号の欠落・曖昧性は未選択を保つ。ソース入力は引き続き必須。
+既存のfixture export一覧をrunner内で共有し、editionを捏造しない。数値・名前・極性と
+意味出力は維持する。以下のexact-byte境界は過去の記録。
+
 ## Checker Task 257C1 frozen runner route
 
 private exact routeはfrozen 107-byte

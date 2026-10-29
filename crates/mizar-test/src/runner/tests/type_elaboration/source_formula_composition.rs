@@ -4285,7 +4285,7 @@ fn task257c3_real_route_publishes_exact_composition_and_resolver_provenance() {
     assert_eq!(TASK257C1_SOURCE.len(), 107);
     assert!(TASK257C1_SOURCE.ends_with('\n'));
     let payload =
-        extract_source_imported_predicate_chain_formula(&ast, &module, &symbols, TASK257C1_SOURCE)
+        extract_source_imported_predicate_chain_formula(&ast, &module, &symbols)
             .expect("Task257C3 exact lower selector");
     assert_eq!(
         (
@@ -4579,8 +4579,8 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
     );
     for (label, loaded) in [
         (
-            "missing final LF",
-            TASK257C1_SOURCE.trim_end_matches('\n').to_owned(),
+            "changed final numeral",
+            TASK257C1_SOURCE.replacen("does not divides 3", "does not divides 30", 1),
         ),
         (
             "named near miss",
@@ -4603,7 +4603,11 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             ),
         ),
     ] {
-        let (ast, module, _, symbols) = task253_ast_from_source_text(&loaded, 257_300);
+        let (ast, module, _, symbols, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(&loaded, 257_300);
+        if label == "changed final numeral" {
+            assert_eq!(diagnostics, 0);
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+        }
         let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
         assert!(
             source_predicate_chain_composition_output_with_source(
@@ -4620,7 +4624,7 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             &exact_symbols,
             TASK257C1_SOURCE.trim_end_matches('\n'),
         )
-        .is_none()
+        .expect("same actual token anchors without trailing LF").is_ok()
     );
 
     let (b1_ast, b1_module, b1_symbols) = task252_real_ast(TASK257B1_CASE);

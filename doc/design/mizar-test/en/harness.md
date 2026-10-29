@@ -3382,6 +3382,17 @@ typed/resolved ownership. The selector receives the loaded source text and
 requires the frozen 138 bytes including the final LF; missing-final-LF and
 whitespace-only variants are independently rejected.
 
+## Task257C1/C3 source layout
+
+The source-bearing chain route accepts token-preserving layout through one Atomic
+source/import seal. Its selector is AST-only; source input remains required.
+Successful selection authenticates genuine imported lexing and the entire replayed,
+augmented resolver environment; stale associations are errors propagated by C3.
+Missing or ambiguous required imported symbols remain unselected. The existing
+native fixture export list is shared through runner-only visibility, without a
+fabricated source edition. Fixed numeral/name/polarity profiles and all semantic
+outputs remain unchanged. The following exact-byte boundary is historical.
+
 ## Checker Task 257C1 Frozen Runner Route
 
 The private exact route will recognize only the frozen 107-byte

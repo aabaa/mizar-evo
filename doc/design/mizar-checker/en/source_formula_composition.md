@@ -28,6 +28,13 @@ with the original context, scope, ordinal, declaration identity and empty captur
 Composition checks both bare-use byte extents; generic PrimaryTerm policy stays
 unchanged. All dependency/transaction shapes and original debug oracles remain fixed.
 
+## Task257C3 relative source profile
+
+C3 uses actual formula/segment member envelopes and nonoverlapping source order,
+with checked numeral/divides/does/not widths of 1/7/4/3. It preserves canonical
+descriptors, contexts, candidate provenance, shared middle edge and all immutable
+transaction checks; original absolute byte positions are historical examples.
+
 ## Task257B3 middle-name boundary
 
 B3 carries its middle existential name into its sole bare use and equality descriptor.

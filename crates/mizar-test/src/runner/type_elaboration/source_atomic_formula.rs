@@ -167,6 +167,247 @@ fn source_atomic_formula_output_with_mutation_impl(
     mutate: impl FnOnce(&mut SourceAtomicFormulaHandoffInput),
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
     let route = exact_atomic_route(ast, &module, symbols, source_text)?;
+    if let ExactAtomicRoute::PredicateChain(payload) = &route {
+        let source_matches = || -> Option<()> {
+            use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as T};
+            let source_text = source_text?;
+            ast.canonical_bytes()?;
+            if ast.expression_root().is_some() {
+                return None;
+            }
+            let root = ast.root()?;
+            let root_node = ast.node(root)?;
+            let root_children = super::source_ast::structural_child_ids(ast, root_node);
+            let [compilation] = root_children.as_slice() else {
+                return None;
+            };
+            if !root_node.children.iter().copied().eq(ast
+                .token_nodes()
+                .iter()
+                .copied()
+                .chain([*compilation]))
+            {
+                return None;
+            }
+            let items = super::source_ast::exact_compilation_item_list(ast)?;
+            let item_children = structural_child_ids(ast, items);
+            let [import_id, _] = item_children.as_slice() else {
+                return None;
+            };
+            let import_node = ast.node(*import_id)?;
+            let import_children = structural_child_ids(ast, import_node);
+            let [declaration_id] = import_children.as_slice() else {
+                return None;
+            };
+            let declaration_node = ast.node(*declaration_id)?;
+            let declaration_children = structural_child_ids(ast, declaration_node);
+            let [path_id] = declaration_children.as_slice() else {
+                return None;
+            };
+            let path_node = ast.node(*path_id)?;
+            let path_segments = structural_child_ids(ast, path_node);
+            let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+            if !preprocessed.diagnostics.is_empty() {
+                return None;
+            }
+            let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+            let prelude = mizar_lexer::scan_import_prelude(&raw);
+            let [import] = prelude.imports.as_slice() else {
+                return None;
+            };
+            if !prelude.diagnostics.is_empty()
+                || import.alias.is_some()
+                || import.path.relative.is_some()
+                || import.path.spelling != "parser.type_fixtures"
+                || import.path.components.len() != path_segments.len()
+            {
+                return None;
+            }
+            for (span, expected) in [
+                (import.span, declaration_node.range),
+                (import.path.span, path_node.range),
+            ] {
+                let ranges = preprocessed
+                    .preprocess_map
+                    .source_ranges_for_lexical(span)?;
+                if ranges.first()?.start != expected.start || ranges.last()?.end != expected.end {
+                    return None;
+                }
+            }
+            for (component, id) in import.path.components.iter().zip(&path_segments) {
+                let ranges = preprocessed
+                    .preprocess_map
+                    .source_ranges_for_lexical(component.span)?;
+                let [range] = ranges.as_slice() else {
+                    return None;
+                };
+                let expected = ast.node(*id)?;
+                if !matches!(expected.kind, K::PathSegment)
+                    || range.start != expected.range.start
+                    || range.end != expected.range.end
+                    || source_text.get(expected.range.start..expected.range.end)
+                        != Some(component.spelling.as_str())
+                {
+                    return None;
+                }
+            }
+            let imports = prelude
+                .imports
+                .iter()
+                .map(|import| mizar_lexer::ResolvedImport {
+                    module_id: mizar_lexer::ModuleId::new(import.path.spelling.as_str()),
+                })
+                .collect::<Vec<_>>();
+            let summaries = imports
+                .iter()
+                .enumerate()
+                .map(|(ordinal, import)| mizar_lexer::ModuleLexicalSummary {
+                    exported_symbols: crate::runner::import_fixtures::parse_only_fixture_symbols(
+                        &import.module_id,
+                    ),
+                    module_id: import.module_id.clone(),
+                    fingerprint: mizar_lexer::LexicalSummaryFingerprint::new((ordinal as u64) + 1),
+                })
+                .collect::<Vec<_>>();
+            let lexical_env = mizar_lexer::build_lexical_environment(&imports, &summaries).ok()?;
+            let scopes = mizar_lexer::build_scope_skeleton(&raw);
+            let tokens = mizar_lexer::disambiguate(
+                &raw,
+                &lexical_env,
+                &mizar_lexer::ParserLexContext::general(),
+                &scopes,
+            );
+            if !tokens.diagnostics().is_empty() || tokens.tokens().len() != ast.token_nodes().len()
+            {
+                return None;
+            }
+            for (actual, supplied) in tokens.tokens().iter().zip(ast.token_views()) {
+                let token = supplied.as_token()?;
+                let kind = match actual.kind() {
+                    mizar_lexer::TokenKind::Identifier => T::Identifier,
+                    mizar_lexer::TokenKind::ReservedWord => T::ReservedWord,
+                    mizar_lexer::TokenKind::ReservedSymbol => T::ReservedSymbol,
+                    mizar_lexer::TokenKind::Numeral => T::Numeral,
+                    mizar_lexer::TokenKind::UserSymbol => T::UserSymbol,
+                    _ => return None,
+                };
+                let ranges = preprocessed
+                    .preprocess_map
+                    .source_ranges_for_lexical(actual.span())?;
+                let [range] = ranges.as_slice() else {
+                    return None;
+                };
+                if token.kind != kind
+                    || token.text.as_ref() != actual.lexeme()
+                    || supplied.range().start != range.start
+                    || supplied.range().end != range.end
+                    || source_text.get(range.start..range.end) != Some(actual.lexeme())
+                {
+                    return None;
+                }
+            }
+            let mut reachable = vec![false; ast.nodes().len()];
+            let mut pending = vec![root];
+            while let Some(id) = pending.pop() {
+                if std::mem::replace(reachable.get_mut(id.index())?, true) {
+                    continue;
+                }
+                pending.extend(ast.node(id)?.children.iter().copied());
+            }
+            if ast.node_views().any(|node| !reachable[node.id().index()]) {
+                return None;
+            }
+            let mut owned_tokens = Vec::new();
+            for node in ast.node_views() {
+                if node.is_recovered()
+                    || source_text
+                        .get(node.range().start..node.range().end)
+                        .is_none()
+                    || ast.range_contains_child_ranges(node.id()) != Some(true)
+                {
+                    return None;
+                }
+                if matches!(node.kind(), K::Token(_)) {
+                    continue;
+                }
+                if node.id() == root {
+                    if root_node.range.start != ast.node(*ast.token_nodes().first()?)?.range.start
+                        || root_node.range.end != ast.node(*ast.token_nodes().last()?)?.range.end
+                    {
+                        return None;
+                    }
+                    continue;
+                }
+                let children = node.child_views().collect::<Vec<_>>();
+                if children
+                    .windows(2)
+                    .any(|pair| pair[0].range().end > pair[1].range().start)
+                    || children.first()?.range().start != node.range().start
+                    || children.last()?.range().end != node.range().end
+                {
+                    return None;
+                }
+                let positions: &[usize] = match node.kind() {
+                    K::ImportItem => &[0, 2],
+                    K::ModulePath => &[1],
+                    K::PathSegment | K::NumeralTerm => &[0],
+                    K::TheoremItem => &[0, 1, 2, 4],
+                    K::PredicateSegment
+                        if payload.segment_sites[1].node().index() == node.id().index() =>
+                    {
+                        &[0, 1]
+                    }
+                    K::CompilationUnit
+                    | K::ItemList
+                    | K::ImportAliasDecl
+                    | K::FormulaExpression
+                    | K::PredicateApplication
+                    | K::PredicateSegment
+                    | K::PredicateHead
+                    | K::QualifiedSymbol
+                    | K::TermExpression => &[],
+                    _ => return None,
+                };
+                if !children
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, child)| child.as_token().map(|_| index))
+                    .eq(positions.iter().copied())
+                {
+                    return None;
+                }
+                owned_tokens.extend(
+                    children
+                        .iter()
+                        .filter_map(|child| child.as_token().map(|_| child.id())),
+                );
+            }
+            owned_tokens.sort();
+            if owned_tokens != ast.token_nodes() {
+                return None;
+            }
+            let shells =
+                mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+            let replay = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            if !replay.diagnostics().is_empty() {
+                return None;
+            }
+            let replay = crate::runner::import_fixtures::augment_type_elaboration_import_summaries(
+                ast,
+                &module,
+                replay.into_env(),
+            );
+            (&replay == symbols).then_some(())
+        };
+        if source_matches().is_none() {
+            return Some(Err("Task257C1 source association is invalid".to_owned()));
+        }
+    }
     Some(build_output(ast, module, symbols, route, mutate))
 }
 
@@ -176,9 +417,9 @@ fn exact_atomic_route(
     symbols: &SymbolEnv,
     source_text: Option<&str>,
 ) -> Option<ExactAtomicRoute> {
-    if let Some(payload) = source_text.and_then(|source_text| {
-        extract_source_imported_predicate_chain_formula(ast, module, symbols, source_text)
-    }) {
+    if let Some(payload) = source_text
+        .and_then(|_| extract_source_imported_predicate_chain_formula(ast, module, symbols))
+    {
         return Some(ExactAtomicRoute::PredicateChain(payload));
     }
     if let Some(payload) = extract_source_builtin_binary_term_formula(ast) {

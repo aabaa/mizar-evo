@@ -27,6 +27,12 @@ composition検証は同じ局所bindingを選び、元のcontext、scope、ordin
 検査し、汎用PrimaryTermの規則は維持する。依存・transaction形状と元の
 デバッグ期待値は変更しない。
 
+## Task257C3 の相対ソース位置
+
+C3は実formula/segmentのメンバー範囲と重複しないソース順序を使い、numeral/divides/does/not
+の幅1/7/4/3をchecked演算で保つ。正規表記・context・候補provenance・共有中間edgeと
+immutable transaction検証を維持する。元の固定位置は過去の例である。
+
 ## Task257B3 中間変数名の境界
 
 B3は中間の存在変数名を唯一の裸の参照と等式表記へ渡す。Compositeが宣言幅を、

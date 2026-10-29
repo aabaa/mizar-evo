@@ -27,8 +27,6 @@ use super::source_reserve::{
     source_mode_symbol_spelling,
 };
 
-const SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD: &str = "import parser.type_fixtures;\ntheorem FormulaPredicateChainPayloadBoundary: 1 divides 2 does not divides 3;\n";
-
 #[derive(Debug)]
 pub(in crate::runner) struct SourceReservedVariableBinaryFormulaConfig {
     pub(in crate::runner) label: &'static str,
@@ -2056,13 +2054,11 @@ pub(in crate::runner) fn extract_source_imported_predicate_chain_formula(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
     symbols: &SymbolEnv,
-    source_text: &str,
 ) -> Option<SourceImportedPredicateChainFormula> {
-    if source_text != SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD
-        || ast
-            .nodes()
-            .iter()
-            .any(|node| !is_supported_imported_predicate_chain_theorem_bridge_node(node))
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_imported_predicate_chain_theorem_bridge_node(node))
     {
         return None;
     }

@@ -342,7 +342,9 @@ impl LexicalSummaryProvider for ParseOnlyImportProvider {
     }
 }
 
-fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> {
+pub(in crate::runner) fn parse_only_fixture_symbols(
+    module_id: &ModuleId,
+) -> Vec<ExportedSymbolShape> {
     if module_id.as_str() == "parser.nested_capture_fixtures" {
         return [
             ("Element", UserSymbolKind::Mode, UserSymbolArity::exact(1)),

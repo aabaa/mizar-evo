@@ -1176,10 +1176,7 @@ fn validate_predicate_chain_dependency_profiles(
         return Err(SourcePredicateChainCompositionError::DependencyMismatch);
     }
 
-    for (index, (start, end, spelling)) in [(75, 76, "1"), (85, 86, "2"), (104, 105, "3")]
-        .into_iter()
-        .enumerate()
-    {
+    for (index, spelling) in ["1", "2", "3"].into_iter().enumerate() {
         let term = primary_terms
             .terms()
             .get(SourcePrimaryTermId::new(index))
@@ -1189,8 +1186,11 @@ fn validate_predicate_chain_dependency_profiles(
             .get(SourceNumericTypeRequestId::new(index))
             .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
         if term.source_ordinal() != index
-            || term.source_range().start != start
-            || term.source_range().end != end
+            || term
+                .source_range()
+                .end
+                .checked_sub(term.source_range().start)
+                != Some(1)
             || term.context() != crate::binding_env::BindingContextId::new(0)
             || term.recovery() != SourcePrimaryTermRecovery::Normal
             || term.spelling() != spelling
@@ -1207,13 +1207,24 @@ fn validate_predicate_chain_dependency_profiles(
         }
     }
 
+    let [Some(first), Some(middle), Some(last)] = [0, 1, 2].map(|index| {
+        primary_terms
+            .terms()
+            .get(SourcePrimaryTermId::new(index))
+            .map(|term| term.source_range())
+    }) else {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    };
+    if first.end > middle.start || middle.end > last.start {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
     let formula = atomic_formulas
         .formulas()
         .get(SourceAtomicFormulaId::new(0))
         .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
     if formula.source_ordinal() != 0
-        || formula.source_range().start != 75
-        || formula.source_range().end != 105
+        || formula.source_range().start != first.start
+        || formula.source_range().end != last.end
         || formula.context() != crate::binding_env::BindingContextId::new(0)
         || formula.recovery() != SourceAtomicFormulaRecovery::Normal
         || formula.spelling() != "1 divides 2 does not divides 3"
@@ -1222,9 +1233,36 @@ fn validate_predicate_chain_dependency_profiles(
         return Err(SourcePredicateChainCompositionError::DependencyMismatch);
     }
 
+    let Some(SourcePredicateSegmentPolarityInput::Negative {
+        verb_range,
+        verb_spelling,
+        verb_recovery,
+        not_range,
+        not_spelling,
+        not_recovery,
+        ..
+    }) = atomic_formulas
+        .predicate_segments()
+        .get(SourcePredicateSegmentId::new(1))
+        .map(|segment| segment.polarity())
+    else {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    };
+    if verb_range.end.checked_sub(verb_range.start) != Some(4)
+        || middle.end > verb_range.start
+        || verb_range.end > not_range.start
+        || verb_spelling != "does"
+        || *verb_recovery != SourceAtomicFormulaRecovery::Normal
+        || not_range.end.checked_sub(not_range.start) != Some(3)
+        || not_spelling != "not"
+        || *not_recovery != SourceAtomicFormulaRecovery::Normal
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+
     for (index, (start, end, spelling, head, left_edge, right_edge)) in [
-        (75, 86, "1 divides 2", 0, 0, 1),
-        (87, 105, "does not divides 3", 1, 1, 2),
+        (first.start, middle.end, "1 divides 2", 0, 0, 1),
+        (verb_range.start, last.end, "does not divides 3", 1, 1, 2),
     ]
     .into_iter()
     .enumerate()
@@ -1256,34 +1294,10 @@ fn validate_predicate_chain_dependency_profiles(
     ) {
         return Err(SourcePredicateChainCompositionError::DependencyMismatch);
     }
-    let Some(SourcePredicateSegmentPolarityInput::Negative {
-        verb_range,
-        verb_spelling,
-        verb_recovery,
-        not_range,
-        not_spelling,
-        not_recovery,
-        ..
-    }) = atomic_formulas
-        .predicate_segments()
-        .get(SourcePredicateSegmentId::new(1))
-        .map(|segment| segment.polarity())
-    else {
-        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
-    };
-    if verb_range.start != 87
-        || verb_range.end != 91
-        || verb_spelling != "does"
-        || *verb_recovery != SourceAtomicFormulaRecovery::Normal
-        || not_range.start != 92
-        || not_range.end != 95
-        || not_spelling != "not"
-        || *not_recovery != SourceAtomicFormulaRecovery::Normal
+    for (index, (before, after)) in [(first.end, middle.start), (not_range.end, last.start)]
+        .into_iter()
+        .enumerate()
     {
-        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
-    }
-
-    for (index, (start, end)) in [(77, 84), (96, 103)].into_iter().enumerate() {
         let head = atomic_formulas
             .predicate_heads()
             .get(SourcePredicateHeadId::new(index))
@@ -1293,8 +1307,13 @@ fn validate_predicate_chain_dependency_profiles(
             .get(SourcePredicateCandidateId::new(index))
             .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
         if head.formula() != SourceAtomicFormulaId::new(0)
-            || head.source_range().start != start
-            || head.source_range().end != end
+            || head
+                .source_range()
+                .end
+                .checked_sub(head.source_range().start)
+                != Some(7)
+            || before > head.source_range().start
+            || head.source_range().end > after
             || head.context() != crate::binding_env::BindingContextId::new(0)
             || head.recovery() != SourceAtomicFormulaRecovery::Normal
             || head.spelling() != "divides"
@@ -12746,6 +12765,155 @@ pub(crate) mod tests {
                 conjunction: SourcePredicateChainConjunctionId::new(0),
             })
         );
+    }
+
+    #[test]
+    fn metamorphic_chain_layout_lower_profiles_keep_widths_and_envelopes() {
+        for defect in 0..8 {
+            let fixture = task_257c3_fixture();
+            let source = fixture.lower.source;
+            let mut extents = [
+                (175, 176),
+                (195, 196),
+                (234, 235),
+                (175, 235),
+                (175, 196),
+                (201, 235),
+                (180, 187),
+                (220, 227),
+                (201, 205),
+                (210, 213),
+            ];
+            match defect {
+                1 => extents[0].1 += 1,
+                2 => extents[6].1 += 1,
+                3 => extents[8].1 += 1,
+                4 => extents[9].1 += 1,
+                5 => extents[3].0 -= 1,
+                6 => extents[4].1 += 1,
+                7 => extents[5].0 -= 1,
+                _ => {}
+            }
+            let ranges = extents.map(|(start, end)| range(source, start, end));
+            let arena = TypedArena::try_new(
+                fixture.lower.arena.root(),
+                fixture
+                    .lower
+                    .arena
+                    .iter()
+                    .map(|(id, node)| {
+                        let mut node = node.clone();
+                        node.anchor = SourceAnchor::Range(ranges[id.index()]);
+                        node
+                    })
+                    .collect(),
+            )
+            .expect("coherent relocated arena");
+            let terms = fixture
+                .lower
+                .primary
+                .terms()
+                .iter()
+                .map(|(id, term)| SourcePrimaryTermInput {
+                    site: term.site().clone(),
+                    source_range: ranges[id.index()],
+                    source_ordinal: term.source_ordinal(),
+                    context: term.context(),
+                    recovery: term.recovery(),
+                    spelling: term.spelling().to_owned(),
+                    kind: term.kind(),
+                    role: term.role(),
+                    parent: term.parent(),
+                })
+                .collect::<Vec<_>>();
+            let numeric_type_requests = terms
+                .iter()
+                .enumerate()
+                .map(|(index, term)| SourceNumericTypeRequestInput {
+                    term: SourcePrimaryTermId::new(index),
+                    owner: term.site.clone(),
+                    source_range: term.source_range,
+                    spelling: term.spelling.clone(),
+                    request_ordinal: index,
+                })
+                .collect();
+            let primary = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: source,
+                    module_id: fixture.lower.module.clone(),
+                    terms,
+                    references: Vec::new(),
+                    numeric_type_requests,
+                },
+                &fixture.lower.bindings,
+                &arena,
+            )
+            .expect("real independently valid relocated Primary");
+            let mut atomic_input = fixture.lower.input.clone();
+            atomic_input.formulas[0].source_range = ranges[3];
+            for (index, segment) in atomic_input.predicate_segments.iter_mut().enumerate() {
+                segment.source_range = ranges[4 + index];
+                if let SourcePredicateSegmentPolarityInput::Negative {
+                    verb_range,
+                    not_range,
+                    ..
+                } = &mut segment.polarity
+                {
+                    *verb_range = ranges[8];
+                    *not_range = ranges[9];
+                }
+            }
+            for (index, head) in atomic_input.predicate_heads.iter_mut().enumerate() {
+                head.source_range = ranges[6 + index];
+            }
+            let atomic = SourceAtomicFormulaProducer::build(
+                atomic_input,
+                &fixture.lower.bindings,
+                &fixture.lower.symbols,
+                &primary,
+                None,
+                None,
+                None,
+                &arena,
+            )
+            .expect("real independently valid relocated Atomic");
+            let result = SourcePredicateChainCompositionProducer::build(
+                fixture.input.clone(),
+                &primary,
+                &atomic,
+                &arena,
+            );
+            if defect != 0 {
+                assert_eq!(
+                    result,
+                    Err(SourcePredicateChainCompositionError::DependencyMismatch),
+                    "coherent profile defect {defect}"
+                );
+                continue;
+            }
+            let composition = result.expect("layout-independent public C3");
+            assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(
+                composition.atomic_formula_fingerprint(),
+                atomic.debug_text()
+            );
+            let typed = empty_typed_ast(source, fixture.lower.module, arena)
+                .with_source_term(primary)
+                .unwrap()
+                .with_source_atomic_formula(atomic)
+                .unwrap()
+                .with_source_predicate_chain_composition(composition.clone())
+                .unwrap();
+            assert_eq!(
+                typed.clone().source_predicate_chain_composition(),
+                Some(&composition)
+            );
+            let resolved = assemble_empty_resolved(&typed).unwrap();
+            assert_eq!(
+                resolved.clone().source_predicate_chain_composition(),
+                Some(&composition)
+            );
+        }
     }
 
     #[test]
