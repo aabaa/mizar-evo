@@ -1970,3 +1970,245 @@ fn task264_carrier_extra_symbol(
         )),
     )
 }
+
+#[test]
+fn task264_native_layout_lexical_stream_and_surface_topology_are_equivalent() {
+    let mut executed = 0;
+    for (profile, original, node_count, token_count, parameter) in [
+        (
+            "means",
+            SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+            85,
+            53,
+            65,
+        ),
+        (
+            "equals",
+            SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+            56,
+            35,
+            47,
+        ),
+    ] {
+        let baseline = task257c4c1_frontend_output(original, 264_950 + executed);
+        assert!(baseline.diagnostics.is_empty(), "{profile} baseline");
+        let baseline_ast = baseline.ast.as_ref().expect("native baseline AST");
+        assert_eq!(baseline_ast.nodes().len(), node_count);
+        assert_eq!(
+            baseline_ast.root().map(|id| id.index()),
+            Some(node_count - 1)
+        );
+        let mut sources = vec![("original", original.to_owned())];
+        sources.extend(
+            metamorphic_edits::variants(baseline_ast, original)
+                .into_iter()
+                .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+                .map(|(kind, edits)| (kind, metamorphic_edits::apply(original, &edits))),
+        );
+        assert_eq!(sources.len(), 3);
+        assert_eq!(
+            (sources[1].0, sources[2].0),
+            ("leading_line", "intertoken_layout")
+        );
+        sources.push((
+            "missing_final_lf",
+            original.strip_suffix('\n').unwrap().to_owned(),
+        ));
+        sources.push(("appended_space", format!("{original} ")));
+        let compact = original
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .replace(" -> ", "->")
+            .replace("; ", ";")
+            .replace("steps: 1", "steps:1");
+        let compact = if profile == "means" {
+            compact.replace("it = it", "it::=λ=::=it")
+        } else {
+            compact.replace("equals M.carrier", "equals M . ::=λ=::carrier")
+        };
+        assert!(compact.contains("::=λ=::"));
+        sources.push(("compact_unicode_comment", compact));
+        assert_eq!(sources.len(), 6);
+        for (layout, source) in sources {
+            let frontend = task257c4c1_frontend_output(&source, 264_960 + executed);
+            assert!(frontend.diagnostics.is_empty(), "{profile}/{layout}");
+            assert!(
+                frontend.preprocessed.diagnostics.is_empty(),
+                "{profile}/{layout}"
+            );
+            assert!(frontend.tokens.diagnostics.is_empty(), "{profile}/{layout}");
+            assert!(frontend.preprocessed.import_stubs.is_empty());
+            assert!(frontend.preprocessed.doc_comments.is_empty());
+            assert_eq!(frontend.source.source_text.as_ref(), source);
+            assert_eq!(frontend.source.package_id, baseline.source.package_id);
+            assert_eq!(frontend.source.edition, baseline.source.edition);
+            let ast = frontend.ast.as_ref().expect("native layout AST");
+            assert_eq!(ast.source_id, frontend.source.source_id);
+            assert_eq!(frontend.tokens.source_id, ast.source_id);
+            assert_eq!(frontend.preprocessed.source_id, ast.source_id);
+            assert_eq!(frontend.preprocessed.source_map.source_id, ast.source_id);
+            assert!(ast.canonical_bytes().is_some(), "{profile}/{layout}");
+            assert!(ast.node_views().all(|node| !node.is_recovered()));
+            assert!(ast.expression_root().is_none());
+            assert_eq!(ast.nodes().len(), node_count);
+            assert_eq!(ast.root().map(|id| id.index()), Some(node_count - 1));
+            assert_eq!(ast.token_nodes().len(), token_count);
+            for (id, (node, expected)) in ast.nodes().iter().zip(baseline_ast.nodes()).enumerate() {
+                assert_eq!(
+                    (&node.kind, &node.children),
+                    (&expected.kind, &expected.children),
+                    "{profile}/{layout}/node{id}"
+                );
+                assert!(
+                    node.range.start < node.range.end
+                        && source.get(node.range.start..node.range.end).is_some()
+                );
+                for child in &node.children {
+                    let child = ast.node(*child).unwrap();
+                    assert!(
+                        node.range.start <= child.range.start && child.range.end <= node.range.end
+                    );
+                }
+                if let (Some(first), Some(last)) = (node.children.first(), node.children.last()) {
+                    assert_eq!(node.range.start, ast.node(*first).unwrap().range.start);
+                    assert_eq!(node.range.end, ast.node(*last).unwrap().range.end);
+                    if id != node_count - 1 {
+                        assert!(
+                            node.children.windows(2).all(|pair| ast
+                                .node(pair[0])
+                                .unwrap()
+                                .range
+                                .end
+                                <= ast.node(pair[1]).unwrap().range.start)
+                        );
+                    }
+                }
+            }
+            let root = ast.root_view().unwrap();
+            let (compilation, aliases) = ast
+                .node(ast.root().unwrap())
+                .unwrap()
+                .children
+                .split_last()
+                .unwrap();
+            assert_eq!(aliases, ast.token_nodes());
+            assert_eq!(root.range(), ast.node(*compilation).unwrap().range);
+            assert_eq!(
+                ast.node(*compilation).unwrap().kind,
+                SurfaceNodeKind::CompilationUnit
+            );
+            let parameter = &ast.nodes()[parameter];
+            let declaration = ast.node(ast.token_nodes()[20]).unwrap();
+            assert_eq!(parameter.kind, SurfaceNodeKind::DefinitionParameter);
+            assert_eq!(
+                parameter.range.start,
+                ast.node(ast.token_nodes()[19]).unwrap().range.start
+            );
+            assert_eq!(
+                parameter.range.end,
+                ast.node(ast.token_nodes()[23]).unwrap().range.end
+            );
+            assert_eq!(parameter.children[1], ast.token_nodes()[20]);
+            assert_ne!(parameter.range, declaration.range);
+            assert_eq!(
+                source.get(declaration.range.start..declaration.range.end),
+                Some("M")
+            );
+            let native = frontend.tokens.tokens();
+            assert_eq!(native.len(), token_count);
+            for (index, kind, text) in [
+                (2, mizar_lexer::TokenKind::Identifier, "Task264Carrier"),
+                (22, mizar_lexer::TokenKind::UserSymbol, "Task264Carrier"),
+            ] {
+                assert_eq!(
+                    (native[index].kind, native[index].text.as_ref()),
+                    (kind, text)
+                );
+            }
+            if profile == "means" {
+                for index in [39, 48] {
+                    assert_eq!(
+                        (native[index].kind, native[index].text.as_ref()),
+                        (mizar_lexer::TokenKind::Numeral, "1")
+                    );
+                }
+            }
+            let preprocessed = mizar_lexer::preprocess_source_for_lexing(&source);
+            assert!(preprocessed.diagnostics.is_empty());
+            assert_eq!(
+                preprocessed.lexical_text,
+                frontend.preprocessed.lexical_text.as_str()
+            );
+            assert_eq!(
+                preprocessed.preprocess_map,
+                frontend.preprocessed.source_map.preprocess_map
+            );
+            if layout == "compact_unicode_comment" {
+                assert!(preprocessed.comments.iter().any(|comment| comment.kind
+                    == mizar_lexer::CommentKind::MultiLine
+                    && comment.lexeme.contains('λ')));
+            }
+            let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).expect("strict raw scan");
+            let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+            let locals = mizar_lexer::collect_local_lexical_declarations(
+                &raw,
+                mizar_lexer::ModuleId::new(frontend.source.module_path.as_str()),
+            );
+            assert_eq!(&locals, frontend.tokens.local_declarations());
+            let scopes = mizar_lexer::build_scope_skeleton(&raw);
+            assert!(scopes.diagnostics.is_empty());
+            let manual = mizar_lexer::disambiguate_with_local_declarations(
+                &raw,
+                &environment,
+                &locals,
+                &mizar_lexer::ParserLexContext::general(),
+                &scopes,
+            );
+            assert!(manual.diagnostics().is_empty());
+            assert_eq!(manual.tokens().len(), native.len());
+            for ((token, native), surface) in
+                manual.tokens().iter().zip(native).zip(ast.token_views())
+            {
+                let mapped = preprocessed
+                    .preprocess_map
+                    .source_ranges_for_lexical(token.span)
+                    .unwrap();
+                assert_eq!(mapped.len(), 1, "{profile}/{layout}: fragmented token");
+                let span = SourceRange {
+                    source_id: frontend.source.source_id,
+                    start: mapped[0].start,
+                    end: mapped[0].end,
+                };
+                assert_eq!(
+                    (token.kind, token.lexeme.as_str(), span),
+                    (native.kind, native.text.as_ref(), native.span),
+                    "{profile}/{layout}"
+                );
+                let kind = match token.kind {
+                    mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
+                    mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
+                    mizar_lexer::TokenKind::Identifier => SurfaceTokenKind::Identifier,
+                    mizar_lexer::TokenKind::UserSymbol => SurfaceTokenKind::UserSymbol,
+                    mizar_lexer::TokenKind::Numeral => SurfaceTokenKind::Numeral,
+                    _ => panic!("unexpected closed-profile token kind"),
+                };
+                let surface_token = surface.as_token().unwrap();
+                assert_eq!(
+                    (
+                        surface_token.kind,
+                        surface_token.text.as_ref(),
+                        surface.range()
+                    ),
+                    (kind, token.lexeme.as_str(), span)
+                );
+                assert_eq!(
+                    source.get(span.start..span.end),
+                    Some(token.lexeme.as_str())
+                );
+            }
+            executed += 1;
+        }
+    }
+    assert_eq!(executed, 12);
+}
