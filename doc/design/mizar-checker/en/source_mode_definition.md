@@ -178,6 +178,15 @@ containing Type anchor retains early fallback; a canonical one retains its late
 Arena error. Later validation and replay remain mandatory; no native-source seal,
 comment/CR layout, semantic credit or raw runner selection follows.
 
+The native runner also admits compensated SP/TAB/LF headers with starts13/29,
+length141 and unchanged prefix13/body45+. It independently lexes literal token
+spans and authenticates all normal Surface kinds, dense identities, children and
+structural covers before deriving header ranges, spelling and Arena anchors.
+The same lower/upper producers and resolver provenance checks remain mandatory;
+source/Surface mismatches retain `None`. Value-identical authenticated artifacts
+do not prove parser-instance freshness. The frozen literal oracle remains
+canonical; no raw-prefix, comment/CR family or semantic credit follows.
+
 After the separate Task-249M prerequisite, the exact source consumes only
 these lower profiles:
 

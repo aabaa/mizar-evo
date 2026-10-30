@@ -1711,3 +1711,154 @@ fn task262_source_binding_core_handoff_with_mutation(
     )
     .expect("Task262 33LB handoff should build")
 }
+
+#[test]
+fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
+    let x_source = SOURCE_MODE_DEFINITION_TEXT.replacen(
+        "let x be set;\n  let",
+        "let  x be set;\n let",
+        1,
+    );
+    let both_source = x_source.replacen("let y be set;\n  mode", "let  y be set;\n mode", 1);
+    let trivia_source = both_source.replacen("let  x be set;", "let\t x\nbe\tset;", 1);
+    let (canonical_ast, canonical_module, canonical_shells, canonical_symbols) =
+        task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_300);
+    let mut positives = Vec::new();
+    for (ordinal, (case, source, ends, declarations, types)) in [
+        ("x", &x_source, [27, 42], [18, 33], [23, 38]),
+        ("both", &both_source, [27, 43], [18, 34], [23, 39]),
+        ("tab_lf", &trivia_source, [27, 43], [18, 34], [23, 39]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert_eq!(source.len(), 141, "{case}");
+        assert_eq!(&source[..13], &SOURCE_MODE_DEFINITION_TEXT[..13]);
+        assert_eq!(&source[45..], &SOURCE_MODE_DEFINITION_TEXT[45..]);
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 262_301 + ordinal);
+        assert_eq!(diagnostics, 0, "{case} native Frontend diagnostics");
+        assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (54, Some(53)));
+        assert!(ast.expression_root().is_none());
+        for (node, expected) in ast.nodes().iter().zip(TASK262_EXPECTED_SURFACE_ROWS) {
+            assert!(!node.recovered);
+            assert_eq!(node.range.source_id, ast.source_id);
+            assert_eq!(
+                node.children.iter().map(|id| id.index()).collect::<Vec<_>>(),
+                expected.children
+            );
+            match (&node.kind, &expected.kind) {
+                (SurfaceNodeKind::Token(actual), Task262ExpectedSurfaceKind::Token(kind, text)) => {
+                    assert_eq!((actual.kind, actual.text.as_ref()), (*kind, *text));
+                    assert_eq!(&source[node.range.start..node.range.end], *text);
+                }
+                (actual, Task262ExpectedSurfaceKind::Structural(kind)) => assert_eq!(actual, kind),
+                (actual, expected) => panic!("{case}: {actual:?} != {expected:?}"),
+            }
+        }
+        for (index, (parameter, declaration, expression)) in [(37, 2, 35), (41, 7, 39)]
+            .into_iter()
+            .enumerate()
+        {
+            assert_eq!(ast.nodes()[parameter].range, task262_range(ast.source_id, [13, 29][index], ends[index]));
+            assert_eq!(ast.nodes()[declaration].range, task262_range(ast.source_id, declarations[index], declarations[index] + 1));
+            assert_eq!(ast.nodes()[expression].range, task262_range(ast.source_id, types[index], types[index] + 3));
+        }
+        assert!(source_mode_definition_output(
+            &canonical_ast,
+            canonical_module.clone(),
+            &canonical_shells,
+            &canonical_symbols,
+            source,
+        ).is_none(), "{case}: canonical spans mismatch changed source");
+        let result = source_mode_definition_output(&ast, module.clone(), &shells, &symbols, source);
+        positives.push((case, source, ast, module, shells, symbols, result));
+    }
+    let failures = positives.iter().filter_map(|(case, _, _, _, _, _, result)| match result {
+        None => Some(format!("{case}: None")),
+        Some(Err(error)) => Some(format!("{case}: SomeErr({error})")),
+        Some(Ok(_)) => None,
+    }).collect::<Vec<_>>();
+    assert!(failures.is_empty(), "native compensated header outcomes: {failures:?}");
+
+    for (case, source, ast, module, shells, symbols, result) in positives {
+        let output = result.unwrap().unwrap();
+        let replay = source_mode_definition_output(&ast, module.clone(), &shells, &symbols, source)
+            .expect("replay family").expect("replay route");
+        assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+        assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+        let context = output.typed_ast.source_context().expect("native Context");
+        let types = output.typed_ast.source_type().expect("native Type");
+        let mode = output.typed_ast.source_mode_definition().expect("native upper Mode");
+        assert_eq!(mode.source_context_fingerprint(), context.debug_text());
+        assert_eq!(mode.source_type_fingerprint(), types.debug_text());
+        assert_eq!(Some(mode), output.resolved.source_mode_definition());
+        assert_eq!((context.declarations().len(), context.binding_env().bindings().len(), types.applications().len(), types.expressions().len()), (2, 2, 2, 3));
+        for (index, (_, parameter)) in mode.parameters().iter().enumerate() {
+            let declaration = context.declarations().iter().nth(index).unwrap().1;
+            let binding = context.binding_env().bindings().get(parameter.binding()).unwrap();
+            let application = types.applications().get(parameter.written_type()).unwrap();
+            let expression = types.expressions().get(application.root()).unwrap();
+            let (parameter_site, declaration_site, type_site, head_site) = [(37, 2, 35, 34), (41, 7, 39, 38)][index];
+            let header_range = ast.nodes()[parameter_site].range;
+            let declaration_range = ast.nodes()[declaration_site].range;
+            let type_range = ast.nodes()[type_site].range;
+            assert_eq!(parameter.source_range(), header_range, "{case}");
+            assert_eq!(parameter.spelling(), &source[header_range.start..header_range.end]);
+            assert_eq!(parameter.declaration_range(), declaration_range);
+            assert_eq!(parameter.binding(), declaration.binding);
+            assert_eq!(parameter.context(), declaration.binding_context);
+            assert_eq!(declaration.declaration_range, declaration_range);
+            assert_eq!(declaration.written_type_range, type_range);
+            assert_eq!(binding.declaration_range, declaration_range);
+            assert_eq!(binding.owner_context, declaration.binding_context);
+            assert_eq!(binding.type_site, mizar_checker::binding_env::BindingTypeSite::Source(type_range));
+            assert_eq!(application.binding(), declaration.binding);
+            assert_eq!(expression.source_range(), type_range);
+            assert_eq!(expression.head_range(), ast.nodes()[head_site].range);
+            assert_eq!(expression.site(), &TypedSiteRef::Node(TypedNodeId::new(type_site)));
+            assert_eq!(expression.head_site(), &TypedSiteRef::Node(TypedNodeId::new(head_site)));
+            assert_eq!(expression.spelling(), "set");
+        }
+        for (index, surface) in ast.nodes().iter().enumerate() {
+            let expected = match index {
+                37 => ast.nodes()[2].range,
+                41 => ast.nodes()[7].range,
+                _ => surface.range,
+            };
+            assert_eq!(output.typed_ast.nodes().node(TypedNodeId::new(index)).unwrap().anchor, SourceAnchor::Range(expected), "{case} Arena row {index}");
+        }
+        let obligations = output.typed_ast.initial_obligations().iter().collect::<Vec<_>>();
+        assert_eq!(obligations.len(), 1);
+        assert_eq!(obligations[0].1.kind, mizar_checker::typed_ast::InitialObligationKind::Sethood);
+        assert_eq!(obligations[0].1.status, mizar_checker::typed_ast::InitialObligationStatus::Pending);
+        assert!(output.typed_ast.types().is_empty());
+        assert!(output.typed_ast.facts().is_empty());
+        assert!(output.typed_ast.coercions().is_empty());
+        assert!(output.typed_ast.diagnostics().is_empty());
+        assert!(output.resolved.checked_formulas().is_empty());
+        assert!(output.resolved.checked_proofs().is_empty());
+        assert!(output.resolved.cluster_facts().is_empty());
+        assert!(output.resolved.diagnostics().is_empty());
+        for (foreign_module, foreign_shells, foreign_symbols) in [
+            (&canonical_module, &shells, &symbols),
+            (&module, &canonical_shells, &symbols),
+            (&module, &shells, &canonical_symbols),
+        ] {
+            let error = source_mode_definition_output(&ast, foreign_module.clone(), foreign_shells, foreign_symbols, source)
+                .expect("authenticated family precedes resolver checks").expect_err("foreign provenance");
+            assert!(error.starts_with("Task262 resolver:"), "{case}: {error}");
+        }
+    }
+    for source in [
+        x_source.replacen("let  x", "let\r x", 1),
+        SOURCE_MODE_DEFINITION_TEXT.replacen(";\n  let", ";::\nlet", 1),
+        SOURCE_MODE_DEFINITION_TEXT.replacen("definition\n  let", "definition \n let", 1),
+        SOURCE_MODE_DEFINITION_TEXT.replacen("is set", "is\tset", 1),
+        SOURCE_MODE_DEFINITION_TEXT.replacen("end;\n", "end; ", 1),
+    ] {
+        assert_eq!(source.len(), 141);
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, 262_310);
+        assert!(source_mode_definition_output(&ast, module, &shells, &symbols, &source).is_none());
+    }
+}

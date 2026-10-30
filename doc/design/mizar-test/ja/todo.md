@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-MODE-NATIVE-HEADER-BRIDGE](../../task_contracts/ja/TEST-MODE-NATIVE-HEADER-BRIDGE.md).
+
 > 2026-09-02 圧縮（batch CPT-10、規則は
 > [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)）:
 > ステータス文書の言語方針（2026-09-01 承認）に基づき、完了タスク本文の正本は

@@ -171,6 +171,14 @@ canonical 検査と順序を保つ。Context／Type の方向別 error、移動 
 に対する早期 fallback、canonical anchor の遅い Arena error も維持する。後段検証と replay
 は必須であり、native-source seal、comment／CR layout、意味論や raw runner 選択は増えない。
 
+native runner は開始13／29、長さ141、prefix13／body45以降を維持した SP／TAB／LF の
+補償 header にも対応する。独立 lexer の literal token span と全正常 Surface node の
+kind／dense identity／children／structural cover を認証し、header 範囲・表記・Arena anchor
+を導出する。同じ lower／upper producer と resolver provenance 検査を必須とし、
+source／Surface 不一致は `None` を維持する。値が同一の認証 artifact は parser instance の
+鮮度を証明しない。固定 literal oracle は canonical のまま保ち、raw-prefix、comment／CR
+family、意味論の credit は増えない。
+
 separate Task-249M prerequisite後、exact sourceがconsumeするlower profileは
 次だけである。
 

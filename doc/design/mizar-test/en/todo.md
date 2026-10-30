@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-MODE-NATIVE-HEADER-BRIDGE](../../task_contracts/en/TEST-MODE-NATIVE-HEADER-BRIDGE.md).
+
 > Compacted 2026-09-02 (batch CPT-10, rules in
 > [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)):
 > completed task bodies and closed addenda-section bodies moved verbatim to
