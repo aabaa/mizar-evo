@@ -4126,6 +4126,12 @@ fn validate_mode_checker_owner<'a>(
         .items()
         .get(SourceItemId::new(0))
         .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    // All remaining profile endpoints are at most 140, bounding each translated addition.
+    let d = source_item
+        .source_range
+        .end
+        .checked_sub(140)
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
     if source_item.id != SourceItemId::new(0)
         || source_item.shell.index() != 0
         || source_item.role != SourceItemRole::DefinitionBlock
@@ -4140,12 +4146,8 @@ fn validate_mode_checker_owner<'a>(
         || source_item.predecessor.is_some()
         || source_item.binding_context != BindingContextId::new(1)
         || source_item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
-        || source_item.source_range
-            != (SourceRange {
-                source_id: source_context.source_id(),
-                start: 0,
-                end: 140,
-            })
+        || source_item.source_range.source_id != source_context.source_id()
+        || source_item.source_range.start > d
         || source_item.site
             != mizar_checker::typed_ast::TypedSiteRef::Node(
                 mizar_checker::typed_ast::TypedNodeId::new(50),
@@ -4187,18 +4189,18 @@ fn validate_mode_checker_owner<'a>(
     for (index, (id, declaration)) in declaration_rows.iter().enumerate() {
         let expected_source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].0,
-            end: expected_parameter_ranges[index].1,
+            start: d + expected_parameter_ranges[index].0,
+            end: d + expected_parameter_ranges[index].1,
         };
         let expected_declaration_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].2,
-            end: expected_parameter_ranges[index].3,
+            start: d + expected_parameter_ranges[index].2,
+            end: d + expected_parameter_ranges[index].3,
         };
         let expected_written_type_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].4,
-            end: expected_parameter_ranges[index].5,
+            start: d + expected_parameter_ranges[index].4,
+            end: d + expected_parameter_ranges[index].5,
         };
         let SourceBindingSiteRole::DefinitionParameter { local } = &declaration.role else {
             return Err(SourceModeCoreContextError::InvalidCheckerOwner);
@@ -4329,8 +4331,8 @@ fn validate_mode_checker_owner<'a>(
         .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
     let definition_range = SourceRange {
         source_id: source_context.source_id(),
-        start: 45,
-        end: 135,
+        start: d + 45,
+        end: d + 135,
     };
     if definition.id() != mizar_checker::source_mode_definition::SourceModeDefinitionId::new(0)
         || definition.definition().index() != 0
@@ -4371,8 +4373,8 @@ fn validate_mode_checker_owner<'a>(
         let declaration = declaration_rows[index].1;
         let expected_source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].0,
-            end: expected_parameter_ranges[index].1,
+            start: d + expected_parameter_ranges[index].0,
+            end: d + expected_parameter_ranges[index].1,
         };
         if parameter_id.index() != index
             || parameter.id().index() != index
@@ -4386,8 +4388,8 @@ fn validate_mode_checker_owner<'a>(
             || parameter.pattern_range()
                 != (SourceRange {
                     source_id: source_context.source_id(),
-                    start: if index == 0 { 86 } else { 89 },
-                    end: if index == 0 { 87 } else { 90 },
+                    start: if index == 0 { d + 86 } else { d + 89 },
+                    end: if index == 0 { d + 87 } else { d + 90 },
                 })
             || parameter.context() != BindingContextId::new(1)
             || parameter.recovery()
@@ -4417,8 +4419,8 @@ fn validate_mode_checker_owner<'a>(
         || application.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 73,
-                end: 91,
+                start: d + 73,
+                end: d + 91,
             })
         || application.context() != BindingContextId::new(1)
         || application.recovery()
@@ -4443,8 +4445,8 @@ fn validate_mode_checker_owner<'a>(
         || expansion.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 95,
-                end: 98,
+                start: d + 95,
+                end: d + 98,
             })
         || expansion.context() != BindingContextId::new(1)
         || expansion.recovery()
@@ -4490,14 +4492,14 @@ fn validate_mode_checker_owner<'a>(
         || property.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 102,
-                end: 135,
+                start: d + 102,
+                end: d + 135,
             })
         || property.justification()
             != &SourceAnchor::Range(SourceRange {
                 source_id: source_context.source_id(),
-                start: 113,
-                end: 134,
+                start: d + 113,
+                end: d + 134,
             })
         || property.recovery()
             != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal

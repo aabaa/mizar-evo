@@ -285,6 +285,11 @@ Resolved/CoreIr slot, installer, production route, Core 34--36 semantics,
 
 ### Core-33 Task262 mode item context
 
+Current uniform coordinates use checked d=source-item end−140, current source identity and start<=d.
+Inner ranges translate by d, including every pattern branch; all non-coordinate and request/property links remain.
+Geometry refusals keep static InvalidCheckerOwner and the existing validation order.
+Checker Pending sethood stays separate; scalar transport adds no authentication, semantics or installation credit.
+
 The frozen [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
 owns the immutable `SourceModeCoreItemAssociation` row/table,
 `SourceModeCoreContextHandoff`, non-exhaustive error, producer, and durable

@@ -1473,6 +1473,271 @@ fn task262_core_item_context_association_is_exact_and_deterministic() {
 }
 
 #[test]
+fn task262_core_context_transports_uniform_mode_source_geometry() {
+    let intertoken = SOURCE_MODE_DEFINITION_TEXT
+        .replacen("definition", "definition :: metamorphic\n", 1);
+    let cases = [
+        ("leading_lf", format!("\n{SOURCE_MODE_DEFINITION_TEXT}"), 1, 1),
+        ("intertoken_gap", intertoken, 0, 16),
+    ];
+    let mut outcomes = Vec::new();
+    for (ordinal, (case, source, m, d)) in cases.into_iter().enumerate() {
+        assert_eq!(source.len(), 141 + d, "{case} source bytes");
+        assert!(if d == 1 {
+            source.starts_with('\n') && &source[1..] == SOURCE_MODE_DEFINITION_TEXT
+        } else {
+            source.starts_with("definition :: metamorphic\n")
+                && source[26..] == SOURCE_MODE_DEFINITION_TEXT[10..]
+        }, "{case} physical source bytes");
+
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 262_220 + ordinal);
+        assert_eq!(diagnostics, 0, "{case} native frontend diagnostics");
+
+        let output = source_mode_definition_output(&ast, module, &shells, &symbols, &source)
+            .expect("fresh Task262 native selector")
+            .expect("public Context/Type+ModeRHS/Mode producers");
+        let source_context = output
+            .typed_ast
+            .source_context()
+            .expect("actual Task248 Context")
+            .clone();
+        let checker_owner = output
+            .typed_ast
+            .source_mode_definition()
+            .expect("actual Task262 Mode owner")
+            .clone();
+        let source_item = source_context
+            .items()
+            .get(mizar_checker::source_context::SourceItemId::new(0))
+            .expect("actual Task248 definition item");
+        let outer = task262_range(source_context.source_id(), m, 140 + d);
+        assert_eq!(source_item.source_range, outer, "{case} outer item");
+
+        let definition = checker_owner
+            .definitions()
+            .get(mizar_checker::source_mode_definition::SourceModeDefinitionId::new(0))
+            .expect("actual Task262 definition");
+        let definition_range = task262_range(source_context.source_id(), 45 + d, 135 + d);
+        assert_eq!(definition.source_range(), definition_range, "{case} definition");
+        assert_eq!(
+            definition.spelling(),
+            &source[definition_range.start..definition_range.end],
+            "{case} definition bytes"
+        );
+        for (index, (parameter, declaration, ty, pattern)) in [
+            (13, 17, 22, 86),
+            (29, 33, 38, 89),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let row = checker_owner
+                .parameters()
+                .get(mizar_checker::source_mode_definition::SourceModeParameterId::new(index))
+                .expect("actual Mode parameter");
+            let context_row = source_context
+                .declarations()
+                .get(mizar_checker::source_context::SourceDeclarationId::new(index))
+                .expect("actual Context declaration");
+            let parameter_range = task262_range(source_context.source_id(), parameter + d, parameter + 13 + d);
+            let declaration_range = task262_range(source_context.source_id(), declaration + d, declaration + 1 + d);
+            let type_range = task262_range(source_context.source_id(), ty + d, ty + 3 + d);
+            let pattern_range = task262_range(source_context.source_id(), pattern + d, pattern + 1 + d);
+            assert_eq!(
+                (row.source_range(), row.declaration_range(), context_row.declaration_range,
+                    context_row.written_type_range, row.pattern_range()),
+                (parameter_range, declaration_range, declaration_range, type_range, pattern_range),
+                "{case} parameter/declaration/type/pattern geometry {index}"
+            );
+            assert_eq!(row.spelling(), &source[parameter_range.start..parameter_range.end]);
+        }
+
+        let application = checker_owner.applications().get(definition.application()).expect("actual Mode application");
+        let application_range = task262_range(source_context.source_id(), 73 + d, 91 + d);
+        assert_eq!(application.source_range(), application_range, "{case} application");
+        assert_eq!(&source[application_range.start..application_range.end], "Task262Mode [x, y]");
+        assert_eq!(application.spelling(), "Task262Mode [ x , y ]");
+        let expansion = checker_owner.expansions().get(definition.expansion()).expect("actual RHS expansion");
+        let request = checker_owner.inhabitation_requests().get(definition.inhabitation_request()).expect("actual RHS request");
+        let rhs_range = task262_range(source_context.source_id(), 95 + d, 98 + d);
+        assert_eq!((expansion.source_range(), request.source_range()), (rhs_range, rhs_range), "{case} RHS geometry");
+        assert_eq!(request.expansion(), expansion.id(), "{case} request expansion link");
+        assert_eq!(request.site(), expansion.site(), "{case} request site link");
+        assert_eq!(request.kind(), mizar_checker::source_mode_definition::SourceModeInhabitationRequestKind::Rhs);
+        assert_eq!(&source[rhs_range.start..rhs_range.end], "set");
+        let rhs = output
+            .typed_ast
+            .source_type()
+            .expect("actual Task262 Type")
+            .mode_rhs()
+            .get(mizar_checker::source_type::SourceTypeModeRhsId::new(0))
+            .expect("actual Mode RHS");
+        assert_eq!(rhs.id(), expansion.rhs(), "{case} expansion RHS link");
+        assert_eq!(rhs.definition_range(), definition_range, "{case} RHS definition link");
+        assert_eq!(rhs.definition_site(), definition.site(), "{case} RHS site link");
+
+        let property_id = definition.property().expect("actual sethood property ID");
+        let property = checker_owner.properties().get(property_id).expect("actual sethood property");
+        let property_range = task262_range(source_context.source_id(), 102 + d, 135 + d);
+        let justification = task262_range(source_context.source_id(), 113 + d, 134 + d);
+        assert_eq!(property.source_range(), property_range, "{case} property anchor");
+        assert_eq!(property.justification(), &mizar_session::SourceAnchor::Range(justification));
+        assert_eq!(&source[property_range.start..property_range.end], property.spelling());
+        assert_eq!(&source[justification.start..justification.end], "computation(steps: 1)");
+        let (obligation_id, obligation) = output.typed_ast.initial_obligations().iter().next().unwrap();
+        assert_eq!(obligation_id, property.obligation(), "{case} checker-owned obligation ID");
+        assert_eq!(
+            (obligation.kind, obligation.status, obligation.source_range),
+            (mizar_checker::typed_ast::InitialObligationKind::Sethood,
+                mizar_checker::typed_ast::InitialObligationStatus::Pending, property_range)
+        );
+        assert_eq!(&obligation.owner, property.site());
+
+        let source_bindings = task262_source_binding_core_handoff(&source_context, &checker_owner);
+        let result = mizar_core::elaborator::SourceModeCoreContextProducer::build(
+            source_bindings.clone(),
+            source_context.clone(),
+            checker_owner.clone(),
+        );
+        outcomes.push((case, d, source_context, checker_owner, source_bindings, result));
+    }
+
+    let failures = outcomes
+        .iter()
+        .filter_map(|(case, _, _, _, _, result)| {
+            result.as_ref().err().map(|error| format!("{case}: {error:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(failures.is_empty(), "actual public Core results: {failures:?}");
+
+    for (case, d, source_context, checker_owner, source_bindings, result) in outcomes {
+        let core = result.expect("uniform source geometry reaches Core");
+        assert_eq!(
+            (core.source_context(), core.checker_owner(), core.source_bindings()),
+            (&source_context, &checker_owner, &source_bindings),
+            "{case} retained Context/owner/33LB"
+        );
+        let replay = mizar_core::elaborator::SourceModeCoreContextProducer::build(
+            source_bindings.clone(), source_context.clone(), checker_owner.clone(),
+        )
+        .expect("fresh public Core repeat");
+        assert_eq!(core, replay, "{case} deterministic repeat");
+        let definition = checker_owner
+            .definitions()
+            .get(mizar_checker::source_mode_definition::SourceModeDefinitionId::new(0))
+            .unwrap();
+        let association = core.items().get(definition.id()).expect("whole SymbolId association");
+        let core_item = core.context().item_registry().id_for_symbol(definition.symbol()).unwrap();
+        assert_eq!(association.source_item(), mizar_checker::source_context::SourceItemId::new(0), "{case} source association");
+        assert_eq!(association.symbol(), definition.symbol(), "{case} full SymbolId");
+        assert_eq!(association.core_item(), core_item, "{case} Core item association");
+        assert_eq!(core.items().len(), 1, "{case} complete association map");
+        let context = core.context();
+        let item = context.item_registry().items().get(core_item).unwrap();
+        let provenance = vec![mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            "source-mode-core-item-v1.definition.0",
+        )];
+        let expected_source = mizar_core::core_ir::CoreSourceRef::direct(definition.source_range())
+            .with_provenance(provenance.clone());
+        assert_eq!(item.source, expected_source, "{case} Core source anchor/provenance");
+        let boundary = context.definition_boundaries().get_by_item(core_item).unwrap();
+        assert_eq!(boundary.kind, mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem);
+        assert_eq!(boundary.status, mizar_core::elaborator::DefinitionBoundaryStatus::PendingBody);
+        assert_eq!(boundary.source, item.source);
+        assert_eq!(boundary.provenance.as_slice(), provenance.as_slice());
+        assert_eq!(context.worklist().entries(), &[mizar_core::elaborator::ElaborationWorkItem {
+            kind: mizar_core::elaborator::ElaborationWorkItemKind::Item(core_item),
+            status: mizar_core::elaborator::ElaborationWorkStatus::Pending,
+            source: item.source.clone(),
+            diagnostics: Vec::new(), checker_diagnostics: Vec::new(),
+        }]);
+        assert!(context.dependency_summaries().is_empty()
+            && context.generated_origins().table().is_empty() && context.diagnostics().is_empty());
+        let source_map = context.source_map();
+        assert_eq!(source_map.item_sources.get(&core_item), Some(&item.source));
+        assert!(source_map.term_sources.is_empty() && source_map.formula_sources.is_empty()
+            && source_map.definition_sources.is_empty() && source_map.proof_sources.is_empty()
+            && source_map.algorithm_sources.is_empty() && source_map.generated_sources.is_empty()
+            && source_map.obligation_sources.is_empty(), "{case} no Core semantic maps or obligations");
+
+        if d == 16 {
+            for mutation in [Task262CoreContextMutation::WrongSource, Task262CoreContextMutation::WrongProvenance] {
+                let bindings = task262_source_binding_core_handoff_with_mutation(
+                    &source_context, &checker_owner, mutation,
+                );
+                assert_eq!(
+                    mizar_core::elaborator::SourceModeCoreContextProducer::build(
+                        bindings, source_context.clone(), checker_owner.clone(),
+                    ),
+                    Err(mizar_core::elaborator::SourceModeCoreContextError::InvalidCoreContext),
+                    "{case} shifted stale Core handoff {mutation:?}"
+                );
+            }
+            let stale_context_input = mizar_checker::source_context::SourceBindingContextInput {
+                source_id: source_context.source_id(),
+                module_id: source_context.module_id().clone(),
+                module_site: source_context.local_contexts()
+                    .get(mizar_checker::typed_ast::LocalTypeContextId::new(0)).unwrap().owner.clone(),
+                items: source_context.items().iter().map(|(_, item)| mizar_checker::source_context::SourceItemInput {
+                    shell: item.shell, shell_ordinal: item.shell_ordinal, role: item.role,
+                    module_id: source_context.module_id().clone(),
+                    source_range: task262_range(source_context.source_id(), 0, 140),
+                    parent: item.parent, visibility: item.visibility, site: item.site.clone(),
+                    local_scope: item.local_scope.clone(), recovery: item.recovery,
+                }).collect(),
+                bindings: source_context.declarations().iter().map(|(_, declaration)| {
+                    let item = source_context.items().get(declaration.item).unwrap();
+                    let binding = source_context.binding_env().bindings().get(declaration.binding).unwrap();
+                    mizar_checker::source_context::SourceBindingSiteInput {
+                        shell: item.shell,
+                        context_owner: mizar_checker::source_context::SourceBindingContextOwner::Shell(item.shell),
+                        source_ordinal: declaration.source_ordinal, spelling: declaration.spelling.clone(),
+                        declaration_range: declaration.declaration_range, written_type_range: declaration.written_type_range,
+                        site: declaration.site.clone(), role: declaration.role.clone(), recovery: binding.recovery,
+                    }
+                }).collect(),
+            };
+            let stale_context = mizar_checker::source_context::SourceBindingContextProducer::build(stale_context_input)
+                .expect("fresh public stale Context producer").into_complete()
+                .expect("complete stale Context").into_handoff();
+            assert_eq!(stale_context.items().get(mizar_checker::source_context::SourceItemId::new(0)).unwrap().source_range,
+                task262_range(source_context.source_id(), 0, 140));
+            assert_eq!(stale_context.binding_env(), source_context.binding_env(), "same-source BindingEnv");
+            let stale_bindings = task262_source_binding_core_handoff(&stale_context, &checker_owner);
+            assert_eq!(
+                mizar_core::elaborator::SourceModeCoreContextProducer::build(
+                    stale_bindings, stale_context, checker_owner.clone(),
+                ),
+                Err(mizar_core::elaborator::SourceModeCoreContextError::InvalidCheckerOwner),
+                "same-source stale Context/owner geometry"
+            );
+        }
+    }
+
+    let compensated = SOURCE_MODE_DEFINITION_TEXT.replacen(
+        "let x be set;\n  let", "let  x be set;\n let", 1,
+    );
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&compensated, 262_230);
+    assert_eq!(diagnostics, 0, "native compensated-header diagnostics");
+    let output = source_mode_definition_output(&ast, module, &shells, &symbols, &compensated)
+        .expect("native compensated-header selector")
+        .expect("native compensated-header SomeOk");
+    let source_context = output.typed_ast.source_context().unwrap().clone();
+    let checker_owner = output.typed_ast.source_mode_definition().unwrap().clone();
+    let source_bindings = task262_source_binding_core_handoff(&source_context, &checker_owner);
+    assert_eq!(
+        mizar_core::elaborator::SourceModeCoreContextProducer::build(
+            source_bindings, source_context, checker_owner,
+        ),
+        Err(mizar_core::elaborator::SourceModeCoreContextError::InvalidCheckerOwner),
+        "native nonuniform compensation remains refused"
+    );
+}
+
+#[test]
 fn task262_core_item_context_default_deny_mutations_and_foreign_environment() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_210);

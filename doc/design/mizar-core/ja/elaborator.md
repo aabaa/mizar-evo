@@ -244,6 +244,11 @@ Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_
 
 ### Core-33 Task262 mode item context
 
+現在の一様座標はchecked d=source-item終端−140、current source identity、開始<=dを使う。
+pattern全分岐を含む内側rangeだけをdで移動し、非座標検査とrequest/propertyリンクを保つ。
+geometry拒否はstatic InvalidCheckerOwnerと従来の検証順を維持する。
+checker Pending sethoodは別所有のまま。scalar transportは認証、意味論、installation creditを増やさない。
+
 Freeze済みの [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) が、immutable `SourceModeCoreItemAssociation` row/table、`SourceModeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task262 checker handoff、association tableをby-valueでretainし、complete postvalidation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだvalid public `Mode` item 1件と、`SourceModeDefinitionId`をkeyとするsource-ordered association row 1件であり、inner rangeとversioned provenanceはjoin keyではなくvalidation対象である。Error precedenceは`EnvironmentMismatch`、`InvalidSourceBindingContext`、`InvalidCheckerOwner`、`InvalidCoreContext`、`InvalidItemAssociation`。Build signatureは`SourceModeCoreContextProducer::build(SourceBindingCoreContextHandoff, SourceBindingContextHandoff, SourceModeDefinitionHandoff) -> Result<SourceModeCoreContextHandoff, SourceModeCoreContextError>`。Implementation/verification complete、documentation repair後final review no findings。これはzero-semantic/zero-credit・private-probe-onlyであり、RHS、inhabitation、`sethood`、computation justification、pending obligation、generic API/slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277Bはdeferred/not-ready。
 
 ## Step 2: type and fact lowering
