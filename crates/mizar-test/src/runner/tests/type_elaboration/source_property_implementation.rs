@@ -1041,6 +1041,196 @@ fn task264_selector_type_context_is_exact_for_means_and_equals() {
 }
 
 #[test]
+fn task264_selector_type_context_transports_uniform_prefix_geometry() {
+    use mizar_checker::source_type::{
+        SourceTypeApplicationId as ApplicationId, SourceTypeExpressionId as ExpressionId,
+    };
+    use mizar_core::elaborator::{
+        SourcePropertySelectorTypeContextError as SelectorError,
+        SourcePropertySelectorTypeContextProducer as SelectorProducer,
+    };
+
+    let expected_slices = [
+        "Task264Carrier",
+        "set",
+        "set",
+        "field carrier -> set;",
+        "property marker -> set;",
+    ];
+    let mut prepared = Vec::new();
+    for (profile_index, (profile, canonical)) in [
+        ("means", SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT),
+        ("equals", SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        for (layout_index, (layout, source, expected_ranges)) in [
+            (
+                "leading_lf",
+                format!("\n{canonical}"),
+                [(131, 145), (63, 66), (91, 94), (46, 67), (72, 95)],
+            ),
+            (
+                "first_definition_gap_comment",
+                canonical.replacen("definition\n", "definition\n:: metamorphics\n", 1),
+                [(146, 160), (78, 81), (106, 109), (61, 82), (87, 110)],
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (ast, module, shells, symbols, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(
+                    &source,
+                    264_760 + profile_index * 10 + layout_index,
+                );
+            assert_eq!(diagnostics, 0, "{profile}/{layout}");
+            let output = source_property_implementation_output(
+                &ast, module, &shells, &symbols, &source,
+            )
+            .expect("Task264 selector/type prefix route")
+            .unwrap_or_else(|error| panic!("{profile}/{layout}: {error}"));
+            let owner = output
+                .typed_ast
+                .source_property_implementation()
+                .expect("Task264 selector/type Property owner")
+                .clone();
+            let source_type = output
+                .typed_ast
+                .source_type()
+                .expect("Task264 selector/type handoff")
+                .clone();
+            let actual_ranges = [
+                source_type.expressions().get(ExpressionId::new(0)).unwrap().source_range(),
+                source_type.expressions().get(ExpressionId::new(1)).unwrap().source_range(),
+                source_type.expressions().get(ExpressionId::new(2)).unwrap().source_range(),
+                source_type.structure_members().get(mizar_checker::source_type::SourceTypeStructureMemberId::new(0)).unwrap().member_range(),
+                source_type.structure_members().get(mizar_checker::source_type::SourceTypeStructureMemberId::new(1)).unwrap().member_range(),
+            ];
+            assert_eq!(
+                actual_ranges.map(|range| (range.start, range.end)),
+                expected_ranges,
+                "{profile}/{layout} literal ranges"
+            );
+            for (index, expected) in expected_ranges.into_iter().zip(expected_slices) {
+                assert_eq!(source.get(index.0..index.1), Some(expected), "{profile}/{layout}");
+            }
+            for (index, expected) in expected_ranges.into_iter().take(3).enumerate() {
+                let expression = source_type.expressions().get(ExpressionId::new(index)).unwrap();
+                assert_eq!(
+                    (expression.head_range().start, expression.head_range().end),
+                    expected,
+                    "{profile}/{layout} expression head {index}"
+                );
+            }
+            let carrier = task264_carrier_core_handoff(&owner);
+            prepared.push((profile, layout, owner, carrier, source_type));
+        }
+    }
+
+    let outcomes = prepared
+        .iter()
+        .map(|(_, _, _, carrier, source_type)| {
+            SelectorProducer::build(carrier.clone(), source_type.clone())
+        })
+        .collect::<Vec<_>>();
+
+    let between_blocks = SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT
+        .replacen("\n\ndefinition", "\n\n\ndefinition", 1);
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&between_blocks, 264_790);
+    assert_eq!(diagnostics, 0);
+    let output = source_property_implementation_output(&ast, module, &shells, &symbols, &between_blocks)
+        .expect("native between-block Task264 route")
+        .expect("native between-block Task264 Some(Ok)");
+    let control_owner = output.typed_ast.source_property_implementation().unwrap();
+    let control_type = output.typed_ast.source_type().expect("native Task264 source type");
+    let control_carrier = task264_carrier_core_handoff(control_owner);
+    let carrier_range = match control_owner.carrier_identity().structure_origin().anchor() {
+        mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+        _ => panic!("Task264 carrier origin must have a source range"),
+    };
+    assert_eq!(carrier_range, (13, 101));
+    let domain = control_type.expressions().get(ExpressionId::new(0)).unwrap();
+    assert_eq!((domain.source_range().start, domain.source_range().end), (131, 145));
+    assert_eq!((domain.head_range().start, domain.head_range().end), (131, 145));
+    assert_eq!(between_blocks.get(131..145), Some("Task264Carrier"));
+    assert_eq!(
+        [
+            control_type.expressions().get(ExpressionId::new(1)).unwrap().source_range(),
+            control_type.expressions().get(ExpressionId::new(2)).unwrap().source_range(),
+            control_type.structure_members().get(mizar_checker::source_type::SourceTypeStructureMemberId::new(0)).unwrap().member_range(),
+            control_type.structure_members().get(mizar_checker::source_type::SourceTypeStructureMemberId::new(1)).unwrap().member_range(),
+        ]
+        .map(|range| (range.start, range.end)),
+        [(62, 65), (90, 93), (45, 66), (71, 94)]
+    );
+    for (index, expected) in [(1, (62, 65)), (2, (90, 93))] {
+        let expression = control_type.expressions().get(ExpressionId::new(index)).unwrap();
+        assert_eq!((expression.head_range().start, expression.head_range().end), expected);
+    }
+    assert_eq!(
+        SelectorProducer::build(control_carrier, control_type.clone())
+            .expect_err("between-block domain drift must fail closed"),
+        SelectorError::InvalidSourceType
+    );
+
+    assert_eq!(outcomes.len(), 4);
+    assert!(
+        outcomes.iter().all(|outcome| outcome.is_ok()),
+        "all four measured selector/type prefix outcomes must succeed: {outcomes:?}"
+    );
+    for ((profile, layout, owner, carrier, source_type), outcome) in prepared.iter().zip(&outcomes) {
+        let handoff = outcome.as_ref().expect("Task264 selector/type prefix handoff");
+        assert_eq!(handoff.carrier_context(), carrier, "{profile}/{layout}");
+        assert_eq!(handoff.source_type(), source_type, "{profile}/{layout}");
+        let replay = SelectorProducer::build(carrier.clone(), source_type.clone())
+            .expect("fresh Task264 selector/type replay");
+        assert_eq!(&replay, handoff, "{profile}/{layout}");
+        assert_eq!(handoff.definition_owner(), replay.definition_owner());
+        let identity = owner.carrier_identity();
+        let application = source_type.applications().get(ApplicationId::new(0)).unwrap();
+        let (_, parameter) = owner.parameters().iter().next().unwrap();
+        let domain = handoff.domain();
+        assert_eq!(domain.binding(), parameter.binding());
+        assert_eq!(domain.application(), parameter.written_type());
+        assert_eq!(domain.application(), application.id());
+        assert_eq!(domain.root(), application.root());
+        assert_eq!(domain.carrier_item(), handoff.carrier_item());
+        assert_eq!(carrier.context().item_registry().id_for_symbol(identity.structure_symbol()), Some(handoff.carrier_item()));
+        let association = handoff.association();
+        let (_, target) = owner.targets().iter().next().unwrap();
+        assert_eq!(association.symbol(), identity.property_symbol());
+        assert_eq!(association.symbol(), target.symbol());
+        assert_eq!(association.member_type(), target.return_type());
+        assert_eq!(
+            source_type.structure_members().get(association.member_type()).unwrap().root(),
+            association.root()
+        );
+        let definition_owner = handoff.definition_owner();
+        assert_eq!(definition_owner.anchor_item(), handoff.carrier_item());
+        assert_eq!(definition_owner.item(), None);
+        assert_eq!(definition_owner.property_symbol(), Some(association.symbol()));
+        let core = carrier.context();
+        assert!(core.dependency_summaries().is_empty() && core.generated_origins().table().is_empty());
+        assert!(core.diagnostics().is_empty() && core.source_map().obligation_sources.is_empty());
+        let item = core.item_registry().items().get(handoff.carrier_item()).unwrap();
+        assert!(item.dependencies.is_empty());
+        let dependencies = core.item_registry().dependencies(handoff.carrier_item()).unwrap();
+        assert!(dependencies.local.is_empty() && dependencies.external.is_empty() && dependencies.missing.is_empty());
+        let sources = core.source_map();
+        assert!(sources.term_sources.is_empty() && sources.formula_sources.is_empty());
+        assert!(sources.definition_sources.is_empty() && sources.proof_sources.is_empty());
+        assert!(sources.algorithm_sources.is_empty() && sources.generated_sources.is_empty());
+        let binder = core.binder_context();
+        assert!(binder.frames.is_empty() && binder.free_variables.is_empty());
+        assert!(binder.variable_classes.is_empty() && binder.variable_roles.is_empty() && binder.variable_sorts.is_empty());
+        assert!(core.binder_sources().iter().next().is_none() && core.binder_type_facts().is_empty());
+    }
+}
+
+#[test]
 fn task264_selector_type_cross_profile_and_foreign_transactions_fail_closed() {
     let shared_ordinal = 264_700;
     let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(

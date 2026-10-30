@@ -826,6 +826,8 @@ environment typeをCore public boundaryへ入れない。
 
 Selector item/`CoreDefinition` row/body、`CoreTypePredicate`、normalized type、fact/
 coercion/view/binder/term/formula/diagnostic/semanticsはpublishしない。
+一様selector/type座標は検証済みcarrierのd=end−101を共有し、d+144をchecked検査する。
+Expression source/head 3件とmember 2件を同時移送し、他のjoinとerror順序を保つ。
 
 ## Task IR264 Authenticated Property Definition Owner
 

@@ -5900,6 +5900,16 @@ fn validate_property_selector_source_type(
         _ => return Err(SourcePropertySelectorTypeContextError::InvalidSourceType),
     };
     let identity = checker_owner.carrier_identity();
+    let SourceAnchor::Range(structure_range) = identity.structure_origin().anchor() else {
+        return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+    };
+    let d = structure_range
+        .end
+        .checked_sub(101)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+    // This profile extends beyond the carrier's maximum endpoint.
+    d.checked_add(144)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
     for (index, (site, head_site, start, end)) in [
         (application_site, application_head_site, 130, 144),
         (member_sites[0] - 1, member_sites[0] - 2, 62, 65),
@@ -5914,8 +5924,8 @@ fn validate_property_selector_source_type(
             .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
         let expected_range = SourceRange {
             source_id: source_type.source_id(),
-            start,
-            end,
+            start: d + start,
+            end: d + end,
         };
         let head_matches = match (index, expression.head()) {
             (
@@ -5962,8 +5972,8 @@ fn validate_property_selector_source_type(
             || member.member_range()
                 != (SourceRange {
                     source_id: source_type.source_id(),
-                    start,
-                    end,
+                    start: d + start,
+                    end: d + end,
                 })
             || member.source_ordinal() != index
             || member.root() != SourceTypeExpressionId::new(index + 1)

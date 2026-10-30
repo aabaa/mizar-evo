@@ -954,6 +954,8 @@ public boundary.
 This context publishes no selector item or `CoreDefinition` row/body and does
 not create `CoreTypePredicate`, normalized types, facts, coercions, views,
 binders, terms, formulas, diagnostics, or semantics.
+Uniform selector/type geometry shares the validated carrier d=end−101 and checks d+144.
+All three expression source/head and two member ranges move together; other joins and errors remain.
 
 ## Task IR264 Authenticated Property Definition Owner
 
