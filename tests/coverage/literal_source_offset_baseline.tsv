@@ -10,7 +10,7 @@ crates/mizar-checker/src/source_property_implementation.rs	9
 crates/mizar-checker/src/source_statement.rs	371
 crates/mizar-checker/src/source_structure_definition.rs	2
 crates/mizar-checker/src/source_term.rs	7
-crates/mizar-checker/src/source_type.rs	17
+crates/mizar-checker/src/source_type.rs	15
 crates/mizar-checker/src/type_checker.rs	1
 crates/mizar-core/src/elaborator.rs	19
 crates/mizar-lsp/src/server.rs	1
