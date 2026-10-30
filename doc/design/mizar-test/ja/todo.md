@@ -367,6 +367,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
     - [x] [Task249PI property member Type layout](../../task_contracts/ja/TEST-METAMORPHIC-PROPERTY-TYPE-LAYOUT.md).
     - [x] [Task264 native Property layout evidence](../../task_contracts/ja/TEST-PROPERTY-NATIVE-LAYOUT.md).
     - [x] [Property raw body bridge](../../task_contracts/ja/TEST-PROPERTY-BODY-SOURCE-BRIDGE.md).
+    - [x] [Property raw prefix bridge](../../task_contracts/ja/TEST-PROPERTY-RAW-PREFIX-BRIDGE.md).
 
 ## 推奨検証
 

@@ -59,7 +59,7 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SymbolId},
     symbols::{SignatureProjectionExtractor, SymbolOverloadPolicy},
 };
-use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
 use super::checker_handoff::assemble_empty_resolved_typed_ast;
@@ -142,121 +142,113 @@ enum ExactSurfaceKind {
 
 struct ExactSurfaceRow {
     kind: ExactSurfaceKind,
-    start: usize,
-    end: usize,
     children: &'static [usize],
 }
 
 macro_rules! token_row {
-    ($kind:ident, $text:literal, $start:literal, $end:literal) => {
+    ($kind:ident, $text:literal) => {
         ExactSurfaceRow {
             kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            start: $start,
-            end: $end,
             children: &[],
         }
     };
 }
 macro_rules! structural_row {
-    ($kind:ident, $start:literal, $end:literal, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow { kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind), start: $start, end: $end, children: &[$($child),*] }
+    ($kind:ident, [$($child:literal),* $(,)?]) => {
+        ExactSurfaceRow { kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind), children: &[$($child),*] }
     };
 }
 
 const MEANS_SURFACE: &[ExactSurfaceRow] = &[
-    token_row!(ReservedWord, "definition", 0, 10),
-    token_row!(ReservedWord, "struct", 13, 19),
-    token_row!(Identifier, "Task264Carrier", 20, 34),
-    token_row!(ReservedWord, "where", 35, 40),
-    token_row!(ReservedWord, "field", 45, 50),
-    token_row!(Identifier, "carrier", 51, 58),
-    token_row!(ReservedSymbol, "->", 59, 61),
-    token_row!(ReservedWord, "set", 62, 65),
-    token_row!(ReservedSymbol, ";", 65, 66),
-    token_row!(ReservedWord, "property", 71, 79),
-    token_row!(Identifier, "marker", 80, 86),
-    token_row!(ReservedSymbol, "->", 87, 89),
-    token_row!(ReservedWord, "set", 90, 93),
-    token_row!(ReservedSymbol, ";", 93, 94),
-    token_row!(ReservedWord, "end", 97, 100),
-    token_row!(ReservedSymbol, ";", 100, 101),
-    token_row!(ReservedWord, "end", 102, 105),
-    token_row!(ReservedSymbol, ";", 105, 106),
-    token_row!(ReservedWord, "definition", 108, 118),
-    token_row!(ReservedWord, "let", 121, 124),
-    token_row!(Identifier, "M", 125, 126),
-    token_row!(ReservedWord, "be", 127, 129),
-    token_row!(UserSymbol, "Task264Carrier", 130, 144),
-    token_row!(ReservedSymbol, ";", 144, 145),
-    token_row!(ReservedWord, "property", 148, 156),
-    token_row!(Identifier, "M", 157, 158),
-    token_row!(ReservedSymbol, ".", 158, 159),
-    token_row!(Identifier, "marker", 159, 165),
-    token_row!(ReservedWord, "means", 166, 171),
-    token_row!(ReservedWord, "it", 172, 174),
-    token_row!(ReservedSymbol, "=", 175, 176),
-    token_row!(ReservedWord, "it", 177, 179),
-    token_row!(ReservedSymbol, ";", 179, 180),
-    token_row!(ReservedWord, "existence", 183, 192),
-    token_row!(ReservedWord, "by", 193, 195),
-    token_row!(ReservedWord, "computation", 196, 207),
-    token_row!(ReservedSymbol, "(", 207, 208),
-    token_row!(Identifier, "steps", 208, 213),
-    token_row!(ReservedSymbol, ":", 213, 214),
-    token_row!(Numeral, "1", 215, 216),
-    token_row!(ReservedSymbol, ")", 216, 217),
-    token_row!(ReservedSymbol, ";", 217, 218),
-    token_row!(ReservedWord, "uniqueness", 221, 231),
-    token_row!(ReservedWord, "by", 232, 234),
-    token_row!(ReservedWord, "computation", 235, 246),
-    token_row!(ReservedSymbol, "(", 246, 247),
-    token_row!(Identifier, "steps", 247, 252),
-    token_row!(ReservedSymbol, ":", 252, 253),
-    token_row!(Numeral, "1", 254, 255),
-    token_row!(ReservedSymbol, ")", 255, 256),
-    token_row!(ReservedSymbol, ";", 256, 257),
-    token_row!(ReservedWord, "end", 258, 261),
-    token_row!(ReservedSymbol, ";", 261, 262),
-    structural_row!(StructurePattern, 20, 34, [2]),
-    structural_row!(TypeHead, 62, 65, [7]),
-    structural_row!(TypeExpression, 62, 65, [54]),
-    structural_row!(StructureField, 45, 66, [4, 5, 6, 55, 8]),
-    structural_row!(TypeHead, 90, 93, [12]),
-    structural_row!(TypeExpression, 90, 93, [57]),
-    structural_row!(StructureProperty, 71, 94, [9, 10, 11, 58, 13]),
-    structural_row!(StructureDefinition, 13, 101, [1, 53, 3, 56, 59, 14, 15]),
-    structural_row!(DefinitionBlockItem, 0, 106, [0, 60, 16, 17]),
-    structural_row!(PathSegment, 130, 144, [22]),
-    structural_row!(QualifiedSymbol, 130, 144, [62]),
-    structural_row!(TypeHead, 130, 144, [63]),
-    structural_row!(DefinitionParameter, 121, 145, [19, 20, 21, 64, 23]),
-    structural_row!(ItTerm, 172, 174, [29]),
-    structural_row!(TermExpression, 172, 174, [66]),
-    structural_row!(ItTerm, 177, 179, [31]),
-    structural_row!(TermExpression, 177, 179, [68]),
-    structural_row!(BuiltinPredicateApplication, 172, 179, [67, 30, 69]),
-    structural_row!(FormulaExpression, 172, 179, [70]),
-    structural_row!(FormulaDefiniens, 172, 179, [71]),
-    structural_row!(ComputationOption, 208, 216, [37, 38, 39]),
-    structural_row!(ComputationJustification, 196, 217, [35, 36, 73, 40]),
-    structural_row!(JustificationClause, 193, 217, [34, 74]),
-    structural_row!(CorrectnessCondition, 183, 218, [33, 75, 41]),
-    structural_row!(ComputationOption, 247, 255, [46, 47, 48]),
-    structural_row!(ComputationJustification, 235, 256, [44, 45, 77, 49]),
-    structural_row!(JustificationClause, 232, 256, [43, 78]),
-    structural_row!(CorrectnessCondition, 221, 257, [42, 79, 50]),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "struct"),
+    token_row!(Identifier, "Task264Carrier"),
+    token_row!(ReservedWord, "where"),
+    token_row!(ReservedWord, "field"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "let"),
+    token_row!(Identifier, "M"),
+    token_row!(ReservedWord, "be"),
+    token_row!(UserSymbol, "Task264Carrier"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "M"),
+    token_row!(ReservedSymbol, "."),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedWord, "means"),
+    token_row!(ReservedWord, "it"),
+    token_row!(ReservedSymbol, "="),
+    token_row!(ReservedWord, "it"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "existence"),
+    token_row!(ReservedWord, "by"),
+    token_row!(ReservedWord, "computation"),
+    token_row!(ReservedSymbol, "("),
+    token_row!(Identifier, "steps"),
+    token_row!(ReservedSymbol, ":"),
+    token_row!(Numeral, "1"),
+    token_row!(ReservedSymbol, ")"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "uniqueness"),
+    token_row!(ReservedWord, "by"),
+    token_row!(ReservedWord, "computation"),
+    token_row!(ReservedSymbol, "("),
+    token_row!(Identifier, "steps"),
+    token_row!(ReservedSymbol, ":"),
+    token_row!(Numeral, "1"),
+    token_row!(ReservedSymbol, ")"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    structural_row!(StructurePattern, [2]),
+    structural_row!(TypeHead, [7]),
+    structural_row!(TypeExpression, [54]),
+    structural_row!(StructureField, [4, 5, 6, 55, 8]),
+    structural_row!(TypeHead, [12]),
+    structural_row!(TypeExpression, [57]),
+    structural_row!(StructureProperty, [9, 10, 11, 58, 13]),
+    structural_row!(StructureDefinition, [1, 53, 3, 56, 59, 14, 15]),
+    structural_row!(DefinitionBlockItem, [0, 60, 16, 17]),
+    structural_row!(PathSegment, [22]),
+    structural_row!(QualifiedSymbol, [62]),
+    structural_row!(TypeHead, [63]),
+    structural_row!(DefinitionParameter, [19, 20, 21, 64, 23]),
+    structural_row!(ItTerm, [29]),
+    structural_row!(TermExpression, [66]),
+    structural_row!(ItTerm, [31]),
+    structural_row!(TermExpression, [68]),
+    structural_row!(BuiltinPredicateApplication, [67, 30, 69]),
+    structural_row!(FormulaExpression, [70]),
+    structural_row!(FormulaDefiniens, [71]),
+    structural_row!(ComputationOption, [37, 38, 39]),
+    structural_row!(ComputationJustification, [35, 36, 73, 40]),
+    structural_row!(JustificationClause, [34, 74]),
+    structural_row!(CorrectnessCondition, [33, 75, 41]),
+    structural_row!(ComputationOption, [46, 47, 48]),
+    structural_row!(ComputationJustification, [44, 45, 77, 49]),
+    structural_row!(JustificationClause, [43, 78]),
+    structural_row!(CorrectnessCondition, [42, 79, 50]),
     structural_row!(
         PropertyImplementation,
-        108,
-        262,
         [18, 65, 24, 25, 26, 27, 28, 72, 32, 76, 80, 51, 52]
     ),
-    structural_row!(ItemList, 0, 262, [61, 81]),
-    structural_row!(CompilationUnit, 0, 262, [82]),
+    structural_row!(ItemList, [61, 81]),
+    structural_row!(CompilationUnit, [82]),
     structural_row!(
         Root,
-        0,
-        262,
         [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
             24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
@@ -266,70 +258,66 @@ const MEANS_SURFACE: &[ExactSurfaceRow] = &[
 ];
 
 const EQUALS_SURFACE: &[ExactSurfaceRow] = &[
-    token_row!(ReservedWord, "definition", 0, 10),
-    token_row!(ReservedWord, "struct", 13, 19),
-    token_row!(Identifier, "Task264Carrier", 20, 34),
-    token_row!(ReservedWord, "where", 35, 40),
-    token_row!(ReservedWord, "field", 45, 50),
-    token_row!(Identifier, "carrier", 51, 58),
-    token_row!(ReservedSymbol, "->", 59, 61),
-    token_row!(ReservedWord, "set", 62, 65),
-    token_row!(ReservedSymbol, ";", 65, 66),
-    token_row!(ReservedWord, "property", 71, 79),
-    token_row!(Identifier, "marker", 80, 86),
-    token_row!(ReservedSymbol, "->", 87, 89),
-    token_row!(ReservedWord, "set", 90, 93),
-    token_row!(ReservedSymbol, ";", 93, 94),
-    token_row!(ReservedWord, "end", 97, 100),
-    token_row!(ReservedSymbol, ";", 100, 101),
-    token_row!(ReservedWord, "end", 102, 105),
-    token_row!(ReservedSymbol, ";", 105, 106),
-    token_row!(ReservedWord, "definition", 108, 118),
-    token_row!(ReservedWord, "let", 121, 124),
-    token_row!(Identifier, "M", 125, 126),
-    token_row!(ReservedWord, "be", 127, 129),
-    token_row!(UserSymbol, "Task264Carrier", 130, 144),
-    token_row!(ReservedSymbol, ";", 144, 145),
-    token_row!(ReservedWord, "property", 148, 156),
-    token_row!(Identifier, "M", 157, 158),
-    token_row!(ReservedSymbol, ".", 158, 159),
-    token_row!(Identifier, "marker", 159, 165),
-    token_row!(ReservedWord, "equals", 166, 172),
-    token_row!(Identifier, "M", 173, 174),
-    token_row!(ReservedSymbol, ".", 174, 175),
-    token_row!(Identifier, "carrier", 175, 182),
-    token_row!(ReservedSymbol, ";", 182, 183),
-    token_row!(ReservedWord, "end", 184, 187),
-    token_row!(ReservedSymbol, ";", 187, 188),
-    structural_row!(StructurePattern, 20, 34, [2]),
-    structural_row!(TypeHead, 62, 65, [7]),
-    structural_row!(TypeExpression, 62, 65, [36]),
-    structural_row!(StructureField, 45, 66, [4, 5, 6, 37, 8]),
-    structural_row!(TypeHead, 90, 93, [12]),
-    structural_row!(TypeExpression, 90, 93, [39]),
-    structural_row!(StructureProperty, 71, 94, [9, 10, 11, 40, 13]),
-    structural_row!(StructureDefinition, 13, 101, [1, 35, 3, 38, 41, 14, 15]),
-    structural_row!(DefinitionBlockItem, 0, 106, [0, 42, 16, 17]),
-    structural_row!(PathSegment, 130, 144, [22]),
-    structural_row!(QualifiedSymbol, 130, 144, [44]),
-    structural_row!(TypeHead, 130, 144, [45]),
-    structural_row!(DefinitionParameter, 121, 145, [19, 20, 21, 46, 23]),
-    structural_row!(TermReference, 173, 174, [29]),
-    structural_row!(SelectorAccess, 173, 182, [48, 30, 31]),
-    structural_row!(TermExpression, 173, 182, [49]),
-    structural_row!(TermDefiniens, 173, 182, [50]),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "struct"),
+    token_row!(Identifier, "Task264Carrier"),
+    token_row!(ReservedWord, "where"),
+    token_row!(ReservedWord, "field"),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedSymbol, "->"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "let"),
+    token_row!(Identifier, "M"),
+    token_row!(ReservedWord, "be"),
+    token_row!(UserSymbol, "Task264Carrier"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "property"),
+    token_row!(Identifier, "M"),
+    token_row!(ReservedSymbol, "."),
+    token_row!(Identifier, "marker"),
+    token_row!(ReservedWord, "equals"),
+    token_row!(Identifier, "M"),
+    token_row!(ReservedSymbol, "."),
+    token_row!(Identifier, "carrier"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    structural_row!(StructurePattern, [2]),
+    structural_row!(TypeHead, [7]),
+    structural_row!(TypeExpression, [36]),
+    structural_row!(StructureField, [4, 5, 6, 37, 8]),
+    structural_row!(TypeHead, [12]),
+    structural_row!(TypeExpression, [39]),
+    structural_row!(StructureProperty, [9, 10, 11, 40, 13]),
+    structural_row!(StructureDefinition, [1, 35, 3, 38, 41, 14, 15]),
+    structural_row!(DefinitionBlockItem, [0, 42, 16, 17]),
+    structural_row!(PathSegment, [22]),
+    structural_row!(QualifiedSymbol, [44]),
+    structural_row!(TypeHead, [45]),
+    structural_row!(DefinitionParameter, [19, 20, 21, 46, 23]),
+    structural_row!(TermReference, [29]),
+    structural_row!(SelectorAccess, [48, 30, 31]),
+    structural_row!(TermExpression, [49]),
+    structural_row!(TermDefiniens, [50]),
     structural_row!(
         PropertyImplementation,
-        108,
-        188,
         [18, 47, 24, 25, 26, 27, 28, 51, 32, 33, 34]
     ),
-    structural_row!(ItemList, 0, 188, [43, 52]),
-    structural_row!(CompilationUnit, 0, 188, [53]),
+    structural_row!(ItemList, [43, 52]),
+    structural_row!(CompilationUnit, [53]),
     structural_row!(
         Root,
-        0,
-        188,
         [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
             24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 54
@@ -695,7 +683,7 @@ fn source_property_implementation_output_impl(
     let profile = [Profile::Means, Profile::Equals].into_iter().find(|profile| {
         let rows = surface(*profile);
         let count = rows.iter().take_while(|row| matches!(&row.kind, ExactSurfaceKind::Token(..))).count();
-        native.tokens().len() == count && native.tokens().iter().zip(rows).enumerate().all(|(index, (token, row))| {
+        native.tokens().len() == count && native.tokens().iter().zip(rows).all(|(token, row)| {
             let kind = match token.kind() {
                 mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
                 mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
@@ -705,7 +693,6 @@ fn source_property_implementation_output_impl(
                 _ => return false,
             };
             matches!(&row.kind, ExactSurfaceKind::Token(expected, text) if kind == *expected && token.lexeme() == *text)
-                && (index > 18 || (mapped[index].start == row.start && mapped[index].end == row.end))
         })
     })?;
     if !surface_is_exact(ast, profile, mutation, &mapped) {
@@ -819,11 +806,6 @@ fn resolver_profile(
     profile: Profile,
     mutation: SourcePropertyImplementationRouteMutation,
 ) -> Result<[ResolverIdentity; 3], String> {
-    let owner = match profile {
-        Profile::Means => 81,
-        Profile::Equals => 52,
-    };
-    let root_end = ast.nodes()[owner].range.end;
     let declarations = shells.declarations();
     let kinds = [
         DeclarationShellKind::DefinitionBlock,
@@ -836,7 +818,6 @@ fn resolver_profile(
         Profile::Means => [61, 60, 56, 59, 81],
         Profile::Equals => [43, 42, 38, 41, 52],
     };
-    let ranges = [(0, 106), (13, 101), (45, 66), (71, 94), (108, root_end)];
     let parents = [None, Some(0), Some(1), Some(1), None];
     if declarations.len() != 5 || !shells.exports().is_empty() {
         return Err("Task264 resolver shell cardinality changed".to_owned());
@@ -853,7 +834,7 @@ fn resolver_profile(
             || ordinal != index
             || row.kind() != kinds[index]
             || row.node_id().index() != nodes[index]
-            || row.range() != range(ast.source_id, ranges[index].0, ranges[index].1)
+            || row.range() != ast.nodes()[nodes[index]].range
             || row.parent().map(|id| id.index()) != parents[index]
             || row.module() != module
             || row.recovered()
@@ -957,7 +938,7 @@ fn resolver_profile(
         } else {
             carrier.origin().structural_path()
         };
-    if carrier.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 45, 66))
+    if carrier.origin().anchor() != &SourceAnchor::Range(ast.nodes()[nodes[2]].range)
         || carrier.origin().source_id() != ast.source_id
         || carrier.origin().module_id() != module
         || carrier_path != [4, 0, 11, 0, 18, 0]
@@ -973,11 +954,10 @@ fn resolver_profile(
         .definitions()
         .get(result[2].1)
         .ok_or_else(|| "Task264 marker disappeared".to_owned())?;
-    if marker.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 71, 94))
+    if marker.origin().anchor() != &SourceAnchor::Range(ast.nodes()[nodes[3]].range)
         || marker.origin().structural_path() != [4, 0, 11, 0, 19, 1]
         || marker.origin().import_edge().is_some()
         || marker.origin().is_recovered()
-        || owner != nodes[4]
     {
         return Err("Task264 marker provenance changed".to_owned());
     }
@@ -1148,16 +1128,8 @@ fn source_type(
 ) -> Result<mizar_checker::source_type::SourceTypeApplicationHandoff, String> {
     let source = ast.source_id;
     let (expression_node, head_node, member_specs) = match profile {
-        Profile::Means => (
-            63,
-            64,
-            [(56, 45, 66, 55, 54, 62, 65), (59, 71, 94, 58, 57, 90, 93)],
-        ),
-        Profile::Equals => (
-            45,
-            46,
-            [(38, 45, 66, 37, 36, 62, 65), (41, 71, 94, 40, 39, 90, 93)],
-        ),
+        Profile::Means => (63, 64, [(56, 55, 54), (59, 58, 57)]),
+        Profile::Equals => (45, 46, [(38, 37, 36), (41, 40, 39)]),
     };
     let base = SourceTypeProducer::build(
         SourceTypeHandoffInput {
@@ -1195,31 +1167,30 @@ fn source_type(
         .into_iter()
         .enumerate()
         .map(
-            |(
-                source_ordinal,
-                (member_node, member_start, member_end, expression_node, head_node, start, end),
-            )| SourceTypeStructureMemberInput {
-                member_site: node_site(member_node),
-                member_range: range(source, member_start, member_end),
-                source_ordinal,
-                expression: SourceTypeExpressionInput {
-                    source_id: source,
-                    module_id: module.clone(),
-                    site: node_site(expression_node),
-                    source_range: range(source, start, end),
-                    spelling: "set".to_owned(),
-                    head_site: node_site(head_node),
-                    head_range: range(source, start, end),
-                    head_spelling: "set".to_owned(),
-                    form: SourceTypeApplicationForm::Bare,
-                    head: SourceTypeHead::BuiltinSet,
-                    recovery: NodeRecoveryState::Normal,
-                },
+            |(source_ordinal, (member_node, expression_node, head_node))| {
+                SourceTypeStructureMemberInput {
+                    member_site: node_site(member_node),
+                    member_range: ast.nodes()[member_node].range,
+                    source_ordinal,
+                    expression: SourceTypeExpressionInput {
+                        source_id: source,
+                        module_id: module.clone(),
+                        site: node_site(expression_node),
+                        source_range: ast.nodes()[expression_node].range,
+                        spelling: "set".to_owned(),
+                        head_site: node_site(head_node),
+                        head_range: ast.nodes()[head_node].range,
+                        head_spelling: "set".to_owned(),
+                        form: SourceTypeApplicationForm::Bare,
+                        head: SourceTypeHead::BuiltinSet,
+                        recovery: NodeRecoveryState::Normal,
+                    },
+                }
             },
         )
         .collect::<Vec<_>>();
     if mutation == SourcePropertyImplementationRouteMutation::WrongType {
-        members[1].member_range = range(source, 45, 66);
+        members[1].member_range = members[0].member_range;
     }
     SourceTypeStructureMemberProducer::extend_property_implementation(
         &base,
@@ -1491,11 +1462,11 @@ fn checker_input(
     };
     let implementation_range = ast.nodes()[owner].range;
     let parameter_range = ast.nodes()[parameter].range;
-    let target_range = range(
-        source,
-        ast.nodes()[25].range.start,
-        ast.nodes()[27].range.end,
-    );
+    let target_range = SourceRange {
+        source_id: source,
+        start: ast.nodes()[25].range.start,
+        end: ast.nodes()[27].range.end,
+    };
     let definiens_range = ast.nodes()[definiens_node].range;
     Ok(SourcePropertyImplementationHandoffInput {
         source_id: source,
@@ -1776,13 +1747,6 @@ fn route_output_is_exact(output: &SourcePropertyImplementationRouteOutput) -> bo
         && resolved.checked_formulas().is_empty()
 }
 
-const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
-}
 const fn node_site(index: usize) -> TypedSiteRef {
     TypedSiteRef::Node(TypedNodeId::new(index))
 }

@@ -5405,11 +5405,11 @@ runner behavior remains byte-identical pending Task 264.
 ## Property body source association
 
 The frozen Task264 route below records the original canonical fixtures. Current
-selection uses actual native token kinds/text and mapped fixed prefix0..18 geometry,
-including definition108..118; post-header body and suffix trivia may vary. Native
+selection uses actual native token kinds/text; prefix, body and suffix trivia may
+vary while every token retains its exact mapped source association. Native
 preprocessing/strict scanning, actual-module local declarations, scope and general
 disambiguation must succeed without diagnostics/imports/unsupported metadata. Each
-literal has one exact physical source fragment. Unsupported raw family/prefix yields
+literal has one exact physical source fragment. Unsupported raw family yields
 None before AST association; a selected raw/AST disagreement yields SomeErr.
 
 Authenticate supplied canonical indexed AST storage, current source IDs, exact native
@@ -5420,12 +5420,13 @@ diagnostics. This checks agreement of supplied raw/AST/resolver objects; the pri
 signature carries no independent loaded-source seal or foreign-bundle provenance.
 
 Existing constructors consume admitted AST roles/raw slices, preserving typed M20
-rather than the full Surface let envelope, fixed prefix identities, canonical lower
+rather than the full Surface let envelope, authenticated prefix identities, canonical lower
 strings, physical upper strings, lower/upper Typed/final and Equals-consumer replay.
 Closed end; requires no terminal LF; removing that LF or appending SP preserves the
-original AST anchors and is admitted. Shifted raw prefix remains unsupported; selected
-stale-body association fails. Preserve actual mutation ownership, obligations and
-semantic isolation. This body slice gives no whole-prefix, exception or semantic credit.
+original AST anchors and is admitted. Shells, selector origins, Type members and Set
+leaves use authenticated prefix roles; stale prefix/body associations fail after raw
+selection. Preserve actual mutation ownership, obligations and semantic isolation.
+Property layout exceptions are retired; Mode/Functor exceptions remain separately owned.
 
 ## Checker Task 264 Frozen Private Route
 

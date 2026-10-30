@@ -5072,11 +5072,11 @@ byte-identicalである。
 ## Property body source association
 
 以下の frozen Task264 route は元の正規 fixture の記録である。現在の選択は実際の
-native token の kind／text と固定 prefix0..18（definition108..118）の mapped 範囲を
-使い、header 後の body と suffix trivia を可変とする。native preprocessing／strict
+native token の kind／text を使い、各 token の厳密な mapped source 関連を保って
+prefix／body／suffix trivia を可変とする。native preprocessing／strict
 scan、実際の module の local declaration、scope、general disambiguation に diagnostic、
 import、未対応 metadata がないことを要求する。各 literal は正確な単一の物理 fragment
-に対応する。未対応 raw family／prefix は AST 照合前に None、選択済みの raw／AST 不一致
+に対応する。未対応 raw family は AST 照合前に None、選択済みの raw／AST 不一致
 は SomeErr とする。
 
 渡された AST の canonical indexed storage、current source ID、native token の kind／
@@ -5087,11 +5087,12 @@ shell-set 全体と SymbolEnv を再生成し、diagnostic zero と完全一致�
 seal や、全体が整合した別 bundle の出自の証明を持たない。
 
 既存 constructor は認証済み AST role／raw slice を使い、typed M20 と full Surface let
-を区別する。固定 prefix identity、下位の正規文字列と上位の物理文字列、lower／upper
+を区別する。認証済み prefix identity、下位の正規文字列と上位の物理文字列、lower／upper
 Typed／final と Equals consumer の replay を保つ。閉じた end; は末尾 LF を要求しない。
-その LF の削除や SP の追加では元の AST anchor を保ったまま受理する。raw prefix の移動は
-未対応で、選択済み body の古い関連は拒否する。mutation の実際の責務、obligation、意味論
-の分離を保ち、prefix 全体・exception・semantic credit は増やさない。
+その LF の削除や SP の追加では元の AST anchor を保ったまま受理する。shell、selector
+origin、Type member と Set leaf は認証済み prefix role を使い、古い prefix／body 関連は
+raw 選択後に拒否する。mutation の実際の責務、obligation、意味論の分離を保つ。
+Property layout exception は解消し、Mode／Functor exception は別の所有範囲として残す。
 
 ## Checker Task 264 frozen private route
 

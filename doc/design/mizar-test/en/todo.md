@@ -410,6 +410,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - [x] [Task249PI property member Type layout](../../task_contracts/en/TEST-METAMORPHIC-PROPERTY-TYPE-LAYOUT.md).
     - [x] [Task264 native Property layout evidence](../../task_contracts/en/TEST-PROPERTY-NATIVE-LAYOUT.md).
     - [x] [Property raw body bridge](../../task_contracts/en/TEST-PROPERTY-BODY-SOURCE-BRIDGE.md).
+    - [x] [Property raw prefix bridge](../../task_contracts/en/TEST-PROPERTY-RAW-PREFIX-BRIDGE.md).
 
 ## Recommended Verification
 
