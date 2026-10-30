@@ -6882,6 +6882,18 @@ fn validate_property_equals_selector_identity(
         .requests()
         .get(association.member_request())
         .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let SourceAnchor::Range(structure_range) =
+        property.carrier_identity().structure_origin().anchor()
+    else {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity);
+    };
+    let d = structure_range
+        .end
+        .checked_sub(101)
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    // Selector uses extend beyond the carrier's maximum endpoint.
+    d.checked_add(182)
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
     let source_id = parameter_context.source_id();
     let parameter = parameter_context.association();
 
@@ -6932,8 +6944,8 @@ fn validate_property_equals_selector_identity(
         || base.source_range()
             != (SourceRange {
                 source_id,
-                start: 173,
-                end: 174,
+                start: d + 173,
+                end: d + 174,
             })
         || base.spelling() != "M"
         || reference.term() != association.base_term()
@@ -6958,8 +6970,8 @@ fn validate_property_equals_selector_identity(
         || selector.source_range()
             != (SourceRange {
                 source_id,
-                start: 173,
-                end: 182,
+                start: d + 173,
+                end: d + 182,
             })
         || selector.spelling() != "M.carrier"
         || member.term() != association.structure_term()
@@ -6970,8 +6982,8 @@ fn validate_property_equals_selector_identity(
         || member.source_range()
             != (SourceRange {
                 source_id,
-                start: 175,
-                end: 182,
+                start: d + 175,
+                end: d + 182,
             })
         || member.spelling() != "carrier"
         || edge.term() != association.structure_term()

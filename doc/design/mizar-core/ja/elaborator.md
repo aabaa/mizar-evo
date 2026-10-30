@@ -886,6 +886,8 @@ IR264 property ownerは意図的にnon-itemである。Carrier item 0はowner an
 だけでproperty ownerに代用しない。Seed-local id/use-site source/checker provenanceはlater
 owner-aware lowerer向けinputであり、`CoreTermId`/term table/source map/formula/definition body/
 route/semantic creditはpublishしない。
+一様seed座標はcarrier origin終端−101とd+182をchecked検査し、3 rangeを移送する。
+検証済みparameter contextへの完全Property結合を保ち、bodyとcarrierのoffsetを共有する。
 
 ## Task 35L264 Task264 equals selector term lowering
 

@@ -1903,6 +1903,167 @@ fn task264_equals_selector_term_seeds_are_exact_and_deterministic() {
 }
 
 #[test]
+fn task264_equals_selector_term_seeds_transport_uniform_prefix_geometry() {
+    use mizar_core::{
+        core_ir::{CoreProvenance, CoreProvenancePhase, CoreSourceRef, CoreTermKind, CoreVarId},
+        elaborator::{
+            CoreTermSeedId, CoreTermSeedKind,
+            SourcePropertyEqualsSelectorTermLoweringProducer as LoweringProducer,
+            SourcePropertyEqualsSelectorTermSeedError as SeedError,
+            SourcePropertyEqualsSelectorTermSeedProducer as SeedProducer,
+            SourcePropertyParameterCoreContextProducer as ParameterProducer,
+        },
+    };
+
+    let layouts = [
+        ("leading_lf", format!("\n{SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT}"), [(174, 175), (174, 183), (176, 183)]),
+        ("first_definition_gap_comment", SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT.replacen("definition\n", "definition\n:: metamorphics\n", 1), [(189, 190), (189, 198), (191, 198)]),
+    ];
+    let mut prepared = Vec::new();
+    for (index, (layout, source, literal_ranges)) in layouts.into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 265_500 + index);
+        assert_eq!(diagnostics, 0, "{layout}");
+        let output = source_property_implementation_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task264 Equals prefix route")
+            .unwrap_or_else(|error| panic!("{layout}: {error}"));
+        let checker_owner = output.typed_ast.source_property_implementation()
+            .expect("Task264 Equals checker owner").clone();
+        let terms = output.typed_ast.source_term().expect("Task264 Equals primary terms");
+        let structures = output.typed_ast.source_structure().expect("Task264 Equals structure terms");
+        let identity = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+            &symbols, checker_owner.clone(), terms.clone(), structures.clone(),
+        ).expect("Task264 Equals checker identity");
+        assert_eq!(identity.property(), &checker_owner, "{layout}");
+        let selector_context = task264_selector_type_handoff(&output);
+        let source_context = output.typed_ast.source_context().expect("Task264 Equals SourceContext").clone();
+        let parameter = ParameterProducer::build(selector_context.clone(), source_context.clone())
+            .expect("Task264 Equals parameter context");
+        let association = identity.association();
+        let base = terms.terms().get(association.base_term()).expect("Task264 Equals base M");
+        let selector = structures.terms().get(association.structure_term()).expect("Task264 Equals selector M.carrier");
+        let member = structures.members().get(association.member()).expect("Task264 Equals member carrier");
+        let source_id = ast.source_id;
+        assert_eq!((checker_owner.source_id(), terms.source_id(), structures.source_id(), identity.source_id(), parameter.source_id()),
+            (source_id, source_id, source_id, source_id, source_id), "{layout} source IDs");
+        let ranges = literal_ranges.map(|(start, end)| mizar_session::SourceRange { source_id, start, end });
+        assert_eq!([base.source_range(), selector.source_range(), member.source_range()], ranges, "{layout} literal ranges");
+        for (range, expected) in ranges.into_iter().zip(["M", "M.carrier", "carrier"]) {
+            assert_eq!(source.get(range.start..range.end), Some(expected), "{layout} physical source");
+        }
+        prepared.push((layout, parameter, identity, ranges));
+    }
+
+    let outcomes = prepared.iter().map(|(_, parameter, identity, _)| {
+        SeedProducer::build(parameter.clone(), identity.clone())
+    }).collect::<Vec<_>>();
+
+    let body_only_lf = SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT
+        .replacen("  property M.marker equals", "\n  property M.marker equals", 1);
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&body_only_lf, 265_502);
+    assert_eq!(diagnostics, 0, "body-only LF control");
+    let output = source_property_implementation_output(&ast, module, &shells, &symbols, &body_only_lf)
+        .expect("native body-only LF route")
+        .expect("native body-only LF Some(Ok)");
+    let checker_owner = output.typed_ast.source_property_implementation().unwrap().clone();
+    let terms = output.typed_ast.source_term().unwrap().clone();
+    let structures = output.typed_ast.source_structure().unwrap().clone();
+    let identity = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+        &symbols, checker_owner.clone(), terms.clone(), structures.clone(),
+    ).expect("body-only LF checker identity");
+    let selector_context = task264_selector_type_handoff(&output);
+    let parameter = ParameterProducer::build(
+        selector_context.clone(), output.typed_ast.source_context().unwrap().clone(),
+    ).expect("body-only LF parameter context");
+    let carrier_range = match checker_owner.carrier_identity().structure_origin().anchor() {
+        mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+        _ => panic!("body-only LF carrier origin must have a source range"),
+    };
+    assert_eq!(carrier_range, (13, 101));
+    let declaration = output.typed_ast.source_context().unwrap().declarations().iter().next().unwrap().1;
+    assert_eq!((declaration.declaration_range.start, declaration.declaration_range.end), (125, 126));
+    assert_eq!(declaration.declaration_range.source_id, ast.source_id);
+    let domain = selector_context.source_type().expressions().get(selector_context.domain().root()).unwrap();
+    assert_eq!((domain.source_range().start, domain.source_range().end), (130, 144));
+    assert_eq!(domain.source_id(), ast.source_id);
+    assert_eq!(body_only_lf.get(130..144), Some("Task264Carrier"));
+    let control_ranges = [
+        terms.terms().get(identity.association().base_term()).unwrap().source_range(),
+        structures.terms().get(identity.association().structure_term()).unwrap().source_range(),
+        structures.members().get(identity.association().member()).unwrap().source_range(),
+    ];
+    assert_eq!(control_ranges, [(174, 175), (174, 183), (176, 183)]
+        .map(|(start, end)| mizar_session::SourceRange { source_id: ast.source_id, start, end }));
+    for (range, expected) in control_ranges.into_iter().zip(["M", "M.carrier", "carrier"]) {
+        assert_eq!(body_only_lf.get(range.start..range.end), Some(expected));
+    }
+    assert_eq!(
+        SeedProducer::build(parameter, identity)
+            .expect_err("body-only LF selector displacement must fail closed"),
+        SeedError::InvalidSelectorIdentity,
+    );
+
+    assert_eq!(outcomes.len(), 2);
+    assert!(outcomes.iter().all(Result::is_ok), "both measured Equals prefix seeds must succeed: {outcomes:?}");
+    for ((layout, parameter, identity, ranges), outcome) in prepared.iter().zip(&outcomes) {
+        let seed = outcome.as_ref().expect("Task264 Equals prefix seed");
+        let replay = SeedProducer::build(parameter.clone(), identity.clone()).expect("fresh seed replay");
+        assert_eq!(&replay, seed, "{layout} seed replay");
+        assert_eq!(seed.parameter_context(), parameter);
+        assert_eq!(seed.selector_identity(), identity);
+        assert_eq!(seed.source_id(), parameter.source_id());
+        assert_eq!(seed.module_id(), parameter.module_id());
+        let owner = seed.definition_owner();
+        assert_eq!(owner.anchor_item().index(), 0);
+        assert!(owner.item().is_none());
+        assert_eq!(owner.property_symbol(), Some(identity.property().carrier_identity().property_symbol()));
+
+        let association = seed.association();
+        assert_eq!((association.parameter().index(), association.binding().index(), association.core_var().index()), (0, 0, 0));
+        assert_eq!((association.source_base().index(), association.base_seed().index()), (0, 0));
+        assert_eq!((association.source_selector().index(), association.selector_seed().index()), (0, 1));
+        let seeds = seed.terms();
+        assert_eq!(seeds.len(), 2);
+        assert_eq!(seeds[0].kind, CoreTermSeedKind::Var(CoreVarId::new(0)));
+        assert_eq!(seeds[1].kind, CoreTermSeedKind::Select {
+            selector: identity.association().selector_symbol().clone(), base: CoreTermSeedId::new(0),
+        });
+        for (index, (range, key)) in ranges.iter().zip([
+            "source-property-equals-selector-term-seed-v1.base",
+            "source-property-equals-selector-term-seed-v1.selector",
+        ]).enumerate() {
+            assert_eq!(seeds[index].source, CoreSourceRef::direct(*range), "{layout} direct source");
+            assert_eq!(seeds[index].provenance.as_slice(), [CoreProvenance::new(CoreProvenancePhase::Checker, key)], "{layout} checker provenance");
+        }
+
+        let lowered = LoweringProducer::build(seed.clone()).expect("Task35L264 local lowering");
+        assert_eq!(lowered.seed_handoff(), seed);
+        assert_eq!(lowered.definition_owner(), owner);
+        let local = lowered.association();
+        assert_eq!((local.base_seed().index(), local.base_term().index()), (0, 0));
+        assert_eq!((local.selector_seed().index(), local.selector_term().index(), local.root_term().index()), (1, 1, 1));
+        assert_eq!(lowered.terms().len(), 2);
+        let expected_sources = ranges.iter().zip(seeds).map(|(range, seed)| {
+            CoreSourceRef::direct(*range).with_provenance(seed.provenance.as_slice().to_vec())
+        }).collect::<Vec<_>>();
+        let local_base = lowered.terms().get(local.base_term()).expect("lowered base term");
+        let local_selector = lowered.terms().get(local.selector_term()).expect("lowered selector term");
+        assert_eq!(local_base.kind, CoreTermKind::Var(CoreVarId::new(0)));
+        assert_eq!(local_selector.kind, CoreTermKind::Select {
+            selector: identity.association().selector_symbol().clone(), base: local.base_term(),
+        });
+        assert_eq!([&local_base.source, &local_selector.source], [&expected_sources[0], &expected_sources[1]]);
+        let map = lowered.source_map();
+        assert_eq!(map.term_sources.len(), 2);
+        assert_eq!(map.term_sources.get(&local.base_term()), Some(&expected_sources[0]));
+        assert_eq!(map.term_sources.get(&local.selector_term()), Some(&expected_sources[1]));
+        assert!(map.item_sources.is_empty() && map.formula_sources.is_empty() && map.definition_sources.is_empty());
+        assert!(map.proof_sources.is_empty() && map.algorithm_sources.is_empty() && map.generated_sources.is_empty() && map.obligation_sources.is_empty());
+    }
+}
+
+#[test]
 fn task264_equals_selector_term_seeds_reject_mixed_and_foreign_transactions() {
     let shared_ordinal = 265_100;
     let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(

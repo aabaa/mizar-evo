@@ -1022,6 +1022,8 @@ only as the owner's anchor and is never substituted as the property owner.
 Seed-local ids, exact use-site sources, and checker provenance are inputs for a
 later owner-aware lowerer; no `CoreTermId`, term table, source map, formula,
 definition body, route, or semantic credit is published here.
+Uniform seed geometry uses checked carrier-origin end−101 and checked d+182 for all three ranges.
+The complete Property join to validated parameter context keeps body and carrier offsets coupled.
 
 ## Task 35L264 Task264 Equals Selector Term Lowering
 
