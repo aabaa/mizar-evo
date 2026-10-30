@@ -499,6 +499,19 @@ correctness, correctness on `equals`, wrong target family, stale fingerprint,
 copied site, reordered row, cross-source/context data, overlapping ownership,
 and any extra or missing row.
 
+The tables above remain the canonical/native profile. The syntax-free upper
+intake also admits coherent prefix coordinates `(m,d)`: after cardinality,
+checked `d = definition0.start - 61` and `d + 261` must agree with Context item0
+at `m..d+261`, `m <= d`, both definition ranges translated by d, and both
+installed definition-return owner ranges. Missing or unequal claims select `(0,0)`.
+Body comparisons translate by d; Context and contribution spans start at m.
+Build and replay share this non-error selection, excluding Arena, recovery,
+resolver and expression metadata. Every ordinary check still runs in its old order.
+Isolated stale canonical claims retain their old errors; newly coherent shifted
+claims may reach ordinary resolver/row errors. Actual ranges remain unnormalized.
+This proves neither source authentication nor semantic owner attribution. The lower
+Type cutoff still limits jointly constructible layouts; native routing is unchanged.
+
 The producer returns the exact projection specified above. Failure is atomic.
 The public installation surface is:
 

@@ -1155,6 +1155,104 @@ fn functor_return_expression_layout_has_real_frontend_witnesses() {
 }
 
 #[test]
+fn functor_prefix_geometry_has_real_frontend_witnesses() {
+    let (canonical, _, canonical_shells, _, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_320);
+    assert_eq!(diagnostics, 0);
+    assert_eq!(canonical.nodes().len(), 108);
+    let mut sources = metamorphic_edits::variants(&canonical, SOURCE_FUNCTOR_DEFINITION_TEXT)
+        .into_iter()
+        .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+        .map(|(kind, edits)| {
+            (kind, metamorphic_edits::apply(SOURCE_FUNCTOR_DEFINITION_TEXT, &edits))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(sources.iter().map(|(kind, _)| *kind).collect::<Vec<_>>(),
+        ["leading_line", "intertoken_layout"]);
+    assert_eq!(sources[0].1, format!("\n{SOURCE_FUNCTOR_DEFINITION_TEXT}"));
+    assert_eq!(sources[1].1, SOURCE_FUNCTOR_DEFINITION_TEXT.replacen(
+        "definition", "definition :: metamorphic\n", 1));
+    sources.push(("mixed_prefix_intertoken", format!(" \t\n{}", sources[1].1)));
+    for (ordinal, ((case, source), (m, d))) in sources
+        .into_iter()
+        .zip([(1, 1), (0, 16), (3, 19)])
+        .enumerate()
+    {
+        assert_eq!(source.len(), 262 + d, "{case}");
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 260_321 + ordinal);
+        assert_eq!(diagnostics, 0, "{case} native Frontend diagnostics");
+        assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (108, Some(107)));
+        assert!(ast.expression_root().is_none());
+        for (index, (actual, expected)) in ast.nodes().iter().zip(canonical.nodes()).enumerate() {
+            assert!(!actual.recovered, "{case} node {index}");
+            assert_eq!(actual.kind, expected.kind, "{case} node {index} kind/text");
+            assert_eq!(actual.children, expected.children, "{case} node {index} ordered children");
+            let (start, end) = match index {
+                0 => (m, m + 10),
+                104..=107 => (m, d + 261),
+                _ => (expected.range.start + d, expected.range.end + d),
+            };
+            assert_eq!(actual.range, task260_range(ast.source_id, start, end), "{case} node {index}");
+            if let Some(text) = actual.token_text() {
+                assert_eq!(&source[start..end], text, "{case} token {index}");
+            }
+        }
+        for owner in [84, 95, 83, 94] {
+            let original = canonical.nodes()[owner].range;
+            let actual = ast.nodes()[owner].range;
+            assert_eq!(&source[actual.start..actual.end],
+                &SOURCE_FUNCTOR_DEFINITION_TEXT[original.start..original.end],
+                "{case} definition/body {owner} bytes");
+        }
+        assert_eq!(shells.declarations().len(), 3);
+        assert!(shells.exports().is_empty());
+        for (index, (shell, original)) in shells.declarations().iter()
+            .zip(canonical_shells.declarations()).enumerate()
+        {
+            assert_eq!(shell.id(), original.id());
+            assert_eq!(shell.ordinal(), original.ordinal());
+            assert_eq!(shell.kind(), original.kind());
+            assert_eq!(shell.node_id(), original.node_id());
+            assert_eq!(shell.parent(), original.parent());
+            assert_eq!(shell.module(), &module);
+            assert!(!shell.recovered());
+            let start = if index == 0 { m } else { original.range().start + d };
+            assert_eq!(shell.range(), task260_range(ast.source_id, start, original.range().end + d));
+        }
+        assert_eq!(symbols.module_id(), &module);
+        assert_eq!((symbols.symbols().len(), symbols.definitions().len(), symbols.contributions().len()), (2, 2, 1));
+        for (index, definition) in symbols.definitions().iter().enumerate() {
+            let symbol = symbols.symbols().get(definition.symbol()).expect("native functor symbol");
+            assert_eq!(definition.id().index(), index);
+            assert_eq!(symbol.contribution(), definition.contribution());
+            let original = canonical.nodes()[[84, 95][index]].range;
+            let range = task260_range(ast.source_id, original.start + d, original.end + d);
+            for origin in [definition.origin(), symbol.origin()] {
+                assert_eq!(origin.source_id(), ast.source_id);
+                assert_eq!(origin.module_id(), &module);
+                assert_eq!(origin.anchor(), &mizar_session::SourceAnchor::Range(range));
+                assert_eq!(origin.structural_path(), &[4, 0, 9, index as u32]);
+                assert!(origin.import_edge().is_none());
+                assert!(!origin.is_recovered());
+            }
+            let contribution = symbols.contributions().get(definition.contribution())
+                .expect("native functor contribution");
+            assert_eq!(contribution.module(), &module);
+            assert!(matches!(contribution.kind(),
+                mizar_resolve::env::ContributionKind::LocalSource { source_id }
+                    if *source_id == ast.source_id));
+            assert_eq!(contribution.anchor(), &mizar_session::SourceAnchor::Range(
+                task260_range(ast.source_id, m, d + 261)));
+            assert!(contribution.effects().symbols().contains(definition.symbol()));
+            assert!(contribution.effects().definitions().contains(&definition.id()));
+        }
+        assert!(source_functor_definition_output(&ast, module, &shells, &symbols, &source).is_none(),
+            "{case}: native routing remains deferred");
+    }
+}
+
+#[test]
 fn task260_source_ast_resolver_and_lower_mutations_fail_at_the_owner() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_010);

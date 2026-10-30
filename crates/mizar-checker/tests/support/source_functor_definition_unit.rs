@@ -4100,3 +4100,601 @@ fn task_260_public_relocated_joint_lower_bundle_installs_and_replays() {
     assert_eq!(replays[0], replays[1]);
     assert_eq!(original.typed_ast(base), original_lower);
 }
+
+#[test]
+fn task_260_public_prefix_geometry_joint_lower_and_upper_replay() {
+    let original = fixture();
+    let base = unrelated_baseline(original.source);
+    let original_lower = original.typed_ast(base.clone());
+    let canonical = original
+        .build(&base)
+        .expect("original public upper success");
+    let original_typed = original_lower
+        .clone()
+        .with_source_functor_definition(canonical.clone())
+        .expect("original upper Typed installation");
+    assemble_empty(&original_typed).expect("original upper final replay");
+    let mut previous = Vec::new();
+    for pass in 0..2 {
+        let mut outcomes = Vec::new();
+        for (m, d) in [(1, 1), (0, 16), (3, 19), (2, 1)] {
+            let mut f = original.clone();
+            let item = original.source_context.items().iter().next().unwrap().1;
+            let scope = LocalTermScope::new(vec![0]);
+            let context_input = SourceBindingContextInput {
+                source_id: f.source,
+                module_id: f.module.clone(),
+                module_site: TypedSiteRef::Node(MODULE_ROOT),
+                items: vec![SourceItemInput {
+                    shell: item.shell,
+                    shell_ordinal: item.shell_ordinal,
+                    role: item.role,
+                    module_id: f.module.clone(),
+                    source_range: range(f.source, m, d + 261),
+                    parent: item.parent,
+                    visibility: item.visibility,
+                    site: item.site.clone(),
+                    local_scope: Some(scope.clone()),
+                    recovery: SourceItemRecovery::Normal,
+                }],
+                bindings: original
+                    .source_context
+                    .declarations()
+                    .iter()
+                    .map(|(_, row)| {
+                        let declaration_range = range(
+                            f.source,
+                            row.declaration_range.start + d,
+                            row.declaration_range.end + d,
+                        );
+                        SourceBindingSiteInput {
+                            shell: item.shell,
+                            context_owner: SourceBindingContextOwner::Shell(item.shell),
+                            source_ordinal: row.source_ordinal,
+                            spelling: row.spelling.clone(),
+                            declaration_range,
+                            written_type_range: range(
+                                f.source,
+                                row.written_type_range.start + d,
+                                row.written_type_range.end + d,
+                            ),
+                            site: row.site.clone(),
+                            role: SourceBindingSiteRole::DefinitionParameter {
+                                local: LocalTermBinding::new(
+                                    row.spelling.clone(),
+                                    scope.clone(),
+                                    declaration_range,
+                                    row.source_ordinal,
+                                ),
+                            },
+                            recovery: BindingRecoveryState::Normal,
+                        }
+                    })
+                    .collect(),
+            };
+            f.source_context = SourceBindingContextProducer::build(context_input.clone())
+                .expect("fresh prefix public Context")
+                .into_complete()
+                .expect("complete prefix Context")
+                .into_handoff();
+            let mut indexes = SymbolEnvIndexes::default();
+            let contribution = indexes.contributions.insert(
+                f.module.clone(),
+                ContributionKind::LocalSource {
+                    source_id: f.source,
+                },
+                SourceAnchor::Range(range(f.source, m, d + 261)),
+            );
+            for old in original.env.definitions().iter() {
+                let symbol = original.env.symbols().get(old.symbol()).unwrap();
+                let SourceAnchor::Range(old_range) = old.origin().anchor() else {
+                    unreachable!()
+                };
+                let origin = SemanticOrigin::new(
+                    f.source,
+                    f.module.clone(),
+                    SourceAnchor::Range(range(f.source, old_range.start + d, old_range.end + d)),
+                    old.origin().structural_path().to_vec(),
+                );
+                let signature = old.signature().unwrap().clone();
+                indexes.symbols.insert(
+                    SymbolEntry::new(
+                        old.symbol().clone(),
+                        symbol.kind(),
+                        symbol.namespace().clone(),
+                        symbol.primary_spelling(),
+                        origin.clone(),
+                        contribution,
+                    )
+                    .with_visibility(symbol.visibility())
+                    .with_export_status(symbol.export_status())
+                    .with_notation_spelling(symbol.notation_spelling().unwrap())
+                    .with_signature(signature.clone()),
+                );
+                let definition = indexes.definitions.insert(
+                    DefinitionShell::new(old.symbol().clone(), old.kind(), origin, contribution)
+                        .with_visibility(old.visibility())
+                        .with_arity(old.arity().unwrap())
+                        .with_notation_shape(old.notation_shape().unwrap())
+                        .with_signature(signature),
+                );
+                assert_eq!(definition, old.id());
+                indexes
+                    .contributions
+                    .add_symbol(contribution, old.symbol().clone());
+                indexes
+                    .contributions
+                    .add_definition(contribution, definition);
+            }
+            f.env = SymbolEnv::new(f.module.clone(), indexes);
+            // These scalar fixtures retain unowned placeholders; native syntax is tested separately.
+            f.arena = TypedArena::try_new(
+                original.arena.root(),
+                original
+                    .arena
+                    .iter()
+                    .map(|(id, old)| {
+                        let mut node = old.clone();
+                        if id == DEFINITION_BLOCK || id == MODULE_ROOT {
+                            node.anchor = SourceAnchor::Range(range(f.source, m, d + 261));
+                        } else if old.kind.as_str() != "source.unowned" {
+                            let SourceAnchor::Range(old_range) = old.anchor else {
+                                unreachable!()
+                            };
+                            node.anchor = SourceAnchor::Range(range(
+                                f.source,
+                                old_range.start + d,
+                                old_range.end + d,
+                            ));
+                        }
+                        node
+                    })
+                    .collect(),
+            )
+            .expect("rebuilt normal prefix scalar arena");
+            let mut type_input = task249_input(f.source, f.module.clone());
+            for expression in &mut type_input.expressions {
+                expression.source_range.start += d;
+                expression.source_range.end += d;
+                expression.head_range = expression.source_range;
+            }
+            let generic = SourceTypeProducer::build(
+                type_input,
+                f.source_context.binding_env(),
+                &f.env,
+                &f.arena,
+            )
+            .expect("fresh generic Type against actual prefix BindingEnv");
+            f.source_type = SourceTypeDefinitionReturnProducer::extend(
+                &generic,
+                SourceTypeDefinitionReturnExtensionInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    returns: [
+                        (
+                            EQUALS_DEFINITION,
+                            RETURN_EQUALS,
+                            RETURN_HEAD_EQUALS,
+                            61,
+                            118,
+                            105,
+                        ),
+                        (
+                            MEANS_DEFINITION,
+                            RETURN_MEANS,
+                            RETURN_HEAD_MEANS,
+                            121,
+                            179,
+                            163,
+                        ),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(ordinal, (owner, root, head, start, end, ret))| {
+                        SourceTypeDefinitionReturnInput {
+                            definition_site: TypedSiteRef::Node(owner),
+                            definition_range: range(f.source, d + start, d + end),
+                            source_ordinal: ordinal,
+                            expression: bare_set_type(
+                                f.source,
+                                f.module.clone(),
+                                root,
+                                head,
+                                d + ret,
+                                d + ret + 3,
+                            ),
+                        }
+                    })
+                    .collect(),
+                },
+                &f.arena,
+            )
+            .expect("fresh prefix 249R owner/return extension");
+            let mut primary_input = task252_input(f.source, f.module.clone());
+            for term in &mut primary_input.terms {
+                term.source_range.start += d;
+                term.source_range.end += d;
+            }
+            f.source_term = SourcePrimaryTermProducer::build(
+                primary_input,
+                f.source_context.binding_env(),
+                &f.arena,
+            )
+            .expect("fresh prefix Primary");
+            let mut atomic_input = task256_input(f.source, f.module.clone());
+            for formula in &mut atomic_input.formulas {
+                formula.source_range.start += d;
+                formula.source_range.end += d;
+            }
+            f.atomic_formulas = SourceAtomicFormulaProducer::build(
+                atomic_input,
+                f.source_context.binding_env(),
+                &f.env,
+                &f.source_term,
+                None,
+                None,
+                None,
+                &f.arena,
+            )
+            .expect("fresh prefix Atomic with actual Primary");
+            for row in &mut f.input.definitions {
+                row.source_range.start += d;
+                row.source_range.end += d;
+            }
+            for row in &mut f.input.parameters {
+                row.source_range.start += d;
+                row.source_range.end += d;
+                row.declaration_range.start += d;
+                row.declaration_range.end += d;
+            }
+            for row in &mut f.input.guards {
+                row.source_range.start += d;
+                row.source_range.end += d;
+            }
+            for row in &mut f.input.definientia {
+                row.source_range.start += d;
+                row.source_range.end += d;
+            }
+            for row in &mut f.input.correctness {
+                row.source_range.start += d;
+                row.source_range.end += d;
+                let SourceAnchor::Range(justification) = &mut row.justification else {
+                    unreachable!()
+                };
+                justification.start += d;
+                justification.end += d;
+            }
+            let lower = f.typed_ast(base.clone());
+            let final_lower =
+                assemble_empty(&lower).expect("actual prefix joint lower final replay");
+            assert_eq!(final_lower.source_context(), Some(&f.source_context));
+            assert_eq!(final_lower.source_type(), Some(&f.source_type));
+            assert_eq!(final_lower.source_term(), Some(&f.source_term));
+            assert_eq!(
+                final_lower.source_atomic_formula(),
+                Some(&f.atomic_formulas)
+            );
+            assert!(lower.source_functor_definition().is_none());
+            assert_eq!(lower.initial_obligations(), &base);
+            let before = (f.input.clone(), f.env.clone(), lower.clone());
+            let result = f.build(&base);
+            assert_eq!(
+                (f.input.clone(), f.env.clone(), f.typed_ast(base.clone())),
+                before
+            );
+            if m > d {
+                assert_eq!(
+                    result,
+                    Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+                );
+                continue;
+            }
+            outcomes.push((m, d, f, lower, generic, context_input, result));
+        }
+        assert_eq!(outcomes.len(), 3);
+        let failures = outcomes
+            .iter()
+            .filter_map(|(m, d, _, _, _, _, result)| {
+                result
+                    .as_ref()
+                    .err()
+                    .map(|error| format!("({m},{d}): {error:?}"))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            failures.is_empty(),
+            "actual prefix upper outcomes after joint lower Typed/final success: {failures:?}"
+        );
+        let mut current = Vec::new();
+        for (m, d, f, lower, generic, mut context_input, result) in outcomes {
+            let projection = result.unwrap();
+            let handoff = projection.handoff();
+            assert_eq!(
+                handoff.source_context_fingerprint(),
+                f.source_context.debug_text()
+            );
+            assert_eq!(
+                handoff.source_type_fingerprint(),
+                f.source_type.debug_text()
+            );
+            assert_eq!(
+                handoff.source_term_fingerprint(),
+                f.source_term.debug_text()
+            );
+            assert_eq!(
+                handoff.atomic_formula_fingerprint(),
+                Some(f.atomic_formulas.debug_text().as_str())
+            );
+            assert_eq!(
+                (
+                    handoff.application_fingerprint(),
+                    handoff.structure_fingerprint(),
+                    handoff.set_term_fingerprint()
+                ),
+                (None, None, None)
+            );
+            assert_eq!(
+                f.atomic_formulas.primary_term_fingerprint(),
+                f.source_term.debug_text()
+            );
+            assert_eq!(
+                f.source_type.applications(),
+                original.source_type.applications()
+            );
+            assert_eq!(
+                f.source_term.references(),
+                original.source_term.references()
+            );
+            assert_eq!(f.atomic_formulas.edges(), original.atomic_formulas.edges());
+            assert_eq!(
+                f.atomic_formulas.requests(),
+                original.atomic_formulas.requests()
+            );
+            assert_eq!(
+                f.source_context
+                    .items()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1
+                    .source_range,
+                range(f.source, m, d + 261)
+            );
+            for (index, (_, row)) in handoff.definitions().iter().enumerate() {
+                let owner = f
+                    .source_type
+                    .definition_returns()
+                    .get(row.return_type())
+                    .unwrap();
+                let expression = f.source_type.expressions().get(owner.root()).unwrap();
+                assert_eq!(row.source_range(), owner.definition_range());
+                assert_eq!(row.site(), owner.definition_site());
+                assert_eq!(
+                    row.origin(),
+                    f.env.definitions().get(row.definition()).unwrap().origin()
+                );
+                assert_eq!(
+                    row.origin(),
+                    f.env.symbols().get(row.symbol()).unwrap().origin()
+                );
+                assert_eq!(
+                    expression.source_range(),
+                    range(f.source, d + [105, 163][index], d + [108, 166][index])
+                );
+                assert_eq!(expression.head_range(), expression.source_range());
+                let contribution = f.env.contributions().get(row.contribution()).unwrap();
+                assert_eq!(
+                    contribution.anchor(),
+                    &SourceAnchor::Range(range(f.source, m, d + 261))
+                );
+            }
+            for (index, (_, parameter)) in handoff.parameters().iter().enumerate() {
+                let declaration = f.source_context.declarations().iter().nth(index).unwrap().1;
+                let application = f
+                    .source_type
+                    .applications()
+                    .get(parameter.written_type())
+                    .unwrap();
+                let expression = f.source_type.expressions().get(application.root()).unwrap();
+                let binding = f
+                    .source_context
+                    .binding_env()
+                    .bindings()
+                    .get(parameter.binding())
+                    .unwrap();
+                assert_eq!(parameter.binding(), declaration.binding);
+                assert_eq!(parameter.declaration_range(), declaration.declaration_range);
+                assert_eq!(binding.declaration_range, declaration.declaration_range);
+                assert_eq!(
+                    binding.type_site,
+                    BindingTypeSite::Source(expression.source_range())
+                );
+                assert_eq!(application.binding(), parameter.binding());
+                assert_eq!(expression.source_range(), declaration.written_type_range);
+            }
+            let guard = handoff.guards().iter().next().unwrap().1;
+            assert_eq!(
+                f.atomic_formulas
+                    .formulas()
+                    .get(guard.formula())
+                    .unwrap()
+                    .source_range(),
+                range(f.source, d + 52, d + 57)
+            );
+            for (_, row) in handoff.definientia().iter() {
+                let target = match row.target() {
+                    SourceFunctorDefiniensTarget::Primary(id) => {
+                        f.source_term.terms().get(id).unwrap().source_range()
+                    }
+                    SourceFunctorDefiniensTarget::AtomicFormula(id) => {
+                        f.atomic_formulas.formulas().get(id).unwrap().source_range()
+                    }
+                    _ => panic!("prefix definiens target changed"),
+                };
+                assert_eq!(row.source_range(), target);
+                assert_eq!(
+                    handoff.definitions().get(row.owner()).unwrap().definiens(),
+                    row.id()
+                );
+            }
+            assert_eq!(projection.base_initial_obligations(), &base);
+            assert_eq!(projection.initial_obligations().len(), base.len() + 2);
+            assert_eq!(
+                projection
+                    .initial_obligations()
+                    .get(InitialObligationId::new(0)),
+                base.get(InitialObligationId::new(0))
+            );
+            for (index, (_, row)) in handoff.correctness().iter().enumerate() {
+                let obligation = projection
+                    .initial_obligations()
+                    .get(row.obligation())
+                    .unwrap();
+                let old = canonical
+                    .initial_obligations()
+                    .get(row.obligation())
+                    .unwrap();
+                assert_eq!(
+                    obligation.source_range,
+                    f.input.correctness[index].source_range
+                );
+                assert_eq!(
+                    (
+                        &obligation.kind,
+                        &obligation.owner,
+                        &obligation.assumptions,
+                        &obligation.goal,
+                        &obligation.provenance,
+                        obligation.status
+                    ),
+                    (
+                        &old.kind,
+                        &old.owner,
+                        &old.assumptions,
+                        &old.goal,
+                        &old.provenance,
+                        InitialObligationStatus::Pending
+                    )
+                );
+                assert_eq!(
+                    row.justification(),
+                    &f.input.correctness[index].justification
+                );
+            }
+            let typed = lower
+                .clone()
+                .with_source_functor_definition(projection)
+                .expect("prefix upper actual Typed replay");
+            let resolved = assemble_empty(&typed).expect("prefix upper actual final replay");
+            assert_eq!(
+                resolved.source_functor_definition(),
+                typed.source_functor_definition()
+            );
+            assert!(
+                typed.types().is_empty()
+                    && typed.facts().is_empty()
+                    && typed.coercions().is_empty()
+                    && typed.diagnostics().is_empty()
+            );
+            assert!(
+                resolved.expr_metadata().is_empty()
+                    && resolved.inserted_coercions().is_empty()
+                    && resolved.cluster_facts().is_empty()
+                    && resolved.checked_formulas().is_empty()
+                    && resolved.statement_semantics().is_empty()
+                    && resolved.checked_proofs().is_empty()
+                    && resolved.diagnostics().is_empty()
+            );
+            current.push((typed, resolved));
+
+            assert_input_error(
+                &original,
+                &base,
+                |input| {
+                    for row in &mut input.definitions {
+                        row.source_range.start += d;
+                        row.source_range.end += d;
+                    }
+                },
+                SourceFunctorDefinitionError::InvalidDefinition { index: 0 },
+            );
+            let mut stale = original.clone();
+            stale.env = f.env.clone();
+            assert_eq!(
+                stale.build(&base),
+                Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+            );
+            stale = f.clone();
+            stale.env = original.env.clone();
+            assert_eq!(
+                stale.build(&base),
+                Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+            );
+            assert_input_error(
+                &f,
+                &base,
+                |input| input.definitions[1].source_range.end += 1,
+                SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 },
+            );
+            stale = f.clone();
+            stale.source_type = generic;
+            assemble_empty(&stale.typed_ast(base.clone()))
+                .expect("missing return selector has valid public lower bundle");
+            assert_eq!(
+                stale.build(&base),
+                Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+            );
+            context_input.items[0].source_range.end -= 1;
+            stale = f.clone();
+            stale.source_context = SourceBindingContextProducer::build(context_input)
+                .expect("stale item Context public construction")
+                .into_complete()
+                .unwrap()
+                .into_handoff();
+            assert_eq!(
+                stale.build(&base),
+                Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+            );
+            assert_input_error(
+                &f,
+                &base,
+                |input| input.definitions[0].recovery = SourceFunctorDefinitionRecovery::Degraded,
+                SourceFunctorDefinitionError::InvalidDefinition { index: 0 },
+            );
+            assert_input_error(
+                &f,
+                &base,
+                |input| input.guards[0].spelling.push(' '),
+                SourceFunctorDefinitionError::InvalidGuard { index: 0 },
+            );
+            let mut bad = f.clone();
+            bad.arena = arena_with_source_node(
+                &bad.arena,
+                GUARD_OWNER,
+                "source.unowned",
+                range(f.source, d + 45, d + 58),
+                LocalTypeContextId::new(1),
+            );
+            assert_eq!(
+                bad.build(&base),
+                Err(SourceFunctorDefinitionError::InvalidArenaOwnership)
+            );
+        }
+        if pass == 1 {
+            assert_eq!(current, previous);
+        }
+        previous = current;
+    }
+    for bad_range in [
+        range(original.source, 60, 118),
+        range(original.source, usize::MAX - 1, usize::MAX),
+    ] {
+        assert_input_error(
+            &original,
+            &base,
+            |input| input.definitions[0].source_range = bad_range,
+            SourceFunctorDefinitionError::InvalidDefinition { index: 0 },
+        );
+    }
+    assert_eq!(original.typed_ast(base), original_lower);
+}

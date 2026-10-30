@@ -888,9 +888,9 @@ impl SourceFunctorDefinitionProducer {
         if env.module_id() != &input.module_id {
             return Err(SourceFunctorDefinitionError::SourceIdentityMismatch);
         }
-        validate_input_shape(&input)?;
+        let geometry = validate_input_shape(&input, source_context, source_type)?;
         validate_baseline(base_initial_obligations)?;
-        let origins = validate_resolver_definitions(&input, env)?;
+        let origins = validate_resolver_definitions(&input, env, geometry)?;
         validate_input_rows(
             &input,
             source_context,
@@ -901,6 +901,7 @@ impl SourceFunctorDefinitionProducer {
             set_terms,
             atomic_formulas,
             arena,
+            geometry,
         )?;
 
         let mut initial_obligations = base_initial_obligations.clone();
@@ -1152,7 +1153,9 @@ fn validate_dependency_identity(
 
 fn validate_input_shape(
     input: &SourceFunctorDefinitionHandoffInput,
-) -> Result<(), SourceFunctorDefinitionError> {
+    source_context: &SourceBindingContextHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+) -> Result<(usize, usize), SourceFunctorDefinitionError> {
     if input.definitions.len() != 2
         || input.parameters.len() != 2
         || input.guards.len() != 1
@@ -1161,7 +1164,37 @@ fn validate_input_shape(
     {
         return Err(SourceFunctorDefinitionError::UnsupportedTaskShape);
     }
-    Ok(())
+    let Some(d) = input.definitions[0].source_range.start.checked_sub(61) else {
+        return Ok((0, 0));
+    };
+    let Some(end) = d.checked_add(261) else {
+        return Ok((0, 0));
+    };
+    let Some(item) = source_context
+        .items()
+        .get(crate::source_context::SourceItemId::new(0))
+    else {
+        return Ok((0, 0));
+    };
+    let m = item.source_range.start;
+    if m > d
+        || item.source_range != range(input.source_id, m, end)
+        || input
+            .definitions
+            .iter()
+            .enumerate()
+            .any(|(index, definition)| {
+                let (start, end) = [(61, 118), (121, 179)][index];
+                definition.source_range != range(input.source_id, d + start, d + end)
+                    || !source_type
+                        .definition_returns()
+                        .get(SourceTypeDefinitionReturnId::new(index))
+                        .is_some_and(|owner| owner.definition_range() == definition.source_range)
+            })
+    {
+        return Ok((0, 0));
+    }
+    Ok((m, d))
 }
 
 fn validate_baseline(
@@ -1184,6 +1217,7 @@ fn validate_baseline(
 fn validate_resolver_definitions(
     input: &SourceFunctorDefinitionHandoffInput,
     env: &SymbolEnv,
+    geometry: (usize, usize),
 ) -> Result<Vec<SemanticOrigin>, SourceFunctorDefinitionError> {
     if env.symbols().len() != 2 || env.definitions().len() != 2 || env.contributions().len() != 1 {
         return Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 });
@@ -1191,7 +1225,8 @@ fn validate_resolver_definitions(
     let expected_notations = ["task260_equals ( x )", "task260_means ( y )"];
     let expected_paths: [&[u32]; 2] = [&[4, 0, 9, 0], &[4, 0, 9, 1]];
     let expected_ranges = [(61, 118), (121, 179)];
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, 0, 261));
+    let (m, d) = geometry;
+    let expected_anchor = SourceAnchor::Range(range(input.source_id, m, d + 261));
     let mut origins = Vec::with_capacity(2);
     for (index, row) in input.definitions.iter().enumerate() {
         let symbol = env
@@ -1249,8 +1284,8 @@ fn validate_resolver_definitions(
                 &input.module_id,
                 range(
                     input.source_id,
-                    expected_ranges[index].0,
-                    expected_ranges[index].1,
+                    d + expected_ranges[index].0,
+                    d + expected_ranges[index].1,
                 ),
                 expected_paths[index],
             )
@@ -1274,6 +1309,7 @@ fn validate_input_rows(
     set_terms: Option<&SourceSetTermHandoff>,
     atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
     arena: &TypedArena,
+    geometry: (usize, usize),
 ) -> Result<(), SourceFunctorDefinitionError> {
     let Some(atomic_formulas) = atomic_formulas else {
         return Err(SourceFunctorDefinitionError::DependencyMismatch);
@@ -1283,6 +1319,7 @@ fn validate_input_rows(
         return Err(SourceFunctorDefinitionError::DependencyMismatch);
     }
     let source = input.source_id;
+    let (_, d) = geometry;
     let context = BindingContextId::new(1);
     let definition_ranges = [(61, 118), (121, 179)];
     let definition_sites = [84, 95];
@@ -1298,8 +1335,8 @@ fn validate_input_rows(
         if row.source_range
             != range(
                 source,
-                definition_ranges[index].0,
-                definition_ranges[index].1,
+                d + definition_ranges[index].0,
+                d + definition_ranges[index].1,
             )
             || row.source_ordinal != index
             || row.context != context
@@ -1323,7 +1360,7 @@ fn validate_input_rows(
         }
     }
 
-    let local_context = validate_context_profile(input, source_context, arena)?;
+    let local_context = validate_context_profile(input, source_context, arena, geometry)?;
     let parameter_ranges = [(13, 26, 17, 18), (29, 42, 33, 34)];
     let parameter_sites = [65, 69];
     let parameter_spellings = ["let x be set;", "let y be set;"];
@@ -1333,8 +1370,8 @@ fn validate_input_rows(
             || row.binding != BindingId::new(index)
             || row.written_type != SourceTypeApplicationId::new(index)
             || row.site != TypedSiteRef::Node(TypedNodeId::new(parameter_sites[index]))
-            || row.source_range != range(source, start, end)
-            || row.declaration_range != range(source, declaration_start, declaration_end)
+            || row.source_range != range(source, d + start, d + end)
+            || row.declaration_range != range(source, d + declaration_start, d + declaration_end)
             || row.context != context
             || row.recovery != SourceFunctorDefinitionRecovery::Normal
             || row.spelling != parameter_spellings[index]
@@ -1351,14 +1388,14 @@ fn validate_input_rows(
             return Err(SourceFunctorDefinitionError::InvalidArenaOwnership);
         }
     }
-    validate_type_profile(input, source_type, local_context, arena)?;
-    validate_term_and_atomic_profile(input, source_term, atomic_formulas, local_context, arena)?;
+    validate_type_profile(input, source_type, local_context, arena, d)?;
+    validate_term_and_atomic_profile(input, source_term, atomic_formulas, local_context, arena, d)?;
 
     let guard = &input.guards[0];
     if guard.ordinal != 0
         || guard.formula != SourceAtomicFormulaId::new(0)
         || guard.site != TypedSiteRef::Node(TypedNodeId::new(77))
-        || guard.source_range != range(source, 45, 58)
+        || guard.source_range != range(source, d + 45, d + 58)
         || guard.context != context
         || guard.recovery != SourceFunctorDefinitionRecovery::Normal
         || guard.spelling != "assume x = x;"
@@ -1388,7 +1425,11 @@ fn validate_input_rows(
             || row.target != expected_targets[index]
             || row.site != TypedSiteRef::Node(TypedNodeId::new(definiens_sites[index]))
             || row.source_range
-                != range(source, definiens_ranges[index].0, definiens_ranges[index].1)
+                != range(
+                    source,
+                    d + definiens_ranges[index].0,
+                    d + definiens_ranges[index].1,
+                )
             || row.context != context
             || row.recovery != SourceFunctorDefinitionRecovery::Normal
             || row.spelling != definiens_spellings[index]
@@ -1422,9 +1463,13 @@ fn validate_input_rows(
             || row.ordinal != index
             || row.kind != correctness_kinds[index]
             || row.site != TypedSiteRef::Node(TypedNodeId::new(correctness_sites[index]))
-            || row.source_range != range(source, start, end)
+            || row.source_range != range(source, d + start, d + end)
             || row.justification
-                != SourceAnchor::Range(range(source, justification_start, justification_end))
+                != SourceAnchor::Range(range(
+                    source,
+                    d + justification_start,
+                    d + justification_end,
+                ))
             || row.recovery != SourceFunctorDefinitionRecovery::Normal
             || row.spelling != correctness_spellings[index]
             || input.definitions[1].source_range.end >= row.source_range.start
@@ -1529,8 +1574,10 @@ fn validate_context_profile(
     input: &SourceFunctorDefinitionHandoffInput,
     source_context: &SourceBindingContextHandoff,
     arena: &TypedArena,
+    geometry: (usize, usize),
 ) -> Result<LocalTypeContextId, SourceFunctorDefinitionError> {
     let source = input.source_id;
+    let (m, d) = geometry;
     let binding_env = source_context.binding_env();
     if source_context.items().len() != 1
         || source_context.declarations().len() != 2
@@ -1562,7 +1609,7 @@ fn validate_context_profile(
         || item.shell.index() != 0
         || item.shell_ordinal != 0
         || item.role != SourceItemRole::DefinitionBlock
-        || item.source_range != range(source, 0, 261)
+        || item.source_range != range(source, m, d + 261)
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.site != TypedSiteRef::Node(TypedNodeId::new(104))
@@ -1595,9 +1642,9 @@ fn validate_context_profile(
             .get(crate::source_context::SourceDeclarationId::new(index))
             .ok_or(SourceFunctorDefinitionError::InvalidParameter { index })?;
         let written_range = if index == 0 {
-            range(source, 22, 25)
+            range(source, d + 22, d + 25)
         } else {
-            range(source, 38, 41)
+            range(source, d + 38, d + 41)
         };
         if declaration.item != item.id
             || declaration.binding != row.binding
@@ -1644,6 +1691,7 @@ fn validate_type_profile(
     source_type: &SourceTypeApplicationHandoff,
     local_context: LocalTypeContextId,
     arena: &TypedArena,
+    d: usize,
 ) -> Result<(), SourceFunctorDefinitionError> {
     if source_type.applications().len() != 2
         || source_type.expressions().len() != 4
@@ -1661,7 +1709,7 @@ fn validate_type_profile(
             .expressions()
             .get(SourceTypeExpressionId::new(index))
             .ok_or(SourceFunctorDefinitionError::DependencyMismatch)?;
-        let written_range = range(source, ranges[index].0, ranges[index].1);
+        let written_range = range(source, d + ranges[index].0, d + ranges[index].1);
         if expression.id() != SourceTypeExpressionId::new(index)
             || expression.source_id() != source
             || expression.module_id() != &input.module_id
@@ -1727,6 +1775,7 @@ fn validate_term_and_atomic_profile(
     atomic_formulas: &SourceAtomicFormulaHandoff,
     local_context: LocalTypeContextId,
     arena: &TypedArena,
+    d: usize,
 ) -> Result<(), SourceFunctorDefinitionError> {
     if source_term.terms().len() != 5
         || source_term.references().len() != 5
@@ -1759,7 +1808,8 @@ fn validate_term_and_atomic_profile(
             .get(SourcePrimaryTermReferenceId::new(index))
             .ok_or(SourceFunctorDefinitionError::DependencyMismatch)?;
         if term.site() != &TypedSiteRef::Node(TypedNodeId::new(term_sites[index]))
-            || term.source_range() != range(source, term_ranges[index].0, term_ranges[index].1)
+            || term.source_range()
+                != range(source, d + term_ranges[index].0, d + term_ranges[index].1)
             || term.source_ordinal() != index
             || term.context() != context
             || term.recovery() != SourcePrimaryTermRecovery::Normal
@@ -1796,8 +1846,8 @@ fn validate_term_and_atomic_profile(
             || formula.source_range()
                 != range(
                     source,
-                    formula_ranges[formula_index].0,
-                    formula_ranges[formula_index].1,
+                    d + formula_ranges[formula_index].0,
+                    d + formula_ranges[formula_index].1,
                 )
             || formula.source_ordinal() != formula_index
             || formula.context() != context
@@ -1947,7 +1997,7 @@ fn validate_handoff_rows(
             })
             .collect(),
     };
-    validate_input_shape(&input)?;
+    let geometry = validate_input_shape(&input, source_context, source_type)?;
     validate_input_rows(
         &input,
         source_context,
@@ -1958,6 +2008,7 @@ fn validate_handoff_rows(
         set_terms,
         atomic_formulas,
         arena,
+        geometry,
     )?;
     for (index, definition) in handoff.definitions.rows.iter().enumerate() {
         let paths: [&[u32]; 2] = [&[4, 0, 9, 0], &[4, 0, 9, 1]];

@@ -171,6 +171,17 @@ complete validateしてからpublishします。partial means、equals correctne
 target、stale dependency、copied site、reorder、cross-source/context、overlap、
 extra/missing rowをatomicにrejectします。
 
+上表はcanonical/native profileのまま。syntax-free upperは整合するprefix座標
+`(m,d)`も受理する。cardinality後にchecked `d = definition0.start - 61` と
+`d + 261`を求め、Context item0の`m..d+261`、`m <= d`、dだけ移動した両definition
+range、両definition-return owner rangeとの一致を要求する。不足・不一致は`(0,0)`。
+body比較はdだけ移動し、Context/contributionの開始はmとする。構築とreplayは同じ
+非エラー選択を使い、Arena/recovery/resolver/expression metadataを条件に含めない。
+通常の全検査は従来順で行う。孤立したcanonical stale claimのエラーは維持し、
+新たに整合した移動claimは通常のresolver/rowエラーへ進み得る。実rangeを正規化しない。
+これはsource認証や意味論的owner帰属を証明しない。lower Type境界による制限と
+native routingは変わらない。
+
 projectionはhandoff、unchanged baseline obligation、baseline-plus-twoを返します。
 `TypedAst::with_source_functor_definition(SourceFunctorDefinitionProjection)
 -> Result<Self, TypedAstError>`とtyped/final
