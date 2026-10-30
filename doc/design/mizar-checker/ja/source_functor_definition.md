@@ -45,8 +45,8 @@ native routeは先頭SP/TAB/LFと、`definition`から最初の`let`までだけ
 SingleLine/MultiLine commentも受理する。既存lexer scope/preprocessと単一fragmentの
 token mapで供給source全byte、62token、108正常Surface row/childを照合する。
 未報告gap byteはSP/TAB/LF、commentなしでは元のgapとm=dを維持する。最初のletから
-final LFまでのbodyは不変。実parameter type終端はlower境界61以下が必要で、このbodyは
-d<=20に限る。他のtrivia/body familyは拒否し、source-ageやloaded-source sealを主張しない。
+final LFまでのbodyは不変。nativeのd<=20はlower Type境界とは独立に維持する。
+他のtrivia/body familyは拒否し、source-ageやloaded-source sealを主張しない。
 Arena/Context/resolverと全lower/upper入力は実AST range/child/physical spellingから構築し、
 parameter65/69のanchorはidentifier tokenを使う。実public chainはTyped/final transportと
 Pending obligation2件まで。canonical Core probeは別のprivate consumerで、Core/acceptance
@@ -192,8 +192,8 @@ body比較はdだけ移動し、Context/contributionの開始はmとする。構
 非エラー選択を使い、Arena/recovery/resolver/expression metadataを条件に含めない。
 通常の全検査は従来順で行う。孤立したcanonical stale claimのエラーは維持し、
 新たに整合した移動claimは通常のresolver/rowエラーへ進み得る。実rangeを正規化しない。
-これはsource認証や意味論的owner帰属を証明しない。lower Type境界による制限と
-native prefix抽出もこのlower Type境界に従う。
+これはsource認証や意味論的owner帰属を証明しない。lower Typeは独自の整合owner境界を持ち、
+native prefix抽出はd<=20を維持する。
 
 projectionはhandoff、unchanged baseline obligation、baseline-plus-twoを返します。
 `TypedAst::with_source_functor_definition(SourceFunctorDefinitionProjection)

@@ -191,20 +191,24 @@ exact base applicationは`(binding 0, ordinal 0, root 0)` / `(binding 1,
 ordinal 1, root 1)`。base expression 0/1はnode/head 63/62と67/66、
 head/rootは同一のcurrent-source正幅3byte range、`Bare` builtin `set`、normal、
 両spelling `set`、argument/definition-return emptyである。2rangeはsource順で
-非重複（隣接可）、終端はschema offset61以下とする。この境界だけでは移動ownerとの
-関係を証明しない。元のrangeは`22..25`/`38..41`。他shapeはInvalidDefinitionReturnBase。
+非重複（隣接可）、終端はschema offset61以下、または整合する先頭ownerの開始までとする。
+資格は既定Node84、current-source幅57、既定Arena nodeがNormalで同じRange anchor。
+構築は提案owner、installationは保持ownerを使い、不適格時は61を保つ。expression/ordinalは
+資格に含めず、エラーもuniqueness変更もない。61の下限は既存baseを保ち、普遍的な
+parameter-before-owner関係や意味論/source認証を証明しない。
+元のrangeは`22..25`/`38..41`。他shapeはInvalidDefinitionReturnBase。
 整合する移動baseは後続return検査へ進む。構築と再取り付けは同じ検査を使う。
 
 上表はcanonical fixture座標。移動ownerは、siteが既定Node84/95、current-sourceの
 幅57/58、既定Arena nodeがNormalでinputと同じRange anchorの場合だけliteral比較を通過する。
-他は従来段階のcanonical range/site検査を全て行う。移動input/canonical Arenaは
+他は従来段階のcanonical range/site検査を全て行う。baseが受理される場合、移動input/canonical Arenaは
 InvalidDefinitionReturn、canonical input/移動ArenaはInvalidDefinitionReturnSite。
 missing/recovered/non-Range/foreign anchor、wrong/Role site、不正幅は資格を持たない。
 資格判定はエラーを返さずuniquenessを変えず、その後に通常のowner検査を行う。
 return expression/headは同じcurrent-sourceの幅3byte範囲をownerの厳密な内側に持てる。
 包含は先行し、幅/head一致/内側の検査はowner range/site後、その後にunsupported検査。
 expression metadataはowner資格の条件ではない。これはscalar整合性で、意味論的owner帰属や
-source text認証を証明しない。slot/幅、base境界、upper/native profileは固定する。
+source text認証を証明しない。slot/幅、upper/native profileは固定する。
 
 source/moduleはbaseと一致し、return ordinal/IDはvector order。definition owner
 rangeはactual same-source arena nodeのexact rangeで、ordered/nonempty/

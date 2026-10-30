@@ -281,8 +281,13 @@ The exact base applications are `(binding 0, ordinal 0, root 0)` and
 63/62 and 67/66, `Bare`, builtin `set`, normal, and spellings/head spellings `set`;
 the argument and definition-return tables are empty. Each head/root range is the
 same positive current-source three-byte extent. The two extents are ordered and
-nonoverlapping, allowing adjacency, and end at or before schema offset 61.
-That cutoff alone proves no relation to moved owners. The original ranges are `22..25` and `38..41`.
+nonoverlapping, allowing adjacency, and end at or before schema offset 61, or
+the first owner start when larger and coherent: expected Node 84, current-source
+width 57 and an exact matching normal expected-Arena Range anchor. Build uses
+the proposed owner and installation the retained owner; ineligible metadata keeps
+61. Eligibility excludes expression/ordinal metadata and neither errors nor mutates
+uniqueness state. The floor preserves old bases, without a universal parameter-before-owner
+guarantee or semantic/source authentication. The original ranges are `22..25` and `38..41`.
 Other base shapes return `InvalidDefinitionReturnBase`; coherent moved bases
 are admitted and can reach the unchanged later return checks. This scalar profile
 authenticates no raw source. Builder and installation share these checks.
@@ -290,8 +295,8 @@ authenticates no raw source. Builder and installation share these checks.
 The table gives canonical fixture coordinates. A moved owner bypasses only the
 literal range comparison when its site is the expected Node sites 84/95, its current-source
 width is 57/58, and that expected normal Arena node has exactly the input Range anchor.
-Otherwise all canonical range/site checks run at their old phases: moved input with
-canonical Arena gives InvalidDefinitionReturn; canonical input with moved Arena gives
+Otherwise all canonical range/site checks run at their old phases. With an otherwise
+admitted base, moved input with canonical Arena gives InvalidDefinitionReturn; canonical input with moved Arena gives
 InvalidDefinitionReturnSite. Missing/recovered/non-Range/foreign anchors, wrong/Role
 sites and coherent wrong widths cannot qualify. Eligibility returns no error and
 mutates no uniqueness state; ordinary owner validation still follows it.
@@ -299,7 +304,7 @@ Each return expression/head pair may share a current-source width-three range st
 inside its owner. Inclusive containment stays early; width/head equality/interior
 checks follow owner range/site, then unsupported expression checks. Expression
 metadata is not owner eligibility. This scalar coherence proves no semantic owner
-attribution or source-text authentication; slots, widths, base cutoff and upper/native
+attribution or source-text authentication; slots, widths and upper/native
 profiles stay fixed.
 
 Exactly two rows of this normal, argument-free, bare builtin-`set`

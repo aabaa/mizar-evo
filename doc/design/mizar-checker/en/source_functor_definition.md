@@ -52,8 +52,8 @@ comments solely between `definition` and the first `let`. Existing lexer scope,
 preprocessing and single-fragment token maps authenticate every supplied byte,
 all 62 tokens and all 108 normal Surface rows/children. Unreported gap bytes are
 SP/TAB/LF; without a comment the original gap and m=d remain exact. The source
-body from first `let` through final LF is unchanged. Actual parameter type ends
-must fit the lower cutoff61, so this body permits d<=20. Other trivia/body families
+body from first `let` through final LF is unchanged. Native support retains d<=20
+independently of the lower Type bound. Other trivia/body families
 remain refused. This coherence supplies no source-age or loaded-source seal.
 Arena, Context, resolver and every lower/upper input use actual authenticated AST
 ranges/children and physical spellings; parameter65/69 anchors are identifier tokens.
@@ -525,7 +525,7 @@ resolver and expression metadata. Every ordinary check still runs in its old ord
 Isolated stale canonical claims retain their old errors; newly coherent shifted
 claims may reach ordinary resolver/row errors. Actual ranges remain unnormalized.
 This proves neither source authentication nor semantic owner attribution. The lower
-Type cutoff still limits jointly constructible layouts and native prefix extraction.
+Type admission has its own coherent-owner bound; native extraction retains d<=20.
 
 The producer returns the exact projection specified above. Failure is atomic.
 The public installation surface is:

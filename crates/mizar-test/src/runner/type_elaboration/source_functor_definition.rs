@@ -946,7 +946,7 @@ fn exact_functor_definition(
         text.bytes()
             .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
     };
-    // The unchanged public Type producer requires the second parameter type end <= 61.
+    // Native prefix support remains bounded independently of the lower Type producer.
     if d > 20
         || m > d
         || d.checked_add(262)? != source_text.len()
