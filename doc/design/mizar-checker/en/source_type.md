@@ -286,7 +286,15 @@ return-owner schema start. The original ranges are `22..25` and `38..41`.
 Other base shapes return `InvalidDefinitionReturnBase`; coherent moved bases
 are admitted and can reach the unchanged later return checks. This scalar profile
 authenticates no raw source. Builder and installation use the same predicate;
-return-owner/type coordinates and their error ownership remain unchanged.
+return-owner coordinates and their error ownership remain fixed.
+
+The table gives canonical fixture coordinates. Each return expression/head pair
+may share any current-source width-three range strictly inside its fixed owner.
+The inclusive containment precheck remains early; width, head/root equality and
+strict-interior checks stay after owner-range/site validation at the former
+expression-coordinate phase. Builder and installation share these checks.
+This scalar admission supplies no source-text or semantic owner-attribution proof;
+owner coordinates/sites, base prefix bound and upper/native profiles stay fixed.
 
 Exactly two rows of this normal, argument-free, bare builtin-`set`
 return-expression shape are admitted. Source/module identity must equal the

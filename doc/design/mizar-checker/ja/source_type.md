@@ -194,8 +194,14 @@ head/rootは同一のcurrent-source正幅3byte range、`Bare` builtin `set`、no
 非重複（隣接可）、終端は固定された最初のreturn-owner schema開始以下とする。
 元のrangeは`22..25`/`38..41`。他のbase shapeは`InvalidDefinitionReturnBase`。
 整合する移動baseは受理され、従来の後続return検査へ進む。このscalar profileは
-raw sourceを認証しない。構築と再取り付けは同一predicateを使い、return-owner/
-type座標とエラーの担当段階は変更しない。
+raw sourceを認証しない。構築と再取り付けは同一predicateを使い、return-owner
+座標とそのエラーの担当段階は固定する。
+
+上の範囲はcanonical fixture座標である。return expression/headの組は同じcurrent-sourceの
+幅3byte範囲を固定ownerの厳密な内側に持てる。包含の事前検査は先行させ、幅・head/root一致・
+厳密な内側の検査はowner range/siteの後、従来のexpression座標検査段階に置く。
+構築と再取り付けは同じreturn検査を使う。このscalar admissionはsource textや意味論的な
+owner帰属を証明しない。owner座標/site、base prefix境界、upper/native profileは固定する。
 
 source/moduleはbaseと一致し、return ordinal/IDはvector order。definition owner
 rangeはactual same-source arena nodeのexact rangeで、ordered/nonempty/

@@ -2413,8 +2413,8 @@ impl fmt::Display for SourceTypeError {
 
 impl Error for SourceTypeError {}
 
-const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize, usize); 2] =
-    [(84, 61, 118, 80, 79, 105), (95, 121, 179, 87, 86, 163)];
+const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize); 2] =
+    [(84, 61, 118, 80, 79), (95, 121, 179, 87, 86)];
 #[cfg(test)]
 const TASK_249S_STRUCTURE_MEMBERS: [(usize, usize, usize, usize, usize, usize, usize); 4] = [
     (53, 42, 63, 52, 51, 59, 62),
@@ -2536,7 +2536,7 @@ fn validate_definition_return_extension(
     }
 
     let mut previous_definition_range = None;
-    for (index, (definition_node, definition_start, definition_end, site, head_site, start)) in
+    for (index, (definition_node, definition_start, definition_end, site, head_site)) in
         TASK_249R_DEFINITION_RETURNS.into_iter().enumerate()
     {
         let id = SourceTypeDefinitionReturnId::new(index);
@@ -2592,12 +2592,17 @@ fn validate_definition_return_extension(
             arena,
         )?;
 
-        let end = start + 3;
         if expression.id != expected_root
             || expression.source_id != handoff.source_id
             || expression.module_id != handoff.module_id
-            || expression.source_range != task_249r_range(handoff.source_id, start, end)
-            || expression.head_range != task_249r_range(handoff.source_id, start, end)
+            || expression
+                .source_range
+                .end
+                .checked_sub(expression.source_range.start)
+                != Some(3)
+            || expression.head_range != expression.source_range
+            || expression.source_range.start <= definition_return.definition_range.start
+            || expression.source_range.end >= definition_return.definition_range.end
         {
             return Err(SourceTypeError::InvalidDefinitionReturn {
                 definition_return: id,
@@ -15133,6 +15138,233 @@ mod tests {
         assert_eq!(fixture.base, original_base);
         assert_eq!(fixture.arena, original_arena);
         assert_eq!(fixture.extension, original_input);
+    }
+
+    #[test]
+    fn task_249r_public_relative_return_expressions_install_and_replay() {
+        let fixture = task_249r_fixture();
+        SourceTypeDefinitionReturnProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("original public Functor returns");
+        let base_input = SourceTypeHandoffInput {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            applications: (0..2)
+                .map(|index| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: vec![
+                task_249r_expression(fixture.source, &fixture.module, 63, 62, 22, 25),
+                task_249r_expression(fixture.source, &fixture.module, 67, 66, 38, 41),
+            ],
+            arguments: Vec::new(),
+        };
+        let bindings = binding_env(
+            fixture.source,
+            &fixture.module,
+            &[range(fixture.source, 22, 25), range(fixture.source, 38, 41)],
+        );
+        let symbols = SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default());
+        let id = SourceTypeDefinitionReturnId::new(0);
+        let mut positives = Vec::new();
+        let mut negatives = Vec::new();
+        for case in [
+            "first",
+            "both",
+            "width2",
+            "width4",
+            "head_unequal",
+            "touch_start",
+            "touch_end",
+            "outside_owner",
+            "foreign_root",
+            "foreign_head",
+            "width2_bad_owner",
+            "boundary_bad_owner",
+            "outside_bad_owner",
+            "disjoint_root",
+            "disjoint_head",
+        ] {
+            let mut input = fixture.extension.clone();
+            input.returns[0].expression.source_range = range(fixture.source, 104, 107);
+            if case == "both" {
+                input.returns[1].expression.source_range = range(fixture.source, 161, 164);
+            }
+            let expression = &mut input.returns[0].expression;
+            match case {
+                "width2" | "width2_bad_owner" => expression.source_range.end = 106,
+                "width4" => expression.source_range.end = 108,
+                "touch_start" | "boundary_bad_owner" => {
+                    expression.source_range = range(fixture.source, 61, 64)
+                }
+                "touch_end" => expression.source_range = range(fixture.source, 115, 118),
+                "outside_owner" | "outside_bad_owner" => {
+                    expression.source_range = range(fixture.source, 60, 63)
+                }
+                "foreign_root" => expression.source_range.source_id = other_source_id(),
+                _ => {}
+            }
+            for row in &mut input.returns {
+                row.expression.head_range = row.expression.source_range;
+            }
+            match case {
+                "head_unequal" => {
+                    input.returns[0].expression.head_range = range(fixture.source, 105, 108)
+                }
+                "foreign_head" => {
+                    input.returns[0].expression.head_range.source_id = other_source_id()
+                }
+                _ => {}
+            }
+            if case.ends_with("bad_owner") {
+                input.returns[0].definition_site = role(84, "invalid-owner");
+            }
+            let nodes = fixture
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    let span = match id.index() {
+                        79 if case == "disjoint_head" => Some(range(fixture.source, 108, 111)),
+                        80 if case == "disjoint_root" => Some(range(fixture.source, 108, 111)),
+                        79 => Some(input.returns[0].expression.head_range),
+                        80 => Some(input.returns[0].expression.source_range),
+                        86 => Some(input.returns[1].expression.head_range),
+                        87 => Some(input.returns[1].expression.source_range),
+                        _ => None,
+                    };
+                    if let Some(span) = span {
+                        node.anchor = SourceAnchor::Range(span);
+                    }
+                    node
+                })
+                .collect();
+            let arena =
+                TypedArena::try_new(fixture.arena.root(), nodes).expect("normal rebuilt arena");
+            let base = SourceTypeProducer::build(base_input.clone(), &bindings, &symbols, &arena)
+                .expect("fresh public generic base before return extension");
+            assert_eq!(base, fixture.base);
+            let before = (base.clone(), input.clone(), arena.clone());
+            let result = SourceTypeDefinitionReturnProducer::extend(&base, input.clone(), &arena);
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            if matches!(case, "first" | "both") {
+                positives.push((case, base, input, arena, result));
+            } else {
+                let error = if matches!(
+                    case,
+                    "width2_bad_owner" | "boundary_bad_owner" | "disjoint_root" | "disjoint_head"
+                ) {
+                    SourceTypeError::InvalidDefinitionReturnSite {
+                        definition_return: id,
+                    }
+                } else {
+                    SourceTypeError::InvalidDefinitionReturn {
+                        definition_return: id,
+                    }
+                };
+                negatives.push((case, result, error));
+            }
+        }
+        let failures = positives
+            .iter()
+            .filter_map(|(case, _, _, _, result)| {
+                result
+                    .as_ref()
+                    .err()
+                    .map(|error| format!("{case}: {error:?}"))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            failures.is_empty(),
+            "public moved Functor returns: {failures:?}"
+        );
+        for (case, result, expected) in negatives {
+            assert_eq!(result, Err(expected), "{case}");
+        }
+        for (case, base, input, arena, result) in positives {
+            let handoff = result.expect("both real lexical witnesses accepted");
+            assert_eq!(handoff.applications(), base.applications());
+            assert_eq!(handoff.arguments(), base.arguments());
+            assert_eq!(handoff.expressions().len(), 4);
+            assert_eq!(handoff.definition_returns().len(), 2);
+            assert!(handoff.mode_rhs().is_empty());
+            assert!(handoff.structure_members().is_empty());
+            for (index, expected) in input.returns.iter().enumerate() {
+                let row = handoff
+                    .definition_returns()
+                    .get(SourceTypeDefinitionReturnId::new(index))
+                    .unwrap();
+                assert_eq!(row.id().index(), index);
+                assert_eq!(row.source_ordinal(), index);
+                assert_eq!(row.root(), SourceTypeExpressionId::new(index + 2));
+                assert_eq!(row.definition_site(), &expected.definition_site);
+                assert_eq!(row.definition_range(), expected.definition_range);
+                assert_eq!(
+                    arena.node(row.definition_site().node()).unwrap().anchor,
+                    SourceAnchor::Range(row.definition_range())
+                );
+                let expression = handoff.expressions().get(row.root()).unwrap();
+                assert_eq!(expression.id(), row.root());
+                assert_eq!(expression.source_range(), expected.expression.source_range);
+                assert_eq!(expression.head_range(), expression.source_range());
+                assert_eq!(expression.source_id(), fixture.source);
+                assert_eq!(expression.module_id(), &fixture.module);
+                assert_eq!(expression.site(), &expected.expression.site);
+                assert_eq!(expression.head_site(), &expected.expression.head_site);
+                for site in [expression.site(), expression.head_site()] {
+                    assert_eq!(
+                        arena.node(site.node()).unwrap().anchor,
+                        SourceAnchor::Range(expression.source_range())
+                    );
+                }
+                assert_eq!(
+                    handoff
+                        .expressions()
+                        .get(SourceTypeExpressionId::new(index)),
+                    base.expressions().get(SourceTypeExpressionId::new(index))
+                );
+            }
+            let before = (base.clone(), input.clone(), arena.clone());
+            let repeated_base =
+                SourceTypeProducer::build(base_input.clone(), &bindings, &symbols, &arena)
+                    .expect("fresh repeated generic base");
+            assert_eq!(
+                SourceTypeDefinitionReturnProducer::extend(&repeated_base, input.clone(), &arena),
+                Ok(handoff.clone()),
+                "{case} fresh repeat"
+            );
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            let typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                handoff.clone(),
+                arena,
+            )
+            .expect("actual moved-return Typed installation");
+            assert_eq!(typed.source_type(), Some(&handoff));
+            assert!(typed.source_context().is_none());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.initial_obligations().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            let resolved = assemble_empty_resolved(&typed);
+            assert_eq!(resolved.source_type(), Some(&handoff));
+            assert!(resolved.source_context().is_none());
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+        }
     }
 
     #[test]

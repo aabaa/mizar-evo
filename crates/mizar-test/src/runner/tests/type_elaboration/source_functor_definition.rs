@@ -1065,6 +1065,65 @@ fn task260_mutated_surface_ast(ast: &SurfaceAst, mutation: Task260SurfaceMutatio
 }
 
 #[test]
+fn functor_return_expression_layout_has_real_frontend_witnesses() {
+    let (canonical, _, _, _, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_300);
+    assert_eq!(diagnostics, 0);
+    assert_eq!(canonical.nodes().len(), 108);
+    assert_eq!(canonical.root().map(|id| id.index()), Some(107));
+    assert!(canonical.expression_root().is_none());
+    assert!(canonical.nodes().iter().all(|node| {
+        !node.recovered && node.range.source_id == canonical.source_id
+    }));
+    let first = SOURCE_FUNCTOR_DEFINITION_TEXT.replace("-> set equals", "->set  equals");
+    let both = first.replace(
+        "task260_means(y) -> set means",
+        "task260_means(y)->set   means",
+    );
+    for (ordinal, (source, second_start)) in [(first, 163), (both, 161)].into_iter().enumerate() {
+        assert_eq!(source.len(), 262);
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 260_301 + ordinal);
+        assert_eq!(diagnostics, 0, "witness {ordinal}");
+        assert_eq!(ast.nodes().len(), 108);
+        assert_eq!(ast.root().map(|id| id.index()), Some(107));
+        assert!(ast.expression_root().is_none());
+        for (index, (actual, expected)) in ast.nodes().iter().zip(canonical.nodes()).enumerate() {
+            assert!(!actual.recovered, "witness {ordinal} node {index}");
+            assert_eq!(actual.range.source_id, ast.source_id);
+            assert_eq!(actual.kind, expected.kind, "node {index} kind/text");
+            assert_eq!(actual.children, expected.children, "node {index} children");
+            // Parameters, patterns, bodies, Primary/Atomic roots and suffix stay fixed.
+            if matches!(index, 0..=22 | 25..=34 | 37..=78 | 81..=85 | 88..=107) {
+                assert_eq!(
+                    (actual.range.start, actual.range.end),
+                    (expected.range.start, expected.range.end),
+                    "node {index} stable geometry"
+                );
+            }
+        }
+        for (owner, start, end) in [(84, 61, 118), (95, 121, 179)] {
+            assert_eq!(
+                ast.nodes()[owner].range,
+                task260_range(ast.source_id, start, end)
+            );
+        }
+        for (token, head, root, start) in [(24, 79, 80, 104), (36, 86, 87, second_start)] {
+            assert_eq!(ast.nodes()[token].token_text(), Some("set"));
+            for index in [token, head, root] {
+                assert_eq!(
+                    ast.nodes()[index].range,
+                    task260_range(ast.source_id, start, start + 3)
+                );
+            }
+        }
+        assert!(
+            source_functor_definition_output(&ast, module, &shells, &symbols, &source).is_none()
+        );
+    }
+}
+
+#[test]
 fn task260_source_ast_resolver_and_lower_mutations_fail_at_the_owner() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_010);

@@ -1,5 +1,7 @@
 # mizar-checker TODO
 
+- [x] [CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT](../../task_contracts/ja/CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT.md).
+
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
 > 2026-09-02 圧縮（batch CPT-02、規則は
 > [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)）:

@@ -1,5 +1,7 @@
 # mizar-checker TODO
 
+- [x] [CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT](../../task_contracts/en/CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT.md).
+
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
 > Compacted 2026-09-02 (batch CPT-02, rules in
 > [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)):
