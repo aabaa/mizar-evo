@@ -490,20 +490,30 @@ applications/expressions/arguments/definition-returns/mode-RHS
 | ---: | --- | --- | ---: |
 | 0 | node 49, `45..135`, ordinal 0 | nodes 44/43, `95..98`, `Bare`, builtin `set`, normal | 2 |
 
+These are the original source coordinates; admission uses the relative rules below.
+
 The exact base applications are `(binding 0, ordinal 0, root 0)` and
 `(binding 1, ordinal 1, root 1)`. Base expressions 0/1 use expression/head
-sites 35/34 and 39/38, ranges `22..25` and `38..41`, `Bare`, builtin `set`,
-normal recovery, and `set` for both spellings. Arguments, definition returns,
+sites 35/34 and 39/38, `Bare`, builtin `set`, normal recovery and `set` for
+both spellings. Their equal head/root ranges are positive current-source
+three-byte extents, ordered and nonoverlapping with adjacency allowed. Original
+parameter extents are `22..25` and `38..41`. Arguments, definition returns,
 and mode RHS rows are empty. Any other base shape, including a Task-249R
 handoff, returns `InvalidModeRhsBase`.
 
 Exactly one normal, argument-free, bare builtin-`set` RHS is admitted. Source
 and module identity must equal the base. The dense row ID and source ordinal
-are zero. The definition range is the exact same-source arena node-49 range,
-contains the RHS expression, and is nonempty. Definition, expression, and head
+are zero. The positive current-source definition range starts at or after the
+final parameter type ends and strictly contains the equal three-byte RHS/head
+extent. This reserves minimal header/semicolon capacity, without authenticating
+raw syntax or inferring fixed gaps/header widths. Definition, expression, and head
 sites are exact `TypedSiteRef::Node` identities; role sites are rejected. The
-expression and head sites, ranges, and recovery are revalidated against the
-actual arena. Both syntax-free spellings are exactly `set`. No new site may
+owner range must equal its normal arena anchor; an otherwise valid disagreement
+in either direction returns `InvalidModeRhsSite`, naming an association failure
+without declaring either side authoritative. Expression/head and base anchors
+retain generic containment. Intrinsic row errors precede Site; supported form,
+head, both `set` spellings and expression recovery are checked after Site.
+No new site may
 duplicate any base expression/head or definition site. The new expression ID
 appends at the prior expression length as root 2.
 

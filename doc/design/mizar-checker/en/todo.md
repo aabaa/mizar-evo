@@ -38,6 +38,7 @@
 - [x] [Property joint lower relocation](../../task_contracts/en/TEST-PROPERTY-LOWER-RELOCATION.md).
 - [x] [Functor parameter Type layout](../../task_contracts/en/CHECKER-FUNCTOR-PARAMETER-TYPE-LAYOUT.md).
 - [x] [Functor joint lower layout](../../task_contracts/en/TEST-FUNCTOR-JOINT-LOWER-LAYOUT.md).
+- [x] [Mode Type layout](../../task_contracts/en/CHECKER-MODE-TYPE-LAYOUT.md).
 
 ## Status Legend
 

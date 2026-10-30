@@ -369,18 +369,26 @@ expressions/arguments/definition-returns/mode-RHS `2/2/0/0/0`である。Task
 | ---: | --- | --- | ---: |
 | 0 | node 49, `45..135`, ordinal 0 | nodes 44/43, `95..98`, `Bare`, builtin `set`, normal | 2 |
 
+表は元のsource座標であり、受理条件には以下の相対的な検査を用いる。
+
 exact base applicationは`(binding 0, ordinal 0, root 0)`と`(binding 1,
 ordinal 1, root 1)`である。base expression 0/1はexpression/head site 35/34、
-39/38、range `22..25`/`38..41`、`Bare`、builtin `set`、normal、両spelling
-`set`である。argument/definition return/mode RHSはempty。Task-249R handoffを
+39/38、`Bare`、builtin `set`、normal、両spelling `set`である。head/rootは
+同一のcurrent-source正幅3byte範囲、source順で非重複（隣接可）とする。
+元のparameter範囲は`22..25`/`38..41`。argument/definition return/mode RHSは
+empty。Task-249R handoffを
 含む他shapeは`InvalidModeRhsBase`を返す。
 
 normal/argument-free/bare builtin-`set` RHS exactly 1個だけをadmitする。
 source/module identityはbaseと一致し、dense row ID/source ordinalは0。
-definition rangeはsame-source arena node 49のexact rangeで、RHS expressionを
-containしnonemptyである。definition/expression/head siteはexact
-`TypedSiteRef::Node`でrole siteをrejectする。expression/head site/range/
-recoveryはactual arenaへrevalidateし、両syntax-free spellingはexact `set`。
+definition範囲はcurrent-source正幅範囲で、最後のparameter型終端以降から始まり、
+同一の3byte RHS/head範囲を厳密に内包する。headerとsemicolonの最小余地だけを
+確保し、固定gap/header幅やraw構文の認証は導かない。definition/expression/head
+siteはnormalでdistinctな`TypedSiteRef::Node`とし、role siteをrejectする。
+owner範囲とarena anchorは一致が必要で、他条件が正常な不一致は両方向とも
+`InvalidModeRhsSite`となる。どちらかを真と断定する診断ではない。
+expression/headとbaseのanchorは従来の包含検査を維持する。入力固有のRowエラー、
+Siteの順に検査し、form/head/両spelling `set`/expression recoveryはSite後に検査する。
 new siteはbase expression/head/definition siteとduplicateできない。new
 expression IDはprior expression lengthへroot 2としてappendする。
 

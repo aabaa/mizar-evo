@@ -1972,7 +1972,7 @@ impl SourceTypeStructureMemberProducer {
     }
 }
 
-/// Extends one exact Task-262 lower base with its standalone mode RHS without
+/// Extends one Task-262 lower base with its standalone mode RHS without
 /// fabricating a binding-linked application.
 pub struct SourceTypeModeRhsProducer;
 
@@ -2415,10 +2415,6 @@ impl Error for SourceTypeError {}
 
 const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize, usize); 2] =
     [(84, 61, 118, 80, 79, 105), (95, 121, 179, 87, 86, 163)];
-const TASK_249M_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
-    [(35, 34, 22, 25), (39, 38, 38, 41)];
-const TASK_249M_MODE_RHS: (usize, usize, usize, usize, usize, usize, usize) =
-    (49, 45, 135, 44, 43, 95, 98);
 #[cfg(test)]
 const TASK_249S_STRUCTURE_MEMBERS: [(usize, usize, usize, usize, usize, usize, usize); 4] = [
     (53, 42, 63, 52, 51, 59, 62),
@@ -2707,8 +2703,8 @@ fn task_249m_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
     {
         return false;
     }
-    for (index, (site, head_site, start, end)) in TASK_249M_BASE_EXPRESSIONS.into_iter().enumerate()
-    {
+    let mut previous_end = None;
+    for (index, (site, head_site)) in [(35, 34), (39, 38)].into_iter().enumerate() {
         let Some(application) = handoff
             .applications
             .get(SourceTypeApplicationId::new(index))
@@ -2725,11 +2721,17 @@ fn task_249m_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
             || expression.id != SourceTypeExpressionId::new(index)
             || expression.source_id != handoff.source_id
             || expression.module_id != handoff.module_id
-            || expression.source_range != task_249m_range(handoff.source_id, start, end)
+            || !valid_range(handoff.source_id, expression.source_range)
+            || expression
+                .source_range
+                .end
+                .checked_sub(expression.source_range.start)
+                != Some(3)
+            || previous_end.is_some_and(|end| end > expression.source_range.start)
             || !is_node_site(&expression.site, site)
             || expression.spelling != "set"
             || !is_node_site(&expression.head_site, head_site)
-            || expression.head_range != task_249m_range(handoff.source_id, start, end)
+            || expression.head_range != expression.source_range
             || expression.head_spelling != "set"
             || expression.form != SourceTypeApplicationForm::Bare
             || !matches!(expression.head, SourceTypeHead::BuiltinSet)
@@ -2737,6 +2739,7 @@ fn task_249m_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
         {
             return false;
         }
+        previous_end = Some(expression.source_range.end);
     }
     true
 }
@@ -2766,20 +2769,30 @@ fn validate_mode_rhs_extension(
     let Some(expression) = handoff.expressions.get(expected_root) else {
         return Err(SourceTypeError::InvalidModeRhs { mode_rhs: id });
     };
-    let (definition_node, definition_start, definition_end, site, head_site, start, end) =
-        TASK_249M_MODE_RHS;
+    let (definition_node, site, head_site) = (49, 44, 43);
+    let last_parameter_end = handoff
+        .expressions
+        .get(SourceTypeExpressionId::new(1))
+        .expect("Task 249M base shape checked")
+        .source_range
+        .end;
     if mode_rhs.id != id
         || mode_rhs.source_ordinal != 0
         || mode_rhs.root != expected_root
-        || mode_rhs.definition_range
-            != task_249m_range(handoff.source_id, definition_start, definition_end)
         || !valid_range(handoff.source_id, mode_rhs.definition_range)
-        || !range_contains(mode_rhs.definition_range, expression.source_range)
+        || last_parameter_end > mode_rhs.definition_range.start
+        || mode_rhs.definition_range.start >= expression.source_range.start
+        || expression.source_range.end >= mode_rhs.definition_range.end
         || expression.id != expected_root
         || expression.source_id != handoff.source_id
         || expression.module_id != handoff.module_id
-        || expression.source_range != task_249m_range(handoff.source_id, start, end)
-        || expression.head_range != task_249m_range(handoff.source_id, start, end)
+        || !valid_range(handoff.source_id, expression.source_range)
+        || expression
+            .source_range
+            .end
+            .checked_sub(expression.source_range.start)
+            != Some(3)
+        || expression.head_range != expression.source_range
     {
         return Err(SourceTypeError::InvalidModeRhs { mode_rhs: id });
     }
@@ -2852,14 +2865,6 @@ fn validate_mode_rhs_owner_site(
         return Err(SourceTypeError::InvalidModeRhsSite { mode_rhs });
     }
     Ok(())
-}
-
-fn task_249m_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn validate_property_implementation_structure_member_base(
@@ -8185,15 +8190,15 @@ mod tests {
             |input| input.rhs[0].expression.head_range.start = 94,
             |input| input.rhs[0].expression.source_range.source_id = other_source_id(),
         ];
-        for mutate in invalid_rows {
+        for (index, mutate) in invalid_rows.into_iter().enumerate() {
             let mut invalid = fixture.extension.clone();
             mutate(&mut invalid);
-            assert_task_249m_extension_error(
-                &fixture,
-                invalid,
-                &fixture.arena,
-                SourceTypeError::InvalidModeRhs { mode_rhs },
-            );
+            let expected = if matches!(index, 1 | 2) {
+                SourceTypeError::InvalidModeRhsSite { mode_rhs }
+            } else {
+                SourceTypeError::InvalidModeRhs { mode_rhs }
+            };
+            assert_task_249m_extension_error(&fixture, invalid, &fixture.arena, expected);
         }
 
         let invalid_sites: [fn(&mut SourceTypeModeRhsExtensionInput); 5] = [
@@ -15128,5 +15133,281 @@ mod tests {
         assert_eq!(fixture.base, original_base);
         assert_eq!(fixture.arena, original_arena);
         assert_eq!(fixture.extension, original_input);
+    }
+
+    #[test]
+    fn task_249m_public_relative_layout_installs_and_replays() {
+        let fixture = task_249m_fixture();
+        SourceTypeModeRhsProducer::extend(&fixture.base, fixture.extension.clone(), &fixture.arena)
+            .expect("original public Mode extension");
+        let id = SourceTypeModeRhsId::new(0);
+        let mut positives = Vec::new();
+        let mut negatives = Vec::new();
+        for case in [
+            "rhs_only",
+            "base_and_rhs",
+            "containing_anchors",
+            "adjacent_endpoint",
+            "base_width2",
+            "base_width4",
+            "rhs_width2",
+            "rhs_width4",
+            "head_unequal",
+            "owner_touches_start",
+            "owner_touches_end",
+            "base_crosses_owner",
+            "input_owner_short",
+            "arena_owner_short",
+            "site_before_unsupported",
+            "disjoint_rhs_anchor",
+            "unsupported",
+            "row_before_site_unsupported",
+        ] {
+            let base_ranges = match case {
+                "base_and_rhs" | "containing_anchors" => [(23, 26), (42, 45)],
+                "adjacent_endpoint" => [(50, 53), (53, 56)],
+                "base_width2" => [(22, 24), (38, 41)],
+                "base_width4" => [(22, 26), (38, 41)],
+                "base_crosses_owner" => [(22, 25), (58, 61)],
+                _ => [(22, 25), (38, 41)],
+            };
+            let spans = base_ranges.map(|(start, end)| range(fixture.source, start, end));
+            let mut input = fixture.extension.clone();
+            let row = &mut input.rhs[0];
+            row.definition_range = range(fixture.source, 60, 170);
+            row.expression.source_range = range(fixture.source, 125, 128);
+            row.expression.head_range = row.expression.source_range;
+            match case {
+                "adjacent_endpoint" => {
+                    row.definition_range = range(fixture.source, 56, 61);
+                    row.expression.source_range = range(fixture.source, 57, 60);
+                    row.expression.head_range = row.expression.source_range;
+                }
+                "rhs_width2" | "rhs_width4" => {
+                    row.expression.source_range.end = if case == "rhs_width2" { 127 } else { 129 };
+                    row.expression.head_range = row.expression.source_range;
+                }
+                "head_unequal" => row.expression.head_range = range(fixture.source, 126, 129),
+                "owner_touches_start" => row.definition_range.start = 125,
+                "owner_touches_end" => row.definition_range.end = 128,
+                "input_owner_short" | "site_before_unsupported" => row.definition_range.end = 169,
+                "row_before_site_unsupported" => {
+                    row.definition_range.end = row.definition_range.start;
+                    row.definition_site = role(49, "invalid-owner-role");
+                }
+                _ => {}
+            }
+            if matches!(
+                case,
+                "unsupported" | "site_before_unsupported" | "row_before_site_unsupported"
+            ) {
+                row.expression.form = SourceTypeApplicationForm::Of;
+            }
+            let owner_anchor = match case {
+                "input_owner_short" | "site_before_unsupported" | "row_before_site_unsupported" => {
+                    range(fixture.source, 60, 170)
+                }
+                "arena_owner_short" => range(fixture.source, 60, 169),
+                _ => row.definition_range,
+            };
+            let padding = usize::from(case == "containing_anchors");
+            let nodes = fixture
+                .arena
+                .iter()
+                .map(|(node_id, old)| {
+                    let mut node = old.clone();
+                    let span = match node_id.index() {
+                        34 | 35 => Some(spans[0]),
+                        38 | 39 => Some(spans[1]),
+                        49 => Some(owner_anchor),
+                        44 if case == "disjoint_rhs_anchor" => {
+                            Some(range(fixture.source, 129, 132))
+                        }
+                        44 => Some(row.expression.source_range),
+                        43 => Some(row.expression.head_range),
+                        _ => None,
+                    };
+                    if let Some(span) = span {
+                        let padded = if node_id.index() == 49 { 0 } else { padding };
+                        node.anchor = SourceAnchor::Range(range(
+                            fixture.source,
+                            span.start - padded,
+                            span.end + padded,
+                        ));
+                    }
+                    node
+                })
+                .collect();
+            let arena =
+                TypedArena::try_new(fixture.arena.root(), nodes).expect("normal public Mode arena");
+            let bindings = binding_env(fixture.source, &fixture.module, &spans);
+            let symbols = SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default());
+            let base_input = SourceTypeHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                applications: (0..2)
+                    .map(|index| SourceTypeApplicationInput {
+                        binding: BindingId::new(index),
+                        source_ordinal: index,
+                        root: SourceTypeExpressionId::new(index),
+                    })
+                    .collect(),
+                expressions: [(35, 34), (39, 38)]
+                    .into_iter()
+                    .zip(base_ranges)
+                    .map(|((site, head), (start, end))| {
+                        task_249r_expression(
+                            fixture.source,
+                            &fixture.module,
+                            site,
+                            head,
+                            start,
+                            end,
+                        )
+                    })
+                    .collect(),
+                arguments: Vec::new(),
+            };
+            let base = SourceTypeProducer::build(base_input, &bindings, &symbols, &arena)
+                .expect("actual public generic Mode base");
+            let generic_typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                base.clone(),
+                arena.clone(),
+            )
+            .expect("actual generic Typed prerequisite");
+            assert_eq!(generic_typed.source_type(), Some(&base));
+            let before = (base.clone(), input.clone(), arena.clone());
+            let result = SourceTypeModeRhsProducer::extend(&base, input.clone(), &arena);
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            let expected = match case {
+                "rhs_only" | "base_and_rhs" | "containing_anchors" | "adjacent_endpoint" => None,
+                "base_width2" | "base_width4" => Some(SourceTypeError::InvalidModeRhsBase),
+                "rhs_width2"
+                | "rhs_width4"
+                | "head_unequal"
+                | "owner_touches_start"
+                | "owner_touches_end"
+                | "base_crosses_owner"
+                | "row_before_site_unsupported" => {
+                    Some(SourceTypeError::InvalidModeRhs { mode_rhs: id })
+                }
+                "input_owner_short"
+                | "arena_owner_short"
+                | "site_before_unsupported"
+                | "disjoint_rhs_anchor" => {
+                    Some(SourceTypeError::InvalidModeRhsSite { mode_rhs: id })
+                }
+                "unsupported" => Some(SourceTypeError::UnsupportedModeRhs { mode_rhs: id }),
+                _ => unreachable!("closed Mode case list"),
+            };
+            if let Some(expected) = expected {
+                negatives.push((case, result, expected));
+            } else {
+                positives.push((case, base, input, arena, result));
+            }
+        }
+        assert_eq!(positives.len(), 4);
+        let failures = positives
+            .iter()
+            .filter_map(|(case, _, _, _, result)| {
+                result
+                    .as_ref()
+                    .err()
+                    .map(|error| format!("{case}: {error:?}"))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            failures.is_empty(),
+            "public relative Mode extensions: {failures:?}"
+        );
+        assert_eq!(negatives.len(), 14);
+        for (case, result, expected) in negatives {
+            assert_eq!(result, Err(expected), "{case}");
+        }
+        for (case, base, input, arena, result) in positives {
+            let handoff = result.expect("all public Mode positives succeeded");
+            assert_eq!(handoff.source_id(), fixture.source);
+            assert_eq!(handoff.module_id(), &fixture.module);
+            assert_eq!(handoff.applications().len(), 2);
+            assert_eq!(handoff.expressions().len(), 3);
+            assert_eq!(handoff.mode_rhs().len(), 1);
+            assert_eq!(handoff.applications(), base.applications());
+            assert_eq!(handoff.arguments(), base.arguments());
+            assert!(handoff.definition_returns().is_empty());
+            assert!(handoff.structure_members().is_empty());
+            for (_, application) in handoff.applications().iter() {
+                assert_eq!(
+                    handoff.expressions().get(application.root()),
+                    base.expressions().get(application.root())
+                );
+            }
+            let mode = handoff.mode_rhs().get(id).unwrap();
+            assert_eq!(mode.id(), id);
+            assert_eq!(mode.source_ordinal(), 0);
+            assert_eq!(mode.root(), SourceTypeExpressionId::new(2));
+            assert_eq!(mode.definition_site(), &input.rhs[0].definition_site);
+            assert_eq!(mode.definition_range(), input.rhs[0].definition_range);
+            assert_eq!(
+                arena.node(mode.definition_site().node()).unwrap().anchor,
+                SourceAnchor::Range(mode.definition_range())
+            );
+            let rhs = handoff.expressions().get(mode.root()).unwrap();
+            assert_eq!(rhs.id(), mode.root());
+            assert_eq!(rhs.source_range(), input.rhs[0].expression.source_range);
+            assert_eq!(rhs.head_range(), rhs.source_range());
+            assert_eq!(rhs.source_range().end - rhs.source_range().start, 3);
+            for (_, expression) in handoff.expressions().iter() {
+                assert_eq!(expression.source_id(), fixture.source);
+                assert_eq!(expression.module_id(), &fixture.module);
+                for (site, span) in [
+                    (expression.site(), expression.source_range()),
+                    (expression.head_site(), expression.head_range()),
+                ] {
+                    let SourceAnchor::Range(anchor) = &arena.node(site.node()).unwrap().anchor
+                    else {
+                        panic!("normal range anchor")
+                    };
+                    assert_eq!(anchor.source_id, span.source_id);
+                    assert!(anchor.start <= span.start && span.end <= anchor.end);
+                    if case == "containing_anchors" {
+                        assert_eq!(anchor.end - anchor.start, 5);
+                        assert_eq!(span.end - span.start, 3);
+                    }
+                }
+            }
+            let before = (base.clone(), input.clone(), arena.clone());
+            let replay = SourceTypeModeRhsProducer::extend(&base, input.clone(), &arena)
+                .expect("deterministic public Mode extension");
+            assert_eq!(handoff, replay);
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            let typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                handoff.clone(),
+                arena,
+            )
+            .expect("actual relative Mode Typed installation");
+            assert_eq!(typed.source_type(), Some(&handoff));
+            assert!(typed.source_context().is_none());
+            assert!(typed.source_mode_definition().is_none());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.initial_obligations().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            let resolved = assemble_empty_resolved(&typed);
+            assert_eq!(resolved.source_type(), Some(&handoff));
+            assert!(resolved.source_context().is_none());
+            assert!(resolved.source_mode_definition().is_none());
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+        }
     }
 }
