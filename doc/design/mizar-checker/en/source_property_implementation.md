@@ -12,11 +12,21 @@ the implementation is admitted.
 
 ## Fixed-width local spelling
 
-The original fixed-width profile remains admitted. Prefix tokens through the second
-`definition` (slot18 at108..118), all prefix aggregates, resolver/stored origins and
-Type member/Set spans remain fixed. Implementation starts108; only body gaps after
-that header vary, and its final semicolon determines its end. This admits supplied
-local body frames, not inter-block or whole-source layout.
+The original fixed-width profile remains admitted. Relative prefix ranges are eligible
+only when normal Env origins, actual Type rows and complete scalar prefix Arena geometry
+agree. Prefix0..18 and nine aliases require exact widths, word separation, source,
+state and leaf endpoints; PI member owners are exact, while generic Type containment
+alone is insufficient. No raw prefix witness is available: this proves supplied
+artifact agreement and realizability, not independent loaded-source provenance.
+
+Unavailable eligibility keeps the exact canonical Resolver, prefix Type and header
+checks in their existing order, including all28 canonical prefix pins at late Arena,
+without choosing a new disagreement owner. Eligible
+coherent layouts replace only agreed ranges and can reach existing later child errors.
+Prefix eligibility reads no body19, parameter-Type ranges or input-child ranges/spellings.
+Replay silently qualifies
+stored identity invariants, including only the target symbol/definition/contribution/
+origin association, before any relative permit and keeps its actual error late.
 
 Measure known ASCII word/number/punctuation atoms through native preprocessing and
 its source map. Permit SP/TAB/LF and ordinary line/block comments; reject diagnostics,
@@ -35,15 +45,17 @@ Implementation. Declaration/binding are co-generated, not independent raw witnes
 
 Late Context joins measured owner/M/type. Each child checks its own frame and physical
 parent slice at its existing phase. Typed parameter65/47 anchors M20, not full let19..23.
-Type parameter joins22; prefix Type remains fixed. Target, definiens and correctness
+Type parameter joins22; prefix Type uses only eligible agreed ranges. Target, definiens and correctness
 join their measured atoms, including justification endpoints. Means Atomic retains
 canonical `it = it` independently of physical `it=it`; Equals Structure retains canonical
 `M.carrier` independently of physical `M . carrier`. The Equals consumer remeasures its
-accepted immutable definiens while preserving fixed prefix field-origin association.
+accepted immutable definiens and field origin, retaining equality with the consumer Env.
 
-Arena keeps the same kinds/contexts/roots/states and fixed prefix. Body leaves have
+Arena keeps the same kinds/contexts/roots/states. Prefix and body leaves have
 literal widths/order and aliases use exact leaf endpoints. At the final Arena phase,
-join measured body atoms to actual leaves; read no unowned19 or child fields early.
+join Type prefix metadata and measured body atoms to actual leaves/aliases. Stored
+origins join those ranges in the existing later carrier-identity validator, preserving
+canonical identity-error ownership. Read no unowned19 or input-child ranges/spellings early.
 Preserve early lower/source/shape/baseline/resolver order, stored replay/fingerprints,
 child error ownership, all original arena refusals and semantic-obligation boundaries.
 

@@ -41,6 +41,7 @@
 - [x] [Mode Type layout](../../task_contracts/en/CHECKER-MODE-TYPE-LAYOUT.md).
 - [x] [Property Implementation references](../../task_contracts/en/CHECKER-PROPERTY-IMPLEMENTATION-REFERENCE.md).
 - [x] [Property body layout](../../task_contracts/en/CHECKER-PROPERTY-BODY-LAYOUT.md).
+- [x] [Property coherent prefix layout](../../task_contracts/en/CHECKER-PROPERTY-PREFIX-LAYOUT.md).
 
 ## Status Legend
 

@@ -12,10 +12,19 @@ check する。`equals` は existence/uniqueness を要求せず direct value te
 
 ## Fixed-width local spelling
 
-元の固定幅 profile は引き続き受理する。二つ目の `definition`（slot18、108..118）
-までの token、prefix 集約、resolver／保存済み origin、Type member／Set 範囲は固定する。
-Implementation は108から始まり、header 後の body gap だけを可変とし、最後の semicolon
-で終端を決める。local body frame の整合性であり、block 間や source 全体の受理ではない。
+元の固定幅 profile は引き続き受理する。正常な Env origin、実際の Type、prefix Arena
+の完全な scalar geometry が一致する場合だけ相対範囲を適格とする。prefix0..18 と9個の
+alias に幅・語の区切り・source・state・leaf 端点の厳密な一致を要求する。PI member owner
+は厳密一致であり、一般 Type の包含だけでは足りない。raw prefix の証拠はなく、供給された
+artifact の整合性と実現可能な配置を検査し、独立した loaded source の由来を証明しない。
+
+不適格な場合は canonical Resolver・prefix Type・header の検査と順序をそのまま適用し、
+後段 Arena の28個すべての canonical prefix pin も維持する。不一致の診断責務を新たに
+決めない。適格な配置は一致した範囲だけを置換し、既存の後段の子
+エラーに到達できる。prefix 適格判定では body19・parameter Type 範囲・入力の子の範囲や表記
+を読まない。replay は
+相対配置の許可前に、target の symbol／definition／contribution／origin 関連だけを含む
+保存済み identity の不変条件を黙って検査し、実際の identity エラーは元の後段に保つ。
 
 既知の ASCII 語・数・記号を native preprocessing と source map から測る。
 SP／TAB／LF と通常の行・block comment を許し、diagnostic、documentation／annotation、
@@ -33,14 +42,16 @@ declaration と binding は同時生成され、独立した raw source の証�
 
 遅い Context 段階で測定した owner／M／Type を照合する。各子は自身の frame と親の
 物理 slice を元の段階で検査する。typed parameter65／47 は full let19..23 でなく M20。
-Type parameter は22に対応し、prefix は固定する。target／definiens／correctness と
+Type parameter は22に対応し、prefix は適格な一致範囲だけを使う。target／definiens／correctness と
 justification を測定 atom に照合する。Means Atomic の正規表記 `it = it` と物理 `it=it`、
 Equals Structure の正規表記 `M.carrier` と物理 `M . carrier` を区別する。Equals consumer
-は受理済み immutable definiens を再測定し、prefix field-origin 関連は固定のまま。
+は受理済み immutable definiens と field origin を使い、consumer Env との一致を維持する。
 
-Arena の kind／context／root／state と prefix を維持する。body leaf の幅・順序、alias
-の厳密な leaf 端点を検査し、最後の Arena 段階で測定 body atom と実際の leaf を照合する。
-unowned19 や子 field を先行参照しない。先行する lower／source／shape／baseline／resolver
+Arena の kind／context／root／state を維持する。prefix と body leaf の幅・順序、alias
+の厳密な leaf 端点を検査する。最後の Arena 段階で Type の prefix 情報と測定 body atom
+を実際の leaf／alias に照合する。保存済み origin と同じ範囲の照合は、既存の後段の
+carrier identity 検証で行い、canonical identity エラーの責務を維持する。
+unowned19 や入力の子の範囲・表記を先行参照しない。先行する lower／source／shape／baseline／resolver
 の順序、保存済み replay／fingerprint、子の診断責務、既存の Arena 拒否、意味論・obligation
 境界を維持する。
 

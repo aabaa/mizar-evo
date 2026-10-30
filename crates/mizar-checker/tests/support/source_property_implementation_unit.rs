@@ -589,8 +589,16 @@ fn task_264d_equals_selector_identity_fails_closed() {
         Task264ResolverEnvMutation::FieldWrongOrigin,
         Task264ResolverEnvMutation::MissingFieldEffects,
     ] {
-        let (wrong_env, _) =
-            resolver_env_with_mutation(equals.source, equals.module.clone(), mutation);
+        let (wrong_env, _) = resolver_env_with_mutation(
+            equals.source,
+            equals.module.clone(),
+            [
+                range(equals.source, 13, 101),
+                range(equals.source, 45, 66),
+                range(equals.source, 71, 94),
+            ],
+            mutation,
+        );
         assert_eq!(
             SourcePropertyEqualsSelectorIdentityProducer::build(
                 &wrong_env,
@@ -606,8 +614,16 @@ fn task_264d_equals_selector_identity_fails_closed() {
         Task264ResolverEnvMutation::ExtraSymbol,
         Task264ResolverEnvMutation::ExtraDefinition,
     ] {
-        let (wrong_env, _) =
-            resolver_env_with_mutation(equals.source, equals.module.clone(), mutation);
+        let (wrong_env, _) = resolver_env_with_mutation(
+            equals.source,
+            equals.module.clone(),
+            [
+                range(equals.source, 13, 101),
+                range(equals.source, 45, 66),
+                range(equals.source, 71, 94),
+            ],
+            mutation,
+        );
         assert_eq!(
             SourcePropertyEqualsSelectorIdentityProducer::build(
                 &wrong_env,
@@ -814,7 +830,8 @@ fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
             Profile::Equals,
             means.source,
             &means.source_type,
-            range(means.source, 130, 144)
+            Some(range(means.source, 130, 144)),
+            None,
         )
         .is_err()
     );
@@ -823,7 +840,8 @@ fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
             Profile::Means,
             equals.source,
             &equals.source_type,
-            range(equals.source, 130, 144)
+            Some(range(equals.source, 130, 144)),
+            None,
         )
         .is_err()
     );
@@ -1283,7 +1301,7 @@ fn fixture(profile: TestProfile) -> Fixture {
     );
     let arena = arena(source, profile, None);
     let shell = property_shell(source, &module, profile);
-    let context = source_context(source, module.clone(), shell, profile);
+    let context = source_context(source, module.clone(), shell, profile, &arena);
     let (env, identities) = resolver_env(source, module.clone());
     let source_type = source_type(
         source,
@@ -1308,7 +1326,7 @@ fn fixture(profile: TestProfile) -> Fixture {
     });
     let formula = (profile == TestProfile::Means)
         .then(|| atomic_formula(source, module.clone(), &env, &context, &terms, &arena));
-    let input = checker_input(source, module.clone(), profile, shell, &identities);
+    let input = checker_input(source, module.clone(), profile, shell, &identities, &arena);
     Fixture {
         profile,
         source,
@@ -1392,7 +1410,16 @@ fn property_shell(source: SourceId, module: &ModuleId, profile: TestProfile) -> 
 }
 
 fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, [ResolverIdentity; 3]) {
-    resolver_env_with_mutation(source, module, Task264ResolverEnvMutation::None)
+    resolver_env_with_mutation(
+        source,
+        module,
+        [
+            range(source, 13, 101),
+            range(source, 45, 66),
+            range(source, 71, 94),
+        ],
+        Task264ResolverEnvMutation::None,
+    )
 }
 
 fn resolver_env_with_spelling_override(
@@ -1403,6 +1430,11 @@ fn resolver_env_with_spelling_override(
     resolver_env_with_mutation(
         source,
         module,
+        [
+            range(source, 13, 101),
+            range(source, 45, 66),
+            range(source, 71, 94),
+        ],
         spelling_override.map_or(Task264ResolverEnvMutation::None, |(role, spelling)| {
             Task264ResolverEnvMutation::Spelling(role, spelling)
         }),
@@ -1425,37 +1457,38 @@ enum Task264ResolverEnvMutation<'a> {
 fn resolver_env_with_mutation(
     source: SourceId,
     module: ModuleId,
+    origins: [SourceRange; 3],
     mutation: Task264ResolverEnvMutation<'_>,
 ) -> (SymbolEnv, [ResolverIdentity; 3]) {
     let mut indexes = SymbolEnvIndexes::default();
     let contribution = indexes.contributions.insert(
         module.clone(),
         ContributionKind::LocalSource { source_id: source },
-        SourceAnchor::Range(range(source, 13, 101)),
+        SourceAnchor::Range(origins[0]),
     );
     let specs = [
         (
             "Task264Carrier",
             SymbolKind::Structure,
             DefinitionKind::Structure,
-            13,
-            101,
+            origins[0].start,
+            origins[0].end,
             vec![4, 0, 11, 0],
         ),
         (
             "carrier",
             SymbolKind::Selector,
             DefinitionKind::Selector,
-            45,
-            66,
+            origins[1].start,
+            origins[1].end,
             vec![4, 0, 11, 0, 18, 0],
         ),
         (
             "marker",
             SymbolKind::Selector,
             DefinitionKind::Selector,
-            71,
-            94,
+            origins[2].start,
+            origins[2].end,
             vec![4, 0, 11, 0, 19, 1],
         ),
     ];
@@ -1606,7 +1639,29 @@ fn source_context(
     module: ModuleId,
     shell: DeclarationShellId,
     profile: TestProfile,
+    arena: &TypedArena,
 ) -> SourceBindingContextHandoff {
+    let SourceAnchor::Range(owner_range) = arena
+        .node(TypedNodeId::new(owner_node(profile)))
+        .expect("owner node")
+        .anchor
+    else {
+        panic!("owner range")
+    };
+    let SourceAnchor::Range(declaration_range) = arena
+        .node(TypedNodeId::new(20))
+        .expect("declaration leaf")
+        .anchor
+    else {
+        panic!("declaration range")
+    };
+    let SourceAnchor::Range(written_type_range) = arena
+        .node(TypedNodeId::new(22))
+        .expect("written Type leaf")
+        .anchor
+    else {
+        panic!("written Type range")
+    };
     let scope = LocalTermScope::new(vec![4]);
     let input = SourceBindingContextInput {
         source_id: source,
@@ -1617,7 +1672,7 @@ fn source_context(
             shell_ordinal: 4,
             role: SourceItemRole::PropertyImplementation,
             module_id: module,
-            source_range: range(source, 108, profile_end(profile)),
+            source_range: owner_range,
             parent: None,
             visibility: SourceItemVisibility::Unspecified,
             site: node_site(owner_node(profile)),
@@ -1629,11 +1684,11 @@ fn source_context(
             context_owner: SourceBindingContextOwner::Shell(shell),
             source_ordinal: 0,
             spelling: "M".to_owned(),
-            declaration_range: range(source, 125, 126),
-            written_type_range: range(source, 130, 144),
+            declaration_range,
+            written_type_range,
             site: node_site(parameter_node(profile)),
             role: SourceBindingSiteRole::DefinitionParameter {
-                local: LocalTermBinding::new("M", scope, range(source, 125, 126), 0),
+                local: LocalTermBinding::new("M", scope, declaration_range, 0),
             },
             recovery: BindingRecoveryState::Normal,
         }],
@@ -1654,17 +1709,16 @@ fn source_type(
     env: &SymbolEnv,
 ) -> SourceTypeApplicationHandoff {
     let (expression_node, head_node, member_specs) = match profile {
-        TestProfile::Means => (
-            63,
-            64,
-            [(56, 45, 66, 55, 54, 62, 65), (59, 71, 94, 58, 57, 90, 93)],
-        ),
-        TestProfile::Equals => (
-            45,
-            46,
-            [(38, 45, 66, 37, 36, 62, 65), (41, 71, 94, 40, 39, 90, 93)],
-        ),
+        TestProfile::Means => (63, 64, [(56, 55, 54, 7), (59, 58, 57, 12)]),
+        TestProfile::Equals => (45, 46, [(38, 37, 36, 7), (41, 40, 39, 12)]),
     };
+    let written_type_range = context
+        .declarations()
+        .iter()
+        .next()
+        .expect("parameter declaration")
+        .1
+        .written_type_range;
     let base = SourceTypeProducer::build(
         SourceTypeHandoffInput {
             source_id: source,
@@ -1678,10 +1732,10 @@ fn source_type(
                 source_id: source,
                 module_id: module.clone(),
                 site: node_site(expression_node),
-                source_range: range(source, 130, 144),
+                source_range: written_type_range,
                 spelling: "Task264Carrier".to_owned(),
                 head_site: node_site(head_node),
-                head_range: range(source, 130, 144),
+                head_range: written_type_range,
                 head_spelling: "Task264Carrier".to_owned(),
                 form: SourceTypeApplicationForm::Bare,
                 head: SourceTypeHead::Symbol {
@@ -1701,26 +1755,39 @@ fn source_type(
         .into_iter()
         .enumerate()
         .map(
-            |(
-                source_ordinal,
-                (member_node, member_start, member_end, expression_node, head_node, start, end),
-            )| SourceTypeStructureMemberInput {
-                member_site: node_site(member_node),
-                member_range: range(source, member_start, member_end),
-                source_ordinal,
-                expression: SourceTypeExpressionInput {
-                    source_id: source,
-                    module_id: module.clone(),
-                    site: node_site(expression_node),
-                    source_range: range(source, start, end),
-                    spelling: "set".to_owned(),
-                    head_site: node_site(head_node),
-                    head_range: range(source, start, end),
-                    head_spelling: "set".to_owned(),
-                    form: SourceTypeApplicationForm::Bare,
-                    head: SourceTypeHead::BuiltinSet,
-                    recovery: NodeRecoveryState::Normal,
-                },
+            |(source_ordinal, (member_node, expression_node, head_node, set_leaf))| {
+                let SourceAnchor::Range(member_range) = arena
+                    .node(TypedNodeId::new(member_node))
+                    .expect("member owner")
+                    .anchor
+                else {
+                    panic!("member range")
+                };
+                let SourceAnchor::Range(written_set_range) = arena
+                    .node(TypedNodeId::new(set_leaf))
+                    .expect("Set leaf")
+                    .anchor
+                else {
+                    panic!("Set range")
+                };
+                SourceTypeStructureMemberInput {
+                    member_site: node_site(member_node),
+                    member_range,
+                    source_ordinal,
+                    expression: SourceTypeExpressionInput {
+                        source_id: source,
+                        module_id: module.clone(),
+                        site: node_site(expression_node),
+                        source_range: written_set_range,
+                        spelling: "set".to_owned(),
+                        head_site: node_site(head_node),
+                        head_range: written_set_range,
+                        head_spelling: "set".to_owned(),
+                        form: SourceTypeApplicationForm::Bare,
+                        head: SourceTypeHead::BuiltinSet,
+                        recovery: NodeRecoveryState::Normal,
+                    },
+                }
             },
         )
         .collect();
@@ -1748,16 +1815,12 @@ fn primary_terms(
             vec![
                 (
                     66,
-                    172,
-                    174,
                     "it",
                     SourcePrimaryTermKind::It,
                     SourcePrimaryTermRole::CurrentDefinitionResult,
                 ),
                 (
                     68,
-                    177,
-                    179,
                     "it",
                     SourcePrimaryTermKind::It,
                     SourcePrimaryTermRole::CurrentDefinitionResult,
@@ -1768,8 +1831,6 @@ fn primary_terms(
         TestProfile::Equals => (
             vec![(
                 48,
-                173,
-                174,
                 "M",
                 SourcePrimaryTermKind::VariableReference,
                 SourcePrimaryTermRole::Value,
@@ -1784,10 +1845,17 @@ fn primary_terms(
     let terms = rows
         .into_iter()
         .enumerate()
-        .map(
-            |(source_ordinal, (node, start, end, spelling, kind, role))| SourcePrimaryTermInput {
+        .map(|(source_ordinal, (node, spelling, kind, role))| {
+            let SourceAnchor::Range(source_range) = arena
+                .node(TypedNodeId::new(node))
+                .expect("Primary owner")
+                .anchor
+            else {
+                panic!("Primary range")
+            };
+            SourcePrimaryTermInput {
                 site: node_site(node),
-                source_range: range(source, start, end),
+                source_range,
                 source_ordinal,
                 context: BindingContextId::new(1),
                 recovery: SourcePrimaryTermRecovery::Normal,
@@ -1795,8 +1863,8 @@ fn primary_terms(
                 kind,
                 role,
                 parent: None,
-            },
-        )
+            }
+        })
         .collect::<Vec<_>>();
     SourcePrimaryTermProducer::build(
         SourcePrimaryTermHandoffInput {
@@ -1821,13 +1889,27 @@ fn structure(
     arena: &TypedArena,
     wrong: bool,
 ) -> SourceStructureHandoff {
+    let SourceAnchor::Range(term_range) = arena
+        .node(TypedNodeId::new(49))
+        .expect("Structure owner")
+        .anchor
+    else {
+        panic!("Structure range")
+    };
+    let SourceAnchor::Range(member_range) = arena
+        .node(TypedNodeId::new(31))
+        .expect("selector owner")
+        .anchor
+    else {
+        panic!("selector range")
+    };
     SourceStructureProducer::build(
         SourceStructureHandoffInput {
             source_id: source,
             module_id: module,
             terms: vec![SourceStructureTermInput {
                 site: node_site(49),
-                source_range: range(source, 173, 182),
+                source_range: term_range,
                 source_ordinal: 0,
                 context: BindingContextId::new(1),
                 recovery: SourceStructureRecovery::Normal,
@@ -1840,7 +1922,7 @@ fn structure(
                 term: SourceStructureTermId::new(0),
                 ordinal: 0,
                 site: node_site(31),
-                source_range: range(source, 175, 182),
+                source_range: member_range,
                 spelling: if wrong { "marker" } else { "carrier" }.to_owned(),
                 role: SourceStructureMemberRole::Selector,
                 parent: None,
@@ -1891,13 +1973,20 @@ fn atomic_formula(
     terms: &SourcePrimaryTermHandoff,
     arena: &TypedArena,
 ) -> SourceAtomicFormulaHandoff {
+    let SourceAnchor::Range(formula_range) = arena
+        .node(TypedNodeId::new(70))
+        .expect("Atomic owner")
+        .anchor
+    else {
+        panic!("Atomic range")
+    };
     SourceAtomicFormulaProducer::build(
         SourceAtomicFormulaHandoffInput {
             source_id: source,
             module_id: module,
             formulas: vec![SourceAtomicFormulaInput {
                 site: node_site(70),
-                source_range: range(source, 172, 179),
+                source_range: formula_range,
                 source_ordinal: 0,
                 context: BindingContextId::new(1),
                 recovery: SourceAtomicFormulaRecovery::Normal,
@@ -1962,70 +2051,66 @@ fn checker_input(
     profile: TestProfile,
     shell: DeclarationShellId,
     identities: &[ResolverIdentity; 3],
+    arena: &TypedArena,
 ) -> SourcePropertyImplementationHandoffInput {
     let (
         owner,
-        end,
         parameter,
         style,
         spelling,
         definiens_node,
-        definiens_range,
         definiens_spelling,
         target,
         correctness,
     ) = match profile {
         TestProfile::Means => (
             81,
-            262,
             65,
             SourcePropertyImplementationStyle::Means,
             "definition\n  let M be Task264Carrier;\n  property M.marker means it = it;\n  existence by computation(steps: 1);\n  uniqueness by computation(steps: 1);\nend;",
             72,
-            (172, 179),
             "it = it",
             SourcePropertyDefiniensTarget::AtomicFormula(SourceAtomicFormulaId::new(0)),
             vec![
                 (
                     SourcePropertyCorrectnessKind::Existence,
                     76,
-                    183,
-                    218,
-                    193,
-                    217,
                     "existence by computation(steps: 1);",
                 ),
                 (
                     SourcePropertyCorrectnessKind::Uniqueness,
                     80,
-                    221,
-                    257,
-                    232,
-                    256,
                     "uniqueness by computation(steps: 1);",
                 ),
             ],
         ),
         TestProfile::Equals => (
             52,
-            188,
             47,
             SourcePropertyImplementationStyle::Equals,
             "definition\n  let M be Task264Carrier;\n  property M.marker equals M.carrier;\nend;",
             51,
-            (173, 182),
             "M.carrier",
             SourcePropertyDefiniensTarget::Structure(SourceStructureTermId::new(0)),
             Vec::new(),
         ),
     };
+    let ranges = arena
+        .iter()
+        .map(|(_, node)| {
+            let SourceAnchor::Range(span) = node.anchor else {
+                panic!("Property fixture range")
+            };
+            span
+        })
+        .collect::<Vec<_>>();
     SourcePropertyImplementationHandoffInput {
         source_id: source,
         module_id: module,
         implementations: vec![SourcePropertyImplementationInput {
             shell,
             site: node_site(owner),
-            source_range: range(source, 108, end),
+            source_range: ranges[owner],
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
@@ -2041,8 +2126,8 @@ fn checker_input(
             binding: BindingId::new(0),
             written_type: SourceTypeApplicationId::new(0),
             site: node_site(parameter),
-            source_range: range(source, 121, 145),
-            declaration_range: range(source, 125, 126),
+            source_range: range(source, ranges[19].start, ranges[23].end),
+            declaration_range: ranges[20],
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
             spelling: "let M be Task264Carrier;".to_owned(),
@@ -2058,9 +2143,9 @@ fn checker_input(
                 node: TypedNodeId::new(owner),
                 role: TypeRole::new("source.property-implementation.target"),
             },
-            source_range: range(source, 157, 165),
-            subject_range: range(source, 157, 158),
-            name_range: range(source, 159, 165),
+            source_range: range(source, ranges[25].start, ranges[27].end),
+            subject_range: ranges[25],
+            name_range: ranges[27],
             spelling: "M.marker".to_owned(),
             return_type: SourceTypeStructureMemberId::new(1),
         }],
@@ -2069,7 +2154,7 @@ fn checker_input(
             ordinal: 0,
             target,
             site: node_site(definiens_node),
-            source_range: range(source, definiens_range.0, definiens_range.1),
+            source_range: ranges[definiens_node],
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
             spelling: definiens_spelling.to_owned(),
@@ -2078,17 +2163,15 @@ fn checker_input(
             .into_iter()
             .enumerate()
             .map(
-                |(ordinal, (kind, node, start, end, proof_start, proof_end, spelling))| {
-                    SourcePropertyCorrectnessInput {
-                        owner: SourcePropertyImplementationId::new(0),
-                        ordinal,
-                        kind,
-                        site: node_site(node),
-                        source_range: range(source, start, end),
-                        justification: SourceAnchor::Range(range(source, proof_start, proof_end)),
-                        recovery: SourcePropertyImplementationRecovery::Normal,
-                        spelling: spelling.to_owned(),
-                    }
+                |(ordinal, (kind, node, spelling))| SourcePropertyCorrectnessInput {
+                    owner: SourcePropertyImplementationId::new(0),
+                    ordinal,
+                    kind,
+                    site: node_site(node),
+                    source_range: ranges[node],
+                    justification: SourceAnchor::Range(ranges[node - 1]),
+                    recovery: SourcePropertyImplementationRecovery::Normal,
+                    spelling: spelling.to_owned(),
                 },
             )
             .collect(),
@@ -4138,6 +4221,431 @@ fn task_264_public_measured_body_layout_installs_replays_and_keeps_phase_owners(
             .with_source_property_implementation(projection.clone())
             .expect("actual measured Property installation");
         let resolved = assemble_empty(&typed).expect("actual measured Property final clone");
+        assert_eq!(
+            resolved.source_property_implementation(),
+            typed.source_property_implementation()
+        );
+        assert_eq!(
+            typed.initial_obligations(),
+            projection.initial_obligations()
+        );
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+    }
+}
+
+#[test]
+fn task_264_public_coherent_prefix_layout_and_legacy_disagreements() {
+    let mut positives = Vec::new();
+    let mut coherent_faults = Vec::new();
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let original = fixture(profile);
+        let base = unrelated_baseline(original.source);
+        let original_projection = original
+            .build(&base)
+            .expect("original public Property success");
+        let original_typed = original
+            .typed_base(base.clone())
+            .with_source_property_implementation(original_projection)
+            .expect("original public Property installation");
+        assemble_empty(&original_typed).expect("original public Property final clone");
+        let mut fallback = original.clone();
+        let nodes = original
+            .arena
+            .iter()
+            .map(|(id, old)| {
+                let mut node = old.clone();
+                if id.index() == 3 {
+                    node.anchor = SourceAnchor::Range(range(original.source, 36, 41));
+                }
+                node
+            })
+            .collect();
+        fallback.arena = TypedArena::try_new(original.arena.root(), nodes)
+            .expect("normal prefix-only layout with canonical carried ranges");
+        let lower = fallback.typed_base(base.clone());
+        assemble_empty(&lower).expect("actual lower final before fallback identity faults");
+        for fault in ["identity_path", "target_origin"] {
+            let mut bad = original_typed
+                .source_property_implementation()
+                .expect("original public installed Property")
+                .clone();
+            if fault == "identity_path" {
+                bad.carrier_identity.field.origin = SemanticOrigin::new(
+                    original.source,
+                    original.module.clone(),
+                    SourceAnchor::Range(range(original.source, 45, 66)),
+                    vec![4, 0, 11, 0, 18, 9],
+                );
+            } else {
+                bad.targets.rows[0].origin = bad.carrier_identity.field.origin.clone();
+            }
+            assert_eq!(
+                fallback.validate_handoff(
+                    &bad,
+                    original_typed.initial_obligations(),
+                    &fallback.arena
+                ),
+                Err(SourcePropertyImplementationError::InvalidArenaOwnership),
+                "canonical-range fallback {profile:?}/{fault}"
+            );
+        }
+        for case in [
+            "env_only",
+            "type_owned_only",
+            "pair_alias",
+            "late_arena",
+            "set_containment",
+            "coherent",
+        ] {
+            let mut f = original.clone();
+            let leaf_count = if profile == TestProfile::Means {
+                53
+            } else {
+                35
+            };
+            let prefix = [
+                [0, 10],
+                [14, 20],
+                [22, 36],
+                [37, 42],
+                [48, 53],
+                [55, 62],
+                [63, 65],
+                [67, 70],
+                [70, 71],
+                [77, 85],
+                [87, 93],
+                [94, 96],
+                [99, 102],
+                [102, 103],
+                [107, 110],
+                [110, 111],
+                [115, 118],
+                [118, 119],
+                [123, 133],
+            ];
+            let mut leaves = (0..leaf_count)
+                .map(|index| {
+                    let [start, end] = if case == "coherent" && index <= 18 {
+                        prefix[index]
+                    } else {
+                        let [start, end] = surface_range(profile, index);
+                        let shift = if case == "coherent" { 15 } else { 0 };
+                        [start + shift, end + shift]
+                    };
+                    range(f.source, start, end)
+                })
+                .collect::<Vec<_>>();
+            if case == "type_owned_only" {
+                leaves[4] = range(f.source, 46, 51);
+                leaves[5] = range(f.source, 52, 59);
+            } else if case == "late_arena" {
+                leaves[4] = range(f.source, 44, 49);
+            }
+            let nodes = original
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    let endpoints = match (profile, id.index()) {
+                        (TestProfile::Means, 53) | (TestProfile::Equals, 35) => Some((2, 2)),
+                        (TestProfile::Means, 54..=55) | (TestProfile::Equals, 36..=37) => {
+                            Some((7, 7))
+                        }
+                        (TestProfile::Means, 56) | (TestProfile::Equals, 38) => Some((4, 8)),
+                        (TestProfile::Means, 57..=58) | (TestProfile::Equals, 39..=40) => {
+                            Some((12, 12))
+                        }
+                        (TestProfile::Means, 59) | (TestProfile::Equals, 41) => Some((9, 13)),
+                        (TestProfile::Means, 60) | (TestProfile::Equals, 42) => Some((1, 15)),
+                        (TestProfile::Means, 61) | (TestProfile::Equals, 43) => Some((0, 17)),
+                        _ => None,
+                    };
+                    if id.index() < leaf_count {
+                        node.anchor = SourceAnchor::Range(leaves[id.index()]);
+                    } else if let Some((first, last)) = endpoints {
+                        let mut span = range(f.source, leaves[first].start, leaves[last].end);
+                        if first == 4 && matches!(case, "pair_alias" | "type_owned_only") {
+                            span.start = 46;
+                        } else if first == 4 && case == "late_arena" {
+                            span.start = 45;
+                        } else if first == 7 && case == "set_containment" {
+                            span = range(f.source, 61, 66);
+                        }
+                        node.anchor = SourceAnchor::Range(span);
+                    } else if case == "coherent" {
+                        let SourceAnchor::Range(old_range) = node.anchor else {
+                            panic!("scalar fixture")
+                        };
+                        node.anchor = SourceAnchor::Range(range(
+                            f.source,
+                            old_range.start + if old_range.start >= 108 { 15 } else { 0 },
+                            old_range.end + 15,
+                        ));
+                    }
+                    node
+                })
+                .collect();
+            f.arena = TypedArena::try_new(original.arena.root(), nodes)
+                .expect("normal prefix candidate Arena");
+            let origins = if case == "coherent" {
+                [
+                    range(f.source, 14, 111),
+                    range(f.source, 48, 71),
+                    range(f.source, 77, 103),
+                ]
+            } else {
+                [
+                    range(f.source, 13, 101),
+                    range(
+                        f.source,
+                        if matches!(case, "env_only" | "pair_alias") {
+                            46
+                        } else {
+                            45
+                        },
+                        66,
+                    ),
+                    range(f.source, 71, 94),
+                ]
+            };
+            let (env, identities) = resolver_env_with_mutation(
+                f.source,
+                f.module.clone(),
+                origins,
+                Task264ResolverEnvMutation::None,
+            );
+            f.env = env;
+            let shell = original.input.implementations[0].shell;
+            f.context = source_context(f.source, f.module.clone(), shell, profile, &f.arena);
+            f.source_type = source_type(
+                f.source,
+                f.module.clone(),
+                &identities,
+                &f.context,
+                &f.arena,
+                profile,
+                &f.env,
+            );
+            f.terms = primary_terms(f.source, f.module.clone(), profile, &f.context, &f.arena);
+            if profile == TestProfile::Means {
+                f.formula = Some(atomic_formula(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                ));
+            } else {
+                f.structure = Some(structure(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                    false,
+                ));
+            }
+            f.input = checker_input(
+                f.source,
+                f.module.clone(),
+                profile,
+                shell,
+                &identities,
+                &f.arena,
+            );
+            let lower = f.typed_base(base.clone());
+            let final_lower = assemble_empty(&lower)
+                .expect("actual complete lower final before upper prefix call");
+            assert_eq!(final_lower.source_type(), Some(&f.source_type));
+            let member = f.source_type.structure_members().iter().next().unwrap().1;
+            assert_eq!(
+                member.member_range(),
+                range(
+                    f.source,
+                    if case == "coherent" {
+                        48
+                    } else if matches!(case, "type_owned_only" | "pair_alias") {
+                        46
+                    } else {
+                        45
+                    },
+                    if case == "coherent" { 71 } else { 66 }
+                )
+            );
+            assert_eq!(
+                f.source_type
+                    .expressions()
+                    .get(SourceTypeExpressionId::new(1))
+                    .unwrap()
+                    .source_range(),
+                leaves[7]
+            );
+            assert_eq!(
+                f.env
+                    .definitions()
+                    .iter()
+                    .find(|row| row.id().index() == 1)
+                    .unwrap()
+                    .origin()
+                    .anchor(),
+                &SourceAnchor::Range(origins[1])
+            );
+            let result = f.build(&base);
+            if case != "coherent" {
+                let expected = match case {
+                    "env_only" | "pair_alias" => {
+                        SourcePropertyImplementationError::InvalidResolverTarget { index: 0 }
+                    }
+                    "type_owned_only" => SourcePropertyImplementationError::DependencyMismatch,
+                    "late_arena" | "set_containment" => {
+                        SourcePropertyImplementationError::InvalidArenaOwnership
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(result, Err(expected), "legacy {profile:?}/{case}");
+                continue;
+            }
+            for fault in ["child", "unowned19"] {
+                let mut bad = f.clone();
+                if fault == "child" {
+                    bad.input.parameters[0].spelling.replace_range(3..4, "\t");
+                } else {
+                    let nodes = f
+                        .arena
+                        .iter()
+                        .map(|(id, old)| {
+                            let mut node = old.clone();
+                            if id.index() == 19 {
+                                node.anchor = SourceAnchor::Range(range(
+                                    f.source,
+                                    leaves[19].start - 1,
+                                    leaves[19].end - 1,
+                                ));
+                            }
+                            node
+                        })
+                        .collect();
+                    bad.arena = TypedArena::try_new(f.arena.root(), nodes)
+                        .expect("normal unowned body leaf");
+                }
+                let lower = bad.typed_base(base.clone());
+                assemble_empty(&lower).expect("actual lower final before coherent fault");
+                coherent_faults.push((profile, fault, bad.build(&base)));
+            }
+            positives.push((profile, f, base.clone(), result));
+        }
+    }
+    assert_eq!(positives.len(), 2);
+    let failures = positives
+        .iter()
+        .filter_map(|(profile, _, _, result)| {
+            result
+                .as_ref()
+                .err()
+                .map(|error| format!("{profile:?}: {error:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        failures.is_empty(),
+        "coherent public prefix positives: {failures:?}"
+    );
+    for (profile, fault, result) in coherent_faults {
+        let expected = if fault == "child" {
+            SourcePropertyImplementationError::InvalidParameter { index: 0 }
+        } else {
+            SourcePropertyImplementationError::InvalidArenaOwnership
+        };
+        assert_eq!(result, Err(expected), "coherent {profile:?}/{fault}");
+    }
+    for (profile, f, base, result) in positives {
+        let projection = result.expect("all public coherent prefixes accepted");
+        assert_eq!(
+            projection,
+            f.build(&base).expect("deterministic public prefix replay")
+        );
+        let handoff = projection.handoff();
+        assert_eq!(
+            handoff.carrier_identity().field_origin().anchor(),
+            &SourceAnchor::Range(range(f.source, 48, 71))
+        );
+        assert_eq!(projection.base_initial_obligations(), &base);
+        assert_eq!(
+            projection.initial_obligations().len(),
+            base.len() + if profile == TestProfile::Means { 2 } else { 0 }
+        );
+        for ((_, row), expected) in handoff.correctness().iter().zip(&f.input.correctness) {
+            let obligation = projection
+                .initial_obligations()
+                .get(row.obligation())
+                .unwrap();
+            assert_eq!(obligation.source_range, expected.source_range);
+            assert_eq!(obligation.status, InitialObligationStatus::Pending);
+        }
+        for fault in ["identity_path", "target_origin"] {
+            let mut bad = handoff.clone();
+            if fault == "identity_path" {
+                bad.carrier_identity.field.origin = SemanticOrigin::new(
+                    f.source,
+                    f.module.clone(),
+                    SourceAnchor::Range(range(f.source, 48, 71)),
+                    vec![4, 0, 11, 0, 18, 9],
+                );
+            } else {
+                bad.targets.rows[0].origin = bad.carrier_identity.field.origin.clone();
+            }
+            assert_eq!(
+                f.validate_handoff(&bad, projection.initial_obligations(), &f.arena),
+                Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 }),
+                "replay {profile:?}/{fault}"
+            );
+        }
+        if profile == TestProfile::Equals {
+            let consumer = SourcePropertyEqualsSelectorIdentityProducer::build(
+                &f.env,
+                handoff.clone(),
+                f.terms.clone(),
+                f.structure.clone().unwrap(),
+            )
+            .expect("real coherent Equals consumer");
+            assert_eq!(consumer.property(), handoff);
+            let (unequal_env, _) = resolver_env_with_mutation(
+                f.source,
+                f.module.clone(),
+                [
+                    range(f.source, 14, 111),
+                    range(f.source, 49, 71),
+                    range(f.source, 77, 103),
+                ],
+                Task264ResolverEnvMutation::None,
+            );
+            assert_eq!(
+                SourcePropertyEqualsSelectorIdentityProducer::build(
+                    &unequal_env,
+                    handoff.clone(),
+                    f.terms.clone(),
+                    f.structure.clone().unwrap()
+                ),
+                Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+            );
+        }
+        let typed = f
+            .typed_base(base)
+            .with_source_property_implementation(projection.clone())
+            .expect("real coherent Property installation");
+        let resolved = assemble_empty(&typed).expect("real coherent Property final replay");
         assert_eq!(
             resolved.source_property_implementation(),
             typed.source_property_implementation()

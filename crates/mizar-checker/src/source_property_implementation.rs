@@ -1172,7 +1172,12 @@ fn validate_equals_selector_resolver(
             SymbolKind::Selector,
             DefinitionKind::Selector,
             member.spelling(),
-            range(property.source_id(), 45, 66),
+            match identity.field_origin().anchor() {
+                SourceAnchor::Range(span) => *span,
+                _ => {
+                    return Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity);
+                }
+            },
             &[4, 0, 11, 0, 18, 0],
         )
         || symbol.symbol() != identity.field_symbol()
@@ -1453,9 +1458,11 @@ impl SourcePropertyImplementationProducer {
         }
         validate_shape(&input)?;
         validate_baseline(base_initial_obligations)?;
-        let carrier_identity = validate_resolver_target(&input, env, source_type)?;
+        let carrier_identity = validate_resolver_target(&input, env, source_type, arena)?;
         validate_input(
             &input,
+            &carrier_identity,
+            &carrier_identity.property.origin,
             source_context,
             source_type,
             source_term,
@@ -1741,6 +1748,7 @@ fn validate_resolver_target(
     input: &SourcePropertyImplementationHandoffInput,
     env: &SymbolEnv,
     source_type: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
 ) -> Result<SourcePropertyCarrierIdentity, SourcePropertyImplementationError> {
     if env.symbols().len() != 3 || env.definitions().len() != 3 || env.contributions().len() != 1 {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
@@ -1786,45 +1794,6 @@ fn validate_resolver_target(
             &[4, 0, 11, 0, 19, 1][..],
         ),
     ];
-    if row.definition.index() != 2
-        || row.contribution.index() != 0
-        || contribution.module() != &input.module_id
-        || contribution.kind()
-            != &(ContributionKind::LocalSource {
-                source_id: input.source_id,
-            })
-        || contribution.effects().symbols().len() != 3
-        || contribution.effects().definitions().len() != 3
-        || rows
-            .iter()
-            .enumerate()
-            .any(|(index, (symbol, definition))| {
-                let (symbol_kind, definition_kind, spelling, source_range, path) = expected[index];
-                !resolver_identity_matches(
-                    symbol,
-                    definition,
-                    input.source_id,
-                    &input.module_id,
-                    row.contribution,
-                    symbol_kind,
-                    definition_kind,
-                    spelling,
-                    source_range,
-                    path,
-                ) || !contribution
-                    .effects()
-                    .symbols()
-                    .contains(definition.symbol())
-                    || !contribution
-                        .effects()
-                        .definitions()
-                        .contains(&definition.id())
-            })
-        || row.symbol != *rows[2].1.symbol()
-        || row.definition != rows[2].1.id()
-    {
-        return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
-    }
     let carrier_head_matches = matches!(
         source_type
             .expressions()
@@ -1836,7 +1805,75 @@ fn validate_resolver_target(
         }) if symbol == rows[0].1.symbol()
             && *contribution == rows[0].1.contribution()
     );
-    if !carrier_head_matches {
+    let normal_env = row.definition.index() == 2
+        && row.contribution.index() == 0
+        && contribution.module() == &input.module_id
+        && contribution.kind()
+            == &(ContributionKind::LocalSource {
+                source_id: input.source_id,
+            })
+        && contribution.effects().symbols().len() == 3
+        && contribution.effects().definitions().len() == 3
+        && rows
+            .iter()
+            .enumerate()
+            .all(|(index, (symbol, definition))| {
+                let SourceAnchor::Range(origin_range) = definition.origin().anchor() else {
+                    return false;
+                };
+                let (symbol_kind, definition_kind, spelling, _, path) = expected[index];
+                resolver_identity_matches(
+                    symbol,
+                    definition,
+                    input.source_id,
+                    &input.module_id,
+                    row.contribution,
+                    symbol_kind,
+                    definition_kind,
+                    spelling,
+                    *origin_range,
+                    path,
+                ) && contribution
+                    .effects()
+                    .symbols()
+                    .contains(definition.symbol())
+                    && contribution
+                        .effects()
+                        .definitions()
+                        .contains(&definition.id())
+            })
+        && row.symbol == *rows[2].1.symbol()
+        && row.definition == rows[2].1.id()
+        && carrier_head_matches;
+    let profile = match input.implementations[0].style {
+        SourcePropertyImplementationStyle::Means => Profile::Means,
+        SourcePropertyImplementationStyle::Equals => Profile::Equals,
+    };
+    let prefix = prefix_geometry(profile, input.source_id, arena).filter(|prefix| {
+        normal_env
+            && validate_source_type_profile(
+                profile,
+                input.source_id,
+                source_type,
+                None,
+                Some(prefix),
+            )
+            .is_ok()
+            && rows
+                .iter()
+                .zip([26, 22, 25])
+                .all(|((_, definition), index)| {
+                    definition.origin().anchor() == &SourceAnchor::Range(prefix[index])
+                })
+    });
+    if !normal_env
+        || rows.iter().enumerate().any(|(index, (_, definition))| {
+            let expected_range = prefix
+                .as_ref()
+                .map_or(expected[index].3, |prefix| prefix[[26, 22, 25][index]]);
+            definition.origin().anchor() != &SourceAnchor::Range(expected_range)
+        })
+    {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
     }
     let identities = rows
@@ -1898,6 +1935,37 @@ const MEANS_IMPLEMENTATION: &str = "definition\n  let M be Task264Carrier;\n  pr
 const EQUALS_IMPLEMENTATION: &str =
     "definition\n  let M be Task264Carrier;\n  property M.marker equals M.carrier;\nend;";
 
+const PREFIX_RANGES: &[[usize; 2]] = &[
+    [0, 10],
+    [13, 19],
+    [20, 34],
+    [35, 40],
+    [45, 50],
+    [51, 58],
+    [59, 61],
+    [62, 65],
+    [65, 66],
+    [71, 79],
+    [80, 86],
+    [87, 89],
+    [90, 93],
+    [93, 94],
+    [97, 100],
+    [100, 101],
+    [102, 105],
+    [105, 106],
+    [108, 118],
+    [20, 34],
+    [62, 65],
+    [62, 65],
+    [45, 66],
+    [90, 93],
+    [90, 93],
+    [71, 94],
+    [13, 101],
+    [0, 106],
+];
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Profile {
     Means,
@@ -1908,6 +1976,8 @@ enum Profile {
 #[allow(clippy::too_many_arguments)]
 fn validate_input(
     input: &SourcePropertyImplementationHandoffInput,
+    carrier_identity: &SourcePropertyCarrierIdentity,
+    target_origin: &SemanticOrigin,
     source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
     source_term: &SourcePrimaryTermHandoff,
@@ -1916,7 +1986,7 @@ fn validate_input(
     set_terms: Option<&SourceSetTermHandoff>,
     atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
     arena: &TypedArena,
-) -> Result<(), SourcePropertyImplementationError> {
+) -> Result<[SourceRange; 28], SourcePropertyImplementationError> {
     let implementation = &input.implementations[0];
     let (
         profile,
@@ -1938,10 +2008,26 @@ fn validate_input(
             "M.carrier",
         ),
     };
+    let actual_prefix = prefix_geometry(profile, input.source_id, arena);
+    let prefix = actual_prefix.filter(|prefix| {
+        validate_source_type_profile(profile, input.source_id, source_type, None, Some(prefix))
+            .is_ok()
+            && validate_carrier_identity(
+                carrier_identity,
+                input,
+                target_origin,
+                source_type,
+                Some(prefix),
+            )
+            .is_ok()
+    });
+    let header = prefix
+        .as_ref()
+        .map_or(range(input.source_id, 108, 118), |prefix| prefix[18]);
     if implementation.shell.index() != 4
         || implementation.site != TypedSiteRef::Node(TypedNodeId::new(owner_node))
         || implementation.source_range.source_id != input.source_id
-        || implementation.source_range.start != 108
+        || implementation.source_range.start != header.start
         || implementation.source_ordinal != 0
         || implementation.context != BindingContextId::new(1)
         || implementation.recovery != SourcePropertyImplementationRecovery::Normal
@@ -1958,7 +2044,7 @@ fn validate_input(
         None,
     )
     .ok_or(SourcePropertyImplementationError::InvalidImplementation { index: 0 })?;
-    if body[0] != range(input.source_id, 108, 118) {
+    if body[0] != header {
         return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
     }
     let expected_ranges = [implementation.source_range, body[2], body[4]];
@@ -2009,7 +2095,8 @@ fn validate_input(
                 profile,
                 input.source_id,
                 source_type,
-                declaration.written_type_range,
+                Some(declaration.written_type_range),
+                prefix.as_ref(),
             )
             .is_ok()
             && (declaration.declaration_range != expected_ranges[1]
@@ -2040,7 +2127,13 @@ fn validate_input(
     {
         return Err(SourcePropertyImplementationError::InvalidParameter { index: 0 });
     }
-    validate_source_type_profile(profile, input.source_id, source_type, expected_ranges[2])?;
+    validate_source_type_profile(
+        profile,
+        input.source_id,
+        source_type,
+        Some(expected_ranges[2]),
+        prefix.as_ref(),
+    )?;
 
     let target = &input.targets[0];
     let expected_target_site = TypedSiteRef::Role {
@@ -2107,6 +2200,24 @@ fn validate_input(
     )?;
     validate_correctness(profile, input, &body)?;
     validate_arena(profile, input.source_id, arena)?;
+    let actual_prefix =
+        actual_prefix.ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
+    validate_source_type_profile(
+        profile,
+        input.source_id,
+        source_type,
+        Some(expected_ranges[2]),
+        Some(&actual_prefix),
+    )
+    .map_err(|_| SourcePropertyImplementationError::InvalidArenaOwnership)?;
+    if prefix.is_none()
+        && actual_prefix
+            .iter()
+            .zip(PREFIX_RANGES)
+            .any(|(actual, [start, end])| *actual != range(input.source_id, *start, *end))
+    {
+        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+    }
     for (index, span) in body.iter().enumerate() {
         if arena
             .node(TypedNodeId::new(index + 18))
@@ -2115,7 +2226,7 @@ fn validate_input(
             return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
         }
     }
-    Ok(())
+    Ok(actual_prefix)
 }
 
 fn local_spelling_matches(
@@ -2271,9 +2382,10 @@ fn validate_source_type_profile(
     profile: Profile,
     source: SourceId,
     handoff: &SourceTypeApplicationHandoff,
-    parameter_type_range: SourceRange,
+    parameter_type_range: Option<SourceRange>,
+    prefix: Option<&[SourceRange; 28]>,
 ) -> Result<(), SourcePropertyImplementationError> {
-    if parameter_type_range.source_id != source
+    if parameter_type_range.is_some_and(|span| span.source_id != source)
         || handoff.applications().len() != 1
         || handoff.expressions().len() != 3
         || !handoff.arguments().is_empty()
@@ -2297,15 +2409,24 @@ fn validate_source_type_profile(
         Profile::Means => (63, 64, [56, 59]),
         Profile::Equals => (45, 46, [38, 41]),
     };
-    for (index, (site, head_site, start, end)) in [
+    for (index, (site, head_site, expected_range)) in [
+        (application_node, head_node, parameter_type_range),
         (
-            application_node,
-            head_node,
-            parameter_type_range.start,
-            parameter_type_range.end,
+            member_nodes[0] - 1,
+            member_nodes[0] - 2,
+            Some(prefix.map_or(
+                range(source, PREFIX_RANGES[7][0], PREFIX_RANGES[7][1]),
+                |prefix| prefix[7],
+            )),
         ),
-        (member_nodes[0] - 1, member_nodes[0] - 2, 62, 65),
-        (member_nodes[1] - 1, member_nodes[1] - 2, 90, 93),
+        (
+            member_nodes[1] - 1,
+            member_nodes[1] - 2,
+            Some(prefix.map_or(
+                range(source, PREFIX_RANGES[12][0], PREFIX_RANGES[12][1]),
+                |prefix| prefix[12],
+            )),
+        ),
     ]
     .into_iter()
     .enumerate()
@@ -2328,10 +2449,10 @@ fn validate_source_type_profile(
         let spelling = if index == 0 { "Task264Carrier" } else { "set" };
         if expression.source_id() != source
             || expression.site() != &TypedSiteRef::Node(TypedNodeId::new(site))
-            || expression.source_range() != range(source, start, end)
+            || expected_range.is_some_and(|span| expression.source_range() != span)
             || expression.spelling() != spelling
             || expression.head_site() != &TypedSiteRef::Node(TypedNodeId::new(head_site))
-            || expression.head_range() != range(source, start, end)
+            || expected_range.is_some_and(|span| expression.head_range() != span)
             || expression.head_spelling() != spelling
             || expression.form() != SourceTypeApplicationForm::Bare
             || expression.recovery() != NodeRecoveryState::Normal
@@ -2340,16 +2461,31 @@ fn validate_source_type_profile(
             return Err(SourcePropertyImplementationError::DependencyMismatch);
         }
     }
-    for (index, (site, start, end)) in [(member_nodes[0], 45, 66), (member_nodes[1], 71, 94)]
-        .into_iter()
-        .enumerate()
+    for (index, (site, expected_range)) in [
+        (
+            member_nodes[0],
+            prefix.map_or(
+                range(source, PREFIX_RANGES[22][0], PREFIX_RANGES[22][1]),
+                |prefix| prefix[22],
+            ),
+        ),
+        (
+            member_nodes[1],
+            prefix.map_or(
+                range(source, PREFIX_RANGES[25][0], PREFIX_RANGES[25][1]),
+                |prefix| prefix[25],
+            ),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
     {
         let member = handoff
             .structure_members()
             .get(SourceTypeStructureMemberId::new(index))
             .ok_or(SourcePropertyImplementationError::DependencyMismatch)?;
         if member.member_site() != &TypedSiteRef::Node(TypedNodeId::new(site))
-            || member.member_range() != range(source, start, end)
+            || member.member_range() != expected_range
             || member.source_ordinal() != index
             || member.root() != SourceTypeExpressionId::new(index + 1)
         {
@@ -2630,52 +2766,114 @@ fn validate_correctness(
     }
 }
 
+fn prefix_geometry(
+    profile: Profile,
+    source: SourceId,
+    arena: &TypedArena,
+) -> Option<[SourceRange; 28]> {
+    let atoms = [
+        "definition",
+        "struct",
+        "Task264Carrier",
+        "where",
+        "field",
+        "carrier",
+        "->",
+        "set",
+        ";",
+        "property",
+        "marker",
+        "->",
+        "set",
+        ";",
+        "end",
+        ";",
+        "end",
+        ";",
+        "definition",
+    ];
+    let leaf_count = match profile {
+        Profile::Means => 53,
+        Profile::Equals => 35,
+    };
+    let mut ranges = [range(source, 0, 0); 28];
+    for index in 0..28 {
+        let node_index = if index < 19 {
+            index
+        } else {
+            leaf_count + index - 19
+        };
+        let row = arena.node(TypedNodeId::new(node_index))?;
+        let SourceAnchor::Range(actual) = row.anchor else {
+            return None;
+        };
+        let expected_kind = match index {
+            20 | 23 => "source.type.head",
+            21 | 24 => "source.type.expression",
+            22 | 25 => "source.definition.structure.member",
+            26 => "source.definition.structure",
+            _ => "source.surface.unowned",
+        };
+        let expected_range = if index < 19 {
+            if actual.source_id != source
+                || actual.end.checked_sub(actual.start) != Some(atoms[index].len())
+            {
+                return None;
+            }
+            if index > 0 {
+                let words = atoms[index].as_bytes()[0].is_ascii_alphanumeric()
+                    && atoms[index - 1].as_bytes()[0].is_ascii_alphanumeric();
+                if ranges[index - 1].end > actual.start
+                    || (words && ranges[index - 1].end == actual.start)
+                {
+                    return None;
+                }
+            }
+            actual
+        } else {
+            let (first, last) = [
+                (2, 2),
+                (7, 7),
+                (7, 7),
+                (4, 8),
+                (12, 12),
+                (12, 12),
+                (9, 13),
+                (1, 15),
+                (0, 17),
+            ][index - 19];
+            range(source, ranges[first].start, ranges[last].end)
+        };
+        if row.kind.as_str() != expected_kind
+            || row.anchor != SourceAnchor::Range(expected_range)
+            || row.resolved_node.is_some()
+            || row.typing != TypingState::Unknown
+            || row.recovery != NodeRecoveryState::Normal
+            || row.links.context != Some(LocalTypeContextId::new(1))
+            || row.links.type_entry.is_some()
+            || !row.links.facts.is_empty()
+            || !row.links.coercions.is_empty()
+            || !row.links.initial_obligations.is_empty()
+            || !row.links.diagnostics.is_empty()
+        {
+            return None;
+        }
+        ranges[index] = actual;
+    }
+    Some(ranges)
+}
+
 fn validate_arena(
     profile: Profile,
     source: SourceId,
     arena: &TypedArena,
 ) -> Result<(), SourcePropertyImplementationError> {
-    const PREFIX_RANGES: &[[usize; 2]] = &[
-        [0, 10],
-        [13, 19],
-        [20, 34],
-        [35, 40],
-        [45, 50],
-        [51, 58],
-        [59, 61],
-        [62, 65],
-        [65, 66],
-        [71, 79],
-        [80, 86],
-        [87, 89],
-        [90, 93],
-        [93, 94],
-        [97, 100],
-        [100, 101],
-        [102, 105],
-        [105, 106],
-        [108, 118],
-        [20, 34],
-        [62, 65],
-        [62, 65],
-        [45, 66],
-        [90, 93],
-        [90, 93],
-        [71, 94],
-        [13, 101],
-        [0, 106],
-    ];
+    prefix_geometry(profile, source, arena)
+        .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
     let rows: &[(usize, &str)] = match profile {
         Profile::Means => &[
-            (54, "source.type.head"),
-            (55, "source.type.expression"),
-            (57, "source.type.head"),
-            (58, "source.type.expression"),
             (64, "source.type.head"),
             (63, "source.type.expression"),
-            (56, "source.definition.structure.member"),
-            (59, "source.definition.structure.member"),
-            (60, "source.definition.structure"),
             (65, "source.definition.property-implementation.parameter"),
             (66, "source.term.it"),
             (68, "source.term.it"),
@@ -2687,15 +2885,8 @@ fn validate_arena(
             (84, "source.module"),
         ],
         Profile::Equals => &[
-            (36, "source.type.head"),
-            (37, "source.type.expression"),
-            (39, "source.type.head"),
-            (40, "source.type.expression"),
             (46, "source.type.head"),
             (45, "source.type.expression"),
-            (38, "source.definition.structure.member"),
-            (41, "source.definition.structure.member"),
-            (42, "source.definition.structure"),
             (47, "source.definition.property-implementation.parameter"),
             (31, "source.term.structure.member.selector"),
             (48, "source.term.variable-reference"),
@@ -2721,16 +2912,13 @@ fn validate_arena(
     .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
     let leaf_count = 18 + reference.len();
     for (id, row) in arena.iter() {
+        if id.index() < 19 || (leaf_count..leaf_count + 9).contains(&id.index()) {
+            continue;
+        }
         let SourceAnchor::Range(actual) = &row.anchor else {
             return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
         };
-        let expected_range = if id.index() < 19 {
-            let [start, end] = PREFIX_RANGES[id.index()];
-            range(source, start, end)
-        } else if (leaf_count..leaf_count + 9).contains(&id.index()) {
-            let [start, end] = PREFIX_RANGES[19 + id.index() - leaf_count];
-            range(source, start, end)
-        } else if id.index() < leaf_count {
+        let expected_range = if id.index() < leaf_count {
             let atom = reference[id.index() - 18];
             let previous_atom = reference[id.index() - 19];
             let SourceAnchor::Range(previous) = &arena
@@ -2922,8 +3110,10 @@ fn validate_handoff(
             .collect(),
     };
     validate_shape(&input)?;
-    validate_input(
+    let prefix = validate_input(
         &input,
+        &handoff.carrier_identity,
+        &handoff.targets.rows[0].origin,
         source_context,
         source_type,
         source_term,
@@ -2933,16 +3123,24 @@ fn validate_handoff(
         atomic_formulas,
         arena,
     )?;
-    validate_carrier_identity(handoff, source_type)?;
+    validate_carrier_identity(
+        &handoff.carrier_identity,
+        &input,
+        &handoff.targets.rows[0].origin,
+        source_type,
+        Some(&prefix),
+    )?;
     validate_obligations(handoff, obligations)
 }
 
 fn validate_carrier_identity(
-    handoff: &SourcePropertyImplementationHandoff,
+    identity: &SourcePropertyCarrierIdentity,
+    input: &SourcePropertyImplementationHandoffInput,
+    target_origin: &SemanticOrigin,
     source_type: &SourceTypeApplicationHandoff,
+    prefix: Option<&[SourceRange; 28]>,
 ) -> Result<(), SourcePropertyImplementationError> {
-    let identity = &handoff.carrier_identity;
-    let target = &handoff.targets.rows[0];
+    let target = &input.targets[0];
     let contribution = identity.structure.contribution;
     let distinct_symbols = identity.structure.symbol != identity.field.symbol
         && identity.structure.symbol != identity.property.symbol
@@ -2963,35 +3161,35 @@ fn validate_carrier_identity(
         || contribution.index() != 0
         || identity.field.contribution != contribution
         || identity.property.contribution != contribution
-        || identity.structure.symbol.module() != &handoff.module_id
-        || identity.field.symbol.module() != &handoff.module_id
-        || identity.property.symbol.module() != &handoff.module_id
+        || identity.structure.symbol.module() != &input.module_id
+        || identity.field.symbol.module() != &input.module_id
+        || identity.property.symbol.module() != &input.module_id
         || !distinct_symbols
         || !normal_origin(
             &identity.structure.origin,
-            handoff.source_id,
-            &handoff.module_id,
-            range(handoff.source_id, 13, 101),
+            input.source_id,
+            &input.module_id,
+            prefix.map_or(range(input.source_id, 13, 101), |prefix| prefix[26]),
             &[4, 0, 11, 0],
         )
         || !normal_origin(
             &identity.field.origin,
-            handoff.source_id,
-            &handoff.module_id,
-            range(handoff.source_id, 45, 66),
+            input.source_id,
+            &input.module_id,
+            prefix.map_or(range(input.source_id, 45, 66), |prefix| prefix[22]),
             &[4, 0, 11, 0, 18, 0],
         )
         || !normal_origin(
             &identity.property.origin,
-            handoff.source_id,
-            &handoff.module_id,
-            range(handoff.source_id, 71, 94),
+            input.source_id,
+            &input.module_id,
+            prefix.map_or(range(input.source_id, 71, 94), |prefix| prefix[25]),
             &[4, 0, 11, 0, 19, 1],
         )
         || target.symbol != identity.property.symbol
         || target.definition != identity.property.definition
         || target.contribution != identity.property.contribution
-        || target.origin != identity.property.origin
+        || target_origin != &identity.property.origin
         || !structure_head_matches
     {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });

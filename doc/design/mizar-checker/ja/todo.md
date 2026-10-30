@@ -38,6 +38,7 @@
 - [x] [Mode Type layout](../../task_contracts/ja/CHECKER-MODE-TYPE-LAYOUT.md).
 - [x] [Property Implementation references](../../task_contracts/ja/CHECKER-PROPERTY-IMPLEMENTATION-REFERENCE.md).
 - [x] [Property body layout](../../task_contracts/ja/CHECKER-PROPERTY-BODY-LAYOUT.md).
+- [x] [Property coherent prefix layout](../../task_contracts/ja/CHECKER-PROPERTY-PREFIX-LAYOUT.md).
 
 ## 状態の凡例
 
