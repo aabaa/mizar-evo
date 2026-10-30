@@ -1515,6 +1515,161 @@ fn task264_parameter_core_context_is_exact_for_means_and_equals() {
 }
 
 #[test]
+fn task264_parameter_core_context_joins_uniform_domain_prefix_ranges() {
+    use mizar_core::{
+        core_ir::{CoreProvenance, CoreProvenancePhase, CoreSourceRef},
+        elaborator::{
+            SourcePropertyParameterCoreContextError as ParameterError,
+            SourcePropertyParameterCoreContextProducer as ParameterProducer,
+        },
+    };
+
+    let mut prepared = Vec::new();
+    for (profile_index, (profile, canonical)) in [
+        ("means", SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT),
+        ("equals", SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        for (layout, source, declaration, written_type) in [
+            (
+                "leading_lf",
+                format!("\n{canonical}"),
+                (126, 127),
+                (131, 145),
+            ),
+            (
+                "first_definition_gap_comment",
+                canonical.replacen("definition\n", "definition\n:: metamorphics\n", 1),
+                (141, 142),
+                (146, 160),
+            ),
+        ] {
+            let (ast, module, shells, symbols, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(
+                    &source,
+                    264_940 + profile_index,
+                );
+            assert_eq!(diagnostics, 0, "{profile}/{layout}");
+            let output = source_property_implementation_output(
+                &ast, module, &shells, &symbols, &source,
+            )
+            .expect("Task264 parameter prefix route")
+            .unwrap_or_else(|error| panic!("{profile}/{layout}: {error}"));
+            let selector = task264_selector_type_handoff(&output);
+            let source_context = output
+                .typed_ast
+                .source_context()
+                .expect("Task264 parameter SourceContext")
+                .clone();
+            let (declaration_id, row) = source_context
+                .declarations()
+                .iter()
+                .next()
+                .expect("Task264 parameter declaration");
+            let expected_declaration = mizar_session::SourceRange {
+                source_id: source_context.source_id(),
+                start: declaration.0,
+                end: declaration.1,
+            };
+            let expected_written_type = mizar_session::SourceRange {
+                source_id: source_context.source_id(),
+                start: written_type.0,
+                end: written_type.1,
+            };
+            assert_eq!(declaration_id.index(), 0);
+            assert_eq!(row.declaration_range, expected_declaration, "{profile}/{layout}");
+            assert_eq!(row.written_type_range, expected_written_type, "{profile}/{layout}");
+            assert_eq!(source.get(declaration.0..declaration.1), Some("M"), "{profile}/{layout}");
+            assert_eq!(source.get(written_type.0..written_type.1), Some("Task264Carrier"), "{profile}/{layout}");
+            assert_eq!(source_context.source_id(), ast.source_id, "{profile}/{layout}");
+            let domain = selector.source_type().expressions().get(selector.domain().root()).unwrap();
+            assert_eq!(domain.source_range(), expected_written_type, "{profile}/{layout}");
+            assert_eq!(domain.source_id(), source_context.source_id(), "{profile}/{layout}");
+            assert_eq!(selector.source_id(), source_context.source_id(), "{profile}/{layout}");
+            assert_eq!(selector.module_id(), source_context.module_id(), "{profile}/{layout}");
+            prepared.push((profile, layout, selector, source_context));
+        }
+    }
+
+    let outcomes = prepared
+        .iter()
+        .map(|(_, _, selector, source_context)| {
+            ParameterProducer::build(selector.clone(), source_context.clone())
+        })
+        .collect::<Vec<_>>();
+
+    for (left, right) in [(0, 1), (2, 3)] {
+        let (_, left_layout, left_selector, left_context) = &prepared[left];
+        let (_, right_layout, right_selector, right_context) = &prepared[right];
+        for (selector, context) in [
+            (left_selector.clone(), right_context.clone()),
+            (right_selector.clone(), left_context.clone()),
+        ] {
+            assert_eq!(selector.source_id(), context.source_id());
+            assert_eq!(selector.module_id(), context.module_id());
+            assert_eq!(
+                ParameterProducer::build(selector, context)
+                    .expect_err("same-environment mixed domain layout must fail closed"),
+                ParameterError::InvalidSourceContext,
+                "{left_layout}/{right_layout}"
+            );
+        }
+    }
+
+    assert_eq!(outcomes.len(), 4);
+    assert!(
+        outcomes.iter().all(|outcome| outcome.is_ok()),
+        "all four measured parameter domain layouts must succeed: {outcomes:?}"
+    );
+    for ((profile, layout, selector, source_context), outcome) in prepared.iter().zip(&outcomes) {
+        let handoff = outcome.as_ref().expect("Task264 parameter prefix handoff");
+        assert_eq!(handoff.selector_context(), selector, "{profile}/{layout}");
+        assert_eq!(handoff.source_context(), source_context, "{profile}/{layout}");
+        assert_eq!(handoff.context(), handoff.source_bindings().context());
+        assert_eq!(handoff.source_bindings().binding_env(), source_context.binding_env());
+        let replay = ParameterProducer::build(selector.clone(), source_context.clone())
+            .expect("fresh Task264 parameter replay");
+        assert_eq!(&replay, handoff, "{profile}/{layout}");
+
+        let association = handoff.association();
+        assert_eq!(association.parameter().index(), 0);
+        assert_eq!(association.binding().index(), 0);
+        assert_eq!(association.core_var().index(), 0);
+        let variable = handoff.source_bindings().variables().get(association.binding()).unwrap();
+        assert_eq!(variable.binding(), association.binding());
+        assert_eq!(variable.core_var(), association.core_var());
+        let declaration = source_context.declarations().iter().next().unwrap().1;
+        let source_record = handoff.context().binder_sources().get(association.core_var()).unwrap();
+        let expected_source = CoreSourceRef::direct(declaration.declaration_range).with_provenance(vec![
+            CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "source-binding-core-variable-v1.binding.0",
+            ),
+        ]);
+        assert_eq!(source_record.source, expected_source, "{profile}/{layout}");
+        assert_eq!(source_record.provenance.as_slice(), expected_source.provenance.as_slice());
+        let binder = handoff.context().binder_context();
+        assert!(binder.frames.is_empty());
+        assert!(binder.free_variables.contains(&association.core_var()));
+        assert_eq!(binder.variable_classes.get(&association.core_var()), Some(&mizar_core::binder_normalization::NormalizedVarClass::Free));
+        assert_eq!(binder.variable_roles.get(&association.core_var()).unwrap().as_str(), "definition-parameter");
+        assert_eq!(binder.variable_sorts.get(&association.core_var()), Some(&mizar_core::binder_normalization::NormalizedVarSort::Term));
+        assert_eq!(handoff.context().binder_type_facts().get(&association.core_var()), Some(&Vec::new()));
+        assert!(handoff.context().source_map().term_sources.is_empty());
+        assert!(handoff.context().source_map().formula_sources.is_empty());
+        assert!(handoff.context().source_map().definition_sources.is_empty());
+        assert!(handoff.context().source_map().proof_sources.is_empty());
+        assert!(handoff.context().source_map().algorithm_sources.is_empty());
+        assert!(handoff.context().source_map().obligation_sources.is_empty());
+        assert!(handoff.context().dependency_summaries().is_empty());
+        assert!(handoff.context().generated_origins().table().is_empty());
+        assert!(handoff.context().diagnostics().is_empty());
+    }
+}
+
+#[test]
 fn task264_parameter_core_context_rejects_mixed_and_foreign_transactions() {
     let shared_ordinal = 264_900;
     let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(

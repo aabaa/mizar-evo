@@ -870,6 +870,7 @@ Replayは33LB valueをdeterministically rebuildしてcomplete compareする。Re
 carrier item 0を維持し、free term variable 0/checker declaration source/empty type-factだけを
 追加する。Binder frame、normalized type、term/formula/`it`/definition/route/diagnostic/
 obligation/semantic creditは作らない。
+Declaration written-typeの完全rangeは検証済みselector domainのrangeと一致させる。
 
 ## Task 35E264 Task264 equals selector term seeds
 

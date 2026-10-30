@@ -6339,6 +6339,11 @@ fn validate_property_parameter_source_context(
         return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
     }
 
+    let domain = selector_context
+        .source_type()
+        .expressions()
+        .get(selector_context.domain().root())
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
     let item = source_context
         .items()
         .get(SourceItemId::new(0))
@@ -6372,8 +6377,7 @@ fn validate_property_parameter_source_context(
         || declaration.source_ordinal != parameter.ordinal()
         || declaration.spelling != "M"
         || declaration.declaration_range != parameter.declaration_range()
-        || declaration.written_type_range.start != 130
-        || declaration.written_type_range.end != 144
+        || declaration.written_type_range != domain.source_range()
         || declaration.site != *parameter.site()
         || declaration.binding_context != parameter.context()
         || declaration.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)

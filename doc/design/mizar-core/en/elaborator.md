@@ -1003,6 +1003,7 @@ compares it completely. The resulting context keeps carrier item 0 and adds
 only free term variable 0, its checker declaration-source record, and an empty
 type-fact entry. No binder frame, normalized type, term, formula, `it`,
 definition, route, diagnostic, obligation, or semantic credit is created.
+The complete declaration written-type range must equal the validated selector-domain range.
 
 ## Task 35E264 Task264 Equals Selector Term Seeds
 
