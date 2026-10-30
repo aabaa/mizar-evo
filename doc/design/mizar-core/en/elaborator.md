@@ -248,6 +248,11 @@ definition block to multiple semantic owners.
 
 ### Core-33 Task260 functor item context
 
+Current coordinates use checked d=source-item end−261 and require source-item start<=d.
+Only profile ranges translate by d; source identity and all non-coordinate checks remain.
+Arithmetic/geometry failures keep static InvalidCheckerOwner within the existing owner phase.
+This scalar transport supplies no source authentication, semantic ownership or installation credit.
+
 The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the Task-260-specific two-row Core-context association, immutable handoff,
 error surface, producer boundary, and detailed invariants. Implementation,

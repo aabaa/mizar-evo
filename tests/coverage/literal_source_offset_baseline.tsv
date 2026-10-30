@@ -12,7 +12,7 @@ crates/mizar-checker/src/source_structure_definition.rs	2
 crates/mizar-checker/src/source_term.rs	7
 crates/mizar-checker/src/source_type.rs	17
 crates/mizar-checker/src/type_checker.rs	1
-crates/mizar-core/src/elaborator.rs	21
+crates/mizar-core/src/elaborator.rs	19
 crates/mizar-lsp/src/server.rs	1
 crates/mizar-parser/src/grammar.rs	1
 crates/mizar-parser/src/module.rs	1

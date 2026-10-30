@@ -2572,6 +2572,12 @@ fn validate_functor_checker_owner(
         .items()
         .get(SourceItemId::new(0))
         .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    // All remaining profile endpoints are at most 261, bounding each translated addition.
+    let d = source_item
+        .source_range
+        .end
+        .checked_sub(261)
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
     if source_item.id != SourceItemId::new(0)
         || source_item.role != SourceItemRole::DefinitionBlock
         || source_item.shell_ordinal != 0
@@ -2585,12 +2591,7 @@ fn validate_functor_checker_owner(
         || source_item.predecessor.is_some()
         || source_item.binding_context != BindingContextId::new(1)
         || source_item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
-        || source_item.source_range
-            != (SourceRange {
-                source_id: source_context.source_id(),
-                start: 0,
-                end: 261,
-            })
+        || source_item.source_range.start > d
         || source_item.site
             != mizar_checker::typed_ast::TypedSiteRef::Node(
                 mizar_checker::typed_ast::TypedNodeId::new(104),
@@ -2748,8 +2749,8 @@ fn validate_functor_checker_owner(
     for (index, definition) in definitions.into_iter().enumerate() {
         let expected_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_ranges[index].0,
-            end: expected_ranges[index].1,
+            start: d + expected_ranges[index].0,
+            end: d + expected_ranges[index].1,
         };
         let expected_origin_path = [4_u32, 0, 9, index as u32];
         if definition.id() != SourceFunctorDefinitionId::new(index)
@@ -2787,13 +2788,13 @@ fn validate_functor_checker_owner(
             .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
         let source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: parameter_ranges[index].0,
-            end: parameter_ranges[index].1,
+            start: d + parameter_ranges[index].0,
+            end: d + parameter_ranges[index].1,
         };
         let declaration_range = SourceRange {
             source_id: source_context.source_id(),
-            start: parameter_ranges[index].2,
-            end: parameter_ranges[index].3,
+            start: d + parameter_ranges[index].2,
+            end: d + parameter_ranges[index].3,
         };
         if parameter.id().index() != index
             || parameter.ordinal() != index
@@ -2829,8 +2830,8 @@ fn validate_functor_checker_owner(
         || guard.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 45,
-                end: 58,
+                start: d + 45,
+                end: d + 58,
             })
         || guard.context() != BindingContextId::new(1)
         || guard.recovery() != SourceFunctorDefinitionRecovery::Normal
@@ -2862,8 +2863,8 @@ fn validate_functor_checker_owner(
             || definiens.source_range()
                 != (SourceRange {
                     source_id: source_context.source_id(),
-                    start: definiens_ranges[index].0,
-                    end: definiens_ranges[index].1,
+                    start: d + definiens_ranges[index].0,
+                    end: d + definiens_ranges[index].1,
                 })
             || definiens.context() != BindingContextId::new(1)
             || definiens.recovery() != SourceFunctorDefinitionRecovery::Normal
@@ -2886,13 +2887,13 @@ fn validate_functor_checker_owner(
     for (index, (_, correctness)) in checker_owner.correctness().iter().enumerate() {
         let source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: correctness_ranges[index].0,
-            end: correctness_ranges[index].1,
+            start: d + correctness_ranges[index].0,
+            end: d + correctness_ranges[index].1,
         };
         let justification = SourceRange {
             source_id: source_context.source_id(),
-            start: correctness_ranges[index].2,
-            end: correctness_ranges[index].3,
+            start: d + correctness_ranges[index].2,
+            end: d + correctness_ranges[index].3,
         };
         if correctness.id().index() != index
             || correctness.owner() != SourceFunctorDefinitionId::new(1)

@@ -226,6 +226,11 @@ closed。Field/installerを追加せず、one definition blockをmultiple semant
 
 ### Core-33 Task260 functor item context
 
+現在の座標はchecked d=source-item終端−261を使い、source-item開始<=dを要求する。
+profile rangeだけをdで移動し、source identityと非座標検査は全て維持する。
+算術・geometry不整合は従来owner段階のstatic InvalidCheckerOwnerのままとする。
+このscalar transportはsource認証、意味論的owner帰属、installation creditを与えない。
+
 完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-context association、immutable handoff、error surface、producer boundary と詳細 invariant を所有する。Implementation/verification/exact task-only commit `f8e9fc21` は complete。下記 public enum inventory に `SourceFunctorCoreContextError` を含める。これは zero-semantic/zero-credit の private-probe slice であり、production install、`CoreIr`、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
 
 ### Core-33 Task261 attribute item context

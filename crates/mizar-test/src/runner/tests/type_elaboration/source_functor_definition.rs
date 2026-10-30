@@ -2579,6 +2579,212 @@ fn task260_core_item_context_association_is_exact_and_deterministic() {
 }
 
 #[test]
+fn task260_core_item_context_transports_actual_prefix_geometry() {
+    let intertoken = SOURCE_FUNCTOR_DEFINITION_TEXT
+        .replacen("definition", "definition :: metamorphic\n", 1);
+    let cases = [
+        ("leading_line", format!("\n{SOURCE_FUNCTOR_DEFINITION_TEXT}"), 1, 1),
+        ("intertoken", intertoken.clone(), 0, 16),
+        ("mixed_prefix_intertoken", format!(" \t\n{intertoken}"), 3, 19),
+    ];
+    let mut outcomes = Vec::new();
+    for (ordinal, (case, source, m, d)) in cases.into_iter().enumerate() {
+        assert_eq!(source.len(), 262 + d, "{case}");
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 260_220 + ordinal);
+        assert_eq!(diagnostics, 0, "{case} native Frontend diagnostics");
+        assert_eq!(ast.nodes().len(), 108, "{case} genuine source layout");
+        let output = source_functor_definition_output(&ast, module, &shells, &symbols, &source)
+            .expect("fresh Task260 selector")
+            .expect("fresh public checker producer chain");
+        let source_context = output
+            .typed_ast
+            .source_context()
+            .expect("actual Task248 Context")
+            .clone();
+        let checker_owner = output
+            .typed_ast
+            .source_functor_definition()
+            .expect("actual Task260 upper owner")
+            .clone();
+        let source_bindings = task260_source_binding_core_handoff(&source_context, &checker_owner);
+        let result = mizar_core::elaborator::SourceFunctorCoreContextProducer::build(
+            source_bindings.clone(),
+            source_context.clone(),
+            checker_owner.clone(),
+        );
+        outcomes.push((case, m, d, source_context, checker_owner, source_bindings, result));
+    }
+
+    let failures = outcomes
+        .iter()
+        .filter_map(|(case, _, _, _, _, _, result)| {
+            result.as_ref().err().map(|error| format!("{case}: {error:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(failures.is_empty(), "actual public Core results: {failures:?}");
+
+    for (case, m, d, source_context, checker_owner, source_bindings, result) in outcomes {
+        let core = result.expect("collected public Core success");
+        assert_eq!((core.source_context(), core.checker_owner(), core.source_bindings()),
+            (&source_context, &checker_owner, &source_bindings), "{case} retained inputs");
+        assert_eq!(source_context.items().get(mizar_checker::source_context::SourceItemId::new(0)).unwrap().source_range,
+            task260_range(source_context.source_id(), m, d + 261), "{case} outer item range");
+        let definitions = checker_owner.definitions().iter().collect::<Vec<_>>();
+        assert_eq!(definitions.len(), 2, "{case}");
+        for (index, (_, definition)) in definitions.iter().enumerate() {
+            let (start, end) = [(61 + d, 118 + d), (121 + d, 179 + d)][index];
+            assert_eq!(
+                definition.source_range(),
+                task260_range(source_context.source_id(), start, end),
+                "{case} inner definition {index}"
+            );
+        }
+
+        let replay = mizar_core::elaborator::SourceFunctorCoreContextProducer::build(
+            source_bindings.clone(),
+            source_context.clone(),
+            checker_owner.clone(),
+        )
+        .expect("fresh public Core replay");
+        assert_eq!(core, replay, "{case} deterministic replay");
+
+        let associations = core
+            .items()
+            .iter()
+            .map(|(_, row)| (row.symbol(), row.core_item()))
+            .collect::<Vec<_>>();
+        assert_eq!(associations.len(), 2, "{case}");
+        assert_ne!(associations[0].0, associations[1].0, "{case} whole SymbolIds");
+        assert_ne!(associations[0].1, associations[1].1, "{case} Core item IDs");
+        for (index, (definition_id, definition)) in definitions.iter().enumerate() {
+            let association = core.items().get(*definition_id).expect("whole-symbol association");
+            assert_eq!(association.source_item(), mizar_checker::source_context::SourceItemId::new(0), "{case}");
+            assert_eq!(association.symbol(), definition.symbol(), "{case} full SymbolId join");
+            let item_id = core
+                .context()
+                .item_registry()
+                .id_for_symbol(definition.symbol())
+                .expect("joined Core item");
+            assert_eq!(association.core_item(), item_id, "{case}");
+            let item = core.context().item_registry().items().get(item_id).expect("Core item");
+            let expected_range = task260_range(source_context.source_id(), definition.source_range().start, definition.source_range().end);
+            assert_eq!(item.symbol, *definition.symbol(), "{case}");
+            assert_eq!(item.source.anchor, mizar_core::core_ir::CoreSourceAnchor::SourceRange(expected_range), "{case}");
+            let provenance = vec![mizar_core::core_ir::CoreProvenance::new(
+                mizar_core::core_ir::CoreProvenancePhase::Checker,
+                format!("source-functor-core-item-v1.definition.{index}"),
+            )];
+            assert_eq!(item.source.provenance, provenance, "{case}");
+            let boundary = core.context().definition_boundaries().get_by_item(item_id).expect("pending boundary");
+            assert_eq!(boundary.kind, mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem, "{case}");
+            assert_eq!(boundary.status, mizar_core::elaborator::DefinitionBoundaryStatus::PendingBody, "{case}");
+            assert_eq!(boundary.source, item.source, "{case}");
+            assert_eq!(boundary.provenance.as_slice(), provenance.as_slice(), "{case}");
+        }
+
+        let context = core.context();
+        assert_eq!(context.item_registry().items().len(), 2, "{case}");
+        assert!(context.dependency_summaries().is_empty() && context.generated_origins().table().is_empty()
+            && context.diagnostics().is_empty(), "{case} empty Core semantics");
+        let source_map = context.source_map();
+        assert_eq!(source_map.item_sources.len(), 2, "{case}");
+        for (definition_id, _) in &definitions {
+            let item_id = core.items().get(*definition_id).unwrap().core_item();
+            let item = context.item_registry().items().get(item_id).unwrap();
+            assert_eq!(source_map.item_sources.get(&item_id), Some(&item.source), "{case}");
+        }
+        assert!(source_map.term_sources.is_empty() && source_map.formula_sources.is_empty()
+            && source_map.definition_sources.is_empty() && source_map.proof_sources.is_empty()
+            && source_map.algorithm_sources.is_empty() && source_map.generated_sources.is_empty()
+            && source_map.obligation_sources.is_empty(), "{case} empty semantic maps and obligations");
+        let expected_worklist = definitions.iter().map(|(definition_id, definition)| {
+            mizar_core::elaborator::ElaborationWorkItem {
+                kind: mizar_core::elaborator::ElaborationWorkItemKind::Item(core.items().get(*definition_id).unwrap().core_item()),
+                status: mizar_core::elaborator::ElaborationWorkStatus::Pending,
+                source: mizar_core::core_ir::CoreSourceRef::direct(definition.source_range()).with_provenance(vec![
+                    mizar_core::core_ir::CoreProvenance::new(mizar_core::core_ir::CoreProvenancePhase::Checker,
+                        format!("source-functor-core-item-v1.definition.{}", definition_id.index()))
+                ]),
+                diagnostics: Vec::new(), checker_diagnostics: Vec::new(),
+            }
+        }).collect::<Vec<_>>();
+        assert_eq!(context.worklist().entries(), expected_worklist, "{case}");
+
+        if d == 19 {
+            for mutation in [Task260CoreContextMutation::WrongSource(0), Task260CoreContextMutation::WrongProvenance(1)] {
+                let stale_bindings = task260_source_binding_core_handoff_with_mutation(
+                    &source_context, &checker_owner, mutation,
+                );
+                assert_eq!(
+                    mizar_core::elaborator::SourceFunctorCoreContextProducer::build(
+                        stale_bindings, source_context.clone(), checker_owner.clone(),
+                    ),
+                    Err(mizar_core::elaborator::SourceFunctorCoreContextError::InvalidCoreContext),
+                    "{case} shifted stale Core handoff {mutation:?}"
+                );
+            }
+
+            let stale_context_input = mizar_checker::source_context::SourceBindingContextInput {
+                source_id: source_context.source_id(),
+                module_id: source_context.module_id().clone(),
+                module_site: source_context.local_contexts().get(mizar_checker::typed_ast::LocalTypeContextId::new(0))
+                    .expect("module local context").owner.clone(),
+                items: source_context.items().iter().map(|(_, item)| mizar_checker::source_context::SourceItemInput {
+                        shell: item.shell,
+                        shell_ordinal: item.shell_ordinal,
+                        role: item.role,
+                        module_id: source_context.module_id().clone(),
+                        source_range: task260_range(source_context.source_id(), 0, 261),
+                        parent: item.parent,
+                        visibility: item.visibility,
+                        site: item.site.clone(),
+                        local_scope: item.local_scope.clone(),
+                        recovery: item.recovery,
+                    })
+                    .collect(),
+                bindings: source_context
+                    .declarations()
+                    .iter()
+                    .map(|(_, declaration)| {
+                        let item = source_context.items().get(declaration.item).expect("binding item");
+                        let binding = source_context.binding_env().bindings().get(declaration.binding).expect("binding row");
+                        mizar_checker::source_context::SourceBindingSiteInput {
+                            shell: item.shell,
+                            context_owner: mizar_checker::source_context::SourceBindingContextOwner::Shell(item.shell),
+                            source_ordinal: declaration.source_ordinal,
+                            spelling: declaration.spelling.clone(),
+                            declaration_range: declaration.declaration_range,
+                            written_type_range: declaration.written_type_range,
+                            site: declaration.site.clone(),
+                            role: declaration.role.clone(),
+                            recovery: binding.recovery,
+                        }
+                    })
+                    .collect(),
+            };
+            let stale_context = mizar_checker::source_context::SourceBindingContextProducer::build(stale_context_input)
+                .expect("fresh public stale-context producer")
+                .into_complete()
+                .expect("complete stale context")
+                .into_handoff();
+            assert_eq!((stale_context.source_id(), stale_context.module_id(), stale_context.binding_env()),
+                (source_context.source_id(), source_context.module_id(), source_context.binding_env()),
+                "{case} same-source/module shifted BindingEnv");
+            assert_ne!(stale_context, source_context, "{case} stale Context geometry");
+            let stale_context_bindings = task260_source_binding_core_handoff(&stale_context, &checker_owner);
+            assert_eq!(
+                mizar_core::elaborator::SourceFunctorCoreContextProducer::build(
+                    stale_context_bindings, stale_context, checker_owner.clone(),
+                ),
+                Err(mizar_core::elaborator::SourceFunctorCoreContextError::InvalidCheckerOwner),
+                "{case} same-source stale Context/owner geometry"
+            );
+        }
+    }
+}
+
+#[test]
 fn task260_core_item_context_default_deny_mutations_and_foreign_environment() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_210);
