@@ -1723,24 +1723,45 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
     let trivia_source = both_source.replacen("let  x be set;", "let\t x\nbe\tset;", 1);
     let (canonical_ast, canonical_module, canonical_shells, canonical_symbols) =
         task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_300);
+    let (_, leading_edits) = metamorphic_edits::variants(&canonical_ast, SOURCE_MODE_DEFINITION_TEXT)
+        .into_iter().find(|(kind, _)| *kind == "leading_line").unwrap();
+    let leading_source = metamorphic_edits::apply(SOURCE_MODE_DEFINITION_TEXT, &leading_edits);
+    assert_eq!(leading_source, format!("\n{SOURCE_MODE_DEFINITION_TEXT}"));
+    let (trivia_ast, _, _, _) = task253_ast_from_source_text(&trivia_source, 262_319);
+    let (_, compensated_edits) = metamorphic_edits::variants(&trivia_ast, &trivia_source)
+        .into_iter().find(|(kind, _)| *kind == "leading_line").unwrap();
+    let compensated_leading_source = metamorphic_edits::apply(&trivia_source, &compensated_edits);
+    let mixed_source = format!(" \t\n{trivia_source}");
     let mut positives = Vec::new();
-    for (ordinal, (case, source, ends, declarations, types)) in [
-        ("x", &x_source, [27, 42], [18, 33], [23, 38]),
-        ("both", &both_source, [27, 43], [18, 34], [23, 39]),
-        ("tab_lf", &trivia_source, [27, 43], [18, 34], [23, 39]),
+    for (ordinal, (case, source, offset, ends, declarations, types)) in [
+        ("x", &x_source, 0, [27, 42], [18, 33], [23, 38]),
+        ("both", &both_source, 0, [27, 43], [18, 34], [23, 39]),
+        ("tab_lf", &trivia_source, 0, [27, 43], [18, 34], [23, 39]),
+        ("leading_line", &leading_source, 1, [26, 42], [17, 33], [22, 38]),
+        ("leading_line_tab_lf", &compensated_leading_source, 1, [27, 43], [18, 34], [23, 39]),
+        ("mixed_prefix_tab_lf", &mixed_source, 3, [27, 43], [18, 34], [23, 39]),
     ]
     .into_iter()
     .enumerate()
     {
-        assert_eq!(source.len(), 141, "{case}");
-        assert_eq!(&source[..13], &SOURCE_MODE_DEFINITION_TEXT[..13]);
-        assert_eq!(&source[45..], &SOURCE_MODE_DEFINITION_TEXT[45..]);
+        assert_eq!(source.len(), offset + 141, "{case}");
+        assert_eq!(&source[offset..offset + 13], &SOURCE_MODE_DEFINITION_TEXT[..13]);
+        assert_eq!(&source[offset + 45..], &SOURCE_MODE_DEFINITION_TEXT[45..]);
         let (ast, module, shells, symbols, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(source, 262_301 + ordinal);
         assert_eq!(diagnostics, 0, "{case} native Frontend diagnostics");
         assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (54, Some(53)));
         assert!(ast.expression_root().is_none());
-        for (node, expected) in ast.nodes().iter().zip(TASK262_EXPECTED_SURFACE_ROWS) {
+        assert!(ast.canonical_bytes().is_some(), "{case}");
+        for (index, (node, expected)) in ast.nodes().iter().zip(TASK262_EXPECTED_SURFACE_ROWS).enumerate() {
+            let (start, end) = match index {
+                2..=5 | 34..=36 => (expected.start + declarations[0] - 17, expected.end + declarations[0] - 17),
+                7..=10 | 38..=40 => (expected.start + declarations[1] - 33, expected.end + declarations[1] - 33),
+                37 => (13, ends[0]),
+                41 => (29, ends[1]),
+                _ => (expected.start, expected.end),
+            };
+            assert_eq!(node.range, task262_range(ast.source_id, offset + start, offset + end), "{case} Surface row {index}");
             assert!(!node.recovered);
             assert_eq!(node.range.source_id, ast.source_id);
             assert_eq!(
@@ -1752,7 +1773,11 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
                     assert_eq!((actual.kind, actual.text.as_ref()), (*kind, *text));
                     assert_eq!(&source[node.range.start..node.range.end], *text);
                 }
-                (actual, Task262ExpectedSurfaceKind::Structural(kind)) => assert_eq!(actual, kind),
+                (actual, Task262ExpectedSurfaceKind::Structural(kind)) => {
+                    assert_eq!(actual, kind);
+                    assert_eq!(node.range.start, node.children.iter().map(|id| ast.nodes()[id.index()].range.start).min().unwrap());
+                    assert_eq!(node.range.end, node.children.iter().map(|id| ast.nodes()[id.index()].range.end).max().unwrap());
+                }
                 (actual, expected) => panic!("{case}: {actual:?} != {expected:?}"),
             }
         }
@@ -1760,9 +1785,9 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
             .into_iter()
             .enumerate()
         {
-            assert_eq!(ast.nodes()[parameter].range, task262_range(ast.source_id, [13, 29][index], ends[index]));
-            assert_eq!(ast.nodes()[declaration].range, task262_range(ast.source_id, declarations[index], declarations[index] + 1));
-            assert_eq!(ast.nodes()[expression].range, task262_range(ast.source_id, types[index], types[index] + 3));
+            assert_eq!(ast.nodes()[parameter].range, task262_range(ast.source_id, offset + [13, 29][index], offset + ends[index]));
+            assert_eq!(ast.nodes()[declaration].range, task262_range(ast.source_id, offset + declarations[index], offset + declarations[index] + 1));
+            assert_eq!(ast.nodes()[expression].range, task262_range(ast.source_id, offset + types[index], offset + types[index] + 3));
         }
         assert!(source_mode_definition_output(
             &canonical_ast,
@@ -1772,16 +1797,16 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
             source,
         ).is_none(), "{case}: canonical spans mismatch changed source");
         let result = source_mode_definition_output(&ast, module.clone(), &shells, &symbols, source);
-        positives.push((case, source, ast, module, shells, symbols, result));
+        positives.push((case, source, offset, ast, module, shells, symbols, result));
     }
-    let failures = positives.iter().filter_map(|(case, _, _, _, _, _, result)| match result {
+    let failures = positives.iter().filter_map(|(case, _, _, _, _, _, _, result)| match result {
         None => Some(format!("{case}: None")),
         Some(Err(error)) => Some(format!("{case}: SomeErr({error})")),
         Some(Ok(_)) => None,
     }).collect::<Vec<_>>();
     assert!(failures.is_empty(), "native compensated header outcomes: {failures:?}");
 
-    for (case, source, ast, module, shells, symbols, result) in positives {
+    for (case, source, offset, ast, module, shells, symbols, result) in positives {
         let output = result.unwrap().unwrap();
         let replay = source_mode_definition_output(&ast, module.clone(), &shells, &symbols, source)
             .expect("replay family").expect("replay route");
@@ -1794,6 +1819,31 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
         assert_eq!(mode.source_type_fingerprint(), types.debug_text());
         assert_eq!(Some(mode), output.resolved.source_mode_definition());
         assert_eq!((context.declarations().len(), context.binding_env().bindings().len(), types.applications().len(), types.expressions().len()), (2, 2, 2, 3));
+        assert_eq!(context.items().len(), 1);
+        assert_eq!(context.items().iter().next().unwrap().1.source_range, task262_range(ast.source_id, offset, offset + 140));
+        let definition = mode.definitions().iter().next().unwrap().1;
+        assert_eq!(definition.source_range(), task262_range(ast.source_id, offset + 45, offset + 135));
+        assert_eq!(definition.origin().anchor(), &SourceAnchor::Range(definition.source_range()));
+        assert_eq!(definition.spelling(), &source[offset + 45..offset + 135]);
+        let rhs = types.mode_rhs().iter().next().unwrap().1;
+        let rhs_expression = types.expressions().get(rhs.root()).unwrap();
+        assert_eq!(rhs.definition_range(), definition.source_range());
+        assert_eq!(rhs.definition_site(), definition.site());
+        assert_eq!(rhs_expression.source_range(), task262_range(ast.source_id, offset + 95, offset + 98));
+        assert_eq!(rhs_expression.head_range(), rhs_expression.source_range());
+        assert_eq!(rhs_expression.site(), &TypedSiteRef::Node(TypedNodeId::new(44)));
+        assert_eq!(rhs_expression.head_site(), &TypedSiteRef::Node(TypedNodeId::new(43)));
+        assert_eq!(rhs_expression.spelling(), "set");
+        let application = mode.applications().iter().next().unwrap().1;
+        let expansion = mode.expansions().iter().next().unwrap().1;
+        let request = mode.inhabitation_requests().iter().next().unwrap().1;
+        let property = mode.properties().iter().next().unwrap().1;
+        assert_eq!(application.source_range(), task262_range(ast.source_id, offset + 73, offset + 91));
+        assert_eq!(expansion.source_range(), rhs_expression.source_range());
+        assert_eq!(request.source_range(), rhs_expression.source_range());
+        assert_eq!(property.source_range(), task262_range(ast.source_id, offset + 102, offset + 135));
+        assert_eq!(property.justification(), &SourceAnchor::Range(task262_range(ast.source_id, offset + 113, offset + 134)));
+        assert_eq!((application.owner(), expansion.owner(), request.owner(), property.owner()), (definition.id(), definition.id(), definition.id(), definition.id()));
         for (index, (_, parameter)) in mode.parameters().iter().enumerate() {
             let declaration = context.declarations().iter().nth(index).unwrap().1;
             let binding = context.binding_env().bindings().get(parameter.binding()).unwrap();
@@ -1832,6 +1882,8 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
         assert_eq!(obligations.len(), 1);
         assert_eq!(obligations[0].1.kind, mizar_checker::typed_ast::InitialObligationKind::Sethood);
         assert_eq!(obligations[0].1.status, mizar_checker::typed_ast::InitialObligationStatus::Pending);
+        assert_eq!(obligations[0].1.source_range, property.source_range());
+        assert_eq!(&obligations[0].1.owner, property.site());
         assert!(output.typed_ast.types().is_empty());
         assert!(output.typed_ast.facts().is_empty());
         assert!(output.typed_ast.coercions().is_empty());
@@ -1849,6 +1901,31 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
                 .expect("authenticated family precedes resolver checks").expect_err("foreign provenance");
             assert!(error.starts_with("Task262 resolver:"), "{case}: {error}");
         }
+        if offset > 0 {
+            for (mutation, expected) in [
+                (SourceModeDefinitionRouteMutation::UpperContextRange, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::UpperDefinitionRange, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::UpperRhsOwnerRange, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::MissingModeRhs, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::OverflowUpperContextRange, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin, "invalid mode resolver definition 0"),
+                (SourceModeDefinitionRouteMutation::RelocatedModeRhsExpression, "mode-definition dependency mismatch"),
+                (SourceModeDefinitionRouteMutation::MalformedModeParameter, "invalid source mode parameter 0"),
+                (SourceModeDefinitionRouteMutation::WrongModeApplicationParameters, "invalid source mode application 0"),
+                (SourceModeDefinitionRouteMutation::RemoveModeDefinition, "unsupported mode-definition task shape"),
+            ] {
+                let result = source_mode_definition_output_with_mutation(&ast, module.clone(), &shells, &symbols, source, mutation);
+                let error = result.expect("native authentication before upper control").expect_err("translated upper control");
+                // This stage follows genuine public lower construction and joint
+                // Typed installation; alternate Context claims are upper-only.
+                assert_eq!(error, format!("Task262 mode definition: {expected}"), "{case} {mutation:?}");
+            }
+        }
+    }
+    for (ordinal, prefix) in ["\r", ":: prefix\n"].into_iter().enumerate() {
+        let source = format!("{prefix}{trivia_source}");
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, 262_320 + ordinal);
+        assert!(source_mode_definition_output(&ast, module, &shells, &symbols, &source).is_none(), "unsupported prefix {prefix:?}");
     }
     for source in [
         x_source.replacen("let  x", "let\r x", 1),

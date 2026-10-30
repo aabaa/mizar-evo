@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-MODE-LEADING-LINE-BRIDGE](../../task_contracts/ja/TEST-MODE-LEADING-LINE-BRIDGE.md).
+
 - [x] [TEST-MODE-NATIVE-HEADER-BRIDGE](../../task_contracts/ja/TEST-MODE-NATIVE-HEADER-BRIDGE.md).
 
 > 2026-09-02 圧縮（batch CPT-10、規則は

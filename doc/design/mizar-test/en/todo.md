@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-MODE-LEADING-LINE-BRIDGE](../../task_contracts/en/TEST-MODE-LEADING-LINE-BRIDGE.md).
+
 - [x] [TEST-MODE-NATIVE-HEADER-BRIDGE](../../task_contracts/en/TEST-MODE-NATIVE-HEADER-BRIDGE.md).
 
 > Compacted 2026-09-02 (batch CPT-10, rules in

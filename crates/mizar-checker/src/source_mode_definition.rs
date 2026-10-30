@@ -880,10 +880,10 @@ impl SourceModeDefinitionProducer {
         if env.module_id() != &input.module_id {
             return Err(SourceModeDefinitionError::SourceIdentityMismatch);
         }
-        validate_input_shape(&input)?;
+        let offset = validate_input_shape(&input, source_context, source_type)?;
         validate_baseline(base_initial_obligations)?;
-        let origin = validate_resolver_definition(&input, env)?;
-        validate_input_rows(&input, source_context, source_type, arena)?;
+        let origin = validate_resolver_definition(&input, env, offset)?;
+        validate_input_rows(&input, source_context, source_type, arena, offset)?;
 
         let mut initial_obligations = base_initial_obligations.clone();
         let property = &input.properties[0];
@@ -1079,7 +1079,9 @@ fn validate_dependency_identity(
 
 fn validate_input_shape(
     input: &SourceModeDefinitionHandoffInput,
-) -> Result<(), SourceModeDefinitionError> {
+    source_context: &SourceBindingContextHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+) -> Result<usize, SourceModeDefinitionError> {
     if input.definitions.len() != 1
         || input.parameters.len() != 2
         || input.applications.len() != 1
@@ -1089,7 +1091,23 @@ fn validate_input_shape(
     {
         return Err(SourceModeDefinitionError::UnsupportedTaskShape);
     }
-    Ok(())
+    let definition = input.definitions[0].source_range;
+    if let (Some(item), Some(rhs)) = (
+        source_context
+            .items()
+            .get(crate::source_context::SourceItemId::new(0)),
+        source_type.mode_rhs().get(SourceTypeModeRhsId::new(0)),
+    ) {
+        let offset = item.source_range.start;
+        if let Some(end) = offset.checked_add(140)
+            && item.source_range == range(input.source_id, offset, end)
+            && definition == range(input.source_id, offset + 45, offset + 135)
+            && rhs.definition_range() == definition
+        {
+            return Ok(offset);
+        }
+    }
+    Ok(0)
 }
 
 fn validate_baseline(table: &InitialObligationTable) -> Result<(), SourceModeDefinitionError> {
@@ -1121,6 +1139,7 @@ pub(crate) fn validate_source_mode_definition_absence(
 fn validate_resolver_definition(
     input: &SourceModeDefinitionHandoffInput,
     env: &SymbolEnv,
+    offset: usize,
 ) -> Result<SemanticOrigin, SourceModeDefinitionError> {
     if env.symbols().len() != 1 || env.definitions().len() != 1 || env.contributions().len() != 1 {
         return Err(SourceModeDefinitionError::InvalidResolverDefinition { index: 0 });
@@ -1138,7 +1157,7 @@ fn validate_resolver_definition(
         .contributions()
         .get(row.contribution)
         .ok_or(SourceModeDefinitionError::InvalidResolverDefinition { index: 0 })?;
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, 0, 140));
+    let expected_anchor = SourceAnchor::Range(range(input.source_id, offset, offset + 140));
     if row.definition.index() != 0
         || row.symbol.module() != &input.module_id
         || symbol.symbol() != &row.symbol
@@ -1180,7 +1199,7 @@ fn validate_resolver_definition(
             definition.origin(),
             input.source_id,
             &input.module_id,
-            range(input.source_id, 45, 135),
+            range(input.source_id, offset + 45, offset + 135),
             &[4, 0, 10, 0],
         )
     {
@@ -1194,12 +1213,13 @@ fn validate_input_rows(
     source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
     arena: &TypedArena,
+    offset: usize,
 ) -> Result<(), SourceModeDefinitionError> {
     let source = input.source_id;
     let context = BindingContextId::new(1);
     let definition = &input.definitions[0];
     if definition.site != TypedSiteRef::Node(TypedNodeId::new(49))
-        || definition.source_range != range(source, 45, 135)
+        || definition.source_range != range(source, offset + 45, offset + 135)
         || definition.source_ordinal != 0
         || definition.context != context
         || definition.recovery != SourceModeDefinitionRecovery::Normal
@@ -1243,11 +1263,11 @@ fn validate_input_rows(
         let written_range = declaration.written_type_range;
         if source_type.mode_rhs().len() != 1
             || row.source_range.source_id != source
-            || row.source_range.start != parameter_ranges[index].0
+            || row.source_range.start != offset + parameter_ranges[index].0
             || row.source_range.end
                 > parameter_ranges
                     .get(index + 1)
-                    .map_or(definition.source_range.start, |next| next.0)
+                    .map_or(definition.source_range.start, |next| offset + next.0)
             || row.source_range.end.checked_sub(row.source_range.start) != Some(row.spelling.len())
             || row.declaration_range.source_id != source
             || row
@@ -1322,7 +1342,8 @@ fn validate_input_rows(
                 .and_then(|tail| tail.strip_suffix(b";"))
                 .is_some_and(|gap| gap.iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\n')))
     });
-    let local_context = validate_context_profile(input, source_context, arena, qualified_headers)?;
+    let local_context =
+        validate_context_profile(input, source_context, arena, qualified_headers, offset)?;
     for (index, row) in input.parameters.iter().enumerate() {
         let (start, end, declaration_start, declaration_end, pattern_start, pattern_end) =
             parameter_ranges[index];
@@ -1332,10 +1353,11 @@ fn validate_input_rows(
             || row.written_type != SourceTypeApplicationId::new(index)
             || row.site != TypedSiteRef::Node(TypedNodeId::new(parameter_sites[index]))
             || (!qualified_headers
-                && (row.source_range != range(source, start, end)
-                    || row.declaration_range != range(source, declaration_start, declaration_end)
+                && (row.source_range != range(source, offset + start, offset + end)
+                    || row.declaration_range
+                        != range(source, offset + declaration_start, offset + declaration_end)
                     || row.spelling != parameter_spellings[index]))
-            || row.pattern_range != range(source, pattern_start, pattern_end)
+            || row.pattern_range != range(source, offset + pattern_start, offset + pattern_end)
             || row.context != context
             || row.recovery != SourceModeDefinitionRecovery::Normal
         {
@@ -1351,14 +1373,21 @@ fn validate_input_rows(
             return Err(SourceModeDefinitionError::InvalidArenaOwnership);
         }
     }
-    validate_type_profile(input, source_type, local_context, arena, qualified_headers)?;
+    validate_type_profile(
+        input,
+        source_type,
+        local_context,
+        arena,
+        qualified_headers,
+        offset,
+    )?;
 
     let application = &input.applications[0];
     if application.owner != SourceModeDefinitionId::new(0)
         || application.ordinal != 0
         || application.parameters != [SourceModeParameterId::new(0), SourceModeParameterId::new(1)]
         || application.site != TypedSiteRef::Node(TypedNodeId::new(42))
-        || application.source_range != range(source, 73, 91)
+        || application.source_range != range(source, offset + 73, offset + 91)
         || application.context != context
         || application.recovery != SourceModeDefinitionRecovery::Normal
         || application.spelling != "Task262Mode [ x , y ]"
@@ -1380,7 +1409,7 @@ fn validate_input_rows(
         || expansion.ordinal != 0
         || expansion.rhs != SourceTypeModeRhsId::new(0)
         || expansion.site != TypedSiteRef::Node(TypedNodeId::new(44))
-        || expansion.source_range != range(source, 95, 98)
+        || expansion.source_range != range(source, offset + 95, offset + 98)
         || expansion.context != context
         || expansion.recovery != SourceModeDefinitionRecovery::Normal
         || expansion.spelling != "set"
@@ -1416,8 +1445,8 @@ fn validate_input_rows(
         || property.ordinal != 0
         || property.kind != SourceModePropertyKind::Sethood
         || property.site != TypedSiteRef::Node(TypedNodeId::new(48))
-        || property.source_range != range(source, 102, 135)
-        || property.justification != SourceAnchor::Range(range(source, 113, 134))
+        || property.source_range != range(source, offset + 102, offset + 135)
+        || property.justification != SourceAnchor::Range(range(source, offset + 113, offset + 134))
         || property.recovery != SourceModeDefinitionRecovery::Normal
         || property.spelling != "sethood by computation(steps: 1);"
     {
@@ -1431,7 +1460,7 @@ fn validate_input_rows(
         arena,
     ) || !valid_node(
         TypedNodeId::new(46),
-        range(source, 113, 134),
+        range(source, offset + 113, offset + 134),
         "source.definition.mode.property.justification",
         local_context,
         arena,
@@ -1446,6 +1475,7 @@ fn validate_context_profile(
     source_context: &SourceBindingContextHandoff,
     arena: &TypedArena,
     qualified_headers: bool,
+    offset: usize,
 ) -> Result<LocalTypeContextId, SourceModeDefinitionError> {
     let source = input.source_id;
     let binding_env = source_context.binding_env();
@@ -1479,7 +1509,7 @@ fn validate_context_profile(
         || item.shell.index() != 0
         || item.shell_ordinal != 0
         || item.role != SourceItemRole::DefinitionBlock
-        || item.source_range != range(source, 0, 140)
+        || item.source_range != range(source, offset, offset + 140)
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.site != TypedSiteRef::Node(TypedNodeId::new(50))
@@ -1514,9 +1544,9 @@ fn validate_context_profile(
         let written_range = if qualified_headers {
             declaration.written_type_range
         } else if index == 0 {
-            range(source, 22, 25)
+            range(source, offset + 22, offset + 25)
         } else {
-            range(source, 38, 41)
+            range(source, offset + 38, offset + 41)
         };
         if declaration.item != item.id
             || declaration.binding != row.binding
@@ -1564,6 +1594,7 @@ fn validate_type_profile(
     local_context: LocalTypeContextId,
     arena: &TypedArena,
     qualified_headers: bool,
+    offset: usize,
 ) -> Result<(), SourceModeDefinitionError> {
     if source_type.applications().len() != 2
         || source_type.expressions().len() != 3
@@ -1585,7 +1616,7 @@ fn validate_type_profile(
         let written_range = if qualified_headers && index < 2 {
             expression.source_range()
         } else {
-            range(source, ranges[index].0, ranges[index].1)
+            range(source, offset + ranges[index].0, offset + ranges[index].1)
         };
         if expression.id() != SourceTypeExpressionId::new(index)
             || expression.source_id() != source
@@ -1786,8 +1817,8 @@ fn validate_handoff_rows(
             })
             .collect(),
     };
-    validate_input_shape(&input)?;
-    validate_input_rows(&input, source_context, source_type, arena)?;
+    let offset = validate_input_shape(&input, source_context, source_type)?;
+    validate_input_rows(&input, source_context, source_type, arena, offset)?;
     validate_obligations(handoff, initial_obligations)
 }
 

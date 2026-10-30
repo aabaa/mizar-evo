@@ -169,8 +169,8 @@ this neither invokes upper Mode nor authenticates raw source topology.
 
 Upper parameter headers admit relative ends, declaration/Type ranges and physical
 SP/TAB/LF spelling only when input, Context, BindingEnv and Type agree and their
-owned header Arena nodes are exact and normal. Starts13/29, x/y identities,
-ordered nonoverlapping envelopes before definition45, exact let/name/be/set/semicolon
+owned header Arena nodes are exact and normal. Relative starts13/29, x/y identities,
+ordered nonoverlapping envelopes before relative definition45, exact let/name/be/set/semicolon
 fragments and all body/resolver/RHS rules remain fixed. Qualification returns no
 error: unequal/unavailable claims or inexact header Arena retain canonical checks
 at their original phases, including the directional Context/Type errors. A moved
@@ -178,14 +178,22 @@ containing Type anchor retains early fallback; a canonical one retains its late
 Arena error. Later validation and replay remain mandatory; no native-source seal,
 comment/CR layout, semantic credit or raw runner selection follows.
 
-The native runner also admits compensated SP/TAB/LF headers with starts13/29,
-length141 and unchanged prefix13/body45+. It independently lexes literal token
+Upper coordinates select d only from Context item0=d..d+140, input Mode0=
+d+45..d+135 and an identical installed Mode-RHS owner range, with matching
+source IDs and checked d+140. Missing, unequal or nonrepresentable claims select
+canonical d=0. Header/RHS expression ranges, spelling, metadata, recovery, Arena
+normality and resolver values do not select d; their ordinary checks remain at
+their phases. Build and replay use the same selection. Earlier dependency, shape
+and baseline errors remain earlier; selection grants no normality or source seal.
+
+The native runner also admits compensated SP/TAB/LF headers with relative starts13/29,
+length141 after leading SP/TAB/LF and unchanged relative prefix13/body45+. It independently lexes literal token
 spans and authenticates all normal Surface kinds, dense identities, children and
 structural covers before deriving header ranges, spelling and Arena anchors.
 The same lower/upper producers and resolver provenance checks remain mandatory;
 source/Surface mismatches retain `None`. Value-identical authenticated artifacts
 do not prove parser-instance freshness. The frozen literal oracle remains
-canonical; no raw-prefix, comment/CR family or semantic credit follows.
+canonical; no internal-comment/CR family or semantic credit follows.
 
 After the separate Task-249M prerequisite, the exact source consumes only
 these lower profiles:

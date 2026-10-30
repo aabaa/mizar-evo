@@ -164,19 +164,26 @@ obligation を保ち、upper Mode 呼出しや raw source topology の認証は�
 
 上位 parameter header は input／Context／BindingEnv／Type の一致と、所有 header
 Arena node の正常・厳密一致を条件に、終端・宣言／型の相対範囲と SP／TAB／LF の物理表記を
-受け付ける。開始13／29、x／y identity、definition45 より前の非重複順序、厳密な
+受け付ける。相対開始13／29、x／y identity、相対 definition45 より前の非重複順序、厳密な
 let／name／be／set／semicolon fragment、body／resolver／RHS 条件は維持する。
 資格判定自体は error を返さず、不一致・欠落・header Arena の非厳密一致では従来の
 canonical 検査と順序を保つ。Context／Type の方向別 error、移動 header の包含 Type anchor
 に対する早期 fallback、canonical anchor の遅い Arena error も維持する。後段検証と replay
 は必須であり、native-source seal、comment／CR layout、意味論や raw runner 選択は増えない。
 
-native runner は開始13／29、長さ141、prefix13／body45以降を維持した SP／TAB／LF の
+上位座標の d は Context item0=d..d+140、入力 Mode0=d+45..d+135、同じ範囲の
+installed Mode-RHS owner の3範囲だけから選ぶ。source ID 一致と d+140 の checked 計算を
+必須とし、欠落・不一致・表現不能では canonical d=0 を選ぶ。header／RHS expression 範囲、
+表記、metadata、recovery、Arena 正常性、resolver 値は d の選択に使わず、従来の各段階で
+必ず検査する。build／replay は同じ選択を使い、既存の dependency／shape／baseline error の
+先行順序も保つ。この選択は正常性や source seal を保証しない。
+
+native runner は相対開始13／29、先頭 SP／TAB／LF を除く長さ141、相対 prefix13／body45以降を維持した SP／TAB／LF の
 補償 header にも対応する。独立 lexer の literal token span と全正常 Surface node の
 kind／dense identity／children／structural cover を認証し、header 範囲・表記・Arena anchor
 を導出する。同じ lower／upper producer と resolver provenance 検査を必須とし、
 source／Surface 不一致は `None` を維持する。値が同一の認証 artifact は parser instance の
-鮮度を証明しない。固定 literal oracle は canonical のまま保ち、raw-prefix、comment／CR
+鮮度を証明しない。固定 literal oracle は canonical のまま保ち、内部 comment／CR
 family、意味論の credit は増えない。
 
 separate Task-249M prerequisite後、exact sourceがconsumeするlower profileは

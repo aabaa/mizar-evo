@@ -108,6 +108,14 @@ pub(in crate::runner) enum SourceModeDefinitionRouteMutation {
     WrongModeRequestExpansion,
     WrongModeDefinitionProperty,
     WrongModePropertyJustification,
+    UpperContextRange,
+    OverflowUpperContextRange,
+    UpperDefinitionRange,
+    UpperRhsOwnerRange,
+    MissingModeRhs,
+    RelocatedModeRhsExpression,
+    MalformedModeParameter,
+    StaleUpperResolverOrigin,
 }
 
 enum ExactSurfaceKind {
@@ -636,12 +644,7 @@ fn exact_mode_definition(
     module: &ModuleId,
     source_text: &str,
 ) -> Option<ExactModeDefinition> {
-    if source_text.len() != 141
-        || source_text.get(..13) != SOURCE_MODE_DEFINITION_TEXT.get(..13)
-        || source_text.get(45..) != SOURCE_MODE_DEFINITION_TEXT.get(45..)
-        || ast.root().map(SurfaceNodeId::index) != Some(53)
-        || ast.expression_root().is_some()
-    {
+    if ast.root().map(SurfaceNodeId::index) != Some(53) || ast.expression_root().is_some() {
         return None;
     }
     let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
@@ -692,10 +695,21 @@ fn exact_mode_definition(
         }
         mapped.push(*span);
     }
-    if mapped[1].start != 13 || mapped[6].start != 29 || !surface_profile_is_exact(ast, &mapped) {
+    let offset = mapped.first()?.start;
+    if offset.checked_add(141)? != source_text.len()
+        || !source_text
+            .get(..offset)?
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+        || source_text.get(offset..offset + 13) != SOURCE_MODE_DEFINITION_TEXT.get(..13)
+        || source_text.get(offset + 45..) != SOURCE_MODE_DEFINITION_TEXT.get(45..)
+        || mapped[1].start != offset + 13
+        || mapped[6].start != offset + 29
+        || !surface_profile_is_exact(ast, &mapped, offset)
+    {
         return None;
     }
-    let mut previous_end = 13;
+    let mut previous_end = offset + 13;
     for span in &mapped[1..11] {
         if !source_text
             .get(previous_end..span.start)?
@@ -707,19 +721,55 @@ fn exact_mode_definition(
         previous_end = span.end;
     }
     if !source_text
-        .get(previous_end..45)?
+        .get(previous_end..offset + 45)?
         .bytes()
         .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
     {
         return None;
     }
-    let root = exact_node(ast, 53, SurfaceNodeKind::Root, 0, 140)?;
-    let definition_block = exact_node(ast, 50, SurfaceNodeKind::DefinitionBlockItem, 0, 140)?;
-    let mode = exact_node(ast, 49, SurfaceNodeKind::ModeDefinition, 45, 135)?;
-    let pattern = exact_node(ast, 42, SurfaceNodeKind::ModePattern, 73, 91)?;
-    let rhs = exact_node(ast, 44, SurfaceNodeKind::TypeExpression, 95, 98)?;
-    let property = exact_node(ast, 48, SurfaceNodeKind::ModeProperty, 102, 135)?;
-    let justification = exact_node(ast, 46, SurfaceNodeKind::ComputationJustification, 113, 134)?;
+    let root = exact_node(ast, 53, SurfaceNodeKind::Root, offset, offset + 140)?;
+    let definition_block = exact_node(
+        ast,
+        50,
+        SurfaceNodeKind::DefinitionBlockItem,
+        offset,
+        offset + 140,
+    )?;
+    let mode = exact_node(
+        ast,
+        49,
+        SurfaceNodeKind::ModeDefinition,
+        offset + 45,
+        offset + 135,
+    )?;
+    let pattern = exact_node(
+        ast,
+        42,
+        SurfaceNodeKind::ModePattern,
+        offset + 73,
+        offset + 91,
+    )?;
+    let rhs = exact_node(
+        ast,
+        44,
+        SurfaceNodeKind::TypeExpression,
+        offset + 95,
+        offset + 98,
+    )?;
+    let property = exact_node(
+        ast,
+        48,
+        SurfaceNodeKind::ModeProperty,
+        offset + 102,
+        offset + 135,
+    )?;
+    let justification = exact_node(
+        ast,
+        46,
+        SurfaceNodeKind::ComputationJustification,
+        offset + 113,
+        offset + 134,
+    )?;
     let direct_structural = ast
         .node(definition_block)?
         .children
@@ -745,7 +795,11 @@ fn exact_mode_definition(
     Some(ExactModeDefinition { definition_block })
 }
 
-fn surface_profile_is_exact(ast: &SurfaceAst, mapped: &[mizar_lexer::SourceSpan]) -> bool {
+fn surface_profile_is_exact(
+    ast: &SurfaceAst,
+    mapped: &[mizar_lexer::SourceSpan],
+    offset: usize,
+) -> bool {
     ast.canonical_bytes().is_some()
         && ast.token_nodes().len() == mapped.len()
         && ast
@@ -764,7 +818,11 @@ fn surface_profile_is_exact(ast: &SurfaceAst, mapped: &[mizar_lexer::SourceSpan]
                     && !actual.recovered
                     && (matches!(index, 1..=10 | 34..=41)
                         || actual.range
-                            == source_range(ast.source_id, expected.start, expected.end))
+                            == source_range(
+                                ast.source_id,
+                                offset + expected.start,
+                                offset + expected.end,
+                            ))
                     && actual
                         .children
                         .iter()
@@ -848,7 +906,7 @@ fn exact_resolver_profile(
         || block.kind() != DeclarationShellKind::DefinitionBlock
         || block.node_id().index() != 50
         || block.parent().is_some()
-        || block.range() != source_range(ast.source_id, 0, 140)
+        || block.range() != ast.nodes()[50].range
         || block.module() != module
         || block.recovered()
         || mode.id().index() != 1
@@ -856,7 +914,7 @@ fn exact_resolver_profile(
         || mode.kind() != DeclarationShellKind::ModeDefinition
         || mode.node_id().index() != 49
         || mode.parent() != Some(block.id())
-        || mode.range() != source_range(ast.source_id, 45, 135)
+        || mode.range() != ast.nodes()[49].range
         || mode.module() != module
         || mode.recovered()
         || symbols.module_id() != module
@@ -916,8 +974,8 @@ fn exact_resolver_profile(
     {
         return Err("Task262 resolver: mode definition is not exact".to_owned());
     }
-    validate_origin(ast.source_id, module, definition.origin())?;
-    validate_origin(ast.source_id, module, symbol.origin())?;
+    validate_origin(ast.nodes()[49].range, module, definition.origin())?;
+    validate_origin(ast.nodes()[49].range, module, symbol.origin())?;
     let contribution = symbols
         .contributions()
         .get(definition.contribution())
@@ -943,6 +1001,19 @@ fn resolver_env_with_mutation(
     symbols: &SymbolEnv,
     mutation: SourceModeDefinitionRouteMutation,
 ) -> SymbolEnv {
+    let stale_origin = symbols
+        .symbols()
+        .iter()
+        .next()
+        .filter(|_| mutation == SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin)
+        .map(|entry| {
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                entry.origin().source_id(),
+                entry.origin().module_id().clone(),
+                SourceAnchor::Range(source_range(entry.origin().source_id(), 45, 135)),
+                entry.origin().structural_path().to_vec(),
+            )
+        });
     let mut rebuilt_symbols = SymbolIndex::new();
     for entry in symbols.symbols().iter() {
         let primary_spelling = if mutation == SourceModeDefinitionRouteMutation::WrongResolverEntry
@@ -956,7 +1027,7 @@ fn resolver_env_with_mutation(
             entry.kind(),
             entry.namespace().clone(),
             primary_spelling,
-            entry.origin().clone(),
+            stale_origin.as_ref().unwrap_or(entry.origin()).clone(),
             entry.contribution(),
         )
         .with_visibility(entry.visibility())
@@ -971,51 +1042,85 @@ fn resolver_env_with_mutation(
         rebuilt_symbols.insert(rebuilt);
     }
 
-    let rebuilt_definitions =
-        if mutation == SourceModeDefinitionRouteMutation::WrongResolverDefinitionEntry {
-            let mut definitions = DefinitionIndex::new();
-            for original in symbols.definitions().iter() {
-                let mut rebuilt = DefinitionShell::new(
-                    original.symbol().clone(),
-                    DefinitionKind::Predicate,
-                    original.origin().clone(),
-                    original.contribution(),
-                )
-                .with_visibility(original.visibility())
-                .with_parameters(original.parameters().to_vec())
-                .with_binders(original.binders().to_vec())
-                .with_dependencies(original.dependencies().to_vec());
-                if let Some(arity) = original.arity() {
-                    rebuilt = rebuilt.with_arity(arity);
-                }
-                if let Some(notation_shape) = original.notation_shape() {
-                    rebuilt = rebuilt.with_notation_shape(notation_shape);
-                }
-                if let Some(signature) = original.signature() {
-                    rebuilt = rebuilt.with_signature(signature.clone());
-                }
-                let rebuilt_id = definitions.insert(rebuilt);
-                debug_assert_eq!(rebuilt_id, original.id());
+    let rebuilt_definitions = if matches!(
+        mutation,
+        SourceModeDefinitionRouteMutation::WrongResolverDefinitionEntry
+            | SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin
+    ) {
+        let mut definitions = DefinitionIndex::new();
+        for original in symbols.definitions().iter() {
+            let mut rebuilt = DefinitionShell::new(
+                original.symbol().clone(),
+                if mutation == SourceModeDefinitionRouteMutation::WrongResolverDefinitionEntry {
+                    DefinitionKind::Predicate
+                } else {
+                    original.kind()
+                },
+                stale_origin.as_ref().unwrap_or(original.origin()).clone(),
+                original.contribution(),
+            )
+            .with_visibility(original.visibility())
+            .with_parameters(original.parameters().to_vec())
+            .with_binders(original.binders().to_vec())
+            .with_dependencies(original.dependencies().to_vec());
+            if let Some(arity) = original.arity() {
+                rebuilt = rebuilt.with_arity(arity);
             }
-            definitions
-        } else {
-            symbols.definitions().clone()
-        };
-    let rebuilt_contributions =
-        if mutation == SourceModeDefinitionRouteMutation::WrongResolverContribution {
-            let mut contributions = SourceContributionIndex::new();
-            for original in symbols.contributions().iter() {
-                let rebuilt_id = contributions.insert(
-                    original.module().clone(),
-                    original.kind().clone(),
-                    original.anchor().clone(),
+            if let Some(notation_shape) = original.notation_shape() {
+                rebuilt = rebuilt.with_notation_shape(notation_shape);
+            }
+            if let Some(signature) = original.signature() {
+                rebuilt = rebuilt.with_signature(signature.clone());
+            }
+            let rebuilt_id = definitions.insert(rebuilt);
+            debug_assert_eq!(rebuilt_id, original.id());
+        }
+        definitions
+    } else {
+        symbols.definitions().clone()
+    };
+    let rebuilt_contributions = if matches!(
+        mutation,
+        SourceModeDefinitionRouteMutation::WrongResolverContribution
+            | SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin
+    ) {
+        let mut contributions = SourceContributionIndex::new();
+        for original in symbols.contributions().iter() {
+            let rebuilt_id = contributions.insert(
+                original.module().clone(),
+                original.kind().clone(),
+                if mutation == SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin {
+                    match original.kind() {
+                        ContributionKind::LocalSource { source_id } => {
+                            SourceAnchor::Range(source_range(*source_id, 0, 140))
+                        }
+                        _ => original.anchor().clone(),
+                    }
+                } else {
+                    original.anchor().clone()
+                },
+            );
+            if mutation == SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin {
+                for symbol in original.effects().symbols() {
+                    contributions.add_symbol(rebuilt_id, symbol.clone());
+                }
+                for definition in original.effects().definitions() {
+                    contributions.add_definition(rebuilt_id, *definition);
+                }
+                for summary in original.effects().lexical_summaries() {
+                    contributions.add_lexical_summary(rebuilt_id, *summary);
+                }
+                assert_eq!(
+                    contributions.get(rebuilt_id).unwrap().effects(),
+                    original.effects()
                 );
-                debug_assert_eq!(rebuilt_id, original.id());
             }
-            contributions
-        } else {
-            symbols.contributions().clone()
-        };
+            debug_assert_eq!(rebuilt_id, original.id());
+        }
+        contributions
+    } else {
+        symbols.contributions().clone()
+    };
 
     SymbolEnv::new(
         symbols.module_id().clone(),
@@ -1037,13 +1142,13 @@ fn resolver_env_with_mutation(
 }
 
 fn validate_origin(
-    source_id: SourceId,
+    range: SourceRange,
     module: &ModuleId,
     origin: &mizar_resolve::resolved_ast::SemanticOrigin,
 ) -> Result<(), String> {
-    if origin.source_id() != source_id
+    if origin.source_id() != range.source_id
         || origin.module_id() != module
-        || origin.anchor() != &SourceAnchor::Range(source_range(source_id, 45, 135))
+        || origin.anchor() != &SourceAnchor::Range(range)
         || origin.structural_path() != [4, 0, 10, 0]
         || origin.import_edge().is_some()
         || origin.is_recovered()
@@ -1053,7 +1158,10 @@ fn validate_origin(
     Ok(())
 }
 
-fn task262_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
+fn task262_arena(
+    ast: &SurfaceAst,
+    mutation: SourceModeDefinitionRouteMutation,
+) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
     for (index, row) in EXACT_SURFACE_PROFILE.iter().enumerate() {
         let generic_kind = match row.kind {
@@ -1088,12 +1196,21 @@ fn task262_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
         } else {
             LocalTypeContextId::new(1)
         };
-        let range = ast.nodes()[match index {
+        let mut range = ast.nodes()[match index {
             37 => 2,
             41 => 7,
             _ => index,
         }]
         .range;
+        if mutation == SourceModeDefinitionRouteMutation::UpperRhsOwnerRange && index == 49 {
+            range.end -= 1;
+        }
+        if mutation == SourceModeDefinitionRouteMutation::RelocatedModeRhsExpression
+            && matches!(index, 43 | 44)
+        {
+            range.start += 1;
+            range.end += 1;
+        }
         let actual = builder
             .push(
                 TypedNode::new(kind, SourceAnchor::Range(range))
@@ -1144,7 +1261,7 @@ fn task248_context(
     } else {
         TypedSiteRef::Node(TypedNodeId::new(50))
     };
-    let input = SourceBindingContextInput {
+    let mut input = SourceBindingContextInput {
         source_id: ast.source_id,
         module_id: module.clone(),
         module_site,
@@ -1153,7 +1270,7 @@ fn task248_context(
             shell_ordinal: 0,
             role: SourceItemRole::DefinitionBlock,
             module_id: module,
-            source_range: source_range(ast.source_id, 0, 140),
+            source_range: ast.nodes()[50].range,
             parent: None,
             visibility: SourceItemVisibility::Unspecified,
             site: item_site,
@@ -1209,6 +1326,33 @@ fn task248_context(
             },
         ],
     };
+    match mutation {
+        SourceModeDefinitionRouteMutation::UpperContextRange => {
+            input.items[0].source_range.start += 1
+        }
+        SourceModeDefinitionRouteMutation::OverflowUpperContextRange => {
+            let start = usize::MAX - 139;
+            input.items[0].source_range = source_range(ast.source_id, start, usize::MAX);
+            for binding in &mut input.bindings {
+                for range in [
+                    &mut binding.declaration_range,
+                    &mut binding.written_type_range,
+                ] {
+                    range.start = start + (range.start - ast.nodes()[50].range.start);
+                    range.end = start + (range.end - ast.nodes()[50].range.start);
+                }
+                binding.role = SourceBindingSiteRole::DefinitionParameter {
+                    local: LocalTermBinding::new(
+                        binding.spelling.clone(),
+                        LocalTermScope::new(vec![0]),
+                        binding.declaration_range,
+                        binding.source_ordinal,
+                    ),
+                };
+            }
+        }
+        _ => {}
+    }
     match SourceBindingContextProducer::build(input)
         .map_err(|error| format!("Task248 source context: {error}"))?
     {
@@ -1220,9 +1364,9 @@ fn task248_context(
     }
 }
 
-fn task249_input(source_id: SourceId, module_id: ModuleId) -> SourceTypeHandoffInput {
+fn task249_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeHandoffInput {
     SourceTypeHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id: module_id.clone(),
         applications: vec![
             SourceTypeApplicationInput {
@@ -1237,42 +1381,40 @@ fn task249_input(source_id: SourceId, module_id: ModuleId) -> SourceTypeHandoffI
             },
         ],
         expressions: vec![
-            bare_set_type(source_id, module_id.clone(), 35, 34, 22, 25),
-            bare_set_type(source_id, module_id, 39, 38, 38, 41),
+            bare_set_type(ast.nodes()[35].range, module_id.clone(), 35, 34),
+            bare_set_type(ast.nodes()[39].range, module_id, 39, 38),
         ],
         arguments: Vec::new(),
     }
 }
 
-fn task249m_input(source_id: SourceId, module_id: ModuleId) -> SourceTypeModeRhsExtensionInput {
+fn task249m_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeModeRhsExtensionInput {
     SourceTypeModeRhsExtensionInput {
-        source_id,
+        source_id: ast.source_id,
         module_id: module_id.clone(),
         rhs: vec![SourceTypeModeRhsInput {
             definition_site: TypedSiteRef::Node(TypedNodeId::new(49)),
-            definition_range: source_range(source_id, 45, 135),
+            definition_range: ast.nodes()[49].range,
             source_ordinal: 0,
-            expression: bare_set_type(source_id, module_id, 44, 43, 95, 98),
+            expression: bare_set_type(ast.nodes()[44].range, module_id, 44, 43),
         }],
     }
 }
 
 fn bare_set_type(
-    source_id: SourceId,
+    range: SourceRange,
     module_id: ModuleId,
     site: usize,
     head_site: usize,
-    start: usize,
-    end: usize,
 ) -> SourceTypeExpressionInput {
     SourceTypeExpressionInput {
-        source_id,
+        source_id: range.source_id,
         module_id,
         site: TypedSiteRef::Node(TypedNodeId::new(site)),
-        source_range: source_range(source_id, start, end),
+        source_range: range,
         spelling: "set".to_owned(),
         head_site: TypedSiteRef::Node(TypedNodeId::new(head_site)),
-        head_range: source_range(source_id, start, end),
+        head_range: range,
         head_spelling: "set".to_owned(),
         form: SourceTypeApplicationForm::Bare,
         head: SourceTypeHead::BuiltinSet,
@@ -1281,27 +1423,25 @@ fn bare_set_type(
 }
 
 fn task262_input(
-    source_id: SourceId,
+    ast: &SurfaceAst,
     module_id: ModuleId,
     resolver: (SymbolId, DefinitionId, SourceContributionId),
+    source_text: &str,
 ) -> SourceModeDefinitionHandoffInput {
     SourceModeDefinitionHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id,
         definitions: vec![SourceModeDefinitionInput {
             symbol: resolver.0,
             definition: resolver.1,
             contribution: resolver.2,
             site: TypedSiteRef::Node(TypedNodeId::new(49)),
-            source_range: source_range(source_id, 45, 135),
+            source_range: ast.nodes()[49].range,
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceModeDefinitionRecovery::Normal,
-            spelling: concat!(
-                "mode Task262ModeDefinition: Task262Mode [x, y] is set;\n",
-                "  sethood by computation(steps: 1);"
-            )
-            .to_owned(),
+            spelling: source_text[ast.nodes()[49].range.start..ast.nodes()[49].range.end]
+                .to_owned(),
             application: SourceModeApplicationId::new(0),
             expansion: SourceModeExpansionId::new(0),
             inhabitation_request: SourceModeInhabitationRequestId::new(0),
@@ -1314,12 +1454,13 @@ fn task262_input(
                 binding: BindingId::new(0),
                 written_type: SourceTypeApplicationId::new(0),
                 site: TypedSiteRef::Node(TypedNodeId::new(37)),
-                source_range: source_range(source_id, 13, 26),
-                declaration_range: source_range(source_id, 17, 18),
-                pattern_range: source_range(source_id, 86, 87),
+                source_range: ast.nodes()[37].range,
+                declaration_range: ast.nodes()[2].range,
+                pattern_range: ast.nodes()[16].range,
                 context: BindingContextId::new(1),
                 recovery: SourceModeDefinitionRecovery::Normal,
-                spelling: "let x be set;".to_owned(),
+                spelling: source_text[ast.nodes()[37].range.start..ast.nodes()[37].range.end]
+                    .to_owned(),
             },
             SourceModeParameterInput {
                 owner: SourceModeDefinitionId::new(0),
@@ -1327,12 +1468,13 @@ fn task262_input(
                 binding: BindingId::new(1),
                 written_type: SourceTypeApplicationId::new(1),
                 site: TypedSiteRef::Node(TypedNodeId::new(41)),
-                source_range: source_range(source_id, 29, 42),
-                declaration_range: source_range(source_id, 33, 34),
-                pattern_range: source_range(source_id, 89, 90),
+                source_range: ast.nodes()[41].range,
+                declaration_range: ast.nodes()[7].range,
+                pattern_range: ast.nodes()[18].range,
                 context: BindingContextId::new(1),
                 recovery: SourceModeDefinitionRecovery::Normal,
-                spelling: "let y be set;".to_owned(),
+                spelling: source_text[ast.nodes()[41].range.start..ast.nodes()[41].range.end]
+                    .to_owned(),
             },
         ],
         applications: vec![SourceModeApplicationInput {
@@ -1340,7 +1482,7 @@ fn task262_input(
             ordinal: 0,
             parameters: vec![SourceModeParameterId::new(0), SourceModeParameterId::new(1)],
             site: TypedSiteRef::Node(TypedNodeId::new(42)),
-            source_range: source_range(source_id, 73, 91),
+            source_range: ast.nodes()[42].range,
             context: BindingContextId::new(1),
             recovery: SourceModeDefinitionRecovery::Normal,
             spelling: "Task262Mode [ x , y ]".to_owned(),
@@ -1350,7 +1492,7 @@ fn task262_input(
             ordinal: 0,
             rhs: SourceTypeModeRhsId::new(0),
             site: TypedSiteRef::Node(TypedNodeId::new(44)),
-            source_range: source_range(source_id, 95, 98),
+            source_range: ast.nodes()[44].range,
             context: BindingContextId::new(1),
             recovery: SourceModeDefinitionRecovery::Normal,
             spelling: "set".to_owned(),
@@ -1361,7 +1503,7 @@ fn task262_input(
             expansion: SourceModeExpansionId::new(0),
             kind: SourceModeInhabitationRequestKind::Rhs,
             site: TypedSiteRef::Node(TypedNodeId::new(44)),
-            source_range: source_range(source_id, 95, 98),
+            source_range: ast.nodes()[44].range,
             context: BindingContextId::new(1),
             recovery: SourceModeDefinitionRecovery::Normal,
             spelling: "set".to_owned(),
@@ -1371,8 +1513,8 @@ fn task262_input(
             ordinal: 0,
             kind: SourceModePropertyKind::Sethood,
             site: TypedSiteRef::Node(TypedNodeId::new(48)),
-            source_range: source_range(source_id, 102, 135),
-            justification: SourceAnchor::Range(source_range(source_id, 113, 134)),
+            source_range: ast.nodes()[48].range,
+            justification: SourceAnchor::Range(ast.nodes()[46].range),
             recovery: SourceModeDefinitionRecovery::Normal,
             spelling: "sethood by computation(steps: 1);".to_owned(),
         }],
@@ -1397,14 +1539,17 @@ fn build_output(
     .then(|| resolver_env_with_mutation(symbols, mutation));
     let symbols = corrupted_symbols.as_ref().unwrap_or(symbols);
     let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
-    let arena = task262_arena(ast)?;
-    let source_context = task248_context(ast, module.clone(), shells, exact, mutation)?;
+    let arena = task262_arena(ast, mutation)?;
+    let context_mutation = match mutation {
+        SourceModeDefinitionRouteMutation::UpperContextRange
+        | SourceModeDefinitionRouteMutation::OverflowUpperContextRange => {
+            SourceModeDefinitionRouteMutation::None
+        }
+        _ => mutation,
+    };
+    let source_context = task248_context(ast, module.clone(), shells, exact, context_mutation)?;
 
-    let mut type_input = task249_input(ast.source_id, module.clone());
-    for (expression, site) in type_input.expressions.iter_mut().zip([35, 39]) {
-        expression.source_range = ast.nodes()[site].range;
-        expression.head_range = ast.nodes()[site].range;
-    }
+    let mut type_input = task249_input(ast, module.clone());
     if mutation == SourceModeDefinitionRouteMutation::RemoveTypeExpression {
         type_input.expressions.pop();
     }
@@ -1421,18 +1566,31 @@ fn build_output(
     let base_type =
         SourceTypeProducer::build(type_input, source_context.binding_env(), symbols, &arena)
             .map_err(|error| format!("Task249 source type: {error}"))?;
-    let mut rhs_input = task249m_input(ast.source_id, module.clone());
+    let mut rhs_input = task249m_input(ast, module.clone());
     if mutation == SourceModeDefinitionRouteMutation::WrongModeRhsOwner {
         rhs_input.rhs[0].definition_site = TypedSiteRef::Node(TypedNodeId::new(48));
     }
-    if mutation == SourceModeDefinitionRouteMutation::WrongModeRhsRange {
-        rhs_input.rhs[0].definition_range = source_range(ast.source_id, 45, 134);
+    if matches!(
+        mutation,
+        SourceModeDefinitionRouteMutation::WrongModeRhsRange
+            | SourceModeDefinitionRouteMutation::UpperRhsOwnerRange
+    ) {
+        rhs_input.rhs[0].definition_range.end -= 1;
+    }
+    if mutation == SourceModeDefinitionRouteMutation::RelocatedModeRhsExpression {
+        rhs_input.rhs[0].expression.source_range.start += 1;
+        rhs_input.rhs[0].expression.source_range.end += 1;
+        rhs_input.rhs[0].expression.head_range = rhs_input.rhs[0].expression.source_range;
     }
     if mutation == SourceModeDefinitionRouteMutation::WrongModeRhsExpression {
         rhs_input.rhs[0].expression.site = TypedSiteRef::Node(TypedNodeId::new(43));
     }
-    let source_type = SourceTypeModeRhsProducer::extend(&base_type, rhs_input, &arena)
-        .map_err(|error| format!("Task249M mode RHS: {error}"))?;
+    let source_type = if mutation == SourceModeDefinitionRouteMutation::MissingModeRhs {
+        base_type
+    } else {
+        SourceTypeModeRhsProducer::extend(&base_type, rhs_input, &arena)
+            .map_err(|error| format!("Task249M mode RHS: {error}"))?
+    };
 
     let contexts = source_context.local_contexts().clone();
     let mut typed_ast = TypedAst::try_new(TypedAstParts {
@@ -1452,15 +1610,22 @@ fn build_output(
     })
     .map_err(|error| format!("Task249M typed installation: {error}"))?;
 
-    let mut mode_input = task262_input(ast.source_id, module, resolver);
-    for (parameter, (site, declaration)) in mode_input.parameters.iter_mut().zip([(37, 2), (41, 7)])
-    {
-        let range = ast.nodes()[site].range;
-        parameter.source_range = range;
-        parameter.declaration_range = ast.nodes()[declaration].range;
-        parameter.spelling = source_text[range.start..range.end].to_owned();
-    }
+    // Alternate Context claims are publicly built for upper validation only;
+    // their intentional Arena disagreement is not a joint Typed installation.
+    let upper_context = (context_mutation != mutation)
+        .then(|| task248_context(ast, module.clone(), shells, exact, mutation))
+        .transpose()?;
+    let upper_symbols = (mutation == SourceModeDefinitionRouteMutation::StaleUpperResolverOrigin)
+        .then(|| resolver_env_with_mutation(symbols, mutation));
+    let mut mode_input = task262_input(ast, module, resolver, source_text);
     match mutation {
+        SourceModeDefinitionRouteMutation::UpperDefinitionRange => {
+            mode_input.definitions[0].source_range.end -= 1
+        }
+        SourceModeDefinitionRouteMutation::MalformedModeParameter => {
+            mode_input.parameters[0].spelling =
+                mode_input.parameters[0].spelling.replacen("let", "bad", 1)
+        }
         SourceModeDefinitionRouteMutation::RemoveModeDefinition => mode_input.definitions.clear(),
         SourceModeDefinitionRouteMutation::RemoveModeParameter => {
             mode_input.parameters.pop();
@@ -1477,7 +1642,7 @@ fn build_output(
             mode_input.parameters[0].owner = SourceModeDefinitionId::new(1);
         }
         SourceModeDefinitionRouteMutation::WrongModeParameterPatternRange => {
-            mode_input.parameters[0].pattern_range = source_range(ast.source_id, 89, 90);
+            mode_input.parameters[0].pattern_range = ast.nodes()[18].range;
         }
         SourceModeDefinitionRouteMutation::WrongModeApplicationParameters => {
             mode_input.applications[0].parameters.swap(0, 1);
@@ -1492,17 +1657,22 @@ fn build_output(
             mode_input.definitions[0].property = None;
         }
         SourceModeDefinitionRouteMutation::WrongModePropertyJustification => {
-            mode_input.properties[0].justification =
-                SourceAnchor::Range(source_range(ast.source_id, 113, 133));
+            mode_input.properties[0].justification = SourceAnchor::Range(source_range(
+                ast.source_id,
+                ast.nodes()[46].range.start,
+                ast.nodes()[46].range.end - 1,
+            ));
         }
         _ => {}
     }
     let projection = SourceModeDefinitionProducer::build(
         mode_input,
-        symbols,
-        typed_ast
-            .source_context()
-            .ok_or_else(|| "Task248 source context disappeared".to_owned())?,
+        upper_symbols.as_ref().unwrap_or(symbols),
+        upper_context.as_ref().unwrap_or(
+            typed_ast
+                .source_context()
+                .ok_or_else(|| "Task248 source context disappeared".to_owned())?,
+        ),
         typed_ast
             .source_type()
             .ok_or_else(|| "Task249M source type disappeared".to_owned())?,
