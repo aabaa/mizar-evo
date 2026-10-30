@@ -162,6 +162,11 @@ those associations.
 
 ## Frozen Lower Bundle And Ownership
 
+The lower Context/Type/Mode-RHS bundle also supports joint relocation of the x
+declaration/type with y and RHS unchanged, through public construction and
+Typed/final assembly. Independent RHS ownership and unrelated obligations remain;
+this neither invokes upper Mode nor authenticates raw source topology.
+
 After the separate Task-249M prerequisite, the exact source consumes only
 these lower profiles:
 

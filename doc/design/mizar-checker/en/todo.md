@@ -39,6 +39,7 @@
 - [x] [Functor parameter Type layout](../../task_contracts/en/CHECKER-FUNCTOR-PARAMETER-TYPE-LAYOUT.md).
 - [x] [Functor joint lower layout](../../task_contracts/en/TEST-FUNCTOR-JOINT-LOWER-LAYOUT.md).
 - [x] [Mode Type layout](../../task_contracts/en/CHECKER-MODE-TYPE-LAYOUT.md).
+- [x] [Mode joint lower layout](../../task_contracts/en/TEST-MODE-JOINT-LOWER-LAYOUT.md).
 - [x] [Property Implementation references](../../task_contracts/en/CHECKER-PROPERTY-IMPLEMENTATION-REFERENCE.md).
 - [x] [Property body layout](../../task_contracts/en/CHECKER-PROPERTY-BODY-LAYOUT.md).
 - [x] [Property coherent prefix layout](../../task_contracts/en/CHECKER-PROPERTY-PREFIX-LAYOUT.md).

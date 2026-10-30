@@ -158,6 +158,10 @@ Surface structure と lower handoff だけである。
 
 ## 凍結する lower bundle と ownership
 
+下位 Context／Type／Mode-RHS bundle は、public constructor と Typed／final assembly
+による x 宣言／型の移動の結合にも対応し、y と RHS は変えない。独立した RHS 所有と無関係な
+obligation を保ち、upper Mode 呼出しや raw source topology の認証は行わない。
+
 separate Task-249M prerequisite後、exact sourceがconsumeするlower profileは
 次だけである。
 
