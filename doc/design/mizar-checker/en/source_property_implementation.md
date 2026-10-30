@@ -24,7 +24,16 @@ text, checked at the child phase. Means Atomic retains canonical `it = it` and i
 existing lower checks/fingerprint; Property physical trivia is not copied into Atomic.
 Equals target/selector text remains gapless. Store physical Property strings unchanged
 and replay their fingerprints. Preserve early lower installations and the original
-shape/baseline/resolver/row/Context/lower/Arena order and error ownership.
+shape/baseline/resolver/row/Context/lower/Arena order, with the following association check.
+After its own frame, Implementation compares its M/Type positions to qualified normal
+Context/embedded BindingEnv/actual Type references. Qualification uses the Context's
+own item envelope, exact existing profile roles/identities, current-source positive
+contained ordered M/type extents of widths1/14, normal active DefinitionParameter
+identity/type-site congruence and the actual Bare Carrier root/head. A qualified
+position disagreement returns InvalidImplementation0; unavailable or incongruent
+references retain late Context→Parameter→Type diagnostics. An item-envelope difference
+alone does not select Implementation. This checks supplied associations, not raw-source
+truth; declaration and binding are co-generated. No child fields or arena19 are read early.
 
 This is supplied local-text consistency. Arbitrary trivia, moved tokens, raw-source
 admission and the full Property layout boundary remain separate. The original exact

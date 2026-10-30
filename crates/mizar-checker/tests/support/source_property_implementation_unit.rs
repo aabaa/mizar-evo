@@ -810,10 +810,22 @@ fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
     );
     let equals = fixture(TestProfile::Equals);
     assert!(
-        validate_source_type_profile(Profile::Equals, means.source, &means.source_type).is_err()
+        validate_source_type_profile(
+            Profile::Equals,
+            means.source,
+            &means.source_type,
+            range(means.source, 130, 144)
+        )
+        .is_err()
     );
     assert!(
-        validate_source_type_profile(Profile::Means, equals.source, &equals.source_type).is_err()
+        validate_source_type_profile(
+            Profile::Means,
+            equals.source,
+            &equals.source_type,
+            range(equals.source, 130, 144)
+        )
+        .is_err()
     );
 
     let mut equals_with_it = equals.clone();
@@ -3222,4 +3234,283 @@ fn task_264_public_nonuniform_lower_relocation_installs_and_replays() {
         assert_eq!(replays[0], replays[1]);
         assert_eq!(original.typed_base(base), original_lower);
     }
+}
+
+#[test]
+fn task_264_public_reference_positions_classify_only_congruent_normal_bundles() {
+    let mut outcomes = Vec::new();
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let original = fixture(profile);
+        let base = unrelated_baseline(original.source);
+        original
+            .build(&base)
+            .expect("canonical upper reference baseline");
+        for case in [
+            "canonical",
+            "joint",
+            "m_only",
+            "type_only",
+            "width2",
+            "item_only",
+            "context_canonical_type_moved",
+            "context_canonical_type_moved_bad_child",
+            "context_moved_type_canonical",
+            "context_moved_type_canonical_bad_child",
+        ] {
+            let mut f = original.clone();
+            let declaration_range = match case {
+                "joint" | "m_only" => range(f.source, 126, 127),
+                "width2" => range(f.source, 125, 127),
+                _ => range(f.source, 125, 126),
+            };
+            let context_type_range = if matches!(
+                case,
+                "joint"
+                    | "type_only"
+                    | "width2"
+                    | "context_moved_type_canonical"
+                    | "context_moved_type_canonical_bad_child"
+            ) {
+                range(f.source, 132, 146)
+            } else {
+                range(f.source, 130, 144)
+            };
+            let actual_type_range = if matches!(
+                case,
+                "joint"
+                    | "type_only"
+                    | "width2"
+                    | "context_canonical_type_moved"
+                    | "context_canonical_type_moved_bad_child"
+            ) {
+                range(f.source, 132, 146)
+            } else {
+                range(f.source, 130, 144)
+            };
+            let item_range = range(
+                f.source,
+                if case == "item_only" { 109 } else { 108 },
+                profile_end(profile),
+            );
+            let shell = property_shell(f.source, &f.module, profile);
+            let scope = LocalTermScope::new(vec![4]);
+            let contexts = [actual_type_range, context_type_range]
+                .into_iter()
+                .map(|written_type_range| {
+                    SourceBindingContextProducer::build(SourceBindingContextInput {
+                        source_id: f.source,
+                        module_id: f.module.clone(),
+                        module_site: node_site(root_node(profile)),
+                        items: vec![SourceItemInput {
+                            shell,
+                            shell_ordinal: 4,
+                            role: SourceItemRole::PropertyImplementation,
+                            module_id: f.module.clone(),
+                            source_range: item_range,
+                            parent: None,
+                            visibility: SourceItemVisibility::Unspecified,
+                            site: node_site(owner_node(profile)),
+                            local_scope: Some(scope.clone()),
+                            recovery: SourceItemRecovery::Normal,
+                        }],
+                        bindings: vec![SourceBindingSiteInput {
+                            shell,
+                            context_owner: SourceBindingContextOwner::Shell(shell),
+                            source_ordinal: 0,
+                            spelling: "M".to_owned(),
+                            declaration_range,
+                            written_type_range,
+                            site: node_site(parameter_node(profile)),
+                            role: SourceBindingSiteRole::DefinitionParameter {
+                                local: LocalTermBinding::new(
+                                    "M",
+                                    scope.clone(),
+                                    declaration_range,
+                                    0,
+                                ),
+                            },
+                            recovery: BindingRecoveryState::Normal,
+                        }],
+                    })
+                    .expect("fresh public reference Context")
+                    .into_complete()
+                    .expect("complete reference Context")
+                    .into_handoff()
+                })
+                .collect::<Vec<_>>();
+            let type_path = if profile == TestProfile::Means {
+                62
+            } else {
+                44
+            };
+            let moved = [
+                (parameter_node(profile), declaration_range),
+                (20, declaration_range),
+                (22, actual_type_range),
+                (type_path, actual_type_range),
+                (type_path + 1, actual_type_range),
+                (type_path + 2, actual_type_range),
+                (owner_node(profile), item_range),
+            ];
+            let nodes = original
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    if let Some((_, span)) = moved.iter().find(|(index, _)| *index == id.index()) {
+                        node.anchor = SourceAnchor::Range(*span);
+                    }
+                    node
+                })
+                .collect();
+            f.arena =
+                TypedArena::try_new(original.arena.root(), nodes).expect("normal reference arena");
+            let mut expressions = original.source_type.expressions().iter().map(|(id, row)| {
+                let span = if id.index() == 0 {
+                    actual_type_range
+                } else {
+                    row.source_range()
+                };
+                SourceTypeExpressionInput {
+                    source_id: row.source_id(),
+                    module_id: row.module_id().clone(),
+                    site: row.site().clone(),
+                    source_range: span,
+                    spelling: row.spelling().to_owned(),
+                    head_site: row.head_site().clone(),
+                    head_range: span,
+                    head_spelling: row.head_spelling().to_owned(),
+                    form: row.form(),
+                    head: row.head().clone(),
+                    recovery: row.recovery(),
+                }
+            });
+            let generic = SourceTypeProducer::build(
+                SourceTypeHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    applications: vec![SourceTypeApplicationInput {
+                        binding: BindingId::new(0),
+                        source_ordinal: 0,
+                        root: SourceTypeExpressionId::new(0),
+                    }],
+                    expressions: vec![expressions.next().expect("real parameter type")],
+                    arguments: Vec::new(),
+                },
+                contexts[0].binding_env(),
+                &f.env,
+                &f.arena,
+            )
+            .expect("actual generic Type against matching Context");
+            f.source_type = SourceTypeStructureMemberProducer::extend_property_implementation(
+                &generic,
+                SourceTypeStructureMemberHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    members: original
+                        .source_type
+                        .structure_members()
+                        .iter()
+                        .zip(expressions)
+                        .map(|((_, member), expression)| SourceTypeStructureMemberInput {
+                            member_site: member.member_site().clone(),
+                            member_range: member.member_range(),
+                            source_ordinal: member.source_ordinal(),
+                            expression,
+                        })
+                        .collect(),
+                },
+                &f.arena,
+            )
+            .expect("actual two-member PI extension");
+            f.context = contexts[1].clone();
+            f.terms = primary_terms(f.source, f.module.clone(), profile, &f.context, &f.arena);
+            if profile == TestProfile::Means {
+                f.formula = Some(atomic_formula(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                ));
+            } else {
+                f.structure = Some(structure(
+                    f.source,
+                    f.module.clone(),
+                    &f.env,
+                    &f.context,
+                    &f.terms,
+                    &f.arena,
+                    false,
+                ));
+            }
+            let declaration = f.context.declarations().iter().next().unwrap().1;
+            assert_eq!(declaration.declaration_range, declaration_range);
+            assert_eq!(declaration.written_type_range, context_type_range);
+            assert_eq!(
+                f.context
+                    .binding_env()
+                    .bindings()
+                    .get(BindingId::new(0))
+                    .unwrap()
+                    .type_site,
+                crate::binding_env::BindingTypeSite::Source(context_type_range)
+            );
+            let root = f
+                .source_type
+                .expressions()
+                .get(SourceTypeExpressionId::new(0))
+                .unwrap();
+            assert_eq!(root.source_range(), actual_type_range);
+            assert_eq!(root.head_range(), actual_type_range);
+            let typed = f.typed_base(base.clone());
+            let resolved = assemble_empty(&typed).expect("actual complete lower reference clone");
+            assert_eq!(typed.source_context(), Some(&f.context));
+            assert_eq!(typed.source_type(), Some(&f.source_type));
+            assert_eq!(typed.source_term(), Some(&f.terms));
+            assert_eq!(typed.source_atomic_formula(), f.formula.as_ref());
+            assert_eq!(typed.source_structure(), f.structure.as_ref());
+            assert_eq!(resolved.source_context(), typed.source_context());
+            assert_eq!(resolved.source_type(), typed.source_type());
+            assert_eq!(resolved.source_term(), typed.source_term());
+            assert_eq!(
+                resolved.source_atomic_formula(),
+                typed.source_atomic_formula()
+            );
+            assert_eq!(resolved.source_structure(), typed.source_structure());
+            assert_eq!(typed.initial_obligations(), &base);
+            assert!(typed.source_property_implementation().is_none());
+            assert!(resolved.source_property_implementation().is_none());
+            assert_eq!(f.input, original.input);
+            if case.ends_with("_bad_child") {
+                f.input.parameters[0].spelling.replace_range(4..5, "N");
+            }
+            let expected = match case {
+                "canonical" => Ok(()),
+                "joint" | "m_only" | "type_only" => {
+                    Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 })
+                }
+                "context_canonical_type_moved_bad_child" => {
+                    Err(SourcePropertyImplementationError::InvalidParameter { index: 0 })
+                }
+                _ => Err(SourcePropertyImplementationError::DependencyMismatch),
+            };
+            let result = f.build(&base).map(|_| ());
+            assert_eq!(f.typed_base(base.clone()), typed);
+            outcomes.push((profile, case, result, expected));
+        }
+    }
+    assert_eq!(outcomes.len(), 20);
+    let failures = outcomes
+        .into_iter()
+        .filter_map(|(profile, case, actual, expected)| {
+            (actual != expected)
+                .then(|| format!("{profile:?}/{case}: expected {expected:?}, actual {actual:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        failures.is_empty(),
+        "public reference classifications: {failures:?}"
+    );
 }

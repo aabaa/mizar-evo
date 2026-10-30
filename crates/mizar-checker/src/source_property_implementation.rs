@@ -1,7 +1,10 @@
 //! Syntax-free struct-property-implementation intake for checker phase 6.
 
 use crate::{
-    binding_env::{BindingContextId, BindingId},
+    binding_env::{
+        BinderIdentity, BindingContextId, BindingId, BindingKind, BindingRecoveryState,
+        BindingStatus, BindingTypeSite,
+    },
     source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeRole, SourceAtomicFormulaHandoff,
@@ -1955,13 +1958,68 @@ fn validate_input(
     {
         return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
     }
-    validate_context(
-        input,
-        source_context,
-        owner_node,
-        implementation_end,
-        parameter_node,
-    )?;
+    let expected_ranges = [
+        implementation.source_range,
+        range(input.source_id, 125, 126),
+        range(input.source_id, 130, 144),
+    ];
+    if let (Some(item), Some((_, declaration)), Some(binding)) = (
+        source_context.items().get(SourceItemId::new(0)),
+        source_context.declarations().iter().next(),
+        source_context
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(0)),
+    ) {
+        let reference_ranges = [
+            item.source_range,
+            declaration.declaration_range,
+            declaration.written_type_range,
+        ];
+        let env = source_context.binding_env();
+        if validate_context(source_context, owner_node, reference_ranges, parameter_node).is_ok()
+            && env.source_id() == input.source_id
+            && env.module_id() == &input.module_id
+            && reference_ranges
+                .iter()
+                .all(|span| span.source_id == input.source_id)
+            && declaration
+                .declaration_range
+                .end
+                .checked_sub(declaration.declaration_range.start)
+                == Some(1)
+            && declaration
+                .written_type_range
+                .end
+                .checked_sub(declaration.written_type_range.start)
+                == Some(14)
+            && item.source_range.start <= declaration.declaration_range.start
+            && declaration.declaration_range.end <= declaration.written_type_range.start
+            && declaration.written_type_range.end <= item.source_range.end
+            && binding.kind == BindingKind::DefinitionParameter
+            && binding.status == BindingStatus::Active
+            && binding.recovery == BindingRecoveryState::Normal
+            && binding.owner_context == declaration.binding_context
+            && binding.declaration_range == declaration.declaration_range
+            && binding.type_site == BindingTypeSite::Source(declaration.written_type_range)
+            && matches!(&binding.identity,
+                BinderIdentity::ResolverLocal { scope, ordinal, declaration_range }
+                    if scope.path() == [4] && *ordinal == 0
+                        && *declaration_range == declaration.declaration_range)
+            && validate_source_type_profile(
+                profile,
+                input.source_id,
+                source_type,
+                declaration.written_type_range,
+            )
+            .is_ok()
+            && (declaration.declaration_range != expected_ranges[1]
+                || declaration.written_type_range != expected_ranges[2])
+        {
+            return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
+        }
+    }
+    validate_context(source_context, owner_node, expected_ranges, parameter_node)?;
 
     let parameter = &input.parameters[0];
     if parameter.owner != SourcePropertyImplementationId::new(0)
@@ -1982,7 +2040,7 @@ fn validate_input(
     {
         return Err(SourcePropertyImplementationError::InvalidParameter { index: 0 });
     }
-    validate_source_type_profile(profile, input.source_id, source_type)?;
+    validate_source_type_profile(profile, input.source_id, source_type, expected_ranges[2])?;
 
     let target = &input.targets[0];
     let expected_target_site = TypedSiteRef::Role {
@@ -2086,10 +2144,9 @@ fn local_spelling_matches(
 }
 
 fn validate_context(
-    input: &SourcePropertyImplementationHandoffInput,
     context: &SourceBindingContextHandoff,
     owner_node: usize,
-    end: usize,
+    expected_ranges: [SourceRange; 3],
     parameter_node: usize,
 ) -> Result<(), SourcePropertyImplementationError> {
     let env = context.binding_env();
@@ -2116,7 +2173,7 @@ fn validate_context(
     if item.shell.index() != 4
         || item.shell_ordinal != 4
         || item.role != SourceItemRole::PropertyImplementation
-        || item.source_range != range(input.source_id, 108, end)
+        || item.source_range != expected_ranges[0]
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.site != TypedSiteRef::Node(TypedNodeId::new(owner_node))
@@ -2132,8 +2189,8 @@ fn validate_context(
         || declaration.binding != BindingId::new(0)
         || declaration.source_ordinal != 0
         || declaration.spelling != "M"
-        || declaration.declaration_range != range(input.source_id, 125, 126)
-        || declaration.written_type_range != range(input.source_id, 130, 144)
+        || declaration.declaration_range != expected_ranges[1]
+        || declaration.written_type_range != expected_ranges[2]
         || declaration.site != TypedSiteRef::Node(TypedNodeId::new(parameter_node))
         || declaration.binding_context != BindingContextId::new(1)
         || declaration.local_context != LocalTypeContextId::new(1)
@@ -2149,8 +2206,10 @@ fn validate_source_type_profile(
     profile: Profile,
     source: SourceId,
     handoff: &SourceTypeApplicationHandoff,
+    parameter_type_range: SourceRange,
 ) -> Result<(), SourcePropertyImplementationError> {
-    if handoff.applications().len() != 1
+    if parameter_type_range.source_id != source
+        || handoff.applications().len() != 1
         || handoff.expressions().len() != 3
         || !handoff.arguments().is_empty()
         || !handoff.definition_returns().is_empty()
@@ -2174,7 +2233,12 @@ fn validate_source_type_profile(
         Profile::Equals => (45, 46, [38, 41]),
     };
     for (index, (site, head_site, start, end)) in [
-        (application_node, head_node, 130, 144),
+        (
+            application_node,
+            head_node,
+            parameter_type_range.start,
+            parameter_type_range.end,
+        ),
         (member_nodes[0] - 1, member_nodes[0] - 2, 62, 65),
         (member_nodes[1] - 1, member_nodes[1] - 2, 90, 93),
     ]

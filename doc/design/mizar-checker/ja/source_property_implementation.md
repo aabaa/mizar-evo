@@ -23,7 +23,16 @@ Means Atomic は正規化表記 `it = it`、既存の下位検査と fingerprint
 Property の物理的 trivia は Atomic にコピーしない。Equals target/selector は
 gapless のまま。Property の物理的な文字列と fingerprint を維持して再検証する。
 先行する下位 installation と元の shape/baseline/resolver/row/Context/lower/Arena
-順序・エラー責務を維持する。
+順序を維持し、Implementation 自身の frame 検査後に次の関連検査を行う。
+正常な Context／埋め込み BindingEnv／実際の Type が同じ M・Type 位置を示す場合、
+自身の物理位置との不一致を InvalidImplementation0 とする。参照の適格性は
+Context 自身の item 範囲、既存 profile の role／identity、current source 内の
+正で包含・順序を満たす幅1／14、正常 active DefinitionParameter の identity と
+Type site、および実際の Bare Carrier root／head の一致から判断する。
+不適格または相互不一致の参照は従来の Context→Parameter→Type 診断へ委ねる。
+item 範囲だけの相違では Implementation と判定しない。これは渡された関連の検査で
+raw source の証明ではなく、declaration と binding は同時生成される。
+子の field や arena19 を先行参照しない。
 
 これは渡された local text の整合性であり、任意 trivia、token 移動、raw source
 admission、Property 全体の layout 境界は別の課題である。以下の元ソース、座標、

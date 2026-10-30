@@ -6,7 +6,7 @@ crates/mizar-checker/src/source_functor_definition.rs	7
 crates/mizar-checker/src/source_mode_definition.rs	11
 crates/mizar-checker/src/source_predicate_definition.rs	13
 crates/mizar-checker/src/source_proof_local_declaration.rs	67
-crates/mizar-checker/src/source_property_implementation.rs	23
+crates/mizar-checker/src/source_property_implementation.rs	22
 crates/mizar-checker/src/source_statement.rs	371
 crates/mizar-checker/src/source_structure_definition.rs	2
 crates/mizar-checker/src/source_term.rs	7

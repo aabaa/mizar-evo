@@ -36,6 +36,7 @@
 - [x] [Functor parameter Type layout](../../task_contracts/ja/CHECKER-FUNCTOR-PARAMETER-TYPE-LAYOUT.md).
 - [x] [Functor joint lower layout](../../task_contracts/ja/TEST-FUNCTOR-JOINT-LOWER-LAYOUT.md).
 - [x] [Mode Type layout](../../task_contracts/ja/CHECKER-MODE-TYPE-LAYOUT.md).
+- [x] [Property Implementation references](../../task_contracts/ja/CHECKER-PROPERTY-IMPLEMENTATION-REFERENCE.md).
 
 ## 状態の凡例
 
