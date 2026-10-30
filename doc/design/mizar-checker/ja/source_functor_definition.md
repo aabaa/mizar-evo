@@ -17,7 +17,7 @@ axiom、FOL goal、discharge、VC、Core/ControlFlow IRは作りません。
 
 ## Frozen Exact Source
 
-future active sourceはfinal LF込みでexactly次です。
+canonical sourceはfinal LF込みで次です。
 
 ```mizar
 definition
@@ -39,9 +39,22 @@ primary-term/formula definiens各1件、explicit existence/uniqueness clause各1
 含みます。import/reserve/predicate/property/theorem/proof block/conditional/
 otherwise/redefinition/notation/recoveryはありません。
 
+### Native Prefix Boundary
+
+native routeは先頭SP/TAB/LFと、`definition`から最初の`let`までだけの通常
+SingleLine/MultiLine commentも受理する。既存lexer scope/preprocessと単一fragmentの
+token mapで供給source全byte、62token、108正常Surface row/childを照合する。
+未報告gap byteはSP/TAB/LF、commentなしでは元のgapとm=dを維持する。最初のletから
+final LFまでのbodyは不変。実parameter type終端はlower境界61以下が必要で、このbodyは
+d<=20に限る。他のtrivia/body familyは拒否し、source-ageやloaded-source sealを主張しない。
+Arena/Context/resolverと全lower/upper入力は実AST range/child/physical spellingから構築し、
+parameter65/69のanchorはidentifier tokenを使う。実public chainはTyped/final transportと
+Pending obligation2件まで。canonical Core probeは別のprivate consumerで、Core/acceptance
+creditを与えない。
+
 ## Frozen Surface / Resolver Profile
 
-frontendはzero diagnostics、dense Surface rows 108、root node 107/range
+canonical frontendはzero diagnostics、dense Surface rows 108、root node 107/range
 `0..261`/normalです。relevant rowはparameter type `62/63`・`66/67`、
 DefinitionParameter `65/69`、guard subtree `70..77`、equals pattern/return/body/
 definition `78..84`、means pattern/return/body/definition `85..95`、existence
@@ -180,7 +193,7 @@ body比較はdだけ移動し、Context/contributionの開始はmとする。構
 通常の全検査は従来順で行う。孤立したcanonical stale claimのエラーは維持し、
 新たに整合した移動claimは通常のresolver/rowエラーへ進み得る。実rangeを正規化しない。
 これはsource認証や意味論的owner帰属を証明しない。lower Type境界による制限と
-native routingは変わらない。
+native prefix抽出もこのlower Type境界に従う。
 
 projectionはhandoff、unchanged baseline obligation、baseline-plus-twoを返します。
 `TypedAst::with_source_functor_definition(SourceFunctorDefinitionProjection)

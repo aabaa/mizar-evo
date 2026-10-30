@@ -21,7 +21,7 @@ goal, discharge an obligation, publish a VC, or lower Core/ControlFlow IR.
 
 ## Frozen Exact Source
 
-The future active source is exactly, including the final LF:
+The canonical source, including the final LF, is:
 
 ```mizar
 definition
@@ -45,9 +45,24 @@ There is no import, reserve, predicate, property, theorem, proof block,
 conditional definiens, `otherwise`, redefinition, notation declaration, or
 recovery.
 
+### Native Prefix Boundary
+
+The native route also admits leading SP/TAB/LF and ordinary SingleLine/MultiLine
+comments solely between `definition` and the first `let`. Existing lexer scope,
+preprocessing and single-fragment token maps authenticate every supplied byte,
+all 62 tokens and all 108 normal Surface rows/children. Unreported gap bytes are
+SP/TAB/LF; without a comment the original gap and m=d remain exact. The source
+body from first `let` through final LF is unchanged. Actual parameter type ends
+must fit the lower cutoff61, so this body permits d<=20. Other trivia/body families
+remain refused. This coherence supplies no source-age or loaded-source seal.
+Arena, Context, resolver and every lower/upper input use actual authenticated AST
+ranges/children and physical spellings; parameter65/69 anchors are identifier tokens.
+The real public chain ends at Typed/final transport and two Pending obligations.
+Canonical Core probes are separate private consumers; no Core/acceptance credit follows.
+
 ## Frozen Surface Profile
 
-The frontend produces zero diagnostics and exactly 108 dense Surface rows.
+The canonical frontend result has zero diagnostics and exactly 108 dense Surface rows.
 The root is node 107, range `0..261`, normal. The structural rows needed by
 the private runner are:
 
@@ -78,13 +93,13 @@ label ranges are `66..82` and `126..141`; patterns are `84..101` and
 of node 104 in source order.
 
 The checker never receives these raw node numbers or syntax kinds. The
-private `mizar-test` selector authenticates every loaded byte, final LF, all
+private `mizar-test` selector cross-checks every supplied byte, final LF, all
 108 row kinds/ranges/recovery/ordered children, root identity, direct sibling
 order, and subtree partition before constructing syntax-free inputs.
 
 ## Frozen Raw Resolver Provenance
 
-The resolver result is exactly three shells, two signature projections, zero
+The canonical resolver result is exactly three shells, two signature projections, zero
 symbol diagnostics, two functor symbols, two functor definitions, and one
 local-source contribution:
 
@@ -510,7 +525,7 @@ resolver and expression metadata. Every ordinary check still runs in its old ord
 Isolated stale canonical claims retain their old errors; newly coherent shifted
 claims may reach ordinary resolver/row errors. Actual ranges remain unnormalized.
 This proves neither source authentication nor semantic owner attribution. The lower
-Type cutoff still limits jointly constructible layouts; native routing is unchanged.
+Type cutoff still limits jointly constructible layouts and native prefix extraction.
 
 The producer returns the exact projection specified above. Failure is atomic.
 The public installation surface is:
@@ -574,7 +589,7 @@ credits successful source transport and pending-obligation intake only, not
 definition correctness or acceptance. One covered trace row backlinks only
 this sidecar.
 
-The private runner route authenticates the exact loaded source, normal AST,
+The private runner route authenticates the bounded source family, normal AST,
 resolver profile, Task-248/249/252/256 bundle, and `2/2/1/2/2` Task-260
 result. It runs before the generic definition extraction gap but matches no
 other active case. Existing parser fixtures, mixed predicate/functor gap,

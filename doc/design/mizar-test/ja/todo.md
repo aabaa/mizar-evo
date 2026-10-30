@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-FUNCTOR-RAW-PREFIX-BRIDGE](../../task_contracts/ja/TEST-FUNCTOR-RAW-PREFIX-BRIDGE.md).
+
 - [x] [TEST-MODE-INTERTOKEN-GAP-BRIDGE](../../task_contracts/ja/TEST-MODE-INTERTOKEN-GAP-BRIDGE.md).
 
 - [x] [TEST-MODE-LEADING-LINE-BRIDGE](../../task_contracts/ja/TEST-MODE-LEADING-LINE-BRIDGE.md).

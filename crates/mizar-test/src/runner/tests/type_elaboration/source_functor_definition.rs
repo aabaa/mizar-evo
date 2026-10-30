@@ -1156,10 +1156,15 @@ fn functor_return_expression_layout_has_real_frontend_witnesses() {
 
 #[test]
 fn functor_prefix_geometry_has_real_frontend_witnesses() {
-    let (canonical, _, canonical_shells, _, diagnostics) =
+    let (canonical, canonical_module, canonical_shells, canonical_symbols, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_320);
     assert_eq!(diagnostics, 0);
     assert_eq!(canonical.nodes().len(), 108);
+    let canonical_before = (canonical.clone(), canonical_shells.clone(), canonical_symbols.clone());
+    let original = source_functor_definition_output(
+        &canonical, canonical_module.clone(), &canonical_shells, &canonical_symbols,
+        SOURCE_FUNCTOR_DEFINITION_TEXT,
+    ).expect("original native selector").expect("original native public producer chain");
     let mut sources = metamorphic_edits::variants(&canonical, SOURCE_FUNCTOR_DEFINITION_TEXT)
         .into_iter()
         .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
@@ -1173,17 +1178,34 @@ fn functor_prefix_geometry_has_real_frontend_witnesses() {
     assert_eq!(sources[1].1, SOURCE_FUNCTOR_DEFINITION_TEXT.replacen(
         "definition", "definition :: metamorphic\n", 1));
     sources.push(("mixed_prefix_intertoken", format!(" \t\n{}", sources[1].1)));
+    sources.push(("multiline_gap", SOURCE_FUNCTOR_DEFINITION_TEXT.replacen(
+        "definition", "definition ::= gap\nbody =::", 1)));
+    sources.push(("cutoff20", format!("{}{}", " ".repeat(20), SOURCE_FUNCTOR_DEFINITION_TEXT)));
+    sources.push(("cutoff21", format!("{}{}", " ".repeat(21), SOURCE_FUNCTOR_DEFINITION_TEXT)));
+    let mut outcomes = Vec::new();
     for (ordinal, ((case, source), (m, d))) in sources
         .into_iter()
-        .zip([(1, 1), (0, 16), (3, 19)])
+        .zip([(1, 1), (0, 16), (3, 19), (0, 17), (20, 20), (21, 21)])
         .enumerate()
     {
         assert_eq!(source.len(), 262 + d, "{case}");
+        if m != d {
+            let lexical = mizar_lexer::preprocess_source_for_lexing(&source);
+            assert!(lexical.diagnostics.is_empty(), "{case}");
+            assert_eq!(lexical.comments.len(), 1, "{case}");
+            assert_eq!(lexical.comments[0].kind, if case == "multiline_gap" {
+                mizar_lexer::CommentKind::MultiLine
+            } else { mizar_lexer::CommentKind::SingleLine });
+            assert!(lexical.comments[0].span.start >= m + 10);
+            assert!(lexical.comments[0].span.end <= d + 13);
+        }
+        assert_eq!(&source[d + 13..], &SOURCE_FUNCTOR_DEFINITION_TEXT[13..], "{case} body bytes");
         let (ast, module, shells, symbols, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&source, 260_321 + ordinal);
         assert_eq!(diagnostics, 0, "{case} native Frontend diagnostics");
         assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (108, Some(107)));
         assert!(ast.expression_root().is_none());
+        assert_eq!(ast.token_nodes().iter().map(|id| id.index()).collect::<Vec<_>>(), (0..62).collect::<Vec<_>>());
         for (index, (actual, expected)) in ast.nodes().iter().zip(canonical.nodes()).enumerate() {
             assert!(!actual.recovered, "{case} node {index}");
             assert_eq!(actual.kind, expected.kind, "{case} node {index} kind/text");
@@ -1247,9 +1269,222 @@ fn functor_prefix_geometry_has_real_frontend_witnesses() {
             assert!(contribution.effects().symbols().contains(definition.symbol()));
             assert!(contribution.effects().definitions().contains(&definition.id()));
         }
-        assert!(source_functor_definition_output(&ast, module, &shells, &symbols, &source).is_none(),
-            "{case}: native routing remains deferred");
+        let before = (ast.clone(), shells.clone(), symbols.clone());
+        let result = source_functor_definition_output(&ast, module.clone(), &shells, &symbols, &source);
+        outcomes.push((case, source, m, d, ast, module, shells, symbols, before, result));
     }
+    let failures = outcomes.iter().filter_map(|(case, _, _, d, _, _, _, _, _, result)| {
+        match (*d <= 20, result) {
+            (true, Some(Ok(_))) | (false, None) => None,
+            (_, None) => Some(format!("{case}: None")),
+            (_, Some(Err(error))) => Some(format!("{case}: SomeErr({error})")),
+            (false, Some(Ok(_))) => Some(format!("{case}: unsupported cutoff selected")),
+        }
+    }).collect::<Vec<_>>();
+    assert!(failures.is_empty(), "actual native prefix outcomes: {failures:?}");
+    for (case, source, m, d, ast, module, shells, symbols, before, result) in outcomes {
+        assert_eq!((&ast, &shells, &symbols), (&before.0, &before.1, &before.2), "{case} parsed inputs");
+        if d > 20 { continue; }
+        let output = result.unwrap().unwrap();
+        let replay = source_functor_definition_output(&ast, module, &shells, &symbols, &source)
+            .expect("fresh native selector").expect("fresh native producer replay");
+        assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text(), "{case}");
+        assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text(), "{case}");
+        assert_eq!((&ast, &shells, &symbols), (&before.0, &before.1, &before.2), "{case} replay inputs");
+        let typed = &output.typed_ast;
+        let context = typed.source_context().expect("actual Context/BindingEnv");
+        let types = typed.source_type().expect("actual generic Type/249R");
+        let terms = typed.source_term().expect("actual Primary");
+        let atomic = typed.source_atomic_formula().expect("actual Atomic");
+        let functor = typed.source_functor_definition().expect("actual upper Functor");
+        assert_eq!((context.items().len(), context.declarations().len(), context.binding_env().bindings().len()), (1, 2, 2));
+        assert_eq!((types.applications().len(), types.expressions().len(), types.definition_returns().len(), terms.terms().len(), terms.references().len()), (2, 4, 2, 5, 5));
+        assert_eq!((atomic.formulas().len(), atomic.edges().len(), atomic.requests().len()), (2, 4, 4));
+        assert_eq!((functor.definitions().len(), functor.parameters().len(), functor.guards().len(), functor.definientia().len(), functor.correctness().len()), (2, 2, 1, 2, 2));
+        assert_eq!(context.items().iter().next().unwrap().1.source_range, task260_range(ast.source_id, m, d + 261));
+        assert_eq!(functor.source_context_fingerprint(), context.debug_text());
+        assert_eq!(functor.source_type_fingerprint(), types.debug_text());
+        assert_eq!(functor.source_term_fingerprint(), terms.debug_text());
+        assert_eq!(functor.atomic_formula_fingerprint(), Some(atomic.debug_text().as_str()));
+        assert_eq!(atomic.primary_term_fingerprint(), terms.debug_text());
+        assert_eq!(output.resolved.source_context(), Some(context));
+        assert_eq!(output.resolved.source_type(), Some(types));
+        assert_eq!(output.resolved.source_term(), Some(terms));
+        assert_eq!(output.resolved.source_atomic_formula(), Some(atomic));
+        assert_eq!(output.resolved.source_functor_definition(), Some(functor));
+        for (index, surface) in ast.nodes().iter().enumerate() {
+            let expected = match index {
+                65 => ast.nodes()[2].range,
+                69 => ast.nodes()[7].range,
+                _ => surface.range,
+            };
+            let node = typed.nodes().node(mizar_checker::typed_ast::TypedNodeId::new(index)).unwrap();
+            assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(expected), "{case} actual Arena row {index}");
+            assert_eq!(node.kind, original.typed_ast.nodes().node(mizar_checker::typed_ast::TypedNodeId::new(index)).unwrap().kind);
+            assert_eq!(node.children.iter().map(|id| id.index()).collect::<Vec<_>>(), surface.children.iter().map(|id| id.index()).collect::<Vec<_>>());
+            let resolved = output.resolved.nodes().iter().find(|(_, row)| row.typed_node.index() == index).unwrap().1;
+            assert_eq!(resolved.source_range, expected, "{case} final row {index}");
+            assert!(resolved.final_type.is_none());
+            assert!(resolved.metadata.is_none());
+        }
+        for (index, (_, row)) in functor.definitions().iter().enumerate() {
+            let owner = types.definition_returns().get(row.return_type()).unwrap();
+            let expression = types.expressions().get(owner.root()).unwrap();
+            assert_eq!(row.source_range(), ast.nodes()[[84, 95][index]].range);
+            assert_eq!(row.spelling(), &source[row.source_range().start..row.source_range().end]);
+            assert_eq!(row.source_range(), owner.definition_range());
+            assert_eq!(row.site(), owner.definition_site());
+            assert_eq!(row.origin(), symbols.definitions().get(row.definition()).unwrap().origin());
+            assert_eq!(expression.source_range(), ast.nodes()[[80, 87][index]].range);
+            assert_eq!(expression.head_range(), ast.nodes()[[79, 86][index]].range);
+        }
+        for (index, (_, row)) in functor.parameters().iter().enumerate() {
+            let declaration = context.declarations().iter().nth(index).unwrap().1;
+            let binding = context.binding_env().bindings().get(row.binding()).unwrap();
+            let application = types.applications().get(row.written_type()).unwrap();
+            let expression = types.expressions().get(application.root()).unwrap();
+            assert_eq!(row.source_range(), ast.nodes()[[65, 69][index]].range);
+            assert_eq!(row.spelling(), &source[row.source_range().start..row.source_range().end]);
+            assert_eq!(row.declaration_range(), ast.nodes()[[2, 7][index]].range);
+            assert_eq!(row.binding(), declaration.binding);
+            assert_eq!(binding.declaration_range, declaration.declaration_range);
+            assert_eq!(row.declaration_range(), declaration.declaration_range);
+            assert_eq!(application.binding(), row.binding());
+            assert_eq!(expression.source_range(), declaration.written_type_range);
+            assert_eq!(expression.source_range(), ast.nodes()[[63, 67][index]].range);
+            assert_eq!(binding.type_site, mizar_checker::binding_env::BindingTypeSite::Source(expression.source_range()));
+        }
+        let guard = functor.guards().iter().next().unwrap().1;
+        assert_eq!(atomic.formulas().get(guard.formula()).unwrap().source_range(), ast.nodes()[75].range);
+        for (_, row) in functor.definientia().iter() {
+            let target = match row.target() {
+                mizar_checker::source_functor_definition::SourceFunctorDefiniensTarget::Primary(id) => terms.terms().get(id).unwrap().source_range(),
+                mizar_checker::source_functor_definition::SourceFunctorDefiniensTarget::AtomicFormula(id) => atomic.formulas().get(id).unwrap().source_range(),
+                _ => panic!("{case} unexpected definiens target"),
+            };
+            assert_eq!(row.source_range(), target);
+            assert_eq!(functor.definitions().get(row.owner()).unwrap().definiens(), row.id());
+        }
+        assert_eq!(typed.initial_obligations().len(), 2);
+        for (index, (_, row)) in functor.correctness().iter().enumerate() {
+            let obligation = typed.initial_obligations().get(row.obligation()).unwrap();
+            let old = original.typed_ast.initial_obligations().get(row.obligation()).unwrap();
+            assert_eq!(obligation.source_range, ast.nodes()[[99, 103][index]].range);
+            assert_eq!(obligation.status, mizar_checker::typed_ast::InitialObligationStatus::Pending);
+            assert_eq!((&obligation.kind, &obligation.owner, &obligation.assumptions, &obligation.goal, &obligation.provenance), (&old.kind, &old.owner, &old.assumptions, &old.goal, &old.provenance));
+            assert_eq!(row.justification(), &mizar_session::SourceAnchor::Range(ast.nodes()[[98, 102][index]].range));
+        }
+        assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty() && typed.diagnostics().is_empty());
+        assert!(output.resolved.checked_formulas().is_empty() && output.resolved.checked_proofs().is_empty() && output.resolved.checked_proof_nodes().is_empty() && output.resolved.checked_terminal_goals().is_empty() && output.resolved.statement_semantics().is_empty() && output.resolved.cluster_facts().is_empty() && output.resolved.expr_metadata().is_empty() && output.resolved.inserted_coercions().is_empty() && output.resolved.diagnostics().is_empty());
+        let debug = format!("{}{}", typed.debug_text(), output.resolved.debug_text()).to_ascii_lowercase();
+        for forbidden in ["accepted", "activated", "core-ir", "control-flow", "verification-condition"] {
+            assert!(!debug.contains(forbidden), "{case} leaked {forbidden}");
+        }
+    }
+    assert_eq!((canonical, canonical_shells, canonical_symbols), canonical_before, "original parsed artifacts");
+}
+
+#[test]
+fn functor_raw_prefix_authentication_preserves_refusals() {
+    let source = SOURCE_FUNCTOR_DEFINITION_TEXT.replacen("definition", "definition :: metamorphic\n", 1);
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&source, 260_340);
+    assert_eq!(diagnostics, 0);
+    source_functor_definition_output(&ast, module.clone(), &shells, &symbols, &source)
+        .expect("authenticated intertoken family").expect("actual complete native baseline");
+    let (canonical, canonical_module, canonical_shells, canonical_symbols) =
+        task253_ast_from_source_text(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_341);
+    assert!(source_functor_definition_output(
+        &ast, module.clone(), &shells, &symbols, SOURCE_FUNCTOR_DEFINITION_TEXT,
+    ).is_none(), "current displaced AST cannot authenticate canonical raw text");
+    assert!(source_functor_definition_output(
+        &canonical, canonical_module, &canonical_shells, &canonical_symbols, &source,
+    ).is_none(), "canonical AST cannot authenticate displaced raw text");
+    for mutation in [Task260SurfaceMutation::StructuralKind, Task260SurfaceMutation::ComputationDescendant] {
+        let malformed = task260_mutated_surface_ast(&ast, mutation);
+        assert!(source_functor_definition_output(&malformed, module.clone(), &shells, &symbols, &source).is_none(),
+            "owned/unowned Surface corruption {mutation:?}");
+    }
+    for (ordinal, (case, unsupported)) in [
+        ("no_comment_changed_gap", SOURCE_FUNCTOR_DEFINITION_TEXT.replacen("definition\n  let", "definition \n let", 1)),
+        ("documentation_gap", source.replacen(":: metamorphic", "::: metamorphic", 1)),
+        ("prefix_comment", format!(":: prefix\n{SOURCE_FUNCTOR_DEFINITION_TEXT}")),
+        ("parameter_comment", source.replacen("let x be", "let x :: parameter\nbe", 1)),
+        ("body_comment", source.replacen("means x = y", "means x :: body\n= y", 1)),
+        ("annotation", source.replacen("  func", "  @latex(\"P(x)\")\n  func", 1)),
+        ("gap_cr", source.replacen("definition ", "definition\r", 1)),
+        ("prefix_cr", format!("\r{source}")),
+        ("suffix_comment", format!("{source}:: suffix\n")),
+    ].into_iter().enumerate() {
+        if case == "no_comment_changed_gap" { assert_eq!(unsupported.len(), SOURCE_FUNCTOR_DEFINITION_TEXT.len()); }
+        if case == "documentation_gap" {
+            assert_eq!(mizar_lexer::preprocess_source_for_lexing(&unsupported).comments[0].kind, mizar_lexer::CommentKind::Documentation);
+        }
+        let (candidate, candidate_module, candidate_shells, candidate_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&unsupported, 260_342 + ordinal);
+        if !matches!(case, "gap_cr" | "prefix_cr") { assert_eq!(diagnostics, 0, "{case} genuine Frontend witness"); }
+        assert!(source_functor_definition_output(
+            &candidate, candidate_module, &candidate_shells, &candidate_symbols, &unsupported,
+        ).is_none(), "{case} remains outside the source family");
+    }
+    // Selected families keep owner-stage errors after source/Surface authentication.
+    for (mutation, owner) in [
+        (SourceFunctorDefinitionRouteMutation::WrongContextBindingSite(0), "Task248 source context:"),
+        (SourceFunctorDefinitionRouteMutation::RemoveTypeExpression, "Task249 source type:"),
+        (SourceFunctorDefinitionRouteMutation::WrongReturnRange, "Task249R return type:"),
+        (SourceFunctorDefinitionRouteMutation::WrongTermBinding(4), "Task252 source term:"),
+        (SourceFunctorDefinitionRouteMutation::WrongAtomicEdge(0), "Task256 atomic formula:"),
+        (SourceFunctorDefinitionRouteMutation::RemoveFunctorGuard, "Task260 functor definition:"),
+    ] {
+        let error = source_functor_definition_output_with_mutation(&ast, module.clone(), &shells, &symbols, &source, mutation)
+            .expect("actual intertoken source remains selected").expect_err("existing lower corruption must fail");
+        assert!(error.starts_with(owner), "{mutation:?}: {error}");
+    }
+    // Rebind only geometry within the current bundle: source/module/IDs and all
+    // signatures/effects stay current, while origins and contribution are canonical.
+    let mut stale_symbols = mizar_resolve::env::SymbolIndex::new();
+    let mut stale_definitions = mizar_resolve::env::DefinitionIndex::new();
+    for (index, old) in symbols.definitions().iter().enumerate() {
+        let symbol = symbols.symbols().get(old.symbol()).unwrap();
+        let expected = &TASK260_EXPECTED_SURFACE_ROWS[[84, 95][index]];
+        let origin = mizar_resolve::resolved_ast::SemanticOrigin::new(
+            ast.source_id, module.clone(),
+            mizar_session::SourceAnchor::Range(task260_range(ast.source_id, expected.start, expected.end)),
+            old.origin().structural_path().to_vec(),
+        );
+        assert_eq!(origin.source_id(), old.origin().source_id());
+        assert_eq!(origin.module_id(), old.origin().module_id());
+        stale_symbols.insert(mizar_resolve::env::SymbolEntry::new(
+            symbol.symbol().clone(), symbol.kind(), symbol.namespace().clone(), symbol.primary_spelling(), origin.clone(), symbol.contribution(),
+        ).with_visibility(symbol.visibility()).with_export_status(symbol.export_status())
+            .with_notation_spelling(symbol.notation_spelling().unwrap()).with_signature(symbol.signature().unwrap().clone())
+            .with_relations(symbol.relations().to_vec()));
+        assert!(old.doc_attachment().is_none() && old.conflict().is_none());
+        assert_eq!(stale_definitions.insert(mizar_resolve::env::DefinitionShell::new(
+            old.symbol().clone(), old.kind(), origin, old.contribution(),
+        ).with_visibility(old.visibility()).with_parameters(old.parameters().to_vec()).with_binders(old.binders().to_vec())
+            .with_dependencies(old.dependencies().to_vec()).with_arity(old.arity().unwrap())
+            .with_notation_shape(old.notation_shape().unwrap()).with_signature(old.signature().unwrap().clone())), old.id());
+    }
+    let mut stale_contributions = mizar_resolve::env::SourceContributionIndex::new();
+    for old in symbols.contributions().iter() {
+        let id = stale_contributions.insert(module.clone(), old.kind().clone(),
+            mizar_session::SourceAnchor::Range(task260_range(ast.source_id, 0, 261)));
+        assert_eq!(id, old.id());
+        for symbol in old.effects().symbols() { stale_contributions.add_symbol(id, symbol.clone()); }
+        for definition in old.effects().definitions() { stale_contributions.add_definition(id, *definition); }
+        assert_eq!(stale_contributions.get(id).unwrap().effects(), old.effects());
+    }
+    let stale = mizar_resolve::env::SymbolEnv::new(module.clone(), mizar_resolve::env::SymbolEnvIndexes {
+        imports: symbols.imports().clone(), exports: symbols.exports().clone(), symbols: stale_symbols,
+        labels: symbols.labels().clone(), definitions: stale_definitions, overloads: symbols.overloads().clone(),
+        registrations: symbols.registrations().clone(), lexical_summaries: symbols.lexical_summaries().clone(),
+        namespace_graph: symbols.namespace_graph().clone(), declaration_dependencies: symbols.declaration_dependencies().clone(),
+        contributions: stale_contributions, module_summaries: symbols.module_summaries().clone(),
+    });
+    let error = source_functor_definition_output(&ast, module, &shells, &stale, &source)
+        .expect("same-source stale resolver remains selected").expect_err("canonical resolver ranges are stale");
+    assert_eq!(error, "Task260 resolver: functor origin is not exact");
 }
 
 #[test]
@@ -1749,6 +1984,23 @@ fn task260_expectation_selection_and_predicate_route_stay_isolated() {
     );
     assert_eq!(task260_result.status, TypeElaborationCaseStatus::Passed);
     assert!(task260_result.actual_detail_keys.is_empty());
+    let frontend = run_frontend(&workspace_root, task260_case, task260_ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let mut variants = Vec::new();
+    for (kind, edits) in metamorphic_edits::variants(frontend.ast.as_ref().unwrap(), SOURCE_FUNCTOR_DEFINITION_TEXT)
+        .into_iter().filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+    {
+        let source = metamorphic_edits::apply(SOURCE_FUNCTOR_DEFINITION_TEXT, &edits);
+        let result = metamorphic_guard::with_source(task260_case, &source, || {
+            run_type_elaboration_case(&workspace_root, &workspace_root.join("tests"), task260_case, task260_ordinal)
+        });
+        variants.push((kind, result));
+    }
+    assert_eq!(variants.iter().map(|(kind, _)| *kind).collect::<Vec<_>>(), ["leading_line", "intertoken_layout"]);
+    for (kind, result) in variants {
+        assert_eq!(result.status, TypeElaborationCaseStatus::Passed, "{kind}: {:?}", result.actual_detail_keys);
+        assert!(result.actual_detail_keys.is_empty(), "{kind}");
+    }
 
     let (functor_ast, functor_module, functor_shells, functor_symbols) =
         task253_ast_from_source_text(SOURCE_FUNCTOR_DEFINITION_TEXT, 260_090);

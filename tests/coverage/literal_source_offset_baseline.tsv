@@ -21,7 +21,6 @@ crates/mizar-session/src/source_map.rs	1
 crates/mizar-test/src/runner/type_elaboration/source_application.rs	1
 crates/mizar-test/src/runner/type_elaboration/source_attribute_definition.rs	18
 crates/mizar-test/src/runner/type_elaboration/source_context.rs	1
-crates/mizar-test/src/runner/type_elaboration/source_functor_definition.rs	28
 crates/mizar-test/src/runner/type_elaboration/source_mode_definition.rs	26
 crates/mizar-test/src/runner/type_elaboration/source_predicate_definition.rs	27
 crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs	35

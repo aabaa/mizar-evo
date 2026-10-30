@@ -871,28 +871,121 @@ fn source_functor_definition_output_impl(
     source_text: &str,
     mutation: SourceFunctorDefinitionRouteMutation,
 ) -> Option<Result<SourceFunctorDefinitionRouteOutput, String>> {
-    let exact = exact_functor_definition(ast, source_text)?;
-    Some(build_output(ast, module, shells, symbols, exact, mutation))
+    let exact = exact_functor_definition(ast, &module, source_text)?;
+    Some(build_output(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        exact,
+        mutation,
+    ))
 }
 
-fn exact_functor_definition(ast: &SurfaceAst, source_text: &str) -> Option<ExactFunctorDefinition> {
-    if source_text != SOURCE_FUNCTOR_DEFINITION_TEXT
-        || source_text.len() != 262
-        || !source_text.ends_with('\n')
-        || source_text.ends_with("\n\n")
-        || ast.root().map(SurfaceNodeId::index) != Some(107)
-        || ast.expression_root().is_some()
-        || !surface_profile_is_exact(ast)
+fn exact_functor_definition(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    source_text: &str,
+) -> Option<ExactFunctorDefinition> {
+    if ast.root().map(SurfaceNodeId::index) != Some(107) || ast.expression_root().is_some() {
+        return None;
+    }
+    let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+    if !preprocessed.diagnostics.is_empty() {
+        return None;
+    }
+    let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+    let environment = mizar_lexer::build_lexical_environment(&[], &[]).ok()?;
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &raw,
+        mizar_lexer::ModuleId::new(module.path().as_str()),
+    );
+    let scopes = mizar_lexer::build_scope_skeleton(&raw);
+    if !scopes.diagnostics.is_empty() {
+        return None;
+    }
+    let native = mizar_lexer::disambiguate_with_local_declarations(
+        &raw,
+        &environment,
+        &locals,
+        &mizar_lexer::ParserLexContext::general(),
+        &scopes,
+    );
+    if !native.diagnostics().is_empty() || native.tokens().len() != 62 {
+        return None;
+    }
+    let mut mapped = Vec::with_capacity(62);
+    for (token, expected) in native.tokens().iter().zip(EXACT_SURFACE_PROFILE) {
+        let kind = match token.kind() {
+            mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
+            mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
+            mizar_lexer::TokenKind::Identifier => SurfaceTokenKind::Identifier,
+            mizar_lexer::TokenKind::Numeral => SurfaceTokenKind::Numeral,
+            _ => return None,
+        };
+        if !matches!(&expected.kind, ExactSurfaceKind::Token(expected_kind, text)
+            if kind == *expected_kind && token.lexeme() == *text)
+        {
+            return None;
+        }
+        let fragments = preprocessed
+            .preprocess_map
+            .source_ranges_for_lexical(token.span())?;
+        let [span] = fragments.as_slice() else {
+            return None;
+        };
+        if source_text.get(span.start..span.end) != Some(token.lexeme()) {
+            return None;
+        }
+        mapped.push(*span);
+    }
+    let m = mapped[0].start;
+    let d = mapped[1].start.checked_sub(13)?;
+    let is_layout = |text: &str| {
+        text.bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+    };
+    // The unchanged public Type producer requires the second parameter type end <= 61.
+    if d > 20
+        || m > d
+        || d.checked_add(262)? != source_text.len()
+        || !is_layout(source_text.get(..m)?)
+        || source_text.get(d + 13..) != SOURCE_FUNCTOR_DEFINITION_TEXT.get(13..)
+        || !surface_profile_is_exact(ast, &mapped, m, d)
     {
         return None;
     }
+    if preprocessed.comments.is_empty() {
+        if m != d || source_text.get(m..d + 13) != SOURCE_FUNCTOR_DEFINITION_TEXT.get(..13) {
+            return None;
+        }
+    } else {
+        let mut previous_end = mapped[0].end;
+        for comment in &preprocessed.comments {
+            if !matches!(
+                comment.kind,
+                mizar_lexer::CommentKind::SingleLine | mizar_lexer::CommentKind::MultiLine
+            ) || comment.span.start < previous_end
+                || comment.span.end < comment.span.start
+                || comment.span.end > mapped[1].start
+                || !is_layout(source_text.get(previous_end..comment.span.start)?)
+            {
+                return None;
+            }
+            previous_end = comment.span.end;
+        }
+        if !is_layout(source_text.get(previous_end..mapped[1].start)?) {
+            return None;
+        }
+    }
 
-    let root = exact_node(ast, 107, SurfaceNodeKind::Root, 0, 261)?;
-    let definition_block = exact_node(ast, 104, SurfaceNodeKind::DefinitionBlockItem, 0, 261)?;
-    let equals = exact_node(ast, 84, SurfaceNodeKind::FunctorDefinition, 61, 118)?;
-    let means = exact_node(ast, 95, SurfaceNodeKind::FunctorDefinition, 121, 179)?;
-    let existence = exact_node(ast, 99, SurfaceNodeKind::CorrectnessCondition, 182, 217)?;
-    let uniqueness = exact_node(ast, 103, SurfaceNodeKind::CorrectnessCondition, 220, 256)?;
+    let root = exact_node(ast, 107, SurfaceNodeKind::Root)?;
+    let definition_block = exact_node(ast, 104, SurfaceNodeKind::DefinitionBlockItem)?;
+    let equals = exact_node(ast, 84, SurfaceNodeKind::FunctorDefinition)?;
+    let means = exact_node(ast, 95, SurfaceNodeKind::FunctorDefinition)?;
+    let existence = exact_node(ast, 99, SurfaceNodeKind::CorrectnessCondition)?;
+    let uniqueness = exact_node(ast, 103, SurfaceNodeKind::CorrectnessCondition)?;
     let direct_structural = ast
         .node(definition_block)?
         .children
@@ -915,14 +1008,26 @@ fn exact_functor_definition(ast: &SurfaceAst, source_text: &str) -> Option<Exact
     Some(ExactFunctorDefinition { definition_block })
 }
 
-fn surface_profile_is_exact(ast: &SurfaceAst) -> bool {
+fn surface_profile_is_exact(
+    ast: &SurfaceAst,
+    mapped: &[mizar_lexer::SourceSpan],
+    m: usize,
+    d: usize,
+) -> bool {
     ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
+        && ast.token_nodes().iter().map(|id| id.index()).eq(0..62)
         && ast
             .nodes()
             .iter()
+            .enumerate()
             .zip(EXACT_SURFACE_PROFILE)
-            .all(|(actual, expected)| {
-                actual.range == source_range(ast.source_id, expected.start, expected.end)
+            .all(|((index, actual), expected)| {
+                actual.range
+                    == match index {
+                        0 => source_range(ast.source_id, m, m + 10),
+                        104..=107 => source_range(ast.source_id, m, d + 261),
+                        _ => source_range(ast.source_id, d + expected.start, d + expected.end),
+                    }
                     && !actual.recovered
                     && actual.children.len() == expected.children.len()
                     && actual
@@ -932,29 +1037,26 @@ fn surface_profile_is_exact(ast: &SurfaceAst) -> bool {
                         .all(|(actual, expected)| actual.index() == *expected)
                     && match (&actual.kind, &expected.kind) {
                         (
-                            SurfaceNodeKind::Token(actual),
+                            SurfaceNodeKind::Token(token),
                             ExactSurfaceKind::Token(expected_kind, expected_text),
                         ) => {
-                            actual.kind == *expected_kind && actual.text.as_ref() == *expected_text
+                            token.kind == *expected_kind
+                                && token.text.as_ref() == *expected_text
+                                && mapped.get(index).is_some_and(|span| {
+                                    (actual.range.start, actual.range.end) == (span.start, span.end)
+                                })
                         }
-                        (actual, ExactSurfaceKind::Structural(expected)) => actual == expected,
+                        (kind, ExactSurfaceKind::Structural(expected_kind)) => {
+                            kind == expected_kind
+                        }
                         _ => false,
                     }
             })
 }
 
-fn exact_node(
-    ast: &SurfaceAst,
-    index: usize,
-    kind: SurfaceNodeKind,
-    start: usize,
-    end: usize,
-) -> Option<SurfaceNodeId> {
+fn exact_node(ast: &SurfaceAst, index: usize, kind: SurfaceNodeKind) -> Option<SurfaceNodeId> {
     let view = ast.node_views().find(|view| view.id().index() == index)?;
-    (*view.kind() == kind
-        && view.range() == source_range(ast.source_id, start, end)
-        && !view.is_recovered())
-    .then_some(view.id())
+    (*view.kind() == kind && !view.is_recovered()).then_some(view.id())
 }
 
 fn is_descendant(ast: &SurfaceAst, ancestor: SurfaceNodeId, descendant: SurfaceNodeId) -> bool {
@@ -991,7 +1093,7 @@ fn exact_resolver_profile(
         || block.kind() != DeclarationShellKind::DefinitionBlock
         || block.node_id().index() != 104
         || block.parent().is_some()
-        || block.range() != source_range(ast.source_id, 0, 261)
+        || block.range() != ast.nodes()[104].range
         || block.module() != module
         || block.recovered()
         || equals.id().index() != 1
@@ -999,7 +1101,7 @@ fn exact_resolver_profile(
         || equals.kind() != DeclarationShellKind::FunctorDefinition
         || equals.node_id().index() != 84
         || equals.parent() != Some(block.id())
-        || equals.range() != source_range(ast.source_id, 61, 118)
+        || equals.range() != ast.nodes()[84].range
         || equals.module() != module
         || equals.recovered()
         || means.id().index() != 2
@@ -1007,7 +1109,7 @@ fn exact_resolver_profile(
         || means.kind() != DeclarationShellKind::FunctorDefinition
         || means.node_id().index() != 95
         || means.parent() != Some(block.id())
-        || means.range() != source_range(ast.source_id, 121, 179)
+        || means.range() != ast.nodes()[95].range
         || means.module() != module
         || means.recovered()
         || symbols.module_id() != module
@@ -1043,9 +1145,9 @@ fn exact_resolver_profile(
         return Err("Task260 resolver: parser-backed projections are not exact".to_owned());
     }
     let mut result = Vec::with_capacity(2);
-    for (index, (expected, start, end, path)) in [
-        (expected_spellings[0], 61, 118, &[4, 0, 9, 0][..]),
-        (expected_spellings[1], 121, 179, &[4, 0, 9, 1][..]),
+    for (index, (expected, owner, path)) in [
+        (expected_spellings[0], 84, &[4, 0, 9, 0][..]),
+        (expected_spellings[1], 95, &[4, 0, 9, 1][..]),
     ]
     .into_iter()
     .enumerate()
@@ -1074,8 +1176,8 @@ fn exact_resolver_profile(
         {
             return Err(format!("Task260 resolver: functor {index} is not exact"));
         }
-        validate_origin(ast.source_id, module, definition.origin(), start, end, path)?;
-        validate_origin(ast.source_id, module, symbol.origin(), start, end, path)?;
+        validate_origin(ast.nodes()[owner].range, module, definition.origin(), path)?;
+        validate_origin(ast.nodes()[owner].range, module, symbol.origin(), path)?;
         result.push((
             symbol.symbol().clone(),
             definition.id(),
@@ -1088,6 +1190,7 @@ fn exact_resolver_profile(
         .get(contribution_id)
         .ok_or_else(|| "Task260 resolver: local contribution disappeared".to_owned())?;
     if result[1].2 != contribution_id
+        || contribution.anchor() != &SourceAnchor::Range(ast.nodes()[104].range)
         || contribution.module() != module
         || !matches!(
             contribution.kind(),
@@ -1220,16 +1323,14 @@ fn resolver_env_with_mutation(
 }
 
 fn validate_origin(
-    source_id: SourceId,
+    range: SourceRange,
     module: &ModuleId,
     origin: &mizar_resolve::resolved_ast::SemanticOrigin,
-    start: usize,
-    end: usize,
     structural_path: &[u32],
 ) -> Result<(), String> {
-    if origin.source_id() != source_id
+    if origin.source_id() != range.source_id
         || origin.module_id() != module
-        || origin.anchor() != &SourceAnchor::Range(source_range(source_id, start, end))
+        || origin.anchor() != &SourceAnchor::Range(range)
         || origin.structural_path() != structural_path
         || origin.import_edge().is_some()
         || origin.is_recovered()
@@ -1239,47 +1340,46 @@ fn validate_origin(
     Ok(())
 }
 
-fn task260_arena(source_id: SourceId) -> Result<TypedArena, String> {
+fn task260_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
-    for (index, row) in EXACT_SURFACE_PROFILE.iter().enumerate() {
+    for (index, row) in ast.nodes().iter().enumerate() {
         let generic_kind = match row.kind {
-            ExactSurfaceKind::Token(_, _) => "source.surface.token",
-            ExactSurfaceKind::Structural(_) => "source.surface.structural",
+            SurfaceNodeKind::Token(_) => "source.surface.token",
+            _ => "source.surface.structural",
         };
-        let (kind, start, end) = match index {
-            62 => ("source.type.head", 22, 25),
-            63 => ("source.type.expression", 22, 25),
-            65 => ("source.definition.functor.parameter", 17, 18),
-            66 => ("source.type.head", 38, 41),
-            67 => ("source.type.expression", 38, 41),
-            69 => ("source.definition.functor.parameter", 33, 34),
-            70 => ("source.term.variable-reference", 52, 53),
-            72 => ("source.term.variable-reference", 56, 57),
-            75 => ("source.formula.atomic.equality", 52, 57),
-            77 => ("source.definition.functor.guard", 45, 58),
-            79 => ("source.type.head", 105, 108),
-            80 => ("source.type.expression", 105, 108),
-            81 => ("source.term.variable-reference", 116, 117),
-            83 => ("source.definition.functor.definiens", 116, 117),
-            84 => ("source.definition.functor", 61, 118),
-            86 => ("source.type.head", 163, 166),
-            87 => ("source.type.expression", 163, 166),
-            88 => ("source.term.variable-reference", 173, 174),
-            90 => ("source.term.variable-reference", 177, 178),
-            93 => ("source.formula.atomic.equality", 173, 178),
-            94 => ("source.definition.functor.definiens", 173, 178),
-            95 => ("source.definition.functor", 121, 179),
-            99 => ("source.definition.functor.correctness", 182, 217),
-            103 => ("source.definition.functor.correctness", 220, 256),
-            104 => ("source.definition", 0, 261),
-            107 => ("source.module", 0, 261),
-            _ => (generic_kind, row.start, row.end),
+        let kind = match index {
+            62 => "source.type.head",
+            63 => "source.type.expression",
+            65 => "source.definition.functor.parameter",
+            66 => "source.type.head",
+            67 => "source.type.expression",
+            69 => "source.definition.functor.parameter",
+            70 => "source.term.variable-reference",
+            72 => "source.term.variable-reference",
+            75 => "source.formula.atomic.equality",
+            77 => "source.definition.functor.guard",
+            79 => "source.type.head",
+            80 => "source.type.expression",
+            81 => "source.term.variable-reference",
+            83 => "source.definition.functor.definiens",
+            84 => "source.definition.functor",
+            86 => "source.type.head",
+            87 => "source.type.expression",
+            88 => "source.term.variable-reference",
+            90 => "source.term.variable-reference",
+            93 => "source.formula.atomic.equality",
+            94 => "source.definition.functor.definiens",
+            95 => "source.definition.functor",
+            99 => "source.definition.functor.correctness",
+            103 => "source.definition.functor.correctness",
+            104 => "source.definition",
+            107 => "source.module",
+            _ => generic_kind,
         };
         let children = row
             .children
             .iter()
-            .copied()
-            .map(TypedNodeId::new)
+            .map(|id| TypedNodeId::new(id.index()))
             .collect::<Vec<_>>();
         let context = if index == 107 {
             LocalTypeContextId::new(0)
@@ -1290,7 +1390,11 @@ fn task260_arena(source_id: SourceId) -> Result<TypedArena, String> {
             .push(
                 TypedNode::new(
                     kind,
-                    SourceAnchor::Range(source_range(source_id, start, end)),
+                    SourceAnchor::Range(match index {
+                        65 => ast.nodes()[2].range,
+                        69 => ast.nodes()[7].range,
+                        _ => row.range,
+                    }),
                 )
                 .with_children(children)
                 .with_typing(TypingState::Unknown)
@@ -1310,10 +1414,19 @@ fn task260_arena(source_id: SourceId) -> Result<TypedArena, String> {
         .map_err(|error| error.to_string())
 }
 
+fn source_spelling(ast: &SurfaceAst, source_text: &str, index: usize) -> String {
+    let range = ast.nodes()[index].range;
+    source_text
+        .get(range.start..range.end)
+        .expect("authenticated Functor source range")
+        .to_owned()
+}
+
 fn task248_context(
     ast: &SurfaceAst,
     module: ModuleId,
     shells: &DeclarationShellSet,
+    source_text: &str,
     exact: ExactFunctorDefinition,
     mutation: SourceFunctorDefinitionRouteMutation,
 ) -> Result<mizar_checker::source_context::SourceBindingContextHandoff, String> {
@@ -1348,7 +1461,7 @@ fn task248_context(
             shell_ordinal: 0,
             role: SourceItemRole::DefinitionBlock,
             module_id: module,
-            source_range: source_range(ast.source_id, 0, 261),
+            source_range: ast.nodes()[104].range,
             parent: None,
             visibility: SourceItemVisibility::Unspecified,
             site: item_site,
@@ -1359,9 +1472,9 @@ fn task248_context(
             SourceBindingSiteInput {
                 shell,
                 source_ordinal: 0,
-                spelling: "x".to_owned(),
-                declaration_range: source_range(ast.source_id, 17, 18),
-                written_type_range: source_range(ast.source_id, 22, 25),
+                spelling: source_spelling(ast, source_text, 2),
+                declaration_range: ast.nodes()[2].range,
+                written_type_range: ast.nodes()[63].range,
                 site: if mutation
                     == SourceFunctorDefinitionRouteMutation::WrongContextBindingSite(0)
                 {
@@ -1378,9 +1491,9 @@ fn task248_context(
                 },
                 role: SourceBindingSiteRole::DefinitionParameter {
                     local: LocalTermBinding::new(
-                        "x",
+                        source_spelling(ast, source_text, 2),
                         scope.clone(),
-                        source_range(ast.source_id, 17, 18),
+                        ast.nodes()[2].range,
                         0,
                     ),
                 },
@@ -1396,9 +1509,9 @@ fn task248_context(
                     SourceBindingContextOwner::Shell(shell)
                 },
                 source_ordinal: 1,
-                spelling: "y".to_owned(),
-                declaration_range: source_range(ast.source_id, 33, 34),
-                written_type_range: source_range(ast.source_id, 38, 41),
+                spelling: source_spelling(ast, source_text, 7),
+                declaration_range: ast.nodes()[7].range,
+                written_type_range: ast.nodes()[67].range,
                 site: if mutation
                     == SourceFunctorDefinitionRouteMutation::WrongContextBindingSite(1)
                 {
@@ -1408,9 +1521,9 @@ fn task248_context(
                 },
                 role: SourceBindingSiteRole::DefinitionParameter {
                     local: LocalTermBinding::new(
-                        "y",
+                        source_spelling(ast, source_text, 7),
                         scope,
-                        source_range(ast.source_id, 33, 34),
+                        ast.nodes()[7].range,
                         1,
                     ),
                 },
@@ -1429,9 +1542,13 @@ fn task248_context(
     }
 }
 
-fn task249_input(source_id: SourceId, module_id: ModuleId) -> SourceTypeHandoffInput {
+fn task249_input(
+    ast: &SurfaceAst,
+    source_text: &str,
+    module_id: ModuleId,
+) -> SourceTypeHandoffInput {
     SourceTypeHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id: module_id.clone(),
         applications: vec![
             SourceTypeApplicationInput {
@@ -1446,121 +1563,125 @@ fn task249_input(source_id: SourceId, module_id: ModuleId) -> SourceTypeHandoffI
             },
         ],
         expressions: vec![
-            bare_set_type(source_id, module_id.clone(), 63, 62, 22, 25),
-            bare_set_type(source_id, module_id, 67, 66, 38, 41),
+            bare_set_type(ast, source_text, module_id.clone(), 63, 62),
+            bare_set_type(ast, source_text, module_id, 67, 66),
         ],
         arguments: Vec::new(),
     }
 }
 
 fn task249r_input(
-    source_id: SourceId,
+    ast: &SurfaceAst,
+    source_text: &str,
     module_id: ModuleId,
 ) -> SourceTypeDefinitionReturnExtensionInput {
     SourceTypeDefinitionReturnExtensionInput {
-        source_id,
+        source_id: ast.source_id,
         module_id: module_id.clone(),
         returns: vec![
             SourceTypeDefinitionReturnInput {
                 definition_site: TypedSiteRef::Node(TypedNodeId::new(84)),
-                definition_range: source_range(source_id, 61, 118),
+                definition_range: ast.nodes()[84].range,
                 source_ordinal: 0,
-                expression: bare_set_type(source_id, module_id.clone(), 80, 79, 105, 108),
+                expression: bare_set_type(ast, source_text, module_id.clone(), 80, 79),
             },
             SourceTypeDefinitionReturnInput {
                 definition_site: TypedSiteRef::Node(TypedNodeId::new(95)),
-                definition_range: source_range(source_id, 121, 179),
+                definition_range: ast.nodes()[95].range,
                 source_ordinal: 1,
-                expression: bare_set_type(source_id, module_id, 87, 86, 163, 166),
+                expression: bare_set_type(ast, source_text, module_id, 87, 86),
             },
         ],
     }
 }
 
 fn bare_set_type(
-    source_id: SourceId,
+    ast: &SurfaceAst,
+    source_text: &str,
     module_id: ModuleId,
     site: usize,
     head_site: usize,
-    start: usize,
-    end: usize,
 ) -> SourceTypeExpressionInput {
     SourceTypeExpressionInput {
-        source_id,
+        source_id: ast.source_id,
         module_id,
         site: TypedSiteRef::Node(TypedNodeId::new(site)),
-        source_range: source_range(source_id, start, end),
-        spelling: "set".to_owned(),
+        source_range: ast.nodes()[site].range,
+        spelling: source_spelling(ast, source_text, site),
         head_site: TypedSiteRef::Node(TypedNodeId::new(head_site)),
-        head_range: source_range(source_id, start, end),
-        head_spelling: "set".to_owned(),
+        head_range: ast.nodes()[head_site].range,
+        head_spelling: source_spelling(ast, source_text, head_site),
         form: SourceTypeApplicationForm::Bare,
         head: SourceTypeHead::BuiltinSet,
         recovery: NodeRecoveryState::Normal,
     }
 }
 
-fn task252_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
+fn task252_input(
+    ast: &SurfaceAst,
+    source_text: &str,
+    module_id: ModuleId,
+) -> SourcePrimaryTermHandoffInput {
     let specs = [
-        (70, 52, 53, "x", BindingId::new(0)),
-        (72, 56, 57, "x", BindingId::new(0)),
-        (81, 116, 117, "x", BindingId::new(0)),
-        (88, 173, 174, "x", BindingId::new(0)),
-        (90, 177, 178, "y", BindingId::new(1)),
+        (70, BindingId::new(0)),
+        (72, BindingId::new(0)),
+        (81, BindingId::new(0)),
+        (88, BindingId::new(0)),
+        (90, BindingId::new(1)),
     ];
     SourcePrimaryTermHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id,
         terms: specs
             .iter()
             .enumerate()
-            .map(
-                |(source_ordinal, (site, start, end, spelling, _))| SourcePrimaryTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(*site)),
-                    source_range: source_range(source_id, *start, *end),
-                    source_ordinal,
-                    context: BindingContextId::new(1),
-                    recovery: SourcePrimaryTermRecovery::Normal,
-                    spelling: (*spelling).to_owned(),
-                    kind: SourcePrimaryTermKind::VariableReference,
-                    role: SourcePrimaryTermRole::Value,
-                    parent: None,
-                },
-            )
+            .map(|(source_ordinal, (site, _))| SourcePrimaryTermInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(*site)),
+                source_range: ast.nodes()[*site].range,
+                source_ordinal,
+                context: BindingContextId::new(1),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: source_spelling(ast, source_text, *site),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
             .collect(),
         references: specs
             .iter()
             .enumerate()
-            .map(
-                |(index, (_, _, _, _, binding))| SourcePrimaryTermReferenceInput {
-                    term: SourcePrimaryTermId::new(index),
-                    binding: *binding,
-                    role: SourcePrimaryTermReferenceRole::Variable,
-                },
-            )
+            .map(|(index, (_, binding))| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: *binding,
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
             .collect(),
         numeric_type_requests: Vec::new(),
     }
 }
 
-fn task256_input(source_id: SourceId, module_id: ModuleId) -> SourceAtomicFormulaHandoffInput {
+fn task256_input(
+    ast: &SurfaceAst,
+    source_text: &str,
+    module_id: ModuleId,
+) -> SourceAtomicFormulaHandoffInput {
     let formulas = vec![
         SourceAtomicFormulaInput {
             site: TypedSiteRef::Node(TypedNodeId::new(75)),
-            source_range: source_range(source_id, 52, 57),
+            source_range: ast.nodes()[75].range,
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: "x = x".to_owned(),
+            spelling: source_spelling(ast, source_text, 75),
             kind: SourceAtomicFormulaKind::Equality,
         },
         SourceAtomicFormulaInput {
             site: TypedSiteRef::Node(TypedNodeId::new(93)),
-            source_range: source_range(source_id, 173, 178),
+            source_range: ast.nodes()[93].range,
             source_ordinal: 1,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: "x = y".to_owned(),
+            spelling: source_spelling(ast, source_text, 93),
             kind: SourceAtomicFormulaKind::Equality,
         },
     ];
@@ -1590,7 +1711,7 @@ fn task256_input(source_id: SourceId, module_id: ModuleId) -> SourceAtomicFormul
         })
         .collect();
     SourceAtomicFormulaHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id,
         formulas,
         wrappers: Vec::new(),
@@ -1605,12 +1726,13 @@ fn task256_input(source_id: SourceId, module_id: ModuleId) -> SourceAtomicFormul
 }
 
 fn task260_input(
-    source_id: SourceId,
+    ast: &SurfaceAst,
+    source_text: &str,
     module_id: ModuleId,
     resolver: [(SymbolId, DefinitionId, SourceContributionId); 2],
 ) -> SourceFunctorDefinitionHandoffInput {
     SourceFunctorDefinitionHandoffInput {
-        source_id,
+        source_id: ast.source_id,
         module_id,
         definitions: vec![
             SourceFunctorDefinitionInput {
@@ -1618,11 +1740,11 @@ fn task260_input(
                 definition: resolver[0].1,
                 contribution: resolver[0].2,
                 site: TypedSiteRef::Node(TypedNodeId::new(84)),
-                source_range: source_range(source_id, 61, 118),
+                source_range: ast.nodes()[84].range,
                 source_ordinal: 0,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "func Task260EqualsDef: task260_equals(x) -> set equals x;".to_owned(),
+                spelling: source_spelling(ast, source_text, 84),
                 style: SourceFunctorDefinitionStyle::Equals,
                 return_type: SourceTypeDefinitionReturnId::new(0),
                 definiens: SourceFunctorDefiniensId::new(0),
@@ -1632,11 +1754,11 @@ fn task260_input(
                 definition: resolver[1].1,
                 contribution: resolver[1].2,
                 site: TypedSiteRef::Node(TypedNodeId::new(95)),
-                source_range: source_range(source_id, 121, 179),
+                source_range: ast.nodes()[95].range,
                 source_ordinal: 1,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "func Task260MeansDef: task260_means(y) -> set means x = y;".to_owned(),
+                spelling: source_spelling(ast, source_text, 95),
                 style: SourceFunctorDefinitionStyle::Means,
                 return_type: SourceTypeDefinitionReturnId::new(1),
                 definiens: SourceFunctorDefiniensId::new(1),
@@ -1648,32 +1770,32 @@ fn task260_input(
                 binding: BindingId::new(0),
                 written_type: SourceTypeApplicationId::new(0),
                 site: TypedSiteRef::Node(TypedNodeId::new(65)),
-                source_range: source_range(source_id, 13, 26),
-                declaration_range: source_range(source_id, 17, 18),
+                source_range: ast.nodes()[65].range,
+                declaration_range: ast.nodes()[2].range,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "let x be set;".to_owned(),
+                spelling: source_spelling(ast, source_text, 65),
             },
             SourceFunctorParameterInput {
                 ordinal: 1,
                 binding: BindingId::new(1),
                 written_type: SourceTypeApplicationId::new(1),
                 site: TypedSiteRef::Node(TypedNodeId::new(69)),
-                source_range: source_range(source_id, 29, 42),
-                declaration_range: source_range(source_id, 33, 34),
+                source_range: ast.nodes()[69].range,
+                declaration_range: ast.nodes()[7].range,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "let y be set;".to_owned(),
+                spelling: source_spelling(ast, source_text, 69),
             },
         ],
         guards: vec![SourceFunctorGuardInput {
             ordinal: 0,
             formula: SourceAtomicFormulaId::new(0),
             site: TypedSiteRef::Node(TypedNodeId::new(77)),
-            source_range: source_range(source_id, 45, 58),
+            source_range: ast.nodes()[77].range,
             context: BindingContextId::new(1),
             recovery: SourceFunctorDefinitionRecovery::Normal,
-            spelling: "assume x = x;".to_owned(),
+            spelling: source_spelling(ast, source_text, 77),
         }],
         definientia: vec![
             SourceFunctorDefiniensInput {
@@ -1681,20 +1803,20 @@ fn task260_input(
                 ordinal: 0,
                 target: SourceFunctorDefiniensTarget::Primary(SourcePrimaryTermId::new(2)),
                 site: TypedSiteRef::Node(TypedNodeId::new(83)),
-                source_range: source_range(source_id, 116, 117),
+                source_range: ast.nodes()[83].range,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "x".to_owned(),
+                spelling: source_spelling(ast, source_text, 83),
             },
             SourceFunctorDefiniensInput {
                 owner: SourceFunctorDefinitionId::new(1),
                 ordinal: 1,
                 target: SourceFunctorDefiniensTarget::AtomicFormula(SourceAtomicFormulaId::new(1)),
                 site: TypedSiteRef::Node(TypedNodeId::new(94)),
-                source_range: source_range(source_id, 173, 178),
+                source_range: ast.nodes()[94].range,
                 context: BindingContextId::new(1),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "x = y".to_owned(),
+                spelling: source_spelling(ast, source_text, 94),
             },
         ],
         correctness: vec![
@@ -1703,20 +1825,20 @@ fn task260_input(
                 ordinal: 0,
                 kind: SourceFunctorCorrectnessKind::Existence,
                 site: TypedSiteRef::Node(TypedNodeId::new(99)),
-                source_range: source_range(source_id, 182, 217),
-                justification: SourceAnchor::Range(source_range(source_id, 192, 216)),
+                source_range: ast.nodes()[99].range,
+                justification: SourceAnchor::Range(ast.nodes()[98].range),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "existence by computation(steps: 1);".to_owned(),
+                spelling: source_spelling(ast, source_text, 99),
             },
             SourceFunctorCorrectnessInput {
                 owner: SourceFunctorDefinitionId::new(1),
                 ordinal: 1,
                 kind: SourceFunctorCorrectnessKind::Uniqueness,
                 site: TypedSiteRef::Node(TypedNodeId::new(103)),
-                source_range: source_range(source_id, 220, 256),
-                justification: SourceAnchor::Range(source_range(source_id, 231, 255)),
+                source_range: ast.nodes()[103].range,
+                justification: SourceAnchor::Range(ast.nodes()[102].range),
                 recovery: SourceFunctorDefinitionRecovery::Normal,
-                spelling: "uniqueness by computation(steps: 1);".to_owned(),
+                spelling: source_spelling(ast, source_text, 103),
             },
         ],
     }
@@ -1727,6 +1849,7 @@ fn build_output(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
     exact: ExactFunctorDefinition,
     mutation: SourceFunctorDefinitionRouteMutation,
 ) -> Result<SourceFunctorDefinitionRouteOutput, String> {
@@ -1739,10 +1862,11 @@ fn build_output(
     .then(|| resolver_env_with_mutation(symbols, mutation));
     let symbols = corrupted_symbols.as_ref().unwrap_or(symbols);
     let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
-    let arena = task260_arena(ast.source_id)?;
-    let source_context = task248_context(ast, module.clone(), shells, exact, mutation)?;
+    let arena = task260_arena(ast)?;
+    let source_context =
+        task248_context(ast, module.clone(), shells, source_text, exact, mutation)?;
 
-    let mut type_input = task249_input(ast.source_id, module.clone());
+    let mut type_input = task249_input(ast, source_text, module.clone());
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveTypeExpression {
         type_input.expressions.pop();
     }
@@ -1759,12 +1883,12 @@ fn build_output(
     let base_type =
         SourceTypeProducer::build(type_input, source_context.binding_env(), symbols, &arena)
             .map_err(|error| format!("Task249 source type: {error}"))?;
-    let mut return_input = task249r_input(ast.source_id, module.clone());
+    let mut return_input = task249r_input(ast, source_text, module.clone());
     if mutation == SourceFunctorDefinitionRouteMutation::WrongReturnType {
         return_input.returns[1].definition_site = TypedSiteRef::Node(TypedNodeId::new(84));
     }
     if mutation == SourceFunctorDefinitionRouteMutation::WrongReturnRange {
-        return_input.returns[1].definition_range = source_range(ast.source_id, 61, 118);
+        return_input.returns[1].definition_range = ast.nodes()[84].range;
     }
     if let SourceFunctorDefinitionRouteMutation::WrongReturnExpression(index) = mutation {
         return_input.returns[index].expression.site =
@@ -1791,7 +1915,7 @@ fn build_output(
     })
     .map_err(|error| format!("Task249R typed installation: {error}"))?;
 
-    let mut term_input = task252_input(ast.source_id, module.clone());
+    let mut term_input = task252_input(ast, source_text, module.clone());
     if let SourceFunctorDefinitionRouteMutation::WrongTermBinding(index) = mutation {
         term_input.references[index].binding = if index == 4 {
             BindingId::new(0)
@@ -1816,7 +1940,7 @@ fn build_output(
         .with_source_term(source_term)
         .map_err(|error| format!("Task252 typed installation: {error}"))?;
 
-    let mut atomic_input = task256_input(ast.source_id, module.clone());
+    let mut atomic_input = task256_input(ast, source_text, module.clone());
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveAtomicFormula {
         atomic_input.formulas.pop();
     }
@@ -1854,7 +1978,7 @@ fn build_output(
         .with_source_atomic_formula(source_atomic_formula)
         .map_err(|error| format!("Task256 typed installation: {error}"))?;
 
-    let mut functor_input = task260_input(ast.source_id, module, resolver);
+    let mut functor_input = task260_input(ast, source_text, module, resolver);
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveFunctorGuard {
         functor_input.guards.clear();
     }
