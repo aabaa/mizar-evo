@@ -1221,10 +1221,108 @@ fn validate_input_rows(
     ) {
         return Err(SourceModeDefinitionError::InvalidArenaOwnership);
     }
-    let local_context = validate_context_profile(input, source_context, arena)?;
     let parameter_ranges = [(13, 26, 17, 18, 86, 87), (29, 42, 33, 34, 89, 90)];
     let parameter_sites = [37, 41];
     let parameter_spellings = ["let x be set;", "let y be set;"];
+    let qualified_headers = input.parameters.iter().enumerate().all(|(index, row)| {
+        let Some(declaration) = source_context
+            .declarations()
+            .get(crate::source_context::SourceDeclarationId::new(index))
+        else {
+            return false;
+        };
+        let Some(binding) = source_context.binding_env().bindings().get(row.binding) else {
+            return false;
+        };
+        let Some(application) = source_type.applications().get(row.written_type) else {
+            return false;
+        };
+        let Some(expression) = source_type.expressions().get(application.root()) else {
+            return false;
+        };
+        let written_range = declaration.written_type_range;
+        if source_type.mode_rhs().len() != 1
+            || row.source_range.source_id != source
+            || row.source_range.start != parameter_ranges[index].0
+            || row.source_range.end
+                > parameter_ranges
+                    .get(index + 1)
+                    .map_or(definition.source_range.start, |next| next.0)
+            || row.source_range.end.checked_sub(row.source_range.start) != Some(row.spelling.len())
+            || row.declaration_range.source_id != source
+            || row
+                .declaration_range
+                .end
+                .checked_sub(row.declaration_range.start)
+                != Some(1)
+            || written_range.source_id != source
+            || written_range.end.checked_sub(written_range.start) != Some(3)
+            || declaration.binding != row.binding
+            || declaration.declaration_range != row.declaration_range
+            || binding.declaration_range != row.declaration_range
+            || binding.type_site != BindingTypeSite::Source(written_range)
+            || application.binding() != row.binding
+            || expression.source_range() != written_range
+            || !valid_node(
+                TypedNodeId::new(parameter_sites[index]),
+                row.declaration_range,
+                "source.definition.mode.parameter",
+                LocalTypeContextId::new(1),
+                arena,
+            )
+            || !valid_site(
+                expression.site(),
+                written_range,
+                "source.type.expression",
+                LocalTypeContextId::new(1),
+                arena,
+            )
+            || !valid_site(
+                expression.head_site(),
+                written_range,
+                "source.type.head",
+                LocalTypeContextId::new(1),
+                arena,
+            )
+        {
+            return false;
+        }
+        let (Some(name_start), Some(name_end), Some(type_start), Some(type_end)) = (
+            row.declaration_range
+                .start
+                .checked_sub(row.source_range.start),
+            row.declaration_range
+                .end
+                .checked_sub(row.source_range.start),
+            written_range.start.checked_sub(row.source_range.start),
+            written_range.end.checked_sub(row.source_range.start),
+        ) else {
+            return false;
+        };
+        let bytes = row.spelling.as_bytes();
+        bytes.get(..3) == Some(b"let")
+            && bytes.get(name_start..name_end) == Some(if index == 0 { b"x" } else { b"y" })
+            && bytes.get(type_start..type_end) == Some(b"set")
+            && bytes.get(3..name_start).is_some_and(|gap| {
+                !gap.is_empty() && gap.iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+            })
+            && bytes.get(name_end..type_start).is_some_and(|gap| {
+                gap.first()
+                    .is_some_and(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+                    && gap
+                        .last()
+                        .is_some_and(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+                    && gap
+                        .split(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+                        .filter(|part| !part.is_empty())
+                        .eq([b"be".as_slice()])
+            })
+            && bytes
+                .get(type_end..)
+                .and_then(|tail| tail.strip_suffix(b";"))
+                .is_some_and(|gap| gap.iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\n')))
+    });
+    let local_context = validate_context_profile(input, source_context, arena, qualified_headers)?;
     for (index, row) in input.parameters.iter().enumerate() {
         let (start, end, declaration_start, declaration_end, pattern_start, pattern_end) =
             parameter_ranges[index];
@@ -1233,12 +1331,13 @@ fn validate_input_rows(
             || row.binding != BindingId::new(index)
             || row.written_type != SourceTypeApplicationId::new(index)
             || row.site != TypedSiteRef::Node(TypedNodeId::new(parameter_sites[index]))
-            || row.source_range != range(source, start, end)
-            || row.declaration_range != range(source, declaration_start, declaration_end)
+            || (!qualified_headers
+                && (row.source_range != range(source, start, end)
+                    || row.declaration_range != range(source, declaration_start, declaration_end)
+                    || row.spelling != parameter_spellings[index]))
             || row.pattern_range != range(source, pattern_start, pattern_end)
             || row.context != context
             || row.recovery != SourceModeDefinitionRecovery::Normal
-            || row.spelling != parameter_spellings[index]
         {
             return Err(SourceModeDefinitionError::InvalidParameter { index });
         }
@@ -1252,7 +1351,7 @@ fn validate_input_rows(
             return Err(SourceModeDefinitionError::InvalidArenaOwnership);
         }
     }
-    validate_type_profile(input, source_type, local_context, arena)?;
+    validate_type_profile(input, source_type, local_context, arena, qualified_headers)?;
 
     let application = &input.applications[0];
     if application.owner != SourceModeDefinitionId::new(0)
@@ -1346,6 +1445,7 @@ fn validate_context_profile(
     input: &SourceModeDefinitionHandoffInput,
     source_context: &SourceBindingContextHandoff,
     arena: &TypedArena,
+    qualified_headers: bool,
 ) -> Result<LocalTypeContextId, SourceModeDefinitionError> {
     let source = input.source_id;
     let binding_env = source_context.binding_env();
@@ -1411,7 +1511,9 @@ fn validate_context_profile(
             .declarations()
             .get(crate::source_context::SourceDeclarationId::new(index))
             .ok_or(SourceModeDefinitionError::InvalidParameter { index })?;
-        let written_range = if index == 0 {
+        let written_range = if qualified_headers {
+            declaration.written_type_range
+        } else if index == 0 {
             range(source, 22, 25)
         } else {
             range(source, 38, 41)
@@ -1461,6 +1563,7 @@ fn validate_type_profile(
     source_type: &SourceTypeApplicationHandoff,
     local_context: LocalTypeContextId,
     arena: &TypedArena,
+    qualified_headers: bool,
 ) -> Result<(), SourceModeDefinitionError> {
     if source_type.applications().len() != 2
         || source_type.expressions().len() != 3
@@ -1479,7 +1582,11 @@ fn validate_type_profile(
             .expressions()
             .get(SourceTypeExpressionId::new(index))
             .ok_or(SourceModeDefinitionError::DependencyMismatch)?;
-        let written_range = range(source, ranges[index].0, ranges[index].1);
+        let written_range = if qualified_headers && index < 2 {
+            expression.source_range()
+        } else {
+            range(source, ranges[index].0, ranges[index].1)
+        };
         if expression.id() != SourceTypeExpressionId::new(index)
             || expression.source_id() != source
             || expression.module_id() != &input.module_id

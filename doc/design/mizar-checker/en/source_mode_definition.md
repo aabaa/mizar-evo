@@ -167,6 +167,17 @@ declaration/type with y and RHS unchanged, through public construction and
 Typed/final assembly. Independent RHS ownership and unrelated obligations remain;
 this neither invokes upper Mode nor authenticates raw source topology.
 
+Upper parameter headers admit relative ends, declaration/Type ranges and physical
+SP/TAB/LF spelling only when input, Context, BindingEnv and Type agree and their
+owned header Arena nodes are exact and normal. Starts13/29, x/y identities,
+ordered nonoverlapping envelopes before definition45, exact let/name/be/set/semicolon
+fragments and all body/resolver/RHS rules remain fixed. Qualification returns no
+error: unequal/unavailable claims or inexact header Arena retain canonical checks
+at their original phases, including the directional Context/Type errors. A moved
+containing Type anchor retains early fallback; a canonical one retains its late
+Arena error. Later validation and replay remain mandatory; no native-source seal,
+comment/CR layout, semantic credit or raw runner selection follows.
+
 After the separate Task-249M prerequisite, the exact source consumes only
 these lower profiles:
 

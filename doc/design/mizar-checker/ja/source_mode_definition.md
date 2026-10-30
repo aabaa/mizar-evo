@@ -162,6 +162,15 @@ Surface structure と lower handoff だけである。
 による x 宣言／型の移動の結合にも対応し、y と RHS は変えない。独立した RHS 所有と無関係な
 obligation を保ち、upper Mode 呼出しや raw source topology の認証は行わない。
 
+上位 parameter header は input／Context／BindingEnv／Type の一致と、所有 header
+Arena node の正常・厳密一致を条件に、終端・宣言／型の相対範囲と SP／TAB／LF の物理表記を
+受け付ける。開始13／29、x／y identity、definition45 より前の非重複順序、厳密な
+let／name／be／set／semicolon fragment、body／resolver／RHS 条件は維持する。
+資格判定自体は error を返さず、不一致・欠落・header Arena の非厳密一致では従来の
+canonical 検査と順序を保つ。Context／Type の方向別 error、移動 header の包含 Type anchor
+に対する早期 fallback、canonical anchor の遅い Arena error も維持する。後段検証と replay
+は必須であり、native-source seal、comment／CR layout、意味論や raw runner 選択は増えない。
+
 separate Task-249M prerequisite後、exact sourceがconsumeするlower profileは
 次だけである。
 

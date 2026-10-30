@@ -1533,3 +1533,600 @@ fn task_262_public_relocated_joint_lower_bundle_installs_and_replays() {
     assert_eq!(replays[0], replays[1]);
     assert_eq!(original.typed(baseline), original_lower);
 }
+
+#[test]
+fn task_262_public_qualified_parameter_headers_preserve_fallback_and_replay() {
+    let original = fixture();
+    let baseline = model_domain_baseline(original.source);
+    let original_typed = original.typed(baseline.clone());
+    let original_input = original.input.clone();
+    let original_projection = original.projection(&baseline);
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/types/pass_type_elaboration_mode_definition_payload_001.miz"
+    ));
+    let x_source = source.replacen("let x be set;\n  let", "let  x be set;\n let", 1);
+    let both_source = x_source.replacen("let y be set;\n  mode", "let  y be set;\n mode", 1);
+    let trivia_source = both_source.replacen("let  x be set;", "let\t x\nbe\tset;", 1);
+    for witness in [&x_source, &both_source, &trivia_source] {
+        assert_eq!(witness.len(), 141);
+    }
+    for witness in [&both_source, &trivia_source] {
+        assert_eq!(&witness[45..], &source[45..]);
+    }
+    assert_eq!(&x_source[29..], &source[29..]);
+    let fresh =
+        |headers: [&str; 2], declarations: [usize; 2], type_starts: [usize; 2], with_rhs: bool| {
+            let mut f = original.clone();
+            let item = original.source_context.items().iter().next().unwrap().1;
+            let scope = LocalTermScope::new(vec![0]);
+            f.source_context = SourceBindingContextProducer::build(SourceBindingContextInput {
+                source_id: f.source,
+                module_id: f.module.clone(),
+                module_site: TypedSiteRef::Node(MODULE_ROOT),
+                items: vec![SourceItemInput {
+                    shell: item.shell,
+                    shell_ordinal: item.shell_ordinal,
+                    role: SourceItemRole::DefinitionBlock,
+                    module_id: f.module.clone(),
+                    source_range: item.source_range,
+                    parent: item.parent,
+                    visibility: item.visibility,
+                    site: item.site.clone(),
+                    local_scope: Some(scope.clone()),
+                    recovery: SourceItemRecovery::Normal,
+                }],
+                bindings: original
+                    .source_context
+                    .declarations()
+                    .iter()
+                    .enumerate()
+                    .map(|(index, (_, row))| {
+                        let declaration_range =
+                            range(f.source, declarations[index], declarations[index] + 1);
+                        SourceBindingSiteInput {
+                            shell: item.shell,
+                            context_owner: SourceBindingContextOwner::Shell(item.shell),
+                            source_ordinal: row.source_ordinal,
+                            spelling: row.spelling.clone(),
+                            declaration_range,
+                            written_type_range: range(
+                                f.source,
+                                type_starts[index],
+                                type_starts[index] + 3,
+                            ),
+                            site: row.site.clone(),
+                            role: SourceBindingSiteRole::DefinitionParameter {
+                                local: LocalTermBinding::new(
+                                    row.spelling.clone(),
+                                    scope.clone(),
+                                    declaration_range,
+                                    index,
+                                ),
+                            },
+                            recovery: BindingRecoveryState::Normal,
+                        }
+                    })
+                    .collect(),
+            })
+            .expect("fresh public Context")
+            .into_complete()
+            .expect("complete Context")
+            .into_handoff();
+            let nodes = original
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    for (index, (parameter, expression, head)) in [
+                        (PARAMETER_X, TYPE_EXPRESSION_X, TYPE_HEAD_X),
+                        (PARAMETER_Y, TYPE_EXPRESSION_Y, TYPE_HEAD_Y),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        if id == parameter {
+                            node.anchor = SourceAnchor::Range(range(
+                                f.source,
+                                declarations[index],
+                                declarations[index] + 1,
+                            ));
+                        } else if id == expression || id == head {
+                            node.anchor = SourceAnchor::Range(range(
+                                f.source,
+                                type_starts[index],
+                                type_starts[index] + 3,
+                            ));
+                        }
+                    }
+                    node
+                })
+                .collect();
+            f.arena = TypedArena::try_new(original.arena.root(), nodes)
+                .expect("fresh normal owned header arena");
+            let generic = SourceTypeProducer::build(
+                SourceTypeHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    applications: original
+                        .source_type
+                        .applications()
+                        .iter()
+                        .map(|(_, row)| SourceTypeApplicationInput {
+                            binding: row.binding(),
+                            source_ordinal: row.source_ordinal(),
+                            root: row.root(),
+                        })
+                        .collect(),
+                    expressions: [
+                        (TYPE_EXPRESSION_X, TYPE_HEAD_X),
+                        (TYPE_EXPRESSION_Y, TYPE_HEAD_Y),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, (site, head))| {
+                        bare_set_type(
+                            f.source,
+                            f.module.clone(),
+                            site,
+                            head,
+                            type_starts[index],
+                            type_starts[index] + 3,
+                        )
+                    })
+                    .collect(),
+                    arguments: Vec::new(),
+                },
+                f.source_context.binding_env(),
+                &f.env,
+                &f.arena,
+            )
+            .expect("generic Type uses this fresh Context BindingEnv");
+            let rhs = original
+                .source_type
+                .mode_rhs()
+                .iter()
+                .map(|(_, row)| {
+                    let expression = original.source_type.expressions().get(row.root()).unwrap();
+                    SourceTypeModeRhsInput {
+                        definition_site: row.definition_site().clone(),
+                        definition_range: row.definition_range(),
+                        source_ordinal: row.source_ordinal(),
+                        expression: SourceTypeExpressionInput {
+                            source_id: expression.source_id(),
+                            module_id: expression.module_id().clone(),
+                            site: expression.site().clone(),
+                            source_range: expression.source_range(),
+                            spelling: expression.spelling().to_owned(),
+                            head_site: expression.head_site().clone(),
+                            head_range: expression.head_range(),
+                            head_spelling: expression.head_spelling().to_owned(),
+                            form: expression.form(),
+                            head: expression.head().clone(),
+                            recovery: expression.recovery(),
+                        },
+                    }
+                })
+                .collect();
+            f.source_type = if with_rhs {
+                SourceTypeModeRhsProducer::extend(
+                    &generic,
+                    SourceTypeModeRhsExtensionInput {
+                        source_id: f.source,
+                        module_id: f.module.clone(),
+                        rhs,
+                    },
+                    &f.arena,
+                )
+                .expect("unchanged public Mode RHS")
+            } else {
+                generic
+            };
+            for index in 0..2 {
+                let row = &mut f.input.parameters[index];
+                row.source_range = range(
+                    f.source,
+                    [13, 29][index],
+                    [13, 29][index] + headers[index].len(),
+                );
+                row.declaration_range =
+                    range(f.source, declarations[index], declarations[index] + 1);
+                row.spelling = headers[index].to_owned();
+            }
+            f
+        };
+    let canonical = fresh([&source[13..26], &source[29..42]], [17, 33], [22, 38], true);
+    assert_eq!(canonical.projection(&baseline), original_projection);
+    let mut positives = Vec::new();
+    for (case, witness, ends, declarations, types) in [
+        ("x", &x_source, [27, 42], [18, 33], [23, 38]),
+        ("both", &both_source, [27, 43], [18, 34], [23, 39]),
+        ("tab_lf", &trivia_source, [27, 43], [18, 34], [23, 39]),
+    ] {
+        let headers = [&witness[13..ends[0]], &witness[29..ends[1]]];
+        let f = fresh(headers, declarations, types, true);
+        let lower = f.typed(baseline.clone());
+        let lower_final = assemble_empty(&lower).expect("actual joint lower precondition");
+        assert_eq!(lower_final.source_context(), Some(&f.source_context));
+        assert_eq!(lower_final.source_type(), Some(&f.source_type));
+        assert!(lower.source_mode_definition().is_none());
+        assert!(lower_final.source_mode_definition().is_none());
+        let result = f.build(&baseline);
+        positives.push((case, f, result, headers, declarations, types));
+    }
+    // Negative claims use genuine independent public lower artifacts; none alter a successful handoff.
+    let moved = positives[0].1.clone();
+    let mut controls = Vec::new();
+    let missing_rhs = fresh(
+        [&x_source[13..27], &x_source[29..42]],
+        [18, 33],
+        [23, 38],
+        false,
+    );
+    missing_rhs
+        .source_type
+        .validate_installation(missing_rhs.source, &missing_rhs.module, &missing_rhs.arena)
+        .expect("genuine generic Type without Mode RHS is installable");
+    assert!(missing_rhs.source_type.mode_rhs().is_empty());
+    controls.push((
+        "missing Mode RHS qualification".to_owned(),
+        missing_rhs.build(&baseline),
+        SourceModeDefinitionError::InvalidParameter { index: 0 },
+    ));
+    let invalid_parameter = SourceModeDefinitionError::InvalidParameter { index: 0 };
+    for (case, mut f, expected) in [
+        (
+            "moved Context canonical Type",
+            moved.clone(),
+            invalid_parameter.clone(),
+        ),
+        (
+            "canonical Context moved Type",
+            canonical.clone(),
+            SourceModeDefinitionError::DependencyMismatch,
+        ),
+        (
+            "moved containing anchors",
+            moved.clone(),
+            invalid_parameter.clone(),
+        ),
+        (
+            "canonical containing anchors",
+            canonical.clone(),
+            SourceModeDefinitionError::InvalidArenaOwnership,
+        ),
+    ] {
+        f.arena = {
+            let nodes = f
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    if [TYPE_EXPRESSION_X, TYPE_HEAD_X].contains(&id) {
+                        node.anchor = SourceAnchor::Range(range(f.source, 22, 26));
+                    }
+                    node
+                })
+                .collect();
+            TypedArena::try_new(f.arena.root(), nodes).unwrap()
+        };
+        if case == "moved Context canonical Type" {
+            f.source_type = canonical.source_type.clone();
+        }
+        if case == "canonical Context moved Type" {
+            f.source_type = moved.source_type.clone();
+        }
+        let lower = f.typed(baseline.clone());
+        assemble_empty(&lower)
+            .expect("containing Type anchors pass actual outer lower installation");
+        controls.push((case.to_owned(), f.build(&baseline), expected));
+    }
+    for (case, mut f, declaration) in [
+        (
+            "moved input canonical Context",
+            canonical.clone(),
+            moved.input.parameters[0].declaration_range,
+        ),
+        (
+            "canonical input moved Context",
+            moved.clone(),
+            canonical.input.parameters[0].declaration_range,
+        ),
+    ] {
+        f.input.parameters[0].declaration_range = declaration;
+        controls.push((
+            case.to_owned(),
+            f.build(&baseline),
+            invalid_parameter.clone(),
+        ));
+    }
+    let mut unavailable = canonical.clone();
+    let item = canonical.source_context.items().iter().next().unwrap().1;
+    let declaration = canonical
+        .source_context
+        .declarations()
+        .iter()
+        .next()
+        .unwrap()
+        .1;
+    unavailable.source_context = SourceBindingContextProducer::build(SourceBindingContextInput {
+        source_id: canonical.source,
+        module_id: canonical.module.clone(),
+        module_site: TypedSiteRef::Node(MODULE_ROOT),
+        items: vec![SourceItemInput {
+            shell: item.shell,
+            shell_ordinal: item.shell_ordinal,
+            role: SourceItemRole::PropertyImplementation,
+            module_id: canonical.module.clone(),
+            source_range: item.source_range,
+            parent: item.parent,
+            visibility: item.visibility,
+            site: item.site.clone(),
+            local_scope: Some(LocalTermScope::new(vec![0])),
+            recovery: SourceItemRecovery::Normal,
+        }],
+        bindings: vec![SourceBindingSiteInput {
+            shell: item.shell,
+            context_owner: SourceBindingContextOwner::Shell(item.shell),
+            source_ordinal: declaration.source_ordinal,
+            spelling: declaration.spelling.clone(),
+            declaration_range: declaration.declaration_range,
+            written_type_range: declaration.written_type_range,
+            site: declaration.site.clone(),
+            role: declaration.role.clone(),
+            recovery: BindingRecoveryState::Normal,
+        }],
+    })
+    .unwrap()
+    .into_complete()
+    .unwrap()
+    .into_handoff();
+    assert_eq!(unavailable.source_context.declarations().len(), 1);
+    controls.push((
+        "unavailable Context tuple".to_owned(),
+        unavailable.build(&baseline),
+        SourceModeDefinitionError::DependencyMismatch,
+    ));
+    for (case, header, declarations) in [
+        ("wrong name", "let  z be set;", [18, 33]),
+        ("wrong token", "var  x be set;", [18, 33]),
+        ("declaration offset", "let  x be set;", [19, 33]),
+        ("forbidden CR", "let \rx be set;", [18, 33]),
+        ("comment bytes", "let::x be set;", [18, 33]),
+        ("nonwhitespace", "let _x be set;", [18, 33]),
+        ("missing word gap", "let  x beset;", [18, 33]),
+    ] {
+        let f = fresh(
+            [header, &source[29..42]],
+            declarations,
+            [13 + header.find("set").unwrap(), 38],
+            true,
+        );
+        controls.push((
+            case.to_owned(),
+            f.build(&baseline),
+            invalid_parameter.clone(),
+        ));
+    }
+    for (case, mut f) in [
+        ("envelope length", moved.clone()),
+        ("overlap next header", moved.clone()),
+        ("declaration width", moved.clone()),
+    ] {
+        match case {
+            "envelope length" => f.input.parameters[0].source_range.end += 1,
+            "overlap next header" => {
+                f.input.parameters[0].source_range.end = 30;
+                f.input.parameters[0].spelling = "let  x be set   ;".to_owned();
+            }
+            _ => f.input.parameters[0].declaration_range.end += 1,
+        }
+        controls.push((
+            case.to_owned(),
+            f.build(&baseline),
+            invalid_parameter.clone(),
+        ));
+    }
+    let mut recovered = moved.clone();
+    recovered.arena = arena_with_recovery(&recovered.arena, TYPE_HEAD_X);
+    controls.push((
+        "earlier dependency".to_owned(),
+        recovered.build(&baseline),
+        SourceModeDefinitionError::DependencyMismatch,
+    ));
+    let mut shape = moved.clone();
+    shape.input.applications.clear();
+    controls.push((
+        "earlier shape".to_owned(),
+        shape.build(&baseline),
+        SourceModeDefinitionError::UnsupportedTaskShape,
+    ));
+    let bad_baseline = table_from_drafts(vec![unrelated_draft(
+        moved.source,
+        "source.definition.mode:forged",
+        "forged",
+    )]);
+    controls.push((
+        "earlier baseline".to_owned(),
+        moved.build(&bad_baseline),
+        SourceModeDefinitionError::InvalidObligation,
+    ));
+    let mut resolver = moved.clone();
+    resolver.env = resolver_env(resolver.source, resolver.module.clone(), None).0;
+    controls.push((
+        "earlier resolver".to_owned(),
+        resolver.build(&baseline),
+        SourceModeDefinitionError::InvalidResolverDefinition { index: 0 },
+    ));
+    let mut owner = moved.clone();
+    let nodes = owner
+        .arena
+        .iter()
+        .map(|(id, old)| {
+            let mut node = old.clone();
+            if id == MODE_DEFINITION {
+                node.kind = TypedNode::new("source.unowned", node.anchor.clone()).kind;
+            }
+            node
+        })
+        .collect();
+    owner.arena = TypedArena::try_new(owner.arena.root(), nodes).unwrap();
+    controls.push((
+        "earlier definition owner".to_owned(),
+        owner.build(&baseline),
+        SourceModeDefinitionError::InvalidArenaOwnership,
+    ));
+    let failures = positives
+        .iter()
+        .filter_map(|(case, _, result, _, _, _)| {
+            result
+                .as_ref()
+                .err()
+                .map(|error| format!("{case}: {error:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        failures.is_empty(),
+        "qualified header positives: {failures:?}"
+    );
+    for (case, result, expected) in controls {
+        assert_eq!(result, Err(expected), "{case}");
+    }
+    for (_, f, result, headers, declarations, types) in positives {
+        let input_before = f.input.clone();
+        let projection = result.unwrap();
+        let handoff = projection.handoff();
+        assert_eq!(projection.base_initial_obligations(), &baseline);
+        assert_eq!(projection.initial_obligations().len(), baseline.len() + 1);
+        assert_eq!(
+            obligation_drafts(projection.initial_obligations())[..baseline.len()],
+            obligation_drafts(&baseline)
+        );
+        assert_task262_obligation(
+            projection
+                .initial_obligations()
+                .get(InitialObligationId::new(baseline.len()))
+                .unwrap(),
+            f.source,
+            baseline.len(),
+        );
+        assert_ne!(
+            f.source_context.debug_text(),
+            original.source_context.debug_text()
+        );
+        assert_ne!(
+            f.source_type.debug_text(),
+            original.source_type.debug_text()
+        );
+        assert_eq!(
+            handoff.source_context_fingerprint(),
+            f.source_context.debug_text()
+        );
+        assert_eq!(
+            handoff.source_type_fingerprint(),
+            f.source_type.debug_text()
+        );
+        for (index, (_, parameter)) in handoff.parameters().iter().enumerate() {
+            assert_eq!(parameter.spelling(), headers[index]);
+            assert_eq!(
+                parameter.source_range(),
+                f.input.parameters[index].source_range
+            );
+            assert_eq!(
+                parameter.declaration_range(),
+                range(f.source, declarations[index], declarations[index] + 1)
+            );
+            let declaration = f.source_context.declarations().iter().nth(index).unwrap().1;
+            let application = f
+                .source_type
+                .applications()
+                .get(parameter.written_type())
+                .unwrap();
+            let expression = f.source_type.expressions().get(application.root()).unwrap();
+            assert_eq!(parameter.binding(), declaration.binding);
+            assert_eq!(parameter.declaration_range(), declaration.declaration_range);
+            assert_eq!(expression.source_range(), declaration.written_type_range);
+            assert_eq!(
+                expression.source_range(),
+                range(f.source, types[index], types[index] + 3)
+            );
+        }
+        assert_eq!(
+            handoff.definitions(),
+            original_projection.handoff().definitions()
+        );
+        assert_eq!(
+            handoff.applications(),
+            original_projection.handoff().applications()
+        );
+        assert_eq!(
+            handoff.expansions(),
+            original_projection.handoff().expansions()
+        );
+        assert_eq!(
+            handoff.inhabitation_requests(),
+            original_projection.handoff().inhabitation_requests()
+        );
+        assert_eq!(
+            handoff.properties(),
+            original_projection.handoff().properties()
+        );
+        assert_eq!(f.source_type.mode_rhs(), original.source_type.mode_rhs());
+        if declarations[1] == 33 {
+            assert_eq!(
+                handoff.parameters().iter().nth(1).unwrap().1,
+                original_projection
+                    .handoff()
+                    .parameters()
+                    .iter()
+                    .nth(1)
+                    .unwrap()
+                    .1
+            );
+        }
+        let before = f.typed(baseline.clone());
+        let typed = before
+            .clone()
+            .with_source_mode_definition(projection.clone())
+            .expect("actual upper Typed installation");
+        let resolved = assemble_empty(&typed).expect("actual upper final installation");
+        assert_eq!(typed.source_mode_definition(), Some(handoff));
+        assert_eq!(
+            resolved.source_mode_definition(),
+            typed.source_mode_definition()
+        );
+        assert_eq!(resolved.source_context(), typed.source_context());
+        assert_eq!(resolved.source_type(), typed.source_type());
+        assert_eq!(
+            typed.initial_obligations(),
+            projection.initial_obligations()
+        );
+        let replay = f.build(&baseline).unwrap();
+        assert_eq!(replay, projection);
+        let replay_typed = f
+            .typed(baseline.clone())
+            .with_source_mode_definition(replay)
+            .unwrap();
+        assert_eq!(replay_typed, typed);
+        assert_eq!(assemble_empty(&replay_typed).unwrap(), resolved);
+        assert_eq!(f.typed(baseline.clone()), before);
+        assert_eq!(f.input, input_before);
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+    }
+    assert_eq!(original.input, original_input);
+    assert_eq!(original.typed(baseline), original_typed);
+    assert_eq!(
+        original.projection(&model_domain_baseline(original.source)),
+        original_projection
+    );
+}
