@@ -1250,6 +1250,13 @@ fn validate_equals_selector_association(
         .requests()
         .get(association.member_request())
         .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let atoms = local_spelling_matches(
+        definiens.spelling(),
+        definiens.source_range(),
+        "M.carrier",
+        None,
+    )
+    .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
     if terms.terms().len() != 1
         || terms.references().len() != 1
         || !terms.numeric_type_requests().is_empty()
@@ -1283,7 +1290,7 @@ fn validate_equals_selector_association(
         || base_term.source_ordinal() != 0
         || base_term.context() != BindingContextId::new(1)
         || base_term.site() != &TypedSiteRef::Node(TypedNodeId::new(48))
-        || base_term.source_range() != range(property.source_id(), 173, 174)
+        || base_term.source_range() != atoms[0]
         || base_term.spelling() != "M"
         || base_reference.term() != association.base_term()
         || base_reference.binding() != association.base_binding()
@@ -1297,14 +1304,14 @@ fn validate_equals_selector_association(
         || structure_term.source_ordinal() != 0
         || structure_term.context() != BindingContextId::new(1)
         || structure_term.site() != &TypedSiteRef::Node(TypedNodeId::new(49))
-        || structure_term.source_range() != range(property.source_id(), 173, 182)
+        || structure_term.source_range() != definiens.source_range()
         || structure_term.spelling() != "M.carrier"
         || member.term() != association.structure_term()
         || member.ordinal() != 0
         || member.role() != SourceStructureMemberRole::Selector
         || member.parent().is_some()
         || member.site() != &TypedSiteRef::Node(TypedNodeId::new(31))
-        || member.source_range() != range(property.source_id(), 175, 182)
+        || member.source_range() != atoms[2]
         || member.spelling() != "carrier"
         || edge.term() != association.structure_term()
         || edge.ordinal() != 0
@@ -1887,6 +1894,10 @@ fn resolver_identity_matches(
         )
 }
 
+const MEANS_IMPLEMENTATION: &str = "definition\n  let M be Task264Carrier;\n  property M.marker means it = it;\n  existence by computation(steps: 1);\n  uniqueness by computation(steps: 1);\nend;";
+const EQUALS_IMPLEMENTATION: &str =
+    "definition\n  let M be Task264Carrier;\n  property M.marker equals M.carrier;\nend;";
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Profile {
     Means,
@@ -1907,62 +1918,50 @@ fn validate_input(
     arena: &TypedArena,
 ) -> Result<(), SourcePropertyImplementationError> {
     let implementation = &input.implementations[0];
-    let profile = match (implementation.style, implementation.source_range.end) {
-        (SourcePropertyImplementationStyle::Means, 262) => Profile::Means,
-        (SourcePropertyImplementationStyle::Equals, 188) => Profile::Equals,
-        _ => return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 }),
-    };
     let (
+        profile,
         owner_node,
-        implementation_end,
-        implementation_spelling,
         parameter_node,
         definiens_node,
-        definiens_range,
+        implementation_spelling,
         definiens_spelling,
-    ) = match profile {
-        Profile::Means => (
-            81,
-            262,
-            "definition\n  let M be Task264Carrier;\n  property M.marker means it = it;\n  existence by computation(steps: 1);\n  uniqueness by computation(steps: 1);\nend;",
-            65,
-            72,
-            (172, 179),
-            "it = it",
-        ),
-        Profile::Equals => (
+    ) = match implementation.style {
+        SourcePropertyImplementationStyle::Means => {
+            (Profile::Means, 81, 65, 72, MEANS_IMPLEMENTATION, "it = it")
+        }
+        SourcePropertyImplementationStyle::Equals => (
+            Profile::Equals,
             52,
-            188,
-            "definition\n  let M be Task264Carrier;\n  property M.marker equals M.carrier;\nend;",
             47,
             51,
-            (173, 182),
+            EQUALS_IMPLEMENTATION,
             "M.carrier",
         ),
     };
     if implementation.shell.index() != 4
         || implementation.site != TypedSiteRef::Node(TypedNodeId::new(owner_node))
-        || implementation.source_range != range(input.source_id, 108, implementation_end)
+        || implementation.source_range.source_id != input.source_id
+        || implementation.source_range.start != 108
         || implementation.source_ordinal != 0
         || implementation.context != BindingContextId::new(1)
         || implementation.recovery != SourcePropertyImplementationRecovery::Normal
-        || !local_spelling_matches(
-            &implementation.spelling,
-            implementation.source_range,
-            implementation_spelling,
-            None,
-        )
         || implementation.parameter != SourcePropertyParameterId::new(0)
         || implementation.target != SourcePropertyTargetId::new(0)
         || implementation.definiens != SourcePropertyDefiniensId::new(0)
     {
         return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
     }
-    let expected_ranges = [
+    let body = local_spelling_matches(
+        &implementation.spelling,
         implementation.source_range,
-        range(input.source_id, 125, 126),
-        range(input.source_id, 130, 144),
-    ];
+        implementation_spelling,
+        None,
+    )
+    .ok_or(SourcePropertyImplementationError::InvalidImplementation { index: 0 })?;
+    if body[0] != range(input.source_id, 108, 118) {
+        return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
+    }
+    let expected_ranges = [implementation.source_range, body[2], body[4]];
     if let (Some(item), Some((_, declaration)), Some(binding)) = (
         source_context.items().get(SourceItemId::new(0)),
         source_context.declarations().iter().next(),
@@ -2027,16 +2026,17 @@ fn validate_input(
         || parameter.binding != BindingId::new(0)
         || parameter.written_type != SourceTypeApplicationId::new(0)
         || parameter.site != TypedSiteRef::Node(TypedNodeId::new(parameter_node))
-        || parameter.source_range != range(input.source_id, 121, 145)
-        || parameter.declaration_range != range(input.source_id, 125, 126)
+        || parameter.source_range != range(input.source_id, body[1].start, body[5].end)
+        || parameter.declaration_range != body[2]
         || parameter.context != BindingContextId::new(1)
         || parameter.recovery != SourcePropertyImplementationRecovery::Normal
-        || !local_spelling_matches(
+        || local_spelling_matches(
             &parameter.spelling,
             parameter.source_range,
             "let M be Task264Carrier;",
             Some(implementation),
         )
+        .is_none()
     {
         return Err(SourcePropertyImplementationError::InvalidParameter { index: 0 });
     }
@@ -2053,10 +2053,16 @@ fn validate_input(
         || target.definition.index() != 2
         || target.contribution.index() != 0
         || target.site != expected_target_site
-        || target.source_range != range(input.source_id, 157, 165)
-        || target.subject_range != range(input.source_id, 157, 158)
-        || target.name_range != range(input.source_id, 159, 165)
-        || target.spelling != "M.marker"
+        || target.source_range != range(input.source_id, body[7].start, body[9].end)
+        || target.subject_range != body[7]
+        || target.name_range != body[9]
+        || local_spelling_matches(
+            &target.spelling,
+            target.source_range,
+            "M.marker",
+            Some(implementation),
+        )
+        .is_none()
         || target.return_type != SourceTypeStructureMemberId::new(1)
         || source_type
             .structure_members()
@@ -2077,70 +2083,129 @@ fn validate_input(
         || definiens.ordinal != 0
         || definiens.target != expected_target
         || definiens.site != TypedSiteRef::Node(TypedNodeId::new(definiens_node))
-        || definiens.source_range != range(input.source_id, definiens_range.0, definiens_range.1)
+        || definiens.source_range != range(input.source_id, body[11].start, body[13].end)
         || definiens.context != BindingContextId::new(1)
         || definiens.recovery != SourcePropertyImplementationRecovery::Normal
-        || !local_spelling_matches(
+        || local_spelling_matches(
             &definiens.spelling,
             definiens.source_range,
             definiens_spelling,
             Some(implementation),
         )
+        .is_none()
     {
         return Err(SourcePropertyImplementationError::InvalidDefiniens { index: 0 });
     }
     validate_profile_lower(
         profile,
-        input.source_id,
+        [body[11], body[12], body[13]],
         source_term,
         applications,
         structures,
         set_terms,
         atomic_formulas,
     )?;
-    validate_correctness(profile, input)?;
+    validate_correctness(profile, input, &body)?;
     validate_arena(profile, input.source_id, arena)?;
+    for (index, span) in body.iter().enumerate() {
+        if arena
+            .node(TypedNodeId::new(index + 18))
+            .is_none_or(|node| node.anchor != SourceAnchor::Range(*span))
+        {
+            return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+        }
+    }
     Ok(())
 }
 
 fn local_spelling_matches(
     spelling: &str,
-    range: SourceRange,
+    span: SourceRange,
     expected: &str,
     parent: Option<&SourcePropertyImplementationInput>,
-) -> bool {
-    if spelling.len() != expected.len() {
-        return false;
+) -> Option<Vec<SourceRange>> {
+    if span.end.checked_sub(span.start) != Some(spelling.len()) || spelling.is_empty() {
+        return None;
     }
-    let actual = spelling.as_bytes();
-    let expected = expected.as_bytes();
-    let mut offset = 0;
-    while offset < expected.len() {
-        if matches!(expected[offset], b' ' | b'\t' | b'\n') {
-            let start = offset;
-            while offset < expected.len() && matches!(expected[offset], b' ' | b'\t' | b'\n') {
-                offset += 1;
-            }
-            let gap = &actual[start..offset];
-            if !gap.iter().all(|&byte| matches!(byte, b' ' | b'\t' | b'\n')) && gap != b"::\n" {
-                return false;
-            }
-        } else {
-            if actual[offset] != expected[offset] {
-                return false;
-            }
-            offset += 1;
+    if let Some(parent) = parent {
+        let start = span.start.checked_sub(parent.source_range.start)?;
+        let end = span.end.checked_sub(parent.source_range.start)?;
+        if span.source_id != parent.source_range.source_id
+            || parent.spelling.get(start..end) != Some(spelling)
+        {
+            return None;
         }
     }
-    parent.is_none_or(|parent| {
-        let Some(start) = range.start.checked_sub(parent.source_range.start) else {
-            return false;
+    let preprocessed = mizar_lexer::preprocess_source_for_lexing(spelling);
+    if !preprocessed.diagnostics.is_empty()
+        || preprocessed.comments.iter().any(|comment| {
+            !matches!(
+                comment.kind,
+                mizar_lexer::CommentKind::SingleLine | mizar_lexer::CommentKind::MultiLine
+            )
+        })
+    {
+        return None;
+    }
+    let actual = preprocessed.lexical_text.as_bytes();
+    let expected = expected.as_bytes();
+    let mut measured = Vec::new();
+    let mut cursor = 0;
+    let mut expected_cursor = 0;
+    let mut previous_word = false;
+    while expected_cursor < expected.len() {
+        if matches!(expected[expected_cursor], b' ' | b'\t' | b'\n') {
+            expected_cursor += 1;
+            continue;
+        }
+        let start = expected_cursor;
+        let word = expected[start].is_ascii_alphanumeric() || expected[start] == b'_';
+        expected_cursor += 1;
+        if word {
+            while expected_cursor < expected.len()
+                && (expected[expected_cursor].is_ascii_alphanumeric()
+                    || expected[expected_cursor] == b'_')
+            {
+                expected_cursor += 1;
+            }
+        }
+        let gap_start = cursor;
+        while cursor < actual.len() && matches!(actual[cursor], b' ' | b'\t' | b'\n') {
+            cursor += 1;
+        }
+        if previous_word && word && gap_start == cursor {
+            return None;
+        }
+        let end = cursor.checked_add(expected_cursor - start)?;
+        if actual.get(cursor..end) != Some(&expected[start..expected_cursor]) {
+            return None;
+        }
+        let fragments = preprocessed
+            .preprocess_map
+            .source_ranges_for_lexical(mizar_lexer::SourceSpan { start: cursor, end })?;
+        let [fragment] = fragments.as_slice() else {
+            return None;
         };
-        let Some(end) = range.end.checked_sub(parent.source_range.start) else {
-            return false;
-        };
-        parent.spelling.get(start..end) == Some(spelling)
-    })
+        if spelling.as_bytes().get(fragment.start..fragment.end)
+            != Some(&expected[start..expected_cursor])
+        {
+            return None;
+        }
+        measured.push(range(
+            span.source_id,
+            span.start.checked_add(fragment.start)?,
+            span.start.checked_add(fragment.end)?,
+        ));
+        previous_word = word;
+        cursor = end;
+    }
+    if cursor != actual.len()
+        || measured.first()?.start != span.start
+        || measured.last()?.end != span.end
+    {
+        return None;
+    }
+    Some(measured)
 }
 
 fn validate_context(
@@ -2296,13 +2361,14 @@ fn validate_source_type_profile(
 
 fn validate_profile_lower(
     profile: Profile,
-    source: SourceId,
+    atoms: [SourceRange; 3],
     terms: &SourcePrimaryTermHandoff,
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     set_terms: Option<&SourceSetTermHandoff>,
     formulas: Option<&SourceAtomicFormulaHandoff>,
 ) -> Result<(), SourcePropertyImplementationError> {
+    let source = atoms[0].source_id;
     if applications.is_some() || set_terms.is_some() {
         return Err(SourcePropertyImplementationError::DependencyMismatch);
     }
@@ -2318,9 +2384,7 @@ fn validate_profile_lower(
             if terms.terms().len() != 2 {
                 return Err(SourcePropertyImplementationError::InvalidDefiniens { index: 0 });
             }
-            for (index, (node, start, end)) in
-                [(66, 172, 174), (68, 177, 179)].into_iter().enumerate()
-            {
+            for (index, (node, span)) in [(66, atoms[0]), (68, atoms[2])].into_iter().enumerate() {
                 let term = terms
                     .terms()
                     .get(SourcePrimaryTermId::new(index))
@@ -2331,7 +2395,7 @@ fn validate_profile_lower(
                     || term.parent().is_some()
                     || term.context() != BindingContextId::new(1)
                     || term.site() != &TypedSiteRef::Node(TypedNodeId::new(node))
-                    || term.source_range() != range(source, start, end)
+                    || term.source_range() != span
                     || term.spelling() != "it"
                 {
                     return Err(SourcePropertyImplementationError::InvalidDefiniens { index: 0 });
@@ -2353,7 +2417,7 @@ fn validate_profile_lower(
                 || formulas.requests().len() != 2
                 || formula.kind() != SourceAtomicFormulaKind::Equality
                 || formula.site() != &TypedSiteRef::Node(TypedNodeId::new(70))
-                || formula.source_range() != range(source, 172, 179)
+                || formula.source_range() != range(source, atoms[0].start, atoms[2].end)
                 || formula.source_ordinal() != 0
                 || formula.context() != BindingContextId::new(1)
                 || formula.recovery()
@@ -2444,7 +2508,7 @@ fn validate_profile_lower(
             if term.kind() != SourcePrimaryTermKind::VariableReference
                 || term.role() != SourcePrimaryTermRole::Value
                 || term.site() != &TypedSiteRef::Node(TypedNodeId::new(48))
-                || term.source_range() != range(source, 173, 174)
+                || term.source_range() != atoms[0]
                 || term.context() != BindingContextId::new(1)
                 || term.spelling() != "M"
                 || reference.term() != SourcePrimaryTermId::new(0)
@@ -2456,7 +2520,7 @@ fn validate_profile_lower(
                 || reference.use_ordinal() != 1
                 || structure.kind() != SourceStructureTermKind::SelectorAccess
                 || structure.site() != &TypedSiteRef::Node(TypedNodeId::new(49))
-                || structure.source_range() != range(source, 173, 182)
+                || structure.source_range() != range(source, atoms[0].start, atoms[2].end)
                 || structure.source_ordinal() != 0
                 || structure.context() != BindingContextId::new(1)
                 || structure.recovery() != crate::source_structure::SourceStructureRecovery::Normal
@@ -2464,7 +2528,7 @@ fn validate_profile_lower(
                 || member.term() != SourceStructureTermId::new(0)
                 || member.ordinal() != 0
                 || member.site() != &TypedSiteRef::Node(TypedNodeId::new(31))
-                || member.source_range() != range(source, 175, 182)
+                || member.source_range() != atoms[2]
                 || member.spelling() != "carrier"
                 || member.role() != SourceStructureMemberRole::Selector
                 || member.parent().is_some()
@@ -2512,6 +2576,7 @@ fn validate_profile_lower(
 fn validate_correctness(
     profile: Profile,
     input: &SourcePropertyImplementationHandoffInput,
+    body: &[SourceRange],
 ) -> Result<(), SourcePropertyImplementationError> {
     match profile {
         Profile::Equals if input.correctness.is_empty() => Ok(()),
@@ -2524,40 +2589,38 @@ fn validate_correctness(
                 (
                     SourcePropertyCorrectnessKind::Existence,
                     76,
-                    183,
-                    218,
-                    193,
-                    217,
+                    15,
                     "existence by computation(steps: 1);",
                 ),
                 (
                     SourcePropertyCorrectnessKind::Uniqueness,
                     80,
-                    221,
-                    257,
-                    232,
-                    256,
+                    24,
                     "uniqueness by computation(steps: 1);",
                 ),
             ];
-            for (index, (kind, node, start, end, proof_start, proof_end, spelling)) in
-                rows.into_iter().enumerate()
-            {
+            for (index, (kind, node, start, spelling)) in rows.into_iter().enumerate() {
                 let row = &input.correctness[index];
                 if row.owner != SourcePropertyImplementationId::new(0)
                     || row.ordinal != index
                     || row.kind != kind
                     || row.site != TypedSiteRef::Node(TypedNodeId::new(node))
-                    || row.source_range != range(input.source_id, start, end)
+                    || row.source_range
+                        != range(input.source_id, body[start].start, body[start + 8].end)
                     || row.justification
-                        != SourceAnchor::Range(range(input.source_id, proof_start, proof_end))
+                        != SourceAnchor::Range(range(
+                            input.source_id,
+                            body[start + 1].start,
+                            body[start + 7].end,
+                        ))
                     || row.recovery != SourcePropertyImplementationRecovery::Normal
-                    || !local_spelling_matches(
+                    || local_spelling_matches(
                         &row.spelling,
                         row.source_range,
                         spelling,
                         Some(&input.implementations[0]),
                     )
+                    .is_none()
                 {
                     return Err(SourcePropertyImplementationError::InvalidCorrectness { index });
                 }
@@ -2572,7 +2635,7 @@ fn validate_arena(
     source: SourceId,
     arena: &TypedArena,
 ) -> Result<(), SourcePropertyImplementationError> {
-    const MEANS_RANGES: &[[usize; 2]] = &[
+    const PREFIX_RANGES: &[[usize; 2]] = &[
         [0, 10],
         [13, 19],
         [20, 34],
@@ -2592,40 +2655,6 @@ fn validate_arena(
         [102, 105],
         [105, 106],
         [108, 118],
-        [121, 124],
-        [125, 126],
-        [127, 129],
-        [130, 144],
-        [144, 145],
-        [148, 156],
-        [157, 158],
-        [158, 159],
-        [159, 165],
-        [166, 171],
-        [172, 174],
-        [175, 176],
-        [177, 179],
-        [179, 180],
-        [183, 192],
-        [193, 195],
-        [196, 207],
-        [207, 208],
-        [208, 213],
-        [213, 214],
-        [215, 216],
-        [216, 217],
-        [217, 218],
-        [221, 231],
-        [232, 234],
-        [235, 246],
-        [246, 247],
-        [247, 252],
-        [252, 253],
-        [254, 255],
-        [255, 256],
-        [256, 257],
-        [258, 261],
-        [261, 262],
         [20, 34],
         [62, 65],
         [62, 65],
@@ -2635,183 +2664,137 @@ fn validate_arena(
         [71, 94],
         [13, 101],
         [0, 106],
-        [130, 144],
-        [130, 144],
-        [130, 144],
-        [121, 145],
-        [172, 174],
-        [172, 174],
-        [177, 179],
-        [177, 179],
-        [172, 179],
-        [172, 179],
-        [172, 179],
-        [208, 216],
-        [196, 217],
-        [193, 217],
-        [183, 218],
-        [247, 255],
-        [235, 256],
-        [232, 256],
-        [221, 257],
-        [108, 262],
-        [0, 262],
-        [0, 262],
-        [0, 262],
     ];
-    const EQUALS_RANGES: &[[usize; 2]] = &[
-        [0, 10],
-        [13, 19],
-        [20, 34],
-        [35, 40],
-        [45, 50],
-        [51, 58],
-        [59, 61],
-        [62, 65],
-        [65, 66],
-        [71, 79],
-        [80, 86],
-        [87, 89],
-        [90, 93],
-        [93, 94],
-        [97, 100],
-        [100, 101],
-        [102, 105],
-        [105, 106],
-        [108, 118],
-        [121, 124],
-        [125, 126],
-        [127, 129],
-        [130, 144],
-        [144, 145],
-        [148, 156],
-        [157, 158],
-        [158, 159],
-        [159, 165],
-        [166, 172],
-        [173, 174],
-        [174, 175],
-        [175, 182],
-        [182, 183],
-        [184, 187],
-        [187, 188],
-        [20, 34],
-        [62, 65],
-        [62, 65],
-        [45, 66],
-        [90, 93],
-        [90, 93],
-        [71, 94],
-        [13, 101],
-        [0, 106],
-        [130, 144],
-        [130, 144],
-        [130, 144],
-        [121, 145],
-        [173, 174],
-        [173, 182],
-        [173, 182],
-        [173, 182],
-        [108, 188],
-        [0, 188],
-        [0, 188],
-        [0, 188],
-    ];
-    let rows: &[(usize, usize, usize, &str)] = match profile {
+    let rows: &[(usize, &str)] = match profile {
         Profile::Means => &[
-            (54, 62, 65, "source.type.head"),
-            (55, 62, 65, "source.type.expression"),
-            (57, 90, 93, "source.type.head"),
-            (58, 90, 93, "source.type.expression"),
-            (64, 130, 144, "source.type.head"),
-            (63, 130, 144, "source.type.expression"),
-            (56, 45, 66, "source.definition.structure.member"),
-            (59, 71, 94, "source.definition.structure.member"),
-            (60, 13, 101, "source.definition.structure"),
-            (
-                65,
-                125,
-                126,
-                "source.definition.property-implementation.parameter",
-            ),
-            (66, 172, 174, "source.term.it"),
-            (68, 177, 179, "source.term.it"),
-            (70, 172, 179, "source.formula.atomic.equality"),
-            (
-                72,
-                172,
-                179,
-                "source.definition.property-implementation.definiens",
-            ),
-            (
-                76,
-                183,
-                218,
-                "source.definition.property-implementation.correctness",
-            ),
-            (
-                80,
-                221,
-                257,
-                "source.definition.property-implementation.correctness",
-            ),
-            (81, 108, 262, "source.definition.property-implementation"),
-            (84, 0, 262, "source.module"),
+            (54, "source.type.head"),
+            (55, "source.type.expression"),
+            (57, "source.type.head"),
+            (58, "source.type.expression"),
+            (64, "source.type.head"),
+            (63, "source.type.expression"),
+            (56, "source.definition.structure.member"),
+            (59, "source.definition.structure.member"),
+            (60, "source.definition.structure"),
+            (65, "source.definition.property-implementation.parameter"),
+            (66, "source.term.it"),
+            (68, "source.term.it"),
+            (70, "source.formula.atomic.equality"),
+            (72, "source.definition.property-implementation.definiens"),
+            (76, "source.definition.property-implementation.correctness"),
+            (80, "source.definition.property-implementation.correctness"),
+            (81, "source.definition.property-implementation"),
+            (84, "source.module"),
         ],
         Profile::Equals => &[
-            (36, 62, 65, "source.type.head"),
-            (37, 62, 65, "source.type.expression"),
-            (39, 90, 93, "source.type.head"),
-            (40, 90, 93, "source.type.expression"),
-            (46, 130, 144, "source.type.head"),
-            (45, 130, 144, "source.type.expression"),
-            (38, 45, 66, "source.definition.structure.member"),
-            (41, 71, 94, "source.definition.structure.member"),
-            (42, 13, 101, "source.definition.structure"),
-            (
-                47,
-                125,
-                126,
-                "source.definition.property-implementation.parameter",
-            ),
-            (31, 175, 182, "source.term.structure.member.selector"),
-            (48, 173, 174, "source.term.variable-reference"),
-            (49, 173, 182, "source.term.structure.selector"),
-            (
-                51,
-                173,
-                182,
-                "source.definition.property-implementation.definiens",
-            ),
-            (52, 108, 188, "source.definition.property-implementation"),
-            (55, 0, 188, "source.module"),
+            (36, "source.type.head"),
+            (37, "source.type.expression"),
+            (39, "source.type.head"),
+            (40, "source.type.expression"),
+            (46, "source.type.head"),
+            (45, "source.type.expression"),
+            (38, "source.definition.structure.member"),
+            (41, "source.definition.structure.member"),
+            (42, "source.definition.structure"),
+            (47, "source.definition.property-implementation.parameter"),
+            (31, "source.term.structure.member.selector"),
+            (48, "source.term.variable-reference"),
+            (49, "source.term.structure.selector"),
+            (51, "source.definition.property-implementation.definiens"),
+            (52, "source.definition.property-implementation"),
+            (55, "source.module"),
         ],
     };
-    let expected_len = match profile {
-        Profile::Means => 85,
-        Profile::Equals => 56,
-    };
-    let exact_ranges = match profile {
-        Profile::Means => MEANS_RANGES,
-        Profile::Equals => EQUALS_RANGES,
+    let (expected_len, canonical) = match profile {
+        Profile::Means => (85, MEANS_IMPLEMENTATION),
+        Profile::Equals => (56, EQUALS_IMPLEMENTATION),
     };
     if arena.len() != expected_len || arena.root() != Some(TypedNodeId::new(expected_len - 1)) {
         return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
     }
+    let reference = local_spelling_matches(
+        canonical,
+        range(source, 108, 108 + canonical.len()),
+        canonical,
+        None,
+    )
+    .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
+    let leaf_count = 18 + reference.len();
     for (id, row) in arena.iter() {
-        let owned = rows.iter().find(|(node, ..)| *node == id.index());
-        let expected_kind = owned.map_or("source.surface.unowned", |(_, _, _, kind)| *kind);
-        let expected_context = if id.index() == expected_len - 1 {
-            LocalTypeContextId::new(0)
-        } else {
-            LocalTypeContextId::new(1)
+        let SourceAnchor::Range(actual) = &row.anchor else {
+            return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
         };
-        let [start, end] = owned.map_or(exact_ranges[id.index()], |(_, start, end, _)| {
-            [*start, *end]
-        });
-        let anchor_matches = row.anchor == SourceAnchor::Range(range(source, start, end));
+        let expected_range = if id.index() < 19 {
+            let [start, end] = PREFIX_RANGES[id.index()];
+            range(source, start, end)
+        } else if (leaf_count..leaf_count + 9).contains(&id.index()) {
+            let [start, end] = PREFIX_RANGES[19 + id.index() - leaf_count];
+            range(source, start, end)
+        } else if id.index() < leaf_count {
+            let atom = reference[id.index() - 18];
+            let previous_atom = reference[id.index() - 19];
+            let SourceAnchor::Range(previous) = &arena
+                .node(TypedNodeId::new(id.index() - 1))
+                .expect("dense arena")
+                .anchor
+            else {
+                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+            };
+            let first = canonical.as_bytes()[atom.start - 108];
+            let previous_first = canonical.as_bytes()[previous_atom.start - 108];
+            let words = (first.is_ascii_alphanumeric() || first == b'_')
+                && (previous_first.is_ascii_alphanumeric() || previous_first == b'_');
+            if actual.source_id != source
+                || actual.start >= actual.end
+                || actual.end.checked_sub(actual.start) != atom.end.checked_sub(atom.start)
+                || previous.end > actual.start
+                || (words && previous.end == actual.start)
+            {
+                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+            }
+            *actual
+        } else {
+            let (first, last) = match (profile, id.index()) {
+                (Profile::Means, 62..=64) | (Profile::Equals, 44..=46) => (22, 22),
+                (Profile::Means, 65) | (Profile::Equals, 47) => (20, 20),
+                (Profile::Means, 66..=67) | (Profile::Equals, 48) => (29, 29),
+                (Profile::Means, 68..=69) => (31, 31),
+                (Profile::Means, 70..=72) | (Profile::Equals, 49..=51) => (29, 31),
+                (Profile::Means, 73) => (37, 39),
+                (Profile::Means, 74) => (35, 40),
+                (Profile::Means, 75) => (34, 40),
+                (Profile::Means, 76) => (33, 41),
+                (Profile::Means, 77) => (46, 48),
+                (Profile::Means, 78) => (44, 49),
+                (Profile::Means, 79) => (43, 49),
+                (Profile::Means, 80) => (42, 50),
+                (Profile::Means, 81) | (Profile::Equals, 52) => (18, leaf_count - 1),
+                (Profile::Means, 82..=84) | (Profile::Equals, 53..=55) => (0, leaf_count - 1),
+                _ => return Err(SourcePropertyImplementationError::InvalidArenaOwnership),
+            };
+            let SourceAnchor::Range(first) = &arena
+                .node(TypedNodeId::new(first))
+                .expect("dense arena")
+                .anchor
+            else {
+                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+            };
+            let SourceAnchor::Range(last) = &arena
+                .node(TypedNodeId::new(last))
+                .expect("dense arena")
+                .anchor
+            else {
+                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+            };
+            range(source, first.start, last.end)
+        };
+        let expected_kind = rows
+            .iter()
+            .find(|(node, _)| *node == id.index())
+            .map_or("source.surface.unowned", |(_, kind)| *kind);
+        let expected_context = LocalTypeContextId::new(usize::from(id.index() != expected_len - 1));
         if row.kind.as_str() != expected_kind
-            || !anchor_matches
+            || row.anchor != SourceAnchor::Range(expected_range)
             || row.resolved_node.is_some()
             || row.typing != TypingState::Unknown
             || row.recovery != NodeRecoveryState::Normal

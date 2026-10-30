@@ -12,31 +12,37 @@ check する。`equals` は existence/uniqueness を要求せず direct value te
 
 ## Fixed-width local spelling
 
-upper transport は元の token 座標と spelling frame を維持する。非 trivia byte の
-位置を保ち、既存 gap では同じ byte 幅の space/tab/LF、または三 byte gap の
-空の通常行コメント `::` と LF だけを許す。local text 長は元の範囲幅と一致する。
-spelling 検査には lexer、arena 参照、source provider の証拠を用いない。
+元の固定幅 profile は引き続き受理する。二つ目の `definition`（slot18、108..118）
+までの token、prefix 集約、resolver／保存済み origin、Type member／Set 範囲は固定する。
+Implementation は108から始まり、header 後の body gap だけを可変とし、最後の semicolon
+で終端を決める。local body frame の整合性であり、block 間や source 全体の受理ではない。
 
-各 row は元の段階で自身の text を検査する。parameter、target、definiens、
-correctness は、受理した implementation text の対応 slice と子の段階で照合する。
-Means Atomic は正規化表記 `it = it`、既存の下位検査と fingerprint を維持し、
-Property の物理的 trivia は Atomic にコピーしない。Equals target/selector は
-gapless のまま。Property の物理的な文字列と fingerprint を維持して再検証する。
-先行する下位 installation と元の shape/baseline/resolver/row/Context/lower/Arena
-順序を維持し、Implementation 自身の frame 検査後に次の関連検査を行う。
-正常な Context／埋め込み BindingEnv／実際の Type が同じ M・Type 位置を示す場合、
-自身の物理位置との不一致を InvalidImplementation0 とする。参照の適格性は
-Context 自身の item 範囲、既存 profile の role／identity、current source 内の
-正で包含・順序を満たす幅1／14、正常 active DefinitionParameter の identity と
-Type site、および実際の Bare Carrier root／head の一致から判断する。
-不適格または相互不一致の参照は従来の Context→Parameter→Type 診断へ委ねる。
-item 範囲だけの相違では Implementation と判定しない。これは渡された関連の検査で
-raw source の証明ではなく、declaration と binding は同時生成される。
-子の field や arena19 を先行参照しない。
+既知の ASCII 語・数・記号を native preprocessing と source map から測る。
+SP／TAB／LF と通常の行・block comment を許し、diagnostic、documentation／annotation、
+外側 trivia を拒否する。各 literal は正確な byte を持つ単一の元 fragment に写し、
+global offset は checked 加算する。連続する語には区切りを要求し、記号の隣接は許す。
+物理文字列長と範囲幅を一致させ、文字列と fingerprint を維持する。
+Raw LexemeRun の個数を固定 atom の根拠にしない。
 
-これは渡された local text の整合性であり、任意 trivia、token 移動、raw source
-admission、Property 全体の layout 境界は別の課題である。以下の元ソース、座標、
-arena oracle、意味論・obligation 境界を維持する。
+自身の frame 後、測定した M／Type20／22 を、適格な正常 Context／埋め込み BindingEnv／
+実際の Type と比較する。Context 自身の範囲、既存 profile identity、current source の
+正で包含・順序を満たす幅1／14、正常 active DefinitionParameter identity／Type site、
+実際の Bare Carrier の一致を要求する。適格な位置不一致は InvalidImplementation0 とし、
+不適格・相互不一致は従来の Context→Parameter→Type に委ねる。item 範囲だけでは判定しない。
+declaration と binding は同時生成され、独立した raw source の証拠ではない。
+
+遅い Context 段階で測定した owner／M／Type を照合する。各子は自身の frame と親の
+物理 slice を元の段階で検査する。typed parameter65／47 は full let19..23 でなく M20。
+Type parameter は22に対応し、prefix は固定する。target／definiens／correctness と
+justification を測定 atom に照合する。Means Atomic の正規表記 `it = it` と物理 `it=it`、
+Equals Structure の正規表記 `M.carrier` と物理 `M . carrier` を区別する。Equals consumer
+は受理済み immutable definiens を再測定し、prefix field-origin 関連は固定のまま。
+
+Arena の kind／context／root／state と prefix を維持する。body leaf の幅・順序、alias
+の厳密な leaf 端点を検査し、最後の Arena 段階で測定 body atom と実際の leaf を照合する。
+unowned19 や子 field を先行参照しない。先行する lower／source／shape／baseline／resolver
+の順序、保存済み replay／fingerprint、子の診断責務、既存の Arena 拒否、意味論・obligation
+境界を維持する。
 
 ## Task 264 scope / authority
 
@@ -323,6 +329,10 @@ target#<id> owner=<id> ordinal=<n> subject=<id> symbol=<Rust-debug FQN string> d
 definiens#<id> owner=<id> ordinal=<n> target=<definiens-target> range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
 correctness#<id> owner=<id> ordinal=<n> kind=<existence|uniqueness> range=<start>..<end> site=node#<id> justification=range:<start>..<end> recovery=<normal|degraded> spelling=<Rust-debug String> obligation=<id>
 ```
+
+以下の物理範囲・文字列は元 fixture の例であり、body の受理は上記の測定規則に従う。
+`it` relocation の拒否は lower の位置と自身の definiens が不整合な場合を指し、
+全体を整合的に移動した body の拒否ではない。
 
 Active cardinalityはMeans `1/1/1/1/2`、Equals `1/1/1/1/0`です。Parameterは
 binding/application 0、range `121..145`、declaration `125..126`、context 1。

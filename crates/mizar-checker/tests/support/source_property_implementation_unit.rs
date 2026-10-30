@@ -3514,3 +3514,648 @@ fn task_264_public_reference_positions_classify_only_congruent_normal_bundles() 
         "public reference classifications: {failures:?}"
     );
 }
+
+#[test]
+fn task_264_public_measured_body_layout_installs_replays_and_keeps_phase_owners() {
+    let mut positives = Vec::new();
+    let mut negatives = Vec::new();
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let original = fixture(profile);
+        let base = unrelated_baseline(original.source);
+        original
+            .build(&base)
+            .expect("original public Property success");
+        for case in ["layout", "comments"] {
+            let mut f = original.clone();
+            let leaf_count = if profile == TestProfile::Means {
+                53
+            } else {
+                35
+            };
+            let old_text = &original.input.implementations[0].spelling;
+            let mut text = String::new();
+            let mut leaves = (0..18)
+                .map(|index| {
+                    let [start, end] = surface_range(profile, index);
+                    range(f.source, start, end)
+                })
+                .collect::<Vec<_>>();
+            for index in 18..leaf_count {
+                let [start, end] = surface_range(profile, index);
+                let gap = if index == 18 {
+                    ""
+                } else {
+                    let previous = surface_range(profile, index - 1)[1];
+                    &old_text[previous - 108..start - 108]
+                };
+                let gap = match (case, index, profile) {
+                    ("layout", 19, _) => "\n   ",
+                    ("layout", 20, _) => "\t ",
+                    ("layout", 22, _) => "   ",
+                    ("layout", 24, _) => "\n\t\t\t",
+                    ("layout", 33, TestProfile::Means) => "\n     ",
+                    ("layout", 42, TestProfile::Means) => "\n\t",
+                    ("layout", 30 | 31 | 39 | 48, TestProfile::Means) => "",
+                    ("layout", 26 | 27 | 30 | 31, TestProfile::Equals) => " ",
+                    ("comments", 19, _) => "\n::=λ body=::  ",
+                    ("comments", 24, _) => " :: ordinary body\n\t",
+                    ("comments", 30, _) => "::=λ=::",
+                    _ => gap,
+                };
+                text.push_str(gap);
+                let measured_start = 108 + text.len();
+                text.push_str(&old_text[start - 108..end - 108]);
+                leaves.push(range(f.source, measured_start, 108 + text.len()));
+            }
+            let owner_range = range(f.source, 108, 108 + text.len());
+            let definiens_range = range(f.source, leaves[29].start, leaves[31].end);
+            let nodes = original
+                .arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    let endpoints = match (profile, id.index()) {
+                        (TestProfile::Means, 62..=64) | (TestProfile::Equals, 44..=46) => {
+                            Some((22, 22))
+                        }
+                        (TestProfile::Means, 65) | (TestProfile::Equals, 47) => Some((20, 20)),
+                        (TestProfile::Means, 66..=67) | (TestProfile::Equals, 48) => Some((29, 29)),
+                        (TestProfile::Means, 68..=69) => Some((31, 31)),
+                        (TestProfile::Means, 70..=72) | (TestProfile::Equals, 49..=51) => {
+                            Some((29, 31))
+                        }
+                        (TestProfile::Means, 73) => Some((37, 39)),
+                        (TestProfile::Means, 74) => Some((35, 40)),
+                        (TestProfile::Means, 75) => Some((34, 40)),
+                        (TestProfile::Means, 76) => Some((33, 41)),
+                        (TestProfile::Means, 77) => Some((46, 48)),
+                        (TestProfile::Means, 78) => Some((44, 49)),
+                        (TestProfile::Means, 79) => Some((43, 49)),
+                        (TestProfile::Means, 80) => Some((42, 50)),
+                        (TestProfile::Means, 81) | (TestProfile::Equals, 52) => {
+                            Some((18, leaf_count - 1))
+                        }
+                        (TestProfile::Means, 82..=84) | (TestProfile::Equals, 53..=55) => {
+                            Some((0, leaf_count - 1))
+                        }
+                        _ => None,
+                    };
+                    if id.index() < leaf_count {
+                        node.anchor = SourceAnchor::Range(leaves[id.index()]);
+                    } else if let Some((first, last)) = endpoints {
+                        node.anchor = SourceAnchor::Range(range(
+                            f.source,
+                            leaves[first].start,
+                            leaves[last].end,
+                        ));
+                    }
+                    node
+                })
+                .collect();
+            f.arena = TypedArena::try_new(original.arena.root(), nodes)
+                .expect("normal measured body arena");
+            let shell = original.input.implementations[0].shell;
+            let scope = LocalTermScope::new(vec![4]);
+            f.context = SourceBindingContextProducer::build(SourceBindingContextInput {
+                source_id: f.source,
+                module_id: f.module.clone(),
+                module_site: node_site(root_node(profile)),
+                items: vec![SourceItemInput {
+                    shell,
+                    shell_ordinal: 4,
+                    role: SourceItemRole::PropertyImplementation,
+                    module_id: f.module.clone(),
+                    source_range: owner_range,
+                    parent: None,
+                    visibility: SourceItemVisibility::Unspecified,
+                    site: node_site(owner_node(profile)),
+                    local_scope: Some(scope.clone()),
+                    recovery: SourceItemRecovery::Normal,
+                }],
+                bindings: vec![SourceBindingSiteInput {
+                    shell,
+                    context_owner: SourceBindingContextOwner::Shell(shell),
+                    source_ordinal: 0,
+                    spelling: "M".to_owned(),
+                    declaration_range: leaves[20],
+                    written_type_range: leaves[22],
+                    site: node_site(parameter_node(profile)),
+                    role: SourceBindingSiteRole::DefinitionParameter {
+                        local: LocalTermBinding::new("M", scope, leaves[20], 0),
+                    },
+                    recovery: BindingRecoveryState::Normal,
+                }],
+            })
+            .expect("fresh measured Context")
+            .into_complete()
+            .expect("complete measured Context")
+            .into_handoff();
+            let mut expressions = original.source_type.expressions().iter().map(|(id, row)| {
+                let span = if id.index() == 0 {
+                    leaves[22]
+                } else {
+                    row.source_range()
+                };
+                SourceTypeExpressionInput {
+                    source_id: row.source_id(),
+                    module_id: row.module_id().clone(),
+                    site: row.site().clone(),
+                    source_range: span,
+                    spelling: row.spelling().to_owned(),
+                    head_site: row.head_site().clone(),
+                    head_range: span,
+                    head_spelling: row.head_spelling().to_owned(),
+                    form: row.form(),
+                    head: row.head().clone(),
+                    recovery: row.recovery(),
+                }
+            });
+            let generic = SourceTypeProducer::build(
+                SourceTypeHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    applications: vec![SourceTypeApplicationInput {
+                        binding: BindingId::new(0),
+                        source_ordinal: 0,
+                        root: SourceTypeExpressionId::new(0),
+                    }],
+                    expressions: vec![expressions.next().unwrap()],
+                    arguments: Vec::new(),
+                },
+                f.context.binding_env(),
+                &f.env,
+                &f.arena,
+            )
+            .expect("actual measured generic Type");
+            f.source_type = SourceTypeStructureMemberProducer::extend_property_implementation(
+                &generic,
+                SourceTypeStructureMemberHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    members: original
+                        .source_type
+                        .structure_members()
+                        .iter()
+                        .zip(expressions)
+                        .map(|((_, row), expression)| SourceTypeStructureMemberInput {
+                            member_site: row.member_site().clone(),
+                            member_range: row.member_range(),
+                            source_ordinal: row.source_ordinal(),
+                            expression,
+                        })
+                        .collect(),
+                },
+                &f.arena,
+            )
+            .expect("actual unchanged PI prefix");
+            f.terms = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    terms: original
+                        .terms
+                        .terms()
+                        .iter()
+                        .map(|(id, row)| SourcePrimaryTermInput {
+                            site: row.site().clone(),
+                            source_range: leaves[if id.index() == 0 { 29 } else { 31 }],
+                            source_ordinal: row.source_ordinal(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().to_owned(),
+                            kind: row.kind(),
+                            role: row.role(),
+                            parent: row.parent(),
+                        })
+                        .collect(),
+                    references: original
+                        .terms
+                        .references()
+                        .iter()
+                        .map(|(_, row)| SourcePrimaryTermReferenceInput {
+                            term: row.term(),
+                            binding: row.binding(),
+                            role: row.role(),
+                        })
+                        .collect(),
+                    numeric_type_requests: Vec::new(),
+                },
+                f.context.binding_env(),
+                &f.arena,
+            )
+            .expect("actual moved Primary terms");
+            if let Some(old) = &original.formula {
+                let input = SourceAtomicFormulaHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    formulas: old
+                        .formulas()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicFormulaInput {
+                            site: row.site().clone(),
+                            source_range: definiens_range,
+                            source_ordinal: row.source_ordinal(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().to_owned(),
+                            kind: row.kind(),
+                        })
+                        .collect(),
+                    wrappers: Vec::new(),
+                    predicate_segments: Vec::new(),
+                    predicate_heads: Vec::new(),
+                    candidates: Vec::new(),
+                    type_sites: Vec::new(),
+                    attributes: Vec::new(),
+                    edges: old
+                        .edges()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicEdgeInput {
+                            formula: row.formula(),
+                            ordinal: row.ordinal(),
+                            role: row.role(),
+                            target: row.target(),
+                        })
+                        .collect(),
+                    requests: old
+                        .requests()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicRequestInput {
+                            formula: row.formula(),
+                            ordinal: row.ordinal(),
+                            kind: row.kind(),
+                            edge: row.edge(),
+                            candidate: row.candidate(),
+                            type_site: row.type_site(),
+                            attribute: row.attribute(),
+                        })
+                        .collect(),
+                };
+                f.formula = Some(
+                    SourceAtomicFormulaProducer::build(
+                        input,
+                        f.context.binding_env(),
+                        &f.env,
+                        &f.terms,
+                        None,
+                        None,
+                        None,
+                        &f.arena,
+                    )
+                    .expect("canonical Atomic over physical equality range"),
+                );
+            } else {
+                let old = original.structure.as_ref().unwrap();
+                let input = SourceStructureHandoffInput {
+                    source_id: f.source,
+                    module_id: f.module.clone(),
+                    terms: old
+                        .terms()
+                        .iter()
+                        .map(|(_, row)| SourceStructureTermInput {
+                            site: row.site().clone(),
+                            source_range: definiens_range,
+                            source_ordinal: row.source_ordinal(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().to_owned(),
+                            kind: row.kind(),
+                        })
+                        .collect(),
+                    wrappers: Vec::new(),
+                    roots: Vec::new(),
+                    field_updates: Vec::new(),
+                    members: old
+                        .members()
+                        .iter()
+                        .map(|(_, row)| SourceStructureMemberInput {
+                            term: row.term(),
+                            ordinal: row.ordinal(),
+                            site: row.site().clone(),
+                            source_range: leaves[31],
+                            spelling: row.spelling().to_owned(),
+                            role: row.role(),
+                            parent: row.parent(),
+                        })
+                        .collect(),
+                    edges: old
+                        .edges()
+                        .iter()
+                        .map(|(_, row)| SourceStructureEdgeInput {
+                            term: row.term(),
+                            ordinal: row.ordinal(),
+                            role: row.role(),
+                            member: row.member(),
+                            target: row.target(),
+                        })
+                        .collect(),
+                    requests: old
+                        .requests()
+                        .iter()
+                        .map(|(_, row)| SourceStructureRequestInput {
+                            term: row.term(),
+                            member: row.member(),
+                            request_ordinal: row.request_ordinal(),
+                            kind: row.kind(),
+                        })
+                        .collect(),
+                };
+                f.structure = Some(
+                    SourceStructureProducer::build(
+                        input,
+                        &f.env,
+                        f.context.binding_env(),
+                        &f.terms,
+                        None,
+                        &f.arena,
+                    )
+                    .expect("canonical Structure over physical selector range"),
+                );
+            }
+            f.input.implementations[0].source_range = owner_range;
+            f.input.implementations[0].spelling = text.clone();
+            f.input.parameters[0].source_range = range(f.source, leaves[19].start, leaves[23].end);
+            f.input.parameters[0].declaration_range = leaves[20];
+            f.input.targets[0].source_range = range(f.source, leaves[25].start, leaves[27].end);
+            f.input.targets[0].subject_range = leaves[25];
+            f.input.targets[0].name_range = leaves[27];
+            f.input.definientia[0].source_range = definiens_range;
+            for (index, row) in f.input.correctness.iter_mut().enumerate() {
+                let start = if index == 0 { 33 } else { 42 };
+                row.source_range = range(f.source, leaves[start].start, leaves[start + 8].end);
+                row.justification = SourceAnchor::Range(range(
+                    f.source,
+                    leaves[start + 1].start,
+                    leaves[start + 7].end,
+                ));
+            }
+            for (spelling, span) in [
+                {
+                    let row = &mut f.input.parameters[0];
+                    (&mut row.spelling, row.source_range)
+                },
+                {
+                    let row = &mut f.input.targets[0];
+                    (&mut row.spelling, row.source_range)
+                },
+                {
+                    let row = &mut f.input.definientia[0];
+                    (&mut row.spelling, row.source_range)
+                },
+            ]
+            .into_iter()
+            .chain(
+                f.input
+                    .correctness
+                    .iter_mut()
+                    .map(|row| (&mut row.spelling, row.source_range)),
+            ) {
+                *spelling = text[span.start - 108..span.end - 108].to_owned();
+            }
+            let lower = f.typed_base(base.clone());
+            let final_lower = assemble_empty(&lower).expect("actual complete measured lower clone");
+            assert_eq!(final_lower.source_context(), lower.source_context());
+            assert_eq!(final_lower.source_type(), lower.source_type());
+            assert_eq!(final_lower.source_term(), lower.source_term());
+            assert_eq!(
+                final_lower.source_atomic_formula(),
+                lower.source_atomic_formula()
+            );
+            assert_eq!(final_lower.source_structure(), lower.source_structure());
+            assert_eq!(lower.initial_obligations(), &base);
+            assert!(lower.source_property_implementation().is_none());
+            if let Some(formula) = &f.formula {
+                let row = formula.formulas().iter().next().unwrap().1;
+                assert_eq!(row.source_range(), definiens_range);
+                assert_eq!(row.spelling(), "it = it");
+                if case == "layout" {
+                    assert_eq!(definiens_range.end - definiens_range.start, 5);
+                    assert_eq!(f.input.definientia[0].spelling, "it=it");
+                    assert!(
+                        f.input
+                            .correctness
+                            .iter()
+                            .all(|row| row.spelling.contains("steps:1"))
+                    );
+                }
+            } else {
+                let row = f
+                    .structure
+                    .as_ref()
+                    .unwrap()
+                    .terms()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1;
+                assert_eq!(row.source_range(), definiens_range);
+                assert_eq!(row.spelling(), "M.carrier");
+                if case == "layout" {
+                    assert_eq!(definiens_range.end - definiens_range.start, 11);
+                    assert_eq!(f.input.definientia[0].spelling, "M . carrier");
+                    assert_eq!(f.input.targets[0].spelling, "M . marker");
+                }
+            }
+            let result = f.build(&base);
+            assert_eq!(f.typed_base(base.clone()), lower);
+            if case == "layout" {
+                for fault in [
+                    "outer_trivia",
+                    "documentation",
+                    "annotation",
+                    "merged_word",
+                    "split_literal",
+                    "wrong_atom",
+                    "missing_atom",
+                    "broken_comment",
+                    "child_join",
+                    "unowned19",
+                    "own_and_unowned19",
+                ] {
+                    let mut bad = f.clone();
+                    match fault {
+                        "outer_trivia" => {
+                            bad.input.implementations[0].spelling.push(' ');
+                            bad.input.implementations[0].source_range.end += 1;
+                        }
+                        "documentation" | "annotation" | "broken_comment" => {
+                            let offset = leaves[24].start - 108;
+                            let inserted = match fault {
+                                "documentation" => "::: hidden\n",
+                                "annotation" => "@[bad]",
+                                _ => "::=unclosed",
+                            };
+                            bad.input.implementations[0]
+                                .spelling
+                                .insert_str(offset, inserted);
+                            bad.input.implementations[0].source_range.end += inserted.len();
+                        }
+                        "merged_word" => {
+                            let start = leaves[24].end - 108;
+                            let end = leaves[25].start - 108;
+                            bad.input.implementations[0]
+                                .spelling
+                                .replace_range(start..end, "");
+                            bad.input.implementations[0].source_range.end -= end - start;
+                        }
+                        "split_literal" => {
+                            let offset = leaves[24].start - 108 + 4;
+                            bad.input.implementations[0].spelling.insert(offset, ' ');
+                            bad.input.implementations[0].source_range.end += 1;
+                        }
+                        "missing_atom" | "wrong_atom" => {
+                            let offset = leaves[21].start - 108;
+                            bad.input.implementations[0].spelling.replace_range(
+                                offset..offset + 2,
+                                if fault == "missing_atom" { "  " } else { "xx" },
+                            );
+                        }
+                        "child_join" => {
+                            let offset =
+                                leaves[20].start - bad.input.parameters[0].source_range.start - 1;
+                            bad.input.parameters[0]
+                                .spelling
+                                .replace_range(offset..offset + 1, "\t");
+                        }
+                        "unowned19" | "own_and_unowned19" => {
+                            let mut nodes = bad
+                                .arena
+                                .iter()
+                                .map(|(_, node)| node.clone())
+                                .collect::<Vec<_>>();
+                            nodes[19].anchor = SourceAnchor::Range(range(
+                                bad.source,
+                                leaves[19].start - 1,
+                                leaves[19].end - 1,
+                            ));
+                            bad.arena = TypedArena::try_new(bad.arena.root(), nodes)
+                                .expect("normal width-preserving unowned leaf");
+                            if fault == "own_and_unowned19" {
+                                bad.input.implementations[0]
+                                    .spelling
+                                    .replace_range(0..1, "X");
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                    let negative_lower = bad.typed_base(base.clone());
+                    assemble_empty(&negative_lower)
+                        .expect("actual lower clone before upper negative");
+                    let expected = match fault {
+                        "child_join" => {
+                            SourcePropertyImplementationError::InvalidParameter { index: 0 }
+                        }
+                        "unowned19" => SourcePropertyImplementationError::InvalidArenaOwnership,
+                        _ => SourcePropertyImplementationError::InvalidImplementation { index: 0 },
+                    };
+                    negatives.push((profile, fault, bad.build(&base), expected));
+                }
+            }
+            positives.push((profile, case, f, base.clone(), result));
+        }
+    }
+    assert_eq!(positives.len(), 4);
+    let failures = positives
+        .iter()
+        .filter_map(|(profile, case, _, _, result)| {
+            result
+                .as_ref()
+                .err()
+                .map(|error| format!("{profile:?}/{case}: {error:?}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        failures.is_empty(),
+        "measured body public positives: {failures:?}"
+    );
+    for (profile, case, result, expected) in negatives {
+        assert_eq!(result, Err(expected), "{profile:?}/{case}");
+    }
+    for (profile, _case, f, base, result) in positives {
+        let projection = result.expect("all measured public positives passed");
+        assert_eq!(projection, f.build(&base).expect("public replay"));
+        let handoff = projection.handoff();
+        assert_eq!(
+            handoff
+                .implementations()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .source_range(),
+            f.input.implementations[0].source_range
+        );
+        let parameter = handoff.parameters().iter().next().unwrap().1;
+        let target = handoff.targets().iter().next().unwrap().1;
+        let definiens = handoff.definientia().iter().next().unwrap().1;
+        assert_eq!(definiens.spelling(), f.input.definientia[0].spelling);
+        for (actual, expected) in [
+            (parameter.source_range(), f.input.parameters[0].source_range),
+            (
+                parameter.declaration_range(),
+                f.input.parameters[0].declaration_range,
+            ),
+            (target.source_range(), f.input.targets[0].source_range),
+            (target.subject_range(), f.input.targets[0].subject_range),
+            (target.name_range(), f.input.targets[0].name_range),
+            (
+                definiens.source_range(),
+                f.input.definientia[0].source_range,
+            ),
+        ] {
+            assert_eq!(actual, expected);
+        }
+        assert_eq!(parameter.spelling(), f.input.parameters[0].spelling);
+        assert_eq!(target.spelling(), f.input.targets[0].spelling);
+        for ((_, row), expected) in handoff.correctness().iter().zip(&f.input.correctness) {
+            assert_eq!(row.source_range(), expected.source_range);
+            assert_eq!(row.justification(), &expected.justification);
+            assert_eq!(row.spelling(), expected.spelling);
+            let obligation = projection
+                .initial_obligations()
+                .get(row.obligation())
+                .unwrap();
+            assert_eq!(obligation.source_range, expected.source_range);
+            assert_eq!(obligation.status, InitialObligationStatus::Pending);
+        }
+        assert_eq!(projection.base_initial_obligations(), &base);
+        assert_eq!(
+            projection.initial_obligations().len(),
+            base.len() + if profile == TestProfile::Means { 2 } else { 0 }
+        );
+        if profile == TestProfile::Equals {
+            let consumer = SourcePropertyEqualsSelectorIdentityProducer::build(
+                &f.env,
+                handoff.clone(),
+                f.terms.clone(),
+                f.structure.clone().unwrap(),
+            )
+            .expect("actual measured Equals consumer");
+            assert_eq!(consumer.property(), handoff);
+        }
+        let typed = f
+            .typed_base(base)
+            .with_source_property_implementation(projection.clone())
+            .expect("actual measured Property installation");
+        let resolved = assemble_empty(&typed).expect("actual measured Property final clone");
+        assert_eq!(
+            resolved.source_property_implementation(),
+            typed.source_property_implementation()
+        );
+        assert_eq!(
+            typed.initial_obligations(),
+            projection.initial_obligations()
+        );
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+    }
+}

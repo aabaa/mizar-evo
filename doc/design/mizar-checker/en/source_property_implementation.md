@@ -12,32 +12,40 @@ the implementation is admitted.
 
 ## Fixed-width local spelling
 
-The upper transport keeps the original token coordinates and expected spelling frames.
-Within each frame, nontrivia bytes retain their positions. Existing gaps permit only
-same-width space/tab/LF layout, or the empty ordinary line-comment `::` followed by LF
-in a three-byte gap. Local text length equals its unchanged range width; no lexer,
-arena lookup or source-provider evidence participates in this spelling predicate.
+The original fixed-width profile remains admitted. Prefix tokens through the second
+`definition` (slot18 at108..118), all prefix aggregates, resolver/stored origins and
+Type member/Set spans remain fixed. Implementation starts108; only body gaps after
+that header vary, and its final semicolon determines its end. This admits supplied
+local body frames, not inter-block or whole-source layout.
 
-Each row checks its own text at its existing phase. Parameter, target, definiens and
-correctness text also equals the corresponding slice of the admitted implementation
-text, checked at the child phase. Means Atomic retains canonical `it = it` and its
-existing lower checks/fingerprint; Property physical trivia is not copied into Atomic.
-Equals target/selector text remains gapless. Store physical Property strings unchanged
-and replay their fingerprints. Preserve early lower installations and the original
-shape/baseline/resolver/row/Context/lower/Arena order, with the following association check.
-After its own frame, Implementation compares its M/Type positions to qualified normal
-Context/embedded BindingEnv/actual Type references. Qualification uses the Context's
-own item envelope, exact existing profile roles/identities, current-source positive
-contained ordered M/type extents of widths1/14, normal active DefinitionParameter
-identity/type-site congruence and the actual Bare Carrier root/head. A qualified
-position disagreement returns InvalidImplementation0; unavailable or incongruent
-references retain late Context→Parameter→Type diagnostics. An item-envelope difference
-alone does not select Implementation. This checks supplied associations, not raw-source
-truth; declaration and binding are co-generated. No child fields or arena19 are read early.
+Measure known ASCII word/number/punctuation atoms through native preprocessing and
+its source map. Permit SP/TAB/LF and ordinary line/block comments; reject diagnostics,
+documentation/annotations and outer trivia. Each literal maps to one original fragment
+with exact bytes, using checked global offsets. Adjacent words need separation;
+punctuation may touch. Physical text length equals its range width, and strings and
+fingerprints retain that text. Raw LexemeRun count is not a fixed-atom oracle.
 
-This is supplied local-text consistency. Arbitrary trivia, moved tokens, raw-source
-admission and the full Property layout boundary remain separate. The original exact
-sources, geometry, arena oracles and semantic-obligation boundaries below are retained.
+After its own frame, Implementation compares measured M/type slots20/22 with qualified
+normal Context/embedded BindingEnv/actual Type references. Qualification uses Context's
+own envelope, existing profile identities, current positive contained ordered widths1/14,
+normal active DefinitionParameter identity/type-site and actual Bare Carrier congruence.
+Qualified disagreement returns InvalidImplementation0; unavailable or incongruent
+references retain Context→Parameter→Type. Item-envelope differences alone do not select
+Implementation. Declaration/binding are co-generated, not independent raw witnesses.
+
+Late Context joins measured owner/M/type. Each child checks its own frame and physical
+parent slice at its existing phase. Typed parameter65/47 anchors M20, not full let19..23.
+Type parameter joins22; prefix Type remains fixed. Target, definiens and correctness
+join their measured atoms, including justification endpoints. Means Atomic retains
+canonical `it = it` independently of physical `it=it`; Equals Structure retains canonical
+`M.carrier` independently of physical `M . carrier`. The Equals consumer remeasures its
+accepted immutable definiens while preserving fixed prefix field-origin association.
+
+Arena keeps the same kinds/contexts/roots/states and fixed prefix. Body leaves have
+literal widths/order and aliases use exact leaf endpoints. At the final Arena phase,
+join measured body atoms to actual leaves; read no unowned19 or child fields early.
+Preserve early lower/source/shape/baseline/resolver order, stored replay/fingerprints,
+child error ownership, all original arena refusals and semantic-obligation boundaries.
 
 ## Task 264 Scope And Authority
 
@@ -620,6 +628,10 @@ conversion. Failure is atomic. No mutable getter, public row constructor,
 replacement method, raw syntax dependency, or property-value result exists.
 
 ## Active Row And Style Oracle
+
+Physical ranges and strings below describe the original fixtures; the measured-body
+rules above govern body admission. A relocated-It refusal means lower positions
+inconsistent with their own definiens, not a coherently moved complete body.
 
 Both transactions have implementation/parameter/target/definiens cardinality
 `1/1/1/1`. Means has correctness 2; equals has correctness 0.
