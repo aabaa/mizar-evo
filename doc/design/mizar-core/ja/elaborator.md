@@ -764,6 +764,10 @@ requestだけを搬送し、substitution result/VCはdownstreamに残す。
 
 ## Task 33I263 standalone structure item context
 
+保持rangeの一様移動は最大の必要終端からchecked d=inheritance終端−314を求める。
+current-source/origin・全非座標検査、static owner段階、Derived→Base依存を保つ。
+scalar transportはblock offset、source認証、member/view意味論、installation creditを主張しない。
+
 Canonical [Task 33I263 contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
 がstandalone `SourceStructureCoreContextProducer`、immutable two-row
 definition/Core-item association、handoff、typed failure surfaceをownする。

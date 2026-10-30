@@ -878,6 +878,10 @@ downstream.
 
 ## Task 33I263 Standalone Structure Item Context
 
+Uniform retained ranges use checked d=inheritance end−314, the largest required endpoint.
+Current-source/origin and all non-coordinate checks, static owner phase and Derived→Base dependency remain.
+Scalar transport claims no block offset, source authentication, member/view semantics or installation credit.
+
 The canonical [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
 owns the standalone `SourceStructureCoreContextProducer`, immutable two-row
 definition/Core-item association, handoff, and typed failure surface. The

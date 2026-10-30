@@ -444,6 +444,263 @@ fn task263_structure_definition_core_item_context_association_and_local_dependen
 }
 
 #[test]
+fn task263_structure_core_context_transports_uniform_prefix_geometry() {
+    use mizar_checker::source_structure_definition::{
+        SourceStructureDefinitionId as DefinitionId,
+        SourceStructureInheritanceId as InheritanceId,
+        SourceStructureMappingId as MappingId,
+        SourceStructureMemberId as MemberId,
+    };
+    use mizar_core::{
+        core_ir::{
+            CoreItemId, CoreProvenance, CoreProvenancePhase,
+            CoreSourceRef,
+        },
+        elaborator::{
+            DefinitionBoundaryStatus, ElaborationWorkItemKind, ElaborationWorkStatus,
+            SourceStructureCoreContextError as CoreError,
+            SourceStructureCoreContextProducer as CoreProducer,
+        },
+    };
+
+    let layouts = [
+        (
+            "leading_lf",
+            format!("\n{SOURCE_STRUCTURE_DEFINITION_TEXT}"),
+            [
+                (14, 99),
+                (103, 191),
+                (43, 64),
+                (69, 92),
+                (135, 156),
+                (161, 184),
+                (195, 315),
+                (248, 275),
+                (280, 308),
+            ],
+        ),
+        (
+            "definition_comment",
+            SOURCE_STRUCTURE_DEFINITION_TEXT
+                .replacen("definition", "definition :: metamorphic\n", 1),
+            [
+                (29, 114),
+                (118, 206),
+                (58, 79),
+                (84, 107),
+                (150, 171),
+                (176, 199),
+                (210, 330),
+                (263, 290),
+                (295, 323),
+            ],
+        ),
+    ];
+    let expected_slices = [
+        "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;",
+        "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;",
+        "field carrier -> set;",
+        "property marker -> set;",
+        "field carrier -> set;",
+        "property marker -> set;",
+        "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;",
+        "field carrier from carrier;",
+        "property marker from marker;",
+    ];
+    let mut prepared = Vec::new();
+    for (ordinal, (layout, source, expected_ranges)) in layouts.into_iter().enumerate() {
+        assert_eq!(source.len(), [321, 336][ordinal], "{layout}");
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 263_230 + ordinal);
+        assert_eq!(diagnostics, 0, "{layout}");
+        assert!(ast.canonical_bytes().is_some(), "{layout}");
+        assert!(ast.node_views().all(|node| !node.is_recovered()), "{layout}");
+        let output = source_structure_definition_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task263 prefix layout selector")
+            .expect("Task263 prefix layout Type and Structure output");
+        let typed = &output.typed_ast;
+        let checker_owner = typed.source_structure_definition().expect("prefix Structure owner").clone();
+        let lower = typed.source_type().expect("Task263 prefix Type handoff");
+        assert_eq!(
+            (
+                checker_owner.definitions().len(),
+                checker_owner.members().len(),
+                checker_owner.inheritances().len(),
+                checker_owner.mappings().len(),
+                lower.structure_members().len(),
+            ),
+            (2, 4, 1, 2, 4),
+            "{layout}"
+        );
+        let actual_ranges = checker_owner
+            .definitions()
+            .iter()
+            .map(|(_, row)| row.source_range())
+            .chain(checker_owner.members().iter().map(|(_, row)| row.source_range()))
+            .chain(checker_owner.inheritances().iter().map(|(_, row)| row.source_range()))
+            .chain(checker_owner.mappings().iter().map(|(_, row)| row.source_range()))
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual_ranges,
+            expected_ranges.to_vec(),
+            "{layout} literal source geometry"
+        );
+        for ((start, end), expected) in expected_ranges.iter().zip(expected_slices) {
+            assert_eq!(source.get(*start..*end), Some(expected), "{layout}");
+        }
+        assert!(checker_owner.coherence_requests().is_empty(), "{layout}");
+        assert_eq!(checker_owner.base_initial_obligation_count(), 0, "{layout}");
+        assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+
+        let definitions = [
+            checker_owner.definitions().get(DefinitionId::new(0)).unwrap(),
+            checker_owner.definitions().get(DefinitionId::new(1)).unwrap(),
+        ];
+        let inheritance = checker_owner
+            .inheritances()
+            .get(InheritanceId::new(0))
+            .unwrap();
+        assert_eq!(inheritance.child(), definitions[1].id(), "{layout}");
+        assert_eq!(inheritance.parent(), definitions[0].id(), "{layout}");
+        for (index, (view_index, parent_index)) in [(2, 0), (3, 1)].into_iter().enumerate() {
+            let mapping = checker_owner.mappings().get(MappingId::new(index)).unwrap();
+            let view = checker_owner.members().get(MemberId::new(view_index)).unwrap();
+            let parent = checker_owner.members().get(MemberId::new(parent_index)).unwrap();
+            assert_eq!(mapping.inheritance(), inheritance.id(), "{layout}");
+            assert_eq!(mapping.path(), &[inheritance.id()], "{layout}");
+            assert_eq!(mapping.view_member(), view.id(), "{layout}");
+            assert_eq!(view.owner(), inheritance.child(), "{layout}");
+            assert_eq!(mapping.parent_member(), parent.id(), "{layout}");
+            assert_eq!(mapping.root_member(), parent.id(), "{layout}");
+            assert_eq!(parent.owner(), inheritance.parent(), "{layout}");
+        }
+        prepared.push((layout, checker_owner.clone(), task263_core_context(&checker_owner)));
+    }
+
+    let outcomes = prepared
+        .iter()
+        .map(|(_, owner, context)| {
+            CoreProducer::build(context.clone(), owner.clone())
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        outcomes.iter().all(|outcome| outcome.is_ok()),
+        "both measured prefix layouts must reach the public Core producer: {outcomes:?}"
+    );
+    for ((layout, checker_owner, expected_context), outcome) in prepared.iter().zip(&outcomes) {
+        let handoff = outcome.as_ref().expect("prefix geometry Core handoff");
+        assert_eq!(handoff.source_id(), checker_owner.source_id(), "{layout}");
+        assert_eq!(handoff.module_id(), checker_owner.module_id(), "{layout}");
+        assert_eq!(handoff.context(), expected_context, "{layout}");
+        assert_eq!(handoff.checker_owner(), checker_owner, "{layout}");
+        assert_eq!(handoff.items().len(), 2, "{layout}");
+        assert_eq!(
+            CoreProducer::build(task263_core_context(checker_owner), checker_owner.clone())
+                .expect("fresh Task263 Core replay"),
+            *handoff,
+            "{layout}"
+        );
+    }
+
+    let (_, checker_owner, _) = &prepared[1];
+    let handoff = outcomes[1].as_ref().expect("comment-prefix Core handoff");
+    let definitions = [
+        checker_owner.definitions().get(DefinitionId::new(0)).unwrap(),
+        checker_owner.definitions().get(DefinitionId::new(1)).unwrap(),
+    ];
+    let core_items = definitions.map(|definition| {
+        handoff.context().item_registry().id_for_symbol(definition.symbol())
+            .expect("whole structure symbol association")
+    });
+    assert_ne!(core_items[0], core_items[1]);
+    let core = handoff.context();
+    assert!(core.dependency_summaries().is_empty() && core.generated_origins().table().is_empty());
+    assert!(core.diagnostics().is_empty() && core.source_map().obligation_sources.is_empty());
+    let binder = core.binder_context();
+    assert!(binder.frames.is_empty() && binder.free_variables.is_empty());
+    assert!(binder.variable_classes.is_empty() && binder.variable_roles.is_empty());
+    assert!(binder.variable_sorts.is_empty());
+    assert!(core.binder_sources().iter().next().is_none() && core.binder_type_facts().is_empty());
+    for item_index in 0..2 {
+        let definition = definitions[item_index];
+        let key = format!("source-structure-core-item-v1.definition.{item_index}");
+        let provenance = CoreProvenance::new(CoreProvenancePhase::Checker, key);
+        let source = CoreSourceRef::direct(definition.source_range()).with_provenance(vec![provenance.clone()]);
+        let association = handoff.items().get(definition.id()).expect("Core association");
+        assert_eq!((association.symbol(), association.core_item()), (definition.symbol(), core_items[item_index]));
+        let item = core.item_registry().items().get(core_items[item_index]).unwrap();
+        assert_eq!(item.source, source);
+        assert_eq!(core.source_map().item_sources.get(&core_items[item_index]), Some(&item.source));
+        let expected_local: &[CoreItemId] = if item_index == 0 { &[] } else { &core_items[..1] };
+        assert_eq!(item.dependencies, expected_local);
+        let dependencies = core.item_registry().dependencies(core_items[item_index]).unwrap();
+        assert_eq!(dependencies.local, expected_local);
+        assert!(dependencies.external.is_empty() && dependencies.missing.is_empty());
+        let boundary = core.definition_boundaries().get_by_item(core_items[item_index]).unwrap();
+        assert_eq!(boundary.status, DefinitionBoundaryStatus::PendingBody);
+        assert_eq!(boundary.provenance.as_slice(), &[provenance]);
+        let work_item = &core.worklist().entries()[item_index];
+        assert_eq!(work_item.kind, ElaborationWorkItemKind::Item(core_items[item_index]));
+        assert_eq!(work_item.status, ElaborationWorkStatus::Pending);
+        assert_eq!(work_item.source, source);
+    }
+
+    let (_, shifted_owner, _) = &prepared[1];
+    for mutation in [
+        Task263CoreContextMutation::WrongSource,
+        Task263CoreContextMutation::WrongProvenance,
+        Task263CoreContextMutation::MissingDerivedDependency,
+    ] {
+        assert_eq!(
+            CoreProducer::build(
+                task263_core_context_with_mutation(shifted_owner, mutation),
+                shifted_owner.clone(),
+            )
+            .expect_err("admitted shifted owner still rejects a bad Core seed"),
+            CoreError::InvalidCoreContext,
+            "{mutation:?}"
+        );
+    }
+
+    let compact = SOURCE_STRUCTURE_DEFINITION_TEXT
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .replace("carrier -> set;", "carrier->set;")
+        .replace("marker -> set;", "marker->set;")
+        .replace("; ", ";");
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&compact, 263_240);
+    assert_eq!(diagnostics, 0);
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    let output = source_structure_definition_output(&ast, module, &shells, &symbols, &compact)
+        .expect("native compact Task263 selector")
+        .expect("native compact Task263 public Type and Structure output");
+    let compact_owner = output
+        .typed_ast
+        .source_structure_definition()
+        .expect("native compact Task263 Structure owner")
+        .clone();
+    let compact_definitions = [
+        compact_owner.definitions().get(DefinitionId::new(0)).unwrap(),
+        compact_owner.definitions().get(DefinitionId::new(1)).unwrap(),
+    ];
+    let compact_inheritance = compact_owner
+        .inheritances()
+        .get(InheritanceId::new(0)).unwrap();
+    assert_eq!(compact_inheritance.child(), compact_definitions[1].id());
+    assert_eq!(compact_inheritance.parent(), compact_definitions[0].id());
+    assert_eq!(compact_inheritance.source_range().end, 260);
+    assert_eq!(
+        CoreProducer::build(task263_core_context(&compact_owner), compact_owner)
+        .expect_err("native compact under-length inheritance has no uniform prefix geometry"),
+        CoreError::InvalidCheckerOwner
+    );
+}
+
+#[test]
 fn task263_structure_definition_core_item_context_mutations_and_foreign_environment_fail_closed() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_STRUCTURE_DEFINITION_TEXT, 263_210);

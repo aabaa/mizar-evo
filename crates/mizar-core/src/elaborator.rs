@@ -4881,6 +4881,16 @@ fn validate_structure_checker_owner(
             .get(SourceStructureDefinitionId::new(1))
             .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?,
     ];
+    let inheritance = checker_owner
+        .inheritances()
+        .get(mizar_checker::source_structure_definition::SourceStructureInheritanceId::new(0))
+        .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
+    // Inheritance ends at the largest profile endpoint, bounding every addition.
+    let d = inheritance
+        .source_range()
+        .end
+        .checked_sub(314)
+        .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
     let definition_ids = [0, 3];
     let definition_sites = [57, 65];
     let definition_ranges = [(13, 98), (102, 190)];
@@ -4894,8 +4904,8 @@ fn validate_structure_checker_owner(
     for (index, definition) in definitions.iter().enumerate() {
         let source_range = SourceRange {
             source_id: checker_owner.source_id(),
-            start: definition_ranges[index].0,
-            end: definition_ranges[index].1,
+            start: d + definition_ranges[index].0,
+            end: d + definition_ranges[index].1,
         };
         let expected_members = definition_members[index].map(SourceStructureDefinitionId::new);
         let expected_members = expected_members.map(|id| {
@@ -4963,8 +4973,8 @@ fn validate_structure_checker_owner(
             .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
         let source_range = SourceRange {
             source_id: checker_owner.source_id(),
-            start: member_ranges[index].0,
-            end: member_ranges[index].1,
+            start: d + member_ranges[index].0,
+            end: d + member_ranges[index].1,
         };
         if member.id().index() != index
             || member.definition().index() != member_definition_ids[index]
@@ -4992,14 +5002,10 @@ fn validate_structure_checker_owner(
         }
     }
 
-    let inheritance = checker_owner
-        .inheritances()
-        .get(mizar_checker::source_structure_definition::SourceStructureInheritanceId::new(0))
-        .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
     let inheritance_range = SourceRange {
         source_id: checker_owner.source_id(),
-        start: 194,
-        end: 314,
+        start: d + 194,
+        end: d + 314,
     };
     if inheritance.id().index() != 0
         || inheritance.child() != SourceStructureDefinitionId::new(1)
@@ -5040,8 +5046,8 @@ fn validate_structure_checker_owner(
             .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
         let source_range = SourceRange {
             source_id: checker_owner.source_id(),
-            start: mapping_ranges[index].0,
-            end: mapping_ranges[index].1,
+            start: d + mapping_ranges[index].0,
+            end: d + mapping_ranges[index].1,
         };
         if mapping.id().index() != index
             || mapping.definition().index() != mapping_definition_ids[index]
