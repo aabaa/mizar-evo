@@ -5623,6 +5623,14 @@ three-node arena, dependency/input/arena failure, owner replay, Task-269C and
 active-route isolation, and exhaustive semantic emptiness. Runner library is
 548; no case, requirement, result, detail key, warning, or error changes.
 
+## Proof-local Given leading-layout transport
+
+The private Task269GP lower route admits leading SP/TAB/LF before its unchanged 129-byte suffix; all 48 Surface rows and shell/resolver/output ranges share that displacement.
+Every identity/signature/normality/source check remains. Outer selection uses the unmutated profile; selected Surface corruptions still reach the builder's existing Surface error.
+Fingerprints remain lowercase SHA-256 of actual raw-source and Surface snapshot UTF-8, using the existing formatter; canonical hashes/debug bytes and schema stay unchanged.
+Existing raw source passes only through private calls. The lower keeps syntax spelling y/type set and ordinal 1, with no binding scope, visibility, new field/API or dependency.
+Comments, CR, internal/trailing edits and public 269G/Type admission remain outside this slice; no binding/fact/proof/coverage or Task281 retirement credit follows.
+
 ## Checker Task 269GP Dormant Proof-`given` Lower Consumer
 
 The private exact-source branch recognizes only the frozen 129-byte source and

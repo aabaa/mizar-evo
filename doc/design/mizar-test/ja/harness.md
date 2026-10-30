@@ -5259,6 +5259,14 @@ exact routeを実装したがprivateで`run_case`からunreachableのまま。te
 Task-269C/active-route isolation、semantic emptiness全件をvalidateする。runner libraryは548、
 case/requirement/result/detail key/warning/error変更なし。
 
+## Proof-local Given leading-layout transport
+
+Private Task269GP lower routeは未変更129-byte suffix前のSP/TAB/LFだけを許可し、Surface 48行とshell/resolver/output rangeに同じ移動量を使う。
+Identity/signature/normality/source検査を保つ。Outer selectionは未変更profileを使い、選択後Surface corruptionはbuilderの既存Surface errorに到達する。
+Fingerprintは既存formatterで実raw-source/Surface snapshot UTF-8の小文字SHA-256を計算し、canonical hash/debug bytesとschemaを維持する。
+既存raw sourceはprivate call間だけで渡す。Lowerはsyntax spelling y/type setとordinal 1を維持し、binding scope/visibility、新field/API/dependencyを追加しない。
+Comment/CR/internal/trailing編集とpublic 269G/Type admissionは対象外で、binding/fact/proof/coverageやTask281 retirement creditは追加しない。
+
 ## Checker Task 269GP dormant proof-`given` lower consumer
 
 private exact-source branchはfrozen 129-byte sourceだけを認識し、all-node/shell/
