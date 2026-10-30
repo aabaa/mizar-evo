@@ -168,10 +168,10 @@ fn task264_exact_sources_surface_resolver_lower_and_outputs_are_stable() {
 fn task264_byte_ast_resolver_lower_and_it_mutations_fail_at_the_owner() {
     for (ordinal, source) in [SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT, SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT].into_iter().enumerate() {
         let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 264_100 + ordinal);
-        assert!(source_property_implementation_output(&ast, module.clone(), &shells, &symbols, &source[..source.len()-1]).is_none());
+        assert!(source_property_implementation_output(&ast, module.clone(), &shells, &symbols, &source[..source.len()-1]).is_some_and(|result| result.is_ok()));
         let mut extended = source.to_owned();
         extended.push(' ');
-        assert!(source_property_implementation_output(&ast, module.clone(), &shells, &symbols, &extended).is_none());
+        assert!(source_property_implementation_output(&ast, module.clone(), &shells, &symbols, &extended).is_some_and(|result| result.is_ok()));
         for mutation in [
             SourcePropertyImplementationRouteMutation::WrongSurfaceRange,
             SourcePropertyImplementationRouteMutation::WrongSurfaceRecovery,
@@ -2211,4 +2211,477 @@ fn task264_native_layout_lexical_stream_and_surface_topology_are_equivalent() {
         }
     }
     assert_eq!(executed, 12);
+}
+
+#[test]
+fn task264_raw_fixed_prefix_body_bridge_preserves_transport_and_selected_errors() {
+    use mizar_resolve::env::{NamespaceNodeKind, SymbolEnvIndexes};
+    let mut positives = Vec::new();
+    let mut refusals = Vec::new();
+    for (profile, original, owner, parameter, definiens) in [
+        (
+            "means",
+            SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+            81,
+            65,
+            72,
+        ),
+        (
+            "equals",
+            SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+            52,
+            47,
+            51,
+        ),
+    ] {
+        let ordinal = if profile == "means" { 265_000 } else { 265_100 };
+        let (baseline_ast, baseline_module, baseline_shells, baseline_env, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(original, ordinal);
+        assert_eq!(diagnostics, 0);
+        source_property_implementation_output(
+            &baseline_ast,
+            baseline_module.clone(),
+            &baseline_shells,
+            &baseline_env,
+            original,
+        )
+        .expect("original selected profile")
+        .expect("original public route");
+        let layout = original
+            .replacen(
+                "definition\n  let M be Task264Carrier;",
+                "definition\n   let  M be   Task264Carrier;",
+                1,
+            )
+            .replacen("\n  property M.", "\n\t\t\tproperty M.", 1)
+            .replacen("\n  existence", "\n     existence", 1)
+            .replacen("\n  uniqueness", "\n\tuniqueness", 1);
+        let layout = if profile == "means" {
+            layout
+                .replace("it = it", "it=it")
+                .replace("steps: 1", "steps:1")
+        } else {
+            layout
+                .replace("M.marker", "M . marker")
+                .replace("M.carrier", "M . carrier")
+        };
+        let comments = original
+            .replacen("definition\n  let", "definition\n::=λ body=::  let", 1)
+            .replacen("\n  property M.", " :: ordinary body\n  property M.", 1);
+        let comments = if profile == "means" {
+            comments.replace("it = it", "it::=λ=::= it")
+        } else {
+            comments.replace("M.carrier", "M::=λ=::.carrier")
+        };
+        let comments = format!("{comments}:: ordinary suffix\n");
+        for (index, (case, source)) in [("layout", layout), ("comments", comments)]
+            .into_iter()
+            .enumerate()
+        {
+            let frontend = task257c4c1_frontend_output(&source, ordinal + index + 1);
+            assert!(frontend.diagnostics.is_empty(), "{profile}/{case}");
+            assert!(frontend.preprocessed.diagnostics.is_empty());
+            assert!(frontend.tokens.diagnostics.is_empty());
+            assert_eq!(frontend.source.source_text.as_ref(), source);
+            let ast = frontend.ast.as_ref().expect("actual disk Frontend AST");
+            assert_eq!(ast.source_id, frontend.source.source_id);
+            assert_eq!(frontend.preprocessed.source_id, ast.source_id);
+            assert_eq!(frontend.tokens.source_id, ast.source_id);
+            assert!(frontend.preprocessed.import_stubs.is_empty());
+            assert!(frontend.preprocessed.doc_comments.is_empty());
+            let module = mizar_resolve::resolved_ast::ModuleId::new(
+                frontend.source.package_id.clone(),
+                frontend.source.module_path.clone(),
+            );
+            let shells =
+                mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+            let collected = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(
+                collected.diagnostics().is_empty(),
+                "actual resolver prerequisite"
+            );
+            let env = collected.into_env();
+            assert_eq!(
+                (
+                    shells.declarations().len(),
+                    env.symbols().len(),
+                    env.definitions().len(),
+                    env.contributions().len()
+                ),
+                (5, 3, 3, 1)
+            );
+            assert_eq!(
+                ast.node(ast.token_nodes()[18]).unwrap().range,
+                SourceRange {
+                    source_id: ast.source_id,
+                    start: 108,
+                    end: 118
+                }
+            );
+            let result =
+                source_property_implementation_output(ast, module.clone(), &shells, &env, &source);
+            if case == "layout" {
+                refusals.push((
+                    profile,
+                    "selected stale body",
+                    source_property_implementation_output(
+                        &baseline_ast,
+                        baseline_module.clone(),
+                        &baseline_shells,
+                        &baseline_env,
+                        &source,
+                    )
+                    .is_some_and(|result| result.is_err()),
+                ));
+                for fault in ["token_kind", "wrapper_child", "child_order"] {
+                    let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+                    let mut nodes = Vec::new();
+                    for (node_index, node) in ast.nodes().iter().enumerate() {
+                        let mut children = node
+                            .children
+                            .iter()
+                            .map(|child| nodes[child.index()])
+                            .collect::<Vec<_>>();
+                        if fault == "wrapper_child" && node_index == definiens {
+                            children = vec![nodes[29]];
+                        }
+                        if fault == "child_order" && node_index == owner {
+                            children.swap(0, 1);
+                        }
+                        let id = match &node.kind {
+                            SurfaceNodeKind::Token(token) => builder.add_token(
+                                if fault == "token_kind" && node_index == 22 {
+                                    SurfaceTokenKind::Identifier
+                                } else {
+                                    token.kind
+                                },
+                                token.text.as_ref(),
+                                node.range,
+                            ),
+                            kind => builder.add_node(kind.clone(), node.range, children),
+                        };
+                        nodes.push(id);
+                    }
+                    let changed = builder.finish(
+                        ast.root().map(|root| nodes[root.index()]),
+                        ast.expression_root().map(|root| nodes[root.index()]),
+                    );
+                    refusals.push((
+                        profile,
+                        fault,
+                        source_property_implementation_output(
+                            &changed,
+                            module.clone(),
+                            &shells,
+                            &env,
+                            &source,
+                        )
+                        .is_some_and(|result| result.is_err()),
+                    ));
+                }
+                let mut indexes = SymbolEnvIndexes {
+                    imports: env.imports().clone(),
+                    exports: env.exports().clone(),
+                    symbols: env.symbols().clone(),
+                    labels: env.labels().clone(),
+                    definitions: env.definitions().clone(),
+                    overloads: env.overloads().clone(),
+                    registrations: env.registrations().clone(),
+                    lexical_summaries: env.lexical_summaries().clone(),
+                    namespace_graph: env.namespace_graph().clone(),
+                    declaration_dependencies: env.declaration_dependencies().clone(),
+                    contributions: env.contributions().clone(),
+                    module_summaries: env.module_summaries().clone(),
+                };
+                indexes.namespace_graph.insert_node(
+                    NamespaceNodeKind::Segment,
+                    Some(module.clone()),
+                    "unused_property_body",
+                    env.contributions().iter().next().unwrap().id(),
+                );
+                let altered = mizar_resolve::env::SymbolEnv::new(module.clone(), indexes);
+                assert_eq!(altered.symbols(), env.symbols());
+                assert_eq!(altered.definitions(), env.definitions());
+                assert_eq!(altered.contributions(), env.contributions());
+                assert_ne!(altered.namespace_graph(), env.namespace_graph());
+                refusals.push((
+                    profile,
+                    "full-env-only metadata",
+                    source_property_implementation_output(
+                        ast,
+                        module.clone(),
+                        &shells,
+                        &altered,
+                        &source,
+                    )
+                    .is_some_and(|result| result.is_err()),
+                ));
+                let foreign_root = std::env::temp_dir().join(format!(
+                    "mizar-property-body-foreign-{}-{ordinal}",
+                    std::process::id()
+                ));
+                let foreign_path = foreign_root.join("src").join("foreign.miz");
+                std::fs::create_dir_all(foreign_path.parent().expect("foreign source parent"))
+                    .expect("foreign source root");
+                std::fs::write(&foreign_path, &source).expect("real foreign source");
+                let ids = mizar_session::InMemorySessionIdAllocator::new();
+                let snapshot = super::shared::snapshot_id(26_500 + ordinal);
+                mizar_session::SessionIdAllocator::next_source_id(&ids, snapshot)
+                    .expect("advance real source allocator");
+                let foreign = mizar_frontend::orchestration::Frontend::new(
+                    mizar_frontend::source::FrontendSourceLoader::new(
+                        mizar_session::DiskSourceLoader::new(&foreign_root),
+                    ),
+                    ParseOnlyImportProvider,
+                    mizar_frontend::parsing::MizarParserSeam,
+                )
+                .run(
+                    mizar_frontend::source::SourceUnitRequest {
+                        snapshot,
+                        input: mizar_session::SourceInput {
+                            package_id: frontend.source.package_id.clone(),
+                            module_path: frontend.source.module_path.clone(),
+                            normalized_path: mizar_session::normalize_path(
+                                &foreign_root,
+                                &foreign_path,
+                            )
+                            .expect("foreign normalized path"),
+                            edition: frontend.source.edition.clone(),
+                            origin: mizar_session::SourceOriginInput::Disk { path: foreign_path },
+                        },
+                    },
+                    &ids,
+                )
+                .expect("actual Frontend with a distinct allocated source ID");
+                std::fs::remove_dir_all(&foreign_root).expect("clean foreign source");
+                assert!(foreign.diagnostics.is_empty());
+                let foreign_ast = foreign.ast.as_ref().unwrap();
+                assert_ne!(foreign_ast.source_id, ast.source_id);
+                refusals.push((
+                    profile,
+                    "mixed source IDs",
+                    source_property_implementation_output(
+                        foreign_ast,
+                        module.clone(),
+                        &shells,
+                        &env,
+                        &source,
+                    )
+                    .is_some_and(|result| result.is_err()),
+                ));
+                assert_ne!(module, baseline_module, "mixed-module premise");
+                refusals.push((
+                    profile,
+                    "mixed module",
+                    source_property_implementation_output(
+                        ast,
+                        baseline_module.clone(),
+                        &shells,
+                        &env,
+                        &source,
+                    )
+                    .is_some_and(|result| result.is_err()),
+                ));
+            }
+            positives.push((
+                profile,
+                case,
+                source,
+                ast.clone(),
+                module,
+                shells,
+                env,
+                result,
+                owner,
+                parameter,
+                definiens,
+            ));
+        }
+        let documentation = original.replacen(
+            "definition\n  let",
+            "definition\n::: unsupported body metadata\n  let",
+            1,
+        );
+        refusals.push((
+            profile,
+            "unsupported documentation before AST association",
+            source_property_implementation_output(
+                &baseline_ast,
+                baseline_module.clone(),
+                &baseline_shells,
+                &baseline_env,
+                &documentation,
+            )
+            .is_none(),
+        ));
+        for (guard_index, (guard, edits)) in metamorphic_edits::variants(&baseline_ast, original)
+            .into_iter()
+            .filter(|(kind, _)| matches!(*kind, "leading_line" | "intertoken_layout"))
+            .enumerate()
+        {
+            let source = metamorphic_edits::apply(original, &edits);
+            let (ast, module, shells, env, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(
+                    &source,
+                    ordinal + 20 + guard_index,
+                );
+            assert_eq!(diagnostics, 0);
+            refusals.push((
+                profile,
+                guard,
+                source_property_implementation_output(&ast, module, &shells, &env, &source)
+                    .is_none(),
+            ));
+        }
+    }
+    assert_eq!(positives.len(), 4);
+    assert_eq!(refusals.len(), 20);
+    let failures = positives
+        .iter()
+        .filter_map(
+            |(profile, case, _, _, _, _, _, result, _, _, _)| match result {
+                None => Some(format!("{profile}/{case}: None")),
+                Some(Err(error)) => Some(format!("{profile}/{case}: {error}")),
+                Some(Ok(_)) => None,
+            },
+        )
+        .collect::<Vec<_>>();
+    assert!(
+        failures.is_empty(),
+        "raw body route positives: {failures:?}"
+    );
+    for (profile, case, refused) in refusals {
+        assert!(refused, "{profile}/{case}");
+    }
+    for (profile, case, source, ast, module, shells, env, result, owner, parameter, definiens) in
+        positives
+    {
+        let output = result.expect("all selected").expect("all successful");
+        let typed = &output.typed_ast;
+        let resolved = &output.resolved;
+        let context = typed.source_context().unwrap();
+        let types = typed.source_type().unwrap();
+        let terms = typed.source_term().unwrap();
+        let property = typed.source_property_implementation().unwrap();
+        let tokens = ast.token_nodes();
+        let declaration = ast.node(tokens[20]).unwrap().range;
+        let written_type = ast.node(tokens[22]).unwrap().range;
+        let item = property.implementations().iter().next().unwrap().1;
+        let param = property.parameters().iter().next().unwrap().1;
+        let target = property.targets().iter().next().unwrap().1;
+        let body = property.definientia().iter().next().unwrap().1;
+        let context_declaration = context.declarations().iter().next().unwrap().1;
+        assert_eq!(context_declaration.declaration_range, declaration);
+        assert_eq!(context_declaration.written_type_range, written_type);
+        assert_eq!(
+            types.expressions().iter().next().unwrap().1.source_range(),
+            written_type
+        );
+        assert_eq!(item.source_range(), ast.nodes()[owner].range);
+        assert_eq!(param.source_range(), ast.nodes()[parameter].range);
+        assert_eq!(param.declaration_range(), declaration);
+        assert_eq!(
+            typed
+                .nodes()
+                .node(mizar_checker::typed_ast::TypedNodeId::new(parameter))
+                .unwrap()
+                .anchor,
+            SourceAnchor::Range(declaration)
+        );
+        assert_eq!(target.subject_range(), ast.node(tokens[25]).unwrap().range);
+        assert_eq!(target.name_range(), ast.node(tokens[27]).unwrap().range);
+        assert_eq!(target.source_range().start, target.subject_range().start);
+        assert_eq!(target.source_range().end, target.name_range().end);
+        assert_eq!(body.source_range(), ast.nodes()[definiens].range);
+        for (spelling, span) in [
+            (item.spelling(), item.source_range()),
+            (param.spelling(), param.source_range()),
+            (target.spelling(), target.source_range()),
+            (body.spelling(), body.source_range()),
+        ] {
+            assert_eq!(Some(spelling), source.get(span.start..span.end));
+        }
+        for (index, (_, term)) in terms.terms().iter().enumerate() {
+            assert_eq!(
+                term.source_range(),
+                ast.node(tokens[if index == 0 { 29 } else { 31 }])
+                    .unwrap()
+                    .range
+            );
+        }
+        if profile == "means" {
+            let atomic = typed.source_atomic_formula().unwrap();
+            let formula = atomic.formulas().iter().next().unwrap().1;
+            assert_eq!(formula.source_range(), body.source_range());
+            assert_eq!(formula.spelling(), "it = it");
+            assert_eq!(atomic.primary_term_fingerprint(), terms.debug_text());
+            if case == "layout" {
+                assert_eq!(body.spelling(), "it=it");
+            }
+            for (index, (_, row)) in property.correctness().iter().enumerate() {
+                assert_eq!(
+                    row.source_range(),
+                    ast.nodes()[if index == 0 { 76 } else { 80 }].range
+                );
+                assert_eq!(
+                    row.justification(),
+                    &SourceAnchor::Range(ast.nodes()[if index == 0 { 75 } else { 79 }].range)
+                );
+                assert_eq!(
+                    typed
+                        .initial_obligations()
+                        .get(row.obligation())
+                        .unwrap()
+                        .status,
+                    mizar_checker::typed_ast::InitialObligationStatus::Pending
+                );
+            }
+        } else {
+            let structures = typed.source_structure().unwrap();
+            let selector = structures.terms().iter().next().unwrap().1;
+            assert_eq!(selector.source_range(), body.source_range());
+            assert_eq!(selector.spelling(), "M.carrier");
+            assert_eq!(structures.primary_term_fingerprint(), terms.debug_text());
+            if case == "layout" {
+                assert_eq!(body.spelling(), "M . carrier");
+                assert_eq!(target.spelling(), "M . marker");
+            }
+            let consumer = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(&env, property.clone(), terms.clone(), structures.clone()).expect("actual raw Equals consumer");
+            assert_eq!(consumer.property(), property);
+        }
+        assert_eq!(
+            typed.initial_obligations().len(),
+            if profile == "means" { 2 } else { 0 }
+        );
+        assert_eq!(resolved.source_context(), typed.source_context());
+        assert_eq!(resolved.source_type(), typed.source_type());
+        assert_eq!(resolved.source_term(), typed.source_term());
+        assert_eq!(resolved.source_structure(), typed.source_structure());
+        assert_eq!(
+            resolved.source_atomic_formula(),
+            typed.source_atomic_formula()
+        );
+        assert_eq!(resolved.source_property_implementation(), Some(property));
+        let replay = source_property_implementation_output(&ast, module, &shells, &env, &source)
+            .unwrap()
+            .expect("actual full route replay");
+        assert_eq!(replay.typed_ast, output.typed_ast);
+        assert_eq!(replay.resolved, output.resolved);
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+    }
 }

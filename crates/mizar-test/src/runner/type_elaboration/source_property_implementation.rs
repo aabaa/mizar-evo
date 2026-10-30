@@ -68,6 +68,7 @@ use super::source_ast::{
 };
 use super::source_reserve::extract_builtin_source_type_expression;
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT: &str = concat!(
     "definition\n",
     "  struct Task264Carrier where\n",
@@ -84,6 +85,7 @@ pub(in crate::runner) const SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT: &str = co
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT: &str = concat!(
     "definition\n",
     "  struct Task264Carrier where\n",
@@ -646,21 +648,77 @@ fn source_property_implementation_output_impl(
     source_text: &str,
     mutation: SourcePropertyImplementationRouteMutation,
 ) -> Option<Result<SourcePropertyImplementationRouteOutput, String>> {
-    let profile = if source_text == SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT
-        && source_text.len() == 263
+    let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+    if !preprocessed.diagnostics.is_empty()
+        || preprocessed.comments.iter().any(|comment| {
+            !matches!(
+                comment.kind,
+                mizar_lexer::CommentKind::SingleLine | mizar_lexer::CommentKind::MultiLine
+            )
+        })
     {
-        Profile::Means
-    } else if source_text == SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT && source_text.len() == 189
-    {
-        Profile::Equals
-    } else {
-        return None;
-    };
-    if !source_text.ends_with('\n') || source_text.ends_with("\n\n") {
         return None;
     }
+    let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+    let environment = mizar_lexer::build_lexical_environment(&[], &[]).ok()?;
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &raw,
+        mizar_lexer::ModuleId::new(module.path().as_str()),
+    );
+    let scopes = mizar_lexer::build_scope_skeleton(&raw);
+    if !scopes.diagnostics.is_empty() {
+        return None;
+    }
+    let native = mizar_lexer::disambiguate_with_local_declarations(
+        &raw,
+        &environment,
+        &locals,
+        &mizar_lexer::ParserLexContext::general(),
+        &scopes,
+    );
+    if !native.diagnostics().is_empty() {
+        return None;
+    }
+    let mut mapped = Vec::with_capacity(native.tokens().len());
+    for token in native.tokens() {
+        let fragments = preprocessed
+            .preprocess_map
+            .source_ranges_for_lexical(token.span())?;
+        let [span] = fragments.as_slice() else {
+            return None;
+        };
+        if source_text.get(span.start..span.end) != Some(token.lexeme()) {
+            return None;
+        }
+        mapped.push(*span);
+    }
+    let profile = [Profile::Means, Profile::Equals].into_iter().find(|profile| {
+        let rows = surface(*profile);
+        let count = rows.iter().take_while(|row| matches!(&row.kind, ExactSurfaceKind::Token(..))).count();
+        native.tokens().len() == count && native.tokens().iter().zip(rows).enumerate().all(|(index, (token, row))| {
+            let kind = match token.kind() {
+                mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
+                mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
+                mizar_lexer::TokenKind::Identifier => SurfaceTokenKind::Identifier,
+                mizar_lexer::TokenKind::UserSymbol => SurfaceTokenKind::UserSymbol,
+                mizar_lexer::TokenKind::Numeral => SurfaceTokenKind::Numeral,
+                _ => return false,
+            };
+            matches!(&row.kind, ExactSurfaceKind::Token(expected, text) if kind == *expected && token.lexeme() == *text)
+                && (index > 18 || (mapped[index].start == row.start && mapped[index].end == row.end))
+        })
+    })?;
+    if !surface_is_exact(ast, profile, mutation, &mapped) {
+        return Some(Err("Task264 Surface profile is not exact".to_owned()));
+    }
     Some(build_output(
-        ast, module, shells, symbols, profile, mutation,
+        ast,
+        module,
+        shells,
+        symbols,
+        profile,
+        mutation,
+        source_text,
     ))
 }
 
@@ -675,6 +733,7 @@ fn surface_is_exact(
     ast: &SurfaceAst,
     profile: Profile,
     mutation: SourcePropertyImplementationRouteMutation,
+    mapped: &[mizar_lexer::SourceSpan],
 ) -> bool {
     let expected = surface(profile);
     let mut root = ast.root().map(SurfaceNodeId::index);
@@ -708,7 +767,14 @@ fn surface_is_exact(
         SourcePropertyImplementationRouteMutation::WrongSurfaceRoot => root = None,
         _ => {}
     }
-    root == Some(expected.len() - 1)
+    ast.canonical_bytes().is_some()
+        && ast.token_nodes().len() == mapped.len()
+        && ast
+            .token_nodes()
+            .iter()
+            .enumerate()
+            .all(|(index, node)| node.index() == index)
+        && root == Some(expected.len() - 1)
         && ast.expression_root().is_none()
         && ast.nodes().len() == expected.len()
         && ast
@@ -718,14 +784,26 @@ fn surface_is_exact(
             .zip(expected)
             .all(|((index, actual), expected)| {
                 actual.range.source_id == ast.source_id
-                    && ranges[index] == (expected.start, expected.end)
                     && !recoveries[index]
                     && children[index] == expected.children
                     && match (&actual.kind, &expected.kind) {
                         (SurfaceNodeKind::Token(actual), ExactSurfaceKind::Token(kind, text)) => {
-                            actual.kind == *kind && actual.text.as_ref() == *text
+                            actual.kind == *kind
+                                && actual.text.as_ref() == *text
+                                && mapped
+                                    .get(index)
+                                    .is_some_and(|span| ranges[index] == (span.start, span.end))
                         }
-                        (actual, ExactSurfaceKind::Structural(expected)) => actual == expected,
+                        (actual, ExactSurfaceKind::Structural(kind)) => {
+                            actual == kind
+                                && expected
+                                    .children
+                                    .first()
+                                    .zip(expected.children.last())
+                                    .is_some_and(|(first, last)| {
+                                        ranges[index] == (ranges[*first].0, ranges[*last].1)
+                                    })
+                        }
                         _ => false,
                     }
             })
@@ -745,10 +823,7 @@ fn resolver_profile(
         Profile::Means => 81,
         Profile::Equals => 52,
     };
-    let root_end = match profile {
-        Profile::Means => 262,
-        Profile::Equals => 188,
-    };
+    let root_end = ast.nodes()[owner].range.end;
     let declarations = shells.declarations();
     let kinds = [
         DeclarationShellKind::DefinitionBlock,
@@ -910,13 +985,13 @@ fn resolver_profile(
 }
 
 fn task264_arena(
-    source: SourceId,
+    ast: &SurfaceAst,
     profile: Profile,
     mutation: SourcePropertyImplementationRouteMutation,
 ) -> Result<TypedArena, String> {
     let rows = surface(profile);
     let mut builder = TypedArenaBuilder::new();
-    for (index, row) in rows.iter().enumerate() {
+    for index in 0..rows.len() {
         let kind = match (profile, index) {
             (Profile::Means, 54 | 57 | 64) | (Profile::Equals, 36 | 39 | 46) => "source.type.head",
             (Profile::Means, 55 | 58 | 63) | (Profile::Equals, 37 | 40 | 45) => {
@@ -952,12 +1027,12 @@ fn task264_arena(
         } else {
             kind
         };
-        let (anchor_start, anchor_end) = if (profile == Profile::Means && index == 65)
+        let anchor = if (profile == Profile::Means && index == 65)
             || (profile == Profile::Equals && index == 47)
         {
-            (125, 126)
+            ast.nodes()[20].range
         } else {
-            (row.start, row.end)
+            ast.nodes()[index].range
         };
         let context = if kind == "source.module" {
             LocalTypeContextId::new(0)
@@ -966,17 +1041,20 @@ fn task264_arena(
         };
         let actual = builder
             .push(
-                TypedNode::new(
-                    kind,
-                    SourceAnchor::Range(range(source, anchor_start, anchor_end)),
-                )
-                .with_children(row.children.iter().copied().map(TypedNodeId::new).collect())
-                .with_typing(TypingState::Unknown)
-                .with_recovery(NodeRecoveryState::Normal)
-                .with_links(TypedNodeLinks {
-                    context: Some(context),
-                    ..TypedNodeLinks::default()
-                }),
+                TypedNode::new(kind, SourceAnchor::Range(anchor))
+                    .with_children(
+                        ast.nodes()[index]
+                            .children
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                    .with_typing(TypingState::Unknown)
+                    .with_recovery(NodeRecoveryState::Normal)
+                    .with_links(TypedNodeLinks {
+                        context: Some(context),
+                        ..TypedNodeLinks::default()
+                    }),
             )
             .map_err(|error| error.to_string())?;
         if actual.index() != index {
@@ -998,10 +1076,6 @@ fn source_context(
     let owner = match profile {
         Profile::Means => 81,
         Profile::Equals => 52,
-    };
-    let end = match profile {
-        Profile::Means => 262,
-        Profile::Equals => 188,
     };
     let parameter = match profile {
         Profile::Means => 65,
@@ -1025,7 +1099,7 @@ fn source_context(
             shell_ordinal: 4,
             role: SourceItemRole::PropertyImplementation,
             module_id: module,
-            source_range: range(ast.source_id, 108, end),
+            source_range: ast.nodes()[owner].range,
             parent: None,
             visibility: SourceItemVisibility::Unspecified,
             site: node_site(owner),
@@ -1041,11 +1115,11 @@ fn source_context(
             },
             source_ordinal: 0,
             spelling: "M".to_owned(),
-            declaration_range: range(ast.source_id, 125, 126),
-            written_type_range: range(ast.source_id, 130, 144),
+            declaration_range: ast.nodes()[20].range,
+            written_type_range: ast.nodes()[22].range,
             site: node_site(parameter),
             role: SourceBindingSiteRole::DefinitionParameter {
-                local: LocalTermBinding::new("M", scope, range(ast.source_id, 125, 126), 0),
+                local: LocalTermBinding::new("M", scope, ast.nodes()[20].range, 0),
             },
             recovery: BindingRecoveryState::Normal,
         }],
@@ -1063,7 +1137,7 @@ fn source_context(
 
 #[allow(clippy::too_many_arguments)] // Rationale: keep every frozen lower-stage authority and corruption seam explicit at the private Task-264 route.
 fn source_type(
-    source: SourceId,
+    ast: &SurfaceAst,
     module: ModuleId,
     identities: &[ResolverIdentity; 3],
     context: &mizar_checker::source_context::SourceBindingContextHandoff,
@@ -1072,6 +1146,7 @@ fn source_type(
     mutation: SourcePropertyImplementationRouteMutation,
     symbols: &SymbolEnv,
 ) -> Result<mizar_checker::source_type::SourceTypeApplicationHandoff, String> {
+    let source = ast.source_id;
     let (expression_node, head_node, member_specs) = match profile {
         Profile::Means => (
             63,
@@ -1097,10 +1172,10 @@ fn source_type(
                 source_id: source,
                 module_id: module.clone(),
                 site: node_site(expression_node),
-                source_range: range(source, 130, 144),
+                source_range: ast.nodes()[22].range,
                 spelling: "Task264Carrier".to_owned(),
                 head_site: node_site(head_node),
-                head_range: range(source, 130, 144),
+                head_range: ast.nodes()[22].range,
                 head_spelling: "Task264Carrier".to_owned(),
                 form: SourceTypeApplicationForm::Bare,
                 head: SourceTypeHead::Symbol {
@@ -1159,28 +1234,25 @@ fn source_type(
 }
 
 fn primary_terms(
-    source: SourceId,
+    ast: &SurfaceAst,
     module: ModuleId,
     profile: Profile,
     mutation: SourcePropertyImplementationRouteMutation,
     context: &mizar_checker::source_context::SourceBindingContextHandoff,
     arena: &TypedArena,
 ) -> Result<mizar_checker::source_term::SourcePrimaryTermHandoff, String> {
+    let source = ast.source_id;
     let (terms, references) = match profile {
         Profile::Means => (
             vec![
                 (
                     66,
-                    172,
-                    174,
                     "it",
                     SourcePrimaryTermKind::It,
                     SourcePrimaryTermRole::CurrentDefinitionResult,
                 ),
                 (
                     68,
-                    177,
-                    179,
                     "it",
                     SourcePrimaryTermKind::It,
                     SourcePrimaryTermRole::CurrentDefinitionResult,
@@ -1191,8 +1263,6 @@ fn primary_terms(
         Profile::Equals => (
             vec![(
                 48,
-                173,
-                174,
                 "M",
                 SourcePrimaryTermKind::VariableReference,
                 SourcePrimaryTermRole::Value,
@@ -1208,9 +1278,9 @@ fn primary_terms(
         .into_iter()
         .enumerate()
         .map(
-            |(source_ordinal, (node, start, end, spelling, kind, role))| SourcePrimaryTermInput {
+            |(source_ordinal, (node, spelling, kind, role))| SourcePrimaryTermInput {
                 site: node_site(node),
-                source_range: range(source, start, end),
+                source_range: ast.nodes()[node].range,
                 source_ordinal,
                 context: BindingContextId::new(1),
                 recovery: SourcePrimaryTermRecovery::Normal,
@@ -1242,7 +1312,7 @@ fn primary_terms(
 }
 
 fn structure(
-    source: SourceId,
+    ast: &SurfaceAst,
     module: ModuleId,
     mutation: SourcePropertyImplementationRouteMutation,
     symbols: &SymbolEnv,
@@ -1250,12 +1320,13 @@ fn structure(
     terms: &mizar_checker::source_term::SourcePrimaryTermHandoff,
     arena: &TypedArena,
 ) -> Result<mizar_checker::source_structure::SourceStructureHandoff, String> {
+    let source = ast.source_id;
     let mut input = SourceStructureHandoffInput {
         source_id: source,
         module_id: module,
         terms: vec![SourceStructureTermInput {
             site: node_site(49),
-            source_range: range(source, 173, 182),
+            source_range: ast.nodes()[49].range,
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceStructureRecovery::Normal,
@@ -1268,7 +1339,7 @@ fn structure(
             term: SourceStructureTermId::new(0),
             ordinal: 0,
             site: node_site(31),
-            source_range: range(source, 175, 182),
+            source_range: ast.nodes()[31].range,
             spelling: "carrier".to_owned(),
             role: SourceStructureMemberRole::Selector,
             parent: None,
@@ -1310,7 +1381,7 @@ fn structure(
 }
 
 fn atomic_formula(
-    source: SourceId,
+    ast: &SurfaceAst,
     module: ModuleId,
     mutation: SourcePropertyImplementationRouteMutation,
     symbols: &SymbolEnv,
@@ -1318,12 +1389,13 @@ fn atomic_formula(
     terms: &mizar_checker::source_term::SourcePrimaryTermHandoff,
     arena: &TypedArena,
 ) -> Result<mizar_checker::source_atomic_formula::SourceAtomicFormulaHandoff, String> {
+    let source = ast.source_id;
     let mut input = SourceAtomicFormulaHandoffInput {
         source_id: source,
         module_id: module,
         formulas: vec![SourceAtomicFormulaInput {
             site: node_site(70),
-            source_range: range(source, 172, 179),
+            source_range: ast.nodes()[70].range,
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
@@ -1388,79 +1460,57 @@ fn atomic_formula(
 }
 
 fn checker_input(
-    source: SourceId,
+    ast: &SurfaceAst,
+    source_text: &str,
     module: ModuleId,
     profile: Profile,
     shell: mizar_resolve::declarations::DeclarationShellId,
     identities: &[ResolverIdentity; 3],
-) -> SourcePropertyImplementationHandoffInput {
-    let (
-        owner,
-        end,
-        parameter,
-        style,
-        implementation_spelling,
-        definiens_node,
-        definiens_range,
-        definiens_spelling,
-        target,
-        correctness,
-    ) = match profile {
+) -> Result<SourcePropertyImplementationHandoffInput, String> {
+    let source = ast.source_id;
+    let (owner, parameter, style, definiens_node, target, correctness) = match profile {
         Profile::Means => (
             81,
-            262,
             65,
             SourcePropertyImplementationStyle::Means,
-            "definition\n  let M be Task264Carrier;\n  property M.marker means it = it;\n  existence by computation(steps: 1);\n  uniqueness by computation(steps: 1);\nend;",
             72,
-            (172, 179),
-            "it = it",
             SourcePropertyDefiniensTarget::AtomicFormula(SourceAtomicFormulaId::new(0)),
             vec![
-                (
-                    SourcePropertyCorrectnessKind::Existence,
-                    76,
-                    183,
-                    218,
-                    193,
-                    217,
-                    "existence by computation(steps: 1);",
-                ),
-                (
-                    SourcePropertyCorrectnessKind::Uniqueness,
-                    80,
-                    221,
-                    257,
-                    232,
-                    256,
-                    "uniqueness by computation(steps: 1);",
-                ),
+                (SourcePropertyCorrectnessKind::Existence, 76, 75),
+                (SourcePropertyCorrectnessKind::Uniqueness, 80, 79),
             ],
         ),
         Profile::Equals => (
             52,
-            188,
             47,
             SourcePropertyImplementationStyle::Equals,
-            "definition\n  let M be Task264Carrier;\n  property M.marker equals M.carrier;\nend;",
             51,
-            (173, 182),
-            "M.carrier",
             SourcePropertyDefiniensTarget::Structure(SourceStructureTermId::new(0)),
             Vec::new(),
         ),
     };
-    SourcePropertyImplementationHandoffInput {
+    let implementation_range = ast.nodes()[owner].range;
+    let parameter_range = ast.nodes()[parameter].range;
+    let target_range = range(
+        source,
+        ast.nodes()[25].range.start,
+        ast.nodes()[27].range.end,
+    );
+    let definiens_range = ast.nodes()[definiens_node].range;
+    Ok(SourcePropertyImplementationHandoffInput {
         source_id: source,
         module_id: module,
         implementations: vec![SourcePropertyImplementationInput {
             shell,
             site: node_site(owner),
-            source_range: range(source, 108, end),
+            source_range: implementation_range,
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
-            spelling: implementation_spelling.to_owned(),
+            spelling: source_text
+                .get(implementation_range.start..implementation_range.end)
+                .ok_or_else(|| "Task264 implementation slice changed".to_owned())?
+                .to_owned(),
             style,
             parameter: SourcePropertyParameterId::new(0),
             target: SourcePropertyTargetId::new(0),
@@ -1472,11 +1522,14 @@ fn checker_input(
             binding: BindingId::new(0),
             written_type: SourceTypeApplicationId::new(0),
             site: node_site(parameter),
-            source_range: range(source, 121, 145),
-            declaration_range: range(source, 125, 126),
+            source_range: parameter_range,
+            declaration_range: ast.nodes()[20].range,
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
-            spelling: "let M be Task264Carrier;".to_owned(),
+            spelling: source_text
+                .get(parameter_range.start..parameter_range.end)
+                .ok_or_else(|| "Task264 parameter slice changed".to_owned())?
+                .to_owned(),
         }],
         targets: vec![SourcePropertyTargetInput {
             owner: SourcePropertyImplementationId::new(0),
@@ -1489,10 +1542,13 @@ fn checker_input(
                 node: TypedNodeId::new(owner),
                 role: TypeRole::new("source.property-implementation.target"),
             },
-            source_range: range(source, 157, 165),
-            subject_range: range(source, 157, 158),
-            name_range: range(source, 159, 165),
-            spelling: "M.marker".to_owned(),
+            source_range: target_range,
+            subject_range: ast.nodes()[25].range,
+            name_range: ast.nodes()[27].range,
+            spelling: source_text
+                .get(target_range.start..target_range.end)
+                .ok_or_else(|| "Task264 target slice changed".to_owned())?
+                .to_owned(),
             return_type: SourceTypeStructureMemberId::new(1),
         }],
         definientia: vec![SourcePropertyDefiniensInput {
@@ -1500,30 +1556,35 @@ fn checker_input(
             ordinal: 0,
             target,
             site: node_site(definiens_node),
-            source_range: range(source, definiens_range.0, definiens_range.1),
+            source_range: definiens_range,
             context: BindingContextId::new(1),
             recovery: SourcePropertyImplementationRecovery::Normal,
-            spelling: definiens_spelling.to_owned(),
+            spelling: source_text
+                .get(definiens_range.start..definiens_range.end)
+                .ok_or_else(|| "Task264 definiens slice changed".to_owned())?
+                .to_owned(),
         }],
         correctness: correctness
             .into_iter()
             .enumerate()
-            .map(
-                |(ordinal, (kind, node, start, end, proof_start, proof_end, spelling))| {
-                    SourcePropertyCorrectnessInput {
-                        owner: SourcePropertyImplementationId::new(0),
-                        ordinal,
-                        kind,
-                        site: node_site(node),
-                        source_range: range(source, start, end),
-                        justification: SourceAnchor::Range(range(source, proof_start, proof_end)),
-                        recovery: SourcePropertyImplementationRecovery::Normal,
-                        spelling: spelling.to_owned(),
-                    }
-                },
-            )
-            .collect(),
-    }
+            .map(|(ordinal, (kind, node, justification))| {
+                let span = ast.nodes()[node].range;
+                Ok(SourcePropertyCorrectnessInput {
+                    owner: SourcePropertyImplementationId::new(0),
+                    ordinal,
+                    kind,
+                    site: node_site(node),
+                    source_range: span,
+                    justification: SourceAnchor::Range(ast.nodes()[justification].range),
+                    recovery: SourcePropertyImplementationRecovery::Normal,
+                    spelling: source_text
+                        .get(span.start..span.end)
+                        .ok_or_else(|| "Task264 correctness slice changed".to_owned())?
+                        .to_owned(),
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?,
+    })
 }
 
 fn build_output(
@@ -1533,15 +1594,25 @@ fn build_output(
     symbols: &SymbolEnv,
     profile: Profile,
     mutation: SourcePropertyImplementationRouteMutation,
+    source_text: &str,
 ) -> Result<SourcePropertyImplementationRouteOutput, String> {
-    if !surface_is_exact(ast, profile, mutation) {
-        return Err("Task264 Surface profile is not exact".to_owned());
-    }
     let identities = resolver_profile(ast, &module, shells, symbols, profile, mutation)?;
-    let arena = task264_arena(ast.source_id, profile, mutation)?;
+    let replay_shells =
+        mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+    let replay = SignatureProjectionExtractor::new(
+        ast,
+        &replay_shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    if &replay_shells != shells || !replay.diagnostics().is_empty() || &replay.into_env() != symbols
+    {
+        return Err("Task264 source association is invalid".to_owned());
+    }
+    let arena = task264_arena(ast, profile, mutation)?;
     let context = source_context(ast, module.clone(), shells, profile, mutation)?;
     let source_type = source_type(
-        ast.source_id,
+        ast,
         module.clone(),
         &identities,
         &context,
@@ -1568,7 +1639,7 @@ fn build_output(
     })
     .map_err(|error| format!("Task249PI typed base: {error}"))?;
     let terms = primary_terms(
-        ast.source_id,
+        ast,
         module.clone(),
         profile,
         mutation,
@@ -1583,7 +1654,7 @@ fn build_output(
     match profile {
         Profile::Means => {
             let formula = atomic_formula(
-                ast.source_id,
+                ast,
                 module.clone(),
                 mutation,
                 symbols,
@@ -1601,7 +1672,7 @@ fn build_output(
         }
         Profile::Equals => {
             let row = structure(
-                ast.source_id,
+                ast,
                 module.clone(),
                 mutation,
                 symbols,
@@ -1619,7 +1690,7 @@ fn build_output(
         }
     }
     let shell = shells.declarations()[4].id();
-    let mut input = checker_input(ast.source_id, module, profile, shell, &identities);
+    let mut input = checker_input(ast, source_text, module, profile, shell, &identities)?;
     if mutation == SourcePropertyImplementationRouteMutation::WrongImplementation {
         input.targets[0].return_type = SourceTypeStructureMemberId::new(0);
     }

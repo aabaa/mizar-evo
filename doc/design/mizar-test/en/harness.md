@@ -5402,6 +5402,31 @@ The implementation adds no route, helper, selector, assertion, result field,
 or runner test. Neither Parser Task-48 property fixture is activated; all
 runner behavior remains byte-identical pending Task 264.
 
+## Property body source association
+
+The frozen Task264 route below records the original canonical fixtures. Current
+selection uses actual native token kinds/text and mapped fixed prefix0..18 geometry,
+including definition108..118; post-header body and suffix trivia may vary. Native
+preprocessing/strict scanning, actual-module local declarations, scope and general
+disambiguation must succeed without diagnostics/imports/unsupported metadata. Each
+literal has one exact physical source fragment. Unsupported raw family/prefix yields
+None before AST association; a selected raw/AST disagreement yields SomeErr.
+
+Authenticate supplied canonical indexed AST storage, current source IDs, exact native
+token kind/text/span, normal nodes, root/expression-root, closed ordered children and
+structural child endpoints. Root token aliases intentionally overlap. Existing own
+resolver checks precede complete shell-set and SymbolEnv replay/equality with zero
+diagnostics. This checks agreement of supplied raw/AST/resolver objects; the private
+signature carries no independent loaded-source seal or foreign-bundle provenance.
+
+Existing constructors consume admitted AST roles/raw slices, preserving typed M20
+rather than the full Surface let envelope, fixed prefix identities, canonical lower
+strings, physical upper strings, lower/upper Typed/final and Equals-consumer replay.
+Closed end; requires no terminal LF; removing that LF or appending SP preserves the
+original AST anchors and is admitted. Shifted raw prefix remains unsupported; selected
+stale-body association fails. Preserve actual mutation ownership, obligations and
+semantic isolation. This body slice gives no whole-prefix, exception or semantic credit.
+
 ## Checker Task 264 Frozen Private Route
 
 The future route matches only the two exact loaded source texts and their full

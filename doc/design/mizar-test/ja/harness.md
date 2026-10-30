@@ -5069,6 +5069,30 @@ implementationはroute/helper/selector/assertion/result field/runner testを追�
 Parser Task-48 property fixtureはいずれもactivateせず、全runner behaviorはTask 264まで
 byte-identicalである。
 
+## Property body source association
+
+以下の frozen Task264 route は元の正規 fixture の記録である。現在の選択は実際の
+native token の kind／text と固定 prefix0..18（definition108..118）の mapped 範囲を
+使い、header 後の body と suffix trivia を可変とする。native preprocessing／strict
+scan、実際の module の local declaration、scope、general disambiguation に diagnostic、
+import、未対応 metadata がないことを要求する。各 literal は正確な単一の物理 fragment
+に対応する。未対応 raw family／prefix は AST 照合前に None、選択済みの raw／AST 不一致
+は SomeErr とする。
+
+渡された AST の canonical indexed storage、current source ID、native token の kind／
+text／span、正常 node、root／expression-root、厳密な子の順序と structural child 端点を
+認証する。root の token alias は意図的に重なる。既存の resolver 自身の検査後に実際の
+shell-set 全体と SymbolEnv を再生成し、diagnostic zero と完全一致を要求する。これは
+渡された raw／AST／resolver の関連検査であり、private signature は独立した loaded-source
+seal や、全体が整合した別 bundle の出自の証明を持たない。
+
+既存 constructor は認証済み AST role／raw slice を使い、typed M20 と full Surface let
+を区別する。固定 prefix identity、下位の正規文字列と上位の物理文字列、lower／upper
+Typed／final と Equals consumer の replay を保つ。閉じた end; は末尾 LF を要求しない。
+その LF の削除や SP の追加では元の AST anchor を保ったまま受理する。raw prefix の移動は
+未対応で、選択済み body の古い関連は拒否する。mutation の実際の責務、obligation、意味論
+の分離を保ち、prefix 全体・exception・semantic credit は増やさない。
+
 ## Checker Task 264 frozen private route
 
 Future routeはexact two loaded textsとfull Surface/resolver profileだけでselect
