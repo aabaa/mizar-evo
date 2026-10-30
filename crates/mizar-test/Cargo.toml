@@ -10,6 +10,7 @@ name = "mizar_test"
 path = "src/lib.rs"
 
 [dependencies]
+sha2 = { version = "0.11.1", default-features = false }
 mizar-checker = { path = "../mizar-checker" }
 mizar-core = { path = "../mizar-core" }
 mizar-frontend = { path = "../mizar-frontend" }

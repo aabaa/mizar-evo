@@ -5581,6 +5581,14 @@ corrupt symbol/definition signature. Neutral reconstruction proves those
 mutation helpers before corruption. Focused and full crate tests pass without
 adding a fifth test or an active dispatch edge.
 
+## Proof-local Let leading-layout transport
+
+The private Task269CP lower route admits leading SP/TAB/LF before its unchanged 100-byte suffix; all 51 Surface rows and shell/resolver/output/local ranges share that displacement.
+Every kind/child/normality/source/identity/signature/path/ordinal/scope check and error boundary remains; comments, CR, internal and trailing edits stay outside the slice.
+Fingerprints retain lowercase SHA-256 over raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8. Actual inputs are hashed in construction/revalidation; canonical digests/debug bytes and the schema remain unchanged.
+Only existing private calls forward raw source; the output gains no field/API. Hash computation uses the test crate's library dependency, with no production subprocess.
+Shifted lower receipts remain rejected by public 269C; no binding/Type/Typed-final, corpus/dispatch, fact, assumption, thesis, proof, Core/VC or acceptance credit is added.
+
 ## Checker Task 269C frozen dormant harness
 
 The proof-local leaf selects exact `SOURCE_PROOF_LOCAL_LET_TEXT`, requires the

@@ -5220,6 +5220,14 @@ profile mutationを併用し、matching present-but-corrupt symbol/definition si
 rejectする。neutral reconstructionでcorruption前のmutation helperを検証する。
 focused/full crate testはPASSし、5件目のtestやactive dispatch edgeは追加しない。
 
+## Proof-local Let leading-layout transport
+
+Private Task269CP lower routeは未変更100-byte suffix前のSP/TAB/LFだけを許可し、Surface 51行とshell/resolver/output/local rangeに同じ移動量を使う。
+Kind/child/normality/source/identity/signature/path/ordinal/scope検査とerror境界を保ち、comment/CR/internal/trailing編集は対象外とする。
+Fingerprintはraw-source UTF-8と`SurfaceAst::snapshot_text()` UTF-8の小文字SHA-256を維持し、構築/再検証で実入力をhashする。Canonical digest/debug bytesとschemaは変えない。
+Raw sourceは既存private call間だけで渡し、output field/APIを追加しない。Hashはtest crateのlibrary dependencyを使い、production subprocessは使わない。
+移送済みlower receiptもpublic 269Cは拒否し、binding/Type/Typed-final、corpus/dispatch、fact/assumption/thesis/proof/Core/VC/acceptance creditは追加しない。
+
 ## Checker Task 269C frozen dormant harness
 
 proof-local leafはexact `SOURCE_PROOF_LOCAL_LET_TEXT`をselectし、unchanged Task-269CP
