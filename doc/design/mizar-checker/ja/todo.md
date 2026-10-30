@@ -1,5 +1,7 @@
 # mizar-checker TODO
 
+- [x] [CHECKER-FUNCTOR-RETURN-OWNER-LAYOUT](../../task_contracts/ja/CHECKER-FUNCTOR-RETURN-OWNER-LAYOUT.md).
+
 - [x] [CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT](../../task_contracts/ja/CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT.md).
 
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。

@@ -1,5 +1,7 @@
 # mizar-checker TODO
 
+- [x] [CHECKER-FUNCTOR-RETURN-OWNER-LAYOUT](../../task_contracts/en/CHECKER-FUNCTOR-RETURN-OWNER-LAYOUT.md).
+
 - [x] [CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT](../../task_contracts/en/CHECKER-FUNCTOR-RETURN-EXPRESSION-LAYOUT.md).
 
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).

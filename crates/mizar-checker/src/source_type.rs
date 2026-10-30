@@ -2571,8 +2571,24 @@ fn validate_definition_return_extension(
         }
         previous_definition_range = Some(definition_return.definition_range);
 
-        if definition_return.definition_range
-            != task_249r_range(handoff.source_id, definition_start, definition_end)
+        let coherent_owner_range =
+            is_node_site(&definition_return.definition_site, definition_node)
+                && definition_return.definition_range.source_id == handoff.source_id
+                && definition_return
+                    .definition_range
+                    .end
+                    .checked_sub(definition_return.definition_range.start)
+                    == Some(definition_end - definition_start)
+                && arena
+                    .node(TypedNodeId::new(definition_node))
+                    .is_some_and(|node| {
+                        node.recovery == NodeRecoveryState::Normal
+                            && source_range(&node.anchor)
+                                == Some(definition_return.definition_range)
+                    });
+        if !coherent_owner_range
+            && definition_return.definition_range
+                != task_249r_range(handoff.source_id, definition_start, definition_end)
         {
             return Err(SourceTypeError::InvalidDefinitionReturn {
                 definition_return: id,
@@ -15347,6 +15363,276 @@ mod tests {
                 arena,
             )
             .expect("actual moved-return Typed installation");
+            assert_eq!(typed.source_type(), Some(&handoff));
+            assert!(typed.source_context().is_none());
+            assert!(typed.types().is_empty());
+            assert!(typed.facts().is_empty());
+            assert!(typed.coercions().is_empty());
+            assert!(typed.initial_obligations().is_empty());
+            assert!(typed.diagnostics().is_empty());
+            let resolved = assemble_empty_resolved(&typed);
+            assert_eq!(resolved.source_type(), Some(&handoff));
+            assert!(resolved.source_context().is_none());
+            assert!(resolved.expr_metadata().is_empty());
+            assert!(resolved.inserted_coercions().is_empty());
+            assert!(resolved.cluster_facts().is_empty());
+            assert!(resolved.checked_formulas().is_empty());
+            assert!(resolved.statement_semantics().is_empty());
+            assert!(resolved.checked_proofs().is_empty());
+            assert!(resolved.diagnostics().is_empty());
+        }
+    }
+
+    #[test]
+    fn task_249r_public_coherent_owner_layout_installs_and_replays() {
+        let fixture = task_249r_fixture();
+        let base_input = SourceTypeHandoffInput {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            applications: (0..2)
+                .map(|index| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: vec![
+                task_249r_expression(fixture.source, &fixture.module, 63, 62, 22, 25),
+                task_249r_expression(fixture.source, &fixture.module, 67, 66, 38, 41),
+            ],
+            arguments: Vec::new(),
+        };
+        let bindings = binding_env(
+            fixture.source,
+            &fixture.module,
+            &[range(fixture.source, 22, 25), range(fixture.source, 38, 41)],
+        );
+        let symbols = SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default());
+        let id = SourceTypeDefinitionReturnId::new(0);
+        let mut positives = Vec::new();
+        let mut negatives = Vec::new();
+        for case in [
+            "canonical",
+            "first",
+            "both",
+            "stale_right",
+            "canonical_moved",
+            "moved_missing",
+            "canonical_missing",
+            "moved_recovered",
+            "canonical_recovered",
+            "moved_point",
+            "canonical_point",
+            "moved_foreign",
+            "canonical_foreign",
+            "wrong_site",
+            "role_site",
+            "width56",
+            "width58",
+            "unsupported",
+            "expression_width2",
+            "expression_role",
+        ] {
+            let canonical = case.starts_with("canonical");
+            let mut input = fixture.extension.clone();
+            if !canonical {
+                input.returns[0].definition_range = range(fixture.source, 62, 119);
+                input.returns[0].expression.source_range = range(fixture.source, 106, 109);
+            }
+            if case == "both" {
+                input.returns[1].definition_range = range(fixture.source, 123, 181);
+                input.returns[1].expression.source_range = range(fixture.source, 165, 168);
+            }
+            match case {
+                "wrong_site" => input.returns[0].definition_site = node_site(83),
+                "role_site" => input.returns[0].definition_site = role(84, "owner"),
+                "width56" => input.returns[0].definition_range.end = 118,
+                "width58" => input.returns[0].definition_range.end = 120,
+                "unsupported" => input.returns[0].expression.form = SourceTypeApplicationForm::Of,
+                "expression_width2" => input.returns[0].expression.source_range.end = 108,
+                "expression_role" => input.returns[0].expression.site = role(80, "return"),
+                _ => {}
+            }
+            for row in &mut input.returns {
+                row.expression.head_range = row.expression.source_range;
+            }
+            let mut nodes = fixture
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            for (owner, root, head, row) in [
+                (84, 80, 79, &input.returns[0]),
+                (95, 87, 86, &input.returns[1]),
+            ] {
+                nodes[owner].anchor = SourceAnchor::Range(row.definition_range);
+                nodes[root].anchor = SourceAnchor::Range(row.expression.source_range);
+                nodes[head].anchor = SourceAnchor::Range(row.expression.head_range);
+            }
+            match case {
+                "stale_right" => {
+                    nodes[84].anchor = SourceAnchor::Range(range(fixture.source, 61, 118));
+                }
+                "canonical_moved" => {
+                    nodes[84].anchor = SourceAnchor::Range(range(fixture.source, 62, 119));
+                }
+                "moved_missing" | "canonical_missing" => nodes.truncate(84),
+                "moved_recovered" | "canonical_recovered" => {
+                    nodes[84].recovery = NodeRecoveryState::Recovered;
+                }
+                "moved_point" | "canonical_point" => {
+                    nodes[84].anchor = SourceAnchor::Point {
+                        source_id: fixture.source,
+                        offset: 62,
+                    };
+                }
+                "moved_foreign" | "canonical_foreign" => {
+                    let mut span = input.returns[0].definition_range;
+                    span.source_id = other_source_id();
+                    nodes[84].anchor = SourceAnchor::Range(span);
+                }
+                _ => {}
+            }
+            let arena = TypedArena::try_new(None, nodes).expect("rebuilt owner-layout arena");
+            let base = SourceTypeProducer::build(base_input.clone(), &bindings, &symbols, &arena)
+                .expect("fresh public generic base before owner extension");
+            assert_eq!(base, fixture.base);
+            let before = (base.clone(), input.clone(), arena.clone());
+            let result = SourceTypeDefinitionReturnProducer::extend(&base, input.clone(), &arena);
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            match case {
+                "canonical" => {
+                    result.expect("canonical public owner extension");
+                }
+                "first" | "both" => positives.push((case, base, input, arena, result)),
+                _ => {
+                    let expected = if canonical || case == "expression_role" {
+                        SourceTypeError::InvalidDefinitionReturnSite {
+                            definition_return: id,
+                        }
+                    } else if case == "unsupported" {
+                        SourceTypeError::UnsupportedDefinitionReturn {
+                            definition_return: id,
+                        }
+                    } else {
+                        SourceTypeError::InvalidDefinitionReturn {
+                            definition_return: id,
+                        }
+                    };
+                    negatives.push((case, result, expected));
+                }
+            }
+        }
+        assert_eq!(positives.len(), 2);
+        let failures = positives
+            .iter()
+            .filter_map(|(case, _, _, _, result)| {
+                result
+                    .as_ref()
+                    .err()
+                    .map(|error| format!("{case}: {error:?}"))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            failures.is_empty(),
+            "public coherent owner witnesses: {failures:?}"
+        );
+        for (case, result, expected) in negatives {
+            assert_eq!(result, Err(expected), "{case}");
+        }
+        for (case, base, input, arena, result) in positives {
+            let handoff = result.expect("both real owner witnesses accepted");
+            assert_eq!(handoff.applications(), base.applications());
+            assert_eq!(handoff.arguments(), base.arguments());
+            assert_eq!(handoff.expressions().len(), 4);
+            assert_eq!(handoff.definition_returns().len(), 2);
+            assert!(handoff.mode_rhs().is_empty());
+            assert!(handoff.structure_members().is_empty());
+            for (index, expected) in input.returns.iter().enumerate() {
+                let row = handoff
+                    .definition_returns()
+                    .get(SourceTypeDefinitionReturnId::new(index))
+                    .unwrap();
+                assert_eq!(row.id().index(), index);
+                assert_eq!(row.source_ordinal(), index);
+                assert_eq!(row.root(), SourceTypeExpressionId::new(index + 2));
+                assert_eq!(row.definition_site(), &expected.definition_site);
+                assert_eq!(row.definition_range(), expected.definition_range);
+                assert_eq!(
+                    arena.node(row.definition_site().node()).unwrap().anchor,
+                    SourceAnchor::Range(row.definition_range())
+                );
+                let expression = handoff.expressions().get(row.root()).unwrap();
+                assert_eq!(expression.source_id(), fixture.source);
+                assert_eq!(expression.module_id(), &fixture.module);
+                assert_eq!(expression.source_range(), expected.expression.source_range);
+                assert_eq!(expression.head_range(), expression.source_range());
+                assert_eq!(expression.site(), &expected.expression.site);
+                assert_eq!(expression.head_site(), &expected.expression.head_site);
+                for site in [expression.site(), expression.head_site()] {
+                    assert_eq!(
+                        arena.node(site.node()).unwrap().anchor,
+                        SourceAnchor::Range(expression.source_range())
+                    );
+                }
+                assert_eq!(
+                    handoff
+                        .expressions()
+                        .get(SourceTypeExpressionId::new(index)),
+                    base.expressions().get(SourceTypeExpressionId::new(index))
+                );
+            }
+            let before = (base.clone(), input.clone(), arena.clone());
+            let repeated =
+                SourceTypeProducer::build(base_input.clone(), &bindings, &symbols, &arena)
+                    .expect("fresh repeated generic base");
+            assert_eq!(
+                SourceTypeDefinitionReturnProducer::extend(&repeated, input.clone(), &arena),
+                Ok(handoff.clone()),
+                "{case} fresh repeat"
+            );
+            assert_eq!((&base, &input, &arena), (&before.0, &before.1, &before.2));
+            for (index, owner) in [84, 95].into_iter().enumerate() {
+                let mut nodes = arena
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                let SourceAnchor::Range(mut span) = nodes[owner].anchor.clone() else {
+                    unreachable!()
+                };
+                span.start += 1;
+                span.end += 1;
+                nodes[owner].anchor = SourceAnchor::Range(span);
+                let drift = TypedArena::try_new(None, nodes).unwrap();
+                let definition_return = SourceTypeDefinitionReturnId::new(index);
+                let expected = if input.returns[index].definition_range
+                    == fixture.extension.returns[index].definition_range
+                {
+                    SourceTypeError::InvalidDefinitionReturnSite { definition_return }
+                } else {
+                    SourceTypeError::InvalidDefinitionReturn { definition_return }
+                };
+                assert_eq!(
+                    handoff.validate_installation(fixture.source, &fixture.module, &drift),
+                    Err(expected)
+                );
+                assert_eq!(
+                    task_249r_typed_ast(
+                        fixture.source,
+                        fixture.module.clone(),
+                        handoff.clone(),
+                        drift
+                    ),
+                    Err(TypedAstError::InvalidSourceType)
+                );
+            }
+            let typed = task_249r_typed_ast(
+                fixture.source,
+                fixture.module.clone(),
+                handoff.clone(),
+                arena,
+            )
+            .expect("actual coherent-owner Typed installation");
             assert_eq!(typed.source_type(), Some(&handoff));
             assert!(typed.source_context().is_none());
             assert!(typed.types().is_empty());

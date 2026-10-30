@@ -1080,7 +1080,21 @@ fn functor_return_expression_layout_has_real_frontend_witnesses() {
         "task260_means(y) -> set means",
         "task260_means(y)->set   means",
     );
-    for (ordinal, (source, second_start)) in [(first, 163), (both, 161)].into_iter().enumerate() {
+    let first_owner = SOURCE_FUNCTOR_DEFINITION_TEXT
+        .replace("  func Task260EqualsDef", "   func Task260EqualsDef")
+        .replace("  func Task260MeansDef", " func Task260MeansDef");
+    let both_owners = SOURCE_FUNCTOR_DEFINITION_TEXT
+        .replace("  func", "   func")
+        .replace("  existence", "existence");
+    for (ordinal, (source, first_start, second_start, first_shift, second_shift)) in [
+        (first, 104, 163, 0, 0),
+        (both, 104, 161, 0, 0),
+        (first_owner, 106, 163, 1, 0),
+        (both_owners, 106, 165, 1, 2),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         assert_eq!(source.len(), 262);
         let (ast, module, shells, symbols, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&source, 260_301 + ordinal);
@@ -1093,22 +1107,39 @@ fn functor_return_expression_layout_has_real_frontend_witnesses() {
             assert_eq!(actual.range.source_id, ast.source_id);
             assert_eq!(actual.kind, expected.kind, "node {index} kind/text");
             assert_eq!(actual.children, expected.children, "node {index} children");
-            // Parameters, patterns, bodies, Primary/Atomic roots and suffix stay fixed.
-            if matches!(index, 0..=22 | 25..=34 | 37..=78 | 81..=85 | 88..=107) {
+            let shift = match index {
+                16..=27 | 78..=84 => first_shift,
+                28..=41 | 85..=95 => second_shift,
+                _ => 0,
+            };
+            // Owner witnesses move every inner range; geometry outside owners stays fixed.
+            if ordinal >= 2
+                || matches!(index, 0..=22 | 25..=34 | 37..=78 | 81..=85 | 88..=107)
+            {
                 assert_eq!(
                     (actual.range.start, actual.range.end),
-                    (expected.range.start, expected.range.end),
-                    "node {index} stable geometry"
+                    (expected.range.start + shift, expected.range.end + shift),
+                    "node {index} geometry"
                 );
             }
         }
-        for (owner, start, end) in [(84, 61, 118), (95, 121, 179)] {
+        for (owner, start, width) in [
+            (84, 61 + first_shift, 57),
+            (95, 121 + second_shift, 58),
+        ] {
             assert_eq!(
                 ast.nodes()[owner].range,
-                task260_range(ast.source_id, start, end)
+                task260_range(ast.source_id, start, start + width)
             );
+            if ordinal >= 2 {
+                let original = canonical.nodes()[owner].range;
+                assert_eq!(
+                    &source[start..start + width],
+                    &SOURCE_FUNCTOR_DEFINITION_TEXT[original.start..original.end]
+                );
+            }
         }
-        for (token, head, root, start) in [(24, 79, 80, 104), (36, 86, 87, second_start)] {
+        for (token, head, root, start) in [(24, 79, 80, first_start), (36, 86, 87, second_start)] {
             assert_eq!(ast.nodes()[token].token_text(), Some("set"));
             for index in [token, head, root] {
                 assert_eq!(
