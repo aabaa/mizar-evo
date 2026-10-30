@@ -401,7 +401,7 @@ audit-driven additions; broader runner growth remains task 10 pacing.
 25. **ATP re-proving benchmark.** [ ]
     - Backend success and kernel acceptance rates by condition and class. Contract: [ATPK-BENCHMARK](../../task_contracts/en/ATPK-BENCHMARK.md).
 
-26. **Source bridge generalization.** [ ]
+26. **Source bridge generalization.** [x]
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/en/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
     - [x] [Proof-label confinement slice](../../task_contracts/en/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
     - [x] [Unused Task257A binder spelling](../../task_contracts/en/TEST-METAMORPHIC-UNUSED-BINDER.md).

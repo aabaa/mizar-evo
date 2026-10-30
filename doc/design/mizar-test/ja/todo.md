@@ -358,7 +358,7 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
 25. **ATP re-proving benchmark。** [ ]
     - 条件と分類ごとの backend の成功率と kernel の受理率。契約: [ATPK-BENCHMARK](../../task_contracts/ja/ATPK-BENCHMARK.md)。
 
-26. **Source bridge generalization.** [ ]
+26. **Source bridge generalization.** [x]
     - [TEST-METAMORPHIC-BRIDGE-GENERALIZATION](../../task_contracts/ja/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
     - [x] [Proof-label confinement slice](../../task_contracts/ja/TEST-METAMORPHIC-LABEL-CONFINEMENT.md).
     - [x] [Unused Task257A binder spelling](../../task_contracts/ja/TEST-METAMORPHIC-UNUSED-BINDER.md).

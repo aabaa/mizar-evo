@@ -1,6 +1,6 @@
 # Task TEST-METAMORPHIC-BRIDGE-GENERALIZATION: generalize source bridge extraction
 Canonical language: English; [Japanese pointer](../ja/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
-Status: in progress. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: resolver/checker/Core corpus routes.
+Status: complete. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: resolver/checker/Core corpus routes.
 Dependencies: the metamorphic guard and authenticated producer handoffs for each affected bridge.
 Readiness: inventory each bridge before implementation; missing producer support stays explicitly blocked.
 Authority: specification §§2.2/2.9, 4.6, 15.10; unchanged active `.miz` cases and expectations.
@@ -29,3 +29,8 @@ original corpus and metamorphic variant, malformed/foreign negative controls,
 and verification cadence including affected long obligations.
 Exit: every owned exception is removed through genuine producer execution;
 remaining lower prerequisites retain a named owner and explicit blocking reason.
+
+Residual profile generality belongs to [checker281](../../mizar-checker/en/todo.md):
+[Type](../../mizar-checker/en/source_type.md#exact-task-260-profile-and-validation)
+still bounds prefix geometry; [Functor](../../mizar-checker/en/source_functor_definition.md#native-prefix-boundary)
+and [Core](../../mizar-core/en/elaborator.md) retain closed families/private probes.
