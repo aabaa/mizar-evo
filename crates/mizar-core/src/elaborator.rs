@@ -5411,6 +5411,14 @@ fn validate_property_carrier_checker_owner(
     }
 
     let identity = checker_owner.carrier_identity();
+    let SourceAnchor::Range(structure_range) = identity.structure_origin().anchor() else {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner);
+    };
+    // The structure end bounds all three retained carrier ranges.
+    let d = structure_range
+        .end
+        .checked_sub(101)
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner)?;
     let symbols = [
         identity.structure_symbol(),
         identity.field_symbol(),
@@ -5443,8 +5451,8 @@ fn validate_property_carrier_checker_owner(
                 checker_owner.module_id(),
                 SourceRange {
                     source_id: checker_owner.source_id(),
-                    start: ranges[index].0,
-                    end: ranges[index].1,
+                    start: d + ranges[index].0,
+                    end: d + ranges[index].1,
                 },
                 paths[index],
             )
@@ -5538,12 +5546,11 @@ fn validate_property_carrier_core_shape(
         CoreProvenancePhase::Checker,
         SOURCE_PROPERTY_CARRIER_CORE_ITEM_PROVENANCE_KEY,
     );
-    let expected_source = CoreSourceRef::direct(SourceRange {
-        source_id: context.source_id(),
-        start: 13,
-        end: 101,
-    })
-    .with_provenance(vec![expected_provenance.clone()]);
+    let SourceAnchor::Range(structure_range) = identity.structure_origin().anchor() else {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    };
+    let expected_source =
+        CoreSourceRef::direct(*structure_range).with_provenance(vec![expected_provenance.clone()]);
     if item.symbol != *identity.structure_symbol()
         || item.kind != CoreItemKind::Structure
         || item.visibility.as_str() != "public"

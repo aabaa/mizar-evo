@@ -482,6 +482,193 @@ fn task264_carrier_core_item_context_is_exact_for_means_and_equals() {
 }
 
 #[test]
+fn task264_carrier_core_context_transports_uniform_prefix_geometry() {
+    use mizar_core::{
+        core_ir::{CoreProvenance, CoreProvenancePhase, CoreSourceRef},
+        elaborator::{
+            DefinitionBoundaryStatus, ElaborationWorkItemKind, ElaborationWorkStatus,
+            SourcePropertyCarrierCoreContextError as CoreError,
+            SourcePropertyCarrierCoreContextProducer as CoreProducer,
+        },
+    };
+
+    let expected_slices = [
+        "struct Task264Carrier where\n    field carrier -> set;\n    property marker -> set;\n  end;",
+        "field carrier -> set;",
+        "property marker -> set;",
+    ];
+    let mut prepared = Vec::new();
+    for (profile_index, (profile, canonical)) in [
+        ("means", SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT),
+        ("equals", SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let layouts = [
+            (
+                "leading_lf",
+                format!("\n{canonical}"),
+                [(14, 102), (46, 67), (72, 95)],
+            ),
+            (
+                "first_definition_gap_comment",
+                canonical.replacen("definition\n", "definition\n:: metamorphics\n", 1),
+                [(29, 117), (61, 82), (87, 110)],
+            ),
+        ];
+        for (layout_index, (layout, source, expected_ranges)) in layouts.into_iter().enumerate() {
+            let (ast, module, shells, symbols, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(
+                    &source,
+                    264_720 + profile_index * 10 + layout_index,
+                );
+            assert_eq!(diagnostics, 0, "{profile}/{layout}");
+            let output = source_property_implementation_output(
+                &ast, module, &shells, &symbols, &source,
+            )
+            .expect("Task264 prefix selector")
+            .unwrap_or_else(|error| panic!("{profile}/{layout}: {error}"));
+            assert!(output.typed_ast.source_type().is_some(), "{profile}/{layout}");
+            let owner = output
+                .typed_ast
+                .source_property_implementation()
+                .expect("Task264 prefix Property owner")
+                .clone();
+            let identity = owner.carrier_identity();
+            let actual_ranges = [
+                match identity.structure_origin().anchor() {
+                    mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+                    _ => panic!("Task264 carrier structure origin must have a source range"),
+                },
+                match identity.field_origin().anchor() {
+                    mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+                    _ => panic!("Task264 carrier field origin must have a source range"),
+                },
+                match identity.property_origin().anchor() {
+                    mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+                    _ => panic!("Task264 carrier property origin must have a source range"),
+                },
+            ];
+            assert_eq!(actual_ranges, expected_ranges, "{profile}/{layout} literal ranges");
+            for ((start, end), expected) in expected_ranges.into_iter().zip(expected_slices) {
+                assert_eq!(source.get(start..end), Some(expected), "{profile}/{layout}");
+            }
+            let context = task264_carrier_core_context(&owner);
+            prepared.push((profile, layout, owner, context));
+        }
+    }
+
+    let outcomes = prepared
+        .iter()
+        .map(|(_, _, owner, context)| CoreProducer::build(context.clone(), owner.clone()))
+        .collect::<Vec<_>>();
+
+    // This native control must succeed before the four uniform Core outcomes are checked.
+    let nonuniform = SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT.replacen(
+        "struct Task264Carrier where",
+        "struct Task264Carrier :: nonuniform\n where",
+        1,
+    );
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&nonuniform, 264_750);
+    assert_eq!(diagnostics, 0);
+    let output = source_property_implementation_output(&ast, module, &shells, &symbols, &nonuniform)
+        .expect("native nonuniform Task264 selector")
+        .expect("native nonuniform Task264 Type and Property output");
+    let nonuniform_owner = output.typed_ast.source_property_implementation().unwrap();
+    let identity = nonuniform_owner.carrier_identity();
+    let nonuniform_ranges = [
+        match identity.structure_origin().anchor() {
+            mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+            _ => panic!("native carrier origin must have a source range"),
+        },
+        match identity.field_origin().anchor() {
+            mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+            _ => panic!("native field origin must have a source range"),
+        },
+        match identity.property_origin().anchor() {
+            mizar_session::SourceAnchor::Range(range) => (range.start, range.end),
+            _ => panic!("native property origin must have a source range"),
+        },
+    ];
+    assert_eq!(nonuniform_ranges, [(13, 116), (60, 81), (86, 109)]);
+    assert_eq!(
+        nonuniform.get(13..116),
+        Some("struct Task264Carrier :: nonuniform\n where\n    field carrier -> set;\n    property marker -> set;\n  end;")
+    );
+    assert_eq!(
+        CoreProducer::build(task264_carrier_core_context(nonuniform_owner), nonuniform_owner.clone())
+            .expect_err("native nonuniform carrier geometry must fail closed"),
+        CoreError::InvalidCheckerOwner
+    );
+
+    assert_eq!(outcomes.len(), 4);
+    assert!(
+        outcomes.iter().all(|outcome| outcome.is_ok()),
+        "all four measured prefix layouts must reach Core: {outcomes:?}"
+    );
+    for ((profile, layout, owner, context), outcome) in prepared.iter().zip(&outcomes) {
+        let handoff = outcome.as_ref().expect("Task264 prefix Core handoff");
+        assert_eq!(handoff.context(), context, "{profile}/{layout}");
+        assert_eq!(handoff.checker_owner(), owner, "{profile}/{layout}");
+        assert_eq!(
+            CoreProducer::build(task264_carrier_core_context(owner), owner.clone())
+                .expect("fresh Task264 Core replay"),
+            *handoff,
+            "{profile}/{layout}"
+        );
+        let identity = owner.carrier_identity();
+        let item_id = handoff.carrier_item();
+        let core = handoff.context();
+        assert_eq!(core.item_registry().id_for_symbol(identity.structure_symbol()), Some(item_id));
+        assert_eq!(core.item_registry().items().len(), 1);
+        let range = match identity.structure_origin().anchor() {
+            mizar_session::SourceAnchor::Range(range) => *range,
+            _ => panic!("Task264 carrier origin must have a source range"),
+        };
+        let source = CoreSourceRef::direct(range).with_provenance(vec![CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            "source-property-carrier-core-item-v1.structure",
+        )]);
+        let item = core.item_registry().items().get(item_id).unwrap();
+        assert_eq!(item.source, source, "{profile}/{layout}");
+        assert!(item.dependencies.is_empty());
+        let dependencies = core.item_registry().dependencies(item_id).unwrap();
+        assert!(dependencies.local.is_empty() && dependencies.external.is_empty() && dependencies.missing.is_empty());
+        assert_eq!(core.source_map().item_sources.get(&item_id), Some(&item.source));
+        let boundary = core.definition_boundaries().get_by_item(item_id).unwrap();
+        assert_eq!(boundary.status, DefinitionBoundaryStatus::PendingBody);
+        assert_eq!(boundary.source, source);
+        assert_eq!(boundary.provenance.as_slice(), source.provenance.as_slice());
+        let work = &core.worklist().entries()[0];
+        assert_eq!(work.kind, ElaborationWorkItemKind::Item(item_id));
+        assert_eq!(work.status, ElaborationWorkStatus::Pending);
+        assert_eq!(work.source, source);
+        assert!(core.dependency_summaries().is_empty() && core.generated_origins().table().is_empty());
+        assert!(core.diagnostics().is_empty() && core.source_map().obligation_sources.is_empty());
+        let binder = core.binder_context();
+        assert!(binder.frames.is_empty() && binder.free_variables.is_empty());
+        assert!(binder.variable_classes.is_empty() && binder.variable_roles.is_empty() && binder.variable_sorts.is_empty());
+        assert!(core.binder_sources().iter().next().is_none() && core.binder_type_facts().is_empty());
+    }
+    for owner in [&prepared[1].2, &prepared[3].2] {
+        for mutation in [
+            Task264CarrierCoreContextMutation::WrongSource,
+            Task264CarrierCoreContextMutation::WrongProvenance,
+            Task264CarrierCoreContextMutation::UnexpectedDependency,
+        ] {
+            assert_eq!(
+                CoreProducer::build(task264_carrier_core_context_with_mutation(owner, mutation), owner.clone())
+                    .expect_err("shifted checker owner still rejects a bad Core seed"),
+                CoreError::InvalidCoreContext,
+                "{mutation:?}"
+            );
+        }
+    }
+}
+
+#[test]
 fn task264_carrier_core_context_mutations_and_foreign_environment_fail_closed() {
     let (ast, module, shells, symbols) = task253_ast_from_source_text(
         SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
@@ -1792,6 +1979,10 @@ fn task264_carrier_core_context_with_mutation(
     mutation: Task264CarrierCoreContextMutation,
 ) -> mizar_core::elaborator::CoreContext {
     let identity = checker_owner.carrier_identity();
+    let structure_range = match identity.structure_origin().anchor() {
+        mizar_session::SourceAnchor::Range(range) => *range,
+        _ => panic!("Task264 carrier structure origin must have a source range"),
+    };
     let summary = mizar_core::elaborator::ResolvedTypedAstSummary::new(
         checker_owner.source_id(),
         checker_owner.module_id().clone(),
@@ -1800,11 +1991,7 @@ fn task264_carrier_core_context_with_mutation(
         summary.with_checker_sites(vec![
             mizar_core::elaborator::CheckerSiteSummary::failed_overload(
                 mizar_checker::resolved_typed_ast::OverloadResolutionId::new(0),
-                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
-                    source_id: checker_owner.source_id(),
-                    start: 13,
-                    end: 101,
-                }),
+                mizar_core::core_ir::CoreSourceRef::direct(structure_range),
             ),
         ])
     } else {
@@ -1826,16 +2013,12 @@ fn task264_carrier_core_context_with_mutation(
             };
         let source_range = if mutation == Task264CarrierCoreContextMutation::WrongSource {
             mizar_session::SourceRange {
-                source_id: checker_owner.source_id(),
-                start: 14,
-                end: 101,
+                source_id: structure_range.source_id,
+                start: structure_range.start + 1,
+                end: structure_range.end,
             }
         } else {
-            mizar_session::SourceRange {
-                source_id: checker_owner.source_id(),
-                start: 13,
-                end: 101,
-            }
+            structure_range
         };
         let source = mizar_core::core_ir::CoreSourceRef::direct(source_range).with_provenance(vec![
             mizar_core::core_ir::CoreProvenance::new(
@@ -1890,11 +2073,7 @@ fn task264_carrier_core_context_with_mutation(
                 task264_carrier_extra_symbol(checker_owner, "task264-carrier-extra"),
                 mizar_core::core_ir::CoreItemKind::Structure,
                 "public",
-                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
-                    source_id: checker_owner.source_id(),
-                    start: 13,
-                    end: 101,
-                })
+                mizar_core::core_ir::CoreSourceRef::direct(structure_range)
                 .with_provenance(vec![mizar_core::core_ir::CoreProvenance::new(
                     mizar_core::core_ir::CoreProvenancePhase::Checker,
                     "source-property-carrier-core-item-v1.extra",
@@ -1914,11 +2093,7 @@ fn task264_carrier_core_context_with_mutation(
                 identity.structure_symbol().clone(),
                 mizar_core::core_ir::GeneratedOriginKind::StableChoice,
                 "task264-carrier-unexpected-generated-origin",
-                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
-                    source_id: checker_owner.source_id(),
-                    start: 13,
-                    end: 101,
-                }),
+                mizar_core::core_ir::CoreSourceRef::direct(structure_range),
                 mizar_core::elaborator::CheckerOwnedProvenance::checker(
                     "task264-carrier-unexpected-generated-origin",
                 ),
@@ -1942,11 +2117,7 @@ fn task264_carrier_core_context_with_mutation(
             .binder_seeds
             .push(mizar_core::elaborator::CoreBinderSeed::new(
                 var,
-                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
-                    source_id: checker_owner.source_id(),
-                    start: 13,
-                    end: 101,
-                }),
+                mizar_core::core_ir::CoreSourceRef::direct(structure_range),
                 mizar_core::elaborator::CheckerOwnedProvenance::checker(
                     "task264-carrier-unexpected-binder",
                 ),

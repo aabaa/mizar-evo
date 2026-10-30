@@ -794,7 +794,7 @@ retainする。Getterは`source_id()`、`module_id()`、`context()`、`checker_o
 `build(CoreContext, SourcePropertyImplementationHandoff)`だけである。
 
 Producerはimmutable three-role receipt、target/property link、source/module、one-item Core
-shapeをrecheckする。Exact whole-symbol lookupがrange `13..101`、dependency/diagnosticなし、
+shapeをrecheckする。Exact whole-symbol lookupが検証済みcarrier range、dependency/diagnosticなし、
 checker provenance `source-property-carrier-core-item-v1.structure`のpublic valid
 `Structure` item 1件を選ぶ。Item source、pending `DefinitionalItem`、pending worklistは
 各1件で、binder/checker site/dependency summary/generated origin/other Core/source-map
@@ -805,6 +805,8 @@ Exact no-final-LF debugは
 `source-property-carrier-core-item-context-v1|module=<package>.<path>|carrier=<whole-fqn>:0:0|item=<id>`。
 Property-implementation shell/field/propertyにはCore itemを作らず、selector/type ownerは
 Core34に残す。Dependency/item-kind/semantic lowering/installer/production route変更なし。
+Carrierの一様座標はstructure origin終端−101のchecked dで3 originを移送する。
+Complete originとowner error順序を保ち、Core sourceには検証済みrangeを使う。
 
 ## Task 34I264 Task264 selector/type context
 

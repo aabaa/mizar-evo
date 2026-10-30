@@ -912,7 +912,7 @@ association row or table is added. The producer's only entry point is
 
 The producer rechecks the immutable three-role carrier receipt, target/property
 link, source/module environment, and one-item Core shape. Exact whole-symbol
-lookup must select one public valid `Structure` item with range `13..101`, no
+lookup must select one public valid `Structure` item at the validated carrier range, no
 dependency or diagnostic, checker provenance
 `source-property-carrier-core-item-v1.structure`, one exact item-source row,
 one pending `DefinitionalItem` boundary, and one pending worklist entry.
@@ -927,6 +927,8 @@ with no final LF. It is non-authoritative. The property-implementation shell,
 field, and property receive no Core item; Core34 retains selector/type
 ownership. No dependency, item-kind change, semantic lowering, installer, or
 production route is introduced.
+Uniform carrier geometry uses checked d=structure origin end−101 for all three origins.
+Complete origins and owner-error precedence remain; Core sources use that validated range.
 
 ## Task 34I264 Task264 Selector/Type Context
 
