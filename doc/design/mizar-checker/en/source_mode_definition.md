@@ -178,22 +178,29 @@ containing Type anchor retains early fallback; a canonical one retains its late
 Arena error. Later validation and replay remain mandatory; no native-source seal,
 comment/CR layout, semantic credit or raw runner selection follows.
 
-Upper coordinates select d only from Context item0=d..d+140, input Mode0=
-d+45..d+135 and an identical installed Mode-RHS owner range, with matching
-source IDs and checked d+140. Missing, unequal or nonrepresentable claims select
-canonical d=0. Header/RHS expression ranges, spelling, metadata, recovery, Arena
-normality and resolver values do not select d; their ordinary checks remain at
-their phases. Build and replay use the same selection. Earlier dependency, shape
-and baseline errors remain earlier; selection grants no normality or source seal.
+Upper coordinates select module start m and body offset d only from Context
+item0=m..d+140, input Mode0=d+45..d+135 and an identical installed Mode-RHS
+owner range, matching source IDs, m<=d and checked Mode.start-45/d+140.
+Missing, unequal or nonrepresentable claims select (0,0). Header/RHS expression
+ranges, spelling, metadata, recovery, Arena normality and resolver values do not
+select the pair. Resolver contribution and Context owners use m..d+140; body
+checks use d. Ordinary validator order and common build/replay selection remain;
+earlier dependency, shape and baseline errors stay earlier. Selection grants no
+normality or source seal.
 
-The native runner also admits compensated SP/TAB/LF headers with relative starts13/29,
-length141 after leading SP/TAB/LF and unchanged relative prefix13/body45+. It independently lexes literal token
-spans and authenticates all normal Surface kinds, dense identities, children and
-structural covers before deriving header ranges, spelling and Arena anchors.
-The same lower/upper producers and resolver provenance checks remain mandatory;
-source/Surface mismatches retain `None`. Value-identical authenticated artifacts
-do not prove parser-instance freshness. The frozen literal oracle remains
-canonical; no internal-comment/CR family or semantic credit follows.
+The native runner authenticates leading SP/TAB/LF and normal SingleLine/MultiLine
+comments only between the definition token and first let. Every gap byte outside
+reported comment spans is SP/TAB/LF; without comments the original exact gap and
+m=d remain mandatory. Header starts stay d+13/d+29, body bytes from d+45 stay
+fixed, and compensated SP/TAB/LF header spelling retains its existing checks.
+Independent literal lexed spans authenticate all normal dense Surface identities,
+kinds, children and structural covers before deriving ranges, spelling and Arena
+anchors: token0 uses m, later tokens use d, containers span m..d+140. All real
+lower/upper producers and resolver provenance checks remain mandatory; source/
+Surface mismatches retain `None`. Value-identical artifacts do not prove parser
+instance freshness. The literal oracle remains canonical. Documentation/prefix/
+header/body comments and CR whitespace remain outside this native family; no
+semantic credit follows.
 
 After the separate Task-249M prerequisite, the exact source consumes only
 these lower profiles:

@@ -880,10 +880,17 @@ impl SourceModeDefinitionProducer {
         if env.module_id() != &input.module_id {
             return Err(SourceModeDefinitionError::SourceIdentityMismatch);
         }
-        let offset = validate_input_shape(&input, source_context, source_type)?;
+        let (module_start, offset) = validate_input_shape(&input, source_context, source_type)?;
         validate_baseline(base_initial_obligations)?;
-        let origin = validate_resolver_definition(&input, env, offset)?;
-        validate_input_rows(&input, source_context, source_type, arena, offset)?;
+        let origin = validate_resolver_definition(&input, env, module_start, offset)?;
+        validate_input_rows(
+            &input,
+            source_context,
+            source_type,
+            arena,
+            module_start,
+            offset,
+        )?;
 
         let mut initial_obligations = base_initial_obligations.clone();
         let property = &input.properties[0];
@@ -1081,7 +1088,7 @@ fn validate_input_shape(
     input: &SourceModeDefinitionHandoffInput,
     source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
-) -> Result<usize, SourceModeDefinitionError> {
+) -> Result<(usize, usize), SourceModeDefinitionError> {
     if input.definitions.len() != 1
         || input.parameters.len() != 2
         || input.applications.len() != 1
@@ -1098,16 +1105,18 @@ fn validate_input_shape(
             .get(crate::source_context::SourceItemId::new(0)),
         source_type.mode_rhs().get(SourceTypeModeRhsId::new(0)),
     ) {
-        let offset = item.source_range.start;
-        if let Some(end) = offset.checked_add(140)
-            && item.source_range == range(input.source_id, offset, end)
+        let module_start = item.source_range.start;
+        if let Some(offset) = definition.start.checked_sub(45)
+            && let Some(end) = offset.checked_add(140)
+            && module_start <= offset
+            && item.source_range == range(input.source_id, module_start, end)
             && definition == range(input.source_id, offset + 45, offset + 135)
             && rhs.definition_range() == definition
         {
-            return Ok(offset);
+            return Ok((module_start, offset));
         }
     }
-    Ok(0)
+    Ok((0, 0))
 }
 
 fn validate_baseline(table: &InitialObligationTable) -> Result<(), SourceModeDefinitionError> {
@@ -1139,6 +1148,7 @@ pub(crate) fn validate_source_mode_definition_absence(
 fn validate_resolver_definition(
     input: &SourceModeDefinitionHandoffInput,
     env: &SymbolEnv,
+    module_start: usize,
     offset: usize,
 ) -> Result<SemanticOrigin, SourceModeDefinitionError> {
     if env.symbols().len() != 1 || env.definitions().len() != 1 || env.contributions().len() != 1 {
@@ -1157,7 +1167,7 @@ fn validate_resolver_definition(
         .contributions()
         .get(row.contribution)
         .ok_or(SourceModeDefinitionError::InvalidResolverDefinition { index: 0 })?;
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, offset, offset + 140));
+    let expected_anchor = SourceAnchor::Range(range(input.source_id, module_start, offset + 140));
     if row.definition.index() != 0
         || row.symbol.module() != &input.module_id
         || symbol.symbol() != &row.symbol
@@ -1213,6 +1223,7 @@ fn validate_input_rows(
     source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
     arena: &TypedArena,
+    module_start: usize,
     offset: usize,
 ) -> Result<(), SourceModeDefinitionError> {
     let source = input.source_id;
@@ -1342,8 +1353,14 @@ fn validate_input_rows(
                 .and_then(|tail| tail.strip_suffix(b";"))
                 .is_some_and(|gap| gap.iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\n')))
     });
-    let local_context =
-        validate_context_profile(input, source_context, arena, qualified_headers, offset)?;
+    let local_context = validate_context_profile(
+        input,
+        source_context,
+        arena,
+        qualified_headers,
+        module_start,
+        offset,
+    )?;
     for (index, row) in input.parameters.iter().enumerate() {
         let (start, end, declaration_start, declaration_end, pattern_start, pattern_end) =
             parameter_ranges[index];
@@ -1475,6 +1492,7 @@ fn validate_context_profile(
     source_context: &SourceBindingContextHandoff,
     arena: &TypedArena,
     qualified_headers: bool,
+    module_start: usize,
     offset: usize,
 ) -> Result<LocalTypeContextId, SourceModeDefinitionError> {
     let source = input.source_id;
@@ -1509,7 +1527,7 @@ fn validate_context_profile(
         || item.shell.index() != 0
         || item.shell_ordinal != 0
         || item.role != SourceItemRole::DefinitionBlock
-        || item.source_range != range(source, offset, offset + 140)
+        || item.source_range != range(source, module_start, offset + 140)
         || item.parent.is_some()
         || item.visibility != SourceItemVisibility::Unspecified
         || item.site != TypedSiteRef::Node(TypedNodeId::new(50))
@@ -1817,8 +1835,15 @@ fn validate_handoff_rows(
             })
             .collect(),
     };
-    let offset = validate_input_shape(&input, source_context, source_type)?;
-    validate_input_rows(&input, source_context, source_type, arena, offset)?;
+    let (module_start, offset) = validate_input_shape(&input, source_context, source_type)?;
+    validate_input_rows(
+        &input,
+        source_context,
+        source_type,
+        arena,
+        module_start,
+        offset,
+    )?;
     validate_obligations(handoff, initial_obligations)
 }
 

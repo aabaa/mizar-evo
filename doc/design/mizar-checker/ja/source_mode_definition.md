@@ -171,20 +171,24 @@ canonical 検査と順序を保つ。Context／Type の方向別 error、移動 
 に対する早期 fallback、canonical anchor の遅い Arena error も維持する。後段検証と replay
 は必須であり、native-source seal、comment／CR layout、意味論や raw runner 選択は増えない。
 
-上位座標の d は Context item0=d..d+140、入力 Mode0=d+45..d+135、同じ範囲の
-installed Mode-RHS owner の3範囲だけから選ぶ。source ID 一致と d+140 の checked 計算を
-必須とし、欠落・不一致・表現不能では canonical d=0 を選ぶ。header／RHS expression 範囲、
-表記、metadata、recovery、Arena 正常性、resolver 値は d の選択に使わず、従来の各段階で
-必ず検査する。build／replay は同じ選択を使い、既存の dependency／shape／baseline error の
-先行順序も保つ。この選択は正常性や source seal を保証しない。
+上位座標の module 開始 m と本文 offset d は Context item0=m..d+140、入力 Mode0=
+d+45..d+135、同じ installed Mode-RHS owner 範囲、source ID 一致、m<=d、checked
+Mode.start-45／d+140 だけから選ぶ。欠落・不一致・表現不能では (0,0) を選ぶ。
+header／RHS expression 範囲、表記、metadata、recovery、Arena 正常性、resolver 値は選択に
+使わない。resolver contribution／Context owner は m..d+140、本文検査は d を使い、
+通常検証の順序と build／replay の共通選択を維持する。既存の dependency／shape／baseline
+error は先行し、この選択は正常性や source seal を保証しない。
 
-native runner は相対開始13／29、先頭 SP／TAB／LF を除く長さ141、相対 prefix13／body45以降を維持した SP／TAB／LF の
-補償 header にも対応する。独立 lexer の literal token span と全正常 Surface node の
-kind／dense identity／children／structural cover を認証し、header 範囲・表記・Arena anchor
-を導出する。同じ lower／upper producer と resolver provenance 検査を必須とし、
-source／Surface 不一致は `None` を維持する。値が同一の認証 artifact は parser instance の
-鮮度を証明しない。固定 literal oracle は canonical のまま保ち、内部 comment／CR
-family、意味論の credit は増えない。
+native runner は先頭 SP／TAB／LF と、definition token から最初の let までだけにある
+正常な SingleLine／MultiLine comment を認証する。報告された comment span 外の gap は
+SP／TAB／LF のみとし、comment がなければ元の厳密な gap と m=d を必須とする。
+header 開始 d+13／d+29、d+45 以降の本文 byte と補償 SP／TAB／LF header 検査は維持する。
+独立 lexer の literal span と全正常 Surface の dense identity／kind／children／structural
+cover を認証して範囲・表記・Arena anchor を導く。token0 は m、後続 token は d、container
+は m..d+140 を使う。実 lower／upper producer と resolver provenance 検査は必須とし、
+source／Surface 不一致は `None` を維持する。同値 artifact は parser instance の鮮度を
+証明しない。固定 literal oracle は canonical のままとし、documentation／先頭／header／本文
+comment と CR 空白は native family の対象外であり、意味論の credit は増えない。
 
 separate Task-249M prerequisite後、exact sourceがconsumeするlower profileは
 次だけである。

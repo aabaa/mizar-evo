@@ -1,5 +1,7 @@
 # mizar-test TODO
 
+- [x] [TEST-MODE-INTERTOKEN-GAP-BRIDGE](../../task_contracts/en/TEST-MODE-INTERTOKEN-GAP-BRIDGE.md).
+
 - [x] [TEST-MODE-LEADING-LINE-BRIDGE](../../task_contracts/en/TEST-MODE-LEADING-LINE-BRIDGE.md).
 
 - [x] [TEST-MODE-NATIVE-HEADER-BRIDGE](../../task_contracts/en/TEST-MODE-NATIVE-HEADER-BRIDGE.md).

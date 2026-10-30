@@ -109,8 +109,11 @@ pub(in crate::runner) enum SourceModeDefinitionRouteMutation {
     WrongModeDefinitionProperty,
     WrongModePropertyJustification,
     UpperContextRange,
+    UpperContextEndRange,
     OverflowUpperContextRange,
     UpperDefinitionRange,
+    UnderflowUpperDefinitionRange,
+    OverflowUpperDefinitionRange,
     UpperRhsOwnerRange,
     MissingModeRhs,
     RelocatedModeRhsExpression,
@@ -648,7 +651,7 @@ fn exact_mode_definition(
         return None;
     }
     let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
-    if !preprocessed.diagnostics.is_empty() || !preprocessed.comments.is_empty() {
+    if !preprocessed.diagnostics.is_empty() {
         return None;
     }
     let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
@@ -695,19 +698,52 @@ fn exact_mode_definition(
         }
         mapped.push(*span);
     }
-    let offset = mapped.first()?.start;
+    let module_start = mapped.first()?.start;
+    let offset = mapped.get(11)?.start.checked_sub(45)?;
     if offset.checked_add(141)? != source_text.len()
+        || module_start > offset
         || !source_text
-            .get(..offset)?
+            .get(..module_start)?
             .bytes()
             .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
-        || source_text.get(offset..offset + 13) != SOURCE_MODE_DEFINITION_TEXT.get(..13)
         || source_text.get(offset + 45..) != SOURCE_MODE_DEFINITION_TEXT.get(45..)
         || mapped[1].start != offset + 13
         || mapped[6].start != offset + 29
-        || !surface_profile_is_exact(ast, &mapped, offset)
+        || !surface_profile_is_exact(ast, &mapped, module_start, offset)
     {
         return None;
+    }
+    if preprocessed.comments.is_empty() {
+        if module_start != offset
+            || source_text.get(offset..offset + 13) != SOURCE_MODE_DEFINITION_TEXT.get(..13)
+        {
+            return None;
+        }
+    } else {
+        let mut previous_end = mapped[0].end;
+        for comment in &preprocessed.comments {
+            if !matches!(
+                comment.kind,
+                mizar_lexer::CommentKind::SingleLine | mizar_lexer::CommentKind::MultiLine
+            ) || comment.span.start < previous_end
+                || comment.span.end < comment.span.start
+                || comment.span.end > mapped[1].start
+                || !source_text
+                    .get(previous_end..comment.span.start)?
+                    .bytes()
+                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+            {
+                return None;
+            }
+            previous_end = comment.span.end;
+        }
+        if !source_text
+            .get(previous_end..mapped[1].start)?
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+        {
+            return None;
+        }
     }
     let mut previous_end = offset + 13;
     for span in &mapped[1..11] {
@@ -727,12 +763,12 @@ fn exact_mode_definition(
     {
         return None;
     }
-    let root = exact_node(ast, 53, SurfaceNodeKind::Root, offset, offset + 140)?;
+    let root = exact_node(ast, 53, SurfaceNodeKind::Root, module_start, offset + 140)?;
     let definition_block = exact_node(
         ast,
         50,
         SurfaceNodeKind::DefinitionBlockItem,
-        offset,
+        module_start,
         offset + 140,
     )?;
     let mode = exact_node(
@@ -798,6 +834,7 @@ fn exact_mode_definition(
 fn surface_profile_is_exact(
     ast: &SurfaceAst,
     mapped: &[mizar_lexer::SourceSpan],
+    module_start: usize,
     offset: usize,
 ) -> bool {
     ast.canonical_bytes().is_some()
@@ -818,11 +855,15 @@ fn surface_profile_is_exact(
                     && !actual.recovered
                     && (matches!(index, 1..=10 | 34..=41)
                         || actual.range
-                            == source_range(
-                                ast.source_id,
-                                offset + expected.start,
-                                offset + expected.end,
-                            ))
+                            == match index {
+                                0 => source_range(ast.source_id, module_start, module_start + 10),
+                                50..=53 => source_range(ast.source_id, module_start, offset + 140),
+                                _ => source_range(
+                                    ast.source_id,
+                                    offset + expected.start,
+                                    offset + expected.end,
+                                ),
+                            })
                     && actual
                         .children
                         .iter()
@@ -1330,6 +1371,9 @@ fn task248_context(
         SourceModeDefinitionRouteMutation::UpperContextRange => {
             input.items[0].source_range.start += 1
         }
+        SourceModeDefinitionRouteMutation::UpperContextEndRange => {
+            input.items[0].source_range.end -= 1
+        }
         SourceModeDefinitionRouteMutation::OverflowUpperContextRange => {
             let start = usize::MAX - 139;
             input.items[0].source_range = source_range(ast.source_id, start, usize::MAX);
@@ -1542,6 +1586,7 @@ fn build_output(
     let arena = task262_arena(ast, mutation)?;
     let context_mutation = match mutation {
         SourceModeDefinitionRouteMutation::UpperContextRange
+        | SourceModeDefinitionRouteMutation::UpperContextEndRange
         | SourceModeDefinitionRouteMutation::OverflowUpperContextRange => {
             SourceModeDefinitionRouteMutation::None
         }
@@ -1621,6 +1666,13 @@ fn build_output(
     match mutation {
         SourceModeDefinitionRouteMutation::UpperDefinitionRange => {
             mode_input.definitions[0].source_range.end -= 1
+        }
+        SourceModeDefinitionRouteMutation::UnderflowUpperDefinitionRange => {
+            mode_input.definitions[0].source_range = source_range(ast.source_id, 44, 134)
+        }
+        SourceModeDefinitionRouteMutation::OverflowUpperDefinitionRange => {
+            mode_input.definitions[0].source_range =
+                source_range(ast.source_id, usize::MAX - 94, usize::MAX - 4)
         }
         SourceModeDefinitionRouteMutation::MalformedModeParameter => {
             mode_input.parameters[0].spelling =
