@@ -263,6 +263,11 @@ zero-semantic/zero-credit private-probe slice; production installation,
 
 ### Core-33 Task261 attribute item context
 
+Current uniform coordinates use checked d=source-item end−115 and require source-item start<=d.
+Only inner profile ranges translate; current source identity and all non-coordinate checks remain.
+Arithmetic/geometry refusals stay static InvalidCheckerOwner in the existing owner phase.
+This scalar transport supplies no source authentication, semantic ownership or installation credit.
+
 The frozen [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
 owns the immutable `SourceAttributeCoreItemAssociation` row/table,
 `SourceAttributeCoreContextHandoff`, non-exhaustive error, producer, and their

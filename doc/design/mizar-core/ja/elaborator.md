@@ -235,6 +235,11 @@ profile rangeだけをdで移動し、source identityと非座標検査は全て
 
 ### Core-33 Task261 attribute item context
 
+現在の一様座標はchecked d=source-item終端−115を使い、source-item開始<=dを要求する。
+内側profile rangeだけを移動し、current source identityと全ての非座標検査を保つ。
+算術・geometry拒否は従来owner段階のstatic InvalidCheckerOwnerのままとする。
+このscalar transportはsource認証、意味論的owner帰属、installation creditを与えない。
+
 Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、immutable `SourceAttributeCoreItemAssociation` row/table、`SourceAttributeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task261 checker handoffをby-valueでretainし、complete validation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだordinary public `Attribute` item 1件と、`SourceAttributeDefinitionId`をkeyとするsource-ordered association row 1件であり、source order、inner definition range、versioned provenanceはjoin keyではなくvalidation対象である。Implementation/verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family API、`CoreContextInput`/Typed/Resolved/CoreIr slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
 
 ### Core-33 Task262 mode item context

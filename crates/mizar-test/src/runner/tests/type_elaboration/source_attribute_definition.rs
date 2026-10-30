@@ -1301,6 +1301,197 @@ fn task261_core_item_context_association_is_exact_and_deterministic() {
 }
 
 #[test]
+fn task261_core_item_context_transports_native_uniform_prefix_geometry() {
+    let leading_layout = SOURCE_ATTRIBUTE_DEFINITION_TEXT
+        .replacen("definition\n", "definition\n \t\n", 1);
+    let sources = [
+        (
+            "line-comment prefix",
+            format!(":: p\n{SOURCE_ATTRIBUTE_DEFINITION_TEXT}"),
+            (5, 120),
+            (50, 115),
+            [(18, 31), (34, 47)],
+            (83, 84),
+            (109, 114),
+        ),
+        (
+            "leading layout",
+            leading_layout,
+            (0, 118),
+            (48, 113),
+            [(16, 29), (32, 45)],
+            (81, 82),
+            (107, 112),
+        ),
+    ];
+    let mut observed = Vec::new();
+    for (ordinal, (name, source, outer, inner, parameters, subject, definiens)) in
+        sources.into_iter().enumerate()
+    {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 261_300 + ordinal);
+        assert_eq!(diagnostics, 0, "{name} native diagnostics");
+        let output = source_attribute_definition_output(
+            &ast, module, &shells, &symbols, &source,
+        )
+        .expect("native Attribute selector")
+        .unwrap_or_else(|error| panic!("{name} native Attribute output: {error}"));
+        let typed = &output.typed_ast;
+        let source_context = typed.source_context().expect("public Context").clone();
+        let checker_owner = typed
+            .source_attribute_definition()
+            .expect("public Attribute")
+            .clone();
+        let definition = checker_owner
+            .definitions()
+            .get(mizar_checker::source_attribute_definition::SourceAttributeDefinitionId::new(0))
+            .expect("native Attribute definition");
+        let outer_range = task261_range(ast.source_id, outer.0, outer.1);
+        let inner_range = task261_range(ast.source_id, inner.0, inner.1);
+        assert_eq!(source_context.items().len(), 1, "{name} source item count");
+        assert_eq!(source_context.items().get(mizar_checker::source_context::SourceItemId::new(0)).unwrap().source_range, outer_range, "{name} literal outer range");
+        assert_eq!(definition.source_range(), inner_range, "{name} literal inner range");
+        let expected_outer_bytes = if name == "line-comment prefix" {
+            &SOURCE_ATTRIBUTE_DEFINITION_TEXT[..115]
+        } else {
+            source.trim_end_matches('\n')
+        };
+        assert_eq!(&source[outer.0..outer.1], expected_outer_bytes, "{name} physical outer bytes");
+        assert_eq!(&source[inner.0..inner.1], "attr Task261AttributeDefinition: x is task261_marked means x = y;", "{name} physical Attribute bytes");
+        assert_eq!(
+            checker_owner.parameters().iter().map(|(_, row)| (row.source_range().start, row.source_range().end)).collect::<Vec<_>>(),
+            parameters,
+            "{name} literal parameter ranges"
+        );
+        assert_eq!(
+            checker_owner.parameters().iter().map(|(_, row)| &source[row.source_range().start..row.source_range().end]).collect::<Vec<_>>(),
+            vec!["let x be set;", "let y be set;"],
+            "{name} physical parameter bytes"
+        );
+        let subject_row = checker_owner.subjects().get(definition.subject()).expect("native subject");
+        assert_eq!(subject_row.source_range(), task261_range(ast.source_id, subject.0, subject.1), "{name} literal subject range");
+        assert_eq!(&source[subject.0..subject.1], "x", "{name} physical subject byte");
+        let definiens_row = checker_owner.definientia().get(definition.definiens()).expect("native definiens");
+        assert_eq!(definiens_row.source_range(), task261_range(ast.source_id, definiens.0, definiens.1), "{name} literal definiens range");
+        assert_eq!(&source[definiens.0..definiens.1], "x = y", "{name} physical definiens bytes");
+
+        let source_bindings = task261_source_binding_core_handoff(&source_context, &checker_owner);
+        let result = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+            source_bindings.clone(), source_context.clone(), checker_owner.clone(),
+        );
+        observed.push((name, inner_range, source_context, checker_owner, source_bindings, result));
+    }
+
+    assert!(
+        observed.iter().all(|case| case.5.is_ok()),
+        "both uniform native layouts must build public Core handoffs: {:?}",
+        observed.iter().map(|case| &case.5).collect::<Vec<_>>()
+    );
+    for (name, inner_range, source_context, checker_owner, source_bindings, result) in &observed {
+        let core = result.as_ref().expect("uniform public Core handoff");
+        assert_eq!(core.source_context(), source_context, "{name} retained Context");
+        assert_eq!(core.checker_owner(), checker_owner, "{name} retained owner");
+        assert_eq!(core.source_bindings(), source_bindings, "{name} retained 33LB");
+        let replay = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+            source_bindings.clone(), source_context.clone(), checker_owner.clone(),
+        )
+        .expect("fresh uniform Core replay");
+        assert_eq!(core, &replay, "{name} deterministic replay");
+
+        let definition = checker_owner.definitions().get(
+            mizar_checker::source_attribute_definition::SourceAttributeDefinitionId::new(0),
+        ).expect("uniform checker definition");
+        let source_item = source_context.context_links().get(definition.context()).unwrap().item.unwrap();
+        assert_eq!(core.items().len(), 1, "{name} one whole-symbol association");
+        let association = core.items().get(definition.id()).expect("uniform association");
+        let core_item = core.context().item_registry().id_for_symbol(definition.symbol()).expect("uniform Core item");
+        assert_eq!((association.definition(), association.source_item(), association.symbol(), association.core_item()), (definition.id(), source_item, definition.symbol(), core_item), "{name} whole SymbolId association");
+        let provenance = vec![mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            "source-attribute-core-item-v1.definition.0",
+        )];
+        let expected_source = mizar_core::core_ir::CoreSourceRef::direct(*inner_range).with_provenance(provenance.clone());
+        let context = core.context();
+        let item = context.item_registry().items().get(core_item).expect("uniform Core row");
+        assert_eq!(item.symbol, *definition.symbol(), "{name} Core symbol");
+        assert_eq!(item.source, expected_source, "{name} Core provenance");
+        assert!(item.dependencies.is_empty() && item.diagnostics.is_empty(), "{name} empty item semantics");
+        let boundary = context.definition_boundaries().get_by_item(core_item).expect("uniform pending boundary");
+        assert_eq!(boundary.status, mizar_core::elaborator::DefinitionBoundaryStatus::PendingBody, "{name} PendingBody");
+        assert_eq!(boundary.source, expected_source, "{name} boundary provenance");
+        assert_eq!(boundary.provenance.as_slice(), provenance.as_slice(), "{name} boundary checker provenance");
+        assert_eq!(context.source_map().item_sources.get(&core_item), Some(&expected_source), "{name} item source map");
+        assert_eq!(context.worklist().entries(), &[mizar_core::elaborator::ElaborationWorkItem {
+            kind: mizar_core::elaborator::ElaborationWorkItemKind::Item(core_item),
+            status: mizar_core::elaborator::ElaborationWorkStatus::Pending,
+            source: expected_source,
+            diagnostics: Vec::new(),
+            checker_diagnostics: Vec::new(),
+        }], "{name} pending worklist provenance");
+        assert!(context.dependency_summaries().is_empty() && context.generated_origins().table().is_empty() && context.diagnostics().is_empty(), "{name} no semantic outputs");
+        let source_map = context.source_map();
+        assert!(source_map.term_sources.is_empty() && source_map.formula_sources.is_empty() && source_map.definition_sources.is_empty() && source_map.proof_sources.is_empty() && source_map.algorithm_sources.is_empty() && source_map.generated_sources.is_empty() && source_map.obligation_sources.is_empty(), "{name} empty semantic maps and obligations");
+    }
+
+    let (_, _, source_context, checker_owner, _, _) = &observed[0];
+    for mutation in [Task261CoreContextMutation::WrongSource, Task261CoreContextMutation::WrongProvenance] {
+        let stale_bindings = task261_source_binding_core_handoff_with_mutation(source_context, checker_owner, mutation);
+        assert_eq!(
+            mizar_core::elaborator::SourceAttributeCoreContextProducer::build(stale_bindings, source_context.clone(), checker_owner.clone()),
+            Err(mizar_core::elaborator::SourceAttributeCoreContextError::InvalidCoreContext),
+            "shifted owner-valid Core mutation {mutation:?}"
+        );
+    }
+    let stale_context_input = mizar_checker::source_context::SourceBindingContextInput {
+        source_id: source_context.source_id(),
+        module_id: source_context.module_id().clone(),
+        module_site: source_context.local_contexts().get(mizar_checker::typed_ast::LocalTypeContextId::new(0)).expect("current module site").owner.clone(),
+        items: source_context.items().iter().map(|(_, item)| mizar_checker::source_context::SourceItemInput {
+            shell: item.shell, shell_ordinal: item.shell_ordinal, role: item.role,
+            module_id: source_context.module_id().clone(), source_range: task261_range(source_context.source_id(), 0, 115),
+            parent: item.parent, visibility: item.visibility, site: item.site.clone(),
+            local_scope: item.local_scope.clone(), recovery: item.recovery,
+        }).collect(),
+        bindings: source_context.declarations().iter().map(|(_, declaration)| {
+            let item = source_context.items().get(declaration.item).expect("current binding item");
+            let binding = source_context.binding_env().bindings().get(declaration.binding).expect("current binding row");
+            mizar_checker::source_context::SourceBindingSiteInput {
+                shell: item.shell,
+                context_owner: mizar_checker::source_context::SourceBindingContextOwner::Shell(item.shell),
+                source_ordinal: declaration.source_ordinal, spelling: declaration.spelling.clone(),
+                declaration_range: declaration.declaration_range, written_type_range: declaration.written_type_range,
+                site: declaration.site.clone(), role: declaration.role.clone(), recovery: binding.recovery,
+            }
+        }).collect(),
+    };
+    let stale_context = mizar_checker::source_context::SourceBindingContextProducer::build(stale_context_input)
+        .expect("public same-source stale Context producer")
+        .into_complete().expect("complete stale Context").into_handoff();
+    assert_eq!(stale_context.binding_env(), source_context.binding_env(), "same-source stale Context BindingEnv");
+    assert_ne!(&stale_context, source_context, "same-source stale Context geometry");
+    let stale_bindings = task261_source_binding_core_handoff(&stale_context, checker_owner);
+    assert_eq!(
+        mizar_core::elaborator::SourceAttributeCoreContextProducer::build(stale_bindings, stale_context, checker_owner.clone()),
+        Err(mizar_core::elaborator::SourceAttributeCoreContextError::InvalidCheckerOwner),
+        "same-source stale Context/owner geometry"
+    );
+
+    let nonuniform_source = SOURCE_ATTRIBUTE_DEFINITION_TEXT.replacen("x = y", "x :: equality\n = y", 1);
+    let (ast, module, shells, symbols, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(&nonuniform_source, 261_310);
+    assert_eq!(diagnostics, 0, "nonuniform native diagnostics");
+    let output = source_attribute_definition_output(&ast, module, &shells, &symbols, &nonuniform_source)
+        .expect("nonuniform native Attribute selector").expect("nonuniform native Attribute output");
+    let source_context = output.typed_ast.source_context().expect("nonuniform public Context").clone();
+    let checker_owner = output.typed_ast.source_attribute_definition().expect("nonuniform public Attribute").clone();
+    let source_bindings = task261_source_binding_core_handoff(&source_context, &checker_owner);
+    assert_eq!(
+        mizar_core::elaborator::SourceAttributeCoreContextProducer::build(source_bindings, source_context, checker_owner),
+        Err(mizar_core::elaborator::SourceAttributeCoreContextError::InvalidCheckerOwner),
+        "native-supported nonuniform geometry remains refused"
+    );
+}
+
+#[test]
 fn task261_core_item_context_default_deny_mutations_and_foreign_environment() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_210);

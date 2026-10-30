@@ -3393,6 +3393,12 @@ fn validate_attribute_checker_owner<'a>(
         .items()
         .get(SourceItemId::new(0))
         .ok_or(SourceAttributeCoreContextError::InvalidCheckerOwner)?;
+    // All remaining profile endpoints are at most 115, bounding each translated addition.
+    let d = source_item
+        .source_range
+        .end
+        .checked_sub(115)
+        .ok_or(SourceAttributeCoreContextError::InvalidCheckerOwner)?;
     if source_item.id != SourceItemId::new(0)
         || source_item.shell.index() != 0
         || source_item.role != SourceItemRole::DefinitionBlock
@@ -3407,12 +3413,8 @@ fn validate_attribute_checker_owner<'a>(
         || source_item.predecessor.is_some()
         || source_item.binding_context != BindingContextId::new(1)
         || source_item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
-        || source_item.source_range
-            != (SourceRange {
-                source_id: source_context.source_id(),
-                start: 0,
-                end: 115,
-            })
+        || source_item.source_range.source_id != source_context.source_id()
+        || source_item.source_range.start > d
         || source_item.site
             != mizar_checker::typed_ast::TypedSiteRef::Node(
                 mizar_checker::typed_ast::TypedNodeId::new(41),
@@ -3454,18 +3456,18 @@ fn validate_attribute_checker_owner<'a>(
     for (index, (id, declaration)) in declaration_rows.iter().enumerate() {
         let expected_source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].0,
-            end: expected_parameter_ranges[index].1,
+            start: d + expected_parameter_ranges[index].0,
+            end: d + expected_parameter_ranges[index].1,
         };
         let expected_declaration_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].2,
-            end: expected_parameter_ranges[index].3,
+            start: d + expected_parameter_ranges[index].2,
+            end: d + expected_parameter_ranges[index].3,
         };
         let expected_written_type_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].4,
-            end: expected_parameter_ranges[index].5,
+            start: d + expected_parameter_ranges[index].4,
+            end: d + expected_parameter_ranges[index].5,
         };
         let SourceBindingSiteRole::DefinitionParameter { local } = &declaration.role else {
             return Err(SourceAttributeCoreContextError::InvalidCheckerOwner);
@@ -3594,8 +3596,8 @@ fn validate_attribute_checker_owner<'a>(
         .ok_or(SourceAttributeCoreContextError::InvalidCheckerOwner)?;
     let definition_range = SourceRange {
         source_id: source_context.source_id(),
-        start: 45,
-        end: 110,
+        start: d + 45,
+        end: d + 110,
     };
     if definition.id() != SourceAttributeDefinitionId::new(0)
         || definition.definition().index() != 0
@@ -3629,8 +3631,8 @@ fn validate_attribute_checker_owner<'a>(
         let declaration = declaration_rows[index].1;
         let expected_source_range = SourceRange {
             source_id: source_context.source_id(),
-            start: expected_parameter_ranges[index].0,
-            end: expected_parameter_ranges[index].1,
+            start: d + expected_parameter_ranges[index].0,
+            end: d + expected_parameter_ranges[index].1,
         };
         if parameter_id.index() != index
             || parameter.id().index() != index
@@ -3660,8 +3662,8 @@ fn validate_attribute_checker_owner<'a>(
         || subject.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 78,
-                end: 79,
+                start: d + 78,
+                end: d + 79,
             })
         || subject.context() != BindingContextId::new(1)
         || subject.recovery() != SourceAttributeDefinitionRecovery::Normal
@@ -3685,8 +3687,8 @@ fn validate_attribute_checker_owner<'a>(
         || definiens.source_range()
             != (SourceRange {
                 source_id: source_context.source_id(),
-                start: 104,
-                end: 109,
+                start: d + 104,
+                end: d + 109,
             })
         || definiens.context() != BindingContextId::new(1)
         || definiens.recovery() != SourceAttributeDefinitionRecovery::Normal
