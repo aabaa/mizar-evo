@@ -12,6 +12,7 @@ crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement
 native B2：全6個の元variable occurrenceを認めた三つのequalityの実operandへjoinし、native ordinal `0..5`と各実use scopeを保持する。全occurrenceの網羅性はcontext数と独立に検証し、moduleと単一proofのcontext数からreference数を導かない。
 native B3は同じ全occurrence認証により全5個の実reference use ordinal `0..4`と実lexical scopeを保持する。equality/witness operand censusは[intake](type_checker.md#original-source-reserved-statement-inputs)が所有し、このproducerはsyntax-freeを保つ。witness targetは実siteから導き、全atomic edge/requestから除外し、固定reference IDやformula index算術を使わない。
 native B3Nは同じreserved occurrence五つとnative clockを保持する。name tokenはprimary term/referenceでもBindingIdでもない。定義roleとname use拒否はintakeが所有し、このproducerへnamed-take構文やabbreviation意味処理を加えない。
+native mixed B3M1は実reserved occurrence全6件と実Resolver clock/lexical scopeを保持する。二つのwitness operandは実primary/reference rowであり、nameはこのtransportに含めない。二witness censusとname use拒否はintakeが所有するため、このproducerとpublic挙動は変更しない。
 
 ## 目的とauthority
 

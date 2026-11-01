@@ -1,8 +1,8 @@
 use super::type_elaboration::{
     SOURCE_STATEMENT_B3M1_TEXT as TASK269B_SOURCE_TEXT,
-    SOURCE_STATEMENT_B3N_TEXT as TASK269A_SOURCE_TEXT, SourceProofLocalDeclarationRouteMutation,
-    SourceProofLocalDeclarationRouteOutput, source_proof_local_declaration_output,
-    source_proof_local_declaration_output_with_mutation,
+    SOURCE_STATEMENT_B3N_TEXT as TASK269A_SOURCE_TEXT,
+     source_proof_local_declaration_output,
+
     source_statement_output_with_source as task269a_lower_output,
     source_statement_transport_detail_keys as task269a_legacy_detail_keys,
 };
@@ -252,161 +252,39 @@ fn assert_task269b_exact_frontend_binding_transaction_and_debug() {
     assert_eq!(diagnostics, 0);
     assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (56, Some(55)));
 
-    let output =
-        source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT)
-            .expect("Task269B exact selector")
-            .expect("Task269B exact route");
-    let handoff = output
-        .typed_ast
-        .source_proof_local_declaration()
-        .expect("Task269B typed owner");
-    let statement = output
-        .typed_ast
-        .source_statement()
-        .expect("Task269B lower statement");
-    let witnesses = output
-        .typed_ast
-        .source_statement_witnesses()
-        .expect("Task269B lower witnesses");
-    let primary = output
-        .typed_ast
-        .source_term()
-        .expect("Task269B lower primary terms");
-    assert_eq!(handoff.base_binding_fingerprint(), statement.binding_env().debug_text());
-    assert_eq!(handoff.statement_fingerprint(), statement.debug_text());
-    assert_eq!(handoff.witness_fingerprint(), witnesses.debug_text());
-    assert_eq!(handoff.primary_term_fingerprint(), primary.debug_text());
-    assert_eq!(
-        handoff.final_binding_fingerprint(),
-        handoff.binding_env().debug_text()
-    );
+    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
+    let (typed, resolved) = task258_native_output(&ast, &module);
+    let statement = typed.source_statement().expect("native mixed lower statement");
+    let witnesses = typed.source_statement_witnesses().expect("native mixed lower witnesses");
+    let primary = typed.source_term().expect("native mixed primary terms");
     assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (2, 1));
-    let named = witnesses
-        .witnesses()
-        .get(mizar_checker::source_statement::SourceStatementWitnessId::new(0))
-        .expect("Task269B named witness");
-    let unnamed = witnesses
-        .witnesses()
-        .get(mizar_checker::source_statement::SourceStatementWitnessId::new(1))
-        .expect("Task269B unnamed witness");
-    assert_eq!(named.name().map(|id| id.index()), Some(0));
-    assert_eq!(named.term(), mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(2)));
-    assert_eq!((named.source_ordinal(), named.ordinal()), (1, 0));
-    assert_eq!(unnamed.name(), None);
-    assert_eq!(unnamed.term(), mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(3)));
-    assert_eq!((unnamed.source_ordinal(), unnamed.ordinal()), (1, 1));
-
-    assert_eq!(handoff.declarations().len(), 1);
-    assert_eq!(
-        (
-            handoff.binding_env().contexts().len(),
-            handoff.binding_env().bindings().len(),
-            handoff.binding_env().diagnostics().len(),
-        ),
-        (2, 2, 0),
-    );
-    let proof_context = handoff
-        .binding_env()
-        .contexts()
-        .get(mizar_checker::binding_env::BindingContextId::new(1))
-        .expect("Task269B proof context");
-    assert_eq!(
-        proof_context
-            .bindings
-            .iter()
-            .map(|id| id.index())
-            .collect::<Vec<_>>(),
-        [1]
-    );
-    assert_eq!(
-        proof_context
-            .visible_bindings
-            .iter()
-            .map(|id| id.index())
-            .collect::<Vec<_>>(),
-        [0, 1]
-    );
-    assert!(
-        handoff
-            .binding_env()
-            .bindings()
-            .get(mizar_checker::binding_env::BindingId::new(2))
-            .is_none(),
-        "Task269B unnamed witness must not allocate a checker binding"
-    );
-    let declaration = handoff
-        .declarations()
-        .get(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationId::new(0))
-        .expect("Task269B declaration");
-    assert_eq!(declaration.witness().index(), 0);
-    assert_eq!(declaration.name().index(), 0);
-    assert_eq!(declaration.rhs(), mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(2)));
-    assert_eq!(declaration.binding().index(), 1);
-    let binding = handoff
-        .binding_env()
-        .bindings()
-        .get(mizar_checker::binding_env::BindingId::new(1))
-        .expect("Task269B checker binding");
-    assert_eq!(binding.spelling, "y");
-    assert_eq!(binding.kind, mizar_checker::binding_env::BindingKind::LocalAbbreviation);
-    assert_eq!((binding.declaration_range.start, binding.declaration_range.end), (84, 85));
-    assert_eq!(binding.visible_after_ordinal, 1);
-    assert!(binding.captured.identities().is_empty());
-    assert!(matches!(
-        &binding.identity,
-        mizar_checker::binding_env::BinderIdentity::ResolverLocal {
-            scope,
-            ordinal: 1,
-            declaration_range,
-        } if scope.path() == [0]
-            && declaration_range.start == 84
-            && declaration_range.end == 85
-    ));
-    assert!(matches!(
-        handoff.binding_env().lookup(&mizar_checker::binding_env::BindingLookupSite::new(
-            "y",
-            mizar_checker::binding_env::BindingContextId::new(1),
-            Some(mizar_resolve::names::LocalTermScope::new(vec![0])),
-            1,
-        )),
-        Ok(mizar_checker::binding_env::BindingLookupResult::ForwardReference {
-            candidates,
-            ..
-        }) if candidates == [mizar_checker::binding_env::BindingId::new(1)]
-    ));
-    assert_eq!(
-        handoff.binding_env().lookup(&mizar_checker::binding_env::BindingLookupSite::new(
-            "y",
-            mizar_checker::binding_env::BindingContextId::new(1),
-            Some(mizar_resolve::names::LocalTermScope::new(vec![0])),
-            2,
-        )),
-        Ok(mizar_checker::binding_env::BindingLookupResult::Local(
-            mizar_checker::binding_env::BindingId::new(1)
-        ))
-    );
-    assert_eq!(
-        handoff.debug_text(),
-        format!(
-            concat!(
-                "source-proof-local-declaration-debug-v1\n",
-                "module: {}::{}\n",
-                "base-binding-fingerprint: {:?}\n",
-                "statement-fingerprint: {:?}\n",
-                "witness-fingerprint: {:?}\n",
-                "primary-term-fingerprint: {:?}\n",
-                "declaration#0 kind=named-witness witness=0 name=0 rhs=primary#2 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
-                "final-binding-fingerprint: {:?}\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            handoff.base_binding_fingerprint(),
-            handoff.statement_fingerprint(),
-            handoff.witness_fingerprint(),
-            handoff.primary_term_fingerprint(),
-            handoff.final_binding_fingerprint(),
-        )
-    );
+    for (index, (_, row)) in witnesses.witnesses().iter().enumerate() {
+        assert_eq!(row.term(), mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(2 + index)));
+        assert_eq!((row.source_ordinal(), row.ordinal()), (1, index));
+        assert_eq!(row.kind(), if index == 0 { mizar_checker::source_statement::SourceStatementWitnessKind::Named } else { mizar_checker::source_statement::SourceStatementWitnessKind::Unnamed });
+        assert_eq!(row.name().map(|id| id.index()), if index == 0 { Some(0) } else { None });
+    }
+    let name = witnesses.names().get(mizar_checker::source_statement::SourceStatementWitnessNameId::new(0)).unwrap();
+    assert_eq!((name.witness().index(), name.site().node().index(), name.source_range().start, name.source_range().end, name.spelling()), (0, 13, 84, 85, "y"));
+    assert_eq!(primary.references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), [0, 1, 2, 3, 4, 5]);
+    assert!(primary.terms().iter().all(|(_, term)| term.spelling() == "x"));
+    let bindings = statement.binding_env();
+    assert_eq!((bindings.contexts().len(), bindings.bindings().len(), bindings.diagnostics().len()), (2, 1, 0));
+    let reserve = bindings.bindings().get(mizar_checker::binding_env::BindingId::new(0)).unwrap();
+    assert_eq!(reserve.kind, mizar_checker::binding_env::BindingKind::ReservedVariable);
+    assert_eq!(reserve.status, mizar_checker::binding_env::BindingStatus::Active);
+    assert_eq!(reserve.visible_after_ordinal, 0);
+    assert!(bindings.bindings().get(mizar_checker::binding_env::BindingId::new(1)).is_none());
+    let context = bindings.contexts().get(mizar_checker::binding_env::BindingContextId::new(1)).unwrap();
+    assert!(context.bindings.is_empty());
+    assert_eq!(context.visible_bindings, [mizar_checker::binding_env::BindingId::new(0)]);
+    assert!(typed.source_proof_local_declaration().is_none());
+    assert!(resolved.source_proof_local_declaration().is_none());
+    assert_eq!(resolved.source_statement(), Some(statement));
+    assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+    assert!(!typed.debug_text().contains("source-proof-local-declaration-debug-v1"));
+    assert!(!resolved.debug_text().contains("source-proof-local-declaration-debug-v1"));
+    assert_eq!(task258_native_output(&ast, &module), (typed, resolved));
 }
 
 #[test]
@@ -425,48 +303,18 @@ fn task269a_resolver_local_row_and_lower_mutations_fail_at_the_owner() {
     ), Err(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationError::DependencyMismatch));
     assert_eq!((typed, resolved), before);
     assert_eq!(task258_native_output(&ast, &module), before);
-    for (profile, source_text, source_ordinal) in [
-        ("Task269B", TASK269B_SOURCE_TEXT, 269_101),
-    ] {
-        let (ast, module, _shells, symbols) =
-            task253_ast_from_source_text(source_text, source_ordinal);
-        for mutation in [
-            SourceProofLocalDeclarationRouteMutation::WrongLocalSpelling,
-            SourceProofLocalDeclarationRouteMutation::WrongLocalScope,
-            SourceProofLocalDeclarationRouteMutation::WrongLocalRange,
-            SourceProofLocalDeclarationRouteMutation::WrongLocalVisibleAfter,
-            SourceProofLocalDeclarationRouteMutation::WrongWitness,
-            SourceProofLocalDeclarationRouteMutation::WrongName,
-            SourceProofLocalDeclarationRouteMutation::WrongRhs,
-            SourceProofLocalDeclarationRouteMutation::WrongBindingContext,
-            SourceProofLocalDeclarationRouteMutation::WrongSourceOrdinal,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerStatement,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerWitness,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerPrimary,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaCardinality,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRoot,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaKind,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaAnchor,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaChildren,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaResolvedNode,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRecovery,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaTyping,
-            SourceProofLocalDeclarationRouteMutation::WrongLowerArenaLinks,
-        ] {
-            assert!(
-                source_proof_local_declaration_output_with_mutation(
-                    &ast,
-                    module.clone(),
-                    &symbols,
-                    source_text,
-                    mutation,
-                )
-                .unwrap_or_else(|| panic!("{profile} exact mutation selector"))
-                .is_err(),
-                "{profile} mutation {mutation:?} unexpectedly succeeded"
-            );
-        }
-    }
+    // All historical B lower and declaration faults are retained at their private producers.
+    let (ast, module, _, symbols) = task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_101);
+    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
+    let (typed, resolved) = task258_native_output(&ast, &module);
+    let before = (typed.clone(), resolved.clone());
+    assert_eq!(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer::build(
+        mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationHandoffInput {
+            source_id: ast.source_id, module_id: module.clone(), declarations: Vec::new(),
+        }, typed.source_statement().unwrap(), typed.source_statement_witnesses().unwrap(), typed.source_term().unwrap(), typed.nodes(),
+    ), Err(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationError::DependencyMismatch));
+    assert_eq!((typed, resolved), before);
+    assert_eq!(task258_native_output(&ast, &module), before);
 }
 
 #[test]
@@ -494,9 +342,11 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
             source_proof_local_declaration_output(&ast, module.clone(), &symbols, &source).is_none(),
             "Task269A selected near miss {ordinal}"
         );
-        if [0, 1, 4].contains(&ordinal) {
+        if [0, 1, 3, 4].contains(&ordinal) {
             let (typed, resolved) = task258_native_output(&ast, &module);
-            assert_eq!(typed.source_statement_witnesses().unwrap().names().len(), 1);
+            let witnesses = typed.source_statement_witnesses().unwrap();
+            assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 3 { 2 } else { 1 }, 1));
+            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
             assert!(typed.source_proof_local_declaration().is_none());
             assert!(resolved.source_proof_local_declaration().is_none());
         }
@@ -521,9 +371,17 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
         let (ast, module, _shells, symbols) =
             task253_ast_from_source_text(&source, 269_220 + ordinal);
         assert!(
-            source_proof_local_declaration_output(&ast, module, &symbols, &source).is_none(),
+            source_proof_local_declaration_output(&ast, module.clone(), &symbols, &source).is_none(),
             "Task269B selected near miss {ordinal}"
         );
+        if [0, 1, 2, 5].contains(&ordinal) {
+            let (typed, resolved) = task258_native_output(&ast, &module);
+            let witnesses = typed.source_statement_witnesses().unwrap();
+            assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 2 { 1 } else { 2 }, 1));
+            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+            assert!(typed.source_proof_local_declaration().is_none());
+            assert!(resolved.source_proof_local_declaration().is_none());
+        }
     }
 
     let (ast, module, _shells, symbols) =
@@ -576,19 +434,29 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
         .is_none(),
         "Task269B selected a recovered name token"
     );
-    let b3m1_imported_y =
-        task269a_symbols_with_visible_imported_y(&b3m1_symbols, b3m1_ast.source_id);
-    assert!(
-        source_proof_local_declaration_output(
-            &b3m1_ast,
-            b3m1_module,
-            &b3m1_imported_y,
-            TASK269B_SOURCE_TEXT,
-        )
-        .expect("Task269B exact selector with imported y")
-        .is_err(),
-        "Task269B accepted a visible imported y"
-    );
+    let (original, native_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&b3m1_ast, &b3m1_module).unwrap().unwrap();
+    let (scope, labels, resolution) = mizar_resolve::symbols::source_proof_inputs(&original, &native_symbols).unwrap();
+    let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &native_symbols, &scope).expect("genuine mixed native base");
+    let native_pair = task258_native_output(&b3m1_ast, &b3m1_module);
+    // Recovered source-name authentication is distinct from typed-node recovery and a retired selector.
+    let (recovered_original, recovered_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&b3m1_recovered, &b3m1_module).unwrap().unwrap();
+    let recovered_before = (recovered_original.clone(), recovered_symbols.clone(), b3m1_recovered.snapshot_text());
+    let pristine_before = (original.clone(), native_symbols.clone(), scope.clone(), labels.clone(), resolution.clone(), base.clone(), b3m1_ast.snapshot_text());
+    let authentication_error = "source symbol environment does not match its declaration collection";
+    assert_eq!(mizar_resolve::symbols::source_proof_inputs(&recovered_original, &recovered_symbols).unwrap_err(), authentication_error);
+    assert_eq!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&recovered_original, &recovered_symbols, &scope).unwrap_err(), authentication_error);
+    assert_eq!(base.clone().with_source_statement_from_original(&recovered_original, &recovered_symbols, &scope), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+    assert_eq!((recovered_original, recovered_symbols, b3m1_recovered.snapshot_text()), recovered_before);
+    assert_eq!((original.clone(), native_symbols.clone(), scope.clone(), labels.clone(), resolution.clone(), base.clone(), b3m1_ast.snapshot_text()), pristine_before);
+    assert_eq!(task258_native_output(&b3m1_ast, &b3m1_module), native_pair);
+
+    let enriched = task269a_symbols_with_visible_imported_y(&native_symbols, b3m1_ast.source_id);
+    assert_ne!(enriched, native_symbols);
+    let before = (original.clone(), native_symbols.clone(), scope.clone(), labels.clone(), resolution.clone(), base.clone(), enriched.clone());
+    assert_eq!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &enriched, &scope).unwrap_err(), "source symbol environment does not match its declaration collection");
+    assert_eq!(base.clone().with_source_statement_from_original(&original, &enriched, &scope), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+    assert_eq!((original, native_symbols, scope, labels, resolution, base, enriched), before);
+    assert_eq!(task258_native_output(&b3m1_ast, &b3m1_module), native_pair);
 
     let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -616,14 +484,11 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
 
     let (ast, module, _shells, symbols) =
         task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_301);
-    let legacy = task269a_lower_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT)
-        .expect("Task258B3M1 selector")
-        .expect("Task258B3M1 route");
-    assert!(legacy.typed_ast.source_proof_local_declaration().is_none());
-    assert_eq!(
-        task269a_legacy_detail_keys(&ast, module, &symbols, TASK269B_SOURCE_TEXT,),
-        Some(Vec::new())
-    );
+    assert!(task269a_lower_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
+    assert_eq!(task269a_legacy_detail_keys(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT), None);
+    let (typed, resolved) = task258_native_output(&ast, &module);
+    assert!(typed.source_proof_local_declaration().is_none());
+    assert!(resolved.source_proof_local_declaration().is_none());
 }
 
 fn task269a_ast_with_recovered_name_token(
@@ -814,12 +679,8 @@ fn task269a_typed_and_final_replay_preserve_empty_semantics() {
 fn assert_task269b_typed_and_final_replay_preserve_empty_semantics() {
     let (ast, module, _shells, symbols) =
         task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_401);
-    let SourceProofLocalDeclarationRouteOutput {
-        typed_ast,
-        resolved,
-    } = source_proof_local_declaration_output(&ast, module, &symbols, TASK269B_SOURCE_TEXT)
-        .expect("Task269B selector")
-        .expect("Task269B route");
+    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
+    let (typed_ast, resolved) = task258_native_output(&ast, &module);
 
     assert_eq!(
         typed_ast.source_proof_local_declaration(),
@@ -838,14 +699,8 @@ fn assert_task269b_typed_and_final_replay_preserve_empty_semantics() {
         .source_statement_witnesses()
         .expect("Task269B lower witnesses");
     assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (2, 1));
-    assert_eq!(
-        typed_ast
-            .source_proof_local_declaration()
-            .expect("Task269B declaration owner")
-            .declarations()
-            .len(),
-        1
-    );
+    assert!(typed_ast.source_proof_local_declaration().is_none());
+    assert!(resolved.source_proof_local_declaration().is_none());
     assert!(typed_ast.contexts().is_empty());
     assert!(typed_ast.types().is_empty());
     assert!(typed_ast.facts().is_empty());
@@ -883,14 +738,14 @@ fn assert_task269b_typed_and_final_replay_preserve_empty_semantics() {
             .debug_text()
             .matches("source-proof-local-declaration-debug-v1")
             .count(),
-        1
+        0
     );
     assert_eq!(
         resolved
             .debug_text()
             .matches("source-proof-local-declaration-debug-v1")
             .count(),
-        1
+        0
     );
     for forbidden in [
         "accepted",
@@ -8400,41 +8255,30 @@ fn task269gcu_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
         .source_proof_local_given_condition_use_term()
         .expect("Task269GCU typed owner")
         .clone();
-    let (task269b_ast, task269b_module, _, task269b_symbols) =
-        task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 2_691_220);
-    let task269b = source_proof_local_declaration_output(
-        &task269b_ast,
-        task269b_module,
-        &task269b_symbols,
-        TASK269B_SOURCE_TEXT,
-    )
-    .expect("Task269B selector for Task269GCU sibling")
-    .expect("Task269B owner for Task269GCU sibling");
-    let declaration = task269b
-        .typed_ast
-        .source_proof_local_declaration()
-        .expect("Task269B declaration owner")
-        .clone();
-    let task269b_before = task269b.typed_ast.debug_text();
-    assert_eq!(
-        task269b
-            .typed_ast
-            .clone()
-            .with_source_proof_local_given_condition_use_term(handoff.clone()),
-        Err(
-            mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm
-        )
-    );
-    assert_eq!(task269b.typed_ast.debug_text(), task269b_before);
-    let gcu_before_declaration = output.typed_ast().debug_text();
-    assert_eq!(
-        output
-            .typed_ast()
-            .clone()
-            .with_source_proof_local_declaration(declaration),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalDeclaration)
-    );
-    assert_eq!(output.typed_ast().debug_text(), gcu_before_declaration);
+    let (mixed_ast, mixed_module, _, _) = task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 2_691_220);
+    let (mixed_source, mixed_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&mixed_ast, &mixed_module).unwrap().unwrap();
+    let (mixed_scope, mixed_labels, mixed_resolution) = mizar_resolve::symbols::source_proof_inputs(&mixed_source, &mixed_symbols).unwrap();
+    let (_, _, mixed_base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&mixed_source, &mixed_symbols, &mixed_scope).unwrap();
+    let (mixed, mixed_final) = task258_native_output(&mixed_ast, &mixed_module);
+    assert_eq!(mixed_base.clone().with_source_statement_from_original(&mixed_source, &mixed_symbols, &mixed_scope), Ok(mixed.clone()));
+    assert!(mixed.source_proof_local_declaration().is_none());
+    assert!(mixed_final.source_proof_local_declaration().is_none());
+    let before = (mixed_source.clone(), mixed_symbols.clone(), mixed_scope.clone(), mixed_labels.clone(), mixed_resolution.clone(), mixed_base.clone(), mixed.clone(), mixed_final.clone(), output.typed_ast().clone(), output.resolved().clone());
+    let mixed_debug = mixed.debug_text();
+    let gcu_debug = output.typed_ast().debug_text();
+    // Public source-family exclusion; exact declaration-slot duties remain in private GCU tests.
+    assert_eq!(mixed.clone().with_source_proof_local_given_condition_use_term(handoff.clone()), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm));
+    assert_eq!(mixed.debug_text(), mixed_debug);
+    assert!(mixed.source_proof_local_given_condition_use_term().is_none());
+    assert_eq!(output.typed_ast().clone().with_source_statement_from_original(&mixed_source, &mixed_symbols, &mixed_scope), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+    assert_eq!(output.typed_ast().debug_text(), gcu_debug);
+    assert!(output.typed_ast().source_statement().is_none());
+    assert!(output.typed_ast().source_proof_local_declaration().is_none());
+    assert_eq!((&mixed_source, &mixed_symbols, &mixed_scope, &mixed_labels, &mixed_resolution, &mixed_base, &mixed, &mixed_final, output.typed_ast(), output.resolved()), (&before.0, &before.1, &before.2, &before.3, &before.4, &before.5, &before.6, &before.7, &before.8, &before.9));
+    assert_eq!(task258_native_output(&mixed_ast, &mixed_module), (mixed, mixed_final));
+    let gcu_replay = source_proof_local_given_condition_use_term_output(&ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT).unwrap().unwrap();
+    assert_eq!(gcu_replay.typed_ast(), output.typed_ast());
+    assert_eq!(gcu_replay.resolved(), output.resolved());
     let dependency = handoff.dependency().clone();
     assert_eq!(
         output

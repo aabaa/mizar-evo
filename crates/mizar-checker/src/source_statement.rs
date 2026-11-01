@@ -791,8 +791,13 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b3m1_profile(&self) -> bool {
-        self.binding_env.contexts().len() == 2
+        self.binding_env
+            .bindings()
+            .get(BindingId::new(0))
+            .is_some_and(|binding| binding.status == BindingStatus::Reserved)
+            && self.binding_env.contexts().len() == 2
             && self.statements.len() == 2
             && self.contexts.len() == 2
             && self.input_facts.len() == 2
@@ -1295,6 +1300,10 @@ impl SourceStatementHandoff {
             let witness = arena
                 .iter()
                 .any(|(_, node)| node.kind.as_str() == "TakeStatement");
+            let witness_count = arena
+                .iter()
+                .filter(|(_, node)| node.kind.as_str() == "Witness")
+                .count();
             let named_witness = witness
                 && arena
                     .iter()
@@ -1408,8 +1417,8 @@ impl SourceStatementHandoff {
                 || module_context.recovery != BindingContextRecovery::Normal
                 || module_context.bindings != [binding.id]
                 || module_context.visible_bindings != [binding.id]
-                || primary_terms.terms().len() != count * 2 + usize::from(witness)
-                || primary_terms.references().len() != count * 2 + usize::from(witness)
+                || primary_terms.terms().len() != count * 2 + witness_count
+                || primary_terms.references().len() != count * 2 + witness_count
                 || !primary_terms.numeric_type_requests().is_empty()
                 || atomic_formulas.formulas().len() != count
                 || atomic_formulas.edges().len() != count * 2
@@ -1506,31 +1515,32 @@ impl SourceStatementHandoff {
                     .iter()
                     .filter(|(_, node)| node.kind.as_str() == "TakeStatement")
                     .collect::<Vec<_>>();
-                let items = arena
+                let mut items = arena
                     .iter()
                     .filter(|(_, node)| node.kind.as_str() == "Witness")
                     .collect::<Vec<_>>();
+                items.sort_by_key(|(_, node)| match node.anchor {
+                    SourceAnchor::Range(range) => range.start,
+                    _ => usize::MAX,
+                });
                 let [(take_id, take)] = takes.as_slice() else {
                     return Err(invalid());
                 };
-                let [(item_id, item)] = items.as_slice() else {
-                    return Err(invalid());
-                };
-                let expression = match item.children.as_slice() {
-                    [expression] | [_, _, expression] => *expression,
+                match (take.children.as_slice(), items.as_slice()) {
+                    ([_, item, _], [(item_id, _)]) if item == item_id => {}
+                    ([_, named, comma, unnamed, _], [(named_id, first), (unnamed_id, second)])
+                        if named == named_id
+                            && unnamed == unnamed_id
+                            && first.children.len() == 3
+                            && second.children.len() == 1
+                            && arena.node(*comma).is_some_and(|node| {
+                                node.kind.as_str()
+                                    == r#"Token(SurfaceToken { kind: ReservedSymbol, text: "," })"#
+                                    && node.recovery == NodeRecoveryState::Normal
+                                    && node.children.is_empty()
+                            }) => {}
                     _ => return Err(invalid()),
-                };
-                let expression = arena.node(expression).ok_or_else(invalid)?;
-                let [term_id] = expression.children.as_slice() else {
-                    return Err(invalid());
-                };
-                let term = arena.node(*term_id).ok_or_else(invalid)?;
-                let SourceAnchor::Range(item_range) = item.anchor else {
-                    return Err(invalid());
-                };
-                let SourceAnchor::Range(expression_range) = expression.anchor else {
-                    return Err(invalid());
-                };
+                }
                 if nested
                     || assumption
                     || descendant
@@ -1539,20 +1549,38 @@ impl SourceStatementHandoff {
                     || owner_node.children[4] != proof_id
                     || proof.children.len() != 4
                     || proof.children[1..3] != [*take_id, sites[1].0]
-                    || take.children.len() != 3
-                    || take.children[1] != *item_id
-                    || expression.kind.as_str() != "TermExpression"
-                    || term.kind.as_str() != "source.term.variable-reference"
-                    || expression.anchor != term.anchor
-                    || item_range.source_id != source_id
-                    || expression_range.source_id != source_id
-                    || item_range.start > expression_range.start
-                    || expression_range.end != item_range.end
-                    || (!named_witness && item_range != expression_range)
                     || !is_descendant(arena, owner.site.node(), proof_id)
-                    || !is_descendant(arena, *take_id, *term_id)
                 {
                     return Err(invalid());
+                }
+                for (_, item) in items {
+                    let expression = match item.children.as_slice() {
+                        [expression] | [_, _, expression] => *expression,
+                        _ => return Err(invalid()),
+                    };
+                    let expression = arena.node(expression).ok_or_else(invalid)?;
+                    let [term_id] = expression.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let term = arena.node(*term_id).ok_or_else(invalid)?;
+                    let SourceAnchor::Range(item_range) = item.anchor else {
+                        return Err(invalid());
+                    };
+                    let SourceAnchor::Range(expression_range) = expression.anchor else {
+                        return Err(invalid());
+                    };
+                    if expression.kind.as_str() != "TermExpression"
+                        || term.kind.as_str() != "source.term.variable-reference"
+                        || expression.anchor != term.anchor
+                        || item_range.source_id != source_id
+                        || expression_range.source_id != source_id
+                        || item_range.start > expression_range.start
+                        || expression_range.end != item_range.end
+                        || (item.children.len() == 1 && item_range != expression_range)
+                        || !is_descendant(arena, *take_id, *term_id)
+                    {
+                        return Err(invalid());
+                    }
                 }
                 let mut term_sites = arena
                     .iter()
@@ -2174,7 +2202,6 @@ impl SourceStatementWitnessHandoff {
                 || application.is_some()
                 || structure.is_some()
                 || set_terms.is_some()
-                || self.witnesses.len() != 1
                 || statements.owners().len() != 1
                 || statements.statements().len() != 2
             {
@@ -2187,10 +2214,14 @@ impl SourceStatementWitnessHandoff {
                 .iter()
                 .filter(|(_, node)| node.kind.as_str() == "TakeStatement")
                 .collect::<Vec<_>>();
-            let items = arena
+            let mut items = arena
                 .iter()
                 .filter(|(_, node)| node.kind.as_str() == "Witness")
                 .collect::<Vec<_>>();
+            items.sort_by_key(|(_, node)| match node.anchor {
+                SourceAnchor::Range(range) => range.start,
+                _ => usize::MAX,
+            });
             let proofs = arena
                 .iter()
                 .filter(|(_, node)| node.kind.as_str() == "ProofBlock")
@@ -2198,187 +2229,213 @@ impl SourceStatementWitnessHandoff {
             let [(take_id, take)] = takes.as_slice() else {
                 return Err(invalid());
             };
-            let [(item_id, item)] = items.as_slice() else {
-                return Err(invalid());
-            };
             let [(proof_id, proof)] = proofs.as_slice() else {
                 return Err(invalid());
             };
-            let (name_site, expression_id) = match item.children.as_slice() {
-                [expression] => (None, *expression),
-                [name, equals, expression] => (Some((*name, *equals)), *expression),
+            match (take.children.as_slice(), items.as_slice()) {
+                ([_, item, _], [(item_id, _)]) if item == item_id => {}
+                ([_, named, comma, unnamed, _], [(named_id, first), (unnamed_id, second)])
+                    if named == named_id
+                        && unnamed == unnamed_id
+                        && first.children.len() == 3
+                        && second.children.len() == 1
+                        && arena.node(*comma).is_some_and(|node| {
+                            node.kind.as_str()
+                                == r#"Token(SurfaceToken { kind: ReservedSymbol, text: "," })"#
+                                && node.recovery == NodeRecoveryState::Normal
+                                && node.children.is_empty()
+                        }) => {}
                 _ => return Err(invalid()),
-            };
-            let expression = arena.node(expression_id).ok_or_else(invalid)?;
-            let [term_site] = expression.children.as_slice() else {
-                return Err(invalid());
-            };
-            let (term_id, term) = primary_terms
-                .terms()
-                .iter()
-                .find(|(_, term)| term.site().node() == *term_site)
-                .ok_or_else(invalid)?;
-            let (reference_id, reference) = primary_terms
-                .references()
-                .iter()
-                .find(|(_, reference)| reference.term() == term_id)
-                .ok_or_else(invalid)?;
-            let context = statements
-                .binding_env()
-                .contexts()
-                .get(term.context())
-                .ok_or_else(invalid)?;
-            let SourceAnchor::Range(take_range) = take.anchor else {
-                return Err(invalid());
-            };
-            let SourceAnchor::Range(item_range) = item.anchor else {
-                return Err(invalid());
-            };
-            let SourceAnchor::Range(expression_range) = expression.anchor else {
-                return Err(invalid());
-            };
-            let name = match name_site {
-                Some((name_site, equals_site)) => {
-                    let [name] = self.names.rows.as_slice() else {
-                        return Err(invalid());
-                    };
-                    let token = arena.node(name_site).ok_or_else(invalid)?;
-                    let equals = arena.node(equals_site).ok_or_else(invalid)?;
-                    let SourceAnchor::Range(equals_range) = equals.anchor else {
-                        return Err(invalid());
-                    };
-                    if name.witness != SourceStatementWitnessId::new(0)
-                        || name.site.node() != name_site
-                        || name.recovery != SourceStatementRecovery::Normal
-                        || !mizar_lexer::is_identifier(&name.spelling)
-                        || token.anchor != SourceAnchor::Range(name.source_range)
-                        || token.kind.as_str()
-                            != format!(
-                                "Token(SurfaceToken {{ kind: Identifier, text: {:?} }})",
-                                name.spelling
-                            )
-                        || equals.kind.as_str()
-                            != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#
-                        || token.recovery != NodeRecoveryState::Normal
-                        || equals.recovery != NodeRecoveryState::Normal
-                        || !token.children.is_empty()
-                        || !equals.children.is_empty()
-                        || name.source_range.source_id != source_id
-                        || equals_range.source_id != source_id
-                        || name.source_range.start != item_range.start
-                        || name.source_range.end > equals_range.start
-                        || equals_range.end > expression_range.start
-                        || expression_range.end != item_range.end
-                        || statements
-                            .binding_env()
-                            .bindings()
-                            .iter()
-                            .any(|(_, binding)| binding.spelling == name.spelling)
-                        || primary_terms
-                            .terms()
-                            .iter()
-                            .any(|(_, term)| term.spelling() == name.spelling)
-                    {
-                        return Err(invalid());
-                    }
-                    Some(SourceStatementWitnessNameId::new(0))
-                }
-                None => {
-                    if !self.names.is_empty() || expression_range != item_range {
-                        return Err(invalid());
-                    }
-                    None
-                }
-            };
-            let owner = statements
-                .owners()
-                .get(SourceTheoremOwnerId::new(0))
-                .ok_or_else(invalid)?;
-            let theorem = statements
-                .statements()
-                .get(SourceStatementId::new(0))
-                .ok_or_else(invalid)?;
-            let conclusion = statements
-                .statements()
-                .get(SourceStatementId::new(1))
-                .ok_or_else(invalid)?;
-            let source_ordinal = statements
-                .statements()
-                .iter()
-                .filter(|(_, statement)| statement.source_range().start < take_range.start)
-                .count();
-            let spelling = match name {
-                Some(id) => format!(
-                    "{} = {}",
-                    self.names.get(id).ok_or_else(invalid)?.spelling,
-                    term.spelling()
-                ),
-                None => term.spelling().to_owned(),
-            };
-            let equality = format!("{} = {}", term.spelling(), term.spelling());
-            if take.children.len() != 3
-                || take.children[1] != *item_id
-                || expression.kind.as_str() != "TermExpression"
-                || expression_range.source_id != source_id
-                || term.source_range() != expression_range
-                || term.kind() != SourcePrimaryTermKind::VariableReference
-                || term.role() != SourcePrimaryTermRole::Value
-                || term.parent().is_some()
-                || term.recovery() != SourcePrimaryTermRecovery::Normal
-                || reference.lexical_scope() != context.lexical_scope.as_ref()
-                || context.lexical_scope.is_none()
-                || reference.use_ordinal() != term.source_ordinal()
-                || reference.role() != SourcePrimaryTermReferenceRole::Variable
-                || !context.visible_bindings.contains(&reference.binding())
-                || proof.children.len() != 4
-                || proof.children[1..3] != [*take_id, conclusion.site().node()]
-                || !is_descendant(arena, owner.site().node(), *proof_id)
-                || !is_descendant(arena, *proof_id, *term_site)
-                || take_range.source_id != source_id
-                || item_range.source_id != source_id
-                || take_range.start > item_range.start
-                || item_range.end > take_range.end
-                || take_range.end > conclusion.source_range().start
-                || theorem.source_ordinal() != 0
-                || source_ordinal != 1
-                || conclusion.source_ordinal() != 2
-                || theorem.spelling()
-                    != format!(
-                        "theorem {} : {} proof take {} ; thus {} ; end ;",
-                        owner.spelling(),
-                        equality,
-                        spelling,
-                        equality
-                    )
-                || statements
-                    .input_facts()
-                    .iter()
-                    .any(|(_, fact)| fact.uses().contains(&reference_id))
-                || take.recovery != NodeRecoveryState::Normal
-                || item.recovery != NodeRecoveryState::Normal
-                || expression.recovery != NodeRecoveryState::Normal
-                || self.witnesses.rows[0]
-                    != (SourceStatementWitness {
-                        owner: SourceTheoremOwnerId::new(0),
-                        binding_context: term.context(),
-                        term: SourceStatementWitnessTermTarget::Primary(term_id),
-                        take_site: TypedSiteRef::Node(*take_id),
-                        take_range,
-                        site: TypedSiteRef::Node(*item_id),
-                        source_range: item_range,
-                        source_ordinal,
-                        ordinal: 0,
-                        spelling,
-                        kind: if name.is_some() {
-                            SourceStatementWitnessKind::Named
-                        } else {
-                            SourceStatementWitnessKind::Unnamed
-                        },
-                        recovery: SourceStatementRecovery::Normal,
-                        name,
-                    })
+            }
+            if self.witnesses.len() != items.len()
+                || self.names.len()
+                    != items
+                        .iter()
+                        .filter(|(_, item)| item.children.len() == 3)
+                        .count()
             {
                 return Err(invalid());
+            }
+            for (ordinal, (item_id, item)) in items.iter().enumerate() {
+                let (name_site, expression_id) = match item.children.as_slice() {
+                    [expression] => (None, *expression),
+                    [name, equals, expression] => (Some((*name, *equals)), *expression),
+                    _ => return Err(invalid()),
+                };
+                let expression = arena.node(expression_id).ok_or_else(invalid)?;
+                let [term_site] = expression.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let (term_id, term) = primary_terms
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site().node() == *term_site)
+                    .ok_or_else(invalid)?;
+                let (reference_id, reference) = primary_terms
+                    .references()
+                    .iter()
+                    .find(|(_, reference)| reference.term() == term_id)
+                    .ok_or_else(invalid)?;
+                let context = statements
+                    .binding_env()
+                    .contexts()
+                    .get(term.context())
+                    .ok_or_else(invalid)?;
+                let SourceAnchor::Range(take_range) = take.anchor else {
+                    return Err(invalid());
+                };
+                let SourceAnchor::Range(item_range) = item.anchor else {
+                    return Err(invalid());
+                };
+                let SourceAnchor::Range(expression_range) = expression.anchor else {
+                    return Err(invalid());
+                };
+                let name = match name_site {
+                    Some((name_site, equals_site)) => {
+                        let [name] = self.names.rows.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let token = arena.node(name_site).ok_or_else(invalid)?;
+                        let equals = arena.node(equals_site).ok_or_else(invalid)?;
+                        let SourceAnchor::Range(equals_range) = equals.anchor else {
+                            return Err(invalid());
+                        };
+                        if name.witness != SourceStatementWitnessId::new(ordinal)
+                            || name.site.node() != name_site
+                            || name.recovery != SourceStatementRecovery::Normal
+                            || !mizar_lexer::is_identifier(&name.spelling)
+                            || token.anchor != SourceAnchor::Range(name.source_range)
+                            || token.kind.as_str()
+                                != format!(
+                                    "Token(SurfaceToken {{ kind: Identifier, text: {:?} }})",
+                                    name.spelling
+                                )
+                            || equals.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#
+                            || token.recovery != NodeRecoveryState::Normal
+                            || equals.recovery != NodeRecoveryState::Normal
+                            || !token.children.is_empty()
+                            || !equals.children.is_empty()
+                            || name.source_range.source_id != source_id
+                            || equals_range.source_id != source_id
+                            || name.source_range.start != item_range.start
+                            || name.source_range.end > equals_range.start
+                            || equals_range.end > expression_range.start
+                            || expression_range.end != item_range.end
+                            || statements
+                                .binding_env()
+                                .bindings()
+                                .iter()
+                                .any(|(_, binding)| binding.spelling == name.spelling)
+                            || primary_terms
+                                .terms()
+                                .iter()
+                                .any(|(_, term)| term.spelling() == name.spelling)
+                        {
+                            return Err(invalid());
+                        }
+                        Some(SourceStatementWitnessNameId::new(0))
+                    }
+                    None => {
+                        if expression_range != item_range {
+                            return Err(invalid());
+                        }
+                        None
+                    }
+                };
+                let owner = statements
+                    .owners()
+                    .get(SourceTheoremOwnerId::new(0))
+                    .ok_or_else(invalid)?;
+                let theorem = statements
+                    .statements()
+                    .get(SourceStatementId::new(0))
+                    .ok_or_else(invalid)?;
+                let conclusion = statements
+                    .statements()
+                    .get(SourceStatementId::new(1))
+                    .ok_or_else(invalid)?;
+                let source_ordinal = statements
+                    .statements()
+                    .iter()
+                    .filter(|(_, statement)| statement.source_range().start < take_range.start)
+                    .count();
+                let spelling = match name {
+                    Some(id) => format!(
+                        "{} = {}",
+                        self.names.get(id).ok_or_else(invalid)?.spelling,
+                        term.spelling()
+                    ),
+                    None => term.spelling().to_owned(),
+                };
+                let equality = format!("{} = {}", term.spelling(), term.spelling());
+                if expression.kind.as_str() != "TermExpression"
+                    || expression_range.source_id != source_id
+                    || term.source_range() != expression_range
+                    || term.kind() != SourcePrimaryTermKind::VariableReference
+                    || term.role() != SourcePrimaryTermRole::Value
+                    || term.parent().is_some()
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+                    || reference.lexical_scope() != context.lexical_scope.as_ref()
+                    || context.lexical_scope.is_none()
+                    || reference.use_ordinal() != term.source_ordinal()
+                    || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                    || !context.visible_bindings.contains(&reference.binding())
+                    || proof.children.len() != 4
+                    || proof.children[1..3] != [*take_id, conclusion.site().node()]
+                    || !is_descendant(arena, owner.site().node(), *proof_id)
+                    || !is_descendant(arena, *proof_id, *term_site)
+                    || take_range.source_id != source_id
+                    || item_range.source_id != source_id
+                    || take_range.start > item_range.start
+                    || item_range.end > take_range.end
+                    || take_range.end > conclusion.source_range().start
+                    || theorem.source_ordinal() != 0
+                    || source_ordinal != 1
+                    || conclusion.source_ordinal() != 2
+                    || theorem.spelling()
+                        != format!(
+                            "theorem {} : {} proof take {} ; thus {} ; end ;",
+                            owner.spelling(),
+                            equality,
+                            self.witnesses
+                                .rows
+                                .iter()
+                                .map(|row| row.spelling.as_str())
+                                .collect::<Vec<_>>()
+                                .join(" , "),
+                            equality
+                        )
+                    || statements
+                        .input_facts()
+                        .iter()
+                        .any(|(_, fact)| fact.uses().contains(&reference_id))
+                    || take.recovery != NodeRecoveryState::Normal
+                    || item.recovery != NodeRecoveryState::Normal
+                    || expression.recovery != NodeRecoveryState::Normal
+                    || self.witnesses.rows[ordinal]
+                        != (SourceStatementWitness {
+                            owner: SourceTheoremOwnerId::new(0),
+                            binding_context: term.context(),
+                            term: SourceStatementWitnessTermTarget::Primary(term_id),
+                            take_site: TypedSiteRef::Node(*take_id),
+                            take_range,
+                            site: TypedSiteRef::Node(*item_id),
+                            source_range: item_range,
+                            source_ordinal,
+                            ordinal,
+                            spelling,
+                            kind: if name.is_some() {
+                                SourceStatementWitnessKind::Named
+                            } else {
+                                SourceStatementWitnessKind::Unnamed
+                            },
+                            recovery: SourceStatementRecovery::Normal,
+                            name,
+                        })
+                {
+                    return Err(invalid());
+                }
             }
             return Ok(());
         }
@@ -2412,7 +2469,9 @@ impl SourceStatementWitnessHandoff {
             set_terms,
             arena,
         )?;
-        validate_witness_name_rows(profile, self.source_id, &self.names, &self.witnesses, arena)
+        #[cfg(test)]
+        validate_witness_name_rows(profile, self.source_id, &self.names, &self.witnesses, arena)?;
+        Ok(())
     }
 }
 
@@ -3760,6 +3819,7 @@ impl SourceStatementWitnessProducer {
                 })
                 .collect(),
         };
+        #[cfg(test)]
         validate_witness_name_rows(profile, input.source_id, &names, &witnesses, arena)?;
         Ok(SourceStatementWitnessHandoff {
             source_id: input.source_id,
@@ -4027,6 +4087,7 @@ enum StatementProfile {
     Task258B3,
     #[cfg(test)]
     Task258B3N,
+    #[cfg(test)]
     Task258B3M1,
     Task258B3M2A,
     Task258B3M2B1,
@@ -4194,16 +4255,20 @@ fn validate_dependencies(
             return Ok(StatementProfile::Task258B3N);
         }
     }
-    let b3m1_binding = exact_binding_profile(StatementProfile::Task258B3M1, source_id, bindings);
-    let b3m1_primary = exact_primary_profile(StatementProfile::Task258B3M1, primary_terms);
-    let b3m1_atomic = exact_atomic_profile(
-        StatementProfile::Task258B3M1,
-        atomic_formulas,
-        primary_terms,
-        arena,
-    );
-    if b3m1_binding && b3m1_primary && b3m1_atomic {
-        return Ok(StatementProfile::Task258B3M1);
+    #[cfg(test)]
+    {
+        let b3m1_binding =
+            exact_binding_profile(StatementProfile::Task258B3M1, source_id, bindings);
+        let b3m1_primary = exact_primary_profile(StatementProfile::Task258B3M1, primary_terms);
+        let b3m1_atomic = exact_atomic_profile(
+            StatementProfile::Task258B3M1,
+            atomic_formulas,
+            primary_terms,
+            arena,
+        );
+        if b3m1_binding && b3m1_primary && b3m1_atomic {
+            return Ok(StatementProfile::Task258B3M1);
+        }
     }
     let b3m2a_binding = exact_binding_profile(StatementProfile::Task258B3M2A, source_id, bindings);
     let b3m2a_primary = exact_primary_profile(StatementProfile::Task258B3M2A, primary_terms);
@@ -4392,6 +4457,7 @@ fn exact_binding_profile(
         StatementProfile::Task258B3 => 2,
         #[cfg(test)]
         StatementProfile::Task258B3N => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
         StatementProfile::Task258B3M2A => 2,
         StatementProfile::Task258B3M2B1 => 2,
@@ -4618,6 +4684,7 @@ fn exact_binding_profile(
                 return false;
             }
         }
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => {
             let Some(proof) = bindings.contexts().get(BindingContextId::new(1)) else {
                 return false;
@@ -5048,6 +5115,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3 => &[(63, 64), (67, 68), (82, 83), (92, 93), (96, 97)],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[(62, 63), (66, 67), (85, 86), (95, 96), (99, 100)],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[
             (65, 66),
             (69, 70),
@@ -5085,6 +5153,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3 => &[0, 0, 1, 1, 1],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[0, 0, 1, 1, 1],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[0, 0, 1, 1, 1, 1],
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
@@ -5126,6 +5195,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3 => &[&[], &[], &[0], &[0], &[0]],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[&[], &[], &[0], &[0], &[0]],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[], &[], &[0], &[0], &[0], &[0]],
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
@@ -6048,6 +6118,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3 => &[(63, 68), (92, 97)],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[(62, 67), (95, 100)],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[(65, 70), (101, 106)],
         StatementProfile::Task258B3M2A => &[(64, 69), (95, 100)],
         StatementProfile::Task258B3M2B1 => &[(70, 75), (101, 106)],
@@ -6077,6 +6148,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3 => &[0, 1],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[0, 1],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[0, 1],
         StatementProfile::Task258B3M2A => &[0, 1],
         StatementProfile::Task258B3M2B1 => &[0, 1],
@@ -6129,6 +6201,7 @@ fn exact_atomic_profile(
             StatementProfile::Task258B3 if formula_index == 1 => 3,
             #[cfg(test)]
             StatementProfile::Task258B3N if formula_index == 1 => 3,
+            #[cfg(test)]
             StatementProfile::Task258B3M1 if formula_index == 1 => 4,
             StatementProfile::Task258B3M2A if formula_index == 1 => 3,
             StatementProfile::Task258B3M2B1 if formula_index == 1 => 4,
@@ -6826,6 +6899,7 @@ fn validate_aggregate_lengths(
         StatementProfile::Task258B3 => (1, 2, 2, 2, 2),
         #[cfg(test)]
         StatementProfile::Task258B3N => (1, 2, 2, 2, 2),
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3M2A => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3M2B1 => (1, 2, 2, 2, 2),
@@ -6975,6 +7049,7 @@ fn validate_owner_rows(
             range(source_id, 19, 106),
             "FormulaStatementNamedWitnessSmoke",
         ),
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => (
             range(source_id, 19, 112),
             "FormulaStatementMultipleWitnessSmoke",
@@ -7227,6 +7302,7 @@ fn validate_statement_rows(
                 "thus x = x ;",
             ),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[
             (
                 0,
@@ -7599,6 +7675,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3 => 2,
         #[cfg(test)]
         StatementProfile::Task258B3N => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
         StatementProfile::Task258B3M2A => 2,
         StatementProfile::Task258B3M2B1 => 2,
@@ -7662,6 +7739,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3 => &[&[false, true], &[false, false]],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[&[false, true], &[false, false]],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[false, true], &[false, false]],
         StatementProfile::Task258B3M2A => &[&[false, true], &[false, false]],
         StatementProfile::Task258B3M2B1 => &[&[false, true], &[false, false]],
@@ -7706,6 +7784,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3 => &[&[true, true], &[false, true]],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[&[true, true], &[false, true]],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[true, true], &[false, true]],
         StatementProfile::Task258B3M2A => &[&[true, true], &[false, true]],
         StatementProfile::Task258B3M2B1 => &[&[true, true], &[false, true]],
@@ -7788,6 +7867,7 @@ fn validate_context_rows(
         StatementProfile::Task258B3 => &[(0, 19, 103), (1, 87, 98)],
         #[cfg(test)]
         StatementProfile::Task258B3N => &[(0, 19, 106), (1, 90, 101)],
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => &[(0, 19, 112), (1, 96, 107)],
         StatementProfile::Task258B3M2A => &[(0, 19, 106), (1, 90, 101)],
         StatementProfile::Task258B3M2B1 => &[(0, 19, 112), (1, 96, 107)],
@@ -7846,6 +7926,7 @@ fn validate_input_fact_rows(
         StatementProfile::Task258B3 => 2,
         #[cfg(test)]
         StatementProfile::Task258B3N => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
         StatementProfile::Task258B3M2A => 2,
         StatementProfile::Task258B3M2B1 => 2,
@@ -7878,7 +7959,9 @@ fn validate_input_fact_rows(
             (StatementProfile::Task258B3M2B2B3C, 1) => 2,
             (StatementProfile::Task258B3M2B2B3D, 1) => 3,
             (StatementProfile::Task258B3M2B2B3E, 1) => 3,
-            (StatementProfile::Task258B3M1 | StatementProfile::Task258B3M2B1, 1) => 4,
+            #[cfg(test)]
+            (StatementProfile::Task258B3M1, 1) => 4,
+            (StatementProfile::Task258B3M2B1, 1) => 4,
             #[cfg(test)]
             (StatementProfile::Task258B3, 1) => 3,
             #[cfg(test)]
@@ -7955,6 +8038,7 @@ fn validate_candidate_fact_rows(
         StatementProfile::Task258B3 => 2,
         #[cfg(test)]
         StatementProfile::Task258B3N => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
         StatementProfile::Task258B3M2A => 2,
         StatementProfile::Task258B3M2B1 => 2,
@@ -8600,6 +8684,7 @@ const TASK258B3N_NODE_RANGES: [(usize, usize); 51] = [
     (0, 106),
 ];
 
+#[cfg(test)]
 const TASK258B3M1_NODE_RANGES: [(usize, usize); 56] = [
     (0, 7),
     (8, 9),
@@ -9313,6 +9398,7 @@ fn task258b3n_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn task258b3m1_node_children(index: usize) -> &'static [usize] {
     match index {
         26 => &[3],
@@ -9352,6 +9438,7 @@ fn task258b3m1_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b3m1_node_kind(index: usize) -> &'static str {
     match index {
         30 | 32 | 36 | 39 | 43 | 45 => "source.term.variable-reference",
@@ -10447,6 +10534,7 @@ fn exact_task258b3n_shared_arena(source_id: SourceId, arena: &TypedArena) -> boo
         })
 }
 
+#[cfg(test)]
 fn exact_task258b3m1_shared_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != TASK258B3M1_NODE_RANGES.len()
         || arena.root() != Some(crate::typed_ast::TypedNodeId::new(55))
@@ -10881,6 +10969,7 @@ enum WitnessProfile {
     Task258B3,
     #[cfg(test)]
     Task258B3N,
+    #[cfg(test)]
     Task258B3M1,
     Task258B3M2A,
     Task258B3M2B1,
@@ -12053,19 +12142,6 @@ fn validate_witness_dependencies(
     let profile = if application.is_none()
         && structure.is_none()
         && set_terms.is_none()
-        && statements.is_task_258b3m1_profile()
-        && exact_binding_profile(
-            StatementProfile::Task258B3M1,
-            source_id,
-            statements.binding_env(),
-        )
-        && exact_primary_profile(StatementProfile::Task258B3M1, primary_terms)
-        && exact_task258b3m1_shared_arena(source_id, arena)
-    {
-        WitnessProfile::Task258B3M1
-    } else if application.is_none()
-        && structure.is_none()
-        && set_terms.is_none()
         && statements.is_task_258b3m2a_profile()
         && exact_binding_profile(
             StatementProfile::Task258B3M2A,
@@ -12316,6 +12392,19 @@ fn validate_witness_dependencies(
             if application.is_none()
                 && structure.is_none()
                 && set_terms.is_none()
+                && statements.is_task_258b3m1_profile()
+                && exact_binding_profile(
+                    StatementProfile::Task258B3M1,
+                    source_id,
+                    statements.binding_env(),
+                )
+                && exact_primary_profile(StatementProfile::Task258B3M1, primary_terms)
+                && exact_task258b3m1_shared_arena(source_id, arena)
+            {
+                WitnessProfile::Task258B3M1
+            } else if application.is_none()
+                && structure.is_none()
+                && set_terms.is_none()
                 && statements.is_task_258b3n_profile()
                 && exact_binding_profile(
                     StatementProfile::Task258B3N,
@@ -12365,6 +12454,7 @@ fn validate_witness_dependencies(
         WitnessProfile::Task258B3N => {
             (range(source_id, 19, 106), 47, range(source_id, 90, 101), 45)
         }
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => {
             (range(source_id, 19, 112), 52, range(source_id, 96, 107), 50)
         }
@@ -12462,6 +12552,7 @@ fn validate_witness_aggregate(
         WitnessProfile::Task258B3 => (1, 0),
         #[cfg(test)]
         WitnessProfile::Task258B3N => (1, 1),
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => (2, 1),
         WitnessProfile::Task258B3M2A => (1, 0),
         WitnessProfile::Task258B3M2B1 => (1, 0),
@@ -12613,6 +12704,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3M2A
         | WitnessProfile::Task258B3M2B1
         | WitnessProfile::Task258B3M2B2A => 1,
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => 2,
         WitnessProfile::Task258B3M2B2B1A => {
             unreachable!("application witness returns above")
@@ -12684,6 +12776,7 @@ fn validate_witness_rows(
                 take_children: &[12, 36, 16],
                 item_children: &[13, 14, 35],
             },
+            #[cfg(test)]
             (WitnessProfile::Task258B3M1, 0) => ExpectedWitnessRow {
                 term_index: 2,
                 take_site: 42,
@@ -12699,6 +12792,7 @@ fn validate_witness_rows(
                 take_children: &[12, 38, 16, 41, 18],
                 item_children: &[13, 14, 37],
             },
+            #[cfg(test)]
             (WitnessProfile::Task258B3M1, 1) => ExpectedWitnessRow {
                 term_index: 3,
                 take_site: 42,
@@ -12882,6 +12976,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3M2A
         | WitnessProfile::Task258B3M2B1
         | WitnessProfile::Task258B3M2B2A => &[0, 1, 2],
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => &[0, 1, 1, 2],
         WitnessProfile::Task258B3M2B2B1A => {
             unreachable!("application witness returns above")
@@ -12922,6 +13017,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3 => 2,
         #[cfg(test)]
         WitnessProfile::Task258B3N => 3,
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => 4,
         WitnessProfile::Task258B3M2A => 2,
         WitnessProfile::Task258B3M2B1 => 2,
@@ -14004,6 +14100,7 @@ fn validate_task258b3m2b2b2c_witness_rows(
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_witness_name_rows(
     profile: WitnessProfile,
     source_id: SourceId,
@@ -14033,6 +14130,7 @@ fn validate_witness_name_rows(
         WitnessProfile::Task258B3 => unreachable!("Task258B3 has no witness-name rows"),
         #[cfg(test)]
         WitnessProfile::Task258B3N => range(source_id, 81, 82),
+        #[cfg(test)]
         WitnessProfile::Task258B3M1 => range(source_id, 84, 85),
         WitnessProfile::Task258B3M2A => {
             unreachable!("Task258B3M2A has no witness-name rows")
@@ -32191,12 +32289,97 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
     ) {
         let fixture = B3M1Fixture::new(161);
         let statement = fixture.statement();
+        let pristine_statement = statement.clone();
+        let pristine_symbols = fixture.symbols.clone();
+        let pristine_bindings = fixture.bindings.clone();
+        let pristine_primary = fixture.primary.clone();
+        let pristine_atomic = fixture.atomic.clone();
+        let pristine_arena = fixture.arena.clone();
         let witnesses = fixture
             .witnesses(&statement, fixture.witness_input())
             .expect("Task269B witnesses");
+        let pristine_input = fixture.proof_local_input();
         let baseline = fixture
-            .proof_local(&statement, &witnesses, fixture.proof_local_input())
+            .proof_local(&statement, &witnesses, pristine_input.clone())
             .expect("Task269B baseline");
+        let pristine_base = fixture
+            .empty_typed()
+            .with_source_statement_witnesses(statement.clone(), witnesses.clone())
+            .expect("Task269B lower pair");
+        let pristine_typed = pristine_base
+            .clone()
+            .with_source_proof_local_declaration(baseline.clone())
+            .expect("Task269B upper install");
+        let pristine_final = assemble_empty_resolved(&pristine_typed).expect("Task269B final");
+        let pristine_typed_debug = pristine_typed.debug_text();
+        let pristine_final_debug = pristine_final.debug_text();
+        let assert_replay = || {
+            assert_eq!(fixture.symbols, pristine_symbols, "Task269B symbols");
+            assert_eq!(fixture.bindings, pristine_bindings, "Task269B bindings");
+            assert_eq!(fixture.primary, pristine_primary, "Task269B primary");
+            assert_eq!(fixture.atomic, pristine_atomic, "Task269B atomic");
+            assert_eq!(fixture.arena, pristine_arena, "Task269B arena");
+            assert_eq!(statement, pristine_statement, "Task269B statement snapshot");
+            assert_eq!(fixture.statement(), statement, "Task269B statement replay");
+            assert_eq!(
+                fixture
+                    .witnesses(&statement, fixture.witness_input())
+                    .expect("Task269B witness replay"),
+                witnesses,
+                "Task269B witness replay"
+            );
+            assert_eq!(
+                fixture
+                    .proof_local(&statement, &witnesses, pristine_input.clone())
+                    .expect("Task269B upper replay"),
+                baseline,
+                "Task269B upper replay"
+            );
+            let replay_typed = fixture
+                .empty_typed()
+                .with_source_statement_witnesses(statement.clone(), witnesses.clone())
+                .expect("Task269B pair replay")
+                .with_source_proof_local_declaration(baseline.clone())
+                .expect("Task269B typed replay");
+            assert_eq!(replay_typed.debug_text(), pristine_typed_debug);
+            assert_eq!(
+                assemble_empty_resolved(&replay_typed)
+                    .expect("Task269B final replay")
+                    .debug_text(),
+                pristine_final_debug
+            );
+        };
+        let assert_upper_refusal =
+            |case: &str,
+             input: SourceProofLocalDeclarationHandoffInput,
+             attempted_witnesses: &SourceStatementWitnessHandoff| {
+                let input_before = input.clone();
+                let witnesses_before = attempted_witnesses.clone();
+                let primary_before = fixture.primary.clone();
+                let arena_before = fixture.arena.clone();
+                assert_eq!(
+                    SourceProofLocalDeclarationProducer::build(
+                        input.clone(),
+                        &statement,
+                        attempted_witnesses,
+                        &fixture.primary,
+                        &fixture.arena,
+                    ),
+                    Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                        declaration: SourceProofLocalDeclarationId::new(0),
+                    }),
+                    "{case}"
+                );
+                assert_eq!(input, input_before, "{case} input purity");
+                assert_eq!(
+                    attempted_witnesses, &witnesses_before,
+                    "{case} witness purity"
+                );
+                assert_eq!(fixture.primary, primary_before, "{case} primary purity");
+                assert_eq!(fixture.arena, arena_before, "{case} arena purity");
+                assert_eq!(statement, pristine_statement, "{case} statement purity");
+                assert_replay();
+            };
 
         let mut wrong_range = fixture.proof_local_input();
         wrong_range.declarations[0].local = LocalTermBinding::new(
@@ -32211,6 +32394,59 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 declaration: SourceProofLocalDeclarationId::new(0),
             })
         );
+        assert_replay();
+
+        for mutation in 0..9 {
+            let mut input = pristine_input.clone();
+            let row = &mut input.declarations[0];
+            match mutation {
+                0 => {
+                    row.local = LocalTermBinding::new(
+                        "z",
+                        LocalTermScope::new(vec![0]),
+                        range(fixture.source, 84, 85),
+                        1,
+                    )
+                }
+                1 => {
+                    row.local = LocalTermBinding::new(
+                        "y",
+                        LocalTermScope::new(vec![1]),
+                        range(fixture.source, 84, 85),
+                        1,
+                    )
+                }
+                2 => {
+                    row.local = LocalTermBinding::new(
+                        "y",
+                        LocalTermScope::new(vec![0]),
+                        range(fixture.source, 80, 82),
+                        1,
+                    )
+                }
+                3 => {
+                    row.local = LocalTermBinding::new(
+                        "y",
+                        LocalTermScope::new(vec![0]),
+                        range(fixture.source, 84, 85),
+                        2,
+                    )
+                }
+                4 => row.witness = SourceStatementWitnessId::new(1),
+                5 => row.name = SourceStatementWitnessNameId::new(1),
+                6 => {
+                    row.rhs = SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(3))
+                }
+                7 => row.binding_context = BindingContextId::new(0),
+                8 => row.source_ordinal = 2,
+                _ => unreachable!(),
+            }
+            assert_upper_refusal(
+                &format!("Task269B declaration field {mutation}"),
+                input,
+                &witnesses,
+            );
+        }
 
         let mut invalid_unnamed = witnesses.clone();
         invalid_unnamed.witnesses.rows[1].source_ordinal = 2;
@@ -32220,19 +32456,57 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 declaration: SourceProofLocalDeclarationId::new(0),
             })
         );
+        assert_replay();
+        let mut exact_lower_ordinal_three = witnesses.clone();
+        exact_lower_ordinal_three.witnesses.rows[1].source_ordinal = 3;
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build(
+                pristine_input.clone(),
+                &statement,
+                &exact_lower_ordinal_three,
+                &fixture.primary,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                declaration: SourceProofLocalDeclarationId::new(0),
+            }),
+            "exact historical lower witness ordinal 3"
+        );
+        assert_eq!(
+            exact_lower_ordinal_three.witnesses.rows[1].source_ordinal,
+            3
+        );
+        assert_replay();
 
         for index in 0..TASK258B3M1_NODE_RANGES.len() {
+            let input = fixture.proof_local_input();
+            let input_before = input.clone();
+            let witnesses_before = witnesses.clone();
+            let primary_before = fixture.primary.clone();
+            let arena = b3m1_typed_arena_with_corrupt_kind(fixture.source, index);
+            let arena_before = arena.clone();
             assert_eq!(
                 SourceProofLocalDeclarationProducer::build(
-                    fixture.proof_local_input(),
+                    input.clone(),
                     &statement,
                     &witnesses,
                     &fixture.primary,
-                    &b3m1_typed_arena_with_corrupt_kind(fixture.source, index),
+                    &arena,
                 ),
                 Err(SourceProofLocalDeclarationError::InvalidArena),
                 "Task269B node {index}"
             );
+            assert_eq!(input, input_before, "Task269B node {index} input purity");
+            assert_eq!(
+                witnesses, witnesses_before,
+                "Task269B node {index} witness purity"
+            );
+            assert_eq!(
+                fixture.primary, primary_before,
+                "Task269B node {index} primary purity"
+            );
+            assert_eq!(arena, arena_before, "Task269B node {index} arena purity");
+            assert_replay();
         }
 
         for corruption in [
@@ -32245,17 +32519,34 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             Task269AArenaCorruption::Typing,
             Task269AArenaCorruption::Links,
         ] {
+            let input = fixture.proof_local_input();
+            let input_before = input.clone();
+            let witnesses_before = witnesses.clone();
+            let primary_before = fixture.primary.clone();
+            let arena = b3m1_typed_arena_with_corruption(fixture.source, corruption);
+            let arena_before = arena.clone();
             assert_eq!(
                 SourceProofLocalDeclarationProducer::build(
-                    fixture.proof_local_input(),
+                    input.clone(),
                     &statement,
                     &witnesses,
                     &fixture.primary,
-                    &b3m1_typed_arena_with_corruption(fixture.source, corruption),
+                    &arena,
                 ),
                 Err(SourceProofLocalDeclarationError::InvalidArena),
                 "Task269B representative {corruption:?}"
             );
+            assert_eq!(input, input_before, "Task269B {corruption:?} input purity");
+            assert_eq!(
+                witnesses, witnesses_before,
+                "Task269B {corruption:?} witness purity"
+            );
+            assert_eq!(
+                fixture.primary, primary_before,
+                "Task269B {corruption:?} primary purity"
+            );
+            assert_eq!(arena, arena_before, "Task269B {corruption:?} arena purity");
+            assert_replay();
         }
 
         let mut stale_final = baseline.clone();
@@ -32793,11 +33084,535 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
     #[test]
     fn task258b3m1_dependencies_rows_precedence_and_all_nodes_fail_closed() {
         let fixture = B3M1Fixture::new(54);
-        let statement = fixture.statement();
+        let pristine_input = fixture.statement_input();
+        let pristine_symbols = fixture.symbols.clone();
+        let pristine_bindings = fixture.bindings.clone();
+        let pristine_primary = fixture.primary.clone();
+        let pristine_atomic = fixture.atomic.clone();
+        let pristine_arena = fixture.arena.clone();
+        let statement = SourceStatementProducer::build(
+            pristine_input.clone(),
+            &pristine_symbols,
+            &pristine_bindings,
+            &pristine_primary,
+            &pristine_atomic,
+            &pristine_arena,
+        )
+        .expect("pristine B3M1 statement");
         let baseline = fixture
             .witnesses(&statement, fixture.witness_input())
             .expect("baseline");
         let baseline_debug = baseline.debug_text();
+        let pristine_base = fixture
+            .empty_typed()
+            .with_source_statement_witnesses(statement.clone(), baseline.clone())
+            .expect("pristine paired install");
+        let pristine_typed = pristine_base
+            .clone()
+            .with_source_proof_local_declaration(
+                fixture
+                    .proof_local(&statement, &baseline, fixture.proof_local_input())
+                    .expect("pristine historical upper"),
+            )
+            .expect("pristine upper install");
+        let pristine_final = assemble_empty_resolved(&pristine_typed).expect("pristine final");
+        let pristine_typed_debug = pristine_typed.debug_text();
+        let pristine_final_debug = pristine_final.debug_text();
+
+        let assert_pristine = || {
+            assert_eq!(fixture.symbols, pristine_symbols, "pristine symbols");
+            assert_eq!(fixture.bindings, pristine_bindings, "pristine bindings");
+            assert_eq!(fixture.primary, pristine_primary, "pristine primary");
+            assert_eq!(fixture.atomic, pristine_atomic, "pristine atomic");
+            assert_eq!(fixture.arena, pristine_arena, "pristine arena");
+            let replay_statement = SourceStatementProducer::build(
+                pristine_input.clone(),
+                &pristine_symbols,
+                &pristine_bindings,
+                &pristine_primary,
+                &pristine_atomic,
+                &pristine_arena,
+            )
+            .expect("pristine statement replay");
+            assert_eq!(replay_statement, statement, "statement replay");
+            let replay_witness = fixture
+                .witnesses(&statement, fixture.witness_input())
+                .expect("pristine witness replay");
+            assert_eq!(replay_witness, baseline, "witness replay");
+            assert_eq!(replay_witness.debug_text(), baseline_debug);
+            let replay_base = fixture
+                .empty_typed()
+                .with_source_statement_witnesses(statement.clone(), baseline.clone())
+                .expect("pristine pair replay");
+            let replay_typed = replay_base
+                .with_source_proof_local_declaration(
+                    fixture
+                        .proof_local(&statement, &baseline, fixture.proof_local_input())
+                        .expect("pristine upper replay"),
+                )
+                .expect("pristine typed replay");
+            assert_eq!(replay_typed.debug_text(), pristine_typed_debug);
+            assert_eq!(
+                assemble_empty_resolved(&replay_typed)
+                    .expect("pristine final replay")
+                    .debug_text(),
+                pristine_final_debug
+            );
+        };
+        let assert_base_refusal =
+            |case: &str,
+             input: SourceStatementHandoffInput,
+             symbols: &SymbolEnv,
+             expected: SourceStatementError| {
+                let input_before = input.clone();
+                let symbols_before = symbols.clone();
+                let result = SourceStatementProducer::build(
+                    input.clone(),
+                    symbols,
+                    &pristine_bindings,
+                    &pristine_primary,
+                    &pristine_atomic,
+                    &pristine_arena,
+                );
+                assert_eq!(result, Err(expected), "{case}");
+                assert_eq!(input, input_before, "{case} input purity");
+                assert_eq!(symbols, &symbols_before, "{case} symbol purity");
+                assert_pristine();
+            };
+
+        for mutation in 0..10 {
+            let mut input = pristine_input.clone();
+            let append = mutation % 2 == 1;
+            match mutation / 2 {
+                0 => {
+                    if append {
+                        input.owners.push(input.owners[0].clone());
+                    } else {
+                        input.owners.pop();
+                    }
+                }
+                1 => {
+                    if append {
+                        input.statements.push(input.statements[1].clone());
+                    } else {
+                        input.statements.pop();
+                    }
+                }
+                2 => {
+                    if append {
+                        input.contexts.push(input.contexts[1].clone());
+                    } else {
+                        input.contexts.pop();
+                    }
+                }
+                3 => {
+                    if append {
+                        input.input_facts.push(input.input_facts[1].clone());
+                    } else {
+                        input.input_facts.pop();
+                    }
+                }
+                4 => {
+                    if append {
+                        input.candidate_facts.push(input.candidate_facts[1].clone());
+                    } else {
+                        input.candidate_facts.pop();
+                    }
+                }
+                _ => unreachable!(),
+            }
+            assert_base_refusal(
+                &format!("aggregate {mutation}"),
+                input,
+                &pristine_symbols,
+                SourceStatementError::InvalidAggregate,
+            );
+        }
+
+        let mut wrong_source = pristine_input.clone();
+        wrong_source.source_id = B3M1Fixture::new(55).source;
+        assert_base_refusal(
+            "transaction source",
+            wrong_source,
+            &pristine_symbols,
+            SourceStatementError::DependencyMismatch,
+        );
+        let mut wrong_module = pristine_input.clone();
+        wrong_module.module_id = ModuleId::new(
+            PackageId::new("foreign"),
+            ModulePath::new("statement.fixture"),
+        );
+        assert_base_refusal(
+            "transaction module",
+            wrong_module,
+            &pristine_symbols,
+            SourceStatementError::DependencyMismatch,
+        );
+
+        let foreign_owner = B3NFixture::new(55);
+        let mut wrong_owner_symbol = pristine_input.clone();
+        wrong_owner_symbol.owners[0].symbol = foreign_owner.symbol.clone();
+        assert_base_refusal(
+            "owner symbol",
+            wrong_owner_symbol,
+            &pristine_symbols,
+            SourceStatementError::InvalidOwner {
+                owner: SourceTheoremOwnerId::new(0),
+            },
+        );
+        let mut wrong_owner_contribution = pristine_input.clone();
+        let mut contributions = pristine_symbols.contributions().clone();
+        let foreign_contribution = contributions.insert(
+            fixture.module.clone(),
+            ContributionKind::LocalSource {
+                source_id: fixture.source,
+            },
+            SourceAnchor::Range(range(fixture.source, 0, 18)),
+        );
+        let symbols_with_foreign_contribution = SymbolEnv::new(
+            pristine_symbols.module_id().clone(),
+            SymbolEnvIndexes {
+                imports: pristine_symbols.imports().clone(),
+                exports: pristine_symbols.exports().clone(),
+                symbols: pristine_symbols.symbols().clone(),
+                labels: pristine_symbols.labels().clone(),
+                definitions: pristine_symbols.definitions().clone(),
+                overloads: pristine_symbols.overloads().clone(),
+                registrations: pristine_symbols.registrations().clone(),
+                lexical_summaries: pristine_symbols.lexical_summaries().clone(),
+                namespace_graph: pristine_symbols.namespace_graph().clone(),
+                declaration_dependencies: pristine_symbols.declaration_dependencies().clone(),
+                contributions,
+                module_summaries: pristine_symbols.module_summaries().clone(),
+            },
+        );
+        wrong_owner_contribution.owners[0].contribution = foreign_contribution;
+        assert_base_refusal(
+            "owner contribution",
+            wrong_owner_contribution,
+            &symbols_with_foreign_contribution,
+            SourceStatementError::InvalidOwner {
+                owner: SourceTheoremOwnerId::new(0),
+            },
+        );
+        for mutation in 0..5 {
+            let mut input = pristine_input.clone();
+            let owner = &mut input.owners[0];
+            match mutation {
+                0 => owner.site = node(53),
+                1 => owner.source_range.start += 1,
+                2 => owner.source_range.end -= 1,
+                3 => owner.spelling.push('x'),
+                4 => owner.recovery = SourceStatementRecovery::Degraded,
+                _ => unreachable!(),
+            }
+            assert_base_refusal(
+                &format!("owner row {mutation}"),
+                input,
+                &pristine_symbols,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            );
+        }
+
+        for index in 0..2 {
+            for mutation in 0..10 {
+                let mut input = pristine_input.clone();
+                let row = &mut input.statements[index];
+                match mutation {
+                    0 => row.owner = SourceTheoremOwnerId::new(1),
+                    1 => row.context = SourceStatementContextId::new(1 - index),
+                    2 => {
+                        row.formula = SourceStatementFormulaTarget::Atomic(
+                            SourceAtomicFormulaId::new(1 - index),
+                        )
+                    }
+                    3 => row.site = node(if index == 0 { 50 } else { 52 }),
+                    4 => row.source_range.start += 1,
+                    5 => row.source_range.end -= 1,
+                    6 => row.source_ordinal = 1,
+                    7 => row.spelling.push('x'),
+                    8 => row.recovery = SourceStatementRecovery::Degraded,
+                    9 => {
+                        row.kind = if index == 0 {
+                            SourceStatementKind::Conclusion
+                        } else {
+                            SourceStatementKind::TheoremProposition
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+                assert_base_refusal(
+                    &format!("statement {index} field {mutation}"),
+                    input,
+                    &pristine_symbols,
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(index),
+                    },
+                );
+            }
+        }
+        let mut conclusion_ordinal_three = pristine_input.clone();
+        conclusion_ordinal_three.statements[1].source_ordinal = 3;
+        assert_base_refusal(
+            "exact lower conclusion ordinal 3",
+            conclusion_ordinal_three,
+            &pristine_symbols,
+            SourceStatementError::InvalidStatement {
+                statement: SourceStatementId::new(1),
+            },
+        );
+
+        for index in 0..2 {
+            for mutation in 0..5 {
+                let mut input = pristine_input.clone();
+                let row = &mut input.contexts[index];
+                match mutation {
+                    0 => row.statement = SourceStatementId::new(1 - index),
+                    1 => row.binding_context = BindingContextId::new(1 - index),
+                    2 => row.source_range.start += 1,
+                    3 => row.source_range.end -= 1,
+                    4 => row.visible_bindings.clear(),
+                    _ => unreachable!(),
+                }
+                assert_base_refusal(
+                    &format!("context {index} field {mutation}"),
+                    input,
+                    &pristine_symbols,
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(index),
+                    },
+                );
+            }
+        }
+
+        for index in 0..2 {
+            for mutation in 0..8 {
+                let mut input = pristine_input.clone();
+                let row = &mut input.input_facts[index];
+                match mutation {
+                    0 => row.statement = SourceStatementId::new(1 - index),
+                    1 => row.context = SourceStatementContextId::new(1 - index),
+                    2 => row.ordinal = 1,
+                    3 => row.binding = BindingId::new(1),
+                    4 => row.uses.swap(0, 1),
+                    5 => row.uses.clear(),
+                    6 => {
+                        let duplicate = row.uses[0];
+                        row.uses.push(duplicate);
+                    }
+                    7 => row.uses.push(SourcePrimaryTermReferenceId::new(99)),
+                    _ => unreachable!(),
+                }
+                assert_base_refusal(
+                    &format!("input fact {index} field {mutation}"),
+                    input,
+                    &pristine_symbols,
+                    SourceStatementError::InvalidInputFact {
+                        fact: SourceStatementInputFactId::new(index),
+                    },
+                );
+            }
+        }
+
+        for index in 0..2 {
+            for mutation in 0..4 {
+                let mut input = pristine_input.clone();
+                let row = &mut input.candidate_facts[index];
+                match mutation {
+                    0 => row.statement = SourceStatementId::new(1 - index),
+                    1 => row.context = SourceStatementContextId::new(1 - index),
+                    2 => row.ordinal = 1,
+                    3 => {
+                        row.formula = SourceStatementFormulaTarget::Atomic(
+                            SourceAtomicFormulaId::new(1 - index),
+                        )
+                    }
+                    _ => unreachable!(),
+                }
+                assert_base_refusal(
+                    &format!("candidate fact {index} field {mutation}"),
+                    input,
+                    &pristine_symbols,
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(index),
+                    },
+                );
+            }
+        }
+
+        let empty_primary = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: Vec::new(),
+                references: Vec::new(),
+                numeric_type_requests: Vec::new(),
+            },
+            &pristine_bindings,
+            &pristine_arena,
+        )
+        .expect("valid empty primary lower handoff");
+        let empty_primary_before = empty_primary.clone();
+        assert_eq!(
+            SourceStatementProducer::build(
+                pristine_input.clone(),
+                &pristine_symbols,
+                &pristine_bindings,
+                &empty_primary,
+                &pristine_atomic,
+                &pristine_arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch),
+            "historical empty-primary dependency refusal"
+        );
+        assert_eq!(empty_primary, empty_primary_before);
+        assert_pristine();
+
+        let actual_labels = pristine_symbols
+            .labels()
+            .by_contribution(fixture.contribution);
+        assert_eq!(actual_labels.len(), 1);
+        let actual_label = actual_labels[0].clone();
+        let make_symbols_with_labels = |labels: LabelIndex| {
+            SymbolEnv::new(
+                pristine_symbols.module_id().clone(),
+                SymbolEnvIndexes {
+                    imports: pristine_symbols.imports().clone(),
+                    exports: pristine_symbols.exports().clone(),
+                    symbols: pristine_symbols.symbols().clone(),
+                    labels,
+                    definitions: pristine_symbols.definitions().clone(),
+                    overloads: pristine_symbols.overloads().clone(),
+                    registrations: pristine_symbols.registrations().clone(),
+                    lexical_summaries: pristine_symbols.lexical_summaries().clone(),
+                    namespace_graph: pristine_symbols.namespace_graph().clone(),
+                    declaration_dependencies: pristine_symbols.declaration_dependencies().clone(),
+                    contributions: pristine_symbols.contributions().clone(),
+                    module_summaries: pristine_symbols.module_summaries().clone(),
+                },
+            )
+        };
+        let mut import_owner_builder = ResolvedArenaBuilder::new();
+        let import_owner = import_owner_builder
+            .push(ResolvedNode::new(
+                syntax::SurfaceNodeKind::ImportAliasDecl,
+                Vec::new(),
+                actual_label.origin().clone(),
+            ))
+            .expect("actual import owner node");
+        let mut temporary_imports = ResolvedImports::new();
+        let imported_edge = temporary_imports.push_import(ResolvedImport::new(
+            import_owner,
+            range(fixture.source, 0, 1),
+            "import statement.fixture;",
+            None,
+            ImportResolution::Resolved(fixture.module.clone()),
+            actual_label.origin().clone(),
+        ));
+        assert_eq!(temporary_imports.imports().count(), 1);
+        for (case, name) in [
+            "Imported",
+            "Missing",
+            "Duplicate",
+            "WrongPath",
+            "WrongKind",
+            "Private",
+            "LocalOnly",
+            "Recovered",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut labels = LabelIndex::new();
+            if case != 1 {
+                let origin_path = if case == 3 {
+                    LabelOriginPath::new("statement.fixture.wrong.theorem")
+                } else {
+                    actual_label.origin_path().clone()
+                };
+                let kind = if case == 4 {
+                    LabelKind::ProofStep
+                } else {
+                    actual_label.kind()
+                };
+                let origin = match case {
+                    0 => actual_label
+                        .origin()
+                        .clone()
+                        .with_import_edge(imported_edge),
+                    7 => actual_label.origin().clone().recovered(),
+                    _ => actual_label.origin().clone(),
+                };
+                let visibility = if case == 5 {
+                    Visibility::Private
+                } else {
+                    actual_label.visibility()
+                };
+                let export_status = if case == 6 {
+                    ExportStatus::LocalOnly
+                } else {
+                    actual_label.export_status()
+                };
+                labels.insert(
+                    LabelEntry::new(
+                        origin_path,
+                        kind,
+                        actual_label.namespace().clone(),
+                        actual_label.primary_spelling(),
+                        origin,
+                        actual_label.contribution(),
+                    )
+                    .with_visibility(visibility)
+                    .with_export_status(export_status),
+                );
+                if case == 2 {
+                    labels.insert(
+                        LabelEntry::new(
+                            LabelOriginPath::new("statement.fixture.duplicate.theorem"),
+                            actual_label.kind(),
+                            actual_label.namespace().clone(),
+                            actual_label.primary_spelling(),
+                            actual_label.origin().clone(),
+                            actual_label.contribution(),
+                        )
+                        .with_visibility(actual_label.visibility())
+                        .with_export_status(actual_label.export_status()),
+                    );
+                }
+            }
+            let attempted_symbols = make_symbols_with_labels(labels);
+            assert_ne!(attempted_symbols, pristine_symbols, "{name} env differs");
+            assert_eq!(
+                attempted_symbols.imports(),
+                pristine_symbols.imports(),
+                "{name} imports stay unchanged"
+            );
+            assert_eq!(
+                attempted_symbols.contributions(),
+                pristine_symbols.contributions(),
+                "{name} contribution effects stay unchanged"
+            );
+            assert!(
+                CheckedStatementOwner::validate_exact_local_theorem(
+                    &attempted_symbols,
+                    fixture.symbol.clone(),
+                    fixture.source,
+                    &fixture.module,
+                )
+                .is_ok(),
+                "{name} owner-only check remains valid"
+            );
+            assert_base_refusal(
+                &format!("label join {name}"),
+                pristine_input.clone(),
+                &attempted_symbols,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            );
+        }
 
         for mutation in 0..6 {
             let mut input = fixture.witness_input();
@@ -32894,6 +33709,18 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 "name field {mutation}"
             );
         }
+        let mut wrong_lower_name = fixture.witness_input();
+        wrong_lower_name.names[0].spelling = "z".to_owned();
+        let wrong_lower_name_before = wrong_lower_name.clone();
+        assert_eq!(
+            fixture.witnesses(&statement, wrong_lower_name.clone()),
+            Err(SourceStatementWitnessError::InvalidName {
+                name: SourceStatementWitnessNameId::new(0),
+            }),
+            "exact historical lower name spelling"
+        );
+        assert_eq!(wrong_lower_name, wrong_lower_name_before);
+        assert_pristine();
         let mut aggregate_first = fixture.witness_input();
         aggregate_first.names.clear();
         aggregate_first.witnesses[0].owner = SourceTheoremOwnerId::new(1);
@@ -33014,6 +33841,22 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                     Err(SourceStatementWitnessError::DependencyMismatch),
                     "node {index} mutation {mutation}"
                 );
+                let witness_input = fixture.witness_input();
+                let witness_input_before = witness_input.clone();
+                let arena_before = arena.clone();
+                assert_eq!(
+                    SourceStatementWitnessProducer::build(
+                        witness_input.clone(),
+                        &statement,
+                        &fixture.primary,
+                        &arena,
+                    ),
+                    Err(SourceStatementWitnessError::DependencyMismatch),
+                    "direct witness producer node {index} mutation {mutation}"
+                );
+                assert_eq!(witness_input, witness_input_before);
+                assert_eq!(arena, arena_before);
+                assert_pristine();
             }
         }
         assert_eq!(

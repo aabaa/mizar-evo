@@ -235,6 +235,7 @@ pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT: &str =
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M1_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementMultipleWitnessSmoke: x = x proof\n",
@@ -1933,11 +1934,6 @@ const SOURCE_STATEMENT_B2_LABEL: &str = "FormulaStatementSingleAssumptionSmoke";
 const SOURCE_STATEMENT_B3_LABEL: &str = "FormulaStatementSingleWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3N_LABEL: &str = "FormulaStatementNamedWitnessSmoke";
-const SOURCE_STATEMENT_B3M1_LABEL: &str = "FormulaStatementMultipleWitnessSmoke";
-const SOURCE_STATEMENT_B3M1_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementMultipleWitnessSmoke : x = x proof take y = x , x ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 const SOURCE_STATEMENT_B3M2A_LABEL: &str = "FormulaStatementNumeralWitnessSmoke";
 const SOURCE_STATEMENT_B3M2A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementNumeralWitnessSmoke : x = x proof take 101 ; thus x = x ; end ;",
@@ -2124,26 +2120,6 @@ pub(in crate::runner) struct SourceStatementB3NExtraction {
     pub(in crate::runner) take_site: TypedSiteRef,
     pub(in crate::runner) witness_site: TypedSiteRef,
     pub(in crate::runner) name_site: TypedSiteRef,
-}
-
-#[derive(Debug, Clone)]
-pub(in crate::runner) struct SourceStatementB3M1Extraction {
-    pub(in crate::runner) theorem_site: TypedSiteRef,
-    pub(in crate::runner) theorem_range: SourceRange,
-    pub(in crate::runner) label_range: SourceRange,
-    pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
-    pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) formula_ranges: [SourceRange; 2],
-    pub(in crate::runner) term_sites: [TypedSiteRef; 6],
-    pub(in crate::runner) term_ranges: [SourceRange; 6],
-    pub(in crate::runner) take_site: TypedSiteRef,
-    pub(in crate::runner) take_range: SourceRange,
-    pub(in crate::runner) witness_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) witness_ranges: [SourceRange; 2],
-    pub(in crate::runner) name_site: TypedSiteRef,
-    pub(in crate::runner) name_range: SourceRange,
-    pub(in crate::runner) proof_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -2428,53 +2404,6 @@ struct SourceStatementWitnessExtraction {
     structure_update_node: Option<usize>,
     set_term_node: Option<usize>,
     source_text: &'static str,
-}
-
-impl From<SourceStatementB3M1Extraction> for SourceStatementWitnessExtraction {
-    fn from(extracted: SourceStatementB3M1Extraction) -> Self {
-        Self {
-            theorem_site: extracted.theorem_site,
-            theorem_range: extracted.theorem_range,
-            label_range: extracted.label_range,
-            statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
-            formula_sites: extracted.formula_sites,
-            formula_ranges: extracted.formula_ranges,
-            term_sites: extracted.term_sites.into(),
-            term_ranges: extracted.term_ranges.into(),
-            take_site: extracted.take_site.clone(),
-            take_range: extracted.take_range,
-            witnesses: vec![
-                SourceStatementWitnessItemExtraction {
-                    site: extracted.witness_sites[0].clone(),
-                    range: extracted.witness_ranges[0],
-                    name: Some((extracted.name_site, extracted.name_range)),
-                    spelling: "y = x",
-                },
-                SourceStatementWitnessItemExtraction {
-                    site: extracted.witness_sites[1].clone(),
-                    range: extracted.witness_ranges[1],
-                    name: None,
-                    spelling: "x",
-                },
-            ],
-            proof_range: extracted.proof_range,
-            label: SOURCE_STATEMENT_B3M1_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M1_SPELLINGS,
-            task: "Task258B3M1",
-            node_count: 56,
-            root: 55,
-            atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 4],
-            application_node: None,
-            application_wrapper_node: None,
-            structure_node: None,
-            structure_selector_node: None,
-            structure_update_node: None,
-            set_term_node: None,
-            source_text: SOURCE_STATEMENT_B3M1_TEXT,
-        }
-    }
 }
 
 impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
@@ -3027,7 +2956,6 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) set_term: Option<SourceSetTermHandoff>,
 }
 
-pub(in crate::runner) type SourceStatementB3M1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2ARouteInputs = SourceStatementB3RouteInputs;
@@ -4039,157 +3967,6 @@ pub(in crate::runner) fn extract_named_witness_source_statement(
         take_site: surface_site(take_id),
         witness_site: surface_site(witness_id),
         name_site: surface_site(name_id),
-    })
-}
-
-pub(in crate::runner) fn extract_multiple_witness_source_statement(
-    ast: &SurfaceAst,
-    source_text: &str,
-) -> Option<SourceStatementB3M1Extraction> {
-    if source_text != SOURCE_STATEMENT_B3M1_TEXT
-        || source_text.len() != 113
-        || !source_text.ends_with('\n')
-        || ast.nodes().len() != 56
-        || ast.root()?.index() != 55
-        || ast
-            .nodes()
-            .iter()
-            .any(|node| node.recovered || node.range.source_id != ast.source_id)
-        || !exact_multiple_witness_surface_profile(ast)
-    {
-        return None;
-    }
-    let item_list = super::source_ast::exact_compilation_item_list(ast)?;
-    let item_children = structural_child_ids(ast, item_list);
-    let (theorem_id, theorem) = exact_surface_node(ast, SurfaceNodeKind::TheoremItem, 19, 112)?;
-    let (proof_id, proof) = exact_surface_node(ast, SurfaceNodeKind::ProofBlock, 71, 111)?;
-    let (take_id, take) = exact_surface_node(ast, SurfaceNodeKind::TakeStatement, 79, 93)?;
-    let witness_nodes = surface_nodes_with_kind(ast, SurfaceNodeKind::Witness);
-    let [
-        (first_witness_id, first_witness),
-        (second_witness_id, second_witness),
-    ] = witness_nodes.as_slice()
-    else {
-        return None;
-    };
-    let (conclusion_id, conclusion) =
-        exact_surface_node(ast, SurfaceNodeKind::ConclusionStatement, 96, 107)?;
-    if item_children.len() != 2
-        || item_children[0].index() != 29
-        || item_children[1] != theorem_id
-        || theorem_id.index() != 52
-        || proof_id.index() != 51
-        || take_id.index() != 42
-        || first_witness_id.index() != 38
-        || first_witness.range.start != 84
-        || first_witness.range.end != 89
-        || second_witness_id.index() != 41
-        || second_witness.range.start != 91
-        || second_witness.range.end != 92
-        || conclusion_id.index() != 50
-        || direct_token_texts(ast, theorem).as_slice()
-            != ["theorem", SOURCE_STATEMENT_B3M1_LABEL, ":", ";"]
-        || direct_token_texts(ast, proof).as_slice() != ["proof", "end"]
-        || direct_token_texts(ast, take).as_slice() != ["take", ",", ";"]
-        || direct_token_texts(ast, first_witness).as_slice() != ["y", "="]
-        || !direct_token_texts(ast, second_witness).is_empty()
-        || direct_token_texts(ast, conclusion).as_slice() != ["thus", ";"]
-        || !surface_is_descendant(ast, theorem_id, proof_id)
-        || !surface_is_descendant(ast, proof_id, take_id)
-        || !surface_is_descendant(ast, take_id, *first_witness_id)
-        || !surface_is_descendant(ast, take_id, *second_witness_id)
-        || surface_is_descendant(ast, *first_witness_id, *second_witness_id)
-        || surface_is_descendant(ast, *second_witness_id, *first_witness_id)
-        || !surface_is_descendant(ast, proof_id, conclusion_id)
-        || surface_is_descendant(ast, conclusion_id, take_id)
-        || surface_nodes_with_kind(ast, SurfaceNodeKind::ProofBlock).len() != 1
-        || surface_nodes_with_kind(ast, SurfaceNodeKind::TakeStatement).len() != 1
-        || surface_nodes_with_kind(ast, SurfaceNodeKind::ConclusionStatement).len() != 1
-        || !surface_nodes_with_kind(ast, SurfaceNodeKind::CompactStatement).is_empty()
-        || !surface_nodes_with_kind(ast, SurfaceNodeKind::Reference).is_empty()
-        || !surface_nodes_with_kind(ast, SurfaceNodeKind::JustificationClause).is_empty()
-    {
-        return None;
-    }
-    let label = ast.nodes().get(6)?;
-    let name_id = *first_witness.children.first()?;
-    let name = ast.node(name_id)?;
-    if label.range.start != 27
-        || label.range.end != 63
-        || label.token_text() != Some(SOURCE_STATEMENT_B3M1_LABEL)
-        || name.range.start != 84
-        || name.range.end != 85
-        || name_id.index() != 13
-        || name.token_text() != Some("y")
-        || !surface_is_descendant(ast, *first_witness_id, name_id)
-        || surface_is_descendant(ast, *second_witness_id, name_id)
-    {
-        return None;
-    }
-    let statement_ids = [theorem_id, conclusion_id];
-    let formula_ranges = [(65, 70), (101, 106)];
-    let expected_formula_ids = [34, 47];
-    let mut formula_ids = Vec::new();
-    for (index, (start, end)) in formula_ranges.into_iter().enumerate() {
-        let (id, formula) = exact_surface_node(
-            ast,
-            SurfaceNodeKind::BuiltinPredicateApplication,
-            start,
-            end,
-        )?;
-        if id.index() != expected_formula_ids[index]
-            || direct_token_texts(ast, formula).as_slice() != ["="]
-            || !surface_is_descendant(ast, statement_ids[index], id)
-            || surface_is_descendant(ast, take_id, id)
-        {
-            return None;
-        }
-        formula_ids.push(id);
-    }
-    let term_ranges = [
-        (65, 66),
-        (69, 70),
-        (88, 89),
-        (91, 92),
-        (101, 102),
-        (105, 106),
-    ];
-    let expected_term_ids = [30, 32, 36, 39, 43, 45];
-    let mut term_sites = Vec::new();
-    for (index, (start, end)) in term_ranges.into_iter().enumerate() {
-        let (id, term) = exact_surface_node(ast, SurfaceNodeKind::TermReference, start, end)?;
-        if id.index() != expected_term_ids[index]
-            || direct_token_texts(ast, term).as_slice() != ["x"]
-            || (index == 2 && !surface_is_descendant(ast, *first_witness_id, id))
-            || (index == 3 && !surface_is_descendant(ast, *second_witness_id, id))
-            || (index < 2 && !surface_is_descendant(ast, theorem_id, id))
-            || (index >= 4 && !surface_is_descendant(ast, conclusion_id, id))
-        {
-            return None;
-        }
-        term_sites.push(surface_site(id));
-    }
-    let formula_ids: [mizar_syntax::SurfaceNodeId; 2] = formula_ids.try_into().ok()?;
-    Some(SourceStatementB3M1Extraction {
-        theorem_site: surface_site(theorem_id),
-        theorem_range: theorem.range,
-        label_range: label.range,
-        statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [range(ast.source_id, 19, 112), range(ast.source_id, 96, 107)],
-        formula_sites: formula_ids.map(surface_site),
-        formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
-        term_sites: term_sites.try_into().ok()?,
-        term_ranges: term_ranges.map(|(start, end)| range(ast.source_id, start, end)),
-        take_site: surface_site(take_id),
-        take_range: take.range,
-        witness_sites: [
-            surface_site(*first_witness_id),
-            surface_site(*second_witness_id),
-        ],
-        witness_ranges: [first_witness.range, second_witness.range],
-        name_site: surface_site(name_id),
-        name_range: name.range,
-        proof_range: proof.range,
     })
 }
 
@@ -6985,195 +6762,6 @@ fn exact_nested_parenthesized_witness_surface_profile(ast: &SurfaceAst) -> bool 
                         .iter()
                         .map(|child| child.index())
                         .eq(task258b3m2b2a_surface_children(index).iter().copied())
-            })
-        })
-}
-
-const TASK258B3M1_SURFACE_RANGES: [(usize, usize); 56] = [
-    (0, 7),
-    (8, 9),
-    (10, 13),
-    (14, 17),
-    (17, 18),
-    (19, 26),
-    (27, 63),
-    (63, 64),
-    (65, 66),
-    (67, 68),
-    (69, 70),
-    (71, 76),
-    (79, 83),
-    (84, 85),
-    (86, 87),
-    (88, 89),
-    (89, 90),
-    (91, 92),
-    (92, 93),
-    (96, 100),
-    (101, 102),
-    (103, 104),
-    (105, 106),
-    (106, 107),
-    (108, 111),
-    (111, 112),
-    (14, 17),
-    (14, 17),
-    (8, 17),
-    (0, 18),
-    (65, 66),
-    (65, 66),
-    (69, 70),
-    (69, 70),
-    (65, 70),
-    (65, 70),
-    (88, 89),
-    (88, 89),
-    (84, 89),
-    (91, 92),
-    (91, 92),
-    (91, 92),
-    (79, 93),
-    (101, 102),
-    (101, 102),
-    (105, 106),
-    (105, 106),
-    (101, 106),
-    (101, 106),
-    (101, 106),
-    (96, 107),
-    (71, 111),
-    (19, 112),
-    (0, 112),
-    (0, 112),
-    (0, 112),
-];
-
-const TASK258B3M1_TOKEN_TEXTS: [&str; 26] = [
-    "reserve",
-    "x",
-    "for",
-    "set",
-    ";",
-    "theorem",
-    "FormulaStatementMultipleWitnessSmoke",
-    ":",
-    "x",
-    "=",
-    "x",
-    "proof",
-    "take",
-    "y",
-    "=",
-    "x",
-    ",",
-    "x",
-    ";",
-    "thus",
-    "x",
-    "=",
-    "x",
-    ";",
-    "end",
-    ";",
-];
-
-fn task258b3m1_token_kind(index: usize) -> SurfaceTokenKind {
-    match index {
-        0 | 2 | 3 | 5 | 11 | 12 | 19 | 24 => SurfaceTokenKind::ReservedWord,
-        1 | 6 | 8 | 10 | 13 | 15 | 17 | 20 | 22 => SurfaceTokenKind::Identifier,
-        4 | 7 | 9 | 14 | 16 | 18 | 21 | 23 | 25 => SurfaceTokenKind::ReservedSymbol,
-        _ => unreachable!("Task258B3M1 has exactly 26 tokens"),
-    }
-}
-
-fn task258b3m1_surface_kind(index: usize) -> SyntaxKind {
-    match index {
-        0..=25 => SyntaxKind::Token,
-        26 => SyntaxKind::TypeHead,
-        27 => SyntaxKind::TypeExpression,
-        28 => SyntaxKind::ReserveSegment,
-        29 => SyntaxKind::ReserveItem,
-        30 | 32 | 36 | 39 | 43 | 45 => SyntaxKind::TermReference,
-        31 | 33 | 37 | 40 | 44 | 46 => SyntaxKind::TermExpression,
-        34 | 47 => SyntaxKind::BuiltinPredicateApplication,
-        35 | 48 => SyntaxKind::FormulaExpression,
-        38 | 41 => SyntaxKind::Witness,
-        42 => SyntaxKind::TakeStatement,
-        49 => SyntaxKind::Proposition,
-        50 => SyntaxKind::ConclusionStatement,
-        51 => SyntaxKind::ProofBlock,
-        52 => SyntaxKind::TheoremItem,
-        53 => SyntaxKind::ItemList,
-        54 => SyntaxKind::CompilationUnit,
-        55 => SyntaxKind::Root,
-        _ => unreachable!("Task258B3M1 has exactly 56 nodes"),
-    }
-}
-
-fn task258b3m1_surface_children(index: usize) -> &'static [usize] {
-    match index {
-        26 => &[3],
-        27 => &[26],
-        28 => &[1, 2, 27],
-        29 => &[0, 28, 4],
-        30 => &[8],
-        31 => &[30],
-        32 => &[10],
-        33 => &[32],
-        34 => &[31, 9, 33],
-        35 => &[34],
-        36 => &[15],
-        37 => &[36],
-        38 => &[13, 14, 37],
-        39 => &[17],
-        40 => &[39],
-        41 => &[40],
-        42 => &[12, 38, 16, 41, 18],
-        43 => &[20],
-        44 => &[43],
-        45 => &[22],
-        46 => &[45],
-        47 => &[44, 21, 46],
-        48 => &[47],
-        49 => &[48],
-        50 => &[19, 49, 23],
-        51 => &[11, 42, 50, 24],
-        52 => &[5, 6, 7, 35, 51, 25],
-        53 => &[29, 52],
-        54 => &[53],
-        55 => &[
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 54,
-        ],
-        _ => &[],
-    }
-}
-
-fn exact_multiple_witness_surface_profile(ast: &SurfaceAst) -> bool {
-    TASK258B3M1_SURFACE_RANGES
-        .iter()
-        .copied()
-        .enumerate()
-        .all(|(index, (start, end))| {
-            ast.nodes().get(index).is_some_and(|node| {
-                let exact_token = if index < TASK258B3M1_TOKEN_TEXTS.len() {
-                    matches!(
-                        &node.kind,
-                        SurfaceNodeKind::Token(token)
-                            if token.kind == task258b3m1_token_kind(index)
-                                && token.text.as_ref() == TASK258B3M1_TOKEN_TEXTS[index]
-                    )
-                } else {
-                    true
-                };
-                exact_token
-                    && node.range == range(ast.source_id, start, end)
-                    && node.kind.syntax_kind() == task258b3m1_surface_kind(index)
-                    && node
-                        .children
-                        .iter()
-                        .map(|child| child.index())
-                        .eq(task258b3m1_surface_children(index).iter().copied())
             })
         })
 }
@@ -14113,15 +13701,7 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M1_TEXT {
-        return source_statement_b3m1_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
+
     None
 }
 
@@ -15961,72 +15541,6 @@ fn source_statement_b3m2a_output_with_source_and_mutation_impl(
     ))
 }
 
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m1_output_with_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m1_output_with_source_and_mutation_impl(
-        ast,
-        module,
-        symbols,
-        source_text,
-        mutate,
-    )
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m1_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_multiple_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M1_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => mutate(symbols),
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3m1_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
-    ))
-}
-
-fn source_statement_b3m1_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_multiple_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M1_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3m1_output(
-        ast, module, &symbols, extracted, mutate,
-    ))
-}
-
 fn source_statement_b4c_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16521,20 +16035,6 @@ pub(in crate::runner) fn source_statement_resolver_env_for_test(
     extracted: &SourceStatementExtraction,
 ) -> Result<SymbolEnv, String> {
     enrich_source_statement_resolver_env(module, symbols, extracted)
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m1_resolver_env_for_test(
-    module: &ModuleId,
-    symbols: &SymbolEnv,
-    extracted: &SourceStatementB3M1Extraction,
-) -> Result<SymbolEnv, String> {
-    enrich_source_statement_resolver_env_for_owner(
-        module,
-        symbols,
-        SOURCE_STATEMENT_B3M1_LABEL,
-        extracted.label_range,
-    )
 }
 
 #[cfg(test)]
@@ -18010,16 +17510,6 @@ fn build_source_statement_b4a_output(
         right_lookup_ordinal: *right_lookup_ordinal,
         reference_use_ordinals,
     })
-}
-
-fn build_source_statement_b3m1_output(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    extracted: SourceStatementB3M1Extraction,
-    mutate: impl FnOnce(&mut SourceStatementB3M1RouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
 fn build_source_statement_b3m2a_output(

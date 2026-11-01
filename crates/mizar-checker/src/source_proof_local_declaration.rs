@@ -1,28 +1,36 @@
 //! Syntax-free transport for proof-local declaration binding transactions.
 
+#[cfg(test)]
+use crate::{
+    binding_env::BindingContextTable,
+    source_statement::SourceStatementWitnessError,
+    source_term::SourcePrimaryTermId,
+    typed_ast::{
+        NodeRecoveryState, TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks, TypingState,
+    },
+};
 use crate::{
     binding_env::{
         BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
-        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDraft, BindingEnv,
-        BindingEnvParts, BindingId, BindingKind, BindingLookupResult, BindingLookupSite,
-        BindingRecoveryState, BindingStatus, BindingTypeSite,
+        BindingContextOwner, BindingContextRecovery, BindingDraft, BindingEnv, BindingEnvParts,
+        BindingId, BindingKind, BindingLookupResult, BindingLookupSite, BindingRecoveryState,
+        BindingStatus, BindingTypeSite,
     },
     source_statement::{
-        SourceStatementHandoff, SourceStatementWitnessError, SourceStatementWitnessHandoff,
-        SourceStatementWitnessId, SourceStatementWitnessNameId, SourceStatementWitnessTermTarget,
+        SourceStatementHandoff, SourceStatementWitnessHandoff, SourceStatementWitnessId,
+        SourceStatementWitnessNameId, SourceStatementWitnessTermTarget,
     },
-    source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
-    typed_ast::{
-        NodeRecoveryState, TypedArena, TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks,
-        TypingState,
-    },
+    source_term::SourcePrimaryTermHandoff,
+    typed_ast::TypedArena,
 };
 use mizar_resolve::{
     env::{DefinitionId, SourceContributionId},
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{ModuleId, SymbolId},
 };
-use mizar_session::{SourceAnchor, SourceId, SourceRange};
+#[cfg(test)]
+use mizar_session::SourceAnchor;
+use mizar_session::{SourceId, SourceRange};
 use std::{
     error::Error,
     fmt::{self, Write as _},
@@ -290,51 +298,61 @@ impl SourceProofLocalDeclarationHandoff {
             return Err(SourceProofLocalDeclarationError::InvalidTransaction);
         }
         validate_transaction_identity(source_id, module_id, statements, witnesses, primary_terms)?;
-        if self.base_binding_fingerprint != statements.binding_env().debug_text()
-            || self.statement_fingerprint != statements.debug_text()
-            || self.witness_fingerprint != witnesses.debug_text()
-            || self.primary_term_fingerprint != primary_terms.debug_text()
+        #[cfg(not(test))]
         {
-            return Err(SourceProofLocalDeclarationError::DependencyMismatch);
+            let _ = arena;
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
         }
+        #[cfg(test)]
+        {
+            if self.base_binding_fingerprint != statements.binding_env().debug_text()
+                || self.statement_fingerprint != statements.debug_text()
+                || self.witness_fingerprint != witnesses.debug_text()
+                || self.primary_term_fingerprint != primary_terms.debug_text()
+            {
+                return Err(SourceProofLocalDeclarationError::DependencyMismatch);
+            }
 
-        let lower = validate_lower_dependencies(
-            self.source_id,
-            &self.module_id,
-            statements,
-            witnesses,
-            primary_terms,
-        )?;
-        if self.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
-            return Err(SourceProofLocalDeclarationError::InvalidAggregate);
-        }
-        let id = SourceProofLocalDeclarationId::new(0);
-        let declaration = self
-            .declarations
-            .get(id)
-            .ok_or(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id })?;
-        if lower.failure == Some(LowerFailure::Declaration)
-            || !exact_output_declaration(declaration)
-            || !exact_output_local_fields(&self.binding_env, self.source_id, lower.profile)
-        {
-            return Err(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id });
-        }
-        if !exact_frozen_arena(lower.profile, self.source_id, arena) {
-            return Err(SourceProofLocalDeclarationError::InvalidArena);
-        }
+            let lower = validate_lower_dependencies(
+                self.source_id,
+                &self.module_id,
+                statements,
+                witnesses,
+                primary_terms,
+            )?;
+            if self.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
+                return Err(SourceProofLocalDeclarationError::InvalidAggregate);
+            }
+            let id = SourceProofLocalDeclarationId::new(0);
+            let declaration = self
+                .declarations
+                .get(id)
+                .ok_or(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id })?;
+            if lower.failure == Some(LowerFailure::Declaration)
+                || !exact_output_declaration(declaration)
+                || !exact_output_local_fields(&self.binding_env, self.source_id, lower.profile)
+            {
+                return Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                    declaration: id,
+                });
+            }
+            if !exact_frozen_arena(lower.profile, self.source_id, arena) {
+                return Err(SourceProofLocalDeclarationError::InvalidArena);
+            }
 
-        let expected = extend_binding_env(
-            statements.binding_env(),
-            &exact_local(self.source_id, lower.profile),
-            lower.profile,
-        )?;
-        if self.binding_env != expected
-            || self.final_binding_fingerprint != self.binding_env.debug_text()
-            || !exact_lookup_behavior(&self.binding_env)
-        {
-            return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
+            let expected = extend_binding_env(
+                statements.binding_env(),
+                &exact_local(self.source_id, lower.profile),
+                lower.profile,
+            )?;
+            if self.binding_env != expected
+                || self.final_binding_fingerprint != self.binding_env.debug_text()
+                || !exact_lookup_behavior(&self.binding_env)
+            {
+                return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
+            }
+            Ok(())
         }
-        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)] // Rationale: append the phase-7 owner guard to the complete frozen replay.
@@ -483,56 +501,66 @@ impl SourceProofLocalDeclarationProducer {
             witnesses,
             primary_terms,
         )?;
-        let lower = validate_lower_dependencies(
-            input.source_id,
-            &input.module_id,
-            statements,
-            witnesses,
-            primary_terms,
-        )?;
-        if input.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
-            return Err(SourceProofLocalDeclarationError::InvalidAggregate);
-        }
-        let id = SourceProofLocalDeclarationId::new(0);
-        let declaration = &input.declarations[0];
-        if lower.failure == Some(LowerFailure::Declaration)
-            || !exact_input_declaration(declaration, witnesses, lower.profile)
+        #[cfg(not(test))]
         {
-            return Err(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id });
+            let _ = arena;
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
         }
-        if !exact_frozen_arena(lower.profile, input.source_id, arena) {
-            return Err(SourceProofLocalDeclarationError::InvalidArena);
-        }
+        #[cfg(test)]
+        {
+            let lower = validate_lower_dependencies(
+                input.source_id,
+                &input.module_id,
+                statements,
+                witnesses,
+                primary_terms,
+            )?;
+            if input.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
+                return Err(SourceProofLocalDeclarationError::InvalidAggregate);
+            }
+            let id = SourceProofLocalDeclarationId::new(0);
+            let declaration = &input.declarations[0];
+            if lower.failure == Some(LowerFailure::Declaration)
+                || !exact_input_declaration(declaration, witnesses, lower.profile)
+            {
+                return Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                    declaration: id,
+                });
+            }
+            if !exact_frozen_arena(lower.profile, input.source_id, arena) {
+                return Err(SourceProofLocalDeclarationError::InvalidArena);
+            }
 
-        let binding_env =
-            extend_binding_env(statements.binding_env(), &declaration.local, lower.profile)?;
-        if !exact_lookup_behavior(&binding_env) {
-            return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
+            let binding_env =
+                extend_binding_env(statements.binding_env(), &declaration.local, lower.profile)?;
+            if !exact_lookup_behavior(&binding_env) {
+                return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
+            }
+            let final_binding_fingerprint = binding_env.debug_text();
+            Ok(SourceProofLocalDeclarationHandoff {
+                source_id: input.source_id,
+                module_id: input.module_id,
+                base_binding_fingerprint: statements.binding_env().debug_text(),
+                statement_fingerprint: statements.debug_text(),
+                witness_fingerprint: witnesses.debug_text(),
+                primary_term_fingerprint: primary_terms.debug_text(),
+                binding_env,
+                final_binding_fingerprint,
+                declarations: SourceProofLocalDeclarationTable {
+                    rows: vec![SourceProofLocalDeclaration {
+                        witness: declaration.witness,
+                        name: declaration.name,
+                        rhs: declaration.rhs,
+                        binding: BindingId::new(1),
+                        binding_context: declaration.binding_context,
+                        source_ordinal: declaration.source_ordinal,
+                        visible_after_ordinal: declaration.local.visible_after_ordinal(),
+                        kind: declaration.kind,
+                        recovery: declaration.recovery,
+                    }],
+                },
+            })
         }
-        let final_binding_fingerprint = binding_env.debug_text();
-        Ok(SourceProofLocalDeclarationHandoff {
-            source_id: input.source_id,
-            module_id: input.module_id,
-            base_binding_fingerprint: statements.binding_env().debug_text(),
-            statement_fingerprint: statements.debug_text(),
-            witness_fingerprint: witnesses.debug_text(),
-            primary_term_fingerprint: primary_terms.debug_text(),
-            binding_env,
-            final_binding_fingerprint,
-            declarations: SourceProofLocalDeclarationTable {
-                rows: vec![SourceProofLocalDeclaration {
-                    witness: declaration.witness,
-                    name: declaration.name,
-                    rhs: declaration.rhs,
-                    binding: BindingId::new(1),
-                    binding_context: declaration.binding_context,
-                    source_ordinal: declaration.source_ordinal,
-                    visible_after_ordinal: declaration.local.visible_after_ordinal(),
-                    kind: declaration.kind,
-                    recovery: declaration.recovery,
-                }],
-            },
-        })
     }
 }
 
@@ -582,19 +610,21 @@ impl fmt::Display for SourceProofLocalDeclarationError {
 
 impl Error for SourceProofLocalDeclarationError {}
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LowerFailure {
     Aggregate,
     Declaration,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FrozenProfile {
-    #[cfg(test)]
     Task258B3N,
     Task258B3M1,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct LowerValidation {
     profile: FrozenProfile,
@@ -620,6 +650,7 @@ fn validate_transaction_identity(
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_lower_dependencies(
     source_id: SourceId,
     module_id: &ModuleId,
@@ -629,16 +660,9 @@ fn validate_lower_dependencies(
 ) -> Result<LowerValidation, SourceProofLocalDeclarationError> {
     let profile = if statements.is_task_258b3m1_profile() {
         FrozenProfile::Task258B3M1
+    } else if statements.is_task_258b3n_profile() {
+        FrozenProfile::Task258B3N
     } else {
-        #[cfg(test)]
-        {
-            if statements.is_task_258b3n_profile() {
-                FrozenProfile::Task258B3N
-            } else {
-                return Err(SourceProofLocalDeclarationError::DependencyMismatch);
-            }
-        }
-        #[cfg(not(test))]
         return Err(SourceProofLocalDeclarationError::DependencyMismatch);
     };
     if statements.binding_env().source_id() != source_id
@@ -669,6 +693,7 @@ fn validate_lower_dependencies(
     Ok(LowerValidation { profile, failure })
 }
 
+#[cfg(test)]
 fn exact_input_declaration(
     declaration: &SourceProofLocalDeclarationInput,
     witnesses: &SourceStatementWitnessHandoff,
@@ -693,6 +718,7 @@ fn exact_input_declaration(
         && declaration.recovery == SourceProofLocalDeclarationRecovery::Normal
 }
 
+#[cfg(test)]
 fn exact_output_declaration(declaration: &SourceProofLocalDeclaration) -> bool {
     declaration.witness == SourceStatementWitnessId::new(0)
         && declaration.name == SourceStatementWitnessNameId::new(0)
@@ -705,6 +731,7 @@ fn exact_output_declaration(declaration: &SourceProofLocalDeclaration) -> bool {
         && declaration.recovery == SourceProofLocalDeclarationRecovery::Normal
 }
 
+#[cfg(test)]
 fn exact_output_local_fields(
     binding_env: &BindingEnv,
     source_id: SourceId,
@@ -732,6 +759,7 @@ fn exact_output_local_fields(
         })
 }
 
+#[cfg(test)]
 fn exact_local_fields(local: &LocalTermBinding, profile: FrozenProfile) -> bool {
     let (start, end) = frozen_local_range(profile);
     local.spelling() == "y"
@@ -741,6 +769,7 @@ fn exact_local_fields(local: &LocalTermBinding, profile: FrozenProfile) -> bool 
         && local.visible_after_ordinal() == 1
 }
 
+#[cfg(test)]
 fn exact_local(source_id: SourceId, profile: FrozenProfile) -> LocalTermBinding {
     let (start, end) = frozen_local_range(profile);
     LocalTermBinding::new(
@@ -751,6 +780,7 @@ fn exact_local(source_id: SourceId, profile: FrozenProfile) -> LocalTermBinding 
     )
 }
 
+#[cfg(test)]
 const fn frozen_local_range(profile: FrozenProfile) -> (usize, usize) {
     match profile {
         #[cfg(test)]
@@ -759,6 +789,7 @@ const fn frozen_local_range(profile: FrozenProfile) -> (usize, usize) {
     }
 }
 
+#[cfg(test)]
 fn extend_binding_env(
     base: &BindingEnv,
     local: &LocalTermBinding,
@@ -810,6 +841,7 @@ fn extend_binding_env(
     .map_err(|_| SourceProofLocalDeclarationError::InvalidBindingEnvironment)
 }
 
+#[cfg(test)]
 fn exact_lookup_behavior(binding_env: &BindingEnv) -> bool {
     let definition_site = BindingLookupSite::new(
         "y",
@@ -912,6 +944,7 @@ const TASK258B3N_NODE_RANGES: [(usize, usize); 51] = [
     (0, 106),
 ];
 
+#[cfg(test)]
 const TASK258B3M1_NODE_RANGES: [(usize, usize); 56] = [
     (0, 7),
     (8, 9),
@@ -1022,6 +1055,7 @@ fn task258b3n_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn task258b3m1_node_children(index: usize) -> &'static [usize] {
     match index {
         26 => &[3],
@@ -1061,6 +1095,7 @@ fn task258b3m1_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b3m1_node_kind(index: usize) -> &'static str {
     match index {
         30 | 32 | 36 | 39 | 43 | 45 => "source.term.variable-reference",
@@ -1074,6 +1109,7 @@ fn task258b3m1_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn exact_frozen_arena(profile: FrozenProfile, source_id: SourceId, arena: &TypedArena) -> bool {
     match profile {
         #[cfg(test)]
@@ -1107,6 +1143,7 @@ fn exact_task258b3n_arena(source_id: SourceId, arena: &TypedArena) -> bool {
             })
 }
 
+#[cfg(test)]
 fn exact_task258b3m1_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     arena.len() == TASK258B3M1_NODE_RANGES.len()
         && arena.root() == Some(TypedNodeId::new(55))
@@ -1131,6 +1168,7 @@ fn exact_task258b3m1_arena(source_id: SourceId, arena: &TypedArena) -> bool {
             })
 }
 
+#[cfg(test)]
 fn frozen_canonical_arena(profile: FrozenProfile, source_id: SourceId) -> TypedArena {
     match profile {
         #[cfg(test)]
@@ -1164,6 +1202,7 @@ fn task258b3n_canonical_arena(source_id: SourceId) -> TypedArena {
         .expect("frozen Task258B3N arena is valid")
 }
 
+#[cfg(test)]
 fn task258b3m1_canonical_arena(source_id: SourceId) -> TypedArena {
     let mut builder = TypedArenaBuilder::new();
     let mut ids = Vec::with_capacity(TASK258B3M1_NODE_RANGES.len());

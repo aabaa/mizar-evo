@@ -6662,49 +6662,53 @@ impl TermFormulaChecker {
                 return Err(invalid());
             };
             if node.kind() == &K::TakeStatement {
-                let witness_id = node.children()[1];
-                let witness = source.arena().node(witness_id).ok_or_else(invalid)?;
-                let (name, expression_id) = match witness.children() {
-                    [expression] => (None, *expression),
-                    [name, _, expression] => (Some(*name), *expression),
-                    _ => return Err(invalid()),
-                };
-                let expression = source.arena().node(expression_id).ok_or_else(invalid)?;
-                let term_site = expression.children()[0];
-                let (term_id, term) = primary
-                    .terms()
-                    .iter()
-                    .find(|(_, term)| term.site().node().index() == term_site.index())
-                    .ok_or_else(invalid)?;
-                let SourceAnchor::Range(witness_range) = witness.origin().anchor() else {
-                    return Err(invalid());
-                };
                 if witnesses.is_some() {
                     return Err(invalid());
                 }
-                let names = match name {
-                    Some(id) => {
-                        let name = source.arena().node(id).ok_or_else(invalid)?;
-                        let K::Token(token) = name.kind() else {
-                            return Err(invalid());
-                        };
-                        let SourceAnchor::Range(range) = name.origin().anchor() else {
-                            return Err(invalid());
-                        };
-                        vec![SourceStatementWitnessNameInput {
-                            witness: SourceStatementWitnessId::new(0),
-                            site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
-                            source_range: *range,
-                            spelling: token.text.to_string(),
-                            recovery: SourceStatementRecovery::Normal,
-                        }]
-                    }
-                    None => Vec::new(),
-                };
-                witnesses = Some(SourceStatementWitnessHandoffInput {
-                    source_id: source.source_id(),
-                    module_id: source.module().clone(),
-                    witnesses: vec![SourceStatementWitnessInput {
+                let mut rows = Vec::new();
+                let mut names = Vec::new();
+                for (ordinal, witness_id) in node.children()[1..node.children().len() - 1]
+                    .iter()
+                    .step_by(2)
+                    .copied()
+                    .enumerate()
+                {
+                    let witness = source.arena().node(witness_id).ok_or_else(invalid)?;
+                    let (name, expression_id) = match witness.children() {
+                        [expression] => (None, *expression),
+                        [name, _, expression] => (Some(*name), *expression),
+                        _ => return Err(invalid()),
+                    };
+                    let expression = source.arena().node(expression_id).ok_or_else(invalid)?;
+                    let term_site = expression.children()[0];
+                    let (term_id, term) = primary
+                        .terms()
+                        .iter()
+                        .find(|(_, term)| term.site().node().index() == term_site.index())
+                        .ok_or_else(invalid)?;
+                    let SourceAnchor::Range(witness_range) = witness.origin().anchor() else {
+                        return Err(invalid());
+                    };
+                    let item_names = match name {
+                        Some(id) => {
+                            let name = source.arena().node(id).ok_or_else(invalid)?;
+                            let K::Token(token) = name.kind() else {
+                                return Err(invalid());
+                            };
+                            let SourceAnchor::Range(range) = name.origin().anchor() else {
+                                return Err(invalid());
+                            };
+                            vec![SourceStatementWitnessNameInput {
+                                witness: SourceStatementWitnessId::new(ordinal),
+                                site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
+                                source_range: *range,
+                                spelling: token.text.to_string(),
+                                recovery: SourceStatementRecovery::Normal,
+                            }]
+                        }
+                        None => Vec::new(),
+                    };
+                    rows.push(SourceStatementWitnessInput {
                         owner: SourceTheoremOwnerId::new(0),
                         binding_context: term.context(),
                         term: SourceStatementWitnessTermTarget::Primary(term_id),
@@ -6713,8 +6717,8 @@ impl TermFormulaChecker {
                         site: TypedSiteRef::Node(TypedNodeId::new(witness_id.index())),
                         source_range: *witness_range,
                         source_ordinal,
-                        ordinal: 0,
-                        spelling: names.first().map_or_else(
+                        ordinal,
+                        spelling: item_names.first().map_or_else(
                             || term.spelling().to_owned(),
                             |name| format!("{} = {}", name.spelling, term.spelling()),
                         ),
@@ -6725,7 +6729,13 @@ impl TermFormulaChecker {
                         },
                         recovery: SourceStatementRecovery::Normal,
                         name: name.map(|_| SourceStatementWitnessNameId::new(0)),
-                    }],
+                    });
+                    names.extend(item_names);
+                }
+                witnesses = Some(SourceStatementWitnessHandoffInput {
+                    source_id: source.source_id(),
+                    module_id: source.module().clone(),
+                    witnesses: rows,
                     names,
                 });
                 continue;
@@ -7173,6 +7183,12 @@ impl TermFormulaChecker {
                 .arena()
                 .iter()
                 .any(|(_, current)| current.kind() == &K::TakeStatement);
+        let witness_count = source
+            .arena()
+            .iter()
+            .filter(|(_, current)| current.kind() == &K::TakeStatement)
+            .map(|(_, current)| current.children().len() / 2)
+            .sum::<usize>();
         let descendant_reserved = nested_reserved
             && source.arena().iter().any(|(_, current)| {
                 current.kind() == &K::ConclusionStatement
@@ -7286,6 +7302,7 @@ impl TermFormulaChecker {
                 }
                 (K::ProofBlock, ["proof", "TakeStatement", "ConclusionStatement", "end"])
                 | (K::TakeStatement, ["take", "Witness", ";"])
+                | (K::TakeStatement, ["take", "Witness", ",", "Witness", ";"])
                 | (K::Witness, ["TermExpression"])
                 | (K::Witness, ["identifier", "=", "TermExpression"])
                     if witness_reserved =>
@@ -7492,7 +7509,7 @@ impl TermFormulaChecker {
                 (&K::ProofBlock, 1),
                 (&K::AssumptionStatement, usize::from(!witness_reserved)),
                 (&K::TakeStatement, usize::from(witness_reserved)),
-                (&K::Witness, usize::from(witness_reserved)),
+                (&K::Witness, witness_count),
                 (&K::ConclusionStatement, 1),
                 (&K::CompactStatement, 0),
                 (&K::Reference, 0),
@@ -7519,8 +7536,18 @@ impl TermFormulaChecker {
             let [_, item, conclusion, _] = node(*proof)?.children() else {
                 return Err(invalid());
             };
-            let [_, body, _] = node(*item)?.children() else {
-                return Err(invalid());
+            let body = match node(*item)?.children() {
+                [_, body, _] => *body,
+                [_, named, _, unnamed, _]
+                    if witness_reserved
+                        && node(*named)?.kind() == &K::Witness
+                        && node(*named)?.children().len() == 3
+                        && node(*unnamed)?.kind() == &K::Witness
+                        && node(*unnamed)?.children().len() == 1 =>
+                {
+                    *named
+                }
+                _ => return Err(invalid()),
             };
             let [_, conclusion_proposition, _] = node(*conclusion)?.children() else {
                 return Err(invalid());
@@ -7541,11 +7568,11 @@ impl TermFormulaChecker {
             }
             let mut formula_sites = vec![*theorem_formula];
             if witness_reserved {
-                if assumption_reserved || node(*body)?.kind() != &K::Witness {
+                if assumption_reserved || node(body)?.kind() != &K::Witness {
                     return Err(invalid());
                 }
             } else {
-                let [formula] = node(*body)?.children() else {
+                let [formula] = node(body)?.children() else {
                     return Err(invalid());
                 };
                 formula_sites.push(*formula);
@@ -17829,7 +17856,10 @@ impl SourceVariableSemanticsChecker {
                 .iter()
                 .filter(|(_, node)| node.kind() == &K::Witness)
                 .count()
-                != takes.len()
+                != takes
+                    .iter()
+                    .map(|(_, take)| take.children().len() / 2)
+                    .sum::<usize>()
             || (!takes.is_empty() && equalities.len() != 2)
         {
             return Err(invalid());
@@ -17845,32 +17875,45 @@ impl SourceVariableSemanticsChecker {
             operand_sites.extend([*left, *right]);
         }
         for (_, take) in &takes {
-            let [keyword, witness, semicolon] = take.children() else {
-                return Err(invalid());
-            };
-            let operand = match node(*witness)?.children() {
-                [operand] => *operand,
-                [name, equals, operand] => {
-                    if !matches!(node(*name)?.kind(), K::Token(token)
-                        if token.kind == SurfaceTokenKind::Identifier
-                            && mizar_lexer::is_identifier(&token.text)
-                            && token.text.as_ref() != declaration.spelling())
-                        || !matches!(node(*equals)?.kind(), K::Token(token)
-                            if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "=")
-                    {
-                        return Err(invalid());
-                    }
-                    *operand
+            let (keyword, witnesses, semicolon) = match take.children() {
+                [keyword, witness, semicolon] => (*keyword, vec![*witness], *semicolon),
+                [keyword, named, comma, unnamed, semicolon]
+                    if node(*named)?.children().len() == 3
+                        && node(*unnamed)?.children().len() == 1
+                        && matches!(node(*comma)?.kind(), K::Token(token)
+                            if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ",") =>
+                {
+                    (*keyword, vec![*named, *unnamed], *semicolon)
                 }
                 _ => return Err(invalid()),
             };
-            if !matches!(node(*keyword)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "take")
-                || !matches!(node(*semicolon)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ";")
-                || node(*witness)?.kind() != &K::Witness
+            if !matches!(node(keyword)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "take")
+                || !matches!(node(semicolon)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ";")
             {
                 return Err(invalid());
             }
-            operand_sites.push(operand);
+            for witness in witnesses {
+                if node(witness)?.kind() != &K::Witness {
+                    return Err(invalid());
+                }
+                let operand = match node(witness)?.children() {
+                    [operand] => *operand,
+                    [name, equals, operand] => {
+                        if !matches!(node(*name)?.kind(), K::Token(token)
+                            if token.kind == SurfaceTokenKind::Identifier
+                                && mizar_lexer::is_identifier(&token.text)
+                                && token.text.as_ref() != declaration.spelling())
+                            || !matches!(node(*equals)?.kind(), K::Token(token)
+                                if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "=")
+                        {
+                            return Err(invalid());
+                        }
+                        *operand
+                    }
+                    _ => return Err(invalid()),
+                };
+                operand_sites.push(operand);
+            }
         }
         operand_sites.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
         let mut operands = Vec::new();

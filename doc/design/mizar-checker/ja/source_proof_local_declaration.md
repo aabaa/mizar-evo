@@ -4,7 +4,7 @@
 > [../en/source_proof_local_declaration.md](../en/source_proof_local_declaration.md)。
 
 ## Native named-witness boundary
-native named-witness transportはname occurrenceだけを記録する。歴史的Task269A exact profileとrunner branchは既存privateテストだけに限定し、共有declaration APIとTask269Bは維持する。lower syntax行は真正なnative name binding/use・abbreviation・activation-clock authorityを与えない。
+historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
 
 ## 状態と authority
 

@@ -13,6 +13,7 @@ The single `ReservedVariable` identity remains module-owned and visible through 
 Native B2 joins all six original variable occurrences to the actual operands of the three admitted equalities, retaining native ordinals `0..5` and each genuine use scope. Require complete occurrence coverage independently of context cardinality: the module and single proof contexts do not determine the reference count.
 Native B3 retains all five actual reference use ordinals `0..4` and genuine lexical scopes through the same complete occurrence authentication. The [intake](type_checker.md#original-source-reserved-statement-inputs) owns the equality/witness operand census; this producer remains syntax-free. The witness target comes from its actual site, outside every atomic edge/request, never from a literal reference ID or formula-index arithmetic.
 Native B3N retains the same five reserved occurrences and native clocks; the name token is neither a primary term/reference nor a BindingId. The intake owns its definition role and refuses name use; this producer gains no named-take syntax or abbreviation semantics.
+Native mixed B3M1 retains all six actual reserved occurrences and their genuine Resolver clocks and lexical scopes. The two witness operands are actual primary/reference rows; the name remains outside this transport. Intake owns the two-witness census and name-use refusal, so this producer and its public behavior remain unchanged.
 
 ## Purpose And Authority
 

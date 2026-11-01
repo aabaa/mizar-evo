@@ -4,7 +4,7 @@
 > [../ja/source_proof_local_declaration.md](../ja/source_proof_local_declaration.md).
 
 ## Native named-witness boundary
-Native named-witness transport records the name occurrence only. The historical Task269A exact profile and runner branch are confined to existing private tests; shared declaration APIs and Task269B remain unchanged. Genuine native name binding/use, abbreviation and activation-clock authority are not supplied by the lower syntax row.
+The historical raw B3N profile and Task269A exact profile/runner remain confined to existing private tests; native B3N named-witness syntax remains supported. Native mixed B3M1 also records syntax only and supplies no declaration. Retire the coupled Task269B historical production graph while preserving the public declaration API, types, producer, errors, signatures and slots; unavailable native declaration authority returns the existing `DependencyMismatch` after transaction-identity validation. Preserve historical B3M1/Task269B positives and faults in existing private tests. Public GCU coverage transfers to the native mixed source-family pair in both orders with no upper declaration; the existing private SourceTerm GCU sentinel continues to own both-order declaration-slot exclusion.
 
 ## Status and authority
 
