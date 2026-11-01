@@ -5108,6 +5108,151 @@ fn assert_task269gup_exact_lower_output(
 }
 
 #[test]
+fn task269gup_lower_transports_leading_space_tab_lf_layouts() {
+    let source = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT;
+    let (base_ast, base_module, base_shells, base_symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, 269_960);
+    assert_eq!(diagnostics, 0);
+    assert_eq!(source.len(), 128);
+    assert_eq!((base_ast.nodes().len(), base_ast.root().map(|id| id.index())), (54, Some(53)));
+    assert_eq!(base_ast.token_nodes().iter().map(|id| id.index()).collect::<Vec<_>>(), (0..27).collect::<Vec<_>>());
+    assert!(base_ast.expression_root().is_none());
+    let base_output = source_proof_local_given_use_lower_output(&base_ast, base_module.clone(), &base_shells, &base_symbols, source)
+        .expect("Task269GUP canonical selector").expect("Task269GUP canonical lower");
+    assert_eq!(source_proof_local_given_use_lower_output(&base_ast, base_module.clone(), &base_shells, &base_symbols, source)
+        .expect("Task269GUP canonical replay selector").expect("Task269GUP canonical replay"), base_output);
+
+    let layouts = [
+        ("leading_lf", format!("\n{source}"), "\n", 1usize),
+        ("mixed_space_tab_lf", format!(" \t\n{source}"), " \t\n", 3usize),
+    ];
+    let mut prepared = Vec::new();
+    for (index, (layout, shifted_source, prefix, delta)) in layouts.into_iter().enumerate() {
+        assert_eq!(shifted_source.len(), 128 + delta, "{layout}");
+        assert_eq!(shifted_source.get(..delta), Some(prefix), "{layout} prefix");
+        assert_eq!(shifted_source.get(delta..), Some(source), "{layout} unchanged suffix");
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&shifted_source, 269_961 + index);
+        assert_eq!(diagnostics, 0, "{layout}");
+        assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (54, Some(53)), "{layout}");
+        assert_eq!(ast.token_nodes().iter().map(|id| id.index()).collect::<Vec<_>>(), (0..27).collect::<Vec<_>>(), "{layout}");
+        assert!(ast.expression_root().is_none(), "{layout}");
+        for (node_index, (base, shifted)) in base_ast.nodes().iter().zip(ast.nodes()).enumerate() {
+            assert_eq!(shifted.kind, base.kind, "{layout} node {node_index} kind");
+            assert_eq!(shifted.children, base.children, "{layout} node {node_index} children");
+            assert!(!base.recovered && !shifted.recovered, "{layout} node {node_index} normality");
+            let expected = mizar_session::SourceRange { source_id: ast.source_id, start: base.range.start + delta, end: base.range.end + delta };
+            assert_eq!(base.range.source_id, base_ast.source_id, "{layout} baseline node {node_index} source ID");
+            assert_eq!(shifted.range, expected, "{layout} node {node_index} translated range");
+            assert_eq!(shifted_source.get(expected.start..expected.end), source.get(base.range.start..base.range.end),
+                "{layout} node {node_index} physical slice");
+        }
+        assert_eq!(ast.nodes().iter().filter(|node| matches!(&node.kind,
+            mizar_syntax::SurfaceNodeKind::Root | mizar_syntax::SurfaceNodeKind::CompilationUnit | mizar_syntax::SurfaceNodeKind::ItemList)).count(), 3, "{layout} wrappers");
+        for node in ast.nodes().iter().filter(|node| matches!(&node.kind,
+            mizar_syntax::SurfaceNodeKind::Root | mizar_syntax::SurfaceNodeKind::CompilationUnit | mizar_syntax::SurfaceNodeKind::ItemList)) {
+            assert_eq!((node.range.source_id, node.range.start, node.range.end), (ast.source_id, delta, delta + 127), "{layout} wrapper span");
+        }
+        prepared.push((layout, delta, shifted_source, ast, module, shells, symbols));
+    }
+    for (layout, _, shifted_source, ..) in &prepared {
+        assert!(source_proof_local_given_use_lower_output(&base_ast, base_module.clone(), &base_shells, &base_symbols, shifted_source).is_none(),
+            "{layout} stale canonical AST/source pair selected");
+    }
+
+    let internal = source.replacen("  given y being set", "   given y being set", 1);
+    assert_ne!(internal, source, "internal layout replacement must match");
+    for (index, unsupported) in [format!(":: prefix comment\n{source}"), format!("\r{source}"), internal, format!("{source} ")].into_iter().enumerate() {
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(&unsupported, 269_970 + index);
+        assert!(source_proof_local_given_use_lower_output(&ast, module, &shells, &symbols, &unsupported).is_none(),
+            "unsupported Task269GUP layout {index} selected");
+    }
+
+    let outcomes = prepared.iter().map(|(_, _, shifted_source, ast, module, shells, symbols)| {
+        source_proof_local_given_use_lower_output(ast, (*module).clone(), shells, symbols, shifted_source)
+    }).collect::<Vec<_>>();
+    assert_eq!(outcomes.len(), 2);
+    assert!(outcomes.iter().all(|outcome| matches!(outcome, Some(Ok(_)))),
+        "both measured Given-use leading layouts must reach the private lower: {outcomes:?}");
+
+    let expected_ranges = [(19, 127), (62, 126), (70, 108), (76, 87), (76, 77), (84, 87), (84, 87)];
+    for ((layout, delta, shifted_source, ast, module, shells, symbols), outcome) in prepared.iter().zip(&outcomes) {
+        let output = outcome.as_ref().expect("Task269GUP shifted selector").as_ref().expect("Task269GUP shifted lower");
+        let source_hash = sha256_text(shifted_source);
+        let surface_hash = sha256_text(&ast.snapshot_text());
+        assert_eq!(output.source_id(), ast.source_id, "{layout}");
+        assert_eq!(output.module_id(), module, "{layout}");
+        assert_eq!(output.source_fingerprint(), source_hash.as_str(), "{layout} raw-source SHA-256");
+        assert_eq!(output.surface_fingerprint(), surface_hash.as_str(), "{layout} snapshot SHA-256");
+        for (range, (start, end)) in [output.theorem_range(), output.proof_range(), output.given_range(), output.segment_range(), output.name_range(), output.type_range(), output.type_head_range()].into_iter().zip(expected_ranges) {
+            assert_eq!(task269cp_range_tuple(range), (ast.source_id, start + *delta, end + *delta), "{layout} literal lower range");
+        }
+        assert_eq!((output.name_spelling(), output.type_spelling(), output.source_ordinal()), ("y", "set", 1), "{layout} syntax payload");
+
+        let [reserve, theorem] = shells.declarations() else { panic!("{layout} shells"); };
+        assert_eq!((reserve.id().index(), reserve.ordinal(), reserve.node_id().index(), reserve.range().source_id, reserve.range().start, reserve.range().end), (0, 0, 30, ast.source_id, *delta, 18 + *delta), "{layout} reserve shell");
+        assert_eq!((theorem.id().index(), theorem.ordinal(), theorem.node_id().index(), theorem.range().source_id, theorem.range().start, theorem.range().end), (1, 1, 50, ast.source_id, 19 + *delta, 127 + *delta), "{layout} theorem shell");
+        assert_eq!(reserve.module(), module, "{layout}");
+        assert_eq!(theorem.module(), module, "{layout}");
+        let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+        let owners = symbols.symbols().visible_candidates(&namespace, "FormulaStatementGivenSmoke");
+        let [owner] = owners.as_slice() else { panic!("{layout} theorem owner"); };
+        let definition = symbols.definitions().by_symbol(owner.symbol()).expect("Task269GUP definition");
+        let contribution = symbols.contributions().get(owner.contribution()).expect("Task269GUP contribution");
+        assert_eq!(output.theorem_symbol(), owner.symbol(), "{layout}");
+        assert_eq!(output.theorem_definition(), definition.id(), "{layout}");
+        assert_eq!(output.contribution(), contribution.id(), "{layout}");
+        assert_eq!(definition.symbol(), owner.symbol(), "{layout}");
+        assert_eq!(definition.origin(), owner.origin(), "{layout}");
+        assert_eq!(definition.contribution(), contribution.id(), "{layout}");
+        assert_eq!(owner.kind(), mizar_resolve::env::SymbolKind::Theorem, "{layout}");
+        assert_eq!(definition.kind(), mizar_resolve::env::DefinitionKind::Theorem, "{layout}");
+        assert_eq!(owner.origin().module_id(), module, "{layout}");
+        assert_eq!(owner.origin().anchor(), &mizar_session::SourceAnchor::Range(mizar_session::SourceRange { source_id: ast.source_id, start: 19 + *delta, end: 127 + *delta }), "{layout}");
+        assert_eq!(owner.origin().structural_path(), [2, 1], "{layout}");
+        assert!(owner.origin().import_edge().is_none() && !owner.origin().is_recovered(), "{layout}");
+        assert_eq!(contribution.anchor(), &mizar_session::SourceAnchor::Range(mizar_session::SourceRange { source_id: ast.source_id, start: *delta, end: 18 + *delta }), "{layout}");
+        assert!(matches!(contribution.kind(), mizar_resolve::env::ContributionKind::LocalSource { source_id } if *source_id == ast.source_id), "{layout}");
+        assert_eq!(contribution.effects().symbols(), [owner.symbol().clone()], "{layout}");
+        assert_eq!(contribution.effects().definitions(), [definition.id()], "{layout}");
+
+        let expected_debug = format!(concat!(
+            "source-proof-local-given-use-lower-debug-v1\nmodule: {}::{}\nsource-fingerprint: {:?}\nsurface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal=1\nname range={}..{} spelling=\"y\"\ntype range={}..{} head={}..{} spelling=\"set\" form=bare\n"),
+            module.package().as_str(), module.path().as_str(), source_hash, surface_hash, owner.symbol().fqn().as_str(),
+            19 + *delta, 127 + *delta, 62 + *delta, 126 + *delta, 70 + *delta, 108 + *delta,
+            76 + *delta, 87 + *delta, 76 + *delta, 77 + *delta, 84 + *delta, 87 + *delta, 84 + *delta, 87 + *delta);
+        assert_eq!(output.debug_text(), expected_debug, "{layout} debug grammar");
+        let replay = source_proof_local_given_use_lower_output(ast, (*module).clone(), shells, symbols, shifted_source)
+            .expect("Task269GUP shifted replay selector").expect("Task269GUP shifted replay");
+        assert_eq!(&replay, output, "{layout} deterministic replay");
+        let surface_none = source_proof_local_given_use_lower_output_with_surface_mutation(ast, (*module).clone(), shells, symbols, shifted_source,
+            SourceProofLocalGivenUseSurfaceMutation::None).expect("shifted GUP Surface None").expect("shifted GUP Surface None output");
+        assert_eq!(&surface_none, output, "{layout} Surface None");
+        assert_eq!(source_proof_local_given_use_lower_output_with_surface_mutation(ast, (*module).clone(), shells, symbols, shifted_source,
+            SourceProofLocalGivenUseSurfaceMutation::NodeRange(0)).expect("shifted GUP Surface corruption remains selected"),
+            Err("Task269GUP exact Surface identity changed after selection".to_owned()), "{layout} Surface mutation precedence");
+        assert_eq!(source_proof_local_given_use_lower_output_with_mutation(ast, (*module).clone(), shells, symbols, shifted_source,
+            SourceProofLocalGivenUseLowerMutation::SourceFingerprint).expect("shifted GUP output corruption remains selected"),
+            Err("Task269GUP private lower output mismatch".to_owned()), "{layout} output corruption");
+        let neutral = source_proof_local_given_use_lower_output_with_resolver_mutation(ast, (*module).clone(), shells, symbols, shifted_source,
+            |symbols| task269cp_mutate_resolver(symbols, Task269cpResolverMutation::None)).expect("shifted GUP neutral resolver selector").expect("shifted GUP neutral resolver");
+        assert_eq!(&neutral, output, "{layout} neutral resolver reconstruction");
+        assert!(source_proof_local_given_use_lower_output_with_resolver_mutation(ast, (*module).clone(), shells, symbols, shifted_source,
+            |symbols| task269cp_mutate_resolver(symbols, Task269cpResolverMutation::SymbolOriginAnchor)).expect("shifted GUP corrupt resolver selector").is_err(), "{layout} resolver corruption");
+        let (_, foreign_module, _, foreign_symbols) = task253_ast_from_source_text(shifted_source, 269_980 + *delta);
+        assert_ne!(foreign_module, *module, "{layout} foreign module receipt");
+        assert!(source_proof_local_given_use_lower_output(ast, (*module).clone(), shells, &foreign_symbols, shifted_source)
+            .expect("shifted GUP foreign resolver").is_err(), "{layout} foreign resolver receipt");
+        assert_eq!(source_proof_local_given_use_binding_output(ast, (*module).clone(), shells, symbols, shifted_source)
+            .expect("Task269GUP shifted binding route").expect_err("Task269GUP must reject transported lower geometry"),
+            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string(),
+            "{layout} public Task269GUP dependency boundary");
+    }
+}
+
+#[test]
 fn source_proof_local_given_use_binding_profile_is_exact_and_private() {
     assert_eq!(SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.len(), 128);
     assert_eq!(

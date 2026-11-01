@@ -9922,10 +9922,6 @@ fn validate_source_proof_local_given_lower_output(
     Ok(())
 }
 
-const SOURCE_PROOF_LOCAL_GIVEN_USE_SOURCE_FINGERPRINT: &str =
-    "ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01";
-const SOURCE_PROOF_LOCAL_GIVEN_USE_SURFACE_FINGERPRINT: &str =
-    "c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d";
 const SOURCE_PROOF_LOCAL_GIVEN_USE_SIGNATURE_PAYLOAD: &str = concat!(
     "node=TheoremItem;symbol=theorem;definition=theorem;",
     "primary_tokens=theorem FormulaStatementGivenSmoke : thesis proof given y being set ",
@@ -10238,6 +10234,16 @@ fn exact_source_proof_local_given_use_surface_profile_with_mutation(
     source_text: &str,
     mutation: SourceProofLocalGivenUseSurfaceMutation,
 ) -> bool {
+    let Some(prefix) = source_text.strip_suffix(SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT) else {
+        return false;
+    };
+    if !prefix
+        .bytes()
+        .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+    {
+        return false;
+    }
+    let d = prefix.len();
     const KINDS: [&str; 54] = [
         "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
         "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
@@ -10414,7 +10420,8 @@ fn exact_source_proof_local_given_use_surface_profile_with_mutation(
         .map(|kind| (*kind).to_owned())
         .collect::<Vec<_>>();
     let mut source_ids = [ast.source_id; 54];
-    let mut ranges = RANGES.to_vec();
+    // Every endpoint is at most 127 within the verified 128-byte suffix.
+    let mut ranges = RANGES.map(|(start, end)| (d + start, d + end)).to_vec();
     let mut recoveries = [false; 54];
     let mut children = CHILDREN
         .iter()
@@ -10466,9 +10473,7 @@ fn exact_source_proof_local_given_use_surface_profile_with_mutation(
         SourceProofLocalGivenUseSurfaceMutation::MissingRootIdentity => root = None,
         SourceProofLocalGivenUseSurfaceMutation::WrongRootIdentity => root = Some(52),
     }
-    source_text == SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT
-        && source_text.len() == 128
-        && source_text.ends_with('\n')
+    source_text.ends_with('\n')
         && !source_text.ends_with("\n\n")
         && ast.nodes().len() == 54
         && ast.root().map(|root| root.index()) == root
@@ -10618,7 +10623,12 @@ fn source_proof_local_given_use_lower_output_impl(
         return None;
     }
     Some(build_source_proof_local_given_use_lower_output(
-        ast, module, shells, symbols, mutations,
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutations,
     ))
 }
 
@@ -10627,6 +10637,7 @@ fn build_source_proof_local_given_use_lower_output(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
     mutations: SourceProofLocalGivenUseMutations,
 ) -> Result<SourceProofLocalGivenUseLowerOutput, String> {
     let SourceProofLocalGivenUseMutations {
@@ -10637,11 +10648,12 @@ fn build_source_proof_local_given_use_lower_output(
     } = mutations;
     if !exact_source_proof_local_given_use_surface_profile_with_mutation(
         ast,
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        source_text,
         mutations.surface,
     ) {
         return Err("Task269GUP exact Surface identity changed after selection".to_owned());
     }
+    let d = source_text.len() - SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.len();
     let [reserve_shell, theorem_shell] = shells.declarations() else {
         return Err("Task269GUP requires exactly two declaration shells".to_owned());
     };
@@ -10656,7 +10668,7 @@ fn build_source_proof_local_given_use_lower_output(
             kind: DeclarationShellKind::Reserve,
             node_index: 30,
             syntax_kind: SyntaxKind::ReserveItem,
-            source_range: range(ast.source_id, 0, 18),
+            source_range: range(ast.source_id, d, d + 18),
         },
         shell_mutation,
     )?;
@@ -10668,7 +10680,7 @@ fn build_source_proof_local_given_use_lower_output(
             kind: DeclarationShellKind::Theorem,
             node_index: 50,
             syntax_kind: SyntaxKind::TheoremItem,
-            source_range: range(ast.source_id, 19, 127),
+            source_range: range(ast.source_id, d + 19, d + 127),
         },
         shell_mutation,
     )?;
@@ -10794,7 +10806,7 @@ fn build_source_proof_local_given_use_lower_output(
             resolver_mutation,
             SourceProofLocalGivenUseResolverProfileMutation::SymbolRelations,
         )
-        || checked_owner.source_range() != range(ast.source_id, 19, 127)
+        || checked_owner.source_range() != range(ast.source_id, d + 19, d + 127)
         || checked_owner.origin() != owner.origin()
         || owner.origin().module_id() != &module
         || !source_proof_local_given_use_resolver_guard(
@@ -10802,7 +10814,7 @@ fn build_source_proof_local_given_use_lower_output(
             resolver_mutation,
             SourceProofLocalGivenUseResolverProfileMutation::SymbolOriginSource,
         )
-        || owner.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 19, 127))
+        || owner.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, d + 19, d + 127))
         || owner.origin().structural_path() != [2, 1]
         || !source_proof_local_given_use_resolver_guard(
             owner.origin().import_edge().is_none(),
@@ -10868,7 +10880,7 @@ fn build_source_proof_local_given_use_lower_output(
             contribution.kind(),
             ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
         )
-        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, d, d + 18))
         || contribution.effects().symbols() != [owner.symbol().clone()]
         || contribution.effects().definitions() != [definition.id()]
         || !source_proof_local_given_use_resolver_guard(
@@ -10923,25 +10935,26 @@ fn build_source_proof_local_given_use_lower_output(
     let mut output = SourceProofLocalGivenUseLowerOutput {
         source_id: ast.source_id,
         module_id: module.clone(),
-        source_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_USE_SOURCE_FINGERPRINT.to_owned(),
-        surface_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_USE_SURFACE_FINGERPRINT.to_owned(),
+        source_fingerprint: source_sha256(source_text),
+        surface_fingerprint: source_sha256(&ast.snapshot_text()),
         theorem_symbol: owner.symbol().clone(),
         theorem_definition: definition.id(),
         contribution: contribution.id(),
-        theorem_range: range(ast.source_id, 19, 127),
-        proof_range: range(ast.source_id, 62, 126),
-        given_range: range(ast.source_id, 70, 108),
-        segment_range: range(ast.source_id, 76, 87),
-        name_range: range(ast.source_id, 76, 77),
+        theorem_range: range(ast.source_id, d + 19, d + 127),
+        proof_range: range(ast.source_id, d + 62, d + 126),
+        given_range: range(ast.source_id, d + 70, d + 108),
+        segment_range: range(ast.source_id, d + 76, d + 87),
+        name_range: range(ast.source_id, d + 76, d + 77),
         name_spelling: "y".to_owned(),
-        type_range: range(ast.source_id, 84, 87),
-        type_head_range: range(ast.source_id, 84, 87),
+        type_range: range(ast.source_id, d + 84, d + 87),
+        type_head_range: range(ast.source_id, d + 84, d + 87),
         type_spelling: "set".to_owned(),
         source_ordinal: 1,
     };
     mutate_source_proof_local_given_use_lower_output(&mut output, mutation);
     validate_source_proof_local_given_use_lower_output(
         ast,
+        source_text,
         &module,
         owner.symbol(),
         definition.id(),
@@ -11138,27 +11151,34 @@ fn mutate_source_proof_local_given_use_lower_output(
 
 fn validate_source_proof_local_given_use_lower_output(
     ast: &SurfaceAst,
+    source_text: &str,
     module: &ModuleId,
     theorem_symbol: &SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
     output: &SourceProofLocalGivenUseLowerOutput,
 ) -> Result<(), String> {
+    let d = source_text
+        .len()
+        .checked_sub(SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.len())
+        .ok_or_else(|| "Task269GUP private lower output mismatch".to_owned())?;
+    let source_fingerprint = source_sha256(source_text);
+    let surface_fingerprint = source_sha256(&ast.snapshot_text());
     if output.source_id != ast.source_id
         || output.module_id != *module
-        || output.source_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_USE_SOURCE_FINGERPRINT
-        || output.surface_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_USE_SURFACE_FINGERPRINT
+        || output.source_fingerprint != source_fingerprint
+        || output.surface_fingerprint != surface_fingerprint
         || output.theorem_symbol != *theorem_symbol
         || output.theorem_definition != theorem_definition
         || output.contribution != contribution
-        || output.theorem_range != range(ast.source_id, 19, 127)
-        || output.proof_range != range(ast.source_id, 62, 126)
-        || output.given_range != range(ast.source_id, 70, 108)
-        || output.segment_range != range(ast.source_id, 76, 87)
-        || output.name_range != range(ast.source_id, 76, 77)
+        || output.theorem_range != range(ast.source_id, d + 19, d + 127)
+        || output.proof_range != range(ast.source_id, d + 62, d + 126)
+        || output.given_range != range(ast.source_id, d + 70, d + 108)
+        || output.segment_range != range(ast.source_id, d + 76, d + 87)
+        || output.name_range != range(ast.source_id, d + 76, d + 77)
         || output.name_spelling != "y"
-        || output.type_range != range(ast.source_id, 84, 87)
-        || output.type_head_range != range(ast.source_id, 84, 87)
+        || output.type_range != range(ast.source_id, d + 84, d + 87)
+        || output.type_head_range != range(ast.source_id, d + 84, d + 87)
         || output.type_spelling != "set"
         || output.source_ordinal != 1
     {
@@ -11168,16 +11188,32 @@ fn validate_source_proof_local_given_use_lower_output(
         concat!(
             "source-proof-local-given-use-lower-debug-v1\n",
             "module: {}::{}\n",
-            "source-fingerprint: \"ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01\"\n",
-            "surface-fingerprint: \"c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
-            "given range=70..108 segment=76..87 source_ordinal=1\n",
-            "name range=76..77 spelling=\"y\"\n",
-            "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
+            "source-fingerprint: {:?}\n",
+            "surface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal=1\n",
+            "name range={}..{} spelling=\"y\"\n",
+            "type range={}..{} head={}..{} spelling=\"set\" form=bare\n",
         ),
         module.package().as_str(),
         module.path().as_str(),
+        source_fingerprint,
+        surface_fingerprint,
         theorem_symbol.fqn().as_str(),
+        d + 19,
+        d + 127,
+        d + 62,
+        d + 126,
+        d + 70,
+        d + 108,
+        d + 76,
+        d + 87,
+        d + 76,
+        d + 77,
+        d + 84,
+        d + 87,
+        d + 84,
+        d + 87,
     );
     if output.debug_text() != expected_debug {
         return Err("Task269GUP private lower debug grammar mismatch".to_owned());
