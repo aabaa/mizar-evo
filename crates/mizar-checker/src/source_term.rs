@@ -1376,6 +1376,110 @@ enum SourcePrimaryTermBindingProfile {
 pub struct SourcePrimaryTermProducer;
 
 impl SourcePrimaryTermProducer {
+    pub(crate) fn build_from_original_reserved_statement_occurrences(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        scope: &ResolvedVariableScope,
+        arena: &TypedArena,
+    ) -> Result<(BindingEnv, SourcePrimaryTermHandoff), SourcePrimaryTermError> {
+        let invalid = || SourcePrimaryTermError::InvalidTransaction;
+        let bindings = crate::type_checker::SourceVariableSemanticsChecker::original_reserved_statement_binding_env(
+            source, symbols, scope,
+        ).map_err(|_| invalid())?;
+        let (scopes, _) = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)
+            .map_err(|_| invalid())?;
+        let root_scope = scopes
+            .iter()
+            .find(|(node, _)| source.resolved_node_for(**node) == Some(source.arena().root()))
+            .map(|(_, local)| local)
+            .ok_or_else(invalid)?;
+        let [declaration] = scope.bindings() else {
+            return Err(invalid());
+        };
+        let binding = bindings
+            .bindings()
+            .get(BindingId::new(0))
+            .ok_or_else(invalid)?;
+        if scope.references().len() != 8
+            || binding.identity
+                != (BinderIdentity::ReservedVariable {
+                    spelling: declaration.spelling().to_owned(),
+                    declaration_range: declaration.range(),
+                })
+        {
+            return Err(invalid());
+        }
+        let mut inputs = Vec::new();
+        let mut references = Vec::new();
+        let mut seen = std::collections::BTreeSet::new();
+        for (ordinal, actual) in scope.references().iter().enumerate() {
+            let invalid = || SourcePrimaryTermError::InvalidReference {
+                reference: SourcePrimaryTermReferenceId::new(ordinal),
+            };
+            let resolved = source
+                .resolved_node_for(actual.node())
+                .ok_or_else(invalid)?;
+            let (typed, _) = arena
+                .iter()
+                .find(|(_, node)| node.resolved_node == Some(resolved))
+                .ok_or_else(invalid)?;
+            let context = if actual.scope() == root_scope {
+                BindingContextId::new(0)
+            } else {
+                bindings
+                    .contexts()
+                    .iter()
+                    .find(|(_, context)| context.lexical_scope.as_ref() == Some(actual.scope()))
+                    .map(|(id, _)| id)
+                    .ok_or_else(invalid)?
+            };
+            if !seen.insert(actual.node())
+                || actual.kind() != SourceVariableReferenceKind::Term
+                || actual.binding() != declaration.id()
+                || actual.spelling() != declaration.spelling()
+                || actual.ordinal() != ordinal
+                || scopes.get(&actual.node()) != Some(actual.scope())
+                || declaration.range().end > actual.range().start
+                || !bindings
+                    .contexts()
+                    .get(context)
+                    .ok_or_else(invalid)?
+                    .visible_bindings
+                    .contains(&binding.id)
+            {
+                return Err(invalid());
+            }
+            inputs.push(SourcePrimaryTermInput {
+                site: TypedSiteRef::Node(typed),
+                source_range: actual.range(),
+                source_ordinal: ordinal,
+                context,
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: actual.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            });
+            references.push(SourcePrimaryTermReference {
+                term: SourcePrimaryTermId::new(ordinal),
+                binding: binding.id,
+                role: SourcePrimaryTermReferenceRole::Variable,
+                lexical_scope: Some(actual.scope().clone()),
+                use_ordinal: actual.ordinal(),
+            });
+        }
+        let terms = validate_terms(source.source_id(), &inputs, &bindings, arena)?;
+        validate_reference_cardinality(&terms, &references)?;
+        let handoff = SourcePrimaryTermHandoff {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            terms: SourcePrimaryTermTable { rows: terms },
+            references: SourcePrimaryTermReferenceTable { rows: references },
+            numeric_type_requests: SourceNumericTypeRequestTable { rows: Vec::new() },
+        };
+        Ok((bindings, handoff))
+    }
+
     pub fn build_from_scoped_theorem_occurrences(
         input: SourcePrimaryTermHandoffInput,
         binding_env: &BindingEnv,

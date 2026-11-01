@@ -2304,11 +2304,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .typed_ast
                     .source_predicate_chain_composition()
                     .is_some()
-                || self
-                    .inputs
-                    .typed_ast
-                    .source_statement_references()
-                    .is_some()
                 || self.inputs.typed_ast.source_statement_witnesses().is_some()
                 || self
                     .inputs
@@ -2983,10 +2978,22 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let legacy_reserved_statement = false;
             #[cfg(test)]
             let legacy_reserved_statement = source_statement.is_task_258a_profile();
+            #[cfg(not(test))]
+            let legacy_nested_statement = false;
+            #[cfg(test)]
+            let legacy_nested_statement = source_statement.is_task_258b1_profile();
+            let native_nested_statement = original_statement
+                && self
+                    .inputs
+                    .typed_ast
+                    .nodes()
+                    .iter()
+                    .any(|(_, node)| node.kind.as_str() == "CompactStatement");
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()
-                        && (source_statement.is_task_258b1_profile()
+                        && (native_nested_statement
+                            || legacy_nested_statement
                             || source_statement.is_task_258b5a_profile()
                             || source_statement.is_task_258b5b_profile()) =>
                 {
@@ -3075,7 +3082,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, None)
                     if source_application.is_none()
-                        && (original_statement
+                        && ((original_statement && !native_nested_statement)
                             || legacy_reserved_statement
                             || source_statement.is_task_258b2_profile()
                             || is_task_258b4) => {}

@@ -7,6 +7,10 @@ this separate entry does not weaken the legacy producer's declaration-point chec
 > Canonical language: English. Japanese companion:
 > [../ja/source_term.md](../ja/source_term.md).
 
+## Original-source nested reserved occurrences
+The crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences` obtains the genuine bounded binding projection and constructs the existing environment/primary pair from complete original source, symbols, occurrences and typed arena. It accepts no caller-made positive rows. All eight variable terms match actual sites/ranges/winners; proof contexts match the genuine variable-scope maps, with module context `None` associated explicitly to the actual root scope. Every reference retains its actual lexical scope and occurrence ordinal.
+The single `ReservedVariable` identity remains module-owned and visible through both proof contexts; proof-context binding lists stay empty. Native ordinal zero never enters legacy declaration-event lookup. The existing public module producer retains its genuine reserved-occurrence behavior; the public scoped theorem producer retains its transaction rules and Reserve refusal. No new public type, field or binder is added.
+
 ## Purpose And Authority
 
 The public `source_term` module implements Checker Task 252. It transports

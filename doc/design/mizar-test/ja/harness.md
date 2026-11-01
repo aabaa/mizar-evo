@@ -29,8 +29,10 @@ Step 5C.7 は既存7行を維持し、厳密な sidecar 照合で対応する in
 出現・choice 根拠・qua 元項・前提引用はケース名から推測しない。ソース・環境・下位段階の検査後に両 qua 箇所の実際の束縛と型を使う。narrowing キーは先行する裸の局所構造体の実際の builtin-set フィールドによる登録不要の構築子 witness を要求し、継承・属性付き対象や無関係なエラーには与えない。所属証明の成功には目標の検証を要する。
 
 ## Original-source reserved statement tests
-本番statement dispatcherは既存B profilesの後で終了し、Task258A fallbackや汎用early reserve routeを置かない。既存active reserve bridgeとbinding/reference-clock coverageの所有は維持する。native reserved-statementは実Frontend captureからpublic original-source installerを直接検証する。
+本番statement dispatcherは残るB profilesの後で終了し、B1 branch・Task258A fallbackや汎用early reserve routeを置かない。既存active reserve bridgeとbinding/reference-clock coverageの所有は維持する。native reserved-statementは実Frontend captureからpublic original-source installerを直接検証する。
 外部Task258A controlはlegacy raw adapterでなくnative owned facts/source provenance/replayを使う。歴史的exact goldensはChecker内に残す。合法なlabel/layout変種は別captureで成功を検証し、異なるraw textと既存ASTを混ぜない。malformed/foreign/cross-family拒否の目的を保持する。
+native nested testは同じpublic atomic original installerと全実occurrence/scope/label batchを使い、owner/proof-label projectionと各clockを保持する。外部B1 positive/foreign controlをレビュー済みsource-derived intentで移行し、raw canonical golden/causal corruptionはprivateに残す。実base typing成功後にB1上位wrapper/Proof拒否を検証する。既存active proof-gapの結果・detail・sidecar・trace所有は維持する。
+
 
 ## Step 5C.4 mode semantic runner
 

@@ -6562,21 +6562,33 @@ impl TermFormulaChecker {
         Ok((bindings, inference, obligations))
     }
 
-    pub(crate) fn check_source_reserved_statement_owner(
+    // reason: Keep the existing owning tuple instead of a single-use handoff type.
+    #[allow(clippy::type_complexity)]
+    pub(crate) fn check_source_reserved_statement_inputs(
         source: &SurfaceResolvedArena,
         symbols: &SymbolEnv,
         scope: &ResolvedVariableScope,
     ) -> Result<
         (
-            crate::source_statement::SourceTheoremOwnerInput,
+            crate::source_statement::SourceStatementHandoffInput,
             BindingEnv,
             crate::typed_ast::TypedAst,
+            Option<(
+                crate::source_statement::SourceStatementReferenceHandoffInput,
+                mizar_resolve::resolved_ast::ResolvedAst,
+                mizar_resolve::labels::ProofLabelSourceCollection,
+                mizar_resolve::labels::LabelResolutionResult,
+            )>,
         ),
         crate::source_statement::SourceStatementError,
     > {
-        use crate::source_statement::{
-            SourceStatementError, SourceStatementRecovery, SourceTheoremOwnerInput,
-            SourceTheoremRole, SourceTheoremStatus,
+        use crate::source_statement::*;
+        use mizar_resolve::{
+            labels::LabelProjectionSource,
+            resolved_ast::{
+                LabelKind, NameRefTable, NodeReferenceKey, NodeResolutionState, ResolvedArena,
+                ResolvedAst, ResolvedImports,
+            },
         };
         let invalid = || SourceStatementError::DependencyMismatch;
         let (bindings, _, typed) =
@@ -6588,16 +6600,27 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
-        let (theorem_id, theorem) = source
+        let mut sites = source
             .arena()
             .iter()
-            .find(|(_, node)| node.kind() == &K::TheoremItem)
-            .ok_or_else(invalid)?;
-        let label = source
+            .filter(|(_, node)| {
+                matches!(
+                    node.kind(),
+                    K::TheoremItem | K::CompactStatement | K::ConclusionStatement
+                )
+            })
+            .collect::<Vec<_>>();
+        sites.sort_by_key(|(_, node)| match node.origin().anchor() {
+            SourceAnchor::Range(range) => range.start,
+            _ => usize::MAX,
+        });
+        let (theorem_id, theorem) = *sites.first().ok_or_else(invalid)?;
+        let K::Token(label) = source
             .arena()
             .node(theorem.children()[1])
-            .ok_or_else(invalid)?;
-        let K::Token(label) = label.kind() else {
+            .ok_or_else(invalid)?
+            .kind()
+        else {
             return Err(invalid());
         };
         let symbol = symbols
@@ -6605,23 +6628,371 @@ impl TermFormulaChecker {
             .iter()
             .find(|entry| entry.primary_spelling() == label.text.as_ref())
             .ok_or_else(invalid)?;
-        let SourceAnchor::Range(source_range) = theorem.origin().anchor() else {
+        let SourceAnchor::Range(owner_range) = theorem.origin().anchor() else {
             return Err(invalid());
         };
-        Ok((
-            SourceTheoremOwnerInput {
+        let mut input = SourceStatementHandoffInput {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            owners: vec![SourceTheoremOwnerInput {
                 symbol: symbol.symbol().clone(),
                 contribution: symbol.contribution(),
                 site: TypedSiteRef::Node(TypedNodeId::new(theorem_id.index())),
-                source_range: *source_range,
+                source_range: *owner_range,
                 spelling: label.text.to_string(),
                 role: SourceTheoremRole::Theorem,
                 status: SourceTheoremStatus::Unmodified,
                 recovery: SourceStatementRecovery::Normal,
-            },
-            bindings,
-            typed,
-        ))
+            }],
+            statements: Vec::new(),
+            contexts: Vec::new(),
+            input_facts: Vec::new(),
+            candidate_facts: Vec::new(),
+        };
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        for (ordinal, (id, node)) in sites.into_iter().enumerate() {
+            let SourceAnchor::Range(range) = node.origin().anchor() else {
+                return Err(invalid());
+            };
+            let (formula_id, formula) = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| {
+                    formula.source_range().start >= range.start
+                        && formula.source_range().end <= range.end
+                })
+                .ok_or_else(invalid)?;
+            let mut tokens = source
+                .arena()
+                .iter()
+                .filter_map(|(_, token_node)| {
+                    let K::Token(token) = token_node.kind() else {
+                        return None;
+                    };
+                    let SourceAnchor::Range(token_range) = token_node.origin().anchor() else {
+                        return None;
+                    };
+                    (token_range.start >= range.start && token_range.end <= range.end)
+                        .then_some((token_range.start, token.text.as_ref()))
+                })
+                .collect::<Vec<_>>();
+            tokens.sort_by_key(|(start, _)| *start);
+            let statement = SourceStatementId::new(ordinal);
+            let context = SourceStatementContextId::new(ordinal);
+            let target = SourceStatementFormulaTarget::Atomic(formula_id);
+            let uses = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == formula_id)
+                .map(|(_, edge)| {
+                    let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                        edge.target()
+                    else {
+                        return Err(invalid());
+                    };
+                    primary
+                        .references()
+                        .iter()
+                        .find(|(_, reference)| reference.term() == term)
+                        .map(|(id, _)| id)
+                        .ok_or_else(invalid)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let binding = primary
+                .references()
+                .get(*uses.first().ok_or_else(invalid)?)
+                .ok_or_else(invalid)?
+                .binding();
+            input.statements.push(SourceStatementInput {
+                owner: SourceTheoremOwnerId::new(0),
+                context,
+                formula: target,
+                site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
+                source_range: *range,
+                source_ordinal: ordinal,
+                spelling: tokens
+                    .into_iter()
+                    .map(|(_, text)| text)
+                    .collect::<Vec<_>>()
+                    .join(" "),
+                kind: match node.kind() {
+                    K::TheoremItem => SourceStatementKind::TheoremProposition,
+                    K::CompactStatement => SourceStatementKind::ProofStepProposition,
+                    _ => SourceStatementKind::Conclusion,
+                },
+                recovery: SourceStatementRecovery::Normal,
+            });
+            input.contexts.push(SourceStatementContextInput {
+                statement,
+                binding_context: formula.context(),
+                source_range: *range,
+                visible_bindings: bindings
+                    .contexts()
+                    .get(formula.context())
+                    .ok_or_else(invalid)?
+                    .visible_bindings
+                    .clone(),
+            });
+            input.input_facts.push(SourceStatementInputFactInput {
+                statement,
+                context,
+                ordinal: 0,
+                kind: SourceStatementInputFactKind::ReservedTypeGuard,
+                binding,
+                uses,
+            });
+            input
+                .candidate_facts
+                .push(SourceStatementCandidateFactInput {
+                    statement,
+                    context,
+                    ordinal: 0,
+                    kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                    formula: target,
+                });
+        }
+        let references = if input.statements.len() == 4 {
+            let (_, labels, resolution) =
+                mizar_resolve::symbols::source_proof_inputs(source, symbols)
+                    .map_err(|_| invalid())?;
+            let projection = labels
+                .projections()
+                .iter()
+                .find(|projection| projection.kind() == LabelKind::ProofStep)
+                .ok_or_else(invalid)?;
+            let LabelProjectionSource::CurrentModule {
+                visible_after_ordinal,
+                proof_scope: Some(proof_scope),
+            } = projection.source()
+            else {
+                return Err(invalid());
+            };
+            let candidate = labels.references().first().ok_or_else(invalid)?;
+            let reference_id = *resolution.ids().first().ok_or_else(invalid)?;
+            let reference_input = SourceStatementReferenceHandoffInput {
+                source_id: source.source_id(),
+                module_id: source.module().clone(),
+                labels: vec![SourceStatementLabelInput {
+                    statement: SourceStatementId::new(1),
+                    context: SourceStatementContextId::new(1),
+                    candidate: SourceStatementCandidateFactId::new(1),
+                    origin_path: projection.origin_path().clone(),
+                    proof_scope: proof_scope.clone(),
+                    source_range: projection.declaration_range(),
+                    source_ordinal: 0,
+                    visible_after_ordinal: *visible_after_ordinal,
+                    spelling: projection.primary_spelling().to_owned(),
+                    kind: SourceStatementLabelKind::ProofStep,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                citations: vec![SourceStatementCitationInput {
+                    statement: SourceStatementId::new(3),
+                    context: SourceStatementContextId::new(3),
+                    target: SourceStatementCitationTarget::Local(SourceStatementLabelId::new(0)),
+                    label_ref: reference_id,
+                    proof_scope: proof_scope.clone(),
+                    source_range: candidate.site().range(),
+                    ordinal: 0,
+                    kind: SourceStatementCitationKind::SimpleLocal,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+            };
+            let nodes = source
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    if id == candidate.site().node() {
+                        node.clone()
+                            .with_reference_key(NodeReferenceKey::Label(reference_id))
+                            .with_resolution(NodeResolutionState::Resolved)
+                    } else {
+                        node.clone()
+                    }
+                })
+                .collect();
+            let ast = ResolvedAst::try_new(
+                source.source_id(),
+                source.module().clone(),
+                ResolvedArena::try_new(source.arena().root(), nodes).map_err(|_| invalid())?,
+                NameRefTable::new(),
+                resolution.table().clone(),
+                ResolvedImports::new(),
+            )
+            .map_err(|_| invalid())?;
+            Some((reference_input, ast, labels, resolution))
+        } else {
+            None
+        };
+        Ok((input, bindings, typed, references))
+    }
+
+    pub(crate) fn validate_reserved_statement_snapshot(
+        ast: &mizar_resolve::resolved_ast::ResolvedAst,
+        arena: &crate::typed_ast::TypedArena,
+        statements: &crate::source_statement::SourceStatementHandoff,
+        projections: &[mizar_resolve::labels::LabelProjection],
+        reference: &mizar_resolve::labels::LabelReferenceCandidate,
+    ) -> Result<(), crate::source_statement::SourceStatementReferenceError> {
+        use crate::source_statement::SourceStatementReferenceError;
+        let invalid = || SourceStatementReferenceError::DependencyMismatch;
+        if ast.nodes().len() != arena.len()
+            || arena.root().map(|id| id.index()) != Some(ast.nodes().root().index())
+        {
+            return Err(invalid());
+        }
+        for (id, node) in ast.nodes().iter() {
+            let typed = arena
+                .node(TypedNodeId::new(id.index()))
+                .ok_or_else(invalid)?;
+            let kind = match node.kind() {
+                K::TermReference => "source.term.variable-reference".to_owned(),
+                K::BuiltinPredicateApplication => "source.formula.atomic.equality".to_owned(),
+                kind => format!("{kind:?}"),
+            };
+            if typed.resolved_node != Some(id)
+                || typed.kind.as_str() != kind
+                || typed.anchor != *node.origin().anchor()
+                || typed
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .ne(node.children().iter().map(|child| child.index()))
+                || node.recovery() != mizar_resolve::resolved_ast::RecoveryState::Normal
+                || typed.recovery != NodeRecoveryState::Normal
+                || node.origin().is_recovered()
+                || node.origin().import_edge().is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        let owner = statements.owners().iter().next().ok_or_else(invalid)?.1;
+        for projection in projections {
+            let statement = statements
+                .statements()
+                .get(crate::source_statement::SourceStatementId::new(
+                    if projection.kind() == mizar_resolve::resolved_ast::LabelKind::Theorem {
+                        0
+                    } else {
+                        1
+                    },
+                ))
+                .ok_or_else(invalid)?;
+            let node = ast
+                .nodes()
+                .node(
+                    arena
+                        .node(statement.site().node())
+                        .and_then(|node| node.resolved_node)
+                        .ok_or_else(invalid)?,
+                )
+                .ok_or_else(invalid)?;
+            let token = if projection.kind() == mizar_resolve::resolved_ast::LabelKind::Theorem {
+                if projection.primary_spelling() != owner.spelling() {
+                    return Err(invalid());
+                }
+                *node.children().get(1).ok_or_else(invalid)?
+            } else {
+                let proposition = ast
+                    .nodes()
+                    .node(*node.children().first().ok_or_else(invalid)?)
+                    .ok_or_else(invalid)?;
+                *proposition.children().first().ok_or_else(invalid)?
+            };
+            let token = ast.nodes().node(token).ok_or_else(invalid)?;
+            if token.origin().anchor() != &SourceAnchor::Range(projection.declaration_range())
+                || !matches!(token.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == projection.primary_spelling())
+            {
+                return Err(invalid());
+            }
+        }
+        let conclusion = statements
+            .statements()
+            .get(crate::source_statement::SourceStatementId::new(3))
+            .ok_or_else(invalid)?;
+        let conclusion = ast
+            .nodes()
+            .node(
+                arena
+                    .node(conclusion.site().node())
+                    .and_then(|node| node.resolved_node)
+                    .ok_or_else(invalid)?,
+            )
+            .ok_or_else(invalid)?;
+        let clause = ast
+            .nodes()
+            .node(*conclusion.children().get(2).ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        let list = ast
+            .nodes()
+            .node(*clause.children().get(1).ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        if list.children() != [reference.site().node()] {
+            return Err(invalid());
+        }
+        let citation = ast
+            .nodes()
+            .node(reference.site().node())
+            .ok_or_else(invalid)?;
+        let token = ast
+            .nodes()
+            .node(*citation.children().first().ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        if citation.kind() != &K::Reference
+            || citation.origin().anchor() != &SourceAnchor::Range(reference.site().range())
+            || !matches!(token.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == reference.site().spelling())
+        {
+            return Err(invalid());
+        }
+        let mut sites = ast
+            .nodes()
+            .iter()
+            .filter(|(_, node)| {
+                matches!(
+                    node.kind(),
+                    K::TheoremItem | K::CompactStatement | K::ConclusionStatement
+                )
+            })
+            .collect::<Vec<_>>();
+        sites.sort_by_key(|(_, node)| match node.origin().anchor() {
+            SourceAnchor::Range(range) => range.start,
+            _ => usize::MAX,
+        });
+        if sites.len() != statements.statements().len() {
+            return Err(invalid());
+        }
+        for ((_, statement), (id, node)) in statements.statements().iter().zip(sites) {
+            let SourceAnchor::Range(range) = node.origin().anchor() else {
+                return Err(invalid());
+            };
+            let mut tokens = ast
+                .nodes()
+                .iter()
+                .filter_map(|(_, token_node)| {
+                    let K::Token(token) = token_node.kind() else {
+                        return None;
+                    };
+                    let SourceAnchor::Range(token_range) = token_node.origin().anchor() else {
+                        return None;
+                    };
+                    (token_range.start >= range.start && token_range.end <= range.end)
+                        .then_some((token_range.start, token.text.as_ref()))
+                })
+                .collect::<Vec<_>>();
+            tokens.sort_by_key(|(start, _)| *start);
+            if statement.site().node().index() != id.index()
+                || statement.source_range() != *range
+                || statement.spelling()
+                    != tokens
+                        .into_iter()
+                        .map(|(_, text)| text)
+                        .collect::<Vec<_>>()
+                        .join(" ")
+            {
+                return Err(invalid());
+            }
+        }
+        Ok(())
     }
 
     /// Extracts and infers original-source set equalities without proof credit.
@@ -6655,6 +7026,11 @@ impl TermFormulaChecker {
             .arena()
             .iter()
             .any(|(_, current)| current.kind() == &K::ReserveItem);
+        let nested_reserved = reserved
+            && source
+                .arena()
+                .iter()
+                .any(|(_, current)| current.kind() == &K::ProofBlock);
         let part = |id| match node(id)?.kind() {
             K::Token(token) => match token.kind {
                 SurfaceTokenKind::Identifier if mizar_lexer::is_identifier(&token.text) => {
@@ -6725,6 +7101,25 @@ impl TermFormulaChecker {
                 }
                 (K::TheoremItem, ["theorem", "identifier", ":", "FormulaExpression", ";"])
                     if reserved =>
+                {
+                    true
+                }
+                (
+                    K::TheoremItem,
+                    [
+                        "theorem",
+                        "identifier",
+                        ":",
+                        "FormulaExpression",
+                        "ProofBlock",
+                        ";",
+                    ],
+                )
+                | (K::ProofBlock, ["proof", "CompactStatement", "ConclusionStatement", "end"])
+                | (K::ProofBlock, ["proof", "ConclusionStatement", "end"])
+                | (K::CompactStatement, ["Proposition", "ProofBlock", ";"])
+                | (K::Proposition, ["identifier", ":", "FormulaExpression"])
+                    if nested_reserved =>
                 {
                     true
                 }
@@ -6822,12 +7217,12 @@ impl TermFormulaChecker {
             let [binding] = scope.bindings() else {
                 return Err(invalid());
             };
-            let [left, right] = scope.references() else {
+            equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
+            if equalities.len() != if nested_reserved { 4 } else { 1 }
+                || scope.references().len() != equalities.len() * 2
+            {
                 return Err(invalid());
-            };
-            let [equality] = equalities.as_slice() else {
-                return Err(invalid());
-            };
+            }
             let segment = source
                 .arena()
                 .iter()
@@ -6842,8 +7237,6 @@ impl TermFormulaChecker {
                 || !binding.declared_type().is_some_and(|ty| {
                     ty.radix() == SourceVariableTypeRadix::Set && ty.attributes().is_empty()
                 })
-                || left.id() == right.id()
-                || left.node() == right.node()
                 || source
                     .arena()
                     .iter()
@@ -6851,15 +7244,17 @@ impl TermFormulaChecker {
                         matches!(current.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
                     })
                     .count()
-                    != 4
+                    != if nested_reserved { 12 } else { 4 }
             {
                 return Err(invalid());
             }
-            for (ordinal, reference) in [left, right].into_iter().enumerate() {
-                let operand = node(*equality)?.children()[ordinal * 2];
+            let mut seen = BTreeSet::new();
+            for (ordinal, reference) in scope.references().iter().enumerate() {
+                let operand = node(equalities[ordinal / 2])?.children()[(ordinal % 2) * 2];
                 let term = node(operand)?.children()[0];
                 let token = node(term)?.children()[0];
-                if reference.kind() != SourceVariableReferenceKind::Term
+                if !seen.insert(reference.node())
+                    || reference.kind() != SourceVariableReferenceKind::Term
                     || reference.binding() != binding.id()
                     || reference.ordinal() != ordinal
                     || reference.spelling() != binding.spelling()
@@ -6872,8 +7267,125 @@ impl TermFormulaChecker {
                 }
             }
         }
-        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(scope);
-        let context = BindingContextId::new(0);
+        if nested_reserved {
+            use mizar_resolve::{
+                labels::{LabelProjectionSource, LabelReferenceScope},
+                resolved_ast::{LabelKind, LabelResolution},
+            };
+            let theorem = source
+                .arena()
+                .iter()
+                .find(|(_, current)| current.kind() == &K::TheoremItem)
+                .map(|(_, current)| current)
+                .ok_or_else(invalid)?;
+            let [_, _, _, _, outer, _] = theorem.children() else {
+                return Err(invalid());
+            };
+            let [_, compact, conclusion, _] = node(*outer)?.children() else {
+                return Err(invalid());
+            };
+            let [proposition, inner, _] = node(*compact)?.children() else {
+                return Err(invalid());
+            };
+            let [label, _, _] = node(*proposition)?.children() else {
+                return Err(invalid());
+            };
+            let [_, inner_conclusion, _] = node(*inner)?.children() else {
+                return Err(invalid());
+            };
+            let [_, _, _] = node(*inner_conclusion)?.children() else {
+                return Err(invalid());
+            };
+            let [_, _, justification, _] = node(*conclusion)?.children() else {
+                return Err(invalid());
+            };
+            let reference_list = node(*justification)?.children()[1];
+            let citation = node(reference_list)?.children()[0];
+            if node(*outer)?.kind() != &K::ProofBlock
+                || node(*compact)?.kind() != &K::CompactStatement
+                || node(*proposition)?.kind() != &K::Proposition
+                || node(*inner)?.kind() != &K::ProofBlock
+                || node(*inner_conclusion)?.kind() != &K::ConclusionStatement
+                || node(*conclusion)?.kind() != &K::ConclusionStatement
+                || source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| current.kind() == &K::ProofBlock)
+                    .count()
+                    != 2
+                || source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| current.kind() == &K::CompactStatement)
+                    .count()
+                    != 1
+            {
+                return Err(invalid());
+            }
+            let (actual_scope, labels, resolution) =
+                mizar_resolve::symbols::source_proof_inputs(source, symbols)
+                    .map_err(|_| invalid())?;
+            let [candidate] = labels.references() else {
+                return Err(invalid());
+            };
+            let [reference] = resolution.ids() else {
+                return Err(invalid());
+            };
+            let projection = labels
+                .projections()
+                .iter()
+                .find(|projection| projection.kind() == LabelKind::ProofStep)
+                .ok_or_else(invalid)?;
+            let LabelProjectionSource::CurrentModule {
+                proof_scope: Some(label_scope),
+                visible_after_ordinal,
+            } = projection.source()
+            else {
+                return Err(invalid());
+            };
+            let LabelReferenceScope::Unqualified {
+                proof_scope: Some(citation_scope),
+            } = candidate.scope()
+            else {
+                return Err(invalid());
+            };
+            let entry = resolution.table().get(*reference).ok_or_else(invalid)?;
+            if actual_scope != *scope
+                || labels.projections().len() != 2
+                || resolution.index().len() != 2
+                || !resolution.diagnostics().is_empty()
+                || resolution.has_unresolved()
+                || projection.declaration_range() != range(*label)?
+                || projection.module() != source.module()
+                || projection.visibility() != Visibility::Private
+                || projection.export_status() != ExportStatus::LocalOnly
+                || projection.origin().source_id() != source.source_id()
+                || projection.origin().import_edge().is_some()
+                || projection.origin().is_recovered()
+                || label_scope != citation_scope
+                || *visible_after_ordinal >= candidate.ordinal()
+                || candidate.site().node() != citation
+                || candidate.site().range() != range(citation)?
+                || entry.site() != candidate.site()
+                || !matches!(node(*label)?.kind(), K::Token(token) if token.text.as_ref() == projection.primary_spelling())
+                || !matches!(entry.resolution(), LabelResolution::Resolved(target) if target.origin() == projection.origin_path() && target.kind() == LabelKind::ProofStep)
+            {
+                return Err(invalid());
+            }
+        }
+        let (bindings, native_primary) = if nested_reserved {
+            let (bindings, primary) =
+                SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences(
+                    source, symbols, scope, &arena,
+                )
+                .map_err(|error| error.to_string())?;
+            (bindings, Some(primary))
+        } else {
+            (
+                SourceVariableSemanticsChecker::occurrence_binding_env(scope),
+                None,
+            )
+        };
         let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
         let mut primary = SourcePrimaryTermHandoffInput {
             source_id: source.source_id(),
@@ -6904,24 +7416,36 @@ impl TermFormulaChecker {
                 .and_then(|(_, current)| current.children().last())
                 .copied()
                 .ok_or_else(invalid)?;
-            let ordinal = primary.terms.len();
-            primary.terms.push(SourcePrimaryTermInput {
-                site: site(id),
-                source_range: reference.range(),
-                source_ordinal: ordinal,
-                context,
-                recovery: SourcePrimaryTermRecovery::Normal,
-                spelling: reference.spelling().into(),
-                kind: SourcePrimaryTermKind::VariableReference,
-                role: SourcePrimaryTermRole::Value,
-                parent: None,
-            });
+            let ordinal = terms.len();
+            let context = match &native_primary {
+                Some(primary) => primary
+                    .terms()
+                    .get(SourcePrimaryTermId::new(ordinal))
+                    .ok_or_else(invalid)?
+                    .context(),
+                None => BindingContextId::new(0),
+            };
+            if native_primary.is_none() {
+                primary.terms.push(SourcePrimaryTermInput {
+                    site: site(id),
+                    source_range: reference.range(),
+                    source_ordinal: ordinal,
+                    context,
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: reference.spelling().into(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                });
+            }
             let binding = BindingId::new(reference.binding().index());
-            primary.references.push(SourcePrimaryTermReferenceInput {
-                term: SourcePrimaryTermId::new(ordinal),
-                binding,
-                role: SourcePrimaryTermReferenceRole::Variable,
-            });
+            if native_primary.is_none() {
+                primary.references.push(SourcePrimaryTermReferenceInput {
+                    term: SourcePrimaryTermId::new(ordinal),
+                    binding,
+                    role: SourcePrimaryTermReferenceRole::Variable,
+                });
+            }
             terms.push(
                 TermInput::new(site(id), context, reference.range(), TermKind::Variable)
                     .with_reference(TermReference::Binding(binding))
@@ -6938,9 +7462,13 @@ impl TermFormulaChecker {
                     )),
             );
         }
-        let primary =
-            SourcePrimaryTermProducer::build_from_occurrences(primary, &bindings, &arena, scope)
-                .map_err(|error| error.to_string())?;
+        let primary = match native_primary {
+            Some(primary) => primary,
+            None => {
+                SourcePrimaryTermProducer::build_from_occurrences(primary, &bindings, &arena, scope)
+                    .map_err(|error| error.to_string())?
+            }
+        };
         let primary_sites = primary
             .terms()
             .iter()
@@ -6963,6 +7491,12 @@ impl TermFormulaChecker {
         let mut formulas = Vec::new();
         for id in equalities {
             let formula = SourceAtomicFormulaId::new(atomic.formulas.len());
+            let left = node(node(id)?.children()[0])?.children()[0];
+            let context = primary
+                .terms()
+                .get(*primary_sites.get(&site(left).node()).ok_or_else(invalid)?)
+                .ok_or_else(invalid)?
+                .context();
             let mut operands = Vec::new();
             let mut spellings = Vec::new();
             for (ordinal, child) in [node(id)?.children()[0], node(id)?.children()[2]]
@@ -7069,6 +7603,17 @@ impl TermFormulaChecker {
         use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypingState};
         let (bindings, inference, original) =
             Self::check_source_theorem_equalities(source, symbols, scope)?;
+        if scope
+            .bindings()
+            .iter()
+            .any(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+            && source
+                .arena()
+                .iter()
+                .any(|(_, node)| node.kind() == &K::ProofBlock)
+        {
+            return Err("theorems.equality.unsupported_source_types".to_owned());
+        }
         let invalid = || "theorems.equality.invalid_typed_association".to_owned();
         let mut nodes = original
             .nodes()
@@ -16924,6 +17469,105 @@ impl SourceVariableSemanticsChecker {
             resolved,
             owners,
         })
+    }
+
+    pub(crate) fn original_reserved_statement_binding_env(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<BindingEnv, String> {
+        let (scopes, parents) =
+            mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+        let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();
+        let [declaration] = scope.bindings() else {
+            return Err(invalid());
+        };
+        let original = Self::occurrence_binding_env(scope);
+        let root_scope = scopes
+            .iter()
+            .find(|(node, _)| source.resolved_node_for(**node) == Some(source.arena().root()))
+            .map(|(_, local)| local)
+            .ok_or_else(invalid)?;
+        if declaration.kind() != SourceVariableBindingKind::Reserve
+            || declaration.scope() != root_scope
+            || scopes.get(&declaration.node()) != Some(root_scope)
+            || original.bindings().len() != 1
+            || original.contexts().len() != 1
+        {
+            return Err(invalid());
+        }
+        let mut proofs = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::ProofBlock)
+            .collect::<Vec<_>>();
+        proofs.sort_by_key(|(_, node)| match node.origin().anchor() {
+            SourceAnchor::Range(range) => range.start,
+            _ => usize::MAX,
+        });
+        if proofs.len() != 2 {
+            return Err(invalid());
+        }
+        let mut contexts = original.contexts().clone();
+        let mut context_scopes = BTreeMap::from([(root_scope.clone(), BindingContextId::new(0))]);
+        for (index, (resolved, proof)) in proofs.into_iter().enumerate() {
+            let SourceAnchor::Range(source_range) = proof.origin().anchor() else {
+                return Err(invalid());
+            };
+            let (surface, local) = scopes
+                .iter()
+                .find(|(node, _)| source.resolved_node_for(**node) == Some(resolved))
+                .ok_or_else(invalid)?;
+            let parent = parents.get(surface).ok_or_else(invalid)?;
+            let parent_scope = scopes.get(parent).ok_or_else(invalid)?;
+            let parent_context = *context_scopes.get(parent_scope).ok_or_else(invalid)?;
+            let parent_node = source
+                .arena()
+                .node(source.resolved_node_for(*parent).ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            if local == parent_scope
+                || context_scopes.contains_key(local)
+                || parent_context != BindingContextId::new(index)
+                || parent_node.kind()
+                    != if index == 0 {
+                        &K::TheoremItem
+                    } else {
+                        &K::CompactStatement
+                    }
+            {
+                return Err(invalid());
+            }
+            let id = contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: *source_range,
+                },
+                parent: Some(parent_context),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(local.clone()),
+                bindings: Vec::new(),
+                visible_bindings: contexts
+                    .get(parent_context)
+                    .ok_or_else(invalid)?
+                    .visible_bindings
+                    .clone(),
+                recovery: BindingContextRecovery::Normal,
+            });
+            context_scopes.insert(local.clone(), id);
+        }
+        if scopes
+            .values()
+            .any(|local| !context_scopes.contains_key(local))
+        {
+            return Err(invalid());
+        }
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            contexts,
+            bindings: original.bindings().clone(),
+            diagnostics: original.diagnostics().clone(),
+        })
+        .map_err(|error| error.to_string())
     }
 
     /// Retains real theorem lexical contexts without changing existing inference handoffs.

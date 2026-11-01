@@ -133,6 +133,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_TEXT: &str = concat!(
     "theorem FormulaStatementReservedVariableEqualitySmoke: x = x;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B1_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementNestedContextSmoke: x = x proof\n",
@@ -1911,13 +1912,8 @@ const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySm
 #[cfg(test)]
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
+#[cfg(test)]
 const SOURCE_STATEMENT_B1_LABEL: &str = "FormulaStatementNestedContextSmoke";
-const SOURCE_STATEMENT_B1_SPELLINGS: [&str; 4] = [
-    "theorem FormulaStatementNestedContextSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x by A ; end ;",
-    "A : x = x proof thus x = x ; end ;",
-    "thus x = x ;",
-    "thus x = x by A ;",
-];
 const SOURCE_STATEMENT_B5A_LABEL: &str = "FormulaStatementAncestorLabelDescendantCitationSmoke";
 const SOURCE_STATEMENT_B5A_SPELLINGS: [&str; 5] = [
     "theorem FormulaStatementAncestorLabelDescendantCitationSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x proof thus x = x by A ; end ; end ;",
@@ -2051,6 +2047,7 @@ pub(in crate::runner) struct SourceStatementExtraction {
     pub(in crate::runner) statement_spelling: String,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB1Extraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -3353,26 +3350,16 @@ fn source_statement_reference_transport_profile_is_exact(
     let local_common = statement.owners().len() == 1
         && references.labels().len() == 1
         && references.citations().len() == 1;
-    (source_text == SOURCE_STATEMENT_B1_TEXT
+    (source_text == SOURCE_STATEMENT_B5A_TEXT
         && local_common
-        && statement.binding_env().contexts().len() == 3
-        && statement.statements().len() == 4
-        && statement.contexts().len() == 4
-        && statement.input_facts().len() == 4
-        && statement.candidate_facts().len() == 4
-        && owner.spelling() == SOURCE_STATEMENT_B1_LABEL
-        && owner.source_range() == range(statement.source_id(), 19, 138)
-        && output.reference_use_ordinals == [1; 8])
-        || (source_text == SOURCE_STATEMENT_B5A_TEXT
-            && local_common
-            && statement.binding_env().contexts().len() == 4
-            && statement.statements().len() == 5
-            && statement.contexts().len() == 5
-            && statement.input_facts().len() == 5
-            && statement.candidate_facts().len() == 5
-            && owner.spelling() == SOURCE_STATEMENT_B5A_LABEL
-            && owner.source_range() == range(statement.source_id(), 19, 184)
-            && output.reference_use_ordinals == [1; 10])
+        && statement.binding_env().contexts().len() == 4
+        && statement.statements().len() == 5
+        && statement.contexts().len() == 5
+        && statement.input_facts().len() == 5
+        && statement.candidate_facts().len() == 5
+        && owner.spelling() == SOURCE_STATEMENT_B5A_LABEL
+        && owner.source_range() == range(statement.source_id(), 19, 184)
+        && output.reference_use_ordinals == [1; 10])
         || (source_text == SOURCE_STATEMENT_B5B_TEXT
             && statement.owners().len() == 1
             && references.labels().is_empty()
@@ -3500,6 +3487,7 @@ pub(in crate::runner) fn extract_source_reserved_variable_theorem_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_nested_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -14294,15 +14282,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B1_TEXT {
-        return source_statement_b1_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     None
 }
 
@@ -16903,45 +16882,6 @@ pub(in crate::runner) fn source_statement_b5a_output_with_raw_resolver_mutation(
         &symbols,
         extracted,
         |_| {},
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b1_output_with_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b1_output_with_source_and_mutation_impl(
-        ast,
-        module,
-        symbols,
-        source_text,
-        mutate,
-    )
-}
-
-fn source_statement_b1_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_nested_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B1_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b1_output(
-        ast, module, &symbols, extracted, mutate,
     ))
 }
 
@@ -21939,443 +21879,6 @@ fn task258b5a_resolved_arena(
     builder.finish(root).map_err(|error| error.to_string())
 }
 
-fn build_source_statement_b1_output(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    extracted: SourceStatementB1Extraction,
-    mutate: impl FnOnce(&mut SourceStatementB1RouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    if symbols.module_id() != &module {
-        return Err("Task258B1 symbol module mismatch".to_owned());
-    }
-    let namespace = NamespacePath::new(module.path().as_str());
-    let owners = symbols
-        .symbols()
-        .visible_candidates(&namespace, SOURCE_STATEMENT_B1_LABEL)
-        .into_iter()
-        .filter(|entry| entry.kind() == SymbolKind::Theorem)
-        .collect::<Vec<_>>();
-    let [owner_entry] = owners.as_slice() else {
-        return Err("Task258B1 requires one exact resolver theorem owner".to_owned());
-    };
-    let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
-        symbols,
-        owner_entry.symbol().clone(),
-        ast.source_id,
-        &module,
-    )
-    .map_err(|error| error.to_string())?;
-    if checked_owner.source_range() != extracted.theorem_range
-        || extracted.label_range != range(ast.source_id, 27, 61)
-    {
-        return Err("Task258B1 resolver theorem provenance mismatch".to_owned());
-    }
-    let reserve =
-        extract_builtin_source_reserve_declarations_after_node_guard(ast, module.clone(), symbols)
-            .map_err(|()| "Task258B1 reserve extraction failed".to_owned())?;
-    let base_binding_env = reserve
-        .bridge
-        .prepare_binding_env(symbols)
-        .map_err(|error| error.to_string())?;
-    let mut contexts = base_binding_env.contexts().clone();
-    let outer = contexts.insert(BindingContextDraft {
-        owner: BindingContextOwner::SourceStatement {
-            source_range: extracted.proof_ranges[0],
-        },
-        parent: Some(BindingContextId::new(0)),
-        layer: BindingContextLayer::Proof,
-        lexical_scope: Some(LocalTermScope::new(vec![0])),
-        bindings: Vec::new(),
-        visible_bindings: vec![BindingId::new(0)],
-        recovery: BindingContextRecovery::Normal,
-    });
-    let nested = contexts.insert(BindingContextDraft {
-        owner: BindingContextOwner::SourceStatement {
-            source_range: extracted.proof_ranges[1],
-        },
-        parent: Some(outer),
-        layer: BindingContextLayer::Proof,
-        lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
-        bindings: Vec::new(),
-        visible_bindings: vec![BindingId::new(0)],
-        recovery: BindingContextRecovery::Normal,
-    });
-    if outer != BindingContextId::new(1) || nested != BindingContextId::new(2) {
-        return Err("Task258B1 binding context identity drift".to_owned());
-    }
-    let binding_env = BindingEnv::try_new(BindingEnvParts {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        contexts,
-        bindings: base_binding_env.bindings().clone(),
-        diagnostics: base_binding_env.diagnostics().clone(),
-    })
-    .map_err(|error| error.to_string())?;
-    let mut owned_node_kinds = BTreeMap::new();
-    for (site, kind) in extracted.statement_sites.iter().zip([
-        "source.statement.theorem",
-        "source.statement.proof-step",
-        "source.statement.conclusion",
-        "source.statement.conclusion",
-    ]) {
-        owned_node_kinds.insert(site.node().index(), kind);
-    }
-    for site in &extracted.formula_sites {
-        owned_node_kinds.insert(site.node().index(), "source.formula.atomic.equality");
-    }
-    let term_contexts = [0, 0, 1, 1, 2, 2, 1, 1];
-    let roots = extracted
-        .term_sites
-        .iter()
-        .zip(term_contexts)
-        .map(|(site, context)| (site.node().index(), BindingContextId::new(context)));
-    let parts = source_term_parts_for_context_roots(
-        ast,
-        module.clone(),
-        &binding_env,
-        roots,
-        &owned_node_kinds,
-    )?;
-    let primary = parts.handoff;
-    let arena = parts.arena;
-    if primary
-        .terms()
-        .iter()
-        .zip(extracted.term_ranges)
-        .any(|((_, term), expected)| term.source_range() != expected)
-    {
-        return Err("Task258B1 primary-term range drift".to_owned());
-    }
-    let atomic = SourceAtomicFormulaProducer::build(
-        task258b1_atomic_input(ast, module.clone(), &extracted),
-        &binding_env,
-        symbols,
-        &primary,
-        None,
-        None,
-        None,
-        &arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let statement = task258b1_statement_input(
-        ast,
-        module.clone(),
-        owner_entry.symbol().clone(),
-        owner_entry.contribution(),
-        &extracted,
-    );
-    let (resolver_ast, projection, reference, resolution) =
-        task258b1_resolver_bundle(ast, &module, owner_entry.contribution())?;
-    let reference_input = SourceStatementReferenceHandoffInput {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        labels: vec![SourceStatementLabelInput {
-            statement: SourceStatementId::new(1),
-            context: SourceStatementContextId::new(1),
-            candidate: SourceStatementCandidateFactId::new(1),
-            origin_path: projection.origin_path().clone(),
-            proof_scope: LabelScopePath::new(vec![0]),
-            source_range: range(ast.source_id, 77, 78),
-            source_ordinal: 0,
-            visible_after_ordinal: 1,
-            spelling: "A".to_owned(),
-            kind: SourceStatementLabelKind::ProofStep,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        citations: vec![SourceStatementCitationInput {
-            statement: SourceStatementId::new(3),
-            context: SourceStatementContextId::new(3),
-            target: SourceStatementCitationTarget::Local(SourceStatementLabelId::new(0)),
-            label_ref: resolution.ids()[0],
-            proof_scope: LabelScopePath::new(vec![0]),
-            source_range: range(ast.source_id, 131, 132),
-            ordinal: 0,
-            kind: SourceStatementCitationKind::SimpleLocal,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-    };
-    let mut inputs = SourceStatementB1RouteInputs {
-        binding_env,
-        arena,
-        primary,
-        atomic,
-        statement,
-        resolver_ast,
-        projection,
-        reference,
-        resolution,
-        reference_input,
-    };
-    mutate(&mut inputs);
-    let statement = SourceStatementProducer::build(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let references = SourceStatementReferenceProducer::build(
-        inputs.reference_input,
-        &statement,
-        &inputs.resolver_ast,
-        &inputs.projection,
-        &inputs.reference,
-        &inputs.resolution,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let reference_use_ordinals = inputs
-        .primary
-        .references()
-        .iter()
-        .map(|(_, reference)| reference.use_ordinal())
-        .collect::<Vec<_>>();
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_statement_references(statement, references)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_statement().is_none()
-        || typed_ast.source_statement_references().is_none()
-        || typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_statement_references() != resolved.source_statement_references()
-        || typed_ast.source_term() != resolved.source_term()
-        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
-        || typed_ast.source_context().is_some()
-        || typed_ast.source_type().is_some()
-        || typed_ast.source_attribute().is_some()
-        || typed_ast.source_evidence().is_some()
-        || typed_ast.source_application().is_some()
-        || typed_ast.source_structure().is_some()
-        || typed_ast.source_set_term().is_some()
-        || typed_ast.source_composite_formula().is_some()
-        || typed_ast.source_formula_composition().is_some()
-        || typed_ast.source_condition_formula_composition().is_some()
-        || typed_ast.source_predicate_chain_composition().is_some()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.collection_candidates().is_empty()
-        || !resolved.expanded_candidates().is_empty()
-        || !resolved.template_expansions().is_empty()
-        || !resolved.viable_candidates().is_empty()
-        || !resolved.viability_decisions().is_empty()
-        || !resolved.specificity_graphs().is_empty()
-        || !resolved.resolved_overloads().is_empty()
-        || !resolved.inserted_coercions().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258B1 immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-        left_lookup_ordinal: reference_use_ordinals[0],
-        right_lookup_ordinal: reference_use_ordinals[1],
-        reference_use_ordinals,
-    })
-}
-
-fn task258b1_resolver_bundle(
-    ast: &SurfaceAst,
-    module: &ModuleId,
-    contribution: mizar_resolve::env::SourceContributionId,
-) -> Result<
-    (
-        ResolvedAst,
-        LabelProjection,
-        LabelReferenceCandidate,
-        mizar_resolve::labels::LabelResolutionResult,
-    ),
-    String,
-> {
-    let preliminary = task258b1_resolved_arena(ast, module, None)?;
-    let preliminary_keyed_nodes = preliminary
-        .iter()
-        .filter(|(_, node)| node.reference_key().is_some())
-        .count();
-    if preliminary.root().index() != 76
-        || preliminary.len() != 77
-        || preliminary_keyed_nodes != 0
-        || preliminary.iter().any(|(id, node)| {
-            node.kind() != &ast.nodes()[id.index()].kind
-                || node
-                    .children()
-                    .iter()
-                    .map(|child| child.index())
-                    .ne(ast.nodes()[id.index()]
-                        .children
-                        .iter()
-                        .map(|child| child.index()))
-                || node.origin().source_id() != ast.source_id
-                || node.origin().module_id() != module
-                || node.origin().import_edge().is_some()
-                || node.origin().structural_path() != [id.index() as u32]
-                || node.origin().anchor() != &SourceAnchor::Range(ast.nodes()[id.index()].range)
-                || node.origin().is_recovered()
-                || node.recovery() != RecoveryState::Normal
-                || node.resolution() != NodeResolutionState::NotApplicable
-        })
-    {
-        return Err("Task258B1 preliminary resolver arena drift".to_owned());
-    }
-    let reference_node = preliminary
-        .iter()
-        .find_map(|(id, _)| (id.index() == 68).then_some(id))
-        .ok_or_else(|| "Task258B1 preliminary reference node is missing".to_owned())?;
-    let namespace = NamespacePath::new(module.path().as_str());
-    let origin_path = LabelOriginPath::new(format!(
-        "{}::{}::proof::A",
-        module.package().as_str(),
-        module.path().as_str()
-    ));
-    let projection = LabelProjection::proof_step(
-        LabelProjectionData {
-            origin_path,
-            module: module.clone(),
-            namespace: namespace.clone(),
-            primary_spelling: "A".to_owned(),
-            kind: LabelKind::ProofStep,
-            declaration_range: range(ast.source_id, 77, 78),
-            origin: SemanticOrigin::new(
-                ast.source_id,
-                module.clone(),
-                SourceAnchor::Range(range(ast.source_id, 77, 78)),
-                vec![12],
-            ),
-            contribution,
-        },
-        1,
-        LabelScopePath::new(vec![0]),
-    );
-    let reference = LabelReferenceCandidate::unqualified_citation(
-        ReferenceSite::new(reference_node, range(ast.source_id, 131, 132), "A"),
-        SemanticOrigin::new(
-            ast.source_id,
-            module.clone(),
-            SourceAnchor::Range(range(ast.source_id, 131, 132)),
-            vec![68],
-        ),
-        3,
-        Some(LabelScopePath::new(vec![0])),
-    );
-    let resolution = LabelResolver::new(std::slice::from_ref(&projection)).resolve(
-        module,
-        &namespace,
-        std::slice::from_ref(&reference),
-    );
-    let [label_ref] = resolution.ids() else {
-        return Err("Task258B1 resolver did not produce one reference id".to_owned());
-    };
-    let final_arena = task258b1_resolved_arena(ast, module, Some(*label_ref))?;
-    let resolver_ast = ResolvedAst::try_new(
-        ast.source_id,
-        module.clone(),
-        final_arena,
-        NameRefTable::new(),
-        resolution.table().clone(),
-        ResolvedImports::new(),
-    )
-    .map_err(|error| error.to_string())?;
-    if resolver_ast.nodes().root().index() != 76
-        || resolver_ast.nodes().len() != 77
-        || resolver_ast
-            .nodes()
-            .iter()
-            .any(|(id, node)| node.kind() != &ast.nodes()[id.index()].kind)
-    {
-        return Err("Task258B1 resolver arena lost parser identity".to_owned());
-    }
-    Ok((resolver_ast, projection, reference, resolution))
-}
-
-fn task258b1_resolved_arena(
-    ast: &SurfaceAst,
-    module: &ModuleId,
-    label_ref: Option<mizar_resolve::resolved_ast::LabelRefId>,
-) -> Result<ResolvedArena, String> {
-    let mut builder = ResolvedArenaBuilder::new();
-    let mut ids = Vec::with_capacity(ast.nodes().len());
-    for (index, node) in ast.nodes().iter().enumerate() {
-        let children = node
-            .children
-            .iter()
-            .map(|child| {
-                ids.get(child.index())
-                    .copied()
-                    .ok_or_else(|| "Task258B1 resolver child order drift".to_owned())
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let origin = SemanticOrigin::new(
-            ast.source_id,
-            module.clone(),
-            SourceAnchor::Range(node.range),
-            vec![index as u32],
-        );
-        let mut resolved = ResolvedNode::new(node.kind.clone(), children, origin);
-        if node.recovered {
-            resolved = resolved.with_recovery(RecoveryState::Recovered);
-        }
-        if index == 68
-            && let Some(label_ref) = label_ref
-        {
-            resolved = resolved
-                .with_resolution(NodeResolutionState::Resolved)
-                .with_reference_key(NodeReferenceKey::Label(label_ref));
-        }
-        let id = builder.push(resolved).map_err(|error| error.to_string())?;
-        if id.index() != index {
-            return Err("Task258B1 resolver node identity drift".to_owned());
-        }
-        ids.push(id);
-    }
-    let root = ast
-        .root()
-        .and_then(|root| ids.get(root.index()).copied())
-        .ok_or_else(|| "Task258B1 resolver root is missing".to_owned())?;
-    builder.finish(root).map_err(|error| error.to_string())
-}
-
 fn task258b3_atomic_input(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -22894,139 +22397,6 @@ fn task258b5a_statement_input(
             })
             .collect(),
         candidate_facts: (0..5)
-            .map(|index| SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(index),
-                context: SourceStatementContextId::new(index),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-            })
-            .collect(),
-    }
-}
-
-fn task258b1_atomic_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    extracted: &SourceStatementB1Extraction,
-) -> SourceAtomicFormulaHandoffInput {
-    let contexts = [0, 1, 2, 1];
-    let formulas = (0..4)
-        .map(|index| SourceAtomicFormulaInput {
-            site: extracted.formula_sites[index].clone(),
-            source_range: extracted.formula_ranges[index],
-            source_ordinal: index,
-            context: BindingContextId::new(contexts[index]),
-            recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: "x = x".to_owned(),
-            kind: SourceAtomicFormulaKind::Equality,
-        })
-        .collect();
-    let mut edges = Vec::new();
-    let mut requests = Vec::new();
-    for formula in 0..4 {
-        for ordinal in 0..2 {
-            let edge = SourceAtomicEdgeId::new(formula * 2 + ordinal);
-            edges.push(SourceAtomicEdgeInput {
-                formula: SourceAtomicFormulaId::new(formula),
-                ordinal,
-                role: if ordinal == 0 {
-                    SourceAtomicEdgeRole::BuiltinLeftOperand
-                } else {
-                    SourceAtomicEdgeRole::BuiltinRightOperand
-                },
-                target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
-                    formula * 2 + ordinal,
-                )),
-            });
-            requests.push(SourceAtomicRequestInput {
-                formula: SourceAtomicFormulaId::new(formula),
-                ordinal,
-                kind: SourceAtomicRequestKind::OperandExpectedType,
-                edge: Some(edge),
-                candidate: None,
-                type_site: None,
-                attribute: None,
-            });
-        }
-    }
-    SourceAtomicFormulaHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        formulas,
-        wrappers: Vec::new(),
-        predicate_segments: Vec::new(),
-        predicate_heads: Vec::new(),
-        candidates: Vec::new(),
-        type_sites: Vec::new(),
-        attributes: Vec::new(),
-        edges,
-        requests,
-    }
-}
-
-fn task258b1_statement_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbol: mizar_resolve::resolved_ast::SymbolId,
-    contribution: mizar_resolve::env::SourceContributionId,
-    extracted: &SourceStatementB1Extraction,
-) -> SourceStatementHandoffInput {
-    let kinds = [
-        SourceStatementKind::TheoremProposition,
-        SourceStatementKind::ProofStepProposition,
-        SourceStatementKind::Conclusion,
-        SourceStatementKind::Conclusion,
-    ];
-    let binding_contexts = [0, 1, 2, 1];
-    SourceStatementHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        owners: vec![SourceTheoremOwnerInput {
-            symbol,
-            contribution,
-            site: extracted.theorem_site.clone(),
-            source_range: extracted.theorem_range,
-            spelling: SOURCE_STATEMENT_B1_LABEL.to_owned(),
-            role: SourceTheoremRole::Theorem,
-            status: SourceTheoremStatus::Unmodified,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        statements: (0..4)
-            .map(|index| SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(index),
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-                site: extracted.statement_sites[index].clone(),
-                source_range: extracted.statement_ranges[index],
-                source_ordinal: index,
-                spelling: SOURCE_STATEMENT_B1_SPELLINGS[index].to_owned(),
-                kind: kinds[index],
-                recovery: SourceStatementRecovery::Normal,
-            })
-            .collect(),
-        contexts: (0..4)
-            .map(|index| SourceStatementContextInput {
-                statement: SourceStatementId::new(index),
-                binding_context: BindingContextId::new(binding_contexts[index]),
-                source_range: extracted.statement_ranges[index],
-                visible_bindings: vec![BindingId::new(0)],
-            })
-            .collect(),
-        input_facts: (0..4)
-            .map(|index| SourceStatementInputFactInput {
-                statement: SourceStatementId::new(index),
-                context: SourceStatementContextId::new(index),
-                ordinal: 0,
-                kind: SourceStatementInputFactKind::ReservedTypeGuard,
-                binding: BindingId::new(0),
-                uses: vec![
-                    SourcePrimaryTermReferenceId::new(index * 2),
-                    SourcePrimaryTermReferenceId::new(index * 2 + 1),
-                ],
-            })
-            .collect(),
-        candidate_facts: (0..4)
             .map(|index| SourceStatementCandidateFactInput {
                 statement: SourceStatementId::new(index),
                 context: SourceStatementContextId::new(index),

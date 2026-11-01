@@ -1863,12 +1863,14 @@ impl TypedAst {
         symbols: &mizar_resolve::env::SymbolEnv,
         scope: &mizar_resolve::names::ResolvedVariableScope,
     ) -> Result<Self, TypedAstError> {
-        let (statement, canonical) = SourceStatementHandoff::from_original(source, symbols, scope)
-            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        let (statement, references, canonical) =
+            SourceStatementHandoff::from_original(source, symbols, scope)
+                .map_err(|_| TypedAstError::InvalidSourceStatement)?;
         if self != canonical {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         self.source_statement = Some(statement);
+        self.source_statement_references = references;
         Ok(self)
     }
 
@@ -2003,10 +2005,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statements.is_task_258b1_profile()
-            && !statements.is_task_258b5a_profile()
-            && !statements.is_task_258b5b_profile()
-        {
+        let allowed = statements.is_task_258b5a_profile() || statements.is_task_258b5b_profile();
+        #[cfg(test)]
+        let allowed = allowed || statements.is_task_258b1_profile();
+        if !allowed {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         references
