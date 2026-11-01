@@ -10,6 +10,7 @@ this separate entry does not weaken the legacy producer's declaration-point chec
 ## Original-source nested reserved occurrences
 The crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences` obtains the genuine bounded binding projection and constructs the existing environment/primary pair from complete original source, symbols, occurrences and typed arena, accepting no caller-made positive rows. Match every variable term to actual site/range/winner and its proof context to genuine scope maps; module context `None` explicitly associates with actual root scope. Retain every actual lexical scope and occurrence ordinal.
 The single `ReservedVariable` identity remains module-owned and visible through all actual proof contexts, whose own binding lists stay empty. B1 has one child proof; B5A has two sibling child proofs. Parent association comes from actual structural parents/scopes, never insertion order or a label-scope cast. Native ordinal zero never enters legacy declaration-event lookup. Existing public module/scoped producers keep their transaction rules and Reserve boundaries. No public type, field or binder is added.
+Native B2 joins all six original variable occurrences to the actual operands of the three admitted equalities, retaining native ordinals `0..5` and each genuine use scope. Require complete occurrence coverage independently of context cardinality: the module and single proof contexts do not determine the reference count.
 
 ## Purpose And Authority
 

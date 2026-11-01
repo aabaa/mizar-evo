@@ -1934,9 +1934,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        let allowed = statement.is_task_258b2_profile();
+        #[cfg(not(test))]
+        let allowed = false;
         #[cfg(test)]
-        let allowed = allowed || statement.is_task_258a_profile();
+        let allowed = statement.is_task_258b2_profile() || statement.is_task_258a_profile();
         if !allowed {
             return Err(TypedAstError::InvalidSourceStatement);
         }

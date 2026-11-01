@@ -6606,7 +6606,10 @@ impl TermFormulaChecker {
             .filter(|(_, node)| {
                 matches!(
                     node.kind(),
-                    K::TheoremItem | K::CompactStatement | K::ConclusionStatement
+                    K::TheoremItem
+                        | K::CompactStatement
+                        | K::AssumptionStatement
+                        | K::ConclusionStatement
                 )
             })
             .collect::<Vec<_>>();
@@ -6719,6 +6722,7 @@ impl TermFormulaChecker {
                 kind: match node.kind() {
                     K::TheoremItem => SourceStatementKind::TheoremProposition,
                     K::CompactStatement => SourceStatementKind::ProofStepProposition,
+                    K::AssumptionStatement => SourceStatementKind::Assumption,
                     _ => SourceStatementKind::Conclusion,
                 },
                 recovery: SourceStatementRecovery::Normal,
@@ -7083,6 +7087,11 @@ impl TermFormulaChecker {
                 .arena()
                 .iter()
                 .any(|(_, current)| current.kind() == &K::ProofBlock);
+        let assumption_reserved = nested_reserved
+            && source
+                .arena()
+                .iter()
+                .any(|(_, current)| current.kind() == &K::AssumptionStatement);
         let descendant_reserved = nested_reserved
             && source.arena().iter().any(|(_, current)| {
                 current.kind() == &K::ConclusionStatement
@@ -7104,7 +7113,8 @@ impl TermFormulaChecker {
                         "thus", "end", "by", "public", "private",
                     ]
                     .contains(&token.text.as_ref())
-                        || (reserved && token.text.as_ref() == "reserve") =>
+                        || (reserved && token.text.as_ref() == "reserve")
+                        || (assumption_reserved && token.text.as_ref() == "assume") =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -7183,6 +7193,12 @@ impl TermFormulaChecker {
                 | (K::Proposition, ["identifier", ":", "FormulaExpression"])
                 | (K::ConclusionStatement, ["thus", "Proposition", "ProofBlock", ";"])
                     if nested_reserved =>
+                {
+                    true
+                }
+                (K::ProofBlock, ["proof", "AssumptionStatement", "ConclusionStatement", "end"])
+                | (K::AssumptionStatement, ["assume", "Proposition", ";"])
+                    if assumption_reserved =>
                 {
                     true
                 }
@@ -7282,7 +7298,9 @@ impl TermFormulaChecker {
             };
             equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
             if equalities.len()
-                != if descendant_reserved {
+                != if assumption_reserved {
+                    3
+                } else if descendant_reserved {
                     5
                 } else if nested_reserved {
                     4
@@ -7314,7 +7332,12 @@ impl TermFormulaChecker {
                         matches!(current.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
                     })
                     .count()
-                    != equalities.len() * 2 + if nested_reserved { 4 } else { 2 }
+                    != equalities.len() * 2
+                        + if nested_reserved && !assumption_reserved {
+                            4
+                        } else {
+                            2
+                        }
             {
                 return Err(invalid());
             }
@@ -7337,7 +7360,65 @@ impl TermFormulaChecker {
                 }
             }
         }
-        if nested_reserved {
+        if assumption_reserved {
+            for (kind, count) in [
+                (&K::TheoremItem, 1),
+                (&K::ProofBlock, 1),
+                (&K::AssumptionStatement, 1),
+                (&K::ConclusionStatement, 1),
+                (&K::CompactStatement, 0),
+            ] {
+                if source
+                    .arena()
+                    .iter()
+                    .filter(|(_, node)| node.kind() == kind)
+                    .count()
+                    != count
+                {
+                    return Err(invalid());
+                }
+            }
+            let theorem = source
+                .arena()
+                .iter()
+                .find(|(_, node)| node.kind() == &K::TheoremItem)
+                .map(|(_, node)| node)
+                .ok_or_else(invalid)?;
+            let [_, _, _, theorem_formula, proof, _] = theorem.children() else {
+                return Err(invalid());
+            };
+            let [_, assumption, conclusion, _] = node(*proof)?.children() else {
+                return Err(invalid());
+            };
+            let [_, assumption_proposition, _] = node(*assumption)?.children() else {
+                return Err(invalid());
+            };
+            let [_, conclusion_proposition, _] = node(*conclusion)?.children() else {
+                return Err(invalid());
+            };
+            let [assumption_formula] = node(*assumption_proposition)?.children() else {
+                return Err(invalid());
+            };
+            let [conclusion_formula] = node(*conclusion_proposition)?.children() else {
+                return Err(invalid());
+            };
+            if node(*proof)?.kind() != &K::ProofBlock
+                || node(*assumption)?.kind() != &K::AssumptionStatement
+                || node(*conclusion)?.kind() != &K::ConclusionStatement
+            {
+                return Err(invalid());
+            }
+            for (formula, equality) in [theorem_formula, assumption_formula, conclusion_formula]
+                .into_iter()
+                .zip(&equalities)
+            {
+                if node(*formula)?.kind() != &K::FormulaExpression
+                    || node(*formula)?.children() != [*equality]
+                {
+                    return Err(invalid());
+                }
+            }
+        } else if nested_reserved {
             use mizar_resolve::{
                 labels::{LabelProjectionSource, LabelReferenceScope},
                 resolved_ast::{LabelKind, LabelResolution},
@@ -17568,6 +17649,11 @@ impl SourceVariableSemanticsChecker {
         let (scopes, parents) =
             mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
         let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();
+        let node = |id| source.arena().node(id).ok_or_else(invalid);
+        let range = |id| match node(id)?.origin().anchor() {
+            SourceAnchor::Range(range) => Ok(*range),
+            _ => Err(invalid()),
+        };
         let [declaration] = scope.bindings() else {
             return Err(invalid());
         };
@@ -17585,6 +17671,56 @@ impl SourceVariableSemanticsChecker {
         {
             return Err(invalid());
         }
+        let mut equalities = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::BuiltinPredicateApplication)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
+        let mut operands = Vec::new();
+        for equality in equalities {
+            let [left, equals, right] = node(equality)?.children() else {
+                return Err(invalid());
+            };
+            if !matches!(node(*equals)?.kind(), K::Token(token) if token.text.as_ref() == "=") {
+                return Err(invalid());
+            }
+            for operand in [left, right] {
+                let [term] = node(*operand)?.children() else {
+                    return Err(invalid());
+                };
+                let [token] = node(*term)?.children() else {
+                    return Err(invalid());
+                };
+                if node(*operand)?.kind() != &K::TermExpression
+                    || node(*term)?.kind() != &K::TermReference
+                    || !matches!(node(*token)?.kind(), K::Token(token)
+                        if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == declaration.spelling())
+                {
+                    return Err(invalid());
+                }
+                operands.push((*term, *token));
+            }
+        }
+        if operands.len() != scope.references().len() {
+            return Err(invalid());
+        }
+        let mut seen = BTreeSet::new();
+        for (ordinal, ((term, token), actual)) in
+            operands.into_iter().zip(scope.references()).enumerate()
+        {
+            if !seen.insert(term)
+                || source.resolved_node_for(actual.node()) != Some(term)
+                || actual.range() != range(token)?
+                || actual.ordinal() != ordinal
+                || actual.kind() != mizar_resolve::names::SourceVariableReferenceKind::Term
+                || actual.binding() != declaration.id()
+                || actual.spelling() != declaration.spelling()
+            {
+                return Err(invalid());
+            }
+        }
         let mut proofs = source
             .arena()
             .iter()
@@ -17594,7 +17730,7 @@ impl SourceVariableSemanticsChecker {
             SourceAnchor::Range(range) => range.start,
             _ => usize::MAX,
         });
-        if !matches!(proofs.len(), 2 | 3) {
+        if !matches!(proofs.len(), 1..=3) {
             return Err(invalid());
         }
         let mut contexts = original.contexts().clone();

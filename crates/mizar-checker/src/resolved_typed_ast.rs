@@ -2977,13 +2977,14 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             #[cfg(not(test))]
             let legacy_reserved_statement = false;
             #[cfg(test)]
-            let legacy_reserved_statement = source_statement.is_task_258a_profile();
+            let legacy_reserved_statement =
+                source_statement.is_task_258a_profile() || source_statement.is_task_258b2_profile();
             #[cfg(not(test))]
             let legacy_nested_statement = false;
             #[cfg(test)]
             let legacy_nested_statement = source_statement.is_task_258b1_profile()
                 || source_statement.is_task_258b5a_profile();
-            let native_nested_statement = original_statement
+            let native_referenced_statement = original_statement
                 && self
                     .inputs
                     .typed_ast
@@ -2993,7 +2994,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()
-                        && (native_nested_statement
+                        && (native_referenced_statement
                             || legacy_nested_statement
                             || source_statement.is_task_258b5b_profile()) =>
                 {
@@ -3082,9 +3083,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, None)
                     if source_application.is_none()
-                        && ((original_statement && !native_nested_statement)
+                        && ((original_statement && !native_referenced_statement)
                             || legacy_reserved_statement
-                            || source_statement.is_task_258b2_profile()
                             || is_task_258b4) => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }

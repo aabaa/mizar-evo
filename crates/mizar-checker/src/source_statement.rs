@@ -655,8 +655,13 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b2_profile(&self) -> bool {
-        self.binding_env.contexts().len() == 2
+        self.binding_env
+            .bindings()
+            .get(BindingId::new(0))
+            .is_some_and(|binding| binding.status == BindingStatus::Reserved)
+            && self.binding_env.contexts().len() == 2
             && self.statements.len() == 3
             && self.contexts.len() == 3
             && self.input_facts.len() == 3
@@ -1205,6 +1210,9 @@ impl SourceStatementHandoff {
             let nested = arena
                 .iter()
                 .any(|(_, node)| node.kind.as_str() == "CompactStatement");
+            let assumption = arena
+                .iter()
+                .any(|(_, node)| node.kind.as_str() == "AssumptionStatement");
             let descendant = arena.iter().any(|(_, node)| {
                 node.kind.as_str() == "ConclusionStatement"
                     && node
@@ -1213,7 +1221,9 @@ impl SourceStatementHandoff {
                         .and_then(|id| arena.node(*id))
                         .is_some_and(|node| node.kind.as_str() == "ProofBlock")
             });
-            let count = if descendant {
+            let count = if assumption {
+                3
+            } else if descendant {
                 5
             } else if nested {
                 4
@@ -1270,7 +1280,9 @@ impl SourceStatementHandoff {
             });
             if self.binding_env.bindings().len() != 1
                 || self.binding_env.contexts().len()
-                    != if descendant {
+                    != if assumption {
+                        2
+                    } else if descendant {
                         4
                     } else if nested {
                         3
@@ -1278,7 +1290,9 @@ impl SourceStatementHandoff {
                         1
                     }
                 || proofs.len()
-                    != if descendant {
+                    != if assumption {
+                        1
+                    } else if descendant {
                         3
                     } else if nested {
                         2
@@ -1368,7 +1382,7 @@ impl SourceStatementHandoff {
                 || owner.site != TypedSiteRef::Node(owner.site.node())
                 || owner_node.anchor != SourceAnchor::Range(owner.source_range)
                 || owner_node.recovery != NodeRecoveryState::Normal
-                || owner_node.children.len() != if nested { 6 } else { 5 }
+                || owner_node.children.len() != if nested || assumption { 6 } else { 5 }
             {
                 return Err(SourceStatementError::InvalidOwner {
                     owner: SourceTheoremOwnerId::new(0),
@@ -1379,7 +1393,10 @@ impl SourceStatementHandoff {
                 .filter(|(_, node)| {
                     matches!(
                         node.kind.as_str(),
-                        "TheoremItem" | "CompactStatement" | "ConclusionStatement"
+                        "TheoremItem"
+                            | "CompactStatement"
+                            | "AssumptionStatement"
+                            | "ConclusionStatement"
                     )
                 })
                 .collect::<Vec<_>>();
@@ -1389,6 +1406,21 @@ impl SourceStatementHandoff {
             });
             if sites.len() != count {
                 return Err(invalid());
+            }
+            if assumption {
+                let (proof_id, proof) = proofs[0];
+                if nested
+                    || descendant
+                    || sites[0].0 != owner.site.node()
+                    || sites[1].1.kind.as_str() != "AssumptionStatement"
+                    || sites[2].1.kind.as_str() != "ConclusionStatement"
+                    || owner_node.children[4] != proof_id
+                    || proof.children.len() != 4
+                    || proof.children[1..3] != [sites[1].0, sites[2].0]
+                    || !is_descendant(arena, owner.site.node(), proof_id)
+                {
+                    return Err(invalid());
+                }
             }
             for (index, ((site_id, site), (formula_id, formula))) in sites
                 .into_iter()
@@ -1417,8 +1449,46 @@ impl SourceStatementHandoff {
                 let kind = match site.kind.as_str() {
                     "TheoremItem" => SourceStatementKind::TheoremProposition,
                     "CompactStatement" => SourceStatementKind::ProofStepProposition,
+                    "AssumptionStatement" => SourceStatementKind::Assumption,
                     _ => SourceStatementKind::Conclusion,
                 };
+                if assumption {
+                    let expression = if index == 0 {
+                        site.children[3]
+                    } else {
+                        let [_, proposition, _] = site.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let proposition = arena.node(*proposition).ok_or_else(invalid)?;
+                        let [expression] = proposition.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        if proposition.kind.as_str() != "Proposition" {
+                            return Err(invalid());
+                        }
+                        *expression
+                    };
+                    let expression = arena.node(expression).ok_or_else(invalid)?;
+                    let expected_spelling = match index {
+                        0 => format!(
+                            "theorem {} : {} proof assume {} ; thus {} ; end ;",
+                            owner.spelling,
+                            formula.spelling(),
+                            formula.spelling(),
+                            formula.spelling()
+                        ),
+                        1 => format!("assume {} ;", formula.spelling()),
+                        _ => format!("thus {} ;", formula.spelling()),
+                    };
+                    if expression.kind.as_str() != "FormulaExpression"
+                        || expression.anchor != SourceAnchor::Range(formula.source_range())
+                        || expression.children != [formula.site().node()]
+                        || statement.spelling != expected_spelling
+                        || (index != 0 && !is_descendant(arena, proofs[0].0, site_id))
+                    {
+                        return Err(invalid());
+                    }
+                }
                 if formula.kind() != SourceAtomicFormulaKind::Equality
                     || formula.source_ordinal() != index
                     || formula.context() != expected_context
@@ -1434,6 +1504,7 @@ impl SourceStatementHandoff {
                     || statement.recovery != SourceStatementRecovery::Normal
                     || statement.spelling.is_empty()
                     || (!nested
+                        && !assumption
                         && statement.spelling
                             != format!("theorem {} : {} ;", owner.spelling, formula.spelling()))
                 {
@@ -1475,6 +1546,21 @@ impl SourceStatementHandoff {
                         } else {
                             reference.lexical_scope() == context.lexical_scope.as_ref()
                         };
+                        if assumption {
+                            let formula_node =
+                                arena.node(formula.site().node()).ok_or_else(invalid)?;
+                            let operand = formula_node
+                                .children
+                                .get(ordinal * 2)
+                                .and_then(|id| arena.node(*id))
+                                .ok_or_else(invalid)?;
+                            if formula_node.children.len() != 3
+                                || operand.kind.as_str() != "TermExpression"
+                                || operand.children != [term.site().node()]
+                            {
+                                return Err(invalid());
+                            }
+                        }
                         if reference.binding() != binding.id
                             || reference.use_ordinal() != index * 2 + ordinal
                             || !scope_matches
@@ -3475,6 +3561,7 @@ enum StatementProfile {
     #[cfg(test)]
     Task258B5A,
     Task258B5B,
+    #[cfg(test)]
     Task258B2,
     Task258B3,
     Task258B3N,
@@ -3603,16 +3690,19 @@ fn validate_dependencies(
     if b5b_binding && b5b_primary && b5b_atomic && exact_task258b5b_shared_arena(source_id, arena) {
         return Ok(StatementProfile::Task258B5B);
     }
-    let b2_binding = exact_binding_profile(StatementProfile::Task258B2, source_id, bindings);
-    let b2_primary = exact_primary_profile(StatementProfile::Task258B2, primary_terms);
-    let b2_atomic = exact_atomic_profile(
-        StatementProfile::Task258B2,
-        atomic_formulas,
-        primary_terms,
-        arena,
-    );
-    if b2_binding && b2_primary && b2_atomic {
-        return Ok(StatementProfile::Task258B2);
+    #[cfg(test)]
+    {
+        let b2_binding = exact_binding_profile(StatementProfile::Task258B2, source_id, bindings);
+        let b2_primary = exact_primary_profile(StatementProfile::Task258B2, primary_terms);
+        let b2_atomic = exact_atomic_profile(
+            StatementProfile::Task258B2,
+            atomic_formulas,
+            primary_terms,
+            arena,
+        );
+        if b2_binding && b2_primary && b2_atomic {
+            return Ok(StatementProfile::Task258B2);
+        }
     }
     let b3_binding = exact_binding_profile(StatementProfile::Task258B3, source_id, bindings);
     let b3_primary = exact_primary_profile(StatementProfile::Task258B3, primary_terms);
@@ -3828,6 +3918,7 @@ fn exact_binding_profile(
         #[cfg(test)]
         StatementProfile::Task258B5A => 4,
         StatementProfile::Task258B5B => 2,
+        #[cfg(test)]
         StatementProfile::Task258B2 => 2,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -3988,6 +4079,7 @@ fn exact_binding_profile(
                 return false;
             }
         }
+        #[cfg(test)]
         StatementProfile::Task258B2 => {
             let Some(proof) = bindings.contexts().get(BindingContextId::new(1)) else {
                 return false;
@@ -4471,6 +4563,7 @@ fn exact_primary_profile(
             (165, 166),
         ],
         StatementProfile::Task258B5B => &[(108, 109), (112, 113), (127, 128), (131, 132)],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[
             (66, 67),
             (70, 71),
@@ -4512,6 +4605,7 @@ fn exact_primary_profile(
         #[cfg(test)]
         StatementProfile::Task258B5A => &[0, 0, 1, 1, 2, 2, 1, 1, 3, 3],
         StatementProfile::Task258B5B => &[0, 0, 1, 1],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[0, 0, 1, 1, 1, 1],
         StatementProfile::Task258B3 => &[0, 0, 1, 1, 1],
         StatementProfile::Task258B3N => &[0, 0, 1, 1, 1],
@@ -4550,6 +4644,7 @@ fn exact_primary_profile(
             &[0, 1],
         ],
         StatementProfile::Task258B5B => &[&[], &[], &[0], &[0]],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[&[], &[], &[0], &[0], &[0], &[0]],
         StatementProfile::Task258B3 => &[&[], &[], &[0], &[0], &[0]],
         StatementProfile::Task258B3N => &[&[], &[], &[0], &[0], &[0]],
@@ -5469,6 +5564,7 @@ fn exact_atomic_profile(
         #[cfg(test)]
         StatementProfile::Task258B5A => &[(81, 86), (98, 103), (119, 124), (140, 145), (161, 166)],
         StatementProfile::Task258B5B => &[(108, 113), (127, 132)],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[(66, 71), (87, 92), (101, 106)],
         StatementProfile::Task258B3 => &[(63, 68), (92, 97)],
         StatementProfile::Task258B3N => &[(62, 67), (95, 100)],
@@ -5495,6 +5591,7 @@ fn exact_atomic_profile(
         #[cfg(test)]
         StatementProfile::Task258B5A => &[0, 1, 2, 1, 3],
         StatementProfile::Task258B5B => &[0, 1],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[0, 1, 1],
         StatementProfile::Task258B3 => &[0, 1],
         StatementProfile::Task258B3N => &[0, 1],
@@ -6238,6 +6335,7 @@ fn validate_aggregate_lengths(
         #[cfg(test)]
         StatementProfile::Task258B5A => (1, 5, 5, 5, 5),
         StatementProfile::Task258B5B => (1, 2, 2, 2, 2),
+        #[cfg(test)]
         StatementProfile::Task258B2 => (1, 3, 3, 3, 3),
         StatementProfile::Task258B3 => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3N => (1, 2, 2, 2, 2),
@@ -6375,6 +6473,7 @@ fn validate_owner_rows(
             range(source_id, 48, 145),
             "FormulaStatementImportedPublicTheoremCitationSmoke",
         ),
+        #[cfg(test)]
         StatementProfile::Task258B2 => (
             range(source_id, 19, 112),
             "FormulaStatementSingleAssumptionSmoke",
@@ -6444,8 +6543,10 @@ fn validate_owner_rows(
         ),
     };
     #[cfg(test)]
-    if profile == StatementProfile::Task258B5A
-        && (owner.contribution.index() != 0 || checked_owner.origin().structural_path() != [2, 1])
+    if matches!(
+        profile,
+        StatementProfile::Task258B5A | StatementProfile::Task258B2
+    ) && (owner.contribution.index() != 0 || checked_owner.origin().structural_path() != [2, 1])
     {
         return Err(SourceStatementError::InvalidOwner { owner: id });
     }
@@ -6467,8 +6568,7 @@ fn validate_owner_rows(
         || !validate_theorem_site(&owner.site, owner.source_range, arena)
         || (matches!(
             profile,
-            StatementProfile::Task258B2
-                | StatementProfile::Task258B5B
+            StatementProfile::Task258B5B
                 | StatementProfile::Task258B3
                 | StatementProfile::Task258B3N
                 | StatementProfile::Task258B3M1
@@ -6896,6 +6996,7 @@ fn validate_statement_rows(
                 "thus x = x ;",
             ),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[
             (
                 0,
@@ -7023,6 +7124,7 @@ fn validate_statement_rows(
         #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
+        #[cfg(test)]
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -7079,6 +7181,7 @@ fn validate_statement_rows(
             &[false, false, false, false, false],
         ],
         StatementProfile::Task258B5B => &[&[false, true], &[false, false]],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[
             &[false, true, true],
             &[false, false, false],
@@ -7120,6 +7223,7 @@ fn validate_statement_rows(
             &[false, false, false, false, true],
         ],
         StatementProfile::Task258B5B => &[&[true, true], &[false, true]],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[
             &[true, true, true],
             &[false, true, false],
@@ -7203,6 +7307,7 @@ fn validate_context_rows(
             (3, 156, 172),
         ],
         StatementProfile::Task258B5B => &[(0, 48, 145), (1, 122, 140)],
+        #[cfg(test)]
         StatementProfile::Task258B2 => &[(0, 19, 112), (1, 80, 93), (1, 96, 107)],
         StatementProfile::Task258B3 => &[(0, 19, 103), (1, 87, 98)],
         StatementProfile::Task258B3N => &[(0, 19, 106), (1, 90, 101)],
@@ -7258,6 +7363,7 @@ fn validate_input_fact_rows(
         #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
+        #[cfg(test)]
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -7365,6 +7471,7 @@ fn validate_candidate_fact_rows(
         #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
+        #[cfg(test)]
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -41118,57 +41225,294 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
     #[test]
     fn task258b2_dependency_rows_containment_and_replay_fail_closed() {
         let fixture = B2Fixture::new(31);
-        let valid = fixture.build(fixture.input()).expect("Task258B2 baseline");
+        let pristine_input = fixture.input();
+        let pristine_symbols = fixture.symbols.clone();
+        let pristine_bindings = fixture.bindings.clone();
+        let pristine_primary = fixture.primary.clone();
+        let pristine_atomic = fixture.atomic.clone();
+        let pristine_arena = fixture.arena.clone();
+        let valid = SourceStatementProducer::build(
+            pristine_input.clone(),
+            &pristine_symbols,
+            &pristine_bindings,
+            &pristine_primary,
+            &pristine_atomic,
+            &pristine_arena,
+        )
+        .expect("Task258B2 baseline");
         let baseline = valid.debug_text();
 
-        let mut aggregate = fixture.input();
-        aggregate.candidate_facts.pop();
-        assert_eq!(
-            fixture.build(aggregate),
-            Err(SourceStatementError::InvalidAggregate)
-        );
-        let mut assumption_kind = fixture.input();
-        assumption_kind.statements[1].kind = SourceStatementKind::Conclusion;
-        assert_eq!(
-            fixture.build(assumption_kind),
-            Err(SourceStatementError::InvalidStatement {
-                statement: SourceStatementId::new(1)
-            })
-        );
-        let mut cross_formula = fixture.input();
-        cross_formula.statements[1].formula =
-            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(2));
-        assert_eq!(
-            fixture.build(cross_formula),
-            Err(SourceStatementError::InvalidStatement {
-                statement: SourceStatementId::new(1)
-            })
-        );
-        let mut wrong_context = fixture.input();
-        wrong_context.contexts[1].binding_context = BindingContextId::new(0);
-        assert_eq!(
-            fixture.build(wrong_context),
-            Err(SourceStatementError::InvalidContext {
-                context: SourceStatementContextId::new(1)
-            })
-        );
-        let mut wrong_uses = fixture.input();
-        wrong_uses.input_facts[1].uses.swap(0, 1);
-        assert_eq!(
-            fixture.build(wrong_uses),
-            Err(SourceStatementError::InvalidInputFact {
-                fact: SourceStatementInputFactId::new(1)
-            })
-        );
-        let mut wrong_candidate = fixture.input();
-        wrong_candidate.candidate_facts[1].formula =
-            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(2));
-        assert_eq!(
-            fixture.build(wrong_candidate),
-            Err(SourceStatementError::InvalidCandidateFact {
-                fact: SourceStatementCandidateFactId::new(1)
-            })
-        );
+        let same_source_b1 = B1Fixture::new(31);
+        assert_eq!(same_source_b1.source, fixture.source);
+        assert_eq!(same_source_b1.module, fixture.module);
+        assert_eq!(same_source_b1.bindings.source_id(), fixture.source);
+        assert_eq!(same_source_b1.bindings.module_id(), &fixture.module);
+        assert_eq!(same_source_b1.primary.source_id(), fixture.source);
+        assert_eq!(same_source_b1.atomic.source_id(), fixture.source);
+        for case in 0..11 {
+            let mut input = pristine_input.clone();
+            let mut bindings = pristine_bindings.clone();
+            let mut primary = pristine_primary.clone();
+            let mut atomic = pristine_atomic.clone();
+            let mut arena = pristine_arena.clone();
+            let expected = match case {
+                0 => {
+                    input.candidate_facts.pop();
+                    SourceStatementError::InvalidAggregate
+                }
+                1 => {
+                    input.statements[1].kind = SourceStatementKind::Conclusion;
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(1),
+                    }
+                }
+                2 => {
+                    input.contexts[1].binding_context = BindingContextId::new(0);
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(1),
+                    }
+                }
+                3 => {
+                    input.input_facts[1].uses.swap(0, 1);
+                    SourceStatementError::InvalidInputFact {
+                        fact: SourceStatementInputFactId::new(1),
+                    }
+                }
+                4 => {
+                    input.candidate_facts[1].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(2));
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(1),
+                    }
+                }
+                5 => {
+                    input.statements[1].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(2));
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(1),
+                    }
+                }
+                6 => {
+                    input.owners[0].source_range.end -= 1;
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                7 => {
+                    arena = mutate_arena(&pristine_arena, |id, row| {
+                        if id == TypedNodeId::new(41) {
+                            row.recovery = NodeRecoveryState::Recovered;
+                        }
+                    });
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(1),
+                    }
+                }
+                8 => {
+                    bindings = same_source_b1.bindings.clone();
+                    SourceStatementError::DependencyMismatch
+                }
+                9 => {
+                    primary = same_source_b1.primary.clone();
+                    SourceStatementError::DependencyMismatch
+                }
+                10 => {
+                    atomic = same_source_b1.atomic.clone();
+                    SourceStatementError::DependencyMismatch
+                }
+                _ => unreachable!(),
+            };
+            let attempted_bindings = bindings.clone();
+            let attempted_primary = primary.clone();
+            let attempted_atomic = atomic.clone();
+            let attempted_arena = arena.clone();
+            let actual = SourceStatementProducer::build(
+                input,
+                &pristine_symbols,
+                &bindings,
+                &primary,
+                &atomic,
+                &arena,
+            )
+            .expect_err("Task258B2 mutation must fail at its owning producer");
+            assert_eq!(actual, expected, "Task258B2 mutation case {case}");
+
+            assert_eq!(fixture.input(), pristine_input);
+            assert_eq!(fixture.symbols, pristine_symbols);
+            assert_eq!(fixture.bindings, pristine_bindings);
+            assert_eq!(fixture.primary, pristine_primary);
+            assert_eq!(fixture.atomic, pristine_atomic);
+            assert_eq!(fixture.arena, pristine_arena);
+            assert_eq!(bindings, attempted_bindings);
+            assert_eq!(primary, attempted_primary);
+            assert_eq!(atomic, attempted_atomic);
+            assert_eq!(arena, attempted_arena);
+            let replay = SourceStatementProducer::build(
+                pristine_input.clone(),
+                &pristine_symbols,
+                &pristine_bindings,
+                &pristine_primary,
+                &pristine_atomic,
+                &pristine_arena,
+            )
+            .expect("Task258B2 canonical replay after mutation");
+            assert_eq!(
+                replay.debug_text(),
+                baseline,
+                "Task258B2 replay after mutation case {case}"
+            );
+        }
+
+        let pristine_label = pristine_symbols
+            .labels()
+            .iter()
+            .next()
+            .expect("Task258B2 exact theorem label")
+            .clone();
+        for (case, name) in [
+            "Imported",
+            "Missing",
+            "Duplicate",
+            "WrongPath",
+            "WrongKind",
+            "Private",
+            "LocalOnly",
+            "Recovered",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut labels = LabelIndex::new();
+            if case != 1 {
+                let origin_path = if case == 3 {
+                    LabelOriginPath::new("task258b2::wrong::theorem::origin")
+                } else {
+                    pristine_label.origin_path().clone()
+                };
+                let kind = if case == 4 {
+                    mizar_resolve::resolved_ast::LabelKind::ProofStep
+                } else {
+                    pristine_label.kind()
+                };
+                let origin = match case {
+                    0 => {
+                        let (import_owner, _) =
+                            same_source_b1.resolver_ast.nodes().iter().next().unwrap();
+                        assert_eq!(import_owner.index(), 0);
+                        let source_range = range(pristine_label.origin().source_id(), 0, 1);
+                        let mut import_metadata = ResolvedImports::new();
+                        let import = import_metadata.push_import(ResolvedImport::new(
+                            import_owner,
+                            source_range,
+                            "import statement.fixture;",
+                            None,
+                            ImportResolution::Resolved(pristine_symbols.module_id().clone()),
+                            pristine_label.origin().clone(),
+                        ));
+                        pristine_label.origin().clone().with_import_edge(import)
+                    }
+                    7 => pristine_label.origin().clone().recovered(),
+                    _ => pristine_label.origin().clone(),
+                };
+                let visibility = if case == 5 {
+                    mizar_resolve::env::Visibility::Private
+                } else {
+                    pristine_label.visibility()
+                };
+                let export_status = if case == 6 {
+                    mizar_resolve::env::ExportStatus::LocalOnly
+                } else {
+                    pristine_label.export_status()
+                };
+                labels.insert(
+                    LabelEntry::new(
+                        origin_path,
+                        kind,
+                        pristine_label.namespace().clone(),
+                        pristine_label.primary_spelling(),
+                        origin,
+                        pristine_label.contribution(),
+                    )
+                    .with_visibility(visibility)
+                    .with_export_status(export_status),
+                );
+                if case == 2 {
+                    labels.insert(
+                        LabelEntry::new(
+                            LabelOriginPath::new("task258b2::duplicate::theorem::origin"),
+                            pristine_label.kind(),
+                            pristine_label.namespace().clone(),
+                            pristine_label.primary_spelling(),
+                            pristine_label.origin().clone(),
+                            pristine_label.contribution(),
+                        )
+                        .with_visibility(pristine_label.visibility())
+                        .with_export_status(pristine_label.export_status()),
+                    );
+                }
+            }
+            let attempted_symbols = SymbolEnv::new(
+                pristine_symbols.module_id().clone(),
+                SymbolEnvIndexes {
+                    imports: pristine_symbols.imports().clone(),
+                    exports: pristine_symbols.exports().clone(),
+                    symbols: pristine_symbols.symbols().clone(),
+                    labels,
+                    definitions: pristine_symbols.definitions().clone(),
+                    overloads: pristine_symbols.overloads().clone(),
+                    registrations: pristine_symbols.registrations().clone(),
+                    lexical_summaries: pristine_symbols.lexical_summaries().clone(),
+                    namespace_graph: pristine_symbols.namespace_graph().clone(),
+                    declaration_dependencies: pristine_symbols.declaration_dependencies().clone(),
+                    contributions: pristine_symbols.contributions().clone(),
+                    module_summaries: pristine_symbols.module_summaries().clone(),
+                },
+            );
+            assert_eq!(
+                attempted_symbols.imports(),
+                pristine_symbols.imports(),
+                "{name} imports"
+            );
+            let attempted_symbols_before = attempted_symbols.clone();
+            let actual = SourceStatementProducer::build(
+                pristine_input.clone(),
+                &attempted_symbols,
+                &pristine_bindings,
+                &pristine_primary,
+                &pristine_atomic,
+                &pristine_arena,
+            )
+            .expect_err("Task258B2 Resolver-label mutation must fail at its owning producer");
+            assert_eq!(
+                actual,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+                "Task258B2 Resolver-label mutation {name}"
+            );
+
+            assert_eq!(attempted_symbols, attempted_symbols_before, "{name} purity");
+            assert_eq!(fixture.input(), pristine_input, "{name} source input");
+            assert_eq!(fixture.symbols, pristine_symbols, "{name} symbols");
+            assert_eq!(fixture.bindings, pristine_bindings, "{name} bindings");
+            assert_eq!(fixture.primary, pristine_primary, "{name} primary terms");
+            assert_eq!(fixture.atomic, pristine_atomic, "{name} atomic formulas");
+            assert_eq!(fixture.arena, pristine_arena, "{name} typed arena");
+            let replay = SourceStatementProducer::build(
+                pristine_input.clone(),
+                &pristine_symbols,
+                &pristine_bindings,
+                &pristine_primary,
+                &pristine_atomic,
+                &pristine_arena,
+            )
+            .expect("Task258B2 canonical replay after Resolver-label mutation");
+            assert_eq!(
+                replay.debug_text(),
+                baseline,
+                "Task258B2 replay after Resolver-label mutation {name}"
+            );
+        }
 
         let escaped_assumption = mutate_arena(&fixture.arena, |id, row| {
             if id == TypedNodeId::new(41) {

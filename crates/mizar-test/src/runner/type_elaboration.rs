@@ -655,7 +655,6 @@ pub(super) use source_statement::{
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
     source_proof_local_let_lower_output_with_shell_mutation,
     source_proof_local_let_lower_output_with_surface_mutation,
-    source_statement_b2_output_with_mutation, source_statement_b2_output_with_resolver_mutation,
     source_statement_b3_output_with_mutation, source_statement_b3_output_with_resolver_mutation,
     source_statement_b3_resolver_env_for_test, source_statement_b3m1_output_with_mutation,
     source_statement_b3m1_output_with_resolver_mutation,
