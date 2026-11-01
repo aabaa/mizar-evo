@@ -6589,6 +6589,10 @@ impl TermFormulaChecker {
         if node(root)?.kind() != &K::Root {
             return Err(invalid());
         }
+        let reserved = source
+            .arena()
+            .iter()
+            .any(|(_, current)| current.kind() == &K::ReserveItem);
         let part = |id| match node(id)?.kind() {
             K::Token(token) => match token.kind {
                 SurfaceTokenKind::Identifier if mizar_lexer::is_identifier(&token.text) => {
@@ -6599,7 +6603,8 @@ impl TermFormulaChecker {
                         "theorem", "lemma", "for", "be", "being", "set", "holds", "proof", "let",
                         "thus", "end", "by", "public", "private",
                     ]
-                    .contains(&token.text.as_ref()) =>
+                    .contains(&token.text.as_ref())
+                        || (reserved && token.text.as_ref() == "reserve") =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -6629,6 +6634,13 @@ impl TermFormulaChecker {
                 .map(|child| part(*child))
                 .collect::<Result<Vec<_>, _>>()?;
             let parts = parts.iter().map(String::as_str).collect::<Vec<_>>();
+            if reserved && current.kind() != &K::Root {
+                for pair in current.children().windows(2) {
+                    if range(pair[0])?.end > range(pair[1])?.start {
+                        return Err(invalid());
+                    }
+                }
+            }
             let valid = match (current.kind(), parts.as_slice()) {
                 (K::Token(_), []) => part(id).is_ok(),
                 (K::Root, _) => {
@@ -6642,6 +6654,18 @@ impl TermFormulaChecker {
                             .eq([&K::CompilationUnit])
                 }
                 (K::CompilationUnit, ["ItemList"]) => true,
+                (K::ItemList, items) if reserved => items == ["ReserveItem", "TheoremItem"],
+                (K::ReserveItem, ["reserve", "ReserveSegment", ";"])
+                | (K::ReserveSegment, ["identifier", "for", "TypeExpression"])
+                    if reserved =>
+                {
+                    true
+                }
+                (K::TheoremItem, ["theorem", "identifier", ":", "FormulaExpression", ";"])
+                    if reserved =>
+                {
+                    true
+                }
                 (K::ItemList, items) => {
                     !items.is_empty()
                         && items.iter().all(|item| {
@@ -6651,12 +6675,13 @@ impl TermFormulaChecker {
                 (K::VisibleItem, ["VisibilityMarker", "TheoremItem" | "LemmaItem"])
                 | (K::VisibilityMarker, ["public" | "private"]) => true,
                 (K::TheoremItem | K::LemmaItem, [keyword, rest @ ..]) => {
-                    *keyword
-                        == if current.kind() == &K::TheoremItem {
-                            "theorem"
-                        } else {
-                            "lemma"
-                        }
+                    !reserved
+                        && *keyword
+                            == if current.kind() == &K::TheoremItem {
+                                "theorem"
+                            } else {
+                                "lemma"
+                            }
                         && rest == ["identifier", ":", "FormulaExpression", "ProofBlock", ";"]
                         && node(current.children()[3])?.children().iter().all(|child| {
                             part(*child).is_ok_and(|kind| kind == "QuantifiedFormula(Universal)")
@@ -6676,10 +6701,6 @@ impl TermFormulaChecker {
                 | (K::TypeHead, ["set"])
                 | (K::TermExpression, ["TermReference"])
                 | (K::TermReference, ["identifier"])
-                | (
-                    K::FormulaExpression,
-                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
-                )
                 | (K::Proposition, ["FormulaExpression"])
                 | (K::ConclusionStatement, ["thus", "Proposition", ";"])
                 | (K::ConclusionStatement, ["thus", "Proposition", "JustificationClause", ";"])
@@ -6689,6 +6710,10 @@ impl TermFormulaChecker {
                 | (K::BuiltinPredicateApplication, ["TermExpression", "=", "TermExpression"]) => {
                     true
                 }
+                (
+                    K::FormulaExpression,
+                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
+                ) => !reserved || parts == ["BuiltinPredicateApplication"],
                 (
                     kind,
                     [
@@ -6728,6 +6753,63 @@ impl TermFormulaChecker {
         }
         let arena = TypedArena::try_new(Some(TypedNodeId::new(root.index())), arena)
             .map_err(|_| invalid())?;
+        if reserved {
+            use mizar_resolve::names::{
+                SourceVariableBindingKind, SourceVariableReferenceKind, SourceVariableTypeRadix,
+            };
+            let [binding] = scope.bindings() else {
+                return Err(invalid());
+            };
+            let [left, right] = scope.references() else {
+                return Err(invalid());
+            };
+            let [equality] = equalities.as_slice() else {
+                return Err(invalid());
+            };
+            let segment = source
+                .arena()
+                .iter()
+                .find(|(_, current)| current.kind() == &K::ReserveSegment)
+                .map(|(_, current)| current)
+                .ok_or_else(invalid)?;
+            let binder = segment.children()[0];
+            if binding.kind() != SourceVariableBindingKind::Reserve
+                || source.resolved_node_for(binding.node()) != Some(binder)
+                || range(binder)? != binding.range()
+                || !matches!(node(binder)?.kind(), K::Token(token) if token.text.as_ref() == binding.spelling())
+                || !binding.declared_type().is_some_and(|ty| {
+                    ty.radix() == SourceVariableTypeRadix::Set && ty.attributes().is_empty()
+                })
+                || left.id() == right.id()
+                || left.node() == right.node()
+                || source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| {
+                        matches!(current.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                    })
+                    .count()
+                    != 4
+            {
+                return Err(invalid());
+            }
+            for (ordinal, reference) in [left, right].into_iter().enumerate() {
+                let operand = node(*equality)?.children()[ordinal * 2];
+                let term = node(operand)?.children()[0];
+                let token = node(term)?.children()[0];
+                if reference.kind() != SourceVariableReferenceKind::Term
+                    || reference.binding() != binding.id()
+                    || reference.ordinal() != ordinal
+                    || reference.spelling() != binding.spelling()
+                    || source.resolved_node_for(reference.node()) != Some(term)
+                    || range(token)? != reference.range()
+                    || binding.range().end > reference.range().start
+                    || !matches!(node(token)?.kind(), K::Token(token) if token.text.as_ref() == binding.spelling())
+                {
+                    return Err(invalid());
+                }
+            }
+        }
         let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(scope);
         let context = BindingContextId::new(0);
         let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
@@ -6752,7 +6834,9 @@ impl TermFormulaChecker {
                 .find(|(_, current)| {
                     matches!(
                         current.kind(),
-                        K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                        K::QuantifierVariableSegment
+                            | K::QualifiedVariableSegment
+                            | K::ReserveSegment
                     ) && current.children().contains(&declaration)
                 })
                 .and_then(|(_, current)| current.children().last())
@@ -16788,6 +16872,11 @@ impl SourceVariableSemanticsChecker {
     ) -> Result<BindingEnv, String> {
         let (original, _, _) =
             TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)?;
+        if scope.bindings().iter().any(|binding| {
+            binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Reserve
+        }) {
+            return Err("theorems.equality.unsupported_source_types".to_owned());
+        }
         let (scopes, parents) =
             mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
         let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();

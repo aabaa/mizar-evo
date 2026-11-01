@@ -2150,6 +2150,13 @@ pub fn source_theorem_reflexivity_witness_draft_from_original(
     let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(source, symbols)?;
     let (_, _, typed) =
         TermFormulaChecker::check_source_theorem_equalities(source, symbols, &scope)?;
+    if scope
+        .bindings()
+        .iter()
+        .any(|binding| binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Reserve)
+    {
+        return Err("theorems.equality.unsupported_source_types".to_owned());
+    }
     let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
         source, &typed, &scope, symbols, &labels, &resolved, None,
     )?;
