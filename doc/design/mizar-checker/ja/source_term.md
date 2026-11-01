@@ -10,6 +10,7 @@
 crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences`は元source/symbols/全occurrences/typed arenaから実binding projectionと既存environment/primary pairを構築し、caller製positive rowを受け取らない。全termの実site/range/winnerと実scope map上のproof contextを照合し、module contextの`None`を実root scopeへ対応付ける。全referenceの実lexical scope/occurrence ordinalを保持する。
 唯一の`ReservedVariable` identityはmodule所有で全proof contextへvisibleとなり、proof自身のbinding listは空とする。B1のchild proofは一つ、B5Aは兄弟となる二つ。parentは実structural parent/scopeから導き、挿入順やlabel scopeへのcastを使わない。native ordinal 0をlegacy declaration-event lookupへ渡さない。既存public module/scoped producerのtransaction規則とReserve境界を維持し、新public type/field/binderを追加しない。
 native B2：全6個の元variable occurrenceを認めた三つのequalityの実operandへjoinし、native ordinal `0..5`と各実use scopeを保持する。全occurrenceの網羅性はcontext数と独立に検証し、moduleと単一proofのcontext数からreference数を導かない。
+native B3は同じ全occurrence認証により全5個の実reference use ordinal `0..4`と実lexical scopeを保持する。equality/witness operand censusは[intake](type_checker.md#original-source-reserved-statement-inputs)が所有し、このproducerはsyntax-freeを保つ。witness targetは実siteから導き、全atomic edge/requestから除外し、固定reference IDやformula index算術を使わない。
 
 ## 目的とauthority
 

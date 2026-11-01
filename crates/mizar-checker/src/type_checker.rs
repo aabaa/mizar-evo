@@ -6579,6 +6579,7 @@ impl TermFormulaChecker {
                 mizar_resolve::labels::ProofLabelSourceCollection,
                 mizar_resolve::labels::LabelResolutionResult,
             )>,
+            Option<crate::source_statement::SourceStatementWitnessHandoffInput>,
         ),
         crate::source_statement::SourceStatementError,
     > {
@@ -6610,6 +6611,7 @@ impl TermFormulaChecker {
                         | K::CompactStatement
                         | K::AssumptionStatement
                         | K::ConclusionStatement
+                        | K::TakeStatement
                 )
             })
             .collect::<Vec<_>>();
@@ -6654,10 +6656,53 @@ impl TermFormulaChecker {
         };
         let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
         let primary = typed.source_term().ok_or_else(invalid)?;
-        for (ordinal, (id, node)) in sites.into_iter().enumerate() {
+        let mut witnesses = None;
+        for (source_ordinal, (id, node)) in sites.into_iter().enumerate() {
             let SourceAnchor::Range(range) = node.origin().anchor() else {
                 return Err(invalid());
             };
+            if node.kind() == &K::TakeStatement {
+                let witness_id = node.children()[1];
+                let witness = source.arena().node(witness_id).ok_or_else(invalid)?;
+                let expression = source
+                    .arena()
+                    .node(witness.children()[0])
+                    .ok_or_else(invalid)?;
+                let term_site = expression.children()[0];
+                let (term_id, term) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site().node().index() == term_site.index())
+                    .ok_or_else(invalid)?;
+                let SourceAnchor::Range(witness_range) = witness.origin().anchor() else {
+                    return Err(invalid());
+                };
+                if witnesses.is_some() {
+                    return Err(invalid());
+                }
+                witnesses = Some(SourceStatementWitnessHandoffInput {
+                    source_id: source.source_id(),
+                    module_id: source.module().clone(),
+                    witnesses: vec![SourceStatementWitnessInput {
+                        owner: SourceTheoremOwnerId::new(0),
+                        binding_context: term.context(),
+                        term: SourceStatementWitnessTermTarget::Primary(term_id),
+                        take_site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
+                        take_range: *range,
+                        site: TypedSiteRef::Node(TypedNodeId::new(witness_id.index())),
+                        source_range: *witness_range,
+                        source_ordinal,
+                        ordinal: 0,
+                        spelling: term.spelling().to_owned(),
+                        kind: SourceStatementWitnessKind::Unnamed,
+                        recovery: SourceStatementRecovery::Normal,
+                        name: None,
+                    }],
+                    names: Vec::new(),
+                });
+                continue;
+            }
+            let ordinal = input.statements.len();
             let (formula_id, formula) = atomic
                 .formulas()
                 .iter()
@@ -6713,7 +6758,7 @@ impl TermFormulaChecker {
                 formula: target,
                 site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
                 source_range: *range,
-                source_ordinal: ordinal,
+                source_ordinal,
                 spelling: tokens
                     .into_iter()
                     .map(|(_, text)| text)
@@ -6874,7 +6919,10 @@ impl TermFormulaChecker {
         } else {
             None
         };
-        Ok((input, bindings, typed, references))
+        if references.is_some() && witnesses.is_some() {
+            return Err(invalid());
+        }
+        Ok((input, bindings, typed, references, witnesses))
     }
 
     pub(crate) fn validate_reserved_statement_snapshot(
@@ -7092,6 +7140,11 @@ impl TermFormulaChecker {
                 .arena()
                 .iter()
                 .any(|(_, current)| current.kind() == &K::AssumptionStatement);
+        let witness_reserved = nested_reserved
+            && source
+                .arena()
+                .iter()
+                .any(|(_, current)| current.kind() == &K::TakeStatement);
         let descendant_reserved = nested_reserved
             && source.arena().iter().any(|(_, current)| {
                 current.kind() == &K::ConclusionStatement
@@ -7114,7 +7167,8 @@ impl TermFormulaChecker {
                     ]
                     .contains(&token.text.as_ref())
                         || (reserved && token.text.as_ref() == "reserve")
-                        || (assumption_reserved && token.text.as_ref() == "assume") =>
+                        || (assumption_reserved && token.text.as_ref() == "assume")
+                        || (witness_reserved && token.text.as_ref() == "take") =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -7199,6 +7253,13 @@ impl TermFormulaChecker {
                 (K::ProofBlock, ["proof", "AssumptionStatement", "ConclusionStatement", "end"])
                 | (K::AssumptionStatement, ["assume", "Proposition", ";"])
                     if assumption_reserved =>
+                {
+                    true
+                }
+                (K::ProofBlock, ["proof", "TakeStatement", "ConclusionStatement", "end"])
+                | (K::TakeStatement, ["take", "Witness", ";"])
+                | (K::Witness, ["TermExpression"])
+                    if witness_reserved =>
                 {
                     true
                 }
@@ -7298,7 +7359,9 @@ impl TermFormulaChecker {
             };
             equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
             if equalities.len()
-                != if assumption_reserved {
+                != if witness_reserved {
+                    2
+                } else if assumption_reserved {
                     3
                 } else if descendant_reserved {
                     5
@@ -7307,8 +7370,27 @@ impl TermFormulaChecker {
                 } else {
                     1
                 }
-                || scope.references().len() != equalities.len() * 2
             {
+                return Err(invalid());
+            }
+            let mut operands = Vec::new();
+            for equality in &equalities {
+                operands.extend([
+                    node(*equality)?.children()[0],
+                    node(*equality)?.children()[2],
+                ]);
+            }
+            if witness_reserved {
+                for (_, witness) in source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| current.kind() == &K::Witness)
+                {
+                    operands.push(witness.children()[0]);
+                }
+            }
+            operands.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
+            if operands.len() != scope.references().len() {
                 return Err(invalid());
             }
             let segment = source
@@ -7332,8 +7414,8 @@ impl TermFormulaChecker {
                         matches!(current.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
                     })
                     .count()
-                    != equalities.len() * 2
-                        + if nested_reserved && !assumption_reserved {
+                    != operands.len()
+                        + if nested_reserved && !assumption_reserved && !witness_reserved {
                             4
                         } else {
                             2
@@ -7342,8 +7424,9 @@ impl TermFormulaChecker {
                 return Err(invalid());
             }
             let mut seen = BTreeSet::new();
-            for (ordinal, reference) in scope.references().iter().enumerate() {
-                let operand = node(equalities[ordinal / 2])?.children()[(ordinal % 2) * 2];
+            for (ordinal, (operand, reference)) in
+                operands.into_iter().zip(scope.references()).enumerate()
+            {
                 let term = node(operand)?.children()[0];
                 let token = node(term)?.children()[0];
                 if !seen.insert(reference.node())
@@ -7360,13 +7443,16 @@ impl TermFormulaChecker {
                 }
             }
         }
-        if assumption_reserved {
+        if assumption_reserved || witness_reserved {
             for (kind, count) in [
                 (&K::TheoremItem, 1),
                 (&K::ProofBlock, 1),
-                (&K::AssumptionStatement, 1),
+                (&K::AssumptionStatement, usize::from(!witness_reserved)),
+                (&K::TakeStatement, usize::from(witness_reserved)),
+                (&K::Witness, usize::from(witness_reserved)),
                 (&K::ConclusionStatement, 1),
                 (&K::CompactStatement, 0),
+                (&K::Reference, 0),
             ] {
                 if source
                     .arena()
@@ -7387,33 +7473,44 @@ impl TermFormulaChecker {
             let [_, _, _, theorem_formula, proof, _] = theorem.children() else {
                 return Err(invalid());
             };
-            let [_, assumption, conclusion, _] = node(*proof)?.children() else {
+            let [_, item, conclusion, _] = node(*proof)?.children() else {
                 return Err(invalid());
             };
-            let [_, assumption_proposition, _] = node(*assumption)?.children() else {
+            let [_, body, _] = node(*item)?.children() else {
                 return Err(invalid());
             };
             let [_, conclusion_proposition, _] = node(*conclusion)?.children() else {
-                return Err(invalid());
-            };
-            let [assumption_formula] = node(*assumption_proposition)?.children() else {
                 return Err(invalid());
             };
             let [conclusion_formula] = node(*conclusion_proposition)?.children() else {
                 return Err(invalid());
             };
             if node(*proof)?.kind() != &K::ProofBlock
-                || node(*assumption)?.kind() != &K::AssumptionStatement
+                || node(*item)?.kind()
+                    != if witness_reserved {
+                        &K::TakeStatement
+                    } else {
+                        &K::AssumptionStatement
+                    }
                 || node(*conclusion)?.kind() != &K::ConclusionStatement
             {
                 return Err(invalid());
             }
-            for (formula, equality) in [theorem_formula, assumption_formula, conclusion_formula]
-                .into_iter()
-                .zip(&equalities)
-            {
-                if node(*formula)?.kind() != &K::FormulaExpression
-                    || node(*formula)?.children() != [*equality]
+            let mut formula_sites = vec![*theorem_formula];
+            if witness_reserved {
+                if assumption_reserved || node(*body)?.kind() != &K::Witness {
+                    return Err(invalid());
+                }
+            } else {
+                let [formula] = node(*body)?.children() else {
+                    return Err(invalid());
+                };
+                formula_sites.push(*formula);
+            }
+            formula_sites.push(*conclusion_formula);
+            for (formula, equality) in formula_sites.into_iter().zip(&equalities) {
+                if node(formula)?.kind() != &K::FormulaExpression
+                    || node(formula)?.children() != [*equality]
                 {
                     return Err(invalid());
                 }
@@ -17678,7 +17775,23 @@ impl SourceVariableSemanticsChecker {
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
-        let mut operands = Vec::new();
+        let takes = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::TakeStatement)
+            .collect::<Vec<_>>();
+        if takes.len() > 1
+            || source
+                .arena()
+                .iter()
+                .filter(|(_, node)| node.kind() == &K::Witness)
+                .count()
+                != takes.len()
+            || (!takes.is_empty() && equalities.len() != 2)
+        {
+            return Err(invalid());
+        }
+        let mut operand_sites = Vec::new();
         for equality in equalities {
             let [left, equals, right] = node(equality)?.children() else {
                 return Err(invalid());
@@ -17686,22 +17799,40 @@ impl SourceVariableSemanticsChecker {
             if !matches!(node(*equals)?.kind(), K::Token(token) if token.text.as_ref() == "=") {
                 return Err(invalid());
             }
-            for operand in [left, right] {
-                let [term] = node(*operand)?.children() else {
-                    return Err(invalid());
-                };
-                let [token] = node(*term)?.children() else {
-                    return Err(invalid());
-                };
-                if node(*operand)?.kind() != &K::TermExpression
-                    || node(*term)?.kind() != &K::TermReference
-                    || !matches!(node(*token)?.kind(), K::Token(token)
-                        if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == declaration.spelling())
-                {
-                    return Err(invalid());
-                }
-                operands.push((*term, *token));
+            operand_sites.extend([*left, *right]);
+        }
+        for (_, take) in &takes {
+            let [keyword, witness, semicolon] = take.children() else {
+                return Err(invalid());
+            };
+            let [operand] = node(*witness)?.children() else {
+                return Err(invalid());
+            };
+            if !matches!(node(*keyword)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "take")
+                || !matches!(node(*semicolon)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ";")
+                || node(*witness)?.kind() != &K::Witness
+            {
+                return Err(invalid());
             }
+            operand_sites.push(*operand);
+        }
+        operand_sites.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
+        let mut operands = Vec::new();
+        for operand in operand_sites {
+            let [term] = node(operand)?.children() else {
+                return Err(invalid());
+            };
+            let [token] = node(*term)?.children() else {
+                return Err(invalid());
+            };
+            if node(operand)?.kind() != &K::TermExpression
+                || node(*term)?.kind() != &K::TermReference
+                || !matches!(node(*token)?.kind(), K::Token(token)
+                    if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == declaration.spelling())
+            {
+                return Err(invalid());
+            }
+            operands.push((*term, *token));
         }
         if operands.len() != scope.references().len() {
             return Err(invalid());
@@ -17730,7 +17861,7 @@ impl SourceVariableSemanticsChecker {
             SourceAnchor::Range(range) => range.start,
             _ => usize::MAX,
         });
-        if !matches!(proofs.len(), 1..=3) {
+        if !matches!(proofs.len(), 1..=3) || (!takes.is_empty() && proofs.len() != 1) {
             return Err(invalid());
         }
         let mut contexts = original.contexts().clone();

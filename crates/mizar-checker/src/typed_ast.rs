@@ -1863,7 +1863,7 @@ impl TypedAst {
         symbols: &mizar_resolve::env::SymbolEnv,
         scope: &mizar_resolve::names::ResolvedVariableScope,
     ) -> Result<Self, TypedAstError> {
-        let (statement, references, canonical) =
+        let (statement, references, witnesses, canonical) =
             SourceStatementHandoff::from_original(source, symbols, scope)
                 .map_err(|_| TypedAstError::InvalidSourceStatement)?;
         if self != canonical {
@@ -1871,6 +1871,7 @@ impl TypedAst {
         }
         self.source_statement = Some(statement);
         self.source_statement_references = references;
+        self.source_statement_witnesses = witnesses;
         Ok(self)
     }
 
@@ -2026,6 +2027,13 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
+        if self
+            .nodes
+            .iter()
+            .any(|(_, node)| node.kind.as_str() == "TheoremItem")
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
         if self.source_nested_fraenkel_capture_identity.is_some() {
             return Err(TypedAstError::InvalidSourceStatement);
         }
@@ -2082,13 +2090,14 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statements.is_task_258b3_profile()
-            && !statements.is_task_258b3n_profile()
-            && !statements.is_task_258b3m1_profile()
-            && !statements.is_task_258b3m2a_profile()
-            && !statements.is_task_258b3m2b1_profile()
-            && !statements.is_task_258b3m2b2a_profile()
-        {
+        let allowed = statements.is_task_258b3n_profile()
+            || statements.is_task_258b3m1_profile()
+            || statements.is_task_258b3m2a_profile()
+            || statements.is_task_258b3m2b1_profile()
+            || statements.is_task_258b3m2b2a_profile();
+        #[cfg(test)]
+        let allowed = allowed || statements.is_task_258b3_profile();
+        if !allowed {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         witnesses

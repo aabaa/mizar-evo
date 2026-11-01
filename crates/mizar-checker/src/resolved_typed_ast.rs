@@ -2256,6 +2256,24 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 });
         let original_statement = self.inputs.typed_ast.resolved_root().is_some()
             && self.inputs.typed_ast.source_statement().is_some();
+        if self.inputs.typed_ast.source_statement().is_some()
+            && !original_statement
+            && self
+                .inputs
+                .typed_ast
+                .nodes()
+                .iter()
+                .any(|(_, node)| node.kind.as_str() == "TheoremItem")
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceStatement);
+        }
+        let native_witness_statement = original_statement
+            && self
+                .inputs
+                .typed_ast
+                .nodes()
+                .iter()
+                .any(|(_, node)| node.kind.as_str() == "TakeStatement");
         if original_statement
             && (self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
@@ -2304,7 +2322,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .typed_ast
                     .source_predicate_chain_composition()
                     .is_some()
-                || self.inputs.typed_ast.source_statement_witnesses().is_some()
+                || (self.inputs.typed_ast.source_statement_witnesses().is_some()
+                    && !native_witness_statement)
                 || self
                     .inputs
                     .typed_ast
@@ -2984,6 +3003,10 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             #[cfg(test)]
             let legacy_nested_statement = source_statement.is_task_258b1_profile()
                 || source_statement.is_task_258b5a_profile();
+            #[cfg(not(test))]
+            let legacy_witness_statement = false;
+            #[cfg(test)]
+            let legacy_witness_statement = source_statement.is_task_258b3_profile();
             let native_referenced_statement = original_statement
                 && self
                     .inputs
@@ -2994,6 +3017,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()
+                        && !native_witness_statement
                         && (native_referenced_statement
                             || legacy_nested_statement
                             || source_statement.is_task_258b5b_profile()) =>
@@ -3009,7 +3033,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, Some(witnesses))
                     if source_application.is_none()
-                        && (source_statement.is_task_258b3_profile()
+                        && (native_witness_statement
+                            || legacy_witness_statement
                             || source_statement.is_task_258b3n_profile()
                             || source_statement.is_task_258b3m1_profile()
                             || source_statement.is_task_258b3m2a_profile()
@@ -3083,7 +3108,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, None)
                     if source_application.is_none()
-                        && ((original_statement && !native_referenced_statement)
+                        && ((original_statement
+                            && !native_referenced_statement
+                            && !native_witness_statement)
                             || legacy_reserved_statement
                             || is_task_258b4) => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
