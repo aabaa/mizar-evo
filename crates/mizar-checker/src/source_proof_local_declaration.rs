@@ -590,6 +590,7 @@ enum LowerFailure {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FrozenProfile {
+    #[cfg(test)]
     Task258B3N,
     Task258B3M1,
 }
@@ -626,11 +627,18 @@ fn validate_lower_dependencies(
     witnesses: &SourceStatementWitnessHandoff,
     primary_terms: &SourcePrimaryTermHandoff,
 ) -> Result<LowerValidation, SourceProofLocalDeclarationError> {
-    let profile = if statements.is_task_258b3n_profile() {
-        FrozenProfile::Task258B3N
-    } else if statements.is_task_258b3m1_profile() {
+    let profile = if statements.is_task_258b3m1_profile() {
         FrozenProfile::Task258B3M1
     } else {
+        #[cfg(test)]
+        {
+            if statements.is_task_258b3n_profile() {
+                FrozenProfile::Task258B3N
+            } else {
+                return Err(SourceProofLocalDeclarationError::DependencyMismatch);
+            }
+        }
+        #[cfg(not(test))]
         return Err(SourceProofLocalDeclarationError::DependencyMismatch);
     };
     if statements.binding_env().source_id() != source_id
@@ -745,6 +753,7 @@ fn exact_local(source_id: SourceId, profile: FrozenProfile) -> LocalTermBinding 
 
 const fn frozen_local_range(profile: FrozenProfile) -> (usize, usize) {
     match profile {
+        #[cfg(test)]
         FrozenProfile::Task258B3N => (81, 82),
         FrozenProfile::Task258B3M1 => (84, 85),
     }
@@ -848,6 +857,7 @@ fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     }
 }
 
+#[cfg(test)]
 const TASK258B3N_NODE_RANGES: [(usize, usize); 51] = [
     (0, 7),
     (8, 9),
@@ -961,6 +971,7 @@ const TASK258B3M1_NODE_RANGES: [(usize, usize); 56] = [
     (0, 112),
 ];
 
+#[cfg(test)]
 fn task258b3n_node_children(index: usize) -> &'static [usize] {
     match index {
         24 => &[3],
@@ -997,6 +1008,7 @@ fn task258b3n_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b3n_node_kind(index: usize) -> &'static str {
     match index {
         28 | 30 | 34 | 38 | 40 => "source.term.variable-reference",
@@ -1064,11 +1076,13 @@ fn task258b3m1_node_kind(index: usize) -> &'static str {
 
 fn exact_frozen_arena(profile: FrozenProfile, source_id: SourceId, arena: &TypedArena) -> bool {
     match profile {
+        #[cfg(test)]
         FrozenProfile::Task258B3N => exact_task258b3n_arena(source_id, arena),
         FrozenProfile::Task258B3M1 => exact_task258b3m1_arena(source_id, arena),
     }
 }
 
+#[cfg(test)]
 fn exact_task258b3n_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     arena.len() == TASK258B3N_NODE_RANGES.len()
         && arena.root() == Some(TypedNodeId::new(50))
@@ -1119,11 +1133,13 @@ fn exact_task258b3m1_arena(source_id: SourceId, arena: &TypedArena) -> bool {
 
 fn frozen_canonical_arena(profile: FrozenProfile, source_id: SourceId) -> TypedArena {
     match profile {
+        #[cfg(test)]
         FrozenProfile::Task258B3N => task258b3n_canonical_arena(source_id),
         FrozenProfile::Task258B3M1 => task258b3m1_canonical_arena(source_id),
     }
 }
 
+#[cfg(test)]
 fn task258b3n_canonical_arena(source_id: SourceId) -> TypedArena {
     let mut builder = TypedArenaBuilder::new();
     let mut ids = Vec::with_capacity(TASK258B3N_NODE_RANGES.len());

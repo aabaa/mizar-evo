@@ -181,6 +181,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3N_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementNamedWitnessSmoke: x = x proof\n",
@@ -1930,11 +1931,8 @@ const SOURCE_STATEMENT_B5B_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B2_LABEL: &str = "FormulaStatementSingleAssumptionSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3_LABEL: &str = "FormulaStatementSingleWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3N_LABEL: &str = "FormulaStatementNamedWitnessSmoke";
-const SOURCE_STATEMENT_B3N_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementNamedWitnessSmoke : x = x proof take y = x ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 const SOURCE_STATEMENT_B3M1_LABEL: &str = "FormulaStatementMultipleWitnessSmoke";
 const SOURCE_STATEMENT_B3M1_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementMultipleWitnessSmoke : x = x proof take y = x , x ; thus x = x ; end ;",
@@ -2114,11 +2112,9 @@ pub(in crate::runner) struct SourceStatementB3Extraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3NExtraction {
-    pub(in crate::runner) theorem_site: TypedSiteRef,
-    pub(in crate::runner) theorem_range: SourceRange,
-    pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
     pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
@@ -2126,12 +2122,8 @@ pub(in crate::runner) struct SourceStatementB3NExtraction {
     pub(in crate::runner) term_sites: [TypedSiteRef; 5],
     pub(in crate::runner) term_ranges: [SourceRange; 5],
     pub(in crate::runner) take_site: TypedSiteRef,
-    pub(in crate::runner) take_range: SourceRange,
     pub(in crate::runner) witness_site: TypedSiteRef,
-    pub(in crate::runner) witness_range: SourceRange,
     pub(in crate::runner) name_site: TypedSiteRef,
-    pub(in crate::runner) name_range: SourceRange,
-    pub(in crate::runner) proof_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -2436,45 +2428,6 @@ struct SourceStatementWitnessExtraction {
     structure_update_node: Option<usize>,
     set_term_node: Option<usize>,
     source_text: &'static str,
-}
-
-impl From<SourceStatementB3NExtraction> for SourceStatementWitnessExtraction {
-    fn from(extracted: SourceStatementB3NExtraction) -> Self {
-        Self {
-            theorem_site: extracted.theorem_site,
-            theorem_range: extracted.theorem_range,
-            label_range: extracted.label_range,
-            statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
-            formula_sites: extracted.formula_sites,
-            formula_ranges: extracted.formula_ranges,
-            term_sites: extracted.term_sites.into(),
-            term_ranges: extracted.term_ranges.into(),
-            take_site: extracted.take_site,
-            take_range: extracted.take_range,
-            witnesses: vec![SourceStatementWitnessItemExtraction {
-                site: extracted.witness_site,
-                range: extracted.witness_range,
-                name: Some((extracted.name_site, extracted.name_range)),
-                spelling: "y = x",
-            }],
-            proof_range: extracted.proof_range,
-            label: SOURCE_STATEMENT_B3N_LABEL,
-            spellings: &SOURCE_STATEMENT_B3N_SPELLINGS,
-            task: "Task258B3N",
-            node_count: 51,
-            root: 50,
-            atomic_term_starts: [0, 3],
-            input_fact_reference_starts: [0, 3],
-            application_node: None,
-            application_wrapper_node: None,
-            structure_node: None,
-            structure_selector_node: None,
-            structure_update_node: None,
-            set_term_node: None,
-            source_text: SOURCE_STATEMENT_B3N_TEXT,
-        }
-    }
 }
 
 impl From<SourceStatementB3M1Extraction> for SourceStatementWitnessExtraction {
@@ -3074,7 +3027,6 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) set_term: Option<SourceSetTermHandoff>,
 }
 
-pub(in crate::runner) type SourceStatementB3NRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B1RouteInputs = SourceStatementB3RouteInputs;
@@ -3977,6 +3929,7 @@ pub(in crate::runner) fn extract_single_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_named_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -4077,9 +4030,6 @@ pub(in crate::runner) fn extract_named_witness_source_statement(
     }
     let formula_ids: [mizar_syntax::SurfaceNodeId; 2] = formula_ids.try_into().ok()?;
     Some(SourceStatementB3NExtraction {
-        theorem_site: surface_site(theorem_id),
-        theorem_range: theorem.range,
-        label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
         statement_ranges: [range(ast.source_id, 19, 106), range(ast.source_id, 90, 101)],
         formula_sites: formula_ids.map(surface_site),
@@ -4087,12 +4037,8 @@ pub(in crate::runner) fn extract_named_witness_source_statement(
         term_sites: term_sites.try_into().ok()?,
         term_ranges: term_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         take_site: surface_site(take_id),
-        take_range: take.range,
         witness_site: surface_site(witness_id),
-        witness_range: witness.range,
         name_site: surface_site(name_id),
-        name_range: name.range,
-        proof_range: proof.range,
     })
 }
 
@@ -14176,15 +14122,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3N_TEXT {
-        return source_statement_b3n_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     None
 }
 
@@ -16090,72 +16027,6 @@ fn source_statement_b3m1_output_with_source_and_mutation_impl(
     ))
 }
 
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3n_output_with_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3NRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3n_output_with_source_and_mutation_impl(
-        ast,
-        module,
-        symbols,
-        source_text,
-        mutate,
-    )
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3n_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_named_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3N_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => mutate(symbols),
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3n_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
-    ))
-}
-
-fn source_statement_b3n_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3NRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_named_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3N_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3n_output(
-        ast, module, &symbols, extracted, mutate,
-    ))
-}
-
 fn source_statement_b4c_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16650,20 +16521,6 @@ pub(in crate::runner) fn source_statement_resolver_env_for_test(
     extracted: &SourceStatementExtraction,
 ) -> Result<SymbolEnv, String> {
     enrich_source_statement_resolver_env(module, symbols, extracted)
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3n_resolver_env_for_test(
-    module: &ModuleId,
-    symbols: &SymbolEnv,
-    extracted: &SourceStatementB3NExtraction,
-) -> Result<SymbolEnv, String> {
-    enrich_source_statement_resolver_env_for_owner(
-        module,
-        symbols,
-        SOURCE_STATEMENT_B3N_LABEL,
-        extracted.label_range,
-    )
 }
 
 #[cfg(test)]
@@ -18153,16 +18010,6 @@ fn build_source_statement_b4a_output(
         right_lookup_ordinal: *right_lookup_ordinal,
         reference_use_ordinals,
     })
-}
-
-fn build_source_statement_b3n_output(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    extracted: SourceStatementB3NExtraction,
-    mutate: impl FnOnce(&mut SourceStatementB3NRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
 fn build_source_statement_b3m1_output(

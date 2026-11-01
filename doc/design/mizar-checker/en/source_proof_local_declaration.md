@@ -3,6 +3,9 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_proof_local_declaration.md](../ja/source_proof_local_declaration.md).
 
+## Native named-witness boundary
+Native named-witness transport records the name occurrence only. The historical Task269A exact profile and runner branch are confined to existing private tests; shared declaration APIs and Task269B remain unchanged. Genuine native name binding/use, abbreviation and activation-clock authority are not supplied by the lower syntax row.
+
 ## Status and authority
 
 This living owner document freezes the completed Checker Task-269 proof-local

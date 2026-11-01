@@ -3,6 +3,9 @@
 > 正本は英語です。英語版:
 > [../en/source_proof_local_declaration.md](../en/source_proof_local_declaration.md)。
 
+## Native named-witness boundary
+native named-witness transportはname occurrenceだけを記録する。歴史的Task269A exact profileとrunner branchは既存privateテストだけに限定し、共有declaration APIとTask269Bは維持する。lower syntax行は真正なnative name binding/use・abbreviation・activation-clock authorityを与えない。
+
 ## 状態と authority
 
 このliving owner文書はChecker Task-269 proof-local declaration lineageの

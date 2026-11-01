@@ -59,9 +59,8 @@ use mizar_syntax::SurfaceNodeKind;
 use super::{
     checker_handoff::{assemble_empty_resolved_typed_ast, source_module_binding_env},
     source_statement::{
-        SOURCE_STATEMENT_B3M1_TEXT, SOURCE_STATEMENT_B3N_TEXT, SourceStatementRouteOutput,
-        extract_multiple_witness_source_statement, extract_named_witness_source_statement,
-        source_proof_local_given_condition_lower_output,
+        SOURCE_STATEMENT_B3M1_TEXT, SourceStatementRouteOutput,
+        extract_multiple_witness_source_statement, source_proof_local_given_condition_lower_output,
         source_proof_local_given_descendant_set_lower_output,
         source_proof_local_given_lower_output, source_proof_local_given_use_lower_output,
         source_proof_local_let_lower_output, source_statement_output_with_source,
@@ -73,17 +72,15 @@ use super::source_reserve::extract_builtin_source_reserve_declarations_after_nod
 #[cfg(test)]
 use super::source_statement::{
     SourceStatementB3RouteInputs, source_statement_b3m1_output_with_mutation,
-    source_statement_b3n_output_with_mutation,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SourceProofLocalProfile {
-    Task258B3N,
     Task258B3M1,
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // Rationale: Tasks 269A/B are private dormant consumers until a later activation task.
+#[allow(dead_code)] // Rationale: Task 269B is a private dormant consumer until a later activation task.
 pub(in crate::runner) struct SourceProofLocalDeclarationRouteOutput {
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
@@ -116,7 +113,7 @@ pub(in crate::runner) enum SourceProofLocalDeclarationRouteMutation {
     WrongLowerArenaLinks,
 }
 
-#[allow(dead_code)] // Rationale: Tasks 269A/B deliberately leave this exact private leaf dormant.
+#[allow(dead_code)] // Rationale: Task 269B deliberately leaves this exact private leaf dormant.
 pub(in crate::runner) fn source_proof_local_declaration_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -150,25 +147,7 @@ fn source_proof_local_declaration_output_impl(
     source_text: &str,
     mutation: SourceProofLocalDeclarationRouteMutation,
 ) -> Option<Result<SourceProofLocalDeclarationRouteOutput, String>> {
-    let (profile, name_range) = if source_text == SOURCE_STATEMENT_B3N_TEXT {
-        let extracted = extract_named_witness_source_statement(ast, source_text)?;
-        if extracted.name_site.node().index() != 13
-            || extracted.name_range.start != 81
-            || extracted.name_range.end != 82
-            || extracted.witness_site.node().index() != 36
-            || extracted.witness_range.start != 81
-            || extracted.witness_range.end != 86
-            || extracted.take_site.node().index() != 37
-            || extracted.take_range.start != 76
-            || extracted.take_range.end != 87
-            || extracted.term_sites[2].node().index() != 34
-            || extracted.term_ranges[2].start != 85
-            || extracted.term_ranges[2].end != 86
-        {
-            return None;
-        }
-        (SourceProofLocalProfile::Task258B3N, extracted.name_range)
-    } else if source_text == SOURCE_STATEMENT_B3M1_TEXT {
+    let (profile, name_range) = if source_text == SOURCE_STATEMENT_B3M1_TEXT {
         let extracted = extract_multiple_witness_source_statement(ast, source_text)?;
         if extracted.name_site.node().index() != 13
             || extracted.name_range.start != 84
@@ -357,9 +336,6 @@ fn lower_output_with_mutation(
     mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
     match profile {
-        SourceProofLocalProfile::Task258B3N => {
-            source_statement_b3n_output_with_mutation(ast, module, symbols, source_text, mutate)
-        }
         SourceProofLocalProfile::Task258B3M1 => {
             source_statement_b3m1_output_with_mutation(ast, module, symbols, source_text, mutate)
         }

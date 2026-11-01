@@ -35,6 +35,7 @@ native nested testは同じpublic atomic original installerと全実occurrence/s
 B5A raw adapter専用のlookup telemetryはrouteと共に退役し、native側は実occurrence座標・正規base全体・immutable reference pairを検証する。B5Bで現用のtelemetryとhybrid negative payloadの意味は維持する。既存B5A raw/enriched resolver環境validatorとvalid環境helperはtest-onlyで保持し、legacy provenance/effects faultを直接検証する。positive statement constructorや本番routeは残さない。
 native B2：native activation前に本番raw runner branchを退役し、外部positive/foreign controlを同じpublic installerによる実captureへ移行し、raw golden/causal corruptionはprivateに維持する。上位wrapper/Proof拒否の検証前に実native baseと組み込みの成功を要求し、active reserve/proof-gap結果・無関係のnative/legacy profile・B5B telemetryを維持する。 B2の歴史的label environment corruptionはprivate raw producerで検証し、native environment controlは[intake](../../mizar-checker/ja/type_checker.md#original-source-reserved-statement-inputs)の元environmentを使う。
 native B3はactivation前に全本番raw base/witness profile・exact classifier・setter/final allowance・runner branchを置換し、歴史的private classifierからnative Active bindingを除外する。外部positive/foreign consumerは実captureと同じpublic original installerを使い、paired-installと上位拒否の検証前にbase成功を要求する。raw golden/causal fault・兄弟profile・Task269a fixture aliasを保持し、active結果・sidecar・trace credit・Driver activationは変更しない。
+native B3Nはraw named-witness branchを実original-source positiveと正確な段階の拒否へ置換する。adapter退役前に歴史的B3N/Task269A goldenとcausal faultをChecker内テストへ保持し、Task269B本番対応は維持する。GCUの唯一のfamily-isolation A→B移管を明示レビューし、native named syntaxからbinding/proof/active-route creditを与えない。
 
 
 ## Step 5C.4 mode semantic runner
