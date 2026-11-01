@@ -620,8 +620,13 @@ impl SourceStatementHandoff {
             && self.candidate_facts.len() == 4
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b5a_profile(&self) -> bool {
-        self.binding_env.contexts().len() == 4
+        self.binding_env
+            .bindings()
+            .get(BindingId::new(0))
+            .is_some_and(|binding| binding.status == BindingStatus::Reserved)
+            && self.binding_env.contexts().len() == 4
             && self.statements.len() == 5
             && self.contexts.len() == 5
             && self.input_facts.len() == 5
@@ -1200,7 +1205,21 @@ impl SourceStatementHandoff {
             let nested = arena
                 .iter()
                 .any(|(_, node)| node.kind.as_str() == "CompactStatement");
-            let count = if nested { 4 } else { 1 };
+            let descendant = arena.iter().any(|(_, node)| {
+                node.kind.as_str() == "ConclusionStatement"
+                    && node
+                        .children
+                        .get(2)
+                        .and_then(|id| arena.node(*id))
+                        .is_some_and(|node| node.kind.as_str() == "ProofBlock")
+            });
+            let count = if descendant {
+                5
+            } else if nested {
+                4
+            } else {
+                1
+            };
             if arena.root().is_none()
                 || self.binding_env.source_id() != source_id
                 || self.binding_env.module_id() != module_id
@@ -1250,8 +1269,22 @@ impl SourceStatementHandoff {
                 _ => usize::MAX,
             });
             if self.binding_env.bindings().len() != 1
-                || self.binding_env.contexts().len() != if nested { 3 } else { 1 }
-                || proofs.len() != if nested { 2 } else { 0 }
+                || self.binding_env.contexts().len()
+                    != if descendant {
+                        4
+                    } else if nested {
+                        3
+                    } else {
+                        1
+                    }
+                || proofs.len()
+                    != if descendant {
+                        3
+                    } else if nested {
+                        2
+                    } else {
+                        0
+                    }
                 || !self.binding_env.diagnostics().is_empty()
                 || binding.kind != BindingKind::ReservedVariable
                 || binding.identity
@@ -1288,7 +1321,14 @@ impl SourceStatementHandoff {
             {
                 return Err(invalid());
             }
-            for (index, (_, proof)) in proofs.iter().enumerate() {
+            for (index, (proof_id, proof)) in proofs.iter().enumerate() {
+                let parent = proofs
+                    .iter()
+                    .enumerate()
+                    .rfind(|(_, (id, _))| is_descendant(arena, *id, *proof_id))
+                    .map_or(BindingContextId::new(0), |(index, _)| {
+                        BindingContextId::new(index + 1)
+                    });
                 let context = self
                     .binding_env
                     .contexts()
@@ -1301,7 +1341,7 @@ impl SourceStatementHandoff {
                     != (BindingContextOwner::SourceStatement {
                         source_range: range,
                     })
-                    || context.parent != Some(BindingContextId::new(index))
+                    || context.parent != Some(parent)
                     || context.layer != BindingContextLayer::Proof
                     || context.lexical_scope.is_none()
                     || !context.bindings.is_empty()
@@ -2093,13 +2133,21 @@ impl SourceStatementReferenceHandoff {
             .any(|(_, node)| node.kind.as_str() == "TheoremItem")
         {
             let invalid = || SourceStatementReferenceError::DependencyMismatch;
+            let descendant = arena.iter().any(|(_, node)| {
+                node.kind.as_str() == "ConclusionStatement"
+                    && node
+                        .children
+                        .get(2)
+                        .and_then(|id| arena.node(*id))
+                        .is_some_and(|node| node.kind.as_str() == "ProofBlock")
+            });
             if self.source_id != source_id
                 || &self.module_id != module_id
                 || statements.source_id() != source_id
                 || statements.module_id() != module_id
                 || self.statement_fingerprint != statements.debug_text()
-                || statements.statements.len() != 4
-                || statements.binding_env.contexts().len() != 3
+                || statements.statements.len() != if descendant { 5 } else { 4 }
+                || statements.binding_env.contexts().len() != if descendant { 4 } else { 3 }
                 || self.resolver_ast.source_id() != source_id
                 || self.resolver_ast.module_id() != module_id
                 || !self.resolver_ast.name_refs().is_empty()
@@ -2186,13 +2234,17 @@ impl SourceStatementReferenceHandoff {
             if replay != self.label_resolution {
                 return Err(invalid());
             }
-            TermFormulaChecker::validate_reserved_statement_snapshot(
+            let citing_statement_id = TermFormulaChecker::validate_reserved_statement_snapshot(
                 &self.resolver_ast,
                 arena,
                 statements,
                 &self.label_projection,
                 &self.reference_candidate,
             )?;
+            let citing_statement = statements
+                .statements
+                .get(citing_statement_id)
+                .ok_or_else(invalid)?;
             let reference_id = self.label_resolution.ids()[0];
             let entry = self
                 .label_resolution
@@ -2238,21 +2290,20 @@ impl SourceStatementReferenceHandoff {
                     label: SourceStatementLabelId::new(0),
                 });
             }
-            if citation.statement != SourceStatementId::new(3)
-                || citation.context != SourceStatementContextId::new(3)
+            if citation.statement != citing_statement_id
+                || citation.context != citing_statement.context
                 || citation.target
                     != SourceStatementCitationTarget::Local(SourceStatementLabelId::new(0))
                 || citation.label_ref != reference_id
                 || citation.proof_scope != *use_scope
-                || use_scope != proof_scope
                 || citation.source_range != self.reference_candidate.site().range()
                 || citation.ordinal != 0
                 || citation.kind != SourceStatementCitationKind::SimpleLocal
                 || citation.recovery != SourceStatementRecovery::Normal
                 || self.reference_candidate.site().spelling() != label.spelling
                 || *visible_after_ordinal >= self.reference_candidate.ordinal()
-                || citation.source_range.start < statements.statements.rows[3].source_range.start
-                || citation.source_range.end > statements.statements.rows[3].source_range.end
+                || citation.source_range.start < citing_statement.source_range.start
+                || citation.source_range.end > citing_statement.source_range.end
                 || citation.source_range.start <= statements.statements.rows[1].source_range.end
             {
                 return Err(SourceStatementReferenceError::InvalidCitation {
@@ -3421,6 +3472,7 @@ enum StatementProfile {
     Task258A,
     #[cfg(test)]
     Task258B1,
+    #[cfg(test)]
     Task258B5A,
     Task258B5B,
     Task258B2,
@@ -3446,6 +3498,7 @@ enum StatementProfile {
 enum StatementReferenceProfile {
     #[cfg(test)]
     Task258B1,
+    #[cfg(test)]
     Task258B5A,
     Task258B5B,
 }
@@ -3457,9 +3510,11 @@ fn statement_reference_profile(
     if statements.is_task_258b1_profile() {
         return Some(StatementReferenceProfile::Task258B1);
     }
+    #[cfg(test)]
     if statements.is_task_258b5a_profile() {
-        Some(StatementReferenceProfile::Task258B5A)
-    } else if statements.is_task_258b5b_profile() {
+        return Some(StatementReferenceProfile::Task258B5A);
+    }
+    if statements.is_task_258b5b_profile() {
         Some(StatementReferenceProfile::Task258B5B)
     } else {
         None
@@ -3519,16 +3574,23 @@ fn validate_dependencies(
             return Ok(StatementProfile::Task258B1);
         }
     }
-    let b5a_binding = exact_binding_profile(StatementProfile::Task258B5A, source_id, bindings);
-    let b5a_primary = exact_primary_profile(StatementProfile::Task258B5A, primary_terms);
-    let b5a_atomic = exact_atomic_profile(
-        StatementProfile::Task258B5A,
-        atomic_formulas,
-        primary_terms,
-        arena,
-    );
-    if b5a_binding && b5a_primary && b5a_atomic && exact_task258b5a_shared_arena(source_id, arena) {
-        return Ok(StatementProfile::Task258B5A);
+    #[cfg(test)]
+    {
+        let b5a_binding = exact_binding_profile(StatementProfile::Task258B5A, source_id, bindings);
+        let b5a_primary = exact_primary_profile(StatementProfile::Task258B5A, primary_terms);
+        let b5a_atomic = exact_atomic_profile(
+            StatementProfile::Task258B5A,
+            atomic_formulas,
+            primary_terms,
+            arena,
+        );
+        if b5a_binding
+            && b5a_primary
+            && b5a_atomic
+            && exact_task258b5a_shared_arena(source_id, arena)
+        {
+            return Ok(StatementProfile::Task258B5A);
+        }
     }
     let b5b_binding = exact_binding_profile(StatementProfile::Task258B5B, source_id, bindings);
     let b5b_primary = exact_primary_profile(StatementProfile::Task258B5B, primary_terms);
@@ -3763,6 +3825,7 @@ fn exact_binding_profile(
         StatementProfile::Task258A => 1,
         #[cfg(test)]
         StatementProfile::Task258B1 => 3,
+        #[cfg(test)]
         StatementProfile::Task258B5A => 4,
         StatementProfile::Task258B5B => 2,
         StatementProfile::Task258B2 => 2,
@@ -3846,6 +3909,7 @@ fn exact_binding_profile(
                 return false;
             }
         }
+        #[cfg(test)]
         StatementProfile::Task258B5A => {
             let Some(outer) = bindings.contexts().get(BindingContextId::new(1)) else {
                 return false;
@@ -4393,6 +4457,7 @@ fn exact_primary_profile(
             (122, 123),
             (126, 127),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             (81, 82),
             (85, 86),
@@ -4444,6 +4509,7 @@ fn exact_primary_profile(
         StatementProfile::Task258A => &[0, 0],
         #[cfg(test)]
         StatementProfile::Task258B1 => &[0, 0, 1, 1, 2, 2, 1, 1],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[0, 0, 1, 1, 2, 2, 1, 1, 3, 3],
         StatementProfile::Task258B5B => &[0, 0, 1, 1],
         StatementProfile::Task258B2 => &[0, 0, 1, 1, 1, 1],
@@ -4470,6 +4536,7 @@ fn exact_primary_profile(
         StatementProfile::Task258A => &[&[], &[]],
         #[cfg(test)]
         StatementProfile::Task258B1 => &[&[], &[], &[0], &[0], &[0, 0], &[0, 0], &[0], &[0]],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             &[],
             &[],
@@ -5399,6 +5466,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258A => &[(74, 79)],
         #[cfg(test)]
         StatementProfile::Task258B1 => &[(63, 68), (80, 85), (101, 106), (122, 127)],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[(81, 86), (98, 103), (119, 124), (140, 145), (161, 166)],
         StatementProfile::Task258B5B => &[(108, 113), (127, 132)],
         StatementProfile::Task258B2 => &[(66, 71), (87, 92), (101, 106)],
@@ -5424,6 +5492,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258A => &[0],
         #[cfg(test)]
         StatementProfile::Task258B1 => &[0, 1, 2, 1],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[0, 1, 2, 1, 3],
         StatementProfile::Task258B5B => &[0, 1],
         StatementProfile::Task258B2 => &[0, 1, 1],
@@ -6166,6 +6235,7 @@ fn validate_aggregate_lengths(
         StatementProfile::Task258A => (1, 1, 1, 1, 1),
         #[cfg(test)]
         StatementProfile::Task258B1 => (1, 4, 4, 4, 4),
+        #[cfg(test)]
         StatementProfile::Task258B5A => (1, 5, 5, 5, 5),
         StatementProfile::Task258B5B => (1, 2, 2, 2, 2),
         StatementProfile::Task258B2 => (1, 3, 3, 3, 3),
@@ -6296,6 +6366,7 @@ fn validate_owner_rows(
             range(source_id, 19, 138),
             "FormulaStatementNestedContextSmoke",
         ),
+        #[cfg(test)]
         StatementProfile::Task258B5A => (
             range(source_id, 19, 184),
             "FormulaStatementAncestorLabelDescendantCitationSmoke",
@@ -6372,6 +6443,12 @@ fn validate_owner_rows(
             "FormulaStatementComprehensionWitnessSmoke",
         ),
     };
+    #[cfg(test)]
+    if profile == StatementProfile::Task258B5A
+        && (owner.contribution.index() != 0 || checked_owner.origin().structural_path() != [2, 1])
+    {
+        return Err(SourceStatementError::InvalidOwner { owner: id });
+    }
     if owner.symbol != *checked_owner.symbol()
         || owner.contribution != authenticated_contribution
         || owner.source_range != expected_range
@@ -6391,7 +6468,6 @@ fn validate_owner_rows(
         || (matches!(
             profile,
             StatementProfile::Task258B2
-                | StatementProfile::Task258B5A
                 | StatementProfile::Task258B5B
                 | StatementProfile::Task258B3
                 | StatementProfile::Task258B3N
@@ -6489,6 +6565,7 @@ fn validate_statement_rows(
                 "thus x = x by Ref ;",
             ),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             (
                 0,
@@ -6943,6 +7020,7 @@ fn validate_statement_rows(
     let rows = match profile {
         #[cfg(test)]
         StatementProfile::Task258B1 => 4,
+        #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
         StatementProfile::Task258B2 => 3,
@@ -6992,6 +7070,7 @@ fn validate_statement_rows(
             &[false, false, false, false],
             &[false, false, false, false],
         ],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             &[false, true, true, true, true],
             &[false, false, true, false, false],
@@ -7032,6 +7111,7 @@ fn validate_statement_rows(
             &[false, false, true, false],
             &[false, false, false, true],
         ],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             &[true, true, true, true, true],
             &[false, true, true, false, false],
@@ -7114,6 +7194,7 @@ fn validate_context_rows(
         StatementProfile::Task258A => &[(0, 19, 80)],
         #[cfg(test)]
         StatementProfile::Task258B1 => &[(0, 19, 138), (1, 77, 114), (2, 96, 107), (1, 117, 133)],
+        #[cfg(test)]
         StatementProfile::Task258B5A => &[
             (0, 19, 184),
             (1, 95, 132),
@@ -7174,6 +7255,7 @@ fn validate_input_fact_rows(
         StatementProfile::Task258A => 1,
         #[cfg(test)]
         StatementProfile::Task258B1 => 4,
+        #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
         StatementProfile::Task258B2 => 3,
@@ -7280,6 +7362,7 @@ fn validate_candidate_fact_rows(
         StatementProfile::Task258A => 1,
         #[cfg(test)]
         StatementProfile::Task258B1 => 4,
+        #[cfg(test)]
         StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B5B => 2,
         StatementProfile::Task258B2 => 3,
@@ -7327,6 +7410,7 @@ fn validate_candidate_fact_rows(
     Ok(())
 }
 
+#[cfg(test)]
 const TASK258B5A_NODE_RANGES: [(usize, usize); 93] = [
     (0, 7),
     (8, 9),
@@ -7423,6 +7507,7 @@ const TASK258B5A_NODE_RANGES: [(usize, usize); 93] = [
     (0, 184),
 ];
 
+#[cfg(test)]
 fn task258b5a_node_children(index: usize) -> &'static [usize] {
     match index {
         41 => &[3],
@@ -7484,6 +7569,7 @@ fn task258b5a_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b5a_node_kind(index: usize) -> &'static str {
     match index {
         45 | 47 | 51 | 53 | 58 | 60 | 68 | 70 | 75 | 77 => "source.term.variable-reference",
@@ -7495,6 +7581,7 @@ fn task258b5a_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn task258b5a_resolver_node_kind(index: usize) -> &'static str {
     match index {
         0 => r#"Token(SurfaceToken { kind: ReservedWord, text: "reserve" })"#,
@@ -7563,6 +7650,7 @@ fn task258b5a_resolver_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn exact_task258b5a_shared_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != TASK258B5A_NODE_RANGES.len()
         || arena.root() != Some(crate::typed_ast::TypedNodeId::new(92))
@@ -13418,6 +13506,7 @@ fn validate_reference_dependencies(
         match profile {
             #[cfg(test)]
             StatementReferenceProfile::Task258B1 => (77, 76, 68, 131, 132),
+            #[cfg(test)]
             StatementReferenceProfile::Task258B5A => (93, 92, 82, 170, 171),
             StatementReferenceProfile::Task258B5B => (57, 56, 48, 136, 139),
         };
@@ -13439,10 +13528,14 @@ fn validate_reference_dependencies(
         || resolver_ast.imports().exports().next().is_some()
         || arena.len() != arena_len
         || arena.root().is_none_or(|root| root.index() != root_index)
-        || (profile == StatementReferenceProfile::Task258B5A
-            && !exact_task258b5a_shared_arena(source_id, arena))
         || (profile == StatementReferenceProfile::Task258B5B
             && !exact_task258b5b_shared_arena(source_id, arena))
+    {
+        return Err(SourceStatementReferenceError::DependencyMismatch);
+    }
+    #[cfg(test)]
+    if profile == StatementReferenceProfile::Task258B5A
+        && !exact_task258b5a_shared_arena(source_id, arena)
     {
         return Err(SourceStatementReferenceError::DependencyMismatch);
     }
@@ -13472,14 +13565,18 @@ fn validate_reference_dependencies(
         else {
             return Err(SourceStatementReferenceError::DependencyMismatch);
         };
-        if (profile == StatementReferenceProfile::Task258B5A
+        #[cfg(test)]
+        if profile == StatementReferenceProfile::Task258B5A
             && format!("{:?}", resolved_node.kind())
-                != task258b5a_resolver_node_kind(resolved_id.index()))
-            || (profile == StatementReferenceProfile::Task258B5B
-                && !task258b5b_resolver_node_kind_is_exact(
-                    resolved_id.index(),
-                    &format!("{:?}", resolved_node.kind()),
-                ))
+                != task258b5a_resolver_node_kind(resolved_id.index())
+        {
+            return Err(SourceStatementReferenceError::DependencyMismatch);
+        }
+        if (profile == StatementReferenceProfile::Task258B5B
+            && !task258b5b_resolver_node_kind_is_exact(
+                resolved_id.index(),
+                &format!("{:?}", resolved_node.kind()),
+            ))
             || resolved_node.origin().source_id() != source_id
             || resolved_node.origin().module_id() != module_id
             || resolved_node.origin().import_edge().is_some()
@@ -13513,10 +13610,14 @@ fn validate_reference_dependencies(
     else {
         return Err(SourceStatementReferenceError::DependencyMismatch);
     };
-    if (profile != StatementReferenceProfile::Task258B5B
+    #[cfg(test)]
+    if profile != StatementReferenceProfile::Task258B5B
         && resolved_node_by_index(resolver_ast.nodes(), 12)
-            .is_none_or(|(_, label_node)| label_node.origin() != projection.origin()))
-        || reference_node.origin() != reference.origin()
+            .is_none_or(|(_, label_node)| label_node.origin() != projection.origin())
+    {
+        return Err(SourceStatementReferenceError::DependencyMismatch);
+    }
+    if reference_node.origin() != reference.origin()
         || reference.site().node().index() != reference_node_index
         || reference.site().range() != range(source_id, reference_start, reference_end)
         || arena
@@ -13567,68 +13668,74 @@ fn validate_label_rows(
         }
         return Ok(());
     }
-    let (label_start, label_end) = match profile {
-        #[cfg(test)]
-        StatementReferenceProfile::Task258B1 => (77, 78),
-        StatementReferenceProfile::Task258B5A => (95, 96),
-        StatementReferenceProfile::Task258B5B => unreachable!("handled above"),
-    };
-    let Some(label) = labels.get(id) else {
-        return Err(SourceStatementReferenceError::InvalidAggregate);
-    };
-    let expected_origin = format!(
-        "{}::{}::proof::A",
-        module_id.package().as_str(),
-        module_id.path().as_str()
-    );
-    let namespace = mizar_resolve::env::NamespacePath::new(module_id.path().as_str());
-    let LabelProjectionSource::CurrentModule {
-        visible_after_ordinal,
-        proof_scope,
-    } = projection.source()
-    else {
-        return Err(SourceStatementReferenceError::InvalidLabel { label: id });
-    };
-    let owner_contribution = statements
-        .owners()
-        .get(SourceTheoremOwnerId::new(0))
-        .map(SourceTheoremOwner::contribution);
-    if label.statement != SourceStatementId::new(1)
-        || statements.statements().get(label.statement).is_none()
-        || label.context != SourceStatementContextId::new(1)
-        || statements.contexts().get(label.context).is_none()
-        || label.candidate != SourceStatementCandidateFactId::new(1)
-        || statements.candidate_facts().get(label.candidate).is_none()
-        || label.origin_path.as_str() != expected_origin
-        || label.proof_scope.path() != [0]
-        || label.source_range != range(source_id, label_start, label_end)
-        || label.source_ordinal != 0
-        || label.visible_after_ordinal != 1
-        || label.spelling != "A"
-        || label.kind != SourceStatementLabelKind::ProofStep
-        || label.recovery != SourceStatementRecovery::Normal
-        || projection.origin_path() != &label.origin_path
-        || projection.module() != module_id
-        || projection.namespace() != &namespace
-        || projection.primary_spelling() != label.spelling
-        || projection.kind() != LabelKind::ProofStep
-        || projection.visibility() != Visibility::Private
-        || projection.export_status() != ExportStatus::LocalOnly
-        || projection.declaration_range() != label.source_range
-        || owner_contribution != Some(projection.contribution())
-        || *visible_after_ordinal != label.visible_after_ordinal
-        || proof_scope.as_ref() != Some(&label.proof_scope)
-        || !exact_semantic_origin(
-            projection.origin(),
-            source_id,
-            module_id,
-            label.source_range,
-            12,
-        )
+    #[cfg(test)]
     {
-        return Err(SourceStatementReferenceError::InvalidLabel { label: id });
+        let (label_start, label_end) = match profile {
+            #[cfg(test)]
+            StatementReferenceProfile::Task258B1 => (77, 78),
+            #[cfg(test)]
+            StatementReferenceProfile::Task258B5A => (95, 96),
+            StatementReferenceProfile::Task258B5B => unreachable!("handled above"),
+        };
+        let Some(label) = labels.get(id) else {
+            return Err(SourceStatementReferenceError::InvalidAggregate);
+        };
+        let expected_origin = format!(
+            "{}::{}::proof::A",
+            module_id.package().as_str(),
+            module_id.path().as_str()
+        );
+        let namespace = mizar_resolve::env::NamespacePath::new(module_id.path().as_str());
+        let LabelProjectionSource::CurrentModule {
+            visible_after_ordinal,
+            proof_scope,
+        } = projection.source()
+        else {
+            return Err(SourceStatementReferenceError::InvalidLabel { label: id });
+        };
+        let owner_contribution = statements
+            .owners()
+            .get(SourceTheoremOwnerId::new(0))
+            .map(SourceTheoremOwner::contribution);
+        if label.statement != SourceStatementId::new(1)
+            || statements.statements().get(label.statement).is_none()
+            || label.context != SourceStatementContextId::new(1)
+            || statements.contexts().get(label.context).is_none()
+            || label.candidate != SourceStatementCandidateFactId::new(1)
+            || statements.candidate_facts().get(label.candidate).is_none()
+            || label.origin_path.as_str() != expected_origin
+            || label.proof_scope.path() != [0]
+            || label.source_range != range(source_id, label_start, label_end)
+            || label.source_ordinal != 0
+            || label.visible_after_ordinal != 1
+            || label.spelling != "A"
+            || label.kind != SourceStatementLabelKind::ProofStep
+            || label.recovery != SourceStatementRecovery::Normal
+            || projection.origin_path() != &label.origin_path
+            || projection.module() != module_id
+            || projection.namespace() != &namespace
+            || projection.primary_spelling() != label.spelling
+            || projection.kind() != LabelKind::ProofStep
+            || projection.visibility() != Visibility::Private
+            || projection.export_status() != ExportStatus::LocalOnly
+            || projection.declaration_range() != label.source_range
+            || owner_contribution != Some(projection.contribution())
+            || *visible_after_ordinal != label.visible_after_ordinal
+            || proof_scope.as_ref() != Some(&label.proof_scope)
+            || !exact_semantic_origin(
+                projection.origin(),
+                source_id,
+                module_id,
+                label.source_range,
+                12,
+            )
+        {
+            return Err(SourceStatementReferenceError::InvalidLabel { label: id });
+        }
+        Ok(())
     }
-    Ok(())
+    #[cfg(not(test))]
+    Err(SourceStatementReferenceError::InvalidLabel { label: id })
 }
 
 fn validate_citation_rows(
@@ -13658,6 +13765,7 @@ fn validate_citation_rows(
     ) = match profile {
         #[cfg(test)]
         StatementReferenceProfile::Task258B1 => (3, 3, &[0][..], 131, 132, 3, 68, "A"),
+        #[cfg(test)]
         StatementReferenceProfile::Task258B5A => (4, 4, &[0, 1][..], 170, 171, 4, 82, "A"),
         StatementReferenceProfile::Task258B5B => (1, 1, &[0][..], 136, 139, 1, 48, "Ref"),
     };
@@ -24177,7 +24285,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ),
             Err(SourceStatementReferenceError::DependencyMismatch)
         );
-        let mut stale = valid;
+        let mut stale = valid.clone();
         stale.statement_fingerprint.push_str(":stale");
         stale.labels.rows[0].visible_after_ordinal = 0;
         assert_eq!(
@@ -24189,6 +24297,597 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ),
             Err(SourceStatementReferenceError::DependencyMismatch)
         );
+
+        let pristine = fixture.clone();
+        let typed = fixture
+            .empty_typed()
+            .with_source_statement_references(fixture.statement.clone(), valid.clone())
+            .expect("Task258B5A pristine typed");
+        let typed_debug = typed.debug_text();
+        let resolved_debug = assemble_empty_resolved(&typed)
+            .expect("Task258B5A pristine final")
+            .debug_text();
+        let replay = || {
+            assert_eq!(
+                (
+                    &fixture.bindings,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.arena,
+                    &fixture.statement,
+                    &fixture.resolver_ast,
+                    &fixture.projection,
+                    &fixture.reference,
+                    &fixture.resolution,
+                ),
+                (
+                    &pristine.bindings,
+                    &pristine.primary,
+                    &pristine.atomic,
+                    &pristine.arena,
+                    &pristine.statement,
+                    &pristine.resolver_ast,
+                    &pristine.projection,
+                    &pristine.reference,
+                    &pristine.resolution,
+                ),
+                "all pristine producer inputs remain unchanged"
+            );
+            let rebuilt = B5AFixture::new(251);
+            assert_eq!(rebuilt.statement, pristine.statement);
+            assert_eq!(rebuilt.resolver_ast, pristine.resolver_ast);
+            let references = rebuilt
+                .references(rebuilt.reference_input())
+                .expect("reference replay");
+            assert_eq!(references, valid);
+            let typed = rebuilt
+                .empty_typed()
+                .with_source_statement_references(rebuilt.statement.clone(), references)
+                .expect("typed replay");
+            assert_eq!(typed.debug_text(), typed_debug);
+            assert_eq!(
+                assemble_empty_resolved(&typed)
+                    .expect("final replay")
+                    .debug_text(),
+                resolved_debug
+            );
+        };
+        let statement_input = || SourceStatementHandoffInput {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            owners: fixture
+                .statement
+                .owners
+                .iter()
+                .map(|(_, row)| SourceTheoremOwnerInput {
+                    symbol: row.symbol.clone(),
+                    contribution: row.contribution,
+                    site: row.site.clone(),
+                    source_range: row.source_range,
+                    spelling: row.spelling.clone(),
+                    role: row.role,
+                    status: row.status,
+                    recovery: row.recovery,
+                })
+                .collect(),
+            statements: fixture
+                .statement
+                .statements
+                .iter()
+                .map(|(_, row)| SourceStatementInput {
+                    owner: row.owner,
+                    context: row.context,
+                    formula: row.formula,
+                    site: row.site.clone(),
+                    source_range: row.source_range,
+                    source_ordinal: row.source_ordinal,
+                    spelling: row.spelling.clone(),
+                    kind: row.kind,
+                    recovery: row.recovery,
+                })
+                .collect(),
+            contexts: fixture
+                .statement
+                .contexts
+                .iter()
+                .map(|(_, row)| SourceStatementContextInput {
+                    statement: row.statement,
+                    binding_context: row.binding_context,
+                    source_range: row.source_range,
+                    visible_bindings: row.visible_bindings.clone(),
+                })
+                .collect(),
+            input_facts: fixture
+                .statement
+                .input_facts
+                .iter()
+                .map(|(_, row)| SourceStatementInputFactInput {
+                    statement: row.statement,
+                    context: row.context,
+                    ordinal: row.ordinal,
+                    kind: row.kind,
+                    binding: row.binding,
+                    uses: row.uses.clone(),
+                })
+                .collect(),
+            candidate_facts: fixture
+                .statement
+                .candidate_facts
+                .iter()
+                .map(|(_, row)| SourceStatementCandidateFactInput {
+                    statement: row.statement,
+                    context: row.context,
+                    ordinal: row.ordinal,
+                    kind: row.kind,
+                    formula: row.formula,
+                })
+                .collect(),
+        };
+        let (_, _, symbols) = b5a_symbol_env(fixture.source, &fixture.module);
+        let pristine_input = statement_input();
+        assert_eq!(
+            SourceStatementProducer::build(
+                pristine_input.clone(),
+                &symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena
+            ),
+            Ok(fixture.statement.clone())
+        );
+        let mut missing_contexts = pristine_input.clone();
+        missing_contexts.contexts.clear();
+        assert_eq!(
+            SourceStatementProducer::build(
+                missing_contexts,
+                &symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena
+            ),
+            Err(SourceStatementError::InvalidAggregate)
+        );
+        replay();
+
+        // Rebuild coherent dependencies so recovery faults reach the binding-profile owner.
+        for mutation in 0..5 {
+            let mut contexts = BindingContextTable::new();
+            for (id, row) in fixture.bindings.contexts().iter() {
+                let inserted = contexts.insert(BindingContextDraft {
+                    owner: row.owner.clone(),
+                    parent: row.parent,
+                    layer: row.layer,
+                    lexical_scope: row.lexical_scope.clone(),
+                    bindings: row.bindings.clone(),
+                    visible_bindings: row.visible_bindings.clone(),
+                    recovery: if id.index() == mutation {
+                        BindingContextRecovery::Degraded
+                    } else {
+                        row.recovery
+                    },
+                });
+                assert_eq!(inserted, id);
+            }
+            let mut bindings = BindingTable::new();
+            for (id, row) in fixture.bindings.bindings().iter() {
+                let inserted = bindings.insert(BindingDraft {
+                    spelling: row.spelling.clone(),
+                    kind: row.kind,
+                    identity: row.identity.clone(),
+                    owner_context: row.owner_context,
+                    declaration_range: row.declaration_range,
+                    visible_after_ordinal: row.visible_after_ordinal,
+                    type_site: row.type_site.clone(),
+                    status: row.status,
+                    captured: row.captured.clone(),
+                    diagnostics: row.diagnostics.clone(),
+                    recovery: if mutation == 4 {
+                        BindingRecoveryState::Degraded
+                    } else {
+                        row.recovery
+                    },
+                });
+                assert_eq!(inserted, id);
+            }
+            let mutated = BindingEnv::try_new(BindingEnvParts {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                contexts,
+                bindings,
+                diagnostics: fixture.bindings.diagnostics().clone(),
+            })
+            .expect("coherent recovery mutation");
+            let mutated_before = mutated.clone();
+            assert_eq!(
+                SourceStatementProducer::build(
+                    pristine_input.clone(),
+                    &symbols,
+                    &mutated,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.arena
+                ),
+                Err(SourceStatementError::DependencyMismatch),
+                "recovery {mutation}"
+            );
+            assert_eq!(mutated, mutated_before);
+            assert_eq!(statement_input(), pristine_input);
+            replay();
+        }
+
+        for row in 0..5 {
+            for family in 0..4 {
+                let mut statement = fixture.statement.clone();
+                let expected = match family {
+                    0 => {
+                        statement.statements.rows[row].source_ordinal = 5;
+                        SourceStatementError::InvalidStatement {
+                            statement: SourceStatementId::new(row),
+                        }
+                    }
+                    1 => {
+                        let context = &mut statement.contexts.rows[row];
+                        context.binding_context =
+                            BindingContextId::new((context.binding_context.index() + 1) % 4);
+                        SourceStatementError::InvalidContext {
+                            context: SourceStatementContextId::new(row),
+                        }
+                    }
+                    2 => {
+                        statement.input_facts.rows[row].uses.swap(0, 1);
+                        SourceStatementError::InvalidInputFact {
+                            fact: SourceStatementInputFactId::new(row),
+                        }
+                    }
+                    3 => {
+                        statement.candidate_facts.rows[row].ordinal = 1;
+                        SourceStatementError::InvalidCandidateFact {
+                            fact: SourceStatementCandidateFactId::new(row),
+                        }
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(
+                    statement.validate_installation(
+                        fixture.source,
+                        &fixture.module,
+                        &fixture.primary,
+                        &fixture.atomic,
+                        &fixture.arena
+                    ),
+                    Err(expected),
+                    "family {family} row {row}"
+                );
+                replay();
+            }
+        }
+        let mut earlier_ordinal = fixture.statement.clone();
+        earlier_ordinal.statements.rows[4].source_ordinal = 3;
+        assert_eq!(
+            earlier_ordinal.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena
+            ),
+            Err(SourceStatementError::InvalidStatement {
+                statement: SourceStatementId::new(4)
+            })
+        );
+        replay();
+        let wrong_typed_kind = mutate_arena(&fixture.arena, |id, row| {
+            if id == TypedNodeId::new(82) {
+                row.kind = "source.statement.citation".into();
+            }
+        });
+        assert_eq!(
+            fixture.statement.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &wrong_typed_kind
+            ),
+            Err(SourceStatementError::DependencyMismatch)
+        );
+        replay();
+
+        for mutation in 0..20 {
+            let mut input = fixture.reference_input();
+            let mut projection = fixture.projection.clone();
+            let mut reference = fixture.reference.clone();
+            let mut resolution = fixture.resolution.clone();
+            match mutation {
+                0 => input.labels[0].statement = SourceStatementId::new(0),
+                1 => input.labels[0].context = SourceStatementContextId::new(0),
+                2 => input.labels[0].candidate = SourceStatementCandidateFactId::new(0),
+                3 => input.labels[0].origin_path = LabelOriginPath::new("wrong::proof::A"),
+                4 => input.labels[0].proof_scope = LabelScopePath::new(vec![0, 1]),
+                5 => input.labels[0].source_range.start -= 1,
+                6 => input.labels[0].source_ordinal = 1,
+                7 => input.labels[0].visible_after_ordinal = 2,
+                8 => input.labels[0].spelling.push('B'),
+                9 => input.labels[0].recovery = SourceStatementRecovery::Degraded,
+                10 => input.citations[0].statement = SourceStatementId::new(3),
+                11 => input.citations[0].context = SourceStatementContextId::new(3),
+                12 => input.citations[0].proof_scope = LabelScopePath::new(vec![0]),
+                13 => input.citations[0].source_range.start -= 1,
+                14 => input.citations[0].ordinal = 1,
+                15 => input.citations[0].recovery = SourceStatementRecovery::Degraded,
+                16 => projection = projection.with_visibility(Visibility::Public),
+                17 => projection = projection.with_export_status(ExportStatus::Exported),
+                18 => reference = reference.with_expectation(LabelExpectation::Theorem),
+                19 => {
+                    resolution = LabelResolver::new(&[]).resolve(
+                        &fixture.module,
+                        fixture.projection.namespace(),
+                        std::slice::from_ref(&fixture.reference),
+                    )
+                }
+                _ => unreachable!(),
+            }
+            let expected = match mutation {
+                0..=9 => SourceStatementReferenceError::InvalidLabel {
+                    label: SourceStatementLabelId::new(0),
+                },
+                10..=15 => SourceStatementReferenceError::InvalidCitation {
+                    citation: SourceStatementCitationId::new(0),
+                },
+                _ => SourceStatementReferenceError::DependencyMismatch,
+            };
+            assert_eq!(
+                SourceStatementReferenceProducer::build(
+                    input,
+                    &fixture.statement,
+                    &fixture.resolver_ast,
+                    &projection,
+                    &reference,
+                    &resolution,
+                    &fixture.arena
+                ),
+                Err(expected),
+                "reference {mutation}"
+            );
+            replay();
+        }
+
+        for mutation in 0..8 {
+            let projection = &fixture.projection;
+            let mut origin_path = projection.origin_path().clone();
+            let mut namespace = projection.namespace().clone();
+            let mut primary_spelling = projection.primary_spelling().to_owned();
+            let mut declaration_range = projection.declaration_range();
+            let mut origin = projection.origin().clone();
+            let mut visible_after_ordinal = 1;
+            let mut proof_scope = LabelScopePath::new(vec![0]);
+            match mutation {
+                0 => origin_path = LabelOriginPath::new("wrong::proof::A"),
+                1 => namespace = NamespacePath::new("statement.wrong.projection"),
+                2 => primary_spelling.push('B'),
+                3 => declaration_range.start -= 1,
+                4 => {
+                    origin = SemanticOrigin::new(
+                        origin.source_id(),
+                        origin.module_id().clone(),
+                        SourceAnchor::Range(range(origin.source_id(), 94, 96)),
+                        origin.structural_path().to_vec(),
+                    )
+                }
+                5 => origin = origin.recovered(),
+                6 => visible_after_ordinal = 2,
+                7 => proof_scope = LabelScopePath::new(vec![0, 1]),
+                _ => unreachable!(),
+            }
+            let mutated = LabelProjection::proof_step(
+                mizar_resolve::labels::LabelProjectionData {
+                    origin_path,
+                    module: projection.module().clone(),
+                    namespace,
+                    primary_spelling,
+                    kind: projection.kind(),
+                    declaration_range,
+                    origin,
+                    contribution: projection.contribution(),
+                },
+                visible_after_ordinal,
+                proof_scope,
+            );
+            let expected = if matches!(mutation, 3 | 6 | 7) {
+                SourceStatementReferenceError::InvalidLabel {
+                    label: SourceStatementLabelId::new(0),
+                }
+            } else {
+                SourceStatementReferenceError::DependencyMismatch
+            };
+            assert_eq!(
+                SourceStatementReferenceProducer::build(
+                    fixture.reference_input(),
+                    &fixture.statement,
+                    &fixture.resolver_ast,
+                    &mutated,
+                    &fixture.reference,
+                    &fixture.resolution,
+                    &fixture.arena
+                ),
+                Err(expected),
+                "projection {mutation}"
+            );
+            replay();
+        }
+
+        for mutation in 0..10 {
+            let reference = &fixture.reference;
+            let mut site_range = reference.site().range();
+            let mut site_spelling = reference.site().spelling().to_owned();
+            let mut origin = reference.origin().clone();
+            let mut ordinal = reference.ordinal();
+            let mut scope = Some(LabelScopePath::new(vec![0, 1]));
+            match mutation {
+                0 => site_range.start -= 1,
+                1 => site_spelling.push('B'),
+                2 => {
+                    origin = SemanticOrigin::new(
+                        origin.source_id(),
+                        origin.module_id().clone(),
+                        origin.anchor().clone(),
+                        vec![999],
+                    )
+                }
+                3 => {
+                    origin = SemanticOrigin::new(
+                        origin.source_id(),
+                        origin.module_id().clone(),
+                        SourceAnchor::Range(range(origin.source_id(), 169, 171)),
+                        origin.structural_path().to_vec(),
+                    )
+                }
+                4 => origin = origin.recovered(),
+                5 => ordinal = 3,
+                6 => scope = Some(LabelScopePath::new(vec![0])),
+                7 => scope = None,
+                8 => {
+                    origin = SemanticOrigin::new(
+                        source_id(252),
+                        origin.module_id().clone(),
+                        origin.anchor().clone(),
+                        origin.structural_path().to_vec(),
+                    )
+                }
+                9 => {
+                    origin = SemanticOrigin::new(
+                        origin.source_id(),
+                        ModuleId::new(
+                            fixture.module.package().clone(),
+                            ModulePath::new("statement.b5a.reference-wrong"),
+                        ),
+                        origin.anchor().clone(),
+                        origin.structural_path().to_vec(),
+                    )
+                }
+                _ => unreachable!(),
+            }
+            let mutated = LabelReferenceCandidate::unqualified_citation(
+                mizar_resolve::resolved_ast::ReferenceSite::new(
+                    reference.site().node(),
+                    site_range,
+                    site_spelling,
+                ),
+                origin,
+                ordinal,
+                scope,
+            );
+            let expected = if matches!(mutation, 5 | 6) {
+                SourceStatementReferenceError::InvalidCitation {
+                    citation: SourceStatementCitationId::new(0),
+                }
+            } else {
+                SourceStatementReferenceError::DependencyMismatch
+            };
+            assert_eq!(
+                SourceStatementReferenceProducer::build(
+                    fixture.reference_input(),
+                    &fixture.statement,
+                    &fixture.resolver_ast,
+                    &fixture.projection,
+                    &mutated,
+                    &fixture.resolution,
+                    &fixture.arena
+                ),
+                Err(expected),
+                "candidate {mutation}"
+            );
+            replay();
+        }
+
+        for mutation in 0..6 {
+            let mut builder = ResolvedArenaBuilder::new();
+            let mut ids = Vec::new();
+            for (id, node) in fixture.resolver_ast.nodes().iter() {
+                let mut kind = node.kind().clone();
+                let mut origin = node.origin().clone();
+                let mut recovery = node.recovery();
+                let mut resolution = node.resolution();
+                let mut reference_key = node.reference_key();
+                if id.index() == 82 {
+                    match mutation {
+                        0 => {
+                            kind = fixture
+                                .resolver_ast
+                                .nodes()
+                                .node(ids[81])
+                                .expect("preceding actual resolver node")
+                                .kind()
+                                .clone()
+                        }
+                        1 => {
+                            origin = SemanticOrigin::new(
+                                origin.source_id(),
+                                origin.module_id().clone(),
+                                origin.anchor().clone(),
+                                vec![999],
+                            )
+                        }
+                        2 => {
+                            origin = SemanticOrigin::new(
+                                origin.source_id(),
+                                origin.module_id().clone(),
+                                SourceAnchor::Range(range(origin.source_id(), 169, 171)),
+                                origin.structural_path().to_vec(),
+                            )
+                        }
+                        3 => {
+                            origin = origin.recovered();
+                            recovery = RecoveryState::Recovered;
+                        }
+                        4 => resolution = NodeResolutionState::Deferred,
+                        5 => {
+                            resolution = NodeResolutionState::NotApplicable;
+                            reference_key = None;
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let mut rebuilt = ResolvedNode::new(kind, node.children().to_vec(), origin)
+                    .with_recovery(recovery)
+                    .with_resolution(resolution);
+                if let Some(key) = reference_key {
+                    rebuilt = rebuilt.with_reference_key(key);
+                }
+                let inserted = builder
+                    .push(rebuilt)
+                    .expect("coherent resolver node mutation");
+                assert_eq!(inserted.index(), id.index());
+                ids.push(inserted);
+            }
+            let mutated = ResolvedAst::try_new(
+                fixture.source,
+                fixture.module.clone(),
+                builder
+                    .finish(ids[fixture.resolver_ast.nodes().root().index()])
+                    .expect("coherent resolver arena mutation"),
+                fixture.resolver_ast.name_refs().clone(),
+                fixture.resolver_ast.label_refs().clone(),
+                fixture.resolver_ast.imports().clone(),
+            )
+            .expect("coherent resolver AST mutation");
+            assert_eq!(
+                SourceStatementReferenceProducer::build(
+                    fixture.reference_input(),
+                    &fixture.statement,
+                    &mutated,
+                    &fixture.projection,
+                    &fixture.reference,
+                    &fixture.resolution,
+                    &fixture.arena
+                ),
+                Err(SourceStatementReferenceError::DependencyMismatch),
+                "resolver AST {mutation}"
+            );
+            replay();
+        }
     }
 
     #[test]

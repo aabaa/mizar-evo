@@ -7,8 +7,8 @@
 > [English source_term.md](../en/source_term.md)
 
 ## Original-source nested reserved occurrences
-crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences`は元source/symbols/全occurrences/typed arenaから実binding projectionと既存environment/primary pairを構築し、caller製positive rowを受け取らない。全8 variable termの実site/range/winner、proof contextと実variable-scope mapsを照合し、module contextの`None`を実root scopeへ明示的に対応付ける。各referenceの実lexical scope/occurrence ordinalを保持する。
-唯一の`ReservedVariable` identityはmodule所有で両proof contextから見え、proof context自身のbinding listは空とする。native ordinal 0をlegacy declaration-event lookupへ渡さない。既存public module producerの実reserved-occurrence対応を維持し、public scoped theorem producerのtransaction規則とReserve拒否を維持する。新public type/field/binderは追加しない。
+crate-private `SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences`は元source/symbols/全occurrences/typed arenaから実binding projectionと既存environment/primary pairを構築し、caller製positive rowを受け取らない。全termの実site/range/winnerと実scope map上のproof contextを照合し、module contextの`None`を実root scopeへ対応付ける。全referenceの実lexical scope/occurrence ordinalを保持する。
+唯一の`ReservedVariable` identityはmodule所有で全proof contextへvisibleとなり、proof自身のbinding listは空とする。B1のchild proofは一つ、B5Aは兄弟となる二つ。parentは実structural parent/scopeから導き、挿入順やlabel scopeへのcastを使わない。native ordinal 0をlegacy declaration-event lookupへ渡さない。既存public module/scoped producerのtransaction規則とReserve境界を維持し、新public type/field/binderを追加しない。
 
 ## 目的とauthority
 

@@ -1937,6 +1937,6 @@ Semantic table、capture state、diagnostic、Core payload、generated origin/pa
 callerはassembly中にtyped receiptをreplaceできない。
 
 ## Original-source reserved statement transport
-[atomic original-source installer](typed_ast.md#original-source-reserved-statement-installation)がrooted native base・statement・任意referenceをimmutableな組に封じる。final inputsからarena/handoffを交換できない。実five-table/lower/context/site joinsを検証し既存5テーブルを保持する。prooflessはreferenceなし、nestedは全label/citation pair・保存した全projection batchのresolution replay・label-only snapshot対応を要求する。label認証はsource intakeとimmutable構築が担い、legacy検証は分離する。
+[atomic original-source installer](typed_ast.md#original-source-reserved-statement-installation)がrooted native base・statement・任意referenceをimmutableな組に封じる。final inputsからarena/handoffを交換できない。実five-table/lower/context/site joinsを検証し既存5テーブルを保持する。prooflessはreferenceなし、B1/B5A nestedは実citing-statement/branching-parent対応と全label/citation pair・保存した全projection batchのresolution replay・label-only snapshot対応を要求する。label認証はsource intakeとimmutable構築が担い、legacy検証は分離する。
 例外はstatement transportだけに限定し、共有proof-local root排除を維持する。templateを含む全auxiliary source family、enriched semantic tables、expression/cluster/overload/template結果、statement semantic/proof bundle、non-syntax node hintを拒否する。nested referenceは必須native pairでありauxiliaryではない。全installed cloneはtransportを保持する。
 implicit closure、checked assumption/fact、logical binder、proof validity、obligation discharge、theorem publication/acceptanceは導かない。構造認証はraw capture/trivia/currentnessやordinary-name resolution完了を意味しない。

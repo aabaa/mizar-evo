@@ -1400,7 +1400,7 @@ impl SourcePrimaryTermProducer {
             .bindings()
             .get(BindingId::new(0))
             .ok_or_else(invalid)?;
-        if scope.references().len() != 8
+        if scope.references().len() != (bindings.contexts().len() + 1) * 2
             || binding.identity
                 != (BinderIdentity::ReservedVariable {
                     spelling: declaration.spelling().to_owned(),

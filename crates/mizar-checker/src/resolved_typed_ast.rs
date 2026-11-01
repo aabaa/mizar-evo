@@ -2981,7 +2981,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             #[cfg(not(test))]
             let legacy_nested_statement = false;
             #[cfg(test)]
-            let legacy_nested_statement = source_statement.is_task_258b1_profile();
+            let legacy_nested_statement = source_statement.is_task_258b1_profile()
+                || source_statement.is_task_258b5a_profile();
             let native_nested_statement = original_statement
                 && self
                     .inputs
@@ -2994,7 +2995,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     if source_application.is_none()
                         && (native_nested_statement
                             || legacy_nested_statement
-                            || source_statement.is_task_258b5a_profile()
                             || source_statement.is_task_258b5b_profile()) =>
                 {
                     references

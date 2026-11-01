@@ -584,10 +584,7 @@ use type_elaboration::{
     source_statement_b4c_output_with_mutation,
     source_statement_b4c_output_with_raw_resolver_mutation,
     source_statement_b4c_output_with_resolver_mutation, source_statement_b4c_resolver_env_for_test,
-    source_statement_b5a_output_with_mutation,
-    source_statement_b5a_output_with_raw_resolver_mutation,
-    source_statement_b5a_output_with_resolver_mutation, source_statement_b5a_resolver_env_for_test,
-    source_statement_b5b_output_with_mutation,
+    source_statement_b5a_resolver_env_for_test, source_statement_b5b_output_with_mutation,
     source_statement_b5b_output_with_raw_resolver_mutation,
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_source, source_statement_resolver_env_for_test,
@@ -632,6 +629,7 @@ use type_elaboration::{
     task258b5a_surface_profile_with_mutation_for_test,
     task258b5b_surface_profile_with_mutation_for_test,
     unwrapped_imported_source_application_handoff_for_test,
+    validate_task258b5a_enriched_resolver_env, validate_task258b5a_raw_resolver_env,
     wrapped_imported_source_application_handoff_for_test,
 };
 #[cfg(test)]

@@ -6584,7 +6584,7 @@ impl TermFormulaChecker {
     > {
         use crate::source_statement::*;
         use mizar_resolve::{
-            labels::LabelProjectionSource,
+            labels::{LabelProjectionSource, LabelReferenceScope},
             resolved_ast::{
                 LabelKind, NameRefTable, NodeReferenceKey, NodeResolutionState, ResolvedArena,
                 ResolvedAst, ResolvedImports,
@@ -6752,7 +6752,11 @@ impl TermFormulaChecker {
                     formula: target,
                 });
         }
-        let references = if input.statements.len() == 4 {
+        let references = if source
+            .arena()
+            .iter()
+            .any(|(_, node)| node.kind() == &K::CompactStatement)
+        {
             let (_, labels, resolution) =
                 mizar_resolve::symbols::source_proof_inputs(source, symbols)
                     .map_err(|_| invalid())?;
@@ -6770,6 +6774,48 @@ impl TermFormulaChecker {
             };
             let candidate = labels.references().first().ok_or_else(invalid)?;
             let reference_id = *resolution.ids().first().ok_or_else(invalid)?;
+            let LabelReferenceScope::Unqualified {
+                proof_scope: Some(use_scope),
+            } = candidate.scope()
+            else {
+                return Err(invalid());
+            };
+            let mut citing = input
+                .statements
+                .iter()
+                .enumerate()
+                .filter(|(_, statement)| {
+                    let Some(node) = typed
+                        .nodes()
+                        .node(statement.site.node())
+                        .and_then(|node| node.resolved_node)
+                        .and_then(|node| source.arena().node(node))
+                    else {
+                        return false;
+                    };
+                    if node.kind() != &K::ConclusionStatement {
+                        return false;
+                    }
+                    let Some(clause) = node
+                        .children()
+                        .get(2)
+                        .and_then(|id| source.arena().node(*id))
+                    else {
+                        return false;
+                    };
+                    if clause.kind() != &K::JustificationClause {
+                        return false;
+                    }
+                    clause
+                        .children()
+                        .get(1)
+                        .and_then(|id| source.arena().node(*id))
+                        .is_some_and(|list| list.children() == [candidate.site().node()])
+                });
+            let (citing_index, citing_statement) = citing.next().ok_or_else(invalid)?;
+            if citing.next().is_some() {
+                return Err(invalid());
+            }
             let reference_input = SourceStatementReferenceHandoffInput {
                 source_id: source.source_id(),
                 module_id: source.module().clone(),
@@ -6787,11 +6833,11 @@ impl TermFormulaChecker {
                     recovery: SourceStatementRecovery::Normal,
                 }],
                 citations: vec![SourceStatementCitationInput {
-                    statement: SourceStatementId::new(3),
-                    context: SourceStatementContextId::new(3),
+                    statement: SourceStatementId::new(citing_index),
+                    context: citing_statement.context,
                     target: SourceStatementCitationTarget::Local(SourceStatementLabelId::new(0)),
                     label_ref: reference_id,
-                    proof_scope: proof_scope.clone(),
+                    proof_scope: use_scope.clone(),
                     source_range: candidate.site().range(),
                     ordinal: 0,
                     kind: SourceStatementCitationKind::SimpleLocal,
@@ -6833,7 +6879,10 @@ impl TermFormulaChecker {
         statements: &crate::source_statement::SourceStatementHandoff,
         projections: &[mizar_resolve::labels::LabelProjection],
         reference: &mizar_resolve::labels::LabelReferenceCandidate,
-    ) -> Result<(), crate::source_statement::SourceStatementReferenceError> {
+    ) -> Result<
+        crate::source_statement::SourceStatementId,
+        crate::source_statement::SourceStatementReferenceError,
+    > {
         use crate::source_statement::SourceStatementReferenceError;
         let invalid = || SourceStatementReferenceError::DependencyMismatch;
         if ast.nodes().len() != arena.len()
@@ -6906,28 +6955,31 @@ impl TermFormulaChecker {
                 return Err(invalid());
             }
         }
-        let conclusion = statements
-            .statements()
-            .get(crate::source_statement::SourceStatementId::new(3))
-            .ok_or_else(invalid)?;
-        let conclusion = ast
-            .nodes()
-            .node(
-                arena
-                    .node(conclusion.site().node())
-                    .and_then(|node| node.resolved_node)
-                    .ok_or_else(invalid)?,
-            )
-            .ok_or_else(invalid)?;
-        let clause = ast
-            .nodes()
-            .node(*conclusion.children().get(2).ok_or_else(invalid)?)
-            .ok_or_else(invalid)?;
-        let list = ast
-            .nodes()
-            .node(*clause.children().get(1).ok_or_else(invalid)?)
-            .ok_or_else(invalid)?;
-        if list.children() != [reference.site().node()] {
+        let mut citing = statements.statements().iter().filter(|(_, statement)| {
+            let Some(node) = arena
+                .node(statement.site().node())
+                .and_then(|node| node.resolved_node)
+                .and_then(|node| ast.nodes().node(node))
+            else {
+                return false;
+            };
+            if node.kind() != &K::ConclusionStatement {
+                return false;
+            }
+            let Some(clause) = node.children().get(2).and_then(|id| ast.nodes().node(*id)) else {
+                return false;
+            };
+            if clause.kind() != &K::JustificationClause {
+                return false;
+            }
+            clause
+                .children()
+                .get(1)
+                .and_then(|id| ast.nodes().node(*id))
+                .is_some_and(|list| list.children() == [reference.site().node()])
+        });
+        let (citing_statement, _) = citing.next().ok_or_else(invalid)?;
+        if citing.next().is_some() {
             return Err(invalid());
         }
         let citation = ast
@@ -6992,7 +7044,7 @@ impl TermFormulaChecker {
                 return Err(invalid());
             }
         }
-        Ok(())
+        Ok(citing_statement)
     }
 
     /// Extracts and infers original-source set equalities without proof credit.
@@ -7031,6 +7083,16 @@ impl TermFormulaChecker {
                 .arena()
                 .iter()
                 .any(|(_, current)| current.kind() == &K::ProofBlock);
+        let descendant_reserved = nested_reserved
+            && source.arena().iter().any(|(_, current)| {
+                current.kind() == &K::ConclusionStatement
+                    && current.children().iter().any(|child| {
+                        source
+                            .arena()
+                            .node(*child)
+                            .is_some_and(|child| child.kind() == &K::ProofBlock)
+                    })
+            });
         let part = |id| match node(id)?.kind() {
             K::Token(token) => match token.kind {
                 SurfaceTokenKind::Identifier if mizar_lexer::is_identifier(&token.text) => {
@@ -7119,6 +7181,7 @@ impl TermFormulaChecker {
                 | (K::ProofBlock, ["proof", "ConclusionStatement", "end"])
                 | (K::CompactStatement, ["Proposition", "ProofBlock", ";"])
                 | (K::Proposition, ["identifier", ":", "FormulaExpression"])
+                | (K::ConclusionStatement, ["thus", "Proposition", "ProofBlock", ";"])
                     if nested_reserved =>
                 {
                     true
@@ -7218,7 +7281,14 @@ impl TermFormulaChecker {
                 return Err(invalid());
             };
             equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
-            if equalities.len() != if nested_reserved { 4 } else { 1 }
+            if equalities.len()
+                != if descendant_reserved {
+                    5
+                } else if nested_reserved {
+                    4
+                } else {
+                    1
+                }
                 || scope.references().len() != equalities.len() * 2
             {
                 return Err(invalid());
@@ -7244,7 +7314,7 @@ impl TermFormulaChecker {
                         matches!(current.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
                     })
                     .count()
-                    != if nested_reserved { 12 } else { 4 }
+                    != equalities.len() * 2 + if nested_reserved { 4 } else { 2 }
             {
                 return Err(invalid());
             }
@@ -7296,10 +7366,30 @@ impl TermFormulaChecker {
             let [_, _, _] = node(*inner_conclusion)?.children() else {
                 return Err(invalid());
             };
-            let [_, _, justification, _] = node(*conclusion)?.children() else {
+            let [_, _, tail, _] = node(*conclusion)?.children() else {
                 return Err(invalid());
             };
-            let reference_list = node(*justification)?.children()[1];
+            let justification = if descendant_reserved {
+                if node(*tail)?.kind() != &K::ProofBlock {
+                    return Err(invalid());
+                }
+                let [_, descendant, _] = node(*tail)?.children() else {
+                    return Err(invalid());
+                };
+                if node(*descendant)?.kind() != &K::ConclusionStatement {
+                    return Err(invalid());
+                }
+                let [_, _, justification, _] = node(*descendant)?.children() else {
+                    return Err(invalid());
+                };
+                *justification
+            } else {
+                *tail
+            };
+            if node(justification)?.kind() != &K::JustificationClause {
+                return Err(invalid());
+            }
+            let reference_list = node(justification)?.children()[1];
             let citation = node(reference_list)?.children()[0];
             if node(*outer)?.kind() != &K::ProofBlock
                 || node(*compact)?.kind() != &K::CompactStatement
@@ -7312,7 +7402,7 @@ impl TermFormulaChecker {
                     .iter()
                     .filter(|(_, current)| current.kind() == &K::ProofBlock)
                     .count()
-                    != 2
+                    != if descendant_reserved { 3 } else { 2 }
                 || source
                     .arena()
                     .iter()
@@ -7337,14 +7427,14 @@ impl TermFormulaChecker {
                 .find(|projection| projection.kind() == LabelKind::ProofStep)
                 .ok_or_else(invalid)?;
             let LabelProjectionSource::CurrentModule {
-                proof_scope: Some(label_scope),
+                proof_scope: Some(_),
                 visible_after_ordinal,
             } = projection.source()
             else {
                 return Err(invalid());
             };
             let LabelReferenceScope::Unqualified {
-                proof_scope: Some(citation_scope),
+                proof_scope: Some(_),
             } = candidate.scope()
             else {
                 return Err(invalid());
@@ -7362,7 +7452,6 @@ impl TermFormulaChecker {
                 || projection.origin().source_id() != source.source_id()
                 || projection.origin().import_edge().is_some()
                 || projection.origin().is_recovered()
-                || label_scope != citation_scope
                 || *visible_after_ordinal >= candidate.ordinal()
                 || candidate.site().node() != citation
                 || candidate.site().range() != range(citation)?
@@ -17505,11 +17594,12 @@ impl SourceVariableSemanticsChecker {
             SourceAnchor::Range(range) => range.start,
             _ => usize::MAX,
         });
-        if proofs.len() != 2 {
+        if !matches!(proofs.len(), 2 | 3) {
             return Err(invalid());
         }
         let mut contexts = original.contexts().clone();
         let mut context_scopes = BTreeMap::from([(root_scope.clone(), BindingContextId::new(0))]);
+        let mut outer_scope = None;
         for (index, (resolved, proof)) in proofs.into_iter().enumerate() {
             let SourceAnchor::Range(source_range) = proof.origin().anchor() else {
                 return Err(invalid());
@@ -17527,12 +17617,16 @@ impl SourceVariableSemanticsChecker {
                 .ok_or_else(invalid)?;
             if local == parent_scope
                 || context_scopes.contains_key(local)
-                || parent_context != BindingContextId::new(index)
+                || if index == 0 {
+                    parent_scope != root_scope
+                } else {
+                    outer_scope.as_ref() != Some(parent_scope)
+                }
                 || parent_node.kind()
-                    != if index == 0 {
-                        &K::TheoremItem
-                    } else {
-                        &K::CompactStatement
+                    != match index {
+                        0 => &K::TheoremItem,
+                        1 => &K::CompactStatement,
+                        _ => &K::ConclusionStatement,
                     }
             {
                 return Err(invalid());
@@ -17552,6 +17646,9 @@ impl SourceVariableSemanticsChecker {
                     .clone(),
                 recovery: BindingContextRecovery::Normal,
             });
+            if index == 0 {
+                outer_scope = Some(local.clone());
+            }
             context_scopes.insert(local.clone(), id);
         }
         if scopes

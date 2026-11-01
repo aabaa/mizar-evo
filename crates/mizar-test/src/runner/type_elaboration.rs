@@ -717,10 +717,7 @@ pub(super) use source_statement::{
     source_statement_b4c_output_with_mutation,
     source_statement_b4c_output_with_raw_resolver_mutation,
     source_statement_b4c_output_with_resolver_mutation, source_statement_b4c_resolver_env_for_test,
-    source_statement_b5a_output_with_mutation,
-    source_statement_b5a_output_with_raw_resolver_mutation,
-    source_statement_b5a_output_with_resolver_mutation, source_statement_b5a_resolver_env_for_test,
-    source_statement_b5b_output_with_mutation,
+    source_statement_b5a_resolver_env_for_test, source_statement_b5b_output_with_mutation,
     source_statement_b5b_output_with_raw_resolver_mutation,
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_source, source_statement_resolver_env_for_test,
@@ -729,7 +726,8 @@ pub(super) use source_statement::{
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
     task258b5a_surface_profile_with_mutation_for_test,
-    task258b5b_surface_profile_with_mutation_for_test,
+    task258b5b_surface_profile_with_mutation_for_test, validate_task258b5a_enriched_resolver_env,
+    validate_task258b5a_raw_resolver_env,
 };
 pub(super) use source_statement::{
     SOURCE_STATEMENT_B5B_TEXT, source_statement_transport_detail_keys,
