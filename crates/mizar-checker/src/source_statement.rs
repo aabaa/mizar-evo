@@ -1325,9 +1325,7 @@ impl SourceStatementHandoff {
                 .collect::<Vec<_>>();
             let group = match groups.as_slice() {
                 [] => None,
-                [first] | [first, _] if witness && witness_count == 1 && !named_witness => {
-                    Some(*first)
-                }
+                [first, ..] if witness && witness_count == 1 && !named_witness => Some(*first),
                 _ => return Err(invalid()),
             };
             let descendant = arena.iter().any(|(_, node)| {
@@ -2345,9 +2343,7 @@ impl SourceStatementWitnessHandoff {
                     .find(|(_, term)| term.site().node() == *term_site)
                     .ok_or_else(invalid)?;
                 let (mut reference_term_id, mut reference_term) = (term_id, term);
-                let mut group_count = 0;
                 while reference_term.kind() == SourcePrimaryTermKind::Parenthesized {
-                    group_count += 1;
                     let node = arena
                         .node(reference_term.site().node())
                         .ok_or_else(invalid)?;
@@ -2360,8 +2356,7 @@ impl SourceStatementWitnessHandoff {
                         .iter()
                         .filter(|(_, child)| child.parent() == Some(reference_term_id));
                     let child = children.next().ok_or_else(invalid)?;
-                    if group_count > 2
-                        || name_site.is_some()
+                    if name_site.is_some()
                         || items.len() != 1
                         || children.next().is_some()
                         || node.kind.as_str() != "source.term.parenthesized"

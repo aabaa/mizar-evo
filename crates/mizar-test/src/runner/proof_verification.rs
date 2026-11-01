@@ -16893,7 +16893,23 @@ mod term_proof_tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         let ids = InMemorySessionIdAllocator::new();
         let mut cases = Vec::new();
-        for text in texts {
+        for (depth, text) in [2usize, 3, 5, 8].into_iter().flat_map(|depth| {
+            texts.iter().map(move |text| {
+                let (old, leaf, spaced) = if text.contains("take ( (") {
+                    ("( ( parcel ) )", "parcel", true)
+                } else if text.contains("((parcel))") {
+                    ("((parcel))", "parcel", false)
+                } else {
+                    ("((x))", "x", false)
+                };
+                let group = if spaced {
+                    format!("{}{leaf}{}", "( ".repeat(depth), " )".repeat(depth))
+                } else {
+                    format!("{}{leaf}{}", "(".repeat(depth), ")".repeat(depth))
+                };
+                (depth, text.replace(old, &group))
+            })
+        }) {
             for buffer in [false, true] {
                 fs::write(&path, if buffer { "stale disk" } else { &text }).unwrap();
                 let frontend = Frontend::new(
@@ -16946,7 +16962,7 @@ mod term_proof_tests {
                 let (scopes, parents) = source_proof_scope_maps(&source, &symbols, &scope)?;
                 assert_eq!(
                     (source.arena().len(), scopes.len(), parents.len()),
-                    (57, 57, 56)
+                    (49 + 4 * depth, 49 + 4 * depth, 48 + 4 * depth)
                 );
                 assert_eq!(
                     (
@@ -16988,7 +17004,7 @@ mod term_proof_tests {
                     (K::ProofBlock, 1),
                     (K::TakeStatement, 1),
                     (K::Witness, 1),
-                    (K::ParenthesizedTerm, 2),
+                    (K::ParenthesizedTerm, depth),
                     (K::TermReference, 5),
                     (K::CompactStatement, 0),
                     (K::Reference, 0),
@@ -17013,36 +17029,43 @@ mod term_proof_tests {
                 let witness = ast.node(take.children()[1]).unwrap();
                 assert_eq!(witness.kind, K::Witness);
                 assert_eq!(witness.children.len(), 1);
-                let expression = ast.node(witness.children[0]).unwrap();
-                assert_eq!(expression.kind, K::TermExpression);
-                let [wrapper_id] = expression.children.as_slice() else {
-                    panic!("one witness operand")
-                };
-                let wrapper = ast.node(*wrapper_id).unwrap();
-                assert_eq!(wrapper.kind, K::ParenthesizedTerm);
-                assert_eq!(wrapper.children.len(), 3);
-                assert_eq!(
-                    ast.node(wrapper.children[0]).unwrap().token_text(),
-                    Some("(")
-                );
-                assert_eq!(
-                    ast.node(wrapper.children[2]).unwrap().token_text(),
-                    Some(")")
-                );
-                let child_expression = ast.node(wrapper.children[1]).unwrap();
-                assert_eq!(child_expression.kind, K::TermExpression);
-                let [inner_id] = child_expression.children.as_slice() else {
-                    panic!("one inner group")
-                };
-                let inner = ast.node(*inner_id).unwrap();
-                assert_eq!(inner.kind, K::ParenthesizedTerm);
-                assert_eq!(inner.children.len(), 3);
-                assert_eq!(ast.node(inner.children[0]).unwrap().token_text(), Some("("));
-                assert_eq!(ast.node(inner.children[2]).unwrap().token_text(), Some(")"));
-                let leaf_expression = ast.node(inner.children[1]).unwrap();
+                let mut expression_id = witness.children[0];
+                let mut expression_parent = take.children()[1];
+                for _ in 0..depth {
+                    let expression = ast.node(expression_id).unwrap();
+                    assert_eq!(expression.kind, K::TermExpression);
+                    assert_eq!(parents[&expression_id], expression_parent);
+                    assert_eq!(scopes[&expression_id], scopes[&proof.id()]);
+                    let [wrapper_id] = expression.children.as_slice() else {
+                        panic!("one witness group")
+                    };
+                    let wrapper = ast.node(*wrapper_id).unwrap();
+                    assert_eq!(wrapper.kind, K::ParenthesizedTerm);
+                    assert_eq!(wrapper.children.len(), 3);
+                    assert_eq!(parents[wrapper_id], expression_id);
+                    assert_eq!(scopes[wrapper_id], scopes[&proof.id()]);
+                    assert!(
+                        !scope
+                            .references()
+                            .iter()
+                            .any(|row| row.node() == *wrapper_id)
+                    );
+                    for (delimiter, spelling) in
+                        [(wrapper.children[0], "("), (wrapper.children[2], ")")]
+                    {
+                        assert_eq!(ast.node(delimiter).unwrap().token_text(), Some(spelling));
+                        assert_eq!(parents[&delimiter], *wrapper_id);
+                        assert_eq!(scopes[&delimiter], scopes[&proof.id()]);
+                    }
+                    expression_parent = *wrapper_id;
+                    expression_id = wrapper.children[1];
+                }
+                let leaf_expression = ast.node(expression_id).unwrap();
                 assert_eq!(leaf_expression.kind, K::TermExpression);
+                assert_eq!(parents[&expression_id], expression_parent);
+                assert_eq!(scopes[&expression_id], scopes[&proof.id()]);
                 let [child_id] = leaf_expression.children.as_slice() else {
-                    panic!("one reserved leaf")
+                    panic!("one reserved leaf at the expected depth")
                 };
                 assert_eq!(ast.node(*child_id).unwrap().kind, K::TermReference);
                 let reference = scope
@@ -17052,20 +17075,7 @@ mod term_proof_tests {
                     .unwrap();
                 assert_eq!(reference.ordinal(), 2);
                 assert_eq!(reference.spelling(), scope.bindings()[0].spelling());
-                assert!(
-                    !scope
-                        .references()
-                        .iter()
-                        .any(|row| row.node() == *wrapper_id)
-                );
-                assert_eq!(parents[wrapper_id], witness.children[0]);
-                assert_eq!(parents[inner_id], wrapper.children[1]);
-                assert_eq!(parents[&inner.children[1]], *inner_id);
-                assert_eq!(parents[child_id], inner.children[1]);
-                assert_eq!(scopes[inner_id], scopes[&proof.id()]);
-                assert!(!scope.references().iter().any(|row| row.node() == *inner_id));
-                assert_eq!(parents[&wrapper.children[1]], *wrapper_id);
-                assert_eq!(scopes[wrapper_id], scopes[&proof.id()]);
+                assert_eq!(parents[child_id], expression_id);
                 assert_eq!(scopes[child_id], scopes[&proof.id()]);
                 for occurrence in scope.references() {
                     assert_eq!(scopes.get(&occurrence.node()), Some(occurrence.scope()));
@@ -17091,11 +17101,12 @@ mod term_proof_tests {
                 );
                 cases.push((
                     frontend, source, symbols, scope, labels, resolution, scopes, parents, before,
+                    depth,
                 ));
             }
         }
-        assert_eq!(cases.len(), 6);
-        // First runtime RED follows readiness of every genuine capture and all six real lower calls.
+        assert_eq!(cases.len(), 24);
+        // First runtime RED follows readiness of every genuine capture and all 24 real lower calls.
         let bases = cases
             .iter()
             .map(|(_, source, symbols, scope, ..)| {
@@ -17111,10 +17122,11 @@ mod term_proof_tests {
             "native nested parenthesized witness equality bases: {errors:?}"
         );
         for (
-            (frontend, source, symbols, scope, labels, resolution, scopes, parents, before),
+            (frontend, source, symbols, scope, labels, resolution, scopes, parents, before, depth),
             result,
         ) in cases.iter().zip(&bases)
         {
+            let depth = *depth;
             let (bindings, inference, base) = result.as_ref().unwrap();
             let ast = frontend.ast.as_ref().unwrap();
             let primary = base.source_term().unwrap();
@@ -17179,7 +17191,7 @@ mod term_proof_tests {
                     inference.terms().len(),
                     inference.formulas().len()
                 ],
-                [2, 1, 7, 5, 0, 2, 4, 4, 7, 2]
+                [2, 1, depth + 5, 5, 0, 2, 4, 4, depth + 5, 2]
             );
             let (binding_id, binding) = bindings.bindings().iter().next().unwrap();
             assert_eq!(binding.kind, BindingKind::ReservedVariable);
@@ -17220,44 +17232,61 @@ mod term_proof_tests {
                 .find(|node| node.kind() == &K::TakeStatement)
                 .unwrap();
             let witness_site = ast.node(take_site.children()[1]).unwrap();
-            let expression_site = ast.node(witness_site.children[0]).unwrap();
-            let wrapper_site = ast
-                .node_views()
-                .find(|node| node.id() == expression_site.children[0])
-                .unwrap();
-            let inner_site = ast
-                .node(ast.node(wrapper_site.children()[1]).unwrap().children[0])
-                .unwrap();
-            let child_site = ast.node(inner_site.children[1]).unwrap().children[0];
+            let mut expression_site = ast.node(witness_site.children[0]).unwrap();
+            let mut wrapper_sites = Vec::new();
+            for _ in 0..depth {
+                assert_eq!(expression_site.kind, K::TermExpression);
+                assert_eq!(expression_site.children.len(), 1);
+                let wrapper_site_id = expression_site.children[0];
+                let wrapper_site = ast.node(wrapper_site_id).unwrap();
+                assert_eq!(wrapper_site.kind, K::ParenthesizedTerm);
+                wrapper_sites.push(wrapper_site_id);
+                expression_site = ast.node(wrapper_site.children[1]).unwrap();
+            }
+            assert_eq!(expression_site.kind, K::TermExpression);
+            assert_eq!(expression_site.children.len(), 1);
+            let child_site = expression_site.children[0];
+            assert_eq!(ast.node(child_site).unwrap().kind, K::TermReference);
             let wrapper_id = SourcePrimaryTermId::new(2);
-            let inner_id = SourcePrimaryTermId::new(3);
-            let child_id = SourcePrimaryTermId::new(4);
-            let inner = primary.terms().get(inner_id).unwrap();
+            let child_id = SourcePrimaryTermId::new(depth + 2);
             let wrapper = primary.terms().get(wrapper_id).unwrap();
             let child = primary.terms().get(child_id).unwrap();
-            assert_eq!(
-                wrapper.site().node(),
-                typed_by_resolved[&source.resolved_node_for(wrapper_site.id()).unwrap()]
-            );
-            assert_eq!(wrapper.source_range(), wrapper_site.range());
-            assert_eq!(wrapper.kind(), SourcePrimaryTermKind::Parenthesized);
-            assert_eq!(wrapper.parent(), None);
             assert_eq!(
                 child.site().node(),
                 typed_by_resolved[&source.resolved_node_for(child_site).unwrap()]
             );
-            assert_eq!(
-                inner.site().node(),
-                typed_by_resolved[&source
-                    .resolved_node_for(ast.node(wrapper_site.children()[1]).unwrap().children[0])
-                    .unwrap()]
-            );
-            assert_eq!(inner.source_range(), inner_site.range);
-            assert_eq!(inner.kind(), SourcePrimaryTermKind::Parenthesized);
-            assert_eq!(inner.parent(), Some(wrapper_id));
-            assert_eq!(child.parent(), Some(inner_id));
-            assert_eq!(inner.context(), child.context());
-            assert_eq!(wrapper.context(), child.context());
+            for (offset, site_id) in wrapper_sites.iter().enumerate() {
+                let site = ast.node(*site_id).unwrap();
+                let id = SourcePrimaryTermId::new(offset + 2);
+                let row = primary.terms().get(id).unwrap();
+                let immediate_child = primary
+                    .terms()
+                    .get(SourcePrimaryTermId::new(offset + 3))
+                    .unwrap();
+                assert_eq!(
+                    row.site().node(),
+                    typed_by_resolved[&source.resolved_node_for(*site_id).unwrap()]
+                );
+                assert_eq!(row.source_range(), site.range);
+                assert_eq!(row.kind(), SourcePrimaryTermKind::Parenthesized);
+                assert_eq!(
+                    row.parent(),
+                    (offset > 0).then(|| SourcePrimaryTermId::new(offset + 1))
+                );
+                assert_eq!(immediate_child.parent(), Some(id));
+                assert_eq!(row.context(), immediate_child.context());
+                assert_eq!(row.context(), child.context());
+                assert_eq!(
+                    row.spelling(),
+                    format!("( {} )", immediate_child.spelling())
+                );
+                assert!(
+                    !primary
+                        .references()
+                        .iter()
+                        .any(|(_, reference)| reference.term() == id)
+                );
+            }
             assert_eq!(
                 bindings
                     .contexts()
@@ -17267,24 +17296,14 @@ mod term_proof_tests {
                     .as_ref(),
                 scopes.get(&proof.id())
             );
-            assert_eq!(wrapper.spelling(), format!("( {} )", inner.spelling()));
-            assert_eq!(inner.spelling(), format!("( {} )", child.spelling()));
-            assert!(
-                !primary
-                    .references()
-                    .iter()
-                    .any(|(_, row)| [wrapper_id, inner_id].contains(&row.term()))
-            );
-            for ((id, row), ordinal) in primary.terms().iter().zip(0..7) {
+            for ((id, row), ordinal) in primary.terms().iter().zip(0..depth + 5) {
                 assert_eq!(row.source_ordinal(), ordinal);
                 assert_eq!(row.role(), SourcePrimaryTermRole::Value);
                 assert_eq!(row.recovery(), SourcePrimaryTermRecovery::Normal);
                 assert_eq!(
                     row.parent(),
-                    if id == inner_id {
-                        Some(wrapper_id)
-                    } else if id == child_id {
-                        Some(inner_id)
+                    if (3..=depth + 2).contains(&id.index()) {
+                        Some(SourcePrimaryTermId::new(id.index() - 1))
                     } else {
                         None
                     }
@@ -17293,7 +17312,7 @@ mod term_proof_tests {
             for ((reference_id, reference), occurrence) in
                 primary.references().iter().zip(scope.references())
             {
-                let target = [0, 1, 4, 5, 6][reference_id.index()];
+                let target = [0, 1, depth + 2, depth + 3, depth + 4][reference_id.index()];
                 assert_eq!(reference.term().index(), target);
                 let term = primary.terms().get(reference.term()).unwrap();
                 assert_eq!(
@@ -17325,60 +17344,67 @@ mod term_proof_tests {
                     .use_ordinal(),
                 2
             );
-            assert_eq!(child.source_ordinal(), 4);
+            assert_eq!(child.source_ordinal(), depth + 2);
             // Checked rows are joined by actual site, never by source-primary or reference IDs.
             let written_type = ast
                 .node_views()
                 .find(|node| node.kind() == &K::TypeExpression)
                 .unwrap();
-            let wrapper_checked = inference
-                .terms()
-                .iter()
-                .find(|(_, term)| term.site == *wrapper.site())
-                .unwrap()
-                .1;
+            assert_eq!(
+                ast.node(parents[&written_type.id()]).unwrap().kind,
+                K::ReserveSegment
+            );
             let child_checked = inference
                 .terms()
                 .iter()
                 .find(|(_, term)| term.site == *child.site())
                 .unwrap()
                 .1;
-            let inner_checked = inference
-                .terms()
-                .iter()
-                .find(|(_, term)| term.site == *inner.site())
-                .unwrap()
-                .1;
-            assert_eq!(wrapper_checked.kind, TermKind::Parenthesized);
-            assert_eq!(wrapper_checked.reference, None);
-            assert_eq!(inner_checked.kind, TermKind::Parenthesized);
-            assert_eq!(inner_checked.reference, None);
-            assert_ne!(inner_checked.type_entry, wrapper_checked.type_entry);
-            assert_ne!(inner_checked.type_entry, child_checked.type_entry);
             assert_eq!(child_checked.kind, TermKind::Variable);
             assert_eq!(
                 child_checked.reference,
                 Some(TermReference::Binding(binding_id))
             );
-            assert_ne!(wrapper_checked.type_entry, child_checked.type_entry);
-            let wrapper_type = inference
-                .type_entries()
-                .get(wrapper_checked.type_entry)
-                .unwrap();
             let child_type = inference
                 .type_entries()
                 .get(child_checked.type_entry)
                 .unwrap();
-            assert_eq!(wrapper_type.owner, *wrapper.site());
             assert_eq!(child_type.owner, *child.site());
-            assert_eq!(wrapper_type.actual, child_type.actual);
-            let inner_type = inference
-                .type_entries()
-                .get(inner_checked.type_entry)
-                .unwrap();
-            assert_eq!(inner_type.owner, *inner.site());
-            assert_eq!(inner_type.actual, wrapper_type.actual);
-            let TypeEntryActual::Known(normalized_id) = wrapper_type.actual else {
+            for offset in 0..depth {
+                let row = primary
+                    .terms()
+                    .get(SourcePrimaryTermId::new(offset + 2))
+                    .unwrap();
+                let immediate_child = primary
+                    .terms()
+                    .get(SourcePrimaryTermId::new(offset + 3))
+                    .unwrap();
+                let checked = inference
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site == *row.site())
+                    .unwrap()
+                    .1;
+                let checked_child = inference
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site == *immediate_child.site())
+                    .unwrap()
+                    .1;
+                assert_eq!(checked.kind, TermKind::Parenthesized);
+                assert_eq!(checked.reference, None);
+                assert_ne!(checked.type_entry, checked_child.type_entry);
+                let entry = inference.type_entries().get(checked.type_entry).unwrap();
+                let child_entry = inference
+                    .type_entries()
+                    .get(checked_child.type_entry)
+                    .unwrap();
+                assert_eq!(entry.owner, *row.site());
+                assert_eq!(child_entry.owner, *immediate_child.site());
+                assert_eq!(entry.actual, child_entry.actual);
+                assert_eq!(entry.actual, child_type.actual);
+            }
+            let TypeEntryActual::Known(normalized_id) = child_type.actual else {
                 panic!("known preserved type")
             };
             let normalized = inference.normalized_types().get(normalized_id).unwrap();
@@ -17397,11 +17423,16 @@ mod term_proof_tests {
                     assert_eq!(entry.status, TypeStatus::Known);
                 }
             }
-            assert_eq!(type_roles.len(), 7);
+            assert_eq!(type_roles.len(), depth + 5);
+            assert_eq!(inference.type_entries().len(), 2 * (depth + 5));
             for occurrence in scope.references() {
                 assert!(
                     type_roles.contains(&format!("theorem.equality.use:{}", occurrence.ordinal()))
                 );
+            }
+            assert!(type_roles.contains("theorem.equality.parenthesized"));
+            for offset in 1..depth {
+                assert!(type_roles.contains(&format!("theorem.equality.parenthesized:{offset}")));
             }
             assert!(
                 normalized.args.is_empty()
@@ -17419,6 +17450,13 @@ mod term_proof_tests {
                     .unwrap()
                     .1;
                 assert_eq!(checked.context, term.context());
+                if term.kind() == SourcePrimaryTermKind::VariableReference {
+                    assert_eq!(checked.kind, TermKind::Variable);
+                    assert_eq!(checked.reference, Some(TermReference::Binding(binding_id)));
+                } else {
+                    assert_eq!(checked.kind, TermKind::Parenthesized);
+                    assert_eq!(checked.reference, None);
+                }
                 assert_eq!(checked.status, TermStatus::Inferred);
                 assert!(checked.deferred.is_empty() && checked.candidate_set.is_none());
                 let entry = inference.type_entries().get(checked.type_entry).unwrap();
@@ -17428,8 +17466,8 @@ mod term_proof_tests {
                 assert_eq!(entry.status, TypeStatus::Known);
                 assert_eq!(entry.actual, TypeEntryActual::Known(normalized_id));
             }
-            assert_eq!(checked_owners.len(), 7);
-            assert_eq!(checked_entries.len(), 7);
+            assert_eq!(checked_owners.len(), depth + 5);
+            assert_eq!(checked_entries.len(), depth + 5);
             assert!(
                 inference
                     .type_entries()
@@ -17488,7 +17526,7 @@ mod term_proof_tests {
                     assert_eq!(edge.ordinal(), ordinal);
                     assert_eq!(checked.terms[ordinal], *term_row.site());
                     assert_ne!(term, wrapper_id);
-                    assert_ne!(term, inner_id);
+                    assert!(!(2..depth + 2).contains(&term.index()));
                     assert_ne!(term, child_id);
                 }
             }
@@ -17501,7 +17539,7 @@ mod term_proof_tests {
                         _ => usize::MAX,
                     })
                     .collect::<Vec<_>>(),
-                [0, 1, 5, 6]
+                [0, 1, depth + 3, depth + 4]
             );
             let mut requested = std::collections::BTreeSet::new();
             for (_, request) in atomic.requests().iter() {
@@ -17563,7 +17601,7 @@ mod term_proof_tests {
                 )
             );
         }
-        // Every complete base oracle precedes all six future-success paired installation attempts.
+        // Every complete base oracle precedes all 24 future-success paired installation attempts.
         let pairs = cases
             .iter()
             .zip(&bases)
@@ -17586,7 +17624,18 @@ mod term_proof_tests {
         );
         for (
             (
-                (frontend, source, symbols, scope, labels, resolution, scopes, parents, before),
+                (
+                    frontend,
+                    source,
+                    symbols,
+                    scope,
+                    labels,
+                    resolution,
+                    scopes,
+                    parents,
+                    before,
+                    depth,
+                ),
                 result,
             ),
             pair,
@@ -17641,8 +17690,10 @@ mod term_proof_tests {
             let site = ast.node(take.children()[1]).unwrap();
             let wrapper_site = ast.node(site.children[0]).unwrap().children[0];
             let wrapper = primary.terms().get(SourcePrimaryTermId::new(2)).unwrap();
-            let inner = primary.terms().get(SourcePrimaryTermId::new(3)).unwrap();
-            let child = primary.terms().get(SourcePrimaryTermId::new(4)).unwrap();
+            let child = primary
+                .terms()
+                .get(SourcePrimaryTermId::new(depth + 2))
+                .unwrap();
             let row = witnesses
                 .witnesses()
                 .get(SourceStatementWitnessId::new(0))
@@ -17678,8 +17729,17 @@ mod term_proof_tests {
                 wrapper.site().node(),
                 typed_by_resolved[&source.resolved_node_for(wrapper_site).unwrap()]
             );
-            assert_eq!(inner.parent(), Some(SourcePrimaryTermId::new(2)));
-            assert_eq!(child.parent(), Some(SourcePrimaryTermId::new(3)));
+            for offset in 0..depth {
+                assert_eq!(
+                    primary
+                        .terms()
+                        .get(SourcePrimaryTermId::new(offset + 3))
+                        .unwrap()
+                        .parent(),
+                    Some(SourcePrimaryTermId::new(offset + 2))
+                );
+            }
+            assert_eq!(child.source_ordinal(), depth + 2);
             assert_eq!(
                 bindings
                     .contexts()
@@ -17803,7 +17863,7 @@ mod term_proof_tests {
                 resolved.source_statement_references().is_none()
                     && resolved.source_proof_local_declaration().is_none()
             );
-            assert_eq!(resolved.nodes().len(), 57);
+            assert_eq!(resolved.nodes().len(), 49 + 4 * depth);
             assert_eq!(
                 resolved
                     .nodes()
@@ -18701,7 +18761,7 @@ mod term_proof_tests {
             foreign_pristine();
         }
         foreign_pristine();
-        // These are unsupported bounded-source domains, not claims of language invalidity.
+        // Triple grouping has its own native base; other mutations remain bounded-source refusals.
         for (case, current) in [
             ("triple", text.replace("take ((x));", "take (((x)));")),
             (
@@ -18777,16 +18837,98 @@ mod term_proof_tests {
             } else {
                 let (occurrences, collected, resolution) = source_proof_inputs(&original, &env)?;
                 let inputs_before = (occurrences.clone(), collected.clone(), resolution.clone());
-                assert_eq!(
-                    TermFormulaChecker::check_source_theorem_equalities(
-                        &original,
-                        &env,
-                        &occurrences
-                    )
-                    .unwrap_err(),
-                    unsupported,
-                    "{case}"
+                let lower = TermFormulaChecker::check_source_theorem_equalities(
+                    &original,
+                    &env,
+                    &occurrences,
                 );
+                if case.starts_with("triple") {
+                    let (_, inference, own_base) = lower.unwrap();
+                    let primary = own_base.source_term().unwrap();
+                    assert_eq!(
+                        (
+                            own_base.nodes().len(),
+                            primary.terms().len(),
+                            primary.references().len()
+                        ),
+                        (61, 8, 5)
+                    );
+                    assert_eq!(
+                        primary
+                            .references()
+                            .iter()
+                            .map(|(_, row)| row.term().index())
+                            .collect::<Vec<_>>(),
+                        [0, 1, 5, 6, 7]
+                    );
+                    assert_eq!(
+                        primary
+                            .references()
+                            .iter()
+                            .map(|(_, row)| row.use_ordinal())
+                            .collect::<Vec<_>>(),
+                        [0, 1, 2, 3, 4]
+                    );
+                    assert_eq!(inference.terms().len(), 8);
+                    assert!(inference.terms().iter().all(|(_, row)| row.status
+                        == mizar_checker::type_checker::TermStatus::Inferred
+                        && row.deferred.is_empty()));
+                    assert_eq!(inference.formulas().len(), 2);
+                    assert!(inference.formulas().iter().all(|(_, row)| row.status
+                        == mizar_checker::type_checker::FormulaStatus::Checked
+                        && row.deferred.is_empty()));
+                    assert!(
+                        inference.diagnostics().is_empty()
+                            && inference.candidate_sets().is_empty()
+                            && inference.facts().is_empty()
+                    );
+                    let written = negative_ast
+                        .node_views()
+                        .find(|node| node.kind() == &K::TypeExpression)
+                        .unwrap();
+                    let written_node = own_base
+                        .nodes()
+                        .iter()
+                        .find(|(_, node)| {
+                            node.resolved_node == original.resolved_node_for(written.id())
+                        })
+                        .unwrap()
+                        .0;
+                    assert_eq!(inference.normalized_types().len(), 1);
+                    let (normalized_id, normalized) =
+                        inference.normalized_types().iter().next().unwrap();
+                    assert_eq!(
+                        normalized.head,
+                        mizar_checker::type_checker::TypeHeadRef::BuiltinSet
+                    );
+                    assert_eq!(normalized.source.range, written.range());
+                    let mut roles = std::collections::BTreeSet::new();
+                    for (_, entry) in inference.type_entries().iter() {
+                        assert_eq!(entry.status, TypeStatus::Known);
+                        assert_eq!(entry.actual, TypeEntryActual::Known(normalized_id));
+                        if let TypedSiteRef::Role { node, role } = &entry.owner {
+                            assert_eq!(*node, written_node);
+                            assert!(roles.insert(role.as_str().to_owned()));
+                        }
+                    }
+                    assert_eq!(roles.len(), 8);
+                    let own_pair = own_base
+                        .with_source_statement_from_original(&original, &env, &occurrences)
+                        .unwrap();
+                    let own_final = assemble_empty_resolved_typed_ast(&own_pair, Vec::new())?;
+                    assert_eq!(own_final.nodes().len(), 61);
+                    assert_eq!(own_final.source_statement(), own_pair.source_statement());
+                    assert_eq!(
+                        own_final.source_statement_witnesses(),
+                        own_pair.source_statement_witnesses()
+                    );
+                    assert_eq!(
+                        assemble_empty_resolved_typed_ast(&own_pair.clone(), Vec::new())?,
+                        own_final
+                    );
+                } else {
+                    assert_eq!(lower.unwrap_err(), unsupported, "{case}");
+                }
                 assert_eq!(snapshot_negative(), negative_before);
                 assert_eq!(
                     (&occurrences, &collected, &resolution),

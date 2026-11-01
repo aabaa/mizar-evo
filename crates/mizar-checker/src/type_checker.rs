@@ -7196,7 +7196,7 @@ impl TermFormulaChecker {
             .collect::<Vec<_>>();
         let mut parenthesized_witness = Vec::new();
         if !groups.is_empty() {
-            if !witness_reserved || witness_count != 1 || groups.len() > 2 {
+            if !witness_reserved || witness_count != 1 {
                 return Err(invalid());
             }
             let mut takes = source
@@ -18025,7 +18025,7 @@ impl SourceVariableSemanticsChecker {
                     _ => return Err(invalid()),
                 };
                 let mut operand = operand;
-                for _ in 0..2 {
+                for _ in 0..source.arena().len() {
                     let [group] = node(operand)?.children() else {
                         return Err(invalid());
                     };

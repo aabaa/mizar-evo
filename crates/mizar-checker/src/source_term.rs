@@ -1454,9 +1454,7 @@ impl SourcePrimaryTermProducer {
                 .last()
                 .is_some_and(|(_, _, child)| child == &TypedSiteRef::Node(typed))
             {
-                if parenthesized.len() > 2
-                    || parenthesized.windows(2).any(|pair| pair[0].2 != pair[1].0)
-                {
+                if parenthesized.windows(2).any(|pair| pair[0].2 != pair[1].0) {
                     return Err(invalid());
                 }
                 let depth = parenthesized.len();

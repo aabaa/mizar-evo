@@ -957,7 +957,7 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
             .is_none(),
             "{label}: exact route/wrong subtree"
         );
-        if ordinal == 1 || ordinal == 18 {
+        if matches!(ordinal, 1 | 2 | 18) {
             assert_eq!(diagnostics, 0);
             assert!(near_ast.nodes().iter().all(|node| !node.recovered));
             let (original, original_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&near_ast, &near_module).unwrap().unwrap();
@@ -971,6 +971,19 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
                 let primary = typed.source_term().unwrap();
                 assert_eq!((primary.terms().len(), primary.references().len()), (6, 5));
                 assert_eq!(primary.terms().get(mizar_checker::source_term::SourcePrimaryTermId::new(3)).unwrap().parent(), Some(mizar_checker::source_term::SourcePrimaryTermId::new(2)));
+                assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
+            } else if ordinal == 2 {
+                assert_eq!(near_ast.nodes().len(), 61);
+                assert_eq!(scope.references().iter().map(|row| row.ordinal()).collect::<Vec<_>>(), [0, 1, 2, 3, 4]);
+                let (typed, resolved) = task258_native_output(&near_ast, &near_module);
+                let primary = typed.source_term().unwrap();
+                assert_eq!((primary.terms().len(), primary.references().len()), (8, 5));
+                for (index, parent) in [(2, None), (3, Some(2)), (4, Some(3)), (5, Some(4))] {
+                    assert_eq!(primary.terms().get(mizar_checker::source_term::SourcePrimaryTermId::new(index)).unwrap().parent().map(|id| id.index()), parent);
+                }
+                assert_eq!(primary.references().iter().map(|(_, row)| row.term().index()).collect::<Vec<_>>(), [0, 1, 5, 6, 7]);
+                assert_eq!(primary.references().iter().map(|(_, row)| row.use_ordinal()).collect::<Vec<_>>(), [0, 1, 2, 3, 4]);
+                assert_eq!(resolved.nodes().len(), 61);
                 assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
             } else {
                 assert_eq!(near_ast.nodes().len(), 57);
