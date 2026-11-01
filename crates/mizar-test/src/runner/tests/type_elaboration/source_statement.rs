@@ -34,7 +34,7 @@ use super::{
     SourceStatementB3NRouteInputs, SourceStatementB3RouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BSurfaceMutation, SourceStatementB4CSurfaceMutation,
     SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
-    SourceStatementB5BSurfaceMutation, SourceStatementExtraction, SourceStatementRouteInputs,
+    SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
     SourceStatementRouteOutput, TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
     TASK258B3M2B2B3B_TASK48_FIELD_COUNT, TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
@@ -138,8 +138,7 @@ use super::{
     source_statement_b5b_output_with_mutation,
     source_statement_b5b_output_with_raw_resolver_mutation,
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
-    source_statement_output_with_resolver_mutation, source_statement_output_with_source,
-    source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
+    source_statement_output_with_source, source_statement_resolver_env_for_test,
     source_statement_transport_detail_keys,
     source_statement_transport_detail_keys_with_output_mutation_for_test,
     task258b4a_surface_profile_with_mutation_for_test,
@@ -1255,7 +1254,10 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 259_050 + ordinal);
-        let foreign = source_statement_output_with_source(
+        let (foreign_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&foreign_ast, &foreign_module)
+        } else {
+            let output = source_statement_output_with_source(
             &foreign_ast,
             foreign_module,
             &foreign_symbols,
@@ -1263,21 +1265,21 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         )
         .expect("foreign selector")
         .expect("foreign route");
-        let foreign_debug = foreign.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let foreign_debug = foreign_typed.debug_text();
         assert_eq!(
-            foreign
-                .typed_ast
+            foreign_typed
                 .clone()
                 .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
             "foreign then B3M2B2A family {ordinal}"
         );
-        assert_eq!(foreign.typed_ast.debug_text(), foreign_debug);
-        if let Some(references) = foreign.typed_ast.source_statement_references() {
+        assert_eq!(foreign_typed.debug_text(), foreign_debug);
+        if let Some(references) = foreign_typed.source_statement_references() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_references(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -1286,11 +1288,10 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
                 "B3M2B2A then reference family {ordinal}"
             );
-        } else if let Some(foreign_witnesses) = foreign.typed_ast.source_statement_witnesses() {
+        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -1302,8 +1303,7 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         } else {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -1312,19 +1312,16 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 "B3M2B2A then base family {ordinal}"
             );
         }
-        let foreign_binding = foreign
-            .typed_ast
+        let foreign_binding = foreign_typed
             .source_statement()
             .expect("foreign statement")
             .binding_env()
             .clone();
-        let foreign_primary = foreign
-            .typed_ast
+        let foreign_primary = foreign_typed
             .source_term()
             .expect("foreign primary")
             .clone();
-        let foreign_atomic = foreign
-            .typed_ast
+        let foreign_atomic = foreign_typed
             .source_atomic_formula()
             .expect("foreign atomic")
             .clone();
@@ -2517,7 +2514,10 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 258_970 + ordinal);
-        let foreign = source_statement_output_with_source(
+        let (foreign_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&foreign_ast, &foreign_module)
+        } else {
+            let output = source_statement_output_with_source(
             &foreign_ast,
             foreign_module,
             &foreign_symbols,
@@ -2525,21 +2525,21 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
         )
         .expect("foreign selector")
         .expect("foreign route");
-        let foreign_debug = foreign.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let foreign_debug = foreign_typed.debug_text();
         assert_eq!(
-            foreign
-                .typed_ast
+            foreign_typed
                 .clone()
                 .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
             "foreign-first family {ordinal}"
         );
-        assert_eq!(foreign.typed_ast.debug_text(), foreign_debug);
-        if let Some(references) = foreign.typed_ast.source_statement_references() {
+        assert_eq!(foreign_typed.debug_text(), foreign_debug);
+        if let Some(references) = foreign_typed.source_statement_references() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_references(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -2548,11 +2548,10 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
                 "B3M2B1-first reference family {ordinal}"
             );
-        } else if let Some(foreign_witnesses) = foreign.typed_ast.source_statement_witnesses() {
+        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -2564,8 +2563,7 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
         } else {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -2574,19 +2572,16 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 "B3M2B1-first base family {ordinal}"
             );
         }
-        let foreign_binding = foreign
-            .typed_ast
+        let foreign_binding = foreign_typed
             .source_statement()
             .expect("foreign statement")
             .binding_env()
             .clone();
-        let foreign_primary = foreign
-            .typed_ast
+        let foreign_primary = foreign_typed
             .source_term()
             .expect("foreign primary")
             .clone();
-        let foreign_atomic = foreign
-            .typed_ast
+        let foreign_atomic = foreign_typed
             .source_atomic_formula()
             .expect("foreign atomic")
             .clone();
@@ -3865,7 +3860,10 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 258_970 + ordinal);
-        let foreign = source_statement_output_with_source(
+        let (foreign_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&foreign_ast, &foreign_module)
+        } else {
+            let output = source_statement_output_with_source(
             &foreign_ast,
             foreign_module,
             &foreign_symbols,
@@ -3873,21 +3871,21 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         )
         .expect("foreign selector")
         .expect("foreign route");
-        let foreign_debug = foreign.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let foreign_debug = foreign_typed.debug_text();
         assert_eq!(
-            foreign
-                .typed_ast
+            foreign_typed
                 .clone()
                 .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
             "foreign-first family {ordinal}"
         );
-        assert_eq!(foreign.typed_ast.debug_text(), foreign_debug);
-        if let Some(references) = foreign.typed_ast.source_statement_references() {
+        assert_eq!(foreign_typed.debug_text(), foreign_debug);
+        if let Some(references) = foreign_typed.source_statement_references() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_references(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -3896,11 +3894,10 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
                 "B3M2A-first reference family {ordinal}"
             );
-        } else if let Some(foreign_witnesses) = foreign.typed_ast.source_statement_witnesses() {
+        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -3912,8 +3909,7 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         } else {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -3922,19 +3918,16 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 "B3M2A-first base family {ordinal}"
             );
         }
-        let foreign_binding = foreign
-            .typed_ast
+        let foreign_binding = foreign_typed
             .source_statement()
             .expect("foreign statement")
             .binding_env()
             .clone();
-        let foreign_primary = foreign
-            .typed_ast
+        let foreign_primary = foreign_typed
             .source_term()
             .expect("foreign primary")
             .clone();
-        let foreign_atomic = foreign
-            .typed_ast
+        let foreign_atomic = foreign_typed
             .source_atomic_formula()
             .expect("foreign atomic")
             .clone();
@@ -5314,7 +5307,10 @@ fn task258b3m1_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 258_830 + ordinal);
-        let foreign = source_statement_output_with_source(
+        let (foreign_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&foreign_ast, &foreign_module)
+        } else {
+            let output = source_statement_output_with_source(
             &foreign_ast,
             foreign_module,
             &foreign_symbols,
@@ -5322,21 +5318,21 @@ fn task258b3m1_family_and_active_route_isolation_is_atomic_in_both_orders() {
         )
         .expect("foreign selector")
         .expect("foreign route");
-        let foreign_debug = foreign.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let foreign_debug = foreign_typed.debug_text();
         assert_eq!(
-            foreign
-                .typed_ast
+            foreign_typed
                 .clone()
                 .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
             "foreign-first family {ordinal}"
         );
-        assert_eq!(foreign.typed_ast.debug_text(), foreign_debug);
-        if let Some(references) = foreign.typed_ast.source_statement_references() {
+        assert_eq!(foreign_typed.debug_text(), foreign_debug);
+        if let Some(references) = foreign_typed.source_statement_references() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_references(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -5345,11 +5341,10 @@ fn task258b3m1_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
                 "B3M1-first reference family {ordinal}"
             );
-        } else if let Some(foreign_witnesses) = foreign.typed_ast.source_statement_witnesses() {
+        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -5361,8 +5356,7 @@ fn task258b3m1_family_and_active_route_isolation_is_atomic_in_both_orders() {
         } else {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -5371,19 +5365,16 @@ fn task258b3m1_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 "B3M1-first base family {ordinal}"
             );
         }
-        let foreign_binding = foreign
-            .typed_ast
+        let foreign_binding = foreign_typed
             .source_statement()
             .expect("foreign statement")
             .binding_env()
             .clone();
-        let foreign_primary = foreign
-            .typed_ast
+        let foreign_primary = foreign_typed
             .source_term()
             .expect("foreign primary")
             .clone();
-        let foreign_atomic = foreign
-            .typed_ast
+        let foreign_atomic = foreign_typed
             .source_atomic_formula()
             .expect("foreign atomic")
             .clone();
@@ -6782,7 +6773,10 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 258_722 + ordinal);
-        let foreign = source_statement_output_with_source(
+        let (foreign_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&foreign_ast, &foreign_module)
+        } else {
+            let output = source_statement_output_with_source(
             &foreign_ast,
             foreign_module,
             &foreign_symbols,
@@ -6790,21 +6784,21 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
         )
         .expect("foreign selector")
         .expect("foreign route");
-        let foreign_debug = foreign.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let foreign_debug = foreign_typed.debug_text();
         assert_eq!(
-            foreign
-                .typed_ast
+            foreign_typed
                 .clone()
                 .with_source_statement_witnesses(b3n_statement.clone(), b3n_witnesses.clone(),),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
             "foreign family {ordinal}"
         );
-        assert_eq!(foreign.typed_ast.debug_text(), foreign_debug);
-        if let Some(references) = foreign.typed_ast.source_statement_references() {
+        assert_eq!(foreign_typed.debug_text(), foreign_debug);
+        if let Some(references) = foreign_typed.source_statement_references() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_references(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -6813,11 +6807,10 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
                 "B3N receiver family {ordinal}"
             );
-        } else if let Some(foreign_witnesses) = foreign.typed_ast.source_statement_witnesses() {
+        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -6829,8 +6822,7 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
         } else {
             assert_eq!(
                 output.typed_ast.clone().with_source_statement(
-                    foreign
-                        .typed_ast
+                    foreign_typed
                         .source_statement()
                         .expect("foreign statement")
                         .clone(),
@@ -6839,19 +6831,16 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
                 "B3N receiver family {ordinal}"
             );
         }
-        let foreign_binding = foreign
-            .typed_ast
+        let foreign_binding = foreign_typed
             .source_statement()
             .expect("foreign statement")
             .binding_env()
             .clone();
-        let foreign_primary = foreign
-            .typed_ast
+        let foreign_primary = foreign_typed
             .source_term()
             .expect("foreign primary")
             .clone();
-        let foreign_atomic = foreign
-            .typed_ast
+        let foreign_atomic = foreign_typed
             .source_atomic_formula()
             .expect("foreign atomic")
             .clone();
@@ -6998,6 +6987,29 @@ const TASK258A_LOWER_SOURCE: &str = concat!(
     "theorem FormulaPredicateChainPayloadBoundary: ",
     "1 divides 2 does not divides 3;\n",
 );
+
+fn task258a_native_output(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+) -> (mizar_checker::typed_ast::TypedAst, mizar_checker::resolved_typed_ast::ResolvedTypedAst) {
+    let (source, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(ast, module)
+        .expect("native source recollection")
+        .expect("native theorem module");
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols)
+        .expect("native source occurrences");
+    let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(
+        &source, &symbols, &scope,
+    )
+    .expect("native equality base");
+    let typed = base
+        .with_source_statement_from_original(&source, &symbols, &scope)
+        .expect("native statement installation");
+    let statement = typed.source_statement().expect("installed native statement");
+    let resolved = assemble_empty_resolved_typed_ast(&typed, Vec::new())
+        .expect("native statement final assembly");
+    assert_eq!(resolved.source_statement(), Some(statement));
+    (typed, resolved)
+}
 
 struct Task258B3RejectContext<'a> {
     ast: &'a mizar_syntax::ast::SurfaceAst,
@@ -8151,10 +8163,15 @@ fn task258b3_selector_rejects_named_multiple_and_cross_slice_sources() {
     .enumerate()
     {
         let (ast, module, _, symbols) = task253_ast_from_source_text(source, 258_630 + ordinal);
-        let output = source_statement_output_with_source(&ast, module, &symbols, source)
+        let (output_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&ast, &module)
+        } else {
+            let output = source_statement_output_with_source(&ast, module, &symbols, source)
             .expect("existing selector")
             .expect("existing route");
-        assert!(output.typed_ast.source_statement_witnesses().is_none());
+            (output.typed_ast, output.resolved)
+        };
+        assert!(output_typed.source_statement_witnesses().is_none());
     }
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -8230,22 +8247,25 @@ fn task258b3_paired_ownership_rejects_all_existing_statement_profiles_in_both_or
         .enumerate()
     {
         let (ast, module, _, symbols) = task253_ast_from_source_text(source, 258_641 + ordinal);
-        let existing = source_statement_output_with_source(&ast, module, &symbols, source)
+        let (existing_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&ast, &module)
+        } else {
+            let output = source_statement_output_with_source(&ast, module, &symbols, source)
             .expect("existing selector")
             .expect("existing route");
-        let existing_debug = existing.typed_ast.debug_text();
+            (output.typed_ast, output.resolved)
+        };
+        let existing_debug = existing_typed.debug_text();
         assert_eq!(
-            existing
-                .typed_ast
+            existing_typed
                 .clone()
                 .with_source_statement_witnesses(b3_statement.clone(), b3_witnesses.clone()),
             Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement)
         );
-        assert_eq!(existing.typed_ast.debug_text(), existing_debug);
+        assert_eq!(existing_typed.debug_text(), existing_debug);
         assert_eq!(
             b3.typed_ast.clone().with_source_statement(
-                existing
-                    .typed_ast
+                existing_typed
                     .source_statement()
                     .expect("existing statement")
                     .clone()
@@ -8836,12 +8856,16 @@ fn task258b2_keeps_task258a_task258b1_and_active_routes_isolated() {
             extract_single_assumption_source_statement(&ast, source).is_none(),
             "cross-profile selector"
         );
-        let output = source_statement_output_with_source(&ast, module, &symbols, source)
+        let (output_typed, _) = if source == TASK258A_SOURCE {
+            task258a_native_output(&ast, &module)
+        } else {
+            let output = source_statement_output_with_source(&ast, module, &symbols, source)
             .expect("prior profile selector")
             .expect("prior profile output");
+            (output.typed_ast, output.resolved)
+        };
         assert!(
-            output
-                .typed_ast
+            output_typed
                 .source_statement()
                 .is_some_and(|statement| {
                     statement.statements().len() != 3
@@ -10423,12 +10447,16 @@ fn task258b1_selector_rejects_exact_nested_statement_near_misses() {
 
 #[test]
 fn task258b1_keeps_task258a_and_active_corpus_routes_isolated() {
-    let (a_ast, a_module, _, a_symbols) = task253_ast_from_source_text(TASK258A_SOURCE, 258_430);
-    let task_a = source_statement_output_with_source(&a_ast, a_module, &a_symbols, TASK258A_SOURCE)
-        .expect("Task258A selector")
-        .expect("Task258A output");
-    assert!(task_a.typed_ast.source_statement_references().is_none());
-    assert_eq!(task_a.reference_use_ordinals, [1, 2]);
+    let (a_ast, a_module, _, _) = task253_ast_from_source_text(TASK258A_SOURCE, 258_430);
+    let (task_a, _) = task258a_native_output(&a_ast, &a_module);
+    assert!(task_a.source_statement_references().is_none());
+    let (source, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&a_ast, &a_module)
+        .unwrap().unwrap();
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+    let references = task_a.source_term().unwrap().references().iter()
+        .map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>();
+    assert_eq!(references, scope.references().iter().map(|reference| reference.ordinal()).collect::<Vec<_>>());
+    assert_eq!(references, [0, 1]);
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -10548,8 +10576,13 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         TASK258A_SOURCE,
     )
     .expect("Task258A exact source must select");
-    let symbols = source_statement_resolver_env_for_test(&module, &symbols, &extracted)
-        .expect("Task258A exact label projection must resolve");
+    let (source, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
+        .unwrap().unwrap();
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+    let (native_bindings, _, native_base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(
+        &source, &symbols, &scope,
+    ).unwrap();
+    let source_before = (source.clone(), symbols.clone(), scope.clone(), native_base.clone());
     assert_eq!(
         (
             extracted.theorem_range.start,
@@ -10571,10 +10604,8 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         (
             extracted.payload.left_spelling.as_str(),
             extracted.payload.right_spelling.as_str(),
-            extracted.payload.left_lookup_ordinal,
-            extracted.payload.right_lookup_ordinal,
         ),
-        ("x", "x", 1, 2)
+        ("x", "x")
     );
     let namespace = NamespacePath::new(module.path().as_str());
     let theorem_candidates = symbols
@@ -10599,19 +10630,15 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         .expect("Task258A real resolver theorem must validate");
     assert_eq!(prechecked_owner.source_range(), extracted.theorem_range);
 
-    let first: SourceStatementRouteOutput =
-        source_statement_output_with_source(&ast, module.clone(), &symbols, TASK258A_SOURCE)
-            .expect("Task258A exact selector")
-            .unwrap_or_else(|error| panic!("Task258A exact route failed: {error}"));
-    let second = source_statement_output_with_source(&ast, module, &symbols, TASK258A_SOURCE)
-        .expect("Task258A repeated selector")
-        .unwrap_or_else(|error| panic!("Task258A repeated route failed: {error}"));
-    assert_eq!(
-        (first.left_lookup_ordinal, first.right_lookup_ordinal),
-        (1, 2)
-    );
+    let (first, first_resolved) = task258a_native_output(&ast, &module);
+    let (second, second_resolved) = task258a_native_output(&ast, &module);
+    assert_eq!(first.nodes(), native_base.nodes());
+    assert_eq!(first.source_term(), native_base.source_term());
+    assert_eq!(first.source_atomic_formula(), native_base.source_atomic_formula());
+    assert_eq!(first.source_statement().unwrap().binding_env(), &native_bindings);
+    assert_eq!((source.clone(), symbols.clone(), scope.clone(), native_base.clone()), source_before);
 
-    let primary = first.typed_ast.source_term().expect("Task252 handoff");
+    let primary = first.source_term().expect("Task252 handoff");
     assert_eq!(
         (
             primary.terms().len(),
@@ -10675,11 +10702,14 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
                 reference.use_ordinal(),
             ))
             .collect::<Vec<_>>(),
-        [(0, 0, 0, 1), (1, 1, 0, 1)]
+        [(0, 0, 0, 0), (1, 1, 0, 1)]
     );
 
+    for ((_, reference), occurrence) in primary.references().iter().zip(scope.references()) {
+        assert_eq!(reference.use_ordinal(), occurrence.ordinal());
+    }
+
     let atomic = first
-        .typed_ast
         .source_atomic_formula()
         .expect("Task256 handoff");
     assert_eq!(
@@ -10793,7 +10823,6 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
     );
 
     let statement = first
-        .typed_ast
         .source_statement()
         .expect("Task258A statement handoff");
     assert_eq!(
@@ -10945,21 +10974,9 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
             .contains(&definition.id())
     );
     assert!(contribution.effects().imports().is_empty());
-    let labels = symbols.labels().by_contribution(owner.contribution());
-    assert_eq!(labels.len(), 1);
-    assert_eq!(labels[0].primary_spelling(), TASK258A_LABEL);
-    assert_eq!(
-        labels[0].kind(),
-        mizar_resolve::resolved_ast::LabelKind::Theorem
-    );
-    assert_eq!(
-        labels[0].visibility(),
-        mizar_resolve::env::Visibility::Public
-    );
-    assert_eq!(
-        labels[0].export_status(),
-        mizar_resolve::env::ExportStatus::Exported
-    );
+    let recollected = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
+        .unwrap().unwrap().1;
+    assert_eq!(symbols.labels(), recollected.labels());
 
     assert_eq!(statement.binding_env().bindings().len(), 1);
     assert_eq!(statement.binding_env().contexts().len(), 1);
@@ -10976,7 +10993,7 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
     );
     assert_eq!(
         binding.status,
-        mizar_checker::binding_env::BindingStatus::Reserved
+        mizar_checker::binding_env::BindingStatus::Active
     );
     assert_eq!(binding.owner_context.index(), 0);
     assert_eq!(
@@ -10987,11 +11004,10 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         ),
         (8, 9, 0)
     );
-    assert!(matches!(
-        binding.type_site,
-        mizar_checker::binding_env::BindingTypeSite::Source(range)
-            if (range.start, range.end) == (14, 17)
-    ));
+    assert_eq!(binding.type_site, mizar_checker::binding_env::BindingTypeSite::Missing);
+    let written_type = ast.node_views().find(|view| matches!(view.kind(), mizar_syntax::SurfaceNodeKind::Token(token) if token.text.as_ref() == "set")).unwrap();
+    assert_eq!((written_type.range().start, written_type.range().end), (14, 17));
+
     assert_eq!(
         statement.binding_fingerprint(),
         statement.binding_env().debug_text()
@@ -10999,29 +11015,29 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
     assert_eq!(statement.primary_term_fingerprint(), primary.debug_text());
     assert_eq!(statement.atomic_formula_fingerprint(), atomic.debug_text());
     assert_eq!(
-        first.typed_ast.source_statement(),
-        first.resolved.source_statement()
+        first.source_statement(),
+        first_resolved.source_statement()
     );
-    assert_eq!(first.typed_ast.source_term(), first.resolved.source_term());
+    assert_eq!(first.source_term(), first_resolved.source_term());
     assert_eq!(
-        first.typed_ast.source_atomic_formula(),
-        first.resolved.source_atomic_formula()
+        first.source_atomic_formula(),
+        first_resolved.source_atomic_formula()
     );
-    assert!(first.typed_ast.source_context().is_none());
-    assert!(first.typed_ast.types().is_empty());
-    assert!(first.typed_ast.facts().is_empty());
-    assert!(first.typed_ast.diagnostics().is_empty());
-    assert!(first.resolved.expr_metadata().is_empty());
-    assert!(first.resolved.cluster_facts().is_empty());
-    assert!(first.resolved.diagnostics().is_empty());
-    assert!(first.resolved.checked_formulas().is_empty());
-    assert!(first.resolved.statement_semantics().is_empty());
-    assert!(first.resolved.checked_proofs().is_empty());
-    assert!(first.resolved.checked_proof_nodes().is_empty());
-    assert!(first.resolved.checked_terminal_goals().is_empty());
-    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
-    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
-    let typed_debug = first.typed_ast.debug_text();
+    assert!(first.source_context().is_none());
+    assert!(first.types().is_empty());
+    assert!(first.facts().is_empty());
+    assert!(first.diagnostics().is_empty());
+    assert!(first_resolved.expr_metadata().is_empty());
+    assert!(first_resolved.cluster_facts().is_empty());
+    assert!(first_resolved.diagnostics().is_empty());
+    assert!(first_resolved.checked_formulas().is_empty());
+    assert!(first_resolved.statement_semantics().is_empty());
+    assert!(first_resolved.checked_proofs().is_empty());
+    assert!(first_resolved.checked_proof_nodes().is_empty());
+    assert!(first_resolved.checked_terminal_goals().is_empty());
+    assert_eq!(first.debug_text(), second.debug_text());
+    assert_eq!(first_resolved.debug_text(), second_resolved.debug_text());
+    let typed_debug = first.debug_text();
     let primary_at = typed_debug
         .find("source-primary-term-debug-v1")
         .expect("typed Task252 debug");
@@ -11033,95 +11049,50 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         .expect("typed Task258A debug");
     let nodes_at = typed_debug.find("nodes:").expect("typed node debug");
     assert!(primary_at < atomic_at && atomic_at < statement_at && statement_at < nodes_at);
-    let typed_clone = first.typed_ast.clone();
-    assert_eq!(typed_clone, first.typed_ast);
+    let typed_clone = first.clone();
+    assert_eq!(typed_clone, first);
     assert_eq!(typed_clone.source_statement(), Some(statement));
-    let resolved_clone = first.resolved.clone();
-    assert_eq!(resolved_clone, first.resolved);
+    let resolved_clone = first_resolved.clone();
+    assert_eq!(resolved_clone, first_resolved);
     assert_eq!(resolved_clone.source_statement(), Some(statement));
 }
 
 #[test]
 fn task258a_dependency_and_row_corruption_fail_atomically_then_replay() {
-    let (ast, module, _, symbols) = task253_ast_from_source_text(TASK258A_SOURCE, 258_100);
-    let baseline =
-        source_statement_output_with_source(&ast, module.clone(), &symbols, TASK258A_SOURCE)
-            .expect("Task258A baseline selector")
-            .expect("Task258A baseline output");
-    let baseline_typed = baseline.typed_ast.debug_text();
-    let baseline_resolved = baseline.resolved.debug_text();
-    let imported_label_error = source_statement_output_with_resolver_mutation(
-        &ast,
-        module.clone(),
-        &symbols,
-        TASK258A_SOURCE,
-        statement_env_with_imported_label,
-    )
-    .expect("Task258A imported-label selector")
-    .expect_err("imported theorem label provenance must fail");
-    assert!(
-        imported_label_error.to_ascii_lowercase().contains("owner"),
-        "unexpected imported-label error: {imported_label_error}"
+    let (ast, module, _, raw_symbols) = task253_ast_from_source_text(TASK258A_SOURCE, 258_100);
+    let (source, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap().unwrap();
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+    let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope).unwrap();
+    let baseline = task258a_native_output(&ast, &module);
+    let before = (ast.snapshot_text(), source.clone(), symbols.clone(), scope.clone(), base.clone());
+    let extracted = extract_source_reserved_variable_theorem_statement(&ast, module.clone(), &raw_symbols, TASK258A_SOURCE).unwrap();
+    let enriched = source_statement_resolver_env_for_test(&module, &raw_symbols, &extracted).unwrap();
+    let imported = statement_env_with_imported_label(enriched.clone());
+    assert_ne!(enriched, symbols);
+    assert_ne!(imported, symbols);
+    let (foreign_ast, foreign_module, _, _) = task253_ast_from_source_text(TASK258A_SOURCE, 258_101);
+    let (foreign_source, foreign_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&foreign_ast, &foreign_module).unwrap().unwrap();
+    let (foreign_scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&foreign_source, &foreign_symbols).unwrap();
+    for (current, env, occurrences) in [
+        (&source, &enriched, &scope),
+        (&source, &imported, &scope),
+        (&foreign_source, &symbols, &scope),
+        (&source, &foreign_symbols, &scope),
+        (&source, &symbols, &foreign_scope),
+    ] {
+        assert_eq!(base.clone().with_source_statement_from_original(current, env, occurrences),
+            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+        assert_eq!((ast.snapshot_text(), source.clone(), symbols.clone(), scope.clone(), base.clone()), before);
+        assert_eq!(task258a_native_output(&ast, &module), baseline);
+    }
+    let (lower_ast, lower_module, lower_symbols) = task252_real_ast("pass_type_elaboration_formula_predicate_chain_segment_payload_001");
+    let lower = source_atomic_formula_output_with_source(&lower_ast, lower_module, &lower_symbols, TASK258A_LOWER_SOURCE).unwrap().unwrap();
+    assert_eq!(
+        lower.typed_ast.with_source_statement_from_original(&source, &symbols, &scope),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
     );
-
-    let (lower_ast, lower_module, lower_symbols) =
-        task252_real_ast("pass_type_elaboration_formula_predicate_chain_segment_payload_001");
-    let lower = source_atomic_formula_output_with_source(
-        &lower_ast,
-        lower_module,
-        &lower_symbols,
-        TASK258A_LOWER_SOURCE,
-    )
-    .expect("Task257C1 lower selector")
-    .expect("Task257C1 lower profile");
-    let wrong_primary = lower
-        .typed_ast
-        .source_term()
-        .expect("Task257C1 primary handoff")
-        .clone();
-    let wrong_atomic = lower
-        .typed_ast
-        .source_atomic_formula()
-        .expect("Task257C1 atomic handoff")
-        .clone();
-    let replay = Task258AReplayFixture {
-        ast: &ast,
-        module,
-        symbols: &symbols,
-        baseline_typed: &baseline_typed,
-        baseline_resolved: &baseline_resolved,
-    };
-
-    assert_task258a_mutation_rejects_then_replays(
-        &replay,
-        "wrong primary profile",
-        "dependency",
-        move |input| input.primary = wrong_primary,
-    );
-    assert_task258a_mutation_rejects_then_replays(
-        &replay,
-        "wrong atomic profile",
-        "dependency",
-        move |input| input.atomic = wrong_atomic,
-    );
-    assert_task258a_mutation_rejects_then_replays(
-        &replay,
-        "missing owner aggregate",
-        "aggregate",
-        |input| input.statement.owners.clear(),
-    );
-    assert_task258a_mutation_rejects_then_replays(
-        &replay,
-        "invalid statement ordinal",
-        "statement",
-        |input| input.statement.statements[0].source_ordinal = 1,
-    );
-    assert_task258a_mutation_rejects_then_replays(
-        &replay,
-        "swapped input reference ids",
-        "input fact",
-        |input| input.statement.input_facts[0].uses.swap(0, 1),
-    );
+    assert_eq!((ast.snapshot_text(), source.clone(), symbols.clone(), scope.clone(), base.clone()), before);
+    assert_eq!(task258a_native_output(&ast, &module), baseline);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -11787,7 +11758,7 @@ fn task258a_selector_rejects_loaded_named_recovered_subtree_and_active_near_miss
         ),
     ] {
         assert!(
-            source_statement_output_with_source(
+            extract_source_reserved_variable_theorem_statement(
                 &exact_ast,
                 exact_module.clone(),
                 &exact_symbols,
@@ -11798,15 +11769,28 @@ fn task258a_selector_rejects_loaded_named_recovered_subtree_and_active_near_miss
         );
     }
 
+    for (ordinal, source) in [
+        TASK258A_SOURCE.trim_end_matches('\n').to_owned(),
+        format!("{TASK258A_SOURCE}\n"),
+        TASK258A_SOURCE.replacen(": x = x;", ":  x = x;", 1),
+        TASK258A_SOURCE.replace("reserve x", "reserve\tx").replace("theorem ", ":: layout comment\ntheorem "),
+        TASK258A_SOURCE.replacen(TASK258A_LABEL, "FormulaStatementReservedVariableEqualityNearMiss", 1),
+    ].into_iter().enumerate() {
+        let (ast, module, _, symbols, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(&source, 258_205 + ordinal);
+        assert_eq!(diagnostics, 0);
+        if source.contains("FormulaStatementReservedVariableEqualityNearMiss") {
+            assert!(extract_source_reserved_variable_theorem_statement(&ast, module.clone(), &symbols, TASK258A_SOURCE).is_none(),
+                "renamed capture must refuse unrelated historical raw source");
+        }
+        let (typed, resolved) = task258a_native_output(&ast, &module);
+        assert_eq!(typed.source_statement(), resolved.source_statement());
+    }
+    let (source, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&exact_ast, &exact_module).unwrap().unwrap();
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+    let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope).unwrap();
+    let baseline = task258a_native_output(&exact_ast, &exact_module);
+
     for (ordinal, (label, source)) in [
-        (
-            "named theorem near miss",
-            TASK258A_SOURCE.replacen(
-                TASK258A_LABEL,
-                "FormulaStatementReservedVariableEqualityNearMiss",
-                1,
-            ),
-        ),
         (
             "recovered equality",
             TASK258A_SOURCE.replacen("x = x;", "x = ;", 1),
@@ -11829,13 +11813,26 @@ fn task258a_selector_rejects_loaded_named_recovered_subtree_and_active_near_miss
     {
         let (ast, module, _, symbols) = task253_ast_from_source_text(&source, 258_210 + ordinal);
         assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
-            "{label} must fail its real loaded-source selector"
+            extract_source_reserved_variable_theorem_statement(&ast, module.clone(), &symbols, &source).is_none(),
+            "{label} must fail its historical selector"
         );
         assert!(
-            source_statement_output_with_source(&ast, module, &symbols, TASK258A_SOURCE).is_none(),
-            "{label} must also fail when the exact loaded-source guard is supplied"
+            extract_source_reserved_variable_theorem_statement(&ast, module.clone(), &symbols, TASK258A_SOURCE).is_none(),
+            "{label} must also fail the mixed AST/source identity guard"
         );
+        let (current, current_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap().unwrap();
+        let current_scope = mizar_resolve::symbols::source_proof_inputs(&current, &current_symbols)
+            .map(|(occurrences, _, _)| occurrences);
+        let occurrences = current_scope.as_ref().unwrap_or(&scope);
+        let lower = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&current, &current_symbols, occurrences);
+        let candidate = lower.as_ref().map(|(_, _, typed)| typed).unwrap_or(&base);
+        assert_eq!(candidate.clone().with_source_statement_from_original(&current, &current_symbols, occurrences),
+            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement), "{label}");
+        if current_scope.is_err() {
+            assert!(mizar_resolve::symbols::validate_source_proof_occurrences(&current, &current_symbols, &scope).is_err());
+            assert!(lower.is_err());
+        }
+        assert_eq!(task258a_native_output(&exact_ast, &exact_module), baseline);
     }
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -11877,26 +11874,23 @@ fn task258a_selector_rejects_loaded_named_recovered_subtree_and_active_near_miss
 
 #[test]
 fn task258a_typed_resolved_ownership_and_task248_first_exclusion_are_atomic() {
-    let (ast, module, _, symbols) = task253_ast_from_source_text(TASK258A_SOURCE, 258_300);
-    let output = source_statement_output_with_source(&ast, module, &symbols, TASK258A_SOURCE)
-        .expect("Task258A ownership selector")
-        .expect("Task258A ownership output");
+    let (ast, module, _, _) = task253_ast_from_source_text(TASK258A_SOURCE, 258_300);
+    let (output, resolved) = task258a_native_output(&ast, &module);
     let statement = output
-        .typed_ast
         .source_statement()
         .expect("Task258A typed owner")
         .clone();
     assert_eq!(
-        output.typed_ast.source_statement(),
-        output.resolved.source_statement()
+        output.source_statement(),
+        resolved.source_statement()
     );
     assert_eq!(
-        output.typed_ast.source_term(),
-        output.resolved.source_term()
+        output.source_term(),
+        resolved.source_term()
     );
     assert_eq!(
-        output.typed_ast.source_atomic_formula(),
-        output.resolved.source_atomic_formula()
+        output.source_atomic_formula(),
+        resolved.source_atomic_formula()
     );
 
     let task248 = task248_real_output();
@@ -11919,63 +11913,9 @@ fn task258a_typed_resolved_ownership_and_task248_first_exclusion_are_atomic() {
     );
     assert_eq!(task248.typed_ast.debug_text(), before);
 
-    let replay = source_statement_output_with_source(
-        &ast,
-        output.typed_ast.module_id().clone(),
-        &symbols,
-        TASK258A_SOURCE,
-    )
-    .expect("Task258A replay selector")
-    .expect("Task258A replay output");
-    assert_eq!(replay.typed_ast.debug_text(), output.typed_ast.debug_text());
-    assert_eq!(replay.resolved.debug_text(), output.resolved.debug_text());
-}
-
-struct Task258AReplayFixture<'a> {
-    ast: &'a SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &'a SymbolEnv,
-    baseline_typed: &'a str,
-    baseline_resolved: &'a str,
-}
-
-fn assert_task258a_mutation_rejects_then_replays(
-    fixture: &Task258AReplayFixture<'_>,
-    label: &str,
-    expected_error_fragment: &str,
-    mutate: impl FnOnce(&mut SourceStatementRouteInputs),
-) {
-    let error = source_statement_output_with_source_and_mutation(
-        fixture.ast,
-        fixture.module.clone(),
-        fixture.symbols,
-        TASK258A_SOURCE,
-        mutate,
-    )
-    .unwrap_or_else(|| panic!("{label} must preserve the exact selector"))
-    .expect_err(label);
-    assert!(
-        error.to_ascii_lowercase().contains(expected_error_fragment),
-        "{label}: expected {expected_error_fragment:?}, got {error:?}"
-    );
-    let replay = source_statement_output_with_source(
-        fixture.ast,
-        fixture.module.clone(),
-        fixture.symbols,
-        TASK258A_SOURCE,
-    )
-    .unwrap_or_else(|| panic!("{label} replay must preserve the selector"))
-    .unwrap_or_else(|error| panic!("{label} replay failed: {error}"));
-    assert_eq!(
-        replay.typed_ast.debug_text(),
-        fixture.baseline_typed,
-        "{label}"
-    );
-    assert_eq!(
-        replay.resolved.debug_text(),
-        fixture.baseline_resolved,
-        "{label}"
-    );
+    let (replay, replay_resolved) = task258a_native_output(&ast, &module);
+    assert_eq!(replay.debug_text(), output.debug_text());
+    assert_eq!(replay_resolved.debug_text(), resolved.debug_text());
 }
 
 fn task258b3m2b2b1a_fixture(
@@ -27515,26 +27455,16 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
 
     let (composite_ast, composite_module, composite_symbols, composite_output) =
         task258b4a_output(265_300);
-    let (atomic_ast, atomic_module, _, atomic_symbols, diagnostics) =
+    let (atomic_ast, atomic_module, _, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_TEXT, 265_301);
     assert_eq!(diagnostics, 0);
-    let atomic_symbols =
-        augment_type_elaboration_import_summaries(&atomic_ast, &atomic_module, atomic_symbols);
-    let atomic_output = source_statement_output_with_source(
-        &atomic_ast,
-        atomic_module,
-        &atomic_symbols,
-        SOURCE_STATEMENT_TEXT,
-    )
-    .expect("atomic selector")
-    .expect("atomic route");
+    let (atomic_output_typed, _) = task258a_native_output(&atomic_ast, &atomic_module);
     let composite_statement = composite_output
         .typed_ast
         .source_statement()
         .expect("composite statement")
         .clone();
-    let atomic_statement = atomic_output
-        .typed_ast
+    let atomic_statement = atomic_output_typed
         .source_statement()
         .expect("atomic statement")
         .clone();
@@ -27551,7 +27481,7 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
             .contains("formula-composition-fingerprint:")
     );
     let composite_before = composite_output.typed_ast.debug_text();
-    let atomic_before = atomic_output.typed_ast.debug_text();
+    let atomic_before = atomic_output_typed.debug_text();
     assert_eq!(
         composite_output
             .typed_ast
@@ -27561,8 +27491,7 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
         TypedAstError::InvalidSourceStatement
     );
     assert_eq!(
-        atomic_output
-            .typed_ast
+        atomic_output_typed
             .clone()
             .with_source_formula_composition_statement(
                 composite_output
@@ -27581,7 +27510,7 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
         TypedAstError::InvalidSourceStatement
     );
     assert_eq!(composite_output.typed_ast.debug_text(), composite_before);
-    assert_eq!(atomic_output.typed_ast.debug_text(), atomic_before);
+    assert_eq!(atomic_output_typed.debug_text(), atomic_before);
     assert_eq!(
         composite_output
             .typed_ast
@@ -28479,21 +28408,11 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
             .expect_err("B4B then B4A must fail"),
         TypedAstError::InvalidSourceStatement
     );
-    let (atomic_ast, atomic_module, _, atomic_symbols, diagnostics) =
+    let (atomic_ast, atomic_module, _, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_TEXT, 266_302);
     assert_eq!(diagnostics, 0);
-    let atomic_symbols =
-        augment_type_elaboration_import_summaries(&atomic_ast, &atomic_module, atomic_symbols);
-    let atomic = source_statement_output_with_source(
-        &atomic_ast,
-        atomic_module,
-        &atomic_symbols,
-        SOURCE_STATEMENT_TEXT,
-    )
-    .expect("atomic selector")
-    .expect("atomic route");
-    let atomic_statement = atomic
-        .typed_ast
+    let (atomic_typed, _) = task258a_native_output(&atomic_ast, &atomic_module);
+    let atomic_statement = atomic_typed
         .source_statement()
         .expect("atomic statement")
         .clone();
@@ -28508,8 +28427,7 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
         TypedAstError::InvalidSourceStatement
     );
     assert_eq!(
-        atomic
-            .typed_ast
+        atomic_typed
             .clone()
             .with_source_formula_composition_statement(
                 b4b.typed_ast
@@ -29684,21 +29602,11 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
             .expect_err("B4C then B4B must fail"),
         TypedAstError::InvalidSourceStatement
     );
-    let (atomic_ast, atomic_module, _, atomic_symbols, diagnostics) =
+    let (atomic_ast, atomic_module, _, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_TEXT, 266_803);
     assert_eq!(diagnostics, 0);
-    let atomic_symbols =
-        augment_type_elaboration_import_summaries(&atomic_ast, &atomic_module, atomic_symbols);
-    let atomic = source_statement_output_with_source(
-        &atomic_ast,
-        atomic_module,
-        &atomic_symbols,
-        SOURCE_STATEMENT_TEXT,
-    )
-    .expect("atomic selector")
-    .expect("atomic route");
-    let atomic_statement = atomic
-        .typed_ast
+    let (atomic_typed, _) = task258a_native_output(&atomic_ast, &atomic_module);
+    let atomic_statement = atomic_typed
         .source_statement()
         .expect("atomic statement")
         .clone();
@@ -29712,8 +29620,7 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
         TypedAstError::InvalidSourceStatement
     );
     assert_eq!(
-        atomic
-            .typed_ast
+        atomic_typed
             .clone()
             .with_source_formula_composition_statement(
                 b4c.typed_ast

@@ -13,6 +13,12 @@ statement shells, visibility-scoped inputs, and unverified candidate
 propositions. It does not parse statements, resolve labels, prove formulas, or
 publish theorem facts.
 
+## Original-source reserved statement construction
+`SourceStatementHandoff::from_original` is a crate-private owning constructor returning the handoff and canonical base `TypedAst` as an ordinary tuple. It delegates source interpretation to the [TypeChecker intake](type_checker.md#original-source-reserved-statement-inputs), authenticates the returned semantic owner with `CheckedStatementOwner`, and derives the existing owner, theorem proposition, module binding context, reserved-type guard and unverified candidate tables from actual source/lower facts.
+The owner site/range are the original TheoremItem, with actual label spelling and Theorem/Unmodified/Normal metadata. The sole statement uses that same site/range, owner/context IDs zero, source ordinal zero and the actual atomic equality target. Its spelling is the theorem's token texts ordered by source range and joined by one ASCII space; the authenticated fixed grammar permits equivalent formatting from the owner label and actual atomic spelling. The context uses the theorem range, actual module binding context and its visible bindings. The reserved-type guard uses the actual reserved binding and both primary reference IDs in equality-operand order; its ordinal is zero. The sole unverified candidate uses that statement/context, ordinal zero and the same atomic target. These ordinal values describe table positions, not resolver use clocks.
+The constructor owns private row construction; it is the necessary privacy boundary with `TypedAst`, not an unchecked attachment wrapper. Source-label authenticity is established by intake and retained by the immutable installed pair, rather than reconstructed from typed token Debug text. No arena copy, receipt or provenance field is retained. The two actual reference ordinals remain those of the native resolver; no legacy clock is substituted.
+Production raw `SourceStatementProducer::build` no longer admits Task258A. Its exact-profile vectors remain Checker-private tests. Other raw profiles are unchanged. Native construction is installed atomically by the [TypedAst owner](typed_ast.md#original-source-reserved-statement-installation); a detached handoff is not independently installable.
+
 ## Task 258A Frozen Reserved-Variable Theorem Slice
 
 Task 258A is the first bounded slice of Checker Task 258. Its exact future

@@ -60,7 +60,7 @@ use mizar_checker::{
     },
     source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermReferenceId},
-    type_checker::{CheckedStatementOwner, FormulaKind},
+    type_checker::CheckedStatementOwner,
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
         TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts, TypedNodeId, TypedSiteRef,
@@ -94,6 +94,16 @@ use mizar_session::{
 };
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind, SyntaxKind};
 
+#[cfg(test)]
+use super::source_ast::subtree_has_recovery;
+#[cfg(test)]
+use super::source_formula::{
+    SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
+    SourceReservedVariableBuiltinType, extract_source_reserved_variable_binary_formula,
+};
+#[cfg(test)]
+use mizar_checker::type_checker::FormulaKind;
+
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_application::{
@@ -102,14 +112,7 @@ use super::{
         wrapped_imported_source_application_handoff_in_context,
         wrapped_imported_source_application_owned_node_kinds,
     },
-    source_ast::{
-        direct_token_texts, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
-        surface_site,
-    },
-    source_formula::{
-        SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
-        SourceReservedVariableBuiltinType, extract_source_reserved_variable_binary_formula,
-    },
+    source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
     source_formula_composition::source_formula_composition_output_with_source,
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_set_term::source_set_term_output_with_source_term_in_context,
@@ -121,9 +124,10 @@ use super::{
         imported_structure_selector_owned_node_kinds, imported_structure_update_handoff_in_context,
         imported_structure_update_owned_node_kinds,
     },
-    source_term::{source_term_parts_for_context_roots, source_term_parts_for_roots},
+    source_term::source_term_parts_for_context_roots,
 };
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementReservedVariableEqualitySmoke: x = x;\n",
@@ -1902,7 +1906,9 @@ pub(in crate::runner) fn task258b5b_surface_profile_with_mutation_for_test(
         })
 }
 
+#[cfg(test)]
 const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
 const SOURCE_STATEMENT_B1_LABEL: &str = "FormulaStatementNestedContextSmoke";
@@ -2012,6 +2018,7 @@ const SOURCE_STATEMENT_B3M2B2B3E_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementComprehensionWitnessSmoke : x = x proof take { 3 where candidate255 is set } ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
     SourceReservedVariableBinaryFormulaConfig {
         label: SOURCE_STATEMENT_LABEL,
@@ -2033,6 +2040,7 @@ const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
         right_expected_role: None,
     };
 
+#[cfg(test)]
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementExtraction {
     pub(in crate::runner) payload: SourceReservedVariableBinaryFormula,
@@ -3431,6 +3439,7 @@ pub(in crate::runner) fn source_statement_transport_detail_keys_with_output_muta
     }
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_source_reserved_variable_theorem_statement(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -14294,7 +14303,7 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, |_| {})
+    None
 }
 
 #[cfg(test)]
@@ -16633,66 +16642,6 @@ pub(in crate::runner) fn source_statement_b4a_output_with_resolver_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_output_with_source_and_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, mutate)
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_source_reserved_variable_theorem_statement(
-        ast,
-        module.clone(),
-        symbols,
-        source_text,
-    )?;
-    let symbols = match enrich_source_statement_resolver_env(&module, symbols, &extracted) {
-        Ok(symbols) => mutate(symbols),
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
-    ))
-}
-
-fn source_statement_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_source_reserved_variable_theorem_statement(
-        ast,
-        module.clone(),
-        symbols,
-        source_text,
-    )?;
-    let symbols = match enrich_source_statement_resolver_env(&module, symbols, &extracted) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_output(
-        ast, module, &symbols, extracted, mutate,
-    ))
-}
-
-#[cfg(test)]
 pub(in crate::runner) fn source_statement_b2_output_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16996,6 +16945,7 @@ fn source_statement_b1_output_with_source_and_mutation_impl(
     ))
 }
 
+#[cfg(test)]
 fn enrich_source_statement_resolver_env(
     module: &ModuleId,
     symbols: &SymbolEnv,
@@ -18614,194 +18564,6 @@ fn build_source_statement_b4a_output(
         left_lookup_ordinal: *left_lookup_ordinal,
         right_lookup_ordinal: *right_lookup_ordinal,
         reference_use_ordinals,
-    })
-}
-
-fn build_source_statement_output(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    extracted: SourceStatementExtraction,
-    mutate: impl FnOnce(&mut SourceStatementRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    if symbols.module_id() != &module {
-        return Err("Task258A symbol module mismatch".to_owned());
-    }
-    let namespace = NamespacePath::new(module.path().as_str());
-    let owners = symbols
-        .symbols()
-        .visible_candidates(&namespace, &extracted.label_spelling)
-        .into_iter()
-        .filter(|entry| entry.kind() == SymbolKind::Theorem)
-        .collect::<Vec<_>>();
-    let [owner_entry] = owners.as_slice() else {
-        return Err("Task258A requires one exact resolver theorem owner".to_owned());
-    };
-    let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
-        symbols,
-        owner_entry.symbol().clone(),
-        ast.source_id,
-        &module,
-    )
-    .map_err(|error| error.to_string())?;
-    if checked_owner.source_range() != extracted.theorem_range {
-        return Err("Task258A resolver theorem range mismatch".to_owned());
-    }
-    if extracted.label_range.start != 27
-        || extracted.label_range.end != 72
-        || extracted.label_range.source_id != extracted.theorem_range.source_id
-        || extracted.label_range.start < extracted.theorem_range.start
-        || extracted.label_range.end > extracted.theorem_range.end
-    {
-        return Err("Task258A resolver label range mismatch".to_owned());
-    }
-
-    let binding_env = extracted
-        .payload
-        .reserve
-        .bridge
-        .prepare_binding_env(symbols)
-        .map_err(|error| error.to_string())?;
-    let mut owned_node_kinds = BTreeMap::new();
-    owned_node_kinds.insert(
-        extracted.theorem_site.node().index(),
-        "source.statement.theorem",
-    );
-    owned_node_kinds.insert(
-        extracted.payload.formula_site.node().index(),
-        "source.formula.atomic.equality",
-    );
-    let parts = source_term_parts_for_roots(
-        ast,
-        module.clone(),
-        &binding_env,
-        [
-            extracted.payload.left_site.node().index(),
-            extracted.payload.right_site.node().index(),
-        ],
-        BindingContextId::new(0),
-        &owned_node_kinds,
-    )?;
-    let primary = parts.handoff;
-    let arena = parts.arena;
-    let atomic_input = atomic_input(ast, module.clone(), &extracted);
-    let atomic = SourceAtomicFormulaProducer::build(
-        atomic_input,
-        &binding_env,
-        symbols,
-        &primary,
-        None,
-        None,
-        None,
-        &arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let statement = statement_input(
-        ast,
-        module.clone(),
-        owner_entry.symbol().clone(),
-        owner_entry.contribution(),
-        &extracted,
-    );
-    let mut inputs = SourceStatementRouteInputs {
-        binding_env,
-        arena,
-        primary,
-        atomic,
-        statement,
-    };
-    mutate(&mut inputs);
-    let statement = SourceStatementProducer::build(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_statement(statement)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_statement().is_none()
-        || typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_term() != resolved.source_term()
-        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
-        || typed_ast.source_context().is_some()
-        || typed_ast.source_type().is_some()
-        || typed_ast.source_attribute().is_some()
-        || typed_ast.source_evidence().is_some()
-        || typed_ast.source_application().is_some()
-        || typed_ast.source_structure().is_some()
-        || typed_ast.source_set_term().is_some()
-        || typed_ast.source_composite_formula().is_some()
-        || typed_ast.source_formula_composition().is_some()
-        || typed_ast.source_condition_formula_composition().is_some()
-        || typed_ast.source_predicate_chain_composition().is_some()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.collection_candidates().is_empty()
-        || !resolved.expanded_candidates().is_empty()
-        || !resolved.template_expansions().is_empty()
-        || !resolved.viable_candidates().is_empty()
-        || !resolved.viability_decisions().is_empty()
-        || !resolved.specificity_graphs().is_empty()
-        || !resolved.resolved_overloads().is_empty()
-        || !resolved.inserted_coercions().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258A immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-        left_lookup_ordinal: extracted.payload.left_lookup_ordinal,
-        right_lookup_ordinal: extracted.payload.right_lookup_ordinal,
-        reference_use_ordinals: vec![
-            extracted.payload.left_lookup_ordinal,
-            extracted.payload.right_lookup_ordinal,
-        ],
     })
 }
 
@@ -22612,115 +22374,6 @@ fn task258b1_resolved_arena(
         .and_then(|root| ids.get(root.index()).copied())
         .ok_or_else(|| "Task258B1 resolver root is missing".to_owned())?;
     builder.finish(root).map_err(|error| error.to_string())
-}
-
-fn atomic_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    extracted: &SourceStatementExtraction,
-) -> SourceAtomicFormulaHandoffInput {
-    SourceAtomicFormulaHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        formulas: vec![SourceAtomicFormulaInput {
-            site: extracted.payload.formula_site.clone(),
-            source_range: extracted.payload.formula_range,
-            source_ordinal: 0,
-            context: BindingContextId::new(0),
-            recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: "x = x".to_owned(),
-            kind: SourceAtomicFormulaKind::Equality,
-        }],
-        wrappers: Vec::new(),
-        predicate_segments: Vec::new(),
-        predicate_heads: Vec::new(),
-        candidates: Vec::new(),
-        type_sites: Vec::new(),
-        attributes: Vec::new(),
-        edges: vec![
-            SourceAtomicEdgeInput {
-                formula: SourceAtomicFormulaId::new(0),
-                ordinal: 0,
-                role: SourceAtomicEdgeRole::BuiltinLeftOperand,
-                target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0)),
-            },
-            SourceAtomicEdgeInput {
-                formula: SourceAtomicFormulaId::new(0),
-                ordinal: 1,
-                role: SourceAtomicEdgeRole::BuiltinRightOperand,
-                target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
-            },
-        ],
-        requests: (0..2)
-            .map(|ordinal| SourceAtomicRequestInput {
-                formula: SourceAtomicFormulaId::new(0),
-                ordinal,
-                kind: SourceAtomicRequestKind::OperandExpectedType,
-                edge: Some(SourceAtomicEdgeId::new(ordinal)),
-                candidate: None,
-                type_site: None,
-                attribute: None,
-            })
-            .collect(),
-    }
-}
-
-fn statement_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbol: mizar_resolve::resolved_ast::SymbolId,
-    contribution: mizar_resolve::env::SourceContributionId,
-    extracted: &SourceStatementExtraction,
-) -> SourceStatementHandoffInput {
-    SourceStatementHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        owners: vec![SourceTheoremOwnerInput {
-            symbol,
-            contribution,
-            site: extracted.theorem_site.clone(),
-            source_range: extracted.theorem_range,
-            spelling: extracted.label_spelling.clone(),
-            role: SourceTheoremRole::Theorem,
-            status: SourceTheoremStatus::Unmodified,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        statements: vec![SourceStatementInput {
-            owner: SourceTheoremOwnerId::new(0),
-            context: SourceStatementContextId::new(0),
-            formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0)),
-            site: extracted.theorem_site.clone(),
-            source_range: extracted.theorem_range,
-            source_ordinal: 0,
-            spelling: extracted.statement_spelling.clone(),
-            kind: SourceStatementKind::TheoremProposition,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        contexts: vec![SourceStatementContextInput {
-            statement: SourceStatementId::new(0),
-            binding_context: BindingContextId::new(0),
-            source_range: extracted.theorem_range,
-            visible_bindings: vec![BindingId::new(0)],
-        }],
-        input_facts: vec![SourceStatementInputFactInput {
-            statement: SourceStatementId::new(0),
-            context: SourceStatementContextId::new(0),
-            ordinal: 0,
-            kind: SourceStatementInputFactKind::ReservedTypeGuard,
-            binding: BindingId::new(0),
-            uses: vec![
-                SourcePrimaryTermReferenceId::new(0),
-                SourcePrimaryTermReferenceId::new(1),
-            ],
-        }],
-        candidate_facts: vec![SourceStatementCandidateFactInput {
-            statement: SourceStatementId::new(0),
-            context: SourceStatementContextId::new(0),
-            ordinal: 0,
-            kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-            formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0)),
-        }],
-    }
 }
 
 fn task258b3_atomic_input(

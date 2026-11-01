@@ -12,6 +12,12 @@ statement/reference installation profile を拡張しない。
 input、未検証candidate propositionのsyntax-free checker boundaryである。
 statement parse、label resolve、formula proof、theorem fact publicationは行わない。
 
+## Original-source reserved statement construction
+crate-private所有constructor `SourceStatementHandoff::from_original` は[TypeChecker intake](type_checker.md#original-source-reserved-statement-inputs)にソース解釈を委ね、返されたsemantic ownerを`CheckedStatementOwner`で認証し、既存5テーブルと正規base `TypedAst`をtupleで返す。実ソースとlower factsからtheorem proposition、module context、reserved-type guard、未検証candidateを導出する。
+ownerのsite/rangeは元TheoremItem、spellingは実label、metadataはTheorem/Unmodified/Normalとする。唯一のstatementも同じsite/range、owner/context IDとsource ordinalは0、formulaは実atomic equality targetを使う。statement spellingはtheorem内tokenをsource range順に並べASCII空白1個で連結する。認証済み固定grammarにより、owner labelと実atomic spellingからの整形も同値となる。contextはtheorem rangeと実module binding context/visible bindings、reserved-type guardは実bindingとoperand順のprimary reference IDを使う。guard/candidate ordinalは0で、candidateは同じstatement/context/atomic targetを指す。このordinalはtable位置でありresolver use clockではない。
+private row構築と`TypedAst`組み込みの所有境界であり、unchecked attachment wrapperではない。label authenticityはintakeとimmutableなinstalled pairが保持し、typed token Debugから再構築しない。arena複製・receipt・provenance fieldは追加せず、native resolverの実reference ordinalを保持する。
+本番raw `SourceStatementProducer::build`からTask258Aを退役し、exact vectorsはChecker内テストに残す。他raw profilesは変更しない。[TypedAst owner](typed_ast.md#original-source-reserved-statement-installation)でatomicに組み込み、切り離したhandoffは再組み込みできない。
+
 ## Task 258A Frozen Reserved-Variable Theorem Slice
 
 Task 258AはChecker Task 258の最初のbounded sliceである。exact future

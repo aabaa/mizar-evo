@@ -35,6 +35,10 @@ The Step 5C.7 route retains its seven rows and adds only the mapped invalid-qua 
 Source occurrences, choice evidence, qua bases, and proof citations are extracted independently of
 case names; proof success requires discharged membership goals. Both qua sites use actual bindings/types after source/environment and lower-stage checks. The narrowing key requires an earlier bare local structure with actual builtin-set field witnesses, without registration; inherited/attributed targets and unrelated errors earn no key.
 
+## Original-source reserved statement tests
+The production statement dispatcher stops after its existing B profiles; it has no Task258A fallback or generalized early reserve route. Existing active reserve bridges and their binding/reference-clock coverage keep ownership. Native reserved-statement tests invoke the public original-source installer directly on genuine Frontend captures.
+External Task258A controls use native owned facts, source provenance and replay rather than legacy raw adapters. Historical exact raw-profile goldens stay private to Checker tests. Coherent label/layout variants are positive separate captures; altered raw text is never mixed with an unrelated AST. Malformed/foreign and cross-family rejection purposes remain required.
+
 ## Step 5C.4 mode semantic runner
 
 The private route preserves the original seven rows and adds only the dependent-mode positive

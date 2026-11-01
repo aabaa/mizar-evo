@@ -6562,6 +6562,68 @@ impl TermFormulaChecker {
         Ok((bindings, inference, obligations))
     }
 
+    pub(crate) fn check_source_reserved_statement_owner(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            crate::source_statement::SourceTheoremOwnerInput,
+            BindingEnv,
+            crate::typed_ast::TypedAst,
+        ),
+        crate::source_statement::SourceStatementError,
+    > {
+        use crate::source_statement::{
+            SourceStatementError, SourceStatementRecovery, SourceTheoremOwnerInput,
+            SourceTheoremRole, SourceTheoremStatus,
+        };
+        let invalid = || SourceStatementError::DependencyMismatch;
+        let (bindings, _, typed) =
+            Self::check_source_theorem_equalities(source, symbols, scope).map_err(|_| invalid())?;
+        if !source
+            .arena()
+            .iter()
+            .any(|(_, node)| node.kind() == &K::ReserveItem)
+        {
+            return Err(invalid());
+        }
+        let (theorem_id, theorem) = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &K::TheoremItem)
+            .ok_or_else(invalid)?;
+        let label = source
+            .arena()
+            .node(theorem.children()[1])
+            .ok_or_else(invalid)?;
+        let K::Token(label) = label.kind() else {
+            return Err(invalid());
+        };
+        let symbol = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.primary_spelling() == label.text.as_ref())
+            .ok_or_else(invalid)?;
+        let SourceAnchor::Range(source_range) = theorem.origin().anchor() else {
+            return Err(invalid());
+        };
+        Ok((
+            SourceTheoremOwnerInput {
+                symbol: symbol.symbol().clone(),
+                contribution: symbol.contribution(),
+                site: TypedSiteRef::Node(TypedNodeId::new(theorem_id.index())),
+                source_range: *source_range,
+                spelling: label.text.to_string(),
+                role: SourceTheoremRole::Theorem,
+                status: SourceTheoremStatus::Unmodified,
+                recovery: SourceStatementRecovery::Normal,
+            },
+            bindings,
+            typed,
+        ))
+    }
+
     /// Extracts and infers original-source set equalities without proof credit.
     pub fn check_source_theorem_equalities(
         source: &SurfaceResolvedArena,

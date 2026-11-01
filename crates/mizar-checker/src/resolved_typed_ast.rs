@@ -2030,7 +2030,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         if let Some(handoff) = &source_proof_local_let_binding {
             let installation_available =
                 source_proof_local_let_binding_typed_profile_is_empty(self.inputs.typed_ast)
-                    && source_statement_inputs_are_syntax_only(&self.inputs);
+                    && source_statement_inputs_are_syntax_only(&self.inputs, false);
             handoff
                 .validate_complete_installation(source_id, &module_id, installation_available)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)?;
@@ -2044,7 +2044,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         if let Some(handoff) = &source_proof_local_given_binding {
             let installation_available =
                 source_proof_local_given_binding_typed_profile_is_empty(self.inputs.typed_ast)
-                    && source_statement_inputs_are_syntax_only(&self.inputs);
+                    && source_statement_inputs_are_syntax_only(&self.inputs, false);
             handoff
                 .validate_complete_installation(source_id, &module_id, installation_available)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenBinding)?;
@@ -2254,8 +2254,135 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         || statement.is_task_258b4b_profile()
                         || statement.is_task_258b4c_profile()
                 });
+        let original_statement = self.inputs.typed_ast.resolved_root().is_some()
+            && self.inputs.typed_ast.source_statement().is_some();
+        if original_statement
+            && (self.inputs.typed_ast.source_context().is_some()
+                || self.inputs.typed_ast.source_type().is_some()
+                || self.inputs.typed_ast.source_attribute().is_some()
+                || self.inputs.typed_ast.source_evidence().is_some()
+                || self.inputs.typed_ast.source_template().is_some()
+                || self.inputs.typed_ast.source_application().is_some()
+                || self.inputs.typed_ast.source_structure().is_some()
+                || self.inputs.typed_ast.source_set_term().is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_attribute_definition()
+                    .is_some()
+                || self.inputs.typed_ast.source_functor_definition().is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_property_implementation()
+                    .is_some()
+                || self.inputs.typed_ast.source_mode_definition().is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_structure_definition()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_predicate_definition()
+                    .is_some()
+                || self.inputs.typed_ast.source_composite_formula().is_some()
+                || self.inputs.typed_ast.source_formula_composition().is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_nested_fraenkel_capture_identity()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_condition_formula_composition()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_predicate_chain_composition()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_statement_references()
+                    .is_some()
+                || self.inputs.typed_ast.source_statement_witnesses().is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_declaration()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_let_binding()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_let_type()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_binding()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_type()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_use_type()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_use_term()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_condition_binding()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_condition_type()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_condition_use_term()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_descendant_binding()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_descendant_type()
+                    .is_some()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_proof_local_given_descendant_use_term()
+                    .is_some()
+                || self.inputs.typed_ast.nodes().iter().any(|(_, node)| {
+                    node.typing != TypingState::Unknown || node.links != Default::default()
+                }))
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceStatement);
+        }
         if self.inputs.typed_ast.source_statement().is_some()
-            && !source_statement_inputs_are_syntax_only(&self.inputs)
+            && !source_statement_inputs_are_syntax_only(&self.inputs, original_statement)
         {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
@@ -2852,6 +2979,10 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
             }
+            #[cfg(not(test))]
+            let legacy_reserved_statement = false;
+            #[cfg(test)]
+            let legacy_reserved_statement = source_statement.is_task_258a_profile();
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()
@@ -2944,7 +3075,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, None)
                     if source_application.is_none()
-                        && (source_statement.is_task_258a_profile()
+                        && (original_statement
+                            || legacy_reserved_statement
                             || source_statement.is_task_258b2_profile()
                             || is_task_258b4) => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
@@ -3589,8 +3721,11 @@ fn source_proof_local_given_descendant_use_term_typed_profile_is_exact(
         && typed_ast.nodes().len() == 5
 }
 
-fn source_statement_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
-    inputs.typed_ast.resolved_root().is_none()
+fn source_statement_inputs_are_syntax_only(
+    inputs: &ResolvedTypedAstInputs<'_>,
+    original_statement: bool,
+) -> bool {
+    (inputs.typed_ast.resolved_root().is_none() || original_statement)
         && inputs.typed_ast.contexts().is_empty()
         && inputs.typed_ast.types().is_empty()
         && inputs.typed_ast.facts().is_empty()
@@ -3620,61 +3755,61 @@ fn source_statement_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) 
 }
 
 fn source_proof_local_let_type_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_use_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_binding_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_binding_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
 }
 
 fn source_statement_node_hints_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {

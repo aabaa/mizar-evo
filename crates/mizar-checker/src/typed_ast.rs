@@ -1857,6 +1857,21 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_statement_from_original(
+        mut self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        scope: &mizar_resolve::names::ResolvedVariableScope,
+    ) -> Result<Self, TypedAstError> {
+        let (statement, canonical) = SourceStatementHandoff::from_original(source, symbols, scope)
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        if self != canonical {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        self.source_statement = Some(statement);
+        Ok(self)
+    }
+
     pub fn with_source_statement(
         mut self,
         statement: SourceStatementHandoff,
@@ -1917,7 +1932,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statement.is_task_258a_profile() && !statement.is_task_258b2_profile() {
+        let allowed = statement.is_task_258b2_profile();
+        #[cfg(test)]
+        let allowed = allowed || statement.is_task_258a_profile();
+        if !allowed {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         self.source_statement = Some(statement);

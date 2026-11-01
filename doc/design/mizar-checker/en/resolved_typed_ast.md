@@ -2066,3 +2066,8 @@ The absent slot preserves old debug bytes. The present chunk follows the same
 formula-composition position as `TypedAst`. Final ownership adds no semantic
 table, capture state, diagnostic, Core payload, generated origin/parameter, or
 active route, and no caller can replace the typed receipt during assembly.
+
+## Original-source reserved statement transport
+The rooted statement state created by the [atomic original-source installer](typed_ast.md#original-source-reserved-statement-installation) is an immutable installed pair: final inputs cannot replace its arena or handoff. Final assembly validates the native table/dependency joins and retains the existing five tables with the real rooted arena. Legacy raw statement validation remains separate.
+The native exception is confined to statement transport; shared proof-local syntax-only guards retain their root exclusions. Reject every extra source family (including templates), expression/type/context/fact/coercion/diagnostic/obligation table, overload/cluster/template result, statement semantic/proof bundle or non-syntax node hint outside the frozen base. Cloning the installed AST preserves transport.
+No implicit closure, proof obligation, checked theorem, publication or acceptance follows from these unverified tables. Structural source authentication does not assert raw capture, trivia identity or filesystem currentness.
