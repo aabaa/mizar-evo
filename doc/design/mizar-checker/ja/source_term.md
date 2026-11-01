@@ -15,6 +15,7 @@ native B3Nは同じreserved occurrence五つとnative clockを保持する。nam
 native mixed B3M1は実reserved occurrence全6件と実Resolver clock/lexical scopeを保持する。二つのwitness operandは実primary/reference rowであり、nameはこのtransportに含めない。二witness censusとname use拒否はintakeが所有するため、このproducerとpublic挙動は変更しない。
 native B3M2B1はsource順primary ID/source ordinal `0..5`を保持し、wrapper 2の後にchild 3 (`parent=2`)を置く。実referenceは`[0,1,3,4,5]`へjoinし、Resolver use ordinal `0..4`と実scopeを独立して保持する。wrapper 2はbinding/reference/numeric requestを持たない。intakeが認証したwrapper/child site relationをこのsyntax-free producerが一度だけ消費し、childを実occurrenceへjoinし、不一致childまたは未使用relationを拒否する。reference clockをprimary ID/ordinalから導かない。
 original-sourceの単一unnamed witnessでtransparent groupの有限深さを`d`とし、preorder primaryを`d+5`件、wrapper IDを`2..d+1`、実reference leafを`d+2`、conclusion leafを`d+3,d+4`とする。実referenceは`[0,1,d+2,d+3,d+4]`へjoinし、Resolver clock `0..4`と実scopeを保つ。深さ2のchainは`2 -> 3 -> 4`である。TypeCheckerが全source chainを認証し、syntax-free producerは既存private site/range/child tupleを深さの固定上限や新abstractionなしで一度消費する。先行parent・厳密包含range・単一child検証により不一致・重複・循環・非連結・未使用relationを拒否する。wrapperはreference/binding/numeric requestを増やさず、clockをprimary IDから導かない。
+original empty-enumeration lower profileのset witnessはprimary/referenceを増やさない。theorem/conclusionの実variable occurrence四つ、native clock `0..3`、全source/scope/binding joinと空numeric requestを保つ。[intake](type_checker.md#original-source-empty-enumeration-lower-acquisition)がnonreference witnessと別set handoff/typeを認証・所有し、このproducerはsyntax-freeのまま変更しない。
 
 ## 目的とauthority
 

@@ -7,6 +7,9 @@ direct set bounds, and premise citations before Core normalization; arbitrary gu
 > Canonical language: English. Japanese companion:
 > [../ja/source_set_term.md](../ja/source_set_term.md).
 
+## Original-source empty-enumeration input
+The original equality intake constructs the existing Enumeration row from the authenticated empty witness's actual typed site/range, proof binding context, Normal recovery and canonical `{ }` spelling. Its source ordinal is zero; wrappers, generators, written type sites, conditions and child edges are empty, with one unassociated ResultType request for term zero. This syntax-free producer validates the whole genuine primary dependency and arena through its existing public transaction; no original-source adapter, new schema or numeric/reference child is introduced. [TypeChecker](type_checker.md#original-source-empty-enumeration-lower-acquisition) separately owns intrinsic result typing; this handoff retains request intent and grants no sethood fact, witness substitution or proof credit.
+
 ## Scope
 
 Checker Task 255 owns a syntax-free immutable description of source set

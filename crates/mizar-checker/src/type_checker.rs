@@ -7151,6 +7151,7 @@ impl TermFormulaChecker {
         String,
     > {
         use crate::source_atomic_formula::*;
+        use crate::source_set_term::*;
         use crate::source_term::*;
         use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode};
         mizar_resolve::symbols::validate_source_proof_occurrences(source, symbols, scope)?;
@@ -7194,6 +7195,46 @@ impl TermFormulaChecker {
             .iter()
             .filter(|(_, current)| current.kind() == &K::ParenthesizedTerm)
             .collect::<Vec<_>>();
+        let enumerations = source
+            .arena()
+            .iter()
+            .filter(|(_, current)| current.kind() == &K::SetEnumeration)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let empty_enumeration = match enumerations.as_slice() {
+            [] => None,
+            [enumeration] if witness_reserved && !assumption_reserved && groups.is_empty() => {
+                let mut takes = source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| current.kind() == &K::TakeStatement);
+                let (_, take) = takes.next().ok_or_else(invalid)?;
+                let [_, witness, _] = take.children() else {
+                    return Err(invalid());
+                };
+                let [operand] = node(*witness)?.children() else {
+                    return Err(invalid());
+                };
+                let [term] = node(*operand)?.children() else {
+                    return Err(invalid());
+                };
+                let [open, close] = node(*enumeration)?.children() else {
+                    return Err(invalid());
+                };
+                if takes.next().is_some()
+                    || witness_count != 1
+                    || node(*witness)?.kind() != &K::Witness
+                    || node(*operand)?.kind() != &K::TermExpression
+                    || term != enumeration
+                    || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
+                    || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
+                {
+                    return Err(invalid());
+                }
+                Some((*operand, *enumeration))
+            }
+            _ => return Err(invalid()),
+        };
         let mut parenthesized_witness = Vec::new();
         if !groups.is_empty() {
             if !witness_reserved || witness_count != 1 {
@@ -7277,6 +7318,8 @@ impl TermFormulaChecker {
                 }
                 SurfaceTokenKind::ReservedSymbol
                     if [":", ";", ",", "="].contains(&token.text.as_ref())
+                        || (empty_enumeration.is_some()
+                            && ["{", "}"].contains(&token.text.as_ref()))
                         || (!parenthesized_witness.is_empty()
                             && ["(", ")"].contains(&token.text.as_ref())) =>
                 {
@@ -7420,6 +7463,12 @@ impl TermFormulaChecker {
                 {
                     true
                 }
+                (K::TermExpression, ["SetEnumeration"]) => {
+                    empty_enumeration.is_some_and(|(operand, _)| id == operand)
+                }
+                (K::SetEnumeration, ["{", "}"]) => {
+                    empty_enumeration.is_some_and(|(_, enumeration)| id == enumeration)
+                }
                 (
                     K::FormulaExpression,
                     ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
@@ -7444,6 +7493,7 @@ impl TermFormulaChecker {
             let kind = match current.kind() {
                 K::TermReference => "source.term.variable-reference".to_owned(),
                 K::ParenthesizedTerm => "source.term.parenthesized".to_owned(),
+                K::SetEnumeration => "source.term.set.enumeration".to_owned(),
                 K::BuiltinPredicateApplication => {
                     equalities.push(id);
                     "source.formula.atomic.equality".to_owned()
@@ -7513,6 +7563,9 @@ impl TermFormulaChecker {
                         }
                         _ => return Err(invalid()),
                     };
+                    if empty_enumeration.is_some_and(|(empty, _)| operand == empty) {
+                        continue;
+                    }
                     operands.push(match parenthesized_witness.first() {
                         Some((group, _, _)) if node(operand)?.children() == [*group] => {
                             parenthesized_witness.last().ok_or_else(invalid)?.1
@@ -7918,6 +7971,82 @@ impl TermFormulaChecker {
                     .map_err(|error| error.to_string())?
             }
         };
+        let set = if let Some((_, enumeration)) = empty_enumeration {
+            let (scopes, _) =
+                mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+            let local = scopes
+                .iter()
+                .find(|(node, _)| source.resolved_node_for(**node) == Some(enumeration))
+                .map(|(_, local)| local)
+                .ok_or_else(invalid)?;
+            let proof = source
+                .arena()
+                .iter()
+                .find(|(_, current)| current.kind() == &K::ProofBlock)
+                .map(|(id, _)| id)
+                .ok_or_else(invalid)?;
+            let proof_range = range(proof)?;
+            let mut contexts = bindings.contexts().iter().filter(|(_, context)| {
+                context.layer == BindingContextLayer::Proof
+                    && context.lexical_scope.as_ref() == Some(local)
+                    && matches!(context.owner, BindingContextOwner::SourceStatement { source_range } if source_range == proof_range)
+            });
+            let (context, _) = contexts.next().ok_or_else(invalid)?;
+            if contexts.next().is_some() {
+                return Err(invalid());
+            }
+            terms.push(
+                TermInput::new(
+                    site(enumeration),
+                    context,
+                    range(enumeration)?,
+                    TermKind::SetEnumeration,
+                )
+                .with_result_type(TypeExpressionInput::new(
+                    site(enumeration),
+                    range(enumeration)?,
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                )),
+            );
+            Some(
+                SourceSetTermProducer::build(
+                    SourceSetTermHandoffInput {
+                        source_id: source.source_id(),
+                        module_id: source.module().clone(),
+                        terms: vec![SourceSetTermInput {
+                            site: site(enumeration),
+                            source_range: range(enumeration)?,
+                            source_ordinal: 0,
+                            context,
+                            recovery: SourceSetTermRecovery::Normal,
+                            spelling: "{ }".to_owned(),
+                            kind: SourceSetTermKind::Enumeration,
+                        }],
+                        wrappers: Vec::new(),
+                        generators: Vec::new(),
+                        type_sites: Vec::new(),
+                        conditions: Vec::new(),
+                        edges: Vec::new(),
+                        requests: vec![SourceSetRequestInput {
+                            term: SourceSetTermId::new(0),
+                            ordinal: 0,
+                            kind: SourceSetRequestKind::ResultType,
+                            generator: None,
+                            type_site: None,
+                        }],
+                    },
+                    &bindings,
+                    &primary,
+                    None,
+                    None,
+                    &arena,
+                )
+                .map_err(|error| error.to_string())?,
+            )
+        } else {
+            None
+        };
         let primary_sites = primary
             .terms()
             .iter()
@@ -7992,14 +8121,22 @@ impl TermFormulaChecker {
             );
         }
         let atomic = SourceAtomicFormulaProducer::build(
-            atomic, &bindings, symbols, &primary, None, None, None, &arena,
+            atomic,
+            &bindings,
+            symbols,
+            &primary,
+            None,
+            None,
+            set.as_ref(),
+            &arena,
         )
         .map_err(|error| error.to_string())?;
         let inference = Self::default().infer(symbols, &bindings, terms, formulas);
         if !inference.diagnostics().is_empty()
             || !inference.candidate_sets().is_empty()
             || !inference.facts().is_empty()
-            || inference.terms().len() != primary.terms().len()
+            || inference.terms().len()
+                != primary.terms().len() + set.as_ref().map_or(0, |set| set.terms().len())
             || inference.formulas().len() != atomic.formulas().len()
             || inference
                 .type_entries()
@@ -8031,6 +8168,10 @@ impl TermFormulaChecker {
             diagnostics: TypeDiagnosticTable::new(),
         })
         .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| match set {
+            Some(set) => ast.with_source_set_term(set),
+            None => Ok(ast),
+        })
         .and_then(|ast| ast.with_source_atomic_formula(atomic))
         .map_err(|error| error.to_string())?;
         Ok((bindings, inference, typed))
@@ -17986,6 +18127,13 @@ impl SourceVariableSemanticsChecker {
             }
             operand_sites.extend([*left, *right]);
         }
+        let enumerations = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::SetEnumeration)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let mut empty_enumeration = false;
         for (_, take) in &takes {
             let (keyword, witnesses, semicolon) = match take.children() {
                 [keyword, witness, semicolon] => (*keyword, vec![*witness], *semicolon),
@@ -18024,6 +18172,31 @@ impl SourceVariableSemanticsChecker {
                     }
                     _ => return Err(invalid()),
                 };
+                let [term] = node(operand)?.children() else {
+                    return Err(invalid());
+                };
+                if node(*term)?.kind() == &K::SetEnumeration {
+                    let [open, close] = node(*term)?.children() else {
+                        return Err(invalid());
+                    };
+                    if empty_enumeration
+                        || enumerations != [*term]
+                        || takes.len() != 1
+                        || take.children().len() != 3
+                        || node(witness)?.children() != [operand]
+                        || node(operand)?.kind() != &K::TermExpression
+                        || source
+                            .arena()
+                            .iter()
+                            .any(|(_, node)| node.kind() == &K::ParenthesizedTerm)
+                        || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
+                        || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
+                    {
+                        return Err(invalid());
+                    }
+                    empty_enumeration = true;
+                    continue;
+                }
                 let mut operand = operand;
                 for _ in 0..source.arena().len() {
                     let [group] = node(operand)?.children() else {
@@ -18049,6 +18222,9 @@ impl SourceVariableSemanticsChecker {
                 }
                 operand_sites.push(operand);
             }
+        }
+        if enumerations.len() != usize::from(empty_enumeration) {
+            return Err(invalid());
         }
         operand_sites.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
         let mut operands = Vec::new();
