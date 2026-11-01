@@ -1381,6 +1381,7 @@ impl SourcePrimaryTermProducer {
         symbols: &mizar_resolve::env::SymbolEnv,
         scope: &ResolvedVariableScope,
         arena: &TypedArena,
+        mut parenthesized: Option<(TypedSiteRef, SourceRange, TypedSiteRef)>,
     ) -> Result<(BindingEnv, SourcePrimaryTermHandoff), SourcePrimaryTermError> {
         let invalid = || SourcePrimaryTermError::InvalidTransaction;
         let bindings = crate::type_checker::SourceVariableSemanticsChecker::original_reserved_statement_binding_env(
@@ -1448,24 +1449,49 @@ impl SourcePrimaryTermProducer {
             {
                 return Err(invalid());
             }
+            let parent = if parenthesized
+                .as_ref()
+                .is_some_and(|(_, _, child)| child == &TypedSiteRef::Node(typed))
+            {
+                let (site, source_range, _) = parenthesized.take().ok_or_else(invalid)?;
+                let parent = SourcePrimaryTermId::new(inputs.len());
+                inputs.push(SourcePrimaryTermInput {
+                    site,
+                    source_range,
+                    source_ordinal: inputs.len(),
+                    context,
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: format!("( {} )", actual.spelling()),
+                    kind: SourcePrimaryTermKind::Parenthesized,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                });
+                Some(parent)
+            } else {
+                None
+            };
+            let term = SourcePrimaryTermId::new(inputs.len());
             inputs.push(SourcePrimaryTermInput {
                 site: TypedSiteRef::Node(typed),
                 source_range: actual.range(),
-                source_ordinal: ordinal,
+                source_ordinal: term.index(),
                 context,
                 recovery: SourcePrimaryTermRecovery::Normal,
                 spelling: actual.spelling().to_owned(),
                 kind: SourcePrimaryTermKind::VariableReference,
                 role: SourcePrimaryTermRole::Value,
-                parent: None,
+                parent,
             });
             references.push(SourcePrimaryTermReference {
-                term: SourcePrimaryTermId::new(ordinal),
+                term,
                 binding: binding.id,
                 role: SourcePrimaryTermReferenceRole::Variable,
                 lexical_scope: Some(actual.scope().clone()),
                 use_ordinal: actual.ordinal(),
             });
+        }
+        if parenthesized.is_some() {
+            return Err(invalid());
         }
         let terms = validate_terms(source.source_id(), &inputs, &bindings, arena)?;
         validate_reference_cardinality(&terms, &references)?;

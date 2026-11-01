@@ -7189,6 +7189,41 @@ impl TermFormulaChecker {
             .filter(|(_, current)| current.kind() == &K::TakeStatement)
             .map(|(_, current)| current.children().len() / 2)
             .sum::<usize>();
+        let groups = source
+            .arena()
+            .iter()
+            .filter(|(_, current)| current.kind() == &K::ParenthesizedTerm)
+            .collect::<Vec<_>>();
+        let parenthesized_witness = match groups.as_slice() {
+            [] => None,
+            [(group, current)] if witness_reserved && witness_count == 1 => {
+                let [open, expression, close] = current.children() else {
+                    return Err(invalid());
+                };
+                let [child] = node(*expression)?.children() else {
+                    return Err(invalid());
+                };
+                if node(*expression)?.kind() != &K::TermExpression
+                    || node(*child)?.kind() != &K::TermReference
+                    || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "(")
+                    || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ")")
+                    || !source.arena().iter().any(|(_, witness)| {
+                        let [operand] = witness.children() else {
+                            return false;
+                        };
+                        witness.kind() == &K::Witness
+                            && node(*operand).is_ok_and(|operand| {
+                                operand.kind() == &K::TermExpression
+                                    && operand.children() == [*group]
+                            })
+                    })
+                {
+                    return Err(invalid());
+                }
+                Some((*group, *expression, *child))
+            }
+            _ => return Err(invalid()),
+        };
         let descendant_reserved = nested_reserved
             && source.arena().iter().any(|(_, current)| {
                 current.kind() == &K::ConclusionStatement
@@ -7217,7 +7252,9 @@ impl TermFormulaChecker {
                     Ok(token.text.to_string())
                 }
                 SurfaceTokenKind::ReservedSymbol
-                    if [":", ";", ",", "="].contains(&token.text.as_ref()) =>
+                    if [":", ";", ",", "="].contains(&token.text.as_ref())
+                        || (parenthesized_witness.is_some()
+                            && ["(", ")"].contains(&token.text.as_ref())) =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -7353,6 +7390,12 @@ impl TermFormulaChecker {
                 | (K::BuiltinPredicateApplication, ["TermExpression", "=", "TermExpression"]) => {
                     true
                 }
+                (K::TermExpression, ["ParenthesizedTerm"])
+                | (K::ParenthesizedTerm, ["(", "TermExpression", ")"])
+                    if parenthesized_witness.is_some() =>
+                {
+                    true
+                }
                 (
                     K::FormulaExpression,
                     ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
@@ -7376,6 +7419,7 @@ impl TermFormulaChecker {
             }
             let kind = match current.kind() {
                 K::TermReference => "source.term.variable-reference".to_owned(),
+                K::ParenthesizedTerm => "source.term.parenthesized".to_owned(),
                 K::BuiltinPredicateApplication => {
                     equalities.push(id);
                     "source.formula.atomic.equality".to_owned()
@@ -7445,7 +7489,14 @@ impl TermFormulaChecker {
                         }
                         _ => return Err(invalid()),
                     };
-                    operands.push(operand);
+                    operands.push(match parenthesized_witness {
+                        Some((group, child_expression, _))
+                            if node(operand)?.children() == [group] =>
+                        {
+                            child_expression
+                        }
+                        _ => operand,
+                    });
                 }
             }
             operands.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
@@ -7713,7 +7764,19 @@ impl TermFormulaChecker {
         let (bindings, native_primary) = if nested_reserved {
             let (bindings, primary) =
                 SourcePrimaryTermProducer::build_from_original_reserved_statement_occurrences(
-                    source, symbols, scope, &arena,
+                    source,
+                    symbols,
+                    scope,
+                    &arena,
+                    parenthesized_witness
+                        .map(|(group, _, child)| {
+                            Ok::<_, String>((
+                                TypedSiteRef::Node(TypedNodeId::new(group.index())),
+                                range(group)?,
+                                TypedSiteRef::Node(TypedNodeId::new(child.index())),
+                            ))
+                        })
+                        .transpose()?,
                 )
                 .map_err(|error| error.to_string())?;
             (bindings, Some(primary))
@@ -7757,8 +7820,10 @@ impl TermFormulaChecker {
             let context = match &native_primary {
                 Some(primary) => primary
                     .terms()
-                    .get(SourcePrimaryTermId::new(ordinal))
+                    .iter()
+                    .find(|(_, term)| term.site() == &site(id))
                     .ok_or_else(invalid)?
+                    .1
                     .context(),
                 None => BindingContextId::new(0),
             };
@@ -7797,6 +7862,26 @@ impl TermFormulaChecker {
                         "set",
                         TypeHeadInput::BuiltinSet,
                     )),
+            );
+        }
+        if let Some((group, _, child)) = parenthesized_witness {
+            let child = terms
+                .iter()
+                .find(|term| term.site == site(child))
+                .ok_or_else(invalid)?;
+            let mut result_type = child.result_type.clone().ok_or_else(invalid)?;
+            result_type.site = TypedSiteRef::Role {
+                node: result_type.site.node(),
+                role: crate::typed_ast::TypeRole::new("theorem.equality.parenthesized"),
+            };
+            terms.push(
+                TermInput::new(
+                    site(group),
+                    child.context,
+                    range(group)?,
+                    TermKind::Parenthesized,
+                )
+                .with_result_type(result_type),
             );
         }
         let primary = match native_primary {
@@ -17911,6 +17996,22 @@ impl SourceVariableSemanticsChecker {
                         *operand
                     }
                     _ => return Err(invalid()),
+                };
+                let operand = match node(operand)?.children() {
+                    [group] if node(*group)?.kind() == &K::ParenthesizedTerm => {
+                        let [open, child, close] = node(*group)?.children() else {
+                            return Err(invalid());
+                        };
+                        if node(witness)?.children().len() != 1
+                            || take.children().len() != 3
+                            || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "(")
+                            || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ")")
+                        {
+                            return Err(invalid());
+                        }
+                        *child
+                    }
+                    _ => operand,
                 };
                 operand_sites.push(operand);
             }

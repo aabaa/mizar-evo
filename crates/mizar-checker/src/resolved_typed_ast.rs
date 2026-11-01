@@ -3008,7 +3008,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             #[cfg(test)]
             let legacy_witness_statement = source_statement.is_task_258b3_profile()
                 || source_statement.is_task_258b3n_profile()
-                || source_statement.is_task_258b3m1_profile();
+                || source_statement.is_task_258b3m1_profile()
+                || source_statement.is_task_258b3m2b1_profile();
             let native_referenced_statement = original_statement
                 && self
                     .inputs
@@ -3038,7 +3039,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         && (native_witness_statement
                             || legacy_witness_statement
                             || source_statement.is_task_258b3m2a_profile()
-                            || source_statement.is_task_258b3m2b1_profile()
                             || source_statement.is_task_258b3m2b2a_profile()) =>
                 {
                     witnesses

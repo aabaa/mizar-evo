@@ -2090,14 +2090,14 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        let allowed = statements.is_task_258b3m2a_profile()
-            || statements.is_task_258b3m2b1_profile()
-            || statements.is_task_258b3m2b2a_profile();
+        let allowed =
+            statements.is_task_258b3m2a_profile() || statements.is_task_258b3m2b2a_profile();
         #[cfg(test)]
         let allowed = allowed
             || statements.is_task_258b3_profile()
             || statements.is_task_258b3n_profile()
-            || statements.is_task_258b3m1_profile();
+            || statements.is_task_258b3m1_profile()
+            || statements.is_task_258b3m2b1_profile();
         if !allowed {
             return Err(TypedAstError::InvalidSourceStatement);
         }
