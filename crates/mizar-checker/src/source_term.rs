@@ -1381,7 +1381,7 @@ impl SourcePrimaryTermProducer {
         symbols: &mizar_resolve::env::SymbolEnv,
         scope: &ResolvedVariableScope,
         arena: &TypedArena,
-        mut parenthesized: Option<(TypedSiteRef, SourceRange, TypedSiteRef)>,
+        mut parenthesized: Vec<(TypedSiteRef, SourceRange, TypedSiteRef)>,
     ) -> Result<(BindingEnv, SourcePrimaryTermHandoff), SourcePrimaryTermError> {
         let invalid = || SourcePrimaryTermError::InvalidTransaction;
         let bindings = crate::type_checker::SourceVariableSemanticsChecker::original_reserved_statement_binding_env(
@@ -1449,27 +1449,40 @@ impl SourcePrimaryTermProducer {
             {
                 return Err(invalid());
             }
-            let parent = if parenthesized
-                .as_ref()
+            let mut parent = None;
+            if parenthesized
+                .last()
                 .is_some_and(|(_, _, child)| child == &TypedSiteRef::Node(typed))
             {
-                let (site, source_range, _) = parenthesized.take().ok_or_else(invalid)?;
-                let parent = SourcePrimaryTermId::new(inputs.len());
-                inputs.push(SourcePrimaryTermInput {
-                    site,
-                    source_range,
-                    source_ordinal: inputs.len(),
-                    context,
-                    recovery: SourcePrimaryTermRecovery::Normal,
-                    spelling: format!("( {} )", actual.spelling()),
-                    kind: SourcePrimaryTermKind::Parenthesized,
-                    role: SourcePrimaryTermRole::Value,
-                    parent: None,
-                });
-                Some(parent)
-            } else {
-                None
-            };
+                if parenthesized.len() > 2
+                    || parenthesized.windows(2).any(|pair| pair[0].2 != pair[1].0)
+                {
+                    return Err(invalid());
+                }
+                let depth = parenthesized.len();
+                for (index, (site, source_range, _)) in
+                    std::mem::take(&mut parenthesized).into_iter().enumerate()
+                {
+                    let id = SourcePrimaryTermId::new(inputs.len());
+                    inputs.push(SourcePrimaryTermInput {
+                        site,
+                        source_range,
+                        source_ordinal: inputs.len(),
+                        context,
+                        recovery: SourcePrimaryTermRecovery::Normal,
+                        spelling: format!(
+                            "{}{}{}",
+                            "( ".repeat(depth - index),
+                            actual.spelling(),
+                            " )".repeat(depth - index)
+                        ),
+                        kind: SourcePrimaryTermKind::Parenthesized,
+                        role: SourcePrimaryTermRole::Value,
+                        parent,
+                    });
+                    parent = Some(id);
+                }
+            }
             let term = SourcePrimaryTermId::new(inputs.len());
             inputs.push(SourcePrimaryTermInput {
                 site: TypedSiteRef::Node(typed),
@@ -1490,7 +1503,7 @@ impl SourcePrimaryTermProducer {
                 use_ordinal: actual.ordinal(),
             });
         }
-        if parenthesized.is_some() {
+        if !parenthesized.is_empty() {
             return Err(invalid());
         }
         let terms = validate_terms(source.source_id(), &inputs, &bindings, arena)?;

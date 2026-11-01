@@ -867,8 +867,13 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b3m2b2a_profile(&self) -> bool {
-        self.binding_env.contexts().len() == 2
+        self.binding_env
+            .bindings()
+            .get(BindingId::new(0))
+            .is_some_and(|binding| binding.status == BindingStatus::Reserved)
+            && self.binding_env.contexts().len() == 2
             && self.statements.len() == 2
             && self.contexts.len() == 2
             && self.input_facts.len() == 2
@@ -1320,8 +1325,8 @@ impl SourceStatementHandoff {
                 .collect::<Vec<_>>();
             let group = match groups.as_slice() {
                 [] => None,
-                [(id, term)] if witness && witness_count == 1 && !named_witness => {
-                    Some((*id, *term))
+                [first] | [first, _] if witness && witness_count == 1 && !named_witness => {
+                    Some(*first)
                 }
                 _ => return Err(invalid()),
             };
@@ -1598,6 +1603,7 @@ impl SourceStatementHandoff {
                         || expression_range.end != item_range.end
                         || (item.children.len() == 1 && item_range != expression_range)
                         || !is_descendant(arena, *take_id, *term_id)
+                        || group.is_some_and(|(_, group)| group.site().node() != *term_id)
                     {
                         return Err(invalid());
                     }
@@ -1631,9 +1637,19 @@ impl SourceStatementHandoff {
                     } else {
                         BindingContextId::new(0)
                     };
-                    let grouped_child = group
-                        .filter(|(_, group)| is_descendant(arena, group.site().node(), site))
-                        .map(|(id, _)| id);
+                    let grouped_parent = groups
+                        .iter()
+                        .find(|(_, group)| {
+                            arena
+                                .node(group.site().node())
+                                .and_then(|group| group.children.get(1))
+                                .and_then(|expression| arena.node(*expression))
+                                .is_some_and(|expression| {
+                                    expression.kind.as_str() == "TermExpression"
+                                        && expression.children == [site]
+                                })
+                        })
+                        .map(|(id, _)| *id);
                     if term.kind() == SourcePrimaryTermKind::Parenthesized {
                         let [_, expression, _] = node.children.as_slice() else {
                             return Err(invalid());
@@ -1644,15 +1660,18 @@ impl SourceStatementHandoff {
                             .iter()
                             .filter(|(_, child)| child.parent() == Some(id));
                         let (_, child) = children.next().ok_or_else(invalid)?;
-                        if group.map(|(id, _)| id) != Some(id)
-                            || context != BindingContextId::new(1)
+                        if context != BindingContextId::new(1)
                             || reference.is_some()
                             || children.next().is_some()
                             || expression.kind.as_str() != "TermExpression"
                             || expression.children != [child.site().node()]
-                            || child.kind() != SourcePrimaryTermKind::VariableReference
+                            || !matches!(
+                                child.kind(),
+                                SourcePrimaryTermKind::VariableReference
+                                    | SourcePrimaryTermKind::Parenthesized
+                            )
                             || term.spelling() != format!("( {} )", child.spelling())
-                            || term.parent().is_some()
+                            || term.parent() != grouped_parent
                         {
                             return Err(invalid());
                         }
@@ -1674,7 +1693,7 @@ impl SourceStatementHandoff {
                         };
                         if term.kind() != SourcePrimaryTermKind::VariableReference
                             || term.spelling() != binding.spelling
-                            || term.parent() != grouped_child
+                            || term.parent() != grouped_parent
                             || reference_id.index() != reference_ordinal
                             || reference.use_ordinal() != reference_ordinal
                             || reference.binding() != binding.id
@@ -2325,40 +2344,47 @@ impl SourceStatementWitnessHandoff {
                     .iter()
                     .find(|(_, term)| term.site().node() == *term_site)
                     .ok_or_else(invalid)?;
-                let (reference_term_id, reference_term) =
-                    if term.kind() == SourcePrimaryTermKind::Parenthesized {
-                        let node = arena.node(*term_site).ok_or_else(invalid)?;
-                        let [_, child_expression, _] = node.children.as_slice() else {
-                            return Err(invalid());
-                        };
-                        let child_expression = arena.node(*child_expression).ok_or_else(invalid)?;
-                        let mut children = primary_terms
-                            .terms()
-                            .iter()
-                            .filter(|(_, child)| child.parent() == Some(term_id));
-                        let child = children.next().ok_or_else(invalid)?;
-                        if name_site.is_some()
-                            || items.len() != 1
-                            || children.next().is_some()
-                            || node.kind.as_str() != "source.term.parenthesized"
-                            || child_expression.kind.as_str() != "TermExpression"
-                            || child_expression.children != [child.1.site().node()]
-                            || child.1.kind() != SourcePrimaryTermKind::VariableReference
-                            || child.1.context() != term.context()
-                            || child.1.role() != SourcePrimaryTermRole::Value
-                            || child.1.recovery() != SourcePrimaryTermRecovery::Normal
-                            || term.spelling() != format!("( {} )", child.1.spelling())
-                            || primary_terms
-                                .references()
-                                .iter()
-                                .any(|(_, reference)| reference.term() == term_id)
-                        {
-                            return Err(invalid());
-                        }
-                        child
-                    } else {
-                        (term_id, term)
+                let (mut reference_term_id, mut reference_term) = (term_id, term);
+                let mut group_count = 0;
+                while reference_term.kind() == SourcePrimaryTermKind::Parenthesized {
+                    group_count += 1;
+                    let node = arena
+                        .node(reference_term.site().node())
+                        .ok_or_else(invalid)?;
+                    let [_, child_expression, _] = node.children.as_slice() else {
+                        return Err(invalid());
                     };
+                    let child_expression = arena.node(*child_expression).ok_or_else(invalid)?;
+                    let mut children = primary_terms
+                        .terms()
+                        .iter()
+                        .filter(|(_, child)| child.parent() == Some(reference_term_id));
+                    let child = children.next().ok_or_else(invalid)?;
+                    if group_count > 2
+                        || name_site.is_some()
+                        || items.len() != 1
+                        || children.next().is_some()
+                        || node.kind.as_str() != "source.term.parenthesized"
+                        || child_expression.kind.as_str() != "TermExpression"
+                        || child_expression.children != [child.1.site().node()]
+                        || !matches!(
+                            child.1.kind(),
+                            SourcePrimaryTermKind::VariableReference
+                                | SourcePrimaryTermKind::Parenthesized
+                        )
+                        || child.1.context() != term.context()
+                        || child.1.role() != SourcePrimaryTermRole::Value
+                        || child.1.recovery() != SourcePrimaryTermRecovery::Normal
+                        || reference_term.spelling() != format!("( {} )", child.1.spelling())
+                        || primary_terms
+                            .references()
+                            .iter()
+                            .any(|(_, reference)| reference.term() == reference_term_id)
+                    {
+                        return Err(invalid());
+                    }
+                    (reference_term_id, reference_term) = child;
+                }
                 let (reference_id, reference) = primary_terms
                     .references()
                     .iter()
@@ -4220,6 +4246,7 @@ enum StatementProfile {
     Task258B3M2A,
     #[cfg(test)]
     Task258B3M2B1,
+    #[cfg(test)]
     Task258B3M2B2A,
     Task258B3M2B2B1A,
     Task258B3M2B2B1B1,
@@ -4425,17 +4452,21 @@ fn validate_dependencies(
             return Ok(StatementProfile::Task258B3M2B1);
         }
     }
-    let b3m2b2a_binding =
-        exact_binding_profile(StatementProfile::Task258B3M2B2A, source_id, bindings);
-    let b3m2b2a_primary = exact_primary_profile(StatementProfile::Task258B3M2B2A, primary_terms);
-    let b3m2b2a_atomic = exact_atomic_profile(
-        StatementProfile::Task258B3M2B2A,
-        atomic_formulas,
-        primary_terms,
-        arena,
-    );
-    if b3m2b2a_binding && b3m2b2a_primary && b3m2b2a_atomic {
-        return Ok(StatementProfile::Task258B3M2B2A);
+    #[cfg(test)]
+    {
+        let b3m2b2a_binding =
+            exact_binding_profile(StatementProfile::Task258B3M2B2A, source_id, bindings);
+        let b3m2b2a_primary =
+            exact_primary_profile(StatementProfile::Task258B3M2B2A, primary_terms);
+        let b3m2b2a_atomic = exact_atomic_profile(
+            StatementProfile::Task258B3M2B2A,
+            atomic_formulas,
+            primary_terms,
+            arena,
+        );
+        if b3m2b2a_binding && b3m2b2a_primary && b3m2b2a_atomic {
+            return Ok(StatementProfile::Task258B3M2B2A);
+        }
     }
     let b3m2b2b1a_binding =
         exact_binding_profile(StatementProfile::Task258B3M2B2B1A, source_id, bindings);
@@ -4594,6 +4625,7 @@ fn exact_binding_profile(
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => 2,
         StatementProfile::Task258B3M2B2B1A => 2,
         StatementProfile::Task258B3M2B2B1B1 => 2,
@@ -4885,6 +4917,7 @@ fn exact_binding_profile(
                 return false;
             }
         }
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => {
             let Some(proof) = bindings.contexts().get(BindingContextId::new(1)) else {
                 return false;
@@ -5174,6 +5207,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3M2B1 => {
             return exact_task258b3m2b1_primary_profile(primary_terms);
         }
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => {
             return exact_task258b3m2b2a_primary_profile(primary_terms);
         }
@@ -5262,6 +5296,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1B1 => unreachable!("handled above"),
@@ -5294,6 +5329,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1B1 => unreachable!("handled above"),
@@ -5337,6 +5373,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1A => unreachable!("handled above"),
         StatementProfile::Task258B3M2B2B1B1 => unreachable!("handled above"),
@@ -5536,6 +5573,7 @@ fn exact_task258b3m2b1_primary_profile(primary_terms: &SourcePrimaryTermHandoff)
     true
 }
 
+#[cfg(test)]
 fn exact_task258b3m2b2a_primary_profile(primary_terms: &SourcePrimaryTermHandoff) -> bool {
     let expected_sites = [30, 32, 40, 38, 36, 44, 46];
     let expected_ranges = [
@@ -6262,6 +6300,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3M2A => &[(64, 69), (95, 100)],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[(70, 75), (101, 106)],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[(76, 81), (109, 114)],
         StatementProfile::Task258B3M2B2B1A => &[(97, 102), (131, 136)],
         StatementProfile::Task258B3M2B2B1B1 => &[(110, 115), (146, 151)],
@@ -6293,6 +6332,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3M2A => &[0, 1],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[0, 1],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[0, 1],
         StatementProfile::Task258B3M2B2B1A => &[0, 1],
         StatementProfile::Task258B3M2B2B1B1 => &[0, 1],
@@ -6347,6 +6387,7 @@ fn exact_atomic_profile(
             StatementProfile::Task258B3M2A if formula_index == 1 => 3,
             #[cfg(test)]
             StatementProfile::Task258B3M2B1 if formula_index == 1 => 4,
+            #[cfg(test)]
             StatementProfile::Task258B3M2B2A if formula_index == 1 => 5,
             StatementProfile::Task258B3M2B2B1A if formula_index == 1 => 4,
             StatementProfile::Task258B3M2B2B1B1 if formula_index == 1 => 4,
@@ -7046,6 +7087,7 @@ fn validate_aggregate_lengths(
         StatementProfile::Task258B3M2A => (1, 2, 2, 2, 2),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => (1, 2, 2, 2, 2),
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3M2B2B1A => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3M2B2B1B1 => (1, 2, 2, 2, 2),
@@ -7206,6 +7248,7 @@ fn validate_owner_rows(
             range(source_id, 19, 112),
             "FormulaStatementParenthesizedWitnessSmoke",
         ),
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => (
             range(source_id, 19, 120),
             "FormulaStatementNestedParenthesizedWitnessSmoke",
@@ -7502,6 +7545,7 @@ fn validate_statement_rows(
                 "thus x = x ;",
             ),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[
             (
                 0,
@@ -7825,6 +7869,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => 2,
         StatementProfile::Task258B3M2B2B1A => 2,
         StatementProfile::Task258B3M2B2B1B1 => 2,
@@ -7890,6 +7935,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3M2A => &[&[false, true], &[false, false]],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[&[false, true], &[false, false]],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[&[false, true], &[false, false]],
         StatementProfile::Task258B3M2B2B1A => &[&[false, true], &[false, false]],
         StatementProfile::Task258B3M2B2B1B1 => &[&[false, true], &[false, false]],
@@ -7936,6 +7982,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3M2A => &[&[true, true], &[false, true]],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[&[true, true], &[false, true]],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[&[true, true], &[false, true]],
         StatementProfile::Task258B3M2B2B1A => &[&[true, true], &[false, true]],
         StatementProfile::Task258B3M2B2B1B1 => &[&[true, true], &[false, true]],
@@ -8020,6 +8067,7 @@ fn validate_context_rows(
         StatementProfile::Task258B3M2A => &[(0, 19, 106), (1, 90, 101)],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[(0, 19, 112), (1, 96, 107)],
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => &[(0, 19, 120), (1, 104, 115)],
         StatementProfile::Task258B3M2B2B1A => &[(0, 48, 142), (1, 126, 137)],
         StatementProfile::Task258B3M2B2B1B1 => &[(0, 48, 157), (1, 141, 152)],
@@ -8080,6 +8128,7 @@ fn validate_input_fact_rows(
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => 2,
         StatementProfile::Task258B3M2B2B1A => 2,
         StatementProfile::Task258B3M2B2B1B1 => 2,
@@ -8098,6 +8147,7 @@ fn validate_input_fact_rows(
             return Err(SourceStatementError::InvalidAggregate);
         };
         let first_term = match (profile, index) {
+            #[cfg(test)]
             (StatementProfile::Task258B3M2B2A, 1) => 5,
             (StatementProfile::Task258B3M2B2B1A, 1) => 4,
             (StatementProfile::Task258B3M2B2B1B1, 1) => 4,
@@ -8124,6 +8174,7 @@ fn validate_input_fact_rows(
             (StatementProfile::Task258B3M2A, 1) => 2,
             #[cfg(test)]
             (StatementProfile::Task258B3M2B1, 1) => 3,
+            #[cfg(test)]
             (StatementProfile::Task258B3M2B2A, 1) => 3,
             (StatementProfile::Task258B3M2B2B1A, 1) => 2,
             (StatementProfile::Task258B3M2B2B1B1, 1) => 2,
@@ -8195,6 +8246,7 @@ fn validate_candidate_fact_rows(
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2B2A => 2,
         StatementProfile::Task258B3M2B2B1A => 2,
         StatementProfile::Task258B3M2B2B1B1 => 2,
@@ -9006,6 +9058,7 @@ const TASK258B3M2B1_NODE_RANGES: [(usize, usize); 53] = [
     (0, 112),
 ];
 
+#[cfg(test)]
 const TASK258B3M2B2A_NODE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -9707,6 +9760,7 @@ fn task258b3m2b1_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2b2a_node_children(index: usize) -> &'static [usize] {
     match index {
         26 => &[3],
@@ -9747,6 +9801,7 @@ fn task258b3m2b2a_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2b2a_node_kind(index: usize) -> &'static str {
     match index {
         30 | 32 | 36 | 44 | 46 => "source.term.variable-reference",
@@ -10770,6 +10825,7 @@ fn exact_task258b3m2b1_shared_arena(source_id: SourceId, arena: &TypedArena) -> 
         })
 }
 
+#[cfg(test)]
 fn exact_task258b3m2b2a_shared_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != TASK258B3M2B2A_NODE_RANGES.len()
         || arena.root() != Some(crate::typed_ast::TypedNodeId::new(56))
@@ -11131,6 +11187,7 @@ enum WitnessProfile {
     Task258B3M2A,
     #[cfg(test)]
     Task258B3M2B1,
+    #[cfg(test)]
     Task258B3M2B2A,
     Task258B3M2B2B1A,
     Task258B3M2B2B1B1,
@@ -12310,19 +12367,6 @@ fn validate_witness_dependencies(
         && exact_task258b3m2a_shared_arena(source_id, arena)
     {
         WitnessProfile::Task258B3M2A
-    } else if application.is_none()
-        && structure.is_none()
-        && set_terms.is_none()
-        && statements.is_task_258b3m2b2a_profile()
-        && exact_binding_profile(
-            StatementProfile::Task258B3M2B2A,
-            source_id,
-            statements.binding_env(),
-        )
-        && exact_primary_profile(StatementProfile::Task258B3M2B2A, primary_terms)
-        && exact_task258b3m2b2a_shared_arena(source_id, arena)
-    {
-        WitnessProfile::Task258B3M2B2A
     } else if structure.is_none()
         && set_terms.is_none()
         && statements.is_task_258b3m2b2b1a_profile()
@@ -12537,6 +12581,19 @@ fn validate_witness_dependencies(
             if application.is_none()
                 && structure.is_none()
                 && set_terms.is_none()
+                && statements.is_task_258b3m2b2a_profile()
+                && exact_binding_profile(
+                    StatementProfile::Task258B3M2B2A,
+                    source_id,
+                    statements.binding_env(),
+                )
+                && exact_primary_profile(StatementProfile::Task258B3M2B2A, primary_terms)
+                && exact_task258b3m2b2a_shared_arena(source_id, arena)
+            {
+                WitnessProfile::Task258B3M2B2A
+            } else if application.is_none()
+                && structure.is_none()
+                && set_terms.is_none()
                 && statements.is_task_258b3m2b1_profile()
                 && exact_binding_profile(
                     StatementProfile::Task258B3M2B1,
@@ -12623,6 +12680,7 @@ fn validate_witness_dependencies(
         WitnessProfile::Task258B3M2B1 => {
             (range(source_id, 19, 112), 49, range(source_id, 96, 107), 47)
         }
+        #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => (
             range(source_id, 19, 120),
             53,
@@ -12716,6 +12774,7 @@ fn validate_witness_aggregate(
         WitnessProfile::Task258B3M2A => (1, 0),
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => (1, 0),
+        #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => (1, 0),
         WitnessProfile::Task258B3M2B2B1A => (1, 0),
         WitnessProfile::Task258B3M2B2B1B1 => (1, 0),
@@ -12863,7 +12922,9 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3N => 1,
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => 1,
-        WitnessProfile::Task258B3M2A | WitnessProfile::Task258B3M2B2A => 1,
+        WitnessProfile::Task258B3M2A => 1,
+        #[cfg(test)]
+        WitnessProfile::Task258B3M2B2A => 1,
         #[cfg(test)]
         WitnessProfile::Task258B3M1 => 2,
         WitnessProfile::Task258B3M2B2B1A => {
@@ -12999,6 +13060,7 @@ fn validate_witness_rows(
                 take_children: &[12, 38, 16],
                 item_children: &[37],
             },
+            #[cfg(test)]
             (WitnessProfile::Task258B3M2B2A, 0) => ExpectedWitnessRow {
                 term_index: 2,
                 take_site: 43,
@@ -13022,10 +13084,13 @@ fn validate_witness_rows(
             return Err(invalid());
         };
         let numeral_witness = profile == WitnessProfile::Task258B3M2A;
-        let parenthesized_witness = profile == WitnessProfile::Task258B3M2B2A;
+        #[cfg(not(test))]
+        let parenthesized_witness = false;
         #[cfg(test)]
-        let parenthesized_witness =
-            parenthesized_witness || profile == WitnessProfile::Task258B3M2B1;
+        let parenthesized_witness = matches!(
+            profile,
+            WitnessProfile::Task258B3M2B2A | WitnessProfile::Task258B3M2B1
+        );
         let reference_valid = if numeral_witness || parenthesized_witness {
             primary_terms
                 .references()
@@ -13081,11 +13146,7 @@ fn validate_witness_rows(
                 != if numeral_witness {
                     "101"
                 } else if parenthesized_witness {
-                    if profile == WitnessProfile::Task258B3M2B2A {
-                        "( ( x ) )"
-                    } else {
-                        "( x )"
-                    }
+                    expected.item_spelling
                 } else {
                     "x"
                 }
@@ -13136,7 +13197,9 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3N => &[0, 1, 2],
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => &[0, 1, 2],
-        WitnessProfile::Task258B3M2A | WitnessProfile::Task258B3M2B2A => &[0, 1, 2],
+        WitnessProfile::Task258B3M2A => &[0, 1, 2],
+        #[cfg(test)]
+        WitnessProfile::Task258B3M2B2A => &[0, 1, 2],
         #[cfg(test)]
         WitnessProfile::Task258B3M1 => &[0, 1, 1, 2],
         WitnessProfile::Task258B3M2B2B1A => {
@@ -13183,6 +13246,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3M2A => 2,
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => 2,
+        #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => 2,
         WitnessProfile::Task258B3M2B2B1A => {
             unreachable!("application witness returns above")
@@ -14301,6 +14365,7 @@ fn validate_witness_name_rows(
         WitnessProfile::Task258B3M2B1 => {
             unreachable!("Task258B3M2B1 has no witness-name rows")
         }
+        #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => {
             unreachable!("Task258B3M2B2A has no witness-name rows")
         }
@@ -37332,13 +37397,69 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
     fn task258b3m2b2a_dependencies_parent_chain_witness_precedence_and_all_nodes_fail_closed() {
         let fixture = B3M2B2AFixture::new(84);
         let statement = fixture.statement();
+        let statement_input = fixture.statement_input();
+        let witness_input = fixture.witness_input();
         let baseline = fixture
-            .witnesses(&statement, fixture.witness_input())
+            .witnesses(&statement, witness_input.clone())
             .expect("baseline");
         let baseline_debug = baseline.debug_text();
+        let pristine_symbols = fixture.symbols.clone();
+        let pristine_bindings = fixture.bindings.clone();
+        let pristine_primary = fixture.primary.clone();
+        let pristine_atomic = fixture.atomic.clone();
+        let pristine_arena = fixture.arena.clone();
+        let pristine_statement = statement.clone();
+        let pristine_statement_input = statement_input.clone();
+        let pristine_witness_input = witness_input.clone();
+        let pristine_baseline = baseline.clone();
+        let pristine_typed = fixture
+            .empty_typed()
+            .with_source_statement_witnesses(statement.clone(), baseline.clone())
+            .expect("pristine paired typed target");
+        let pristine_typed_debug = pristine_typed.debug_text();
+        let pristine_final = assemble_empty_resolved(&pristine_typed).expect("pristine final");
+        let pristine_final_debug = pristine_final.debug_text();
+        let assert_pristine = || {
+            assert_eq!(fixture.symbols, pristine_symbols);
+            assert_eq!(fixture.bindings, pristine_bindings);
+            assert_eq!(fixture.primary, pristine_primary);
+            assert_eq!(fixture.atomic, pristine_atomic);
+            assert_eq!(fixture.arena, pristine_arena);
+            assert_eq!(statement, pristine_statement);
+            assert_eq!(fixture.statement_input(), pristine_statement_input);
+            assert_eq!(statement_input, pristine_statement_input);
+            assert_eq!(witness_input, pristine_witness_input);
+            assert_eq!(baseline, pristine_baseline);
+            let replay_statement = SourceStatementProducer::build(
+                statement_input.clone(),
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            )
+            .expect("pristine statement replay");
+            assert_eq!(replay_statement, statement);
+            let replay_witnesses = SourceStatementWitnessProducer::build(
+                witness_input.clone(),
+                &replay_statement,
+                &fixture.primary,
+                &fixture.arena,
+            )
+            .expect("pristine witness replay");
+            assert_eq!(replay_witnesses, baseline);
+            let replay_typed = fixture
+                .empty_typed()
+                .with_source_statement_witnesses(replay_statement, replay_witnesses)
+                .expect("pristine paired typed replay");
+            assert_eq!(replay_typed.debug_text(), pristine_typed_debug);
+            let replay_final =
+                assemble_empty_resolved(&replay_typed).expect("pristine final replay");
+            assert_eq!(replay_final.debug_text(), pristine_final_debug);
+        };
 
         for mutation in 0..2 {
-            let mut input = fixture.witness_input();
+            let mut input = witness_input.clone();
             if mutation == 0 {
                 input.witnesses.clear();
             } else {
@@ -37349,9 +37470,24 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 Err(SourceStatementWitnessError::InvalidAggregate),
                 "aggregate {mutation}"
             );
+            assert_pristine();
         }
+        let mut extra_name = witness_input.clone();
+        extra_name.names.push(SourceStatementWitnessNameInput {
+            witness: SourceStatementWitnessId::new(0),
+            site: node(42),
+            source_range: range(fixture.source, 95, 100),
+            spelling: "( ( x ) )".to_owned(),
+            recovery: SourceStatementRecovery::Normal,
+        });
+        assert_eq!(
+            fixture.witnesses(&statement, extra_name),
+            Err(SourceStatementWitnessError::InvalidAggregate),
+            "extra name for unnamed witness"
+        );
+        assert_pristine();
         for mutation in 0..15 {
-            let mut input = fixture.witness_input();
+            let mut input = witness_input.clone();
             let row = &mut input.witnesses[0];
             match mutation {
                 0 => row.owner = SourceTheoremOwnerId::new(1),
@@ -37381,15 +37517,17 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 }),
                 "witness field {mutation}"
             );
+            assert_pristine();
         }
-        let mut dependency_first = fixture.witness_input();
+        let mut dependency_first = witness_input.clone();
         dependency_first.source_id = source_id(85);
         dependency_first.witnesses.clear();
         assert_eq!(
             fixture.witnesses(&statement, dependency_first),
             Err(SourceStatementWitnessError::DependencyMismatch)
         );
-        let mut aggregate_before_witness = fixture.witness_input();
+        assert_pristine();
+        let mut aggregate_before_witness = witness_input.clone();
         aggregate_before_witness.witnesses[0].ordinal = 1;
         aggregate_before_witness
             .witnesses
@@ -37398,6 +37536,26 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             fixture.witnesses(&statement, aggregate_before_witness),
             Err(SourceStatementWitnessError::InvalidAggregate)
         );
+        assert_pristine();
+
+        let foreign_m2a = B3M2AFixture::new(84);
+        assert_eq!(foreign_m2a.source, fixture.source);
+        assert_eq!(foreign_m2a.module, fixture.module);
+        let mut bad_target_aggregate = statement_input.clone();
+        bad_target_aggregate.owners.clear();
+        assert_eq!(
+            SourceStatementProducer::build(
+                bad_target_aggregate,
+                &fixture.symbols,
+                &foreign_m2a.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch),
+            "foreign M2A binding precedes target aggregate"
+        );
+        assert_pristine();
 
         let primary_mutations = [
             "outer-extra-reference",
@@ -37456,6 +37614,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                     }
                 };
             assert!(rejected, "{label}");
+            assert_pristine();
         }
         for target in [2, 3, 4] {
             let mut targets = [0, 1, 5, 6];
@@ -37485,6 +37644,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 rejected,
                 "Task256 edge/request contamination by term {target}"
             );
+            assert_pristine();
         }
 
         for mutation in 0..5 {
@@ -37512,6 +37672,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 .is_err(),
                 "base mutation {mutation}"
             );
+            assert_pristine();
         }
         let mut stale_origin = statement.clone();
         stale_origin.checked_owner = CheckedStatementOwner::from_validated_parts_for_test(
@@ -37536,6 +37697,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 owner: SourceTheoremOwnerId::new(0),
             })
         );
+        assert_pristine();
         for fingerprint in 0..3 {
             let mut stale_base = statement.clone();
             match fingerprint {
@@ -37555,6 +37717,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 Err(SourceStatementError::DependencyMismatch),
                 "base fingerprint {fingerprint}"
             );
+            assert_pristine();
         }
         let mut stale_statement = baseline.clone();
         stale_statement.statement_fingerprint.push('x');
@@ -37568,6 +37731,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ),
             Err(SourceStatementWitnessError::DependencyMismatch)
         );
+        assert_pristine();
         let mut stale_primary = baseline.clone();
         stale_primary.primary_term_fingerprint.push('x');
         assert_eq!(
@@ -37580,6 +37744,207 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ),
             Err(SourceStatementWitnessError::DependencyMismatch)
         );
+        assert_pristine();
+
+        let actual_labels = pristine_symbols
+            .labels()
+            .by_contribution(fixture.contribution);
+        assert_eq!(actual_labels.len(), 1);
+        assert!(!pristine_symbols.labels().is_empty());
+        let actual_label = actual_labels[0].clone();
+        let pristine_contribution = pristine_symbols
+            .contributions()
+            .get(fixture.contribution)
+            .expect("fixture contribution")
+            .clone();
+        let make_symbols_with_labels = |labels: LabelIndex| {
+            SymbolEnv::new(
+                pristine_symbols.module_id().clone(),
+                SymbolEnvIndexes {
+                    imports: pristine_symbols.imports().clone(),
+                    exports: pristine_symbols.exports().clone(),
+                    symbols: pristine_symbols.symbols().clone(),
+                    labels,
+                    definitions: pristine_symbols.definitions().clone(),
+                    overloads: pristine_symbols.overloads().clone(),
+                    registrations: pristine_symbols.registrations().clone(),
+                    lexical_summaries: pristine_symbols.lexical_summaries().clone(),
+                    namespace_graph: pristine_symbols.namespace_graph().clone(),
+                    declaration_dependencies: pristine_symbols.declaration_dependencies().clone(),
+                    contributions: pristine_symbols.contributions().clone(),
+                    module_summaries: pristine_symbols.module_summaries().clone(),
+                },
+            )
+        };
+        let mut import_owner_builder = ResolvedArenaBuilder::new();
+        let import_owner = import_owner_builder
+            .push(ResolvedNode::new(
+                syntax::SurfaceNodeKind::ImportAliasDecl,
+                Vec::new(),
+                actual_label.origin().clone(),
+            ))
+            .expect("real imported-label owner node");
+        let mut temporary_imports = ResolvedImports::new();
+        let imported_edge = temporary_imports.push_import(ResolvedImport::new(
+            import_owner,
+            range(fixture.source, 0, 1),
+            "import statement.fixture;",
+            None,
+            ImportResolution::Resolved(fixture.module.clone()),
+            actual_label.origin().clone(),
+        ));
+        assert_eq!(temporary_imports.imports().count(), 1);
+        for (case, name) in [
+            "Imported",
+            "Missing",
+            "Duplicate",
+            "WrongPath",
+            "WrongKind",
+            "Private",
+            "LocalOnly",
+            "Recovered",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut labels = LabelIndex::new();
+            if case != 1 {
+                let origin_path = if case == 3 {
+                    LabelOriginPath::new("statement.fixture.wrong.theorem")
+                } else {
+                    actual_label.origin_path().clone()
+                };
+                let kind = if case == 4 {
+                    LabelKind::ProofStep
+                } else {
+                    actual_label.kind()
+                };
+                let origin = match case {
+                    0 => actual_label
+                        .origin()
+                        .clone()
+                        .with_import_edge(imported_edge),
+                    7 => actual_label.origin().clone().recovered(),
+                    _ => actual_label.origin().clone(),
+                };
+                let visibility = if case == 5 {
+                    Visibility::Private
+                } else {
+                    actual_label.visibility()
+                };
+                let export_status = if case == 6 {
+                    ExportStatus::LocalOnly
+                } else {
+                    actual_label.export_status()
+                };
+                labels.insert(
+                    LabelEntry::new(
+                        origin_path,
+                        kind,
+                        actual_label.namespace().clone(),
+                        actual_label.primary_spelling(),
+                        origin,
+                        actual_label.contribution(),
+                    )
+                    .with_visibility(visibility)
+                    .with_export_status(export_status),
+                );
+                if case == 2 {
+                    labels.insert(
+                        LabelEntry::new(
+                            LabelOriginPath::new("statement.fixture.duplicate.theorem"),
+                            actual_label.kind(),
+                            actual_label.namespace().clone(),
+                            actual_label.primary_spelling(),
+                            actual_label.origin().clone(),
+                            actual_label.contribution(),
+                        )
+                        .with_visibility(actual_label.visibility())
+                        .with_export_status(actual_label.export_status()),
+                    );
+                }
+            }
+            let attempted_symbols = make_symbols_with_labels(labels);
+            let attempted_symbols_before = attempted_symbols.clone();
+            assert_ne!(
+                attempted_symbols, pristine_symbols,
+                "{name} environment differs"
+            );
+            assert_eq!(attempted_symbols.imports(), pristine_symbols.imports());
+            assert_eq!(attempted_symbols.exports(), pristine_symbols.exports());
+            assert_eq!(attempted_symbols.symbols(), pristine_symbols.symbols());
+            assert_eq!(
+                attempted_symbols.definitions(),
+                pristine_symbols.definitions()
+            );
+            assert_eq!(attempted_symbols.overloads(), pristine_symbols.overloads());
+            assert_eq!(
+                attempted_symbols.registrations(),
+                pristine_symbols.registrations()
+            );
+            assert_eq!(
+                attempted_symbols.lexical_summaries(),
+                pristine_symbols.lexical_summaries()
+            );
+            assert_eq!(
+                attempted_symbols.namespace_graph(),
+                pristine_symbols.namespace_graph()
+            );
+            assert_eq!(
+                attempted_symbols.declaration_dependencies(),
+                pristine_symbols.declaration_dependencies()
+            );
+            assert_eq!(
+                attempted_symbols.module_summaries(),
+                pristine_symbols.module_summaries()
+            );
+            assert_eq!(
+                attempted_symbols.contributions(),
+                pristine_symbols.contributions(),
+                "{name} contribution effects stay unchanged"
+            );
+            let attempted_contribution = attempted_symbols
+                .contributions()
+                .get(fixture.contribution)
+                .expect("preserved fixture contribution");
+            assert_eq!(
+                attempted_contribution.effects(),
+                pristine_contribution.effects(),
+                "{name} contribution effects remain pristine"
+            );
+            assert!(!attempted_contribution.effects().symbols().is_empty());
+            assert!(!attempted_contribution.effects().definitions().is_empty());
+            assert!(!attempted_contribution.effects().labels().is_empty());
+            assert!(
+                CheckedStatementOwner::validate_exact_local_theorem(
+                    &attempted_symbols,
+                    fixture.symbol.clone(),
+                    fixture.source,
+                    &fixture.module,
+                )
+                .is_ok(),
+                "{name} owner-only check remains valid"
+            );
+            assert_eq!(
+                SourceStatementProducer::build(
+                    statement_input.clone(),
+                    &attempted_symbols,
+                    &fixture.bindings,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.arena,
+                ),
+                Err(SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                }),
+                "{name} exact resolver-label join owner"
+            );
+            assert_eq!(
+                attempted_symbols, attempted_symbols_before,
+                "{name} env purity"
+            );
+            assert_pristine();
+        }
         for index in 0..TASK258B3M2B2A_NODE_RANGES.len() {
             for mutation in 0..5 {
                 let arena = mutate_arena(&fixture.arena, |id, row| {
@@ -37603,6 +37968,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                         }
                     }
                 });
+                let arena_before = arena.clone();
                 assert_eq!(
                     baseline.validate_installation(
                         fixture.source,
@@ -37614,6 +37980,26 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                     Err(SourceStatementWitnessError::DependencyMismatch),
                     "node {index} mutation {mutation}"
                 );
+                assert_eq!(
+                    arena, arena_before,
+                    "installation arena purity {index}/{mutation}"
+                );
+                assert_pristine();
+                assert_eq!(
+                    SourceStatementWitnessProducer::build(
+                        witness_input.clone(),
+                        &statement,
+                        &fixture.primary,
+                        &arena,
+                    ),
+                    Err(SourceStatementWitnessError::DependencyMismatch),
+                    "constructor node {index} mutation {mutation}"
+                );
+                assert_eq!(
+                    arena, arena_before,
+                    "constructor arena purity {index}/{mutation}"
+                );
+                assert_pristine();
             }
         }
         assert_eq!(
@@ -37627,10 +38013,13 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
     #[test]
     fn task258b3m2b2a_paired_ownership_hybrids_and_all_family_orders_are_atomic() {
-        let fixture = B3M2B2AFixture::new(86);
+        let source_ordinal = 86;
+        let fixture = B3M2B2AFixture::new(source_ordinal);
         let statement = fixture.statement();
+        let statement_input = fixture.statement_input();
+        let witness_input = fixture.witness_input();
         let witnesses = fixture
-            .witnesses(&statement, fixture.witness_input())
+            .witnesses(&statement, witness_input.clone())
             .expect("witnesses");
         let base = fixture.empty_typed();
         let base_debug = base.debug_text();
@@ -37644,6 +38033,61 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             .with_source_statement_witnesses(statement.clone(), witnesses.clone())
             .expect("paired install");
         let typed_debug = typed.debug_text();
+        let final_debug = assemble_empty_resolved(&typed)
+            .expect("target final before foreign attempts")
+            .debug_text();
+        let pristine_symbols = fixture.symbols.clone();
+        let pristine_bindings = fixture.bindings.clone();
+        let pristine_primary = fixture.primary.clone();
+        let pristine_atomic = fixture.atomic.clone();
+        let pristine_arena = fixture.arena.clone();
+        let pristine_statement_input = statement_input.clone();
+        let pristine_witness_input = witness_input.clone();
+        let assert_target_pristine = || {
+            assert_eq!(fixture.symbols, pristine_symbols);
+            assert_eq!(fixture.bindings, pristine_bindings);
+            assert_eq!(fixture.primary, pristine_primary);
+            assert_eq!(fixture.atomic, pristine_atomic);
+            assert_eq!(fixture.arena, pristine_arena);
+            assert_eq!(statement_input, pristine_statement_input);
+            assert_eq!(witness_input, pristine_witness_input);
+            assert_eq!(statement, fixture.statement());
+            assert_eq!(
+                witnesses,
+                fixture
+                    .witnesses(&statement, witness_input.clone())
+                    .expect("target witness replay")
+            );
+            assert_eq!(base.debug_text(), base_debug);
+            assert_eq!(typed.debug_text(), typed_debug);
+            let replay_statement = SourceStatementProducer::build(
+                statement_input.clone(),
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            )
+            .expect("target statement replay");
+            let replay_witnesses = SourceStatementWitnessProducer::build(
+                witness_input.clone(),
+                &replay_statement,
+                &fixture.primary,
+                &fixture.arena,
+            )
+            .expect("target witness constructor replay");
+            let replay_typed = fixture
+                .empty_typed()
+                .with_source_statement_witnesses(replay_statement, replay_witnesses)
+                .expect("target paired replay");
+            assert_eq!(replay_typed.debug_text(), typed_debug);
+            assert_eq!(
+                assemble_empty_resolved(&replay_typed)
+                    .expect("target final replay")
+                    .debug_text(),
+                final_debug
+            );
+        };
         assert_eq!(typed.source_statement(), Some(&statement));
         assert_eq!(typed.source_statement_witnesses(), Some(&witnesses));
         assert!(typed.source_statement_references().is_none());
@@ -37766,16 +38210,27 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                     .expect("B3M2B1 typed"),
             ),
         ] {
+            let occupied_debug = occupied.debug_text();
             assert_eq!(
-                occupied.with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+                occupied
+                    .clone()
+                    .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
                 Err(TypedAstError::InvalidSourceStatement),
                 "{label} then B3M2B2A"
             );
+            assert_eq!(
+                occupied.debug_text(),
+                occupied_debug,
+                "{label} typed purity"
+            );
+            assert_target_pristine();
         }
         assert_eq!(
             typed.clone().with_source_statement(task258a_statement),
             Err(TypedAstError::InvalidSourceStatement)
         );
+        assert_eq!(typed.debug_text(), typed_debug);
+        assert_target_pristine();
         assert_eq!(
             typed.clone().with_source_statement_references(
                 task258b1.statement.clone(),
@@ -37783,10 +38238,14 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ),
             Err(TypedAstError::InvalidSourceStatement)
         );
+        assert_eq!(typed.debug_text(), typed_debug);
+        assert_target_pristine();
         assert_eq!(
             typed.clone().with_source_statement(task258b2_statement),
             Err(TypedAstError::InvalidSourceStatement)
         );
+        assert_eq!(typed.debug_text(), typed_debug);
+        assert_target_pristine();
         for (label, prior_statement, prior_witnesses) in [
             ("B3", b3_statement, b3_witnesses),
             ("B3N", b3n_statement, b3n_witnesses),
@@ -37801,6 +38260,163 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 Err(TypedAstError::InvalidSourceStatement),
                 "B3M2B2A then {label}"
             );
+            assert_eq!(
+                typed.debug_text(),
+                typed_debug,
+                "{label} target typed purity"
+            );
+            assert_target_pristine();
+        }
+
+        let same_source_a = Fixture::new(source_ordinal);
+        let same_source_b1 = B1Fixture::new(source_ordinal);
+        let same_source_b2 = B2Fixture::new(source_ordinal);
+        let same_source_b3 = B3Fixture::new(source_ordinal);
+        let same_source_b3n = B3NFixture::new(source_ordinal);
+        let same_source_m1 = B3M1Fixture::new(source_ordinal);
+        let same_source_m2a = B3M2AFixture::new(source_ordinal);
+        let same_source_m2b1 = B3M2B1Fixture::new(source_ordinal);
+        for (
+            label,
+            donor_source,
+            donor_module,
+            donor_bindings,
+            donor_primary,
+            donor_atomic,
+            donor_arena,
+            complete_error,
+        ) in [
+            (
+                "A",
+                same_source_a.source,
+                &same_source_a.module,
+                &same_source_a.bindings,
+                &same_source_a.primary,
+                &same_source_a.atomic,
+                &same_source_a.arena,
+                SourceStatementError::InvalidAggregate,
+            ),
+            (
+                "B1",
+                same_source_b1.source,
+                &same_source_b1.module,
+                &same_source_b1.bindings,
+                &same_source_b1.primary,
+                &same_source_b1.atomic,
+                &same_source_b1.arena,
+                SourceStatementError::InvalidAggregate,
+            ),
+            (
+                "B2",
+                same_source_b2.source,
+                &same_source_b2.module,
+                &same_source_b2.bindings,
+                &same_source_b2.primary,
+                &same_source_b2.atomic,
+                &same_source_b2.arena,
+                SourceStatementError::InvalidAggregate,
+            ),
+            (
+                "B3",
+                same_source_b3.source,
+                &same_source_b3.module,
+                &same_source_b3.bindings,
+                &same_source_b3.primary,
+                &same_source_b3.atomic,
+                &same_source_b3.arena,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            ),
+            (
+                "B3N",
+                same_source_b3n.source,
+                &same_source_b3n.module,
+                &same_source_b3n.bindings,
+                &same_source_b3n.primary,
+                &same_source_b3n.atomic,
+                &same_source_b3n.arena,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            ),
+            (
+                "M1",
+                same_source_m1.source,
+                &same_source_m1.module,
+                &same_source_m1.bindings,
+                &same_source_m1.primary,
+                &same_source_m1.atomic,
+                &same_source_m1.arena,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            ),
+            (
+                "M2A",
+                same_source_m2a.source,
+                &same_source_m2a.module,
+                &same_source_m2a.bindings,
+                &same_source_m2a.primary,
+                &same_source_m2a.atomic,
+                &same_source_m2a.arena,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            ),
+            (
+                "M2B1",
+                same_source_m2b1.source,
+                &same_source_m2b1.module,
+                &same_source_m2b1.bindings,
+                &same_source_m2b1.primary,
+                &same_source_m2b1.atomic,
+                &same_source_m2b1.arena,
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                },
+            ),
+        ] {
+            assert_eq!(donor_source, fixture.source, "{label} same source");
+            assert_eq!(donor_module, &fixture.module, "{label} same module");
+            let donor_bindings_before = (*donor_bindings).clone();
+            let donor_primary_before = (*donor_primary).clone();
+            let donor_atomic_before = (*donor_atomic).clone();
+            let donor_arena_before = (*donor_arena).clone();
+            assert_eq!(
+                SourceStatementProducer::build(
+                    statement_input.clone(),
+                    &fixture.symbols,
+                    &fixture.bindings,
+                    donor_primary,
+                    donor_atomic,
+                    donor_arena,
+                ),
+                Err(SourceStatementError::DependencyMismatch),
+                "hybrid target bindings with {label} lower tuple"
+            );
+            assert_eq!(*donor_bindings, donor_bindings_before, "{label} bindings");
+            assert_eq!(*donor_primary, donor_primary_before, "{label} primary");
+            assert_eq!(*donor_atomic, donor_atomic_before, "{label} atomic");
+            assert_eq!(*donor_arena, donor_arena_before, "{label} arena");
+            assert_target_pristine();
+            assert_eq!(
+                SourceStatementProducer::build(
+                    statement_input.clone(),
+                    &fixture.symbols,
+                    donor_bindings,
+                    donor_primary,
+                    donor_atomic,
+                    donor_arena,
+                ),
+                Err(complete_error),
+                "complete {label} lower tuple"
+            );
+            assert_eq!(*donor_bindings, donor_bindings_before, "{label} bindings");
+            assert_eq!(*donor_primary, donor_primary_before, "{label} primary");
+            assert_eq!(*donor_atomic, donor_atomic_before, "{label} atomic");
+            assert_eq!(*donor_arena, donor_arena_before, "{label} arena");
+            assert_target_pristine();
         }
 
         let task248 = crate::source_context::tests::task_248_occupied_typed_ast(

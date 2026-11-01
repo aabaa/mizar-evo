@@ -7194,36 +7194,60 @@ impl TermFormulaChecker {
             .iter()
             .filter(|(_, current)| current.kind() == &K::ParenthesizedTerm)
             .collect::<Vec<_>>();
-        let parenthesized_witness = match groups.as_slice() {
-            [] => None,
-            [(group, current)] if witness_reserved && witness_count == 1 => {
+        let mut parenthesized_witness = Vec::new();
+        if !groups.is_empty() {
+            if !witness_reserved || witness_count != 1 || groups.len() > 2 {
+                return Err(invalid());
+            }
+            let mut takes = source
+                .arena()
+                .iter()
+                .filter(|(_, current)| current.kind() == &K::TakeStatement);
+            let (_, take) = takes.next().ok_or_else(invalid)?;
+            let [_, witness, _] = take.children() else {
+                return Err(invalid());
+            };
+            let [operand] = node(*witness)?.children() else {
+                return Err(invalid());
+            };
+            let [group] = node(*operand)?.children() else {
+                return Err(invalid());
+            };
+            if takes.next().is_some()
+                || node(*witness)?.kind() != &K::Witness
+                || node(*operand)?.kind() != &K::TermExpression
+            {
+                return Err(invalid());
+            }
+            let mut group = *group;
+            for index in 0..groups.len() {
+                let current = node(group)?;
                 let [open, expression, close] = current.children() else {
                     return Err(invalid());
                 };
                 let [child] = node(*expression)?.children() else {
                     return Err(invalid());
                 };
-                if node(*expression)?.kind() != &K::TermExpression
-                    || node(*child)?.kind() != &K::TermReference
+                if current.kind() != &K::ParenthesizedTerm
+                    || parenthesized_witness
+                        .iter()
+                        .any(|(seen, _, _)| *seen == group)
+                    || node(*expression)?.kind() != &K::TermExpression
+                    || node(*child)?.kind()
+                        != if index + 1 == groups.len() {
+                            &K::TermReference
+                        } else {
+                            &K::ParenthesizedTerm
+                        }
                     || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "(")
                     || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ")")
-                    || !source.arena().iter().any(|(_, witness)| {
-                        let [operand] = witness.children() else {
-                            return false;
-                        };
-                        witness.kind() == &K::Witness
-                            && node(*operand).is_ok_and(|operand| {
-                                operand.kind() == &K::TermExpression
-                                    && operand.children() == [*group]
-                            })
-                    })
                 {
                     return Err(invalid());
                 }
-                Some((*group, *expression, *child))
+                parenthesized_witness.push((group, *expression, *child));
+                group = *child;
             }
-            _ => return Err(invalid()),
-        };
+        }
         let descendant_reserved = nested_reserved
             && source.arena().iter().any(|(_, current)| {
                 current.kind() == &K::ConclusionStatement
@@ -7253,7 +7277,7 @@ impl TermFormulaChecker {
                 }
                 SurfaceTokenKind::ReservedSymbol
                     if [":", ";", ",", "="].contains(&token.text.as_ref())
-                        || (parenthesized_witness.is_some()
+                        || (!parenthesized_witness.is_empty()
                             && ["(", ")"].contains(&token.text.as_ref())) =>
                 {
                     Ok(token.text.to_string())
@@ -7392,7 +7416,7 @@ impl TermFormulaChecker {
                 }
                 (K::TermExpression, ["ParenthesizedTerm"])
                 | (K::ParenthesizedTerm, ["(", "TermExpression", ")"])
-                    if parenthesized_witness.is_some() =>
+                    if !parenthesized_witness.is_empty() =>
                 {
                     true
                 }
@@ -7489,11 +7513,9 @@ impl TermFormulaChecker {
                         }
                         _ => return Err(invalid()),
                     };
-                    operands.push(match parenthesized_witness {
-                        Some((group, child_expression, _))
-                            if node(operand)?.children() == [group] =>
-                        {
-                            child_expression
+                    operands.push(match parenthesized_witness.first() {
+                        Some((group, _, _)) if node(operand)?.children() == [*group] => {
+                            parenthesized_witness.last().ok_or_else(invalid)?.1
                         }
                         _ => operand,
                     });
@@ -7769,14 +7791,15 @@ impl TermFormulaChecker {
                     scope,
                     &arena,
                     parenthesized_witness
+                        .iter()
                         .map(|(group, _, child)| {
                             Ok::<_, String>((
                                 TypedSiteRef::Node(TypedNodeId::new(group.index())),
-                                range(group)?,
+                                range(*group)?,
                                 TypedSiteRef::Node(TypedNodeId::new(child.index())),
                             ))
                         })
-                        .transpose()?,
+                        .collect::<Result<Vec<_>, _>>()?,
                 )
                 .map_err(|error| error.to_string())?;
             (bindings, Some(primary))
@@ -7864,21 +7887,25 @@ impl TermFormulaChecker {
                     )),
             );
         }
-        if let Some((group, _, child)) = parenthesized_witness {
+        for (index, (group, _, child)) in parenthesized_witness.iter().rev().enumerate() {
             let child = terms
                 .iter()
-                .find(|term| term.site == site(child))
+                .find(|term| term.site == site(*child))
                 .ok_or_else(invalid)?;
             let mut result_type = child.result_type.clone().ok_or_else(invalid)?;
             result_type.site = TypedSiteRef::Role {
                 node: result_type.site.node(),
-                role: crate::typed_ast::TypeRole::new("theorem.equality.parenthesized"),
+                role: crate::typed_ast::TypeRole::new(if index == 0 {
+                    "theorem.equality.parenthesized".to_owned()
+                } else {
+                    format!("theorem.equality.parenthesized:{index}")
+                }),
             };
             terms.push(
                 TermInput::new(
-                    site(group),
+                    site(*group),
                     child.context,
-                    range(group)?,
+                    range(*group)?,
                     TermKind::Parenthesized,
                 )
                 .with_result_type(result_type),
@@ -17997,22 +18024,29 @@ impl SourceVariableSemanticsChecker {
                     }
                     _ => return Err(invalid()),
                 };
-                let operand = match node(operand)?.children() {
-                    [group] if node(*group)?.kind() == &K::ParenthesizedTerm => {
-                        let [open, child, close] = node(*group)?.children() else {
-                            return Err(invalid());
-                        };
-                        if node(witness)?.children().len() != 1
-                            || take.children().len() != 3
-                            || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "(")
-                            || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ")")
-                        {
-                            return Err(invalid());
-                        }
-                        *child
+                let mut operand = operand;
+                for _ in 0..2 {
+                    let [group] = node(operand)?.children() else {
+                        return Err(invalid());
+                    };
+                    if node(operand)?.kind() != &K::TermExpression {
+                        return Err(invalid());
                     }
-                    _ => operand,
-                };
+                    if node(*group)?.kind() != &K::ParenthesizedTerm {
+                        break;
+                    }
+                    let [open, child, close] = node(*group)?.children() else {
+                        return Err(invalid());
+                    };
+                    if node(witness)?.children().len() != 1
+                        || take.children().len() != 3
+                        || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "(")
+                        || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ")")
+                    {
+                        return Err(invalid());
+                    }
+                    operand = *child;
+                }
                 operand_sites.push(operand);
             }
         }

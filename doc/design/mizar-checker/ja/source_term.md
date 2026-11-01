@@ -14,6 +14,7 @@ native B3は同じ全occurrence認証により全5個の実reference use ordinal
 native B3Nは同じreserved occurrence五つとnative clockを保持する。name tokenはprimary term/referenceでもBindingIdでもない。定義roleとname use拒否はintakeが所有し、このproducerへnamed-take構文やabbreviation意味処理を加えない。
 native mixed B3M1は実reserved occurrence全6件と実Resolver clock/lexical scopeを保持する。二つのwitness operandは実primary/reference rowであり、nameはこのtransportに含めない。二witness censusとname use拒否はintakeが所有するため、このproducerとpublic挙動は変更しない。
 native B3M2B1はsource順primary ID/source ordinal `0..5`を保持し、wrapper 2の後にchild 3 (`parent=2`)を置く。実referenceは`[0,1,3,4,5]`へjoinし、Resolver use ordinal `0..4`と実scopeを独立して保持する。wrapper 2はbinding/reference/numeric requestを持たない。intakeが認証したwrapper/child site relationをこのsyntax-free producerが一度だけ消費し、childを実occurrenceへjoinし、不一致childまたは未使用relationを拒否する。reference clockをprimary ID/ordinalから導かない。
+original-source `take ((x));`ではpreorder primary `0..6`を保持し、outer wrapper 2、inner wrapper 3 (`parent=2`)、実reference leaf 4 (`parent=3`)とする。実referenceは`[0,1,4,5,6]`へjoinし、Resolver use ordinal `0..4`と実scopeを保持する。source chainはTypeCheckerが認証し、このproducerはsyntax-freeのまま既存private site/range/child tupleを一度消費し、限定された通常tuple collectionを使い、新type/abstractionを作らない。不一致・重複・循環・未使用relationを拒否する。wrapperはreference/binding/numeric requestを増やさず、clockをprimary ID/ordinalから導かない。
 
 ## 目的とauthority
 

@@ -261,6 +261,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B1_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2A_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementNestedParenthesizedWitnessSmoke: x = x proof\n",
@@ -1942,11 +1943,8 @@ const SOURCE_STATEMENT_B3M2A_SPELLINGS: [&str; 2] = [
 ];
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B1_LABEL: &str = "FormulaStatementParenthesizedWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2A_LABEL: &str = "FormulaStatementNestedParenthesizedWitnessSmoke";
-const SOURCE_STATEMENT_B3M2B2A_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementNestedParenthesizedWitnessSmoke : x = x proof take ( ( x ) ) ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 const SOURCE_STATEMENT_B3M2B2B1A_LABEL: &str = "FormulaStatementApplicationWitnessSmoke";
 const SOURCE_STATEMENT_B3M2B2B1A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementApplicationWitnessSmoke : x = x proof take 1 ++ 2 ; thus x = x ; end ;",
@@ -2157,6 +2155,7 @@ pub(in crate::runner) struct SourceStatementB3M2B1Extraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2AExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2440,45 +2439,6 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
             structure_update_node: None,
             set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2A_TEXT,
-        }
-    }
-}
-
-impl From<SourceStatementB3M2B2AExtraction> for SourceStatementWitnessExtraction {
-    fn from(extracted: SourceStatementB3M2B2AExtraction) -> Self {
-        Self {
-            theorem_site: extracted.theorem_site,
-            theorem_range: extracted.theorem_range,
-            label_range: extracted.label_range,
-            statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
-            formula_sites: extracted.formula_sites,
-            formula_ranges: extracted.formula_ranges,
-            term_sites: extracted.term_sites.into(),
-            term_ranges: extracted.term_ranges.into(),
-            take_site: extracted.take_site,
-            take_range: extracted.take_range,
-            witnesses: vec![SourceStatementWitnessItemExtraction {
-                site: extracted.witness_site,
-                range: extracted.witness_range,
-                name: None,
-                spelling: "( ( x ) )",
-            }],
-            proof_range: extracted.proof_range,
-            label: SOURCE_STATEMENT_B3M2B2A_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2A_SPELLINGS,
-            task: "Task258B3M2B2A",
-            node_count: 57,
-            root: 56,
-            atomic_term_starts: [0, 5],
-            input_fact_reference_starts: [0, 3],
-            application_node: None,
-            application_wrapper_node: None,
-            structure_node: None,
-            structure_selector_node: None,
-            structure_update_node: None,
-            set_term_node: None,
-            source_text: SOURCE_STATEMENT_B3M2B2A_TEXT,
         }
     }
 }
@@ -2917,7 +2877,6 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
 }
 
 pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3RouteInputs;
-pub(in crate::runner) type SourceStatementB3M2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
@@ -4560,6 +4519,7 @@ fn exact_parenthesized_witness_surface_profile(ast: &SurfaceAst) -> bool {
         })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_nested_parenthesized_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -6540,6 +6500,7 @@ pub(in crate::runner) fn extract_choice_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -6600,6 +6561,7 @@ const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 120),
 ];
 
+#[cfg(test)]
 const TASK258B3M2B2A_TOKEN_TEXTS: [&str; 26] = [
     "reserve",
     "x",
@@ -6629,6 +6591,7 @@ const TASK258B3M2B2A_TOKEN_TEXTS: [&str; 26] = [
     ";",
 ];
 
+#[cfg(test)]
 fn task258b3m2b2a_token_kind(index: usize) -> SurfaceTokenKind {
     match index {
         0 | 2 | 3 | 5 | 11 | 12 | 19 | 24 => SurfaceTokenKind::ReservedWord,
@@ -6638,6 +6601,7 @@ fn task258b3m2b2a_token_kind(index: usize) -> SurfaceTokenKind {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2b2a_surface_kind(index: usize) -> SyntaxKind {
     match index {
         0..=25 => SyntaxKind::Token,
@@ -6663,6 +6627,7 @@ fn task258b3m2b2a_surface_kind(index: usize) -> SyntaxKind {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2b2a_surface_children(index: usize) -> &'static [usize] {
     match index {
         26 => &[3],
@@ -6703,6 +6668,7 @@ fn task258b3m2b2a_surface_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn exact_nested_parenthesized_witness_surface_profile(ast: &SurfaceAst) -> bool {
     TASK258B3M2B2A_SURFACE_RANGES
         .iter()
@@ -13640,15 +13606,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2A_TEXT {
-        return source_statement_b3m2b2a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2A_TEXT {
         return source_statement_b3m2a_output_with_source_and_mutation_impl(
             ast,
@@ -15301,72 +15258,6 @@ fn source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2a_output_with_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2a_output_with_source_and_mutation_impl(
-        ast,
-        module,
-        symbols,
-        source_text,
-        mutate,
-    )
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2a_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_nested_parenthesized_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2A_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => mutate(symbols),
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3m2b2a_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
-    ))
-}
-
-fn source_statement_b3m2b2a_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_nested_parenthesized_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2A_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3m2b2a_output(
-        ast, module, &symbols, extracted, mutate,
-    ))
-}
-
-#[cfg(test)]
 pub(in crate::runner) fn source_statement_b3m2a_output_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -15938,20 +15829,6 @@ pub(in crate::runner) fn source_statement_b3m2a_resolver_env_for_test(
         module,
         symbols,
         SOURCE_STATEMENT_B3M2A_LABEL,
-        extracted.label_range,
-    )
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2a_resolver_env_for_test(
-    module: &ModuleId,
-    symbols: &SymbolEnv,
-    extracted: &SourceStatementB3M2B2AExtraction,
-) -> Result<SymbolEnv, String> {
-    enrich_source_statement_resolver_env_for_owner(
-        module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2A_LABEL,
         extracted.label_range,
     )
 }
@@ -17395,16 +17272,6 @@ fn build_source_statement_b3m2a_output(
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2AExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
-}
-
-fn build_source_statement_b3m2b2a_output(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    extracted: SourceStatementB3M2B2AExtraction,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2ARouteInputs),
 ) -> Result<SourceStatementRouteOutput, String> {
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
