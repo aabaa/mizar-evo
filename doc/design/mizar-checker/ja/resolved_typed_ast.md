@@ -1949,4 +1949,4 @@ native B3M2B1のfinal replayはcanonical baseの実wrapper/child関係とsource-
 
 original-statement final組込みは限定されたoriginal空集合・単元集合・bare-set choice witness pairと検証済み全set/primary/statement fingerprintを伴う場合だけ保持SourceSetを認める。そのpairを既存set-aware witness validatorへ渡し、通常source-set clone検証と出力/clone replay中の全immutable pair/setを保つ。application/structure/他auxiliaryの除外、Unknown/default source hint、空semantic/type/context/proof productとproof/Driver境界を変えない。raw-profile allowanceや一般set-witness acceptanceを加えない。
 
-旧B3B raw set依存とwitness-final allowanceはCheckerのtest compilationだけに残す。original-source空集合再生と他raw familyを分離して保持し、productionのB3B raw handoffやsemantic/proof authorityを残さない。
+旧B3B/C raw set依存とwitness-final allowanceはCheckerのtest compilationだけに残す。original-source空集合/choice再生と他raw familyを分離して保持し、productionのB3B/C raw handoffやsemantic/proof authorityを残さない。

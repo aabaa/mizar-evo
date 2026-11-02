@@ -332,6 +332,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3B_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3C_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementChoiceWitnessSmoke: x = x proof\n",
@@ -1979,7 +1980,9 @@ const SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS: [&str; 2] = [
 ];
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3B_LABEL: &str = "FormulaStatementEmptySetEnumerationWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3C_LABEL: &str = "FormulaStatementChoiceWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementChoiceWitnessSmoke : x = x proof take the set ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2307,6 +2310,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3BExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B3CExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2676,6 +2680,7 @@ impl From<SourceStatementB3M2B2B3AExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B3CExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3CExtraction) -> Self {
         Self {
@@ -2843,6 +2848,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatement
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3CRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3DRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3ERouteInputs = SourceStatementB3RouteInputs;
@@ -2857,8 +2863,6 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3AStage {
 }
 
 #[cfg(test)]
-pub(in crate::runner) type SourceStatementB3M2B2B3CStage = SourceStatementB3M2B2B3AStage;
-#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3DStage = SourceStatementB3M2B2B3AStage;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3EStage = SourceStatementB3M2B2B3AStage;
@@ -2871,8 +2875,6 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3BLowerStage {
     Task255,
 }
 #[cfg(test)]
-pub(in crate::runner) type SourceStatementB3M2B2B3CLowerStage = SourceStatementB3M2B2B3BLowerStage;
-#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3DLowerStage = SourceStatementB3M2B2B3BLowerStage;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3ELowerStage = SourceStatementB3M2B2B3BLowerStage;
@@ -2883,27 +2885,6 @@ pub(in crate::runner) const TASK258B3M2B2B3A_TASK256_FIELD_COUNT: usize = 72;
 pub(in crate::runner) const TASK258B3M2B2B3A_TASK258_FIELD_COUNT: usize = 62;
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3A_WITNESS_FIELD_COUNT: usize = 21;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3B_TASK48_FIELD_COUNT: usize = 32;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3B_TASK252_FIELD_COUNT: usize = 55;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_TASK48_FIELD_COUNT: usize =
-    TASK258B3M2B2B3B_TASK48_FIELD_COUNT;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_TASK252_FIELD_COUNT: usize =
-    TASK258B3M2B2B3B_TASK252_FIELD_COUNT;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_TASK255_FIELD_COUNT: usize = 39;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_TASK256_FIELD_COUNT: usize =
-    TASK258B3M2B2B3A_TASK256_FIELD_COUNT;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_TASK258_FIELD_COUNT: usize =
-    TASK258B3M2B2B3A_TASK258_FIELD_COUNT;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3C_WITNESS_FIELD_COUNT: usize =
-    TASK258B3M2B2B3A_WITNESS_FIELD_COUNT;
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3D_TASK48_FIELD_COUNT: usize = 32;
 #[cfg(test)]
@@ -5472,6 +5453,7 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3ASurfaceMutation {
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3BSurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3CSurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
 pub(in crate::runner) type SourceStatementB3M2B2B3DSurfaceMutation =
@@ -6130,6 +6112,7 @@ pub(in crate::runner) fn extract_empty_set_enumeration_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 fn exact_choice_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     exact_choice_witness_surface_profile_with_mutation(
         ast,
@@ -6138,6 +6121,7 @@ fn exact_choice_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> 
     )
 }
 
+#[cfg(test)]
 fn exact_choice_witness_surface_profile_with_mutation(
     ast: &SurfaceAst,
     source_text: &str,
@@ -6376,6 +6360,7 @@ pub(in crate::runner) fn extract_choice_witness_source_statement_with_surface_mu
     extract_choice_witness_source_statement(ast, source_text)
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_choice_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13484,15 +13469,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B3C_TEXT {
-        return source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
         return source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
             ast,
@@ -14124,225 +14100,6 @@ fn source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
-        ast,
-        module,
-        symbols,
-        source_text,
-        mutate,
-    )
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_stage_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    stage: SourceStatementB3M2B2B3CStage,
-    field: usize,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        &symbols,
-        extracted.into(),
-        |_| {},
-        Some((stage, field)),
-        |_| {},
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_lower_stage_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    stage: SourceStatementB3M2B2B3CLowerStage,
-    field: usize,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let baseline = match source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
-        ast,
-        module.clone(),
-        symbols,
-        source_text,
-        |_| {},
-    )? {
-        Ok(output) => output,
-        Err(error) => return Some(Err(error)),
-    };
-
-    match stage {
-        SourceStatementB3M2B2B3CLowerStage::Task48 => {
-            let parts = match mutate_task258b3m2b2b3b_binding_env(
-                baseline
-                    .typed_ast
-                    .source_statement()
-                    .expect("Task258B3M2B2B3C statement")
-                    .binding_env(),
-                field,
-            ) {
-                Ok(parts) => parts,
-                Err(error) => return Some(Err(error)),
-            };
-            let binding_env = match BindingEnv::try_new(parts) {
-                Ok(binding_env) => binding_env,
-                Err(error) => return Some(Err(format!("Task48: {error}"))),
-            };
-            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.binding_env = binding_env,
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task48:") {
-                        error
-                    } else {
-                        format!("Task48: {error}")
-                    }
-                })
-            })
-        }
-        SourceStatementB3M2B2B3CLowerStage::Task252 => {
-            let mut input = task258b3m2b2b3b_primary_input(
-                baseline
-                    .typed_ast
-                    .source_term()
-                    .expect("Task258B3M2B2B3C primary terms"),
-            );
-            if let Err(error) = mutate_task258b3m2b2b3b_primary_input(&mut input, field) {
-                return Some(Err(error));
-            }
-            let primary = match SourcePrimaryTermProducer::build(
-                input,
-                baseline
-                    .typed_ast
-                    .source_statement()
-                    .expect("Task258B3M2B2B3C statement")
-                    .binding_env(),
-                baseline.typed_ast.nodes(),
-            ) {
-                Ok(primary) => primary,
-                Err(error) => return Some(Err(format!("Task252: {error}"))),
-            };
-            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.primary = primary,
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task252:") {
-                        error
-                    } else {
-                        format!("Task252: {error}")
-                    }
-                })
-            })
-        }
-        SourceStatementB3M2B2B3CLowerStage::Task255 => {
-            let mut input = task258b3m2b2b3c_set_input(
-                baseline
-                    .typed_ast
-                    .source_set_term()
-                    .expect("Task258B3M2B2B3C set term"),
-            );
-            if let Err(error) = mutate_task258b3m2b2b3c_set_input(&mut input, field) {
-                return Some(Err(error));
-            }
-            let binding_env = baseline
-                .typed_ast
-                .source_statement()
-                .expect("Task258B3M2B2B3C statement")
-                .binding_env();
-            let primary = baseline
-                .typed_ast
-                .source_term()
-                .expect("Task258B3M2B2B3C primary terms");
-            let set_term = match SourceSetTermProducer::build(
-                input,
-                binding_env,
-                primary,
-                None,
-                None,
-                baseline.typed_ast.nodes(),
-            ) {
-                Ok(set_term) => set_term,
-                Err(error) => return Some(Err(format!("Task255: {error}"))),
-            };
-            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.set_term = Some(set_term),
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task255:") {
-                        error
-                    } else {
-                        format!("Task255: {error}")
-                    }
-                })
-            })
-        }
-    }
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        &symbols,
-        extracted.into(),
-        |_| {},
-        None,
-        mutate,
-    ))
-}
-
-#[cfg(test)]
 pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -14381,28 +14138,6 @@ pub(in crate::runner) fn source_statement_b3m2b2b3c_resolver_env_for_test(
         SOURCE_STATEMENT_B3M2B2B3C_LABEL,
         label_range,
     )
-}
-
-fn source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b3m2b2b3c_output(
-        ast, module, &symbols, extracted, mutate,
-    ))
 }
 
 #[cfg(test)]
@@ -17009,6 +16744,7 @@ fn build_source_statement_b3m2b2b3a_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b3c_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -17267,66 +17003,6 @@ fn task258b3m2b2b3b_primary_input(
 }
 
 #[cfg(test)]
-fn mutate_task258b3m2b2b3b_primary_input(
-    input: &mut SourcePrimaryTermHandoffInput,
-    field: usize,
-) -> Result<(), String> {
-    match field {
-        0 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
-        1 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
-        2 => input.terms.clear(),
-        3 => input.terms.push(input.terms[0].clone()),
-        4..40 => {
-            let offset = field - 4;
-            let term = offset / 9;
-            let other = (term + 1) % 4;
-            match offset % 9 {
-                0 => input.terms[term].site = input.terms[other].site.clone(),
-                1 => input.terms[term].source_range.start += 1,
-                2 => input.terms[term].source_ordinal += 5,
-                3 => {
-                    input.terms[term].context =
-                        BindingContextId::new(1 - input.terms[term].context.index())
-                }
-                4 => input.terms[term].recovery = SourcePrimaryTermRecovery::Degraded,
-                5 => input.terms[term].spelling.push('!'),
-                6 => input.terms[term].kind = SourcePrimaryTermKind::Numeral,
-                7 => input.terms[term].role = SourcePrimaryTermRole::CurrentDefinitionResult,
-                8 => input.terms[term].parent = Some(SourcePrimaryTermId::new(other)),
-                _ => unreachable!(),
-            }
-        }
-        40 => input.references.clear(),
-        41 => input.references.push(input.references[0].clone()),
-        42..54 => {
-            let offset = field - 42;
-            let reference = offset / 3;
-            match offset % 3 {
-                0 => {
-                    input.references[reference].term = SourcePrimaryTermId::new((reference + 1) % 4)
-                }
-                1 => input.references[reference].binding = BindingId::new(99),
-                2 => {
-                    input.references[reference].role = SourcePrimaryTermReferenceRole::LocalConstant
-                }
-                _ => unreachable!(),
-            }
-        }
-        54 => input
-            .numeric_type_requests
-            .push(SourceNumericTypeRequestInput {
-                term: SourcePrimaryTermId::new(0),
-                owner: input.terms[0].site.clone(),
-                source_range: input.terms[0].source_range,
-                spelling: input.terms[0].spelling.clone(),
-                request_ordinal: 0,
-            }),
-        _ => return Err(format!("Task252: unknown mutation field {field}")),
-    }
-    Ok(())
-}
-
-#[cfg(test)]
 fn mutate_task258b3m2b2b3d_primary_input(
     input: &mut SourcePrimaryTermHandoffInput,
     field: usize,
@@ -17390,167 +17066,6 @@ fn mutate_task258b3m2b2b3d_primary_input(
         68 => input.numeric_type_requests[0].spelling.push('!'),
         69 => input.numeric_type_requests[0].request_ordinal += 1,
         _ => return Err(format!("Task252: unknown mutation field {field}")),
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-fn task258b3m2b2b3c_set_input(input: &SourceSetTermHandoff) -> SourceSetTermHandoffInput {
-    SourceSetTermHandoffInput {
-        source_id: input.source_id(),
-        module_id: input.module_id().clone(),
-        terms: input
-            .terms()
-            .iter()
-            .map(|(_, row)| SourceSetTermInput {
-                site: row.site().clone(),
-                source_range: row.source_range(),
-                source_ordinal: row.source_ordinal(),
-                context: row.context(),
-                recovery: row.recovery(),
-                spelling: row.spelling().to_owned(),
-                kind: row.kind(),
-            })
-            .collect(),
-        wrappers: Vec::new(),
-        generators: Vec::new(),
-        type_sites: input
-            .type_sites()
-            .iter()
-            .map(|(_, row)| SourceSetTypeSiteInput {
-                owner: row.owner(),
-                site: row.site().clone(),
-                source_range: row.source_range(),
-                spelling: row.spelling().to_owned(),
-                head_site: row.head_site().clone(),
-                head_range: row.head_range(),
-                head_spelling: row.head_spelling().to_owned(),
-                context: row.context(),
-                recovery: row.recovery(),
-                head: row.head(),
-            })
-            .collect(),
-        conditions: Vec::new(),
-        edges: Vec::new(),
-        requests: input
-            .requests()
-            .iter()
-            .map(|(_, row)| SourceSetRequestInput {
-                term: row.term(),
-                ordinal: row.ordinal(),
-                kind: row.kind(),
-                generator: row.generator(),
-                type_site: row.type_site(),
-            })
-            .collect(),
-    }
-}
-
-#[cfg(test)]
-fn mutate_task258b3m2b2b3c_set_input(
-    input: &mut SourceSetTermHandoffInput,
-    field: usize,
-) -> Result<(), String> {
-    match field {
-        0 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
-        1 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
-        2 => input.terms.clear(),
-        3 => input.terms.push(input.terms[0].clone()),
-        4 => {
-            input.terms[0].site = TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(27))
-        }
-        5 => input.terms[0].source_range.start += 1,
-        6 => input.terms[0].source_ordinal += 1,
-        7 => input.terms[0].context = BindingContextId::new(0),
-        8 => input.terms[0].recovery = SourceSetTermRecovery::Degraded,
-        9 => input.terms[0].spelling.push('!'),
-        10 => input.terms[0].kind = SourceSetTermKind::Enumeration,
-        11 => input.wrappers.push(SourceSetWrapperInput {
-            term: SourceSetTermId::new(0),
-            ordinal: 0,
-            site: input.terms[0].site.clone(),
-            source_range: input.terms[0].source_range,
-            context: input.terms[0].context,
-            recovery: SourceSetTermRecovery::Normal,
-            spelling: "( the set )".to_owned(),
-        }),
-        12 => input.generators.push(SourceSetGeneratorInput {
-            term: SourceSetTermId::new(0),
-            ordinal: 0,
-            site: input.terms[0].site.clone(),
-            source_range: input.terms[0].source_range,
-            spelling: "x being set".to_owned(),
-            context: input.terms[0].context,
-            recovery: SourceSetTermRecovery::Normal,
-            type_site: SourceSetTypeSiteId::new(0),
-        }),
-        13 => input.type_sites.clear(),
-        14 => input.type_sites.push(input.type_sites[0].clone()),
-        15 => {
-            input.type_sites[0].owner = SourceSetTypeOwner::Term {
-                term: SourceSetTermId::new(0),
-                role: SourceSetTypeRole::QuaTarget,
-            }
-        }
-        16 => {
-            input.type_sites[0].site =
-                TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(33))
-        }
-        17 => input.type_sites[0].source_range.start += 1,
-        18 => input.type_sites[0].spelling.push('!'),
-        19 => {
-            input.type_sites[0].head_site =
-                TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(34))
-        }
-        20 => input.type_sites[0].head_range.start += 1,
-        21 => input.type_sites[0].head_spelling.push('!'),
-        22 => input.type_sites[0].context = BindingContextId::new(0),
-        23 => input.type_sites[0].recovery = SourceSetTermRecovery::Degraded,
-        24 => input.type_sites[0].head = SourceSetTypeHead::BuiltinObject,
-        25 => input.conditions.push(SourceSetConditionInput {
-            term: SourceSetTermId::new(0),
-            ordinal: 0,
-            colon_site: input.terms[0].site.clone(),
-            colon_range: input.terms[0].source_range,
-            colon_spelling: ":".to_owned(),
-            condition_site: input.terms[0].site.clone(),
-            source_range: input.terms[0].source_range,
-            spelling: "x = x".to_owned(),
-            recovery: SourceSetTermRecovery::Normal,
-        }),
-        26 => input.edges.push(SourceSetEdgeInput {
-            term: SourceSetTermId::new(0),
-            ordinal: 0,
-            role: SourceSetEdgeRole::EnumerationElement,
-            target: SourceSetTarget::Primary(SourcePrimaryTermId::new(0)),
-        }),
-        27 => input.requests.clear(),
-        28 => input.requests.push(input.requests[0].clone()),
-        29..39 => {
-            let offset = field - 29;
-            let request = offset / 5;
-            match offset % 5 {
-                0 => input.requests[request].term = SourceSetTermId::new(1),
-                1 => input.requests[request].ordinal = 1 - input.requests[request].ordinal,
-                2 => {
-                    input.requests[request].kind = if request == 0 {
-                        SourceSetRequestKind::ResultType
-                    } else {
-                        SourceSetRequestKind::ChoiceNonempty
-                    }
-                }
-                3 => input.requests[request].generator = Some(SourceSetGeneratorId::new(0)),
-                4 => {
-                    input.requests[request].type_site = if request == 0 {
-                        None
-                    } else {
-                        Some(SourceSetTypeSiteId::new(0))
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-        _ => return Err(format!("Task255: unknown mutation field {field}")),
     }
     Ok(())
 }
@@ -18860,7 +18375,6 @@ fn build_source_statement_witness_output_with_controls(
             Some((SourceStatementB3M2B2B3AStage::Witness, _))
         ) {
             let stage = match extracted.task {
-                "Task258B3M2B2B3C" => "B3C",
                 "Task258B3M2B2B3D" => "B3D",
                 "Task258B3M2B2B3E" => "B3E",
                 _ => "B3A",
