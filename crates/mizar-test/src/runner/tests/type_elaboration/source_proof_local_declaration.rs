@@ -10501,44 +10501,345 @@ fn task269sdp_resolver_shell_and_precedence_corruption_fail_closed() {
 }
 
 #[test]
+fn task269sdp_generic_roles_transport_frontend_normal_descendant_sources() {
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceNodeKind as K;
+
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let cases = [
+        ("historical_missing_lf_0", source.trim_end_matches('\n').to_owned(), 2_691_190),
+        ("historical_extra_lf_1", format!("{source}\n"), 2_691_191),
+        ("historical_theorem_name_2", source.replace("ProofLocalGivenDescendantCaptureSmoke", "ProofLocalGivenDescendantCaptureOther"), 2_691_192),
+        ("historical_blank_line_11", source.replace("  given y being set;\n  now", "  given y being set;\n\n  now"), 2_691_201),
+        ("be", source.replace("given y being set", "given y be set"), 2_692_800),
+        ("mixed_leading_layout", format!(" \t\n{source}"), 2_692_801),
+        ("prefix_comment", format!(":: descendant syntax\n{source}"), 2_692_802),
+        ("internal_indent", source.replace("    set z", "\t   set z"), 2_692_803),
+        ("trailing_space", format!("{source} "), 2_692_804),
+        ("coherent_all_names", source.replace("ProofLocalGivenDescendantCaptureSmoke", "LongerDescendantSyntaxTheorem")
+            .replace("reserve x for", "reserve reserved_value for").replace("given y being", "given witness being")
+            .replace("set z = y", "set intermediate = witness").replace("set q = z", "set last_name = intermediate"), 2_692_805),
+        ("interior_comment", source.replace("    set q", "    :: later syntax link\n    set q"), 2_692_806),
+        ("trailing_comment", format!("{source}:: trailing comment\n"), 2_692_807),
+        ("mixed_layout", source.replace("set z = y", "set\tz\n=\ty"), 2_692_808),
+    ];
+    for (index, (label, source, ordinal)) in cases.into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(diagnostics, 0, "{label} must be frontend-normal");
+        assert!(ast.expression_root().is_none(), "{label}");
+        let before = (ast.clone(), shells.clone(), symbols.clone());
+        // Preserve the four retired selector negatives through their private historical route.
+        if index < 4 {
+            assert!(source_proof_local_given_descendant_set_lower_output_with_surface_mutation(
+                &ast, module.clone(), &shells, &symbols, &source, SourceProofLocalGivenDescendantSetSurfaceMutation::None,
+            ).is_none(), "{label} historical exact selector stays private");
+        }
+        let output = source_proof_local_given_descendant_set_lower_output(&ast, module.clone(), &shells, &symbols, &source)
+            .expect("generic descendant shape").expect("generic descendant transport");
+
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("generic source arena");
+        let nodes = TypedArena::try_new(
+            ast.root().map(|root| TypedNodeId::new(root.index())),
+            resolved.arena().iter().map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone()).with_resolved_node(id)
+                    .with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())
+                    .with_recovery(if ast.nodes()[id.index()].recovered {
+                        NodeRecoveryState::Recovered
+                    } else { NodeRecoveryState::Normal })
+            }).collect(),
+        ).expect("syntax-only typed arena");
+        let mut typed = TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id, module_id: module.clone(), resolved_root: Some(resolved.arena().root()),
+            source_context: None, source_type: None, source_attribute: None, nodes,
+            contexts: Default::default(), types: Default::default(), facts: Default::default(),
+            coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+        }).expect("syntax-only receiver");
+        typed.install_source_nodes(&resolved).expect("shared source-node installation");
+        let rows = typed.source_node_entries().unwrap().collect::<Vec<_>>();
+        assert_eq!(rows.len(), ast.nodes().len(), "{label} complete rooted census");
+        for (preorder, row) in rows.iter().enumerate() {
+            let node = &ast.nodes()[row.site().index()];
+            assert_eq!((row.kind(), row.range(), row.preorder_ordinal(), row.recovery()),
+                (&node.kind, node.range, preorder, NodeRecoveryState::Normal), "{label} actual AST/table row");
+            if let Some(parent) = row.parent() {
+                assert_eq!(ast.nodes()[parent.index()].children[row.child_ordinal()].index(), row.site().index(),
+                    "{label} actual parent/child role");
+            }
+        }
+        let role = |kind, parent| {
+            let matches = rows.iter().copied().filter(|row| row.kind() == &kind && row.parent() == parent).collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{label} unique {kind:?} role");
+            matches[0]
+        };
+        let root = role(K::Root, None);
+        let unit = role(K::CompilationUnit, Some(root.site()));
+        let items = role(K::ItemList, Some(unit.site()));
+        let reserve = role(K::ReserveItem, Some(items.site()));
+        let theorem = role(K::TheoremItem, Some(items.site()));
+        let proof = role(K::ProofBlock, Some(theorem.site()));
+        let declaration = role(K::GivenStatement, Some(proof.site()));
+        let segment = role(K::QualifiedVariableSegment, Some(declaration.site()));
+        let name = rows.iter().copied().find(|row| row.parent() == Some(segment.site()) && row.child_ordinal() == 0).unwrap();
+        assert!(matches!(name.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::Identifier));
+        let ty = role(K::TypeExpression, Some(segment.site()));
+        let head = role(K::TypeHead, Some(ty.site()));
+        let now = role(K::NowStatement, Some(proof.site()));
+        let inner = role(K::ConclusionStatement, Some(now.site()));
+        let outer = role(K::ConclusionStatement, Some(proof.site()));
+        let inner_proposition = role(K::Proposition, Some(inner.site()));
+        let outer_proposition = role(K::Proposition, Some(outer.site()));
+        for parent in [theorem, inner_proposition, outer_proposition] {
+            let formula = role(K::FormulaExpression, Some(parent.site()));
+            let thesis = role(K::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis), Some(formula.site()));
+            assert_eq!(thesis.spelling(), "thesis", "{label} actual Thesis discriminant");
+        }
+        for (actual, row) in [output.theorem_range(), output.proof_range(), output.given_range(), output.given_segment_range(),
+            output.given_name_range(), output.given_type_range(), output.given_type_head_range(), output.descendant_now_range(),
+            output.inner_conclusion_range(), output.outer_conclusion_range()].into_iter()
+            .zip([theorem, proof, declaration, segment, name, ty, head, now, inner, outer]) {
+            assert_eq!(actual, row.range(), "{label} authenticated role range");
+            assert_eq!(actual.source_id, ast.source_id, "{label}");
+        }
+        assert_eq!((output.source_id(), output.module_id(), output.given_source_ordinal()),
+            (ast.source_id, &module, declaration.child_ordinal()), "{label} bounded Given position");
+        assert_eq!((output.given_name_spelling(), output.given_type_spelling()), (name.spelling(), head.spelling()), "{label}");
+        assert_eq!(output.source_fingerprint(), sha256_text(&source), "{label} raw source");
+        assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()), "{label} actual AST");
+        for (shell, row) in shells.declarations().iter().zip([reserve, theorem]) {
+            assert_eq!((shell.node_id().index(), shell.range()), (row.site().index(), row.range()), "{label} shell role");
+        }
+        let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+        assert!(symbols.symbols().visible_candidates(&namespace, name.spelling()).is_empty(), "{label} local stays unpublished");
+        let theorem_name = rows.iter().find(|row| row.parent() == Some(theorem.site()) && row.child_ordinal() == 1).unwrap().spelling();
+        let owners = symbols.symbols().visible_candidates(&namespace, theorem_name);
+        let [owner] = owners.as_slice() else { panic!("{label} theorem owner"); };
+        let definition = symbols.definitions().by_symbol(owner.symbol()).unwrap();
+        let contribution = symbols.contributions().get(owner.contribution()).unwrap();
+        assert_eq!((output.theorem_symbol(), output.theorem_definition(), output.contribution()),
+            (owner.symbol(), definition.id(), contribution.id()), "{label}");
+        assert_eq!(owner.origin().anchor(), &mizar_session::SourceAnchor::Range(theorem.range()), "{label}");
+        assert_eq!(definition.origin(), owner.origin(), "{label}");
+        assert_eq!(contribution.anchor(), &mizar_session::SourceAnchor::Range(reserve.range()), "{label}");
+        assert_eq!(owner.signature(), Some(&mizar_resolve::env::SignatureShell::Opaque {
+            schema: "parser-signature-v1".to_owned(),
+            payload: format!("node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens={};notation=_;arity=_;roles=FormulaExpression,ProofBlock", theorem.spelling()),
+        }), "{label} normalized actual token signature");
+        let [t, p, g, s, n, y, h, w, i, o] = [theorem, proof, declaration, segment, name, ty, head, now, inner, outer].map(|row| row.range());
+        let mut expected_debug = format!(concat!(
+            "source-proof-local-given-descendant-set-lower-debug-v1\nmodule: {}::{}\nsource-fingerprint: {:?}\nsurface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal=1\n",
+            "given-name range={}..{} spelling={:?}\n",
+            "given-type range={}..{} head={}..{} spelling=\"set\" form=bare\n",
+            "descendant-now range={}..{}\n"),
+            module.package().as_str(), module.path().as_str(), sha256_text(&source), sha256_text(&ast.snapshot_text()),
+            owner.symbol().fqn().as_str(), t.start, t.end, p.start, p.end, g.start, g.end, s.start, s.end,
+            n.start, n.end, name.spelling(), y.start, y.end, h.start, h.end, w.start, w.end);
+        let sets = rows.iter().copied().filter(|row| row.parent() == Some(now.site()) && matches!(row.kind(), K::SetStatement)).collect::<Vec<_>>();
+        assert_eq!(sets.len(), 2, "{label} exactly two actual Set children");
+        let reserve_segment = role(K::ReserveSegment, Some(reserve.site()));
+        let reserved_name = rows.iter().find(|row| row.parent() == Some(reserve_segment.site()) && row.child_ordinal() == 0).unwrap();
+        let mut spellings = std::collections::BTreeSet::from([reserved_name.spelling(), name.spelling()]);
+        assert_eq!(spellings.len(), 2, "{label} distinct reserve/Given syntax");
+        let mut previous_spelling = name.spelling();
+        for (ordinal, (statement, actual)) in sets.iter().zip(output.set_rows()).enumerate() {
+            assert_eq!(statement.child_ordinal(), ordinal + 1, "{label} actual Now child order");
+            let equating = role(K::Equating, Some(statement.site()));
+            let set_name = rows.iter().find(|row| row.parent() == Some(equating.site()) && row.child_ordinal() == 0).unwrap();
+            assert!(matches!(set_name.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::Identifier));
+            let rhs = role(K::TermExpression, Some(equating.site()));
+            let reference = role(K::TermReference, Some(rhs.site()));
+            assert_eq!(reference.spelling(), previous_spelling, "{label} syntax-only earlier-name link");
+            assert!(spellings.insert(set_name.spelling()), "{label} all four variable names distinct");
+            assert!(symbols.symbols().visible_candidates(&namespace, set_name.spelling()).is_empty(), "{label} no Set module symbol");
+            for (range, row) in [actual.statement_range(), actual.equating_range(), actual.name_range(), actual.rhs_range()]
+                .into_iter().zip([*statement, equating, *set_name, rhs]) {
+                assert_eq!(range, row.range(), "{label} Set#{ordinal} actual role range");
+            }
+            assert_eq!((actual.name_spelling(), actual.rhs_spelling(), actual.source_ordinal()),
+                (set_name.spelling(), reference.spelling(), ordinal), "{label} existing row fields");
+            let [s, e, n, r] = [*statement, equating, *set_name, rhs].map(|row| row.range());
+            expected_debug.push_str(&format!(concat!(
+                "set#{} statement={}..{} equating={}..{} source_ordinal={}\n",
+                "set#{} name range={}..{} spelling={:?} rhs range={}..{} spelling={:?}\n"),
+                ordinal, s.start, s.end, e.start, e.end, ordinal, ordinal, n.start, n.end, set_name.spelling(),
+                r.start, r.end, reference.spelling()));
+            previous_spelling = set_name.spelling();
+        }
+        assert!(sets[0].preorder_ordinal() < sets[1].preorder_ordinal(), "{label} actual Set preorder");
+        expected_debug.push_str(&format!("conclusions inner={}..{} outer={}..{}\n", i.start, i.end, o.start, o.end));
+        assert_eq!(output.debug_text(), expected_debug, "{label} complete actual-row debug grammar");
+        let (fresh_ast, fresh_module, fresh_shells, fresh_symbols, fresh_diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(fresh_diagnostics, 0, "{label}");
+        assert_eq!(source_proof_local_given_descendant_set_lower_output(&fresh_ast, fresh_module, &fresh_shells, &fresh_symbols, &source)
+            .expect("fresh generic selector").expect("fresh generic lower"), output, "{label} fresh whole-output replay");
+        for outcome in [
+            source_proof_local_given_descendant_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_descendant_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_descendant_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+        ] {
+            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string())),
+                "{label} SDC/SDT/SDU dependency boundary");
+        }
+        assert_eq!((ast, shells, symbols), before, "{label} input purity");
+    }
+}
+
+#[test]
+fn task269sdp_actual_rebuilt_ast_and_raw_source_corruption_fail_closed() {
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 2_692_820);
+    let before = (ast.clone(), shells.clone(), symbols.clone());
+    for (index, node) in ast.nodes().iter().enumerate() {
+        for mutation in 0..4 {
+            let changed = task258_mutated_surface(&ast, index, mutation);
+            assert_ne!(changed, ast, "actual node {index} mutation {mutation}");
+            assert!(source_proof_local_given_descendant_set_lower_output(&changed, module.clone(), &shells, &symbols, source).is_none(),
+                "actual node {index} {:?} mutation {mutation} selected", node.kind);
+        }
+    }
+    let no_root = task258_mutated_surface(&ast, ast.nodes().len(), 0);
+    assert!(source_proof_local_given_descendant_set_lower_output(&no_root, module.clone(), &shells, &symbols, source).is_none());
+    // Rebuild actual foreign ranges and each thesis discriminant independently.
+    let allocator = InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(2_692_821);
+    allocator.next_source_id(snapshot).unwrap();
+    let foreign_source = allocator.next_source_id(snapshot).unwrap();
+    assert_ne!(foreign_source, ast.source_id);
+    let thesis_nodes = ast.nodes().iter().enumerate().filter_map(|(index, node)|
+        matches!(node.kind, mizar_syntax::SurfaceNodeKind::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis)).then_some(Some(index)));
+    for target in std::iter::once(None).chain(thesis_nodes) {
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let range = if target.is_none() { mizar_session::SourceRange { source_id: foreign_source, ..node.range } } else { node.range };
+            let kind = if target == Some(index) {
+                mizar_syntax::SurfaceNodeKind::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Contradiction)
+            } else { node.kind.clone() };
+            let children = node.children.iter().map(|child| rebuilt[child.index()]).collect();
+            rebuilt.push(match kind {
+                mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(token.kind, token.text, range),
+                kind => builder.add_node(kind, range, children),
+            });
+        }
+        let changed = builder.finish(ast.root().map(|root| rebuilt[root.index()]), None);
+        assert_ne!(changed, ast);
+        assert!(source_proof_local_given_descendant_set_lower_output(&changed, module.clone(), &shells, &symbols, source).is_none(),
+            "actual source/discriminant corruption {target:?} selected");
+    }
+    for (label, raw) in [
+        ("same_length_token_change", source.replace("given y", "given z")),
+        ("omitted_gap_code", source.replace("  given", "? given")),
+        ("malformed_gap_delimiter", source.replace("  given", ": given")),
+        ("commented_out_tokens", source.replace("  given", "::given")),
+        ("trailing_code", format!("{source}?")),
+        ("bare_cr_prefix", format!("\r{source}")),
+    ] {
+        assert!(source_proof_local_given_descendant_set_lower_output(&ast, module.clone(), &shells, &symbols, &raw).is_none(),
+            "{label} stale AST/raw-source pair selected");
+    }
+    // EN04 4.6.2 and EN15 15.10 forbid redeclaration within the same scope.
+    let redeclared = source.replace("set q = z", "set z = z");
+    let raw = mizar_lexer::scan_raw(&redeclared).expect("duplicate-name source remains lexically formed");
+    let scopes = mizar_lexer::build_scope_skeleton(&raw);
+    assert_eq!(scopes.diagnostics.iter().map(|diagnostic| diagnostic.code).collect::<Vec<_>>(),
+        [mizar_lexer::ScopeSkeletonDiagnosticCode::DuplicateBindingName]);
+    let (changed, changed_module, changed_shells, changed_symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&redeclared, 2_692_838);
+    assert_eq!(diagnostics, scopes.diagnostics.len(), "frontend reports the same-scope duplicate binding");
+    assert!(source_proof_local_given_descendant_set_lower_output(&changed, changed_module, &changed_shells, &changed_symbols, &redeclared).is_none());
+    for (index, mismatched) in [
+        (0, source.replace("given y being", "given witness being")),
+        (1, source.replace("set z = y", "set z = x")),
+        (2, source.replace("set q = z", "set q = y")),
+        (3, source.replace("given y being", "given x being").replace("set z = y", "set z = x")),
+        (4, source.replace("set z = y", "set x = y").replace("set q = z", "set q = x")),
+        (5, source.replace("set z = y", "set y = y").replace("set q = z", "set q = y")),
+        (6, source.replace("set q = z", "set x = z")),
+        (7, source.replace("set q = z", "set y = z")),
+        (9, source.replace("\n  thus thesis;\nend;", "\n  thus x = x;\nend;")),
+    ] {
+        assert_ne!(mismatched, source, "negative syntax mutation must apply {index}");
+        let (changed, changed_module, changed_shells, changed_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&mismatched, 2_692_830 + index);
+        assert_eq!(diagnostics, 0, "normal descendant syntax negative {index}");
+        assert!(source_proof_local_given_descendant_set_lower_output(&changed, changed_module, &changed_shells, &changed_symbols, &mismatched).is_none(),
+            "broken syntax link/name collision/outer Thesis negative {index} selected");
+    }
+    let trivia_only = source.replace("  given", "\t given");
+    let output = source_proof_local_given_descendant_set_lower_output(&ast, module, &shells, &symbols, &trivia_only)
+        .expect("token-equivalent trivia is congruent").expect("authenticated trivia transport");
+    assert_eq!(output.source_fingerprint(), sha256_text(&trivia_only));
+    assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()));
+    assert_eq!((ast, shells, symbols), before, "actual corruption routes preserve inputs");
+}
+
+#[test]
+fn task269sdp_legacy_out_of_range_indexed_mutations_are_neutral() {
+    use self::SourceProofLocalGivenDescendantSetLowerMutation as Lower;
+    use self::SourceProofLocalGivenDescendantSetShellMutation as Shell;
+    use self::SourceProofLocalGivenDescendantSetSurfaceMutation as Surface;
+
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 2_692_860);
+    let before = (ast.clone(), shells.clone(), symbols.clone());
+    let pristine = source_proof_local_given_descendant_set_lower_output(&ast, module.clone(), &shells, &symbols, source)
+        .expect("canonical descendant selector").expect("canonical descendant receipt");
+    for mutation in [Surface::NodeKind(68), Surface::NodeSourceId(68), Surface::NodeRange(68),
+        Surface::NodeRecovery(68), Surface::NodeChildren(68), Surface::TokenNode(36)] {
+        assert_eq!(source_proof_local_given_descendant_set_lower_output_with_surface_mutation(
+            &ast, module.clone(), &shells, &symbols, source, mutation,
+        ).expect("historical selector stays selected").expect("out-of-range expected-profile mutation has no effect"),
+            pristine, "Surface {mutation:?}");
+    }
+    for mutation in [Lower::SetStatementRange(2), Lower::SetEquatingRange(2), Lower::SetNameRange(2),
+        Lower::SetNameSpelling(2), Lower::SetRhsRange(2), Lower::SetRhsSpelling(2), Lower::SetSourceOrdinal(2)] {
+        assert_eq!(source_proof_local_given_descendant_set_lower_output_with_mutation(
+            &ast, module.clone(), &shells, &symbols, source, mutation,
+        ).expect("canonical lower selector").expect("out-of-range row mutation has no effect"),
+            pristine, "lower {mutation:?}");
+    }
+    for mutation in [Shell::Id(2), Shell::Ordinal(2), Shell::Kind(2), Shell::Module(2), Shell::Node(2),
+        Shell::Syntax(2), Shell::Range(2), Shell::Parent(2), Shell::VisibilityState(2), Shell::VisibilityMarker(2),
+        Shell::VisibilitySpelling(2), Shell::Recovery(2)] {
+        assert_eq!(source_proof_local_given_descendant_set_lower_output_with_shell_mutation(
+            &ast, module.clone(), &shells, &symbols, source, mutation,
+        ).expect("canonical shell selector").expect("out-of-range shell mutation has no effect"),
+            pristine, "shell {mutation:?}");
+    }
+    assert_eq!((ast, shells, symbols), before, "neutral controls preserve inputs");
+}
+
+#[test]
 fn task269sdp_near_miss_and_active_routes_remain_isolated() {
     let near_misses = [
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
-            .trim_end_matches('\n')
-            .to_owned(),
-        format!("{SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT}\n"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
-            "ProofLocalGivenDescendantCaptureSmoke",
-            "ProofLocalGivenDescendantCaptureOther",
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
-            .replace("given y being set", "given z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("being set", "being object"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("  now\n", "  now proof\n"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("set z = y", "set z = x"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("set q = z", "set q = y"),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
+        (3, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
+            .replace("given y being set", "given z being set"), 2_691_193),
+        (4, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("being set", "being object"), 2_691_194),
+        (5, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("  now\n", "  now proof\n"), 2_691_195),
+        (6, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("set z = y", "set z = x"), 2_691_196),
+        (7, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace("set q = z", "set q = y"), 2_691_197),
+        (8, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
             "    set z = y;\n    set q = z;",
             "    set q = z;\n    set z = y;",
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
+        ), 2_691_198),
+        (9, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
             "    thus thesis;",
             "    thus x = x;",
             1,
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
+        ), 2_691_199),
+        (10, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
             "  thus thesis;",
             "  thus x = x;",
             1,
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
-            "  given y being set;\n  now",
-            "  given y being set;\n\n  now",
-        ),
+        ), 2_691_200),
     ];
-    for (ordinal, source) in near_misses.into_iter().enumerate() {
+    for (ordinal, source, frontend_fixture_ordinal) in near_misses {
         let (ast, module, shells, symbols) =
-            task253_ast_from_source_text(&source, 2_691_190 + ordinal);
+            task253_ast_from_source_text(&source, frontend_fixture_ordinal);
         assert!(
             source_proof_local_given_descendant_set_lower_output(
                 &ast, module, &shells, &symbols, &source,
@@ -11087,21 +11388,28 @@ fn task269sdc_descendant_binding_profile_isolates_sdp_and_near_miss_sources() {
             "neighbor source {index}",
         );
     }
-    for (index, source) in [
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
             "ProofLocalGivenDescendantCaptureSmoke",
             "ProofLocalGivenDescendantCaptureNearMiss",
             1,
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1),
+        );
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&source, 269_030);
+    assert_eq!(diagnostics, 0);
+    let expected = mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string();
+    assert_eq!(source_proof_local_given_descendant_binding_output(&ast, module.clone(), &shells, &symbols, &source)
+        .expect("Task269SDC transported theorem identifier").unwrap_err(), expected);
+    assert_eq!(source_proof_local_given_descendant_binding_output_with_mutation(
+        &ast, module, &shells, &symbols, &source, SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint,
+    ).expect("Task269SDC selected dependency failure precedes route corruption").unwrap_err(), expected);
+    for (index, source, frontend_fixture_ordinal) in [
+        (1, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1), 269_031),
+        (2, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1), 269_032),
     ]
-    .into_iter()
-    .enumerate()
     {
         let (ast, module, shells, symbols, _) = task253_ast_from_source_text_with_diagnostic_count(
             &source,
-            269_030 + index,
+            frontend_fixture_ordinal,
         );
         assert!(
             source_proof_local_given_descendant_binding_output(
@@ -11484,23 +11792,29 @@ fn task269sdt_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
 
 #[test]
 fn task269sdt_near_miss_neighbor_and_active_routes_remain_isolated() {
-    for (ordinal, source) in [
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
+    for (ordinal, source, frontend_fixture_ordinal) in [
+        (0, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
             "ProofLocalGivenDescendantCaptureSmoke",
             "ProofLocalGivenDescendantCaptureOther",
-        ),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("being set", "being object", 1),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1),
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
+        ), 2_691_430),
+        (4, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
             .trim_end_matches('\n')
-            .to_owned(),
+            .to_owned(), 2_691_434),
+    ] {
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, frontend_fixture_ordinal);
+        assert_eq!(source_proof_local_given_descendant_type_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task269SDT transported historical source").unwrap_err(),
+            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string(),
+            "Task269SDT historical case {ordinal}");
+    }
+    for (ordinal, source, frontend_fixture_ordinal) in [
+        (1, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1), 2_691_431),
+        (2, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("being set", "being object", 1), 2_691_432),
+        (3, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1), 2_691_433),
     ]
-    .into_iter()
-    .enumerate()
     {
         let (ast, module, shells, symbols) =
-            task253_ast_from_source_text(&source, 2_691_430 + ordinal);
+            task253_ast_from_source_text(&source, frontend_fixture_ordinal);
         assert!(
             source_proof_local_given_descendant_type_output(
                 &ast, module, &shells, &symbols, &source,

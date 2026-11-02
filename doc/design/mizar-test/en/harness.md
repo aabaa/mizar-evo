@@ -5656,6 +5656,12 @@ The private Task269GCP lower route reads installed generic source-table roles fo
 Canonical digest/debug bytes and the lower schema remain unchanged. Historical exact-profile/expected-array controls retain their private post-selection error stage, while actual frontend/raw-source faults are checked independently. Unlabeled/different conditions, mismatched local references, bare CR and other syntax shapes remain excluded.
 GC/GCT/GCU keep their canonical dependencies and reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
 
+## Proof-local descendant Set source transport
+
+The private Task269SDP lower route reads installed generic source-table roles for one reserve and named thesis theorem, a bare-set Given, and one nested Now containing two ordered Set rows followed by an inner thesis conclusion and an outer thesis conclusion. Set0's RHS spelling matches the Given name, Set1's RHS matches Set0's name, and all four variable names remain distinct; these are bounded syntax links, with ranges and row order derived from actual parents/children.
+Raw-token-congruent SP/TAB/LF, comments and `be`/`being` use actual source/snapshot hashes and dynamic names/signatures. The existing output/row schema, canonical digest/debug bytes and historical expected-array post-selection error stages remain unchanged; actual frontend/raw-source faults are checked independently.
+The existing [Set/capture semantic deferral](../../mizar-checker/en/source_proof_local_declaration.md#task-269sdp-frozen-descendantset-lower-boundary) remains authoritative. SDC/SDT/SDU reject noncanonical lower receipts; syntax transport adds no scope/capture fields, Set bindings/meaning, inferred type, fact, proof, corpus/dispatch, Core/VC or acceptance credit.
+
 ## Proof-local Given leading-layout transport
 
 The private Task269GP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with an unused single-name bare-set Given, one labeled thesis condition and a direct `thus thesis` conclusion. It derives ranges, identifiers and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; bare CR and other syntax shapes remain excluded.

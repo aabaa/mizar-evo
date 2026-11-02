@@ -18,6 +18,9 @@ Runner-private GUP syntax transportは[harnessの境界](../../mizar-test/ja/har
 ## Generic isolated Given-condition source boundary
 Runner-private GCP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-condition-source-transport)に従う。GC binding・GCT type・GCU term producerはcanonical dependency検証を維持し、noncanonical lower receiptによるcondition fact・native binding/term・proof・dispatch・acceptance supportは加えない。
 
+## Generic descendant source boundary
+Runner-private SDP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-descendant-set-source-transport)に従う。SDC/SDT/SDUはcanonical dependency検証と既存Set/capture保留を維持し、noncanonical lower receiptによるnative binding・term・fact・proof・dispatch・acceptance supportは加えない。
+
 ## 状態と authority
 
 このliving owner文書はChecker Task-269 proof-local declaration lineageの

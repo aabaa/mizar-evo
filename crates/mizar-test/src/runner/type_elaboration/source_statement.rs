@@ -82,32 +82,29 @@ use mizar_resolve::{
         DeclarationShellVisibilityState,
     },
     env::{
-        ContributionKind, DefinitionId, DefinitionIndex, DefinitionKind, DefinitionShell,
-        ExportStatus, NamespacePath, SignatureShell, SourceContributionId, SourceContributionIndex,
-        SymbolEnv, SymbolKind, Visibility,
+        ContributionKind, DefinitionId, DefinitionKind, ExportStatus, NamespacePath,
+        SignatureShell, SourceContributionId, SymbolEnv, SymbolKind, Visibility,
     },
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::{
-        FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin, SurfaceResolvedArena, SymbolId,
-    },
+    resolved_ast::{ModuleId, SurfaceResolvedArena, SymbolId},
 };
 #[cfg(test)]
 use mizar_resolve::{
-    env::SymbolEnvIndexes,
+    env::{DefinitionIndex, DefinitionShell, SourceContributionIndex, SymbolEnvIndexes},
     labels::{
         LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
         LabelScopePath,
     },
     resolved_ast::{
-        ImportResolution, LabelKind, LabelOriginPath, NameRefTable, NodeReferenceKey,
-        NodeResolutionState, RecoveryState, ReferenceSite, ResolvedArena, ResolvedArenaBuilder,
-        ResolvedAst, ResolvedImport, ResolvedImports, ResolvedNode,
+        FullyQualifiedName, ImportResolution, LabelKind, LabelOriginPath, LocalSymbolId,
+        NameRefTable, NodeReferenceKey, NodeResolutionState, RecoveryState, ReferenceSite,
+        ResolvedArena, ResolvedArenaBuilder, ResolvedAst, ResolvedImport, ResolvedImports,
+        ResolvedNode, SemanticOrigin,
     },
 };
-use mizar_session::{
-    BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, SessionIdAllocator,
-    SourceAnchor, SourceId, SourceRange,
-};
+#[cfg(test)]
+use mizar_session::{BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator};
+use mizar_session::{ModulePath, SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind, SyntaxKind};
 
 #[cfg(test)]
@@ -250,6 +247,7 @@ pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT: &str = conc
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem ProofLocalGivenDescendantCaptureSmoke: thesis proof\n",
@@ -12582,18 +12580,6 @@ fn validate_source_proof_local_given_condition_lower_output(
     Ok(())
 }
 
-const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SOURCE_FINGERPRINT: &str =
-    "efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8";
-const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SURFACE_FINGERPRINT: &str =
-    "cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa";
-const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_LABEL: &str = "ProofLocalGivenDescendantCaptureSmoke";
-const SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SIGNATURE_PAYLOAD: &str = concat!(
-    "node=TheoremItem;symbol=theorem;definition=theorem;",
-    "primary_tokens=theorem ProofLocalGivenDescendantCaptureSmoke : thesis proof given y being set ; ",
-    "now set z = y ; set q = z ; thus thesis ; end ; thus thesis ; end ;;notation=_;arity=_;",
-    "roles=FormulaExpression,ProofBlock",
-);
-
 // Rationale: Task 269SDP freezes each descendant Set subtree as syntax-only runner evidence.
 #[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12830,7 +12816,7 @@ impl SourceProofLocalGivenDescendantSetLowerOutput {
 }
 
 // Rationale: Task 269SDP Surface mutation controls are exercised only by the private test seam.
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum SourceProofLocalGivenDescendantSetSurfaceMutation {
     None,
@@ -12943,7 +12929,6 @@ pub(in crate::runner) enum SourceProofLocalGivenDescendantSetResolverProfileMuta
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SourceProofLocalGivenDescendantSetMutations {
-    surface: SourceProofLocalGivenDescendantSetSurfaceMutation,
     lower: SourceProofLocalGivenDescendantSetLowerMutation,
     shell: SourceProofLocalGivenDescendantSetShellMutation,
     resolver: SourceProofLocalGivenDescendantSetResolverProfileMutation,
@@ -12951,19 +12936,10 @@ struct SourceProofLocalGivenDescendantSetMutations {
 
 impl SourceProofLocalGivenDescendantSetMutations {
     const NONE: Self = Self {
-        surface: SourceProofLocalGivenDescendantSetSurfaceMutation::None,
         lower: SourceProofLocalGivenDescendantSetLowerMutation::None,
         shell: SourceProofLocalGivenDescendantSetShellMutation::None,
         resolver: SourceProofLocalGivenDescendantSetResolverProfileMutation::None,
     };
-
-    #[cfg(test)]
-    const fn surface(surface: SourceProofLocalGivenDescendantSetSurfaceMutation) -> Self {
-        Self {
-            surface,
-            ..Self::NONE
-        }
-    }
 
     #[cfg(test)]
     const fn lower(lower: SourceProofLocalGivenDescendantSetLowerMutation) -> Self {
@@ -12999,6 +12975,7 @@ struct SourceProofLocalGivenDescendantSetShellProfile {
     source_range: SourceRange,
 }
 
+#[cfg(test)]
 fn exact_source_proof_local_given_descendant_set_surface_profile(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13010,6 +12987,7 @@ fn exact_source_proof_local_given_descendant_set_surface_profile(
     )
 }
 
+#[cfg(test)]
 fn exact_source_proof_local_given_descendant_set_surface_profile_with_mutation(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13340,13 +13318,25 @@ pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_wi
     source_text: &str,
     mutation: SourceProofLocalGivenDescendantSetSurfaceMutation,
 ) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>> {
+    if !exact_source_proof_local_given_descendant_set_surface_profile(ast, source_text) {
+        return None;
+    }
+    if !exact_source_proof_local_given_descendant_set_surface_profile_with_mutation(
+        ast,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        mutation,
+    ) {
+        return Some(Err(
+            "Task269SDP exact Surface identity changed after selection".to_owned(),
+        ));
+    }
     source_proof_local_given_descendant_set_lower_output_impl(
         ast,
         module,
         shells,
         symbols,
         source_text,
-        SourceProofLocalGivenDescendantSetMutations::surface(mutation),
+        SourceProofLocalGivenDescendantSetMutations::NONE,
     )
 }
 
@@ -13435,11 +13425,153 @@ fn source_proof_local_given_descendant_set_lower_output_impl(
     source_text: &str,
     mutations: SourceProofLocalGivenDescendantSetMutations,
 ) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>> {
-    if !exact_source_proof_local_given_descendant_set_surface_profile(ast, source_text) {
+    use SurfaceNodeKind as K;
+    use SyntaxKind as S;
+
+    if ast.expression_root().is_some() {
+        return None;
+    }
+    let typed = source_proof_local_syntax_receiver(ast, &module, source_text)?;
+    let rows = typed.source_node_entries()?.collect::<Vec<_>>();
+    for row in &rows {
+        let expected: &[SyntaxKind] = match row.kind() {
+            K::Root => &[S::CompilationUnit],
+            K::CompilationUnit => &[S::ItemList],
+            K::ItemList => &[S::ReserveItem, S::TheoremItem],
+            K::ReserveItem => &[
+                S::TokenReservedWord,
+                S::ReserveSegment,
+                S::TokenReservedSymbol,
+            ],
+            K::ReserveSegment => &[S::TokenIdentifier, S::TokenReservedWord, S::TypeExpression],
+            K::TheoremItem => &[
+                S::TokenReservedWord,
+                S::TokenIdentifier,
+                S::TokenReservedSymbol,
+                S::FormulaExpression,
+                S::ProofBlock,
+                S::TokenReservedSymbol,
+            ],
+            K::ProofBlock => &[
+                S::TokenReservedWord,
+                S::GivenStatement,
+                S::NowStatement,
+                S::ConclusionStatement,
+                S::TokenReservedWord,
+            ],
+            K::GivenStatement => &[
+                S::TokenReservedWord,
+                S::QualifiedVariableSegment,
+                S::TokenReservedSymbol,
+            ],
+            K::NowStatement => &[
+                S::TokenReservedWord,
+                S::SetStatement,
+                S::SetStatement,
+                S::ConclusionStatement,
+                S::TokenReservedWord,
+                S::TokenReservedSymbol,
+            ],
+            K::SetStatement => &[S::TokenReservedWord, S::Equating, S::TokenReservedSymbol],
+            K::Equating => &[
+                S::TokenIdentifier,
+                S::TokenReservedSymbol,
+                S::TermExpression,
+            ],
+            K::QualifiedVariableSegment => {
+                &[S::TokenIdentifier, S::TokenReservedWord, S::TypeExpression]
+            }
+            K::ConclusionStatement => {
+                &[S::TokenReservedWord, S::Proposition, S::TokenReservedSymbol]
+            }
+            K::Proposition => &[S::FormulaExpression],
+            K::FormulaExpression => &[S::FormulaConstant],
+            K::TermExpression => &[S::TermReference],
+            K::TermReference => &[S::TokenIdentifier],
+            K::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis) => {
+                &[S::TokenReservedWord]
+            }
+            K::TypeExpression => &[S::TypeHead],
+            K::TypeHead => &[S::TokenReservedWord],
+            K::Token(_) => &[],
+            _ => return None,
+        };
+        let mut children = rows
+            .iter()
+            .filter(|child| child.parent() == Some(row.site()));
+        if row.recovery() != NodeRecoveryState::Normal
+            || row.range().source_id != ast.source_id
+            || source_text
+                .get(row.range().start..row.range().end)
+                .is_none()
+            || children
+                .clone()
+                .map(|child| match child.kind() {
+                    K::Token(token) => token.kind.syntax_kind(),
+                    kind => kind.syntax_kind(),
+                })
+                .ne(expected.iter().copied())
+            || (!expected.is_empty()
+                && (children.clone().next()?.range().start != row.range().start
+                    || children.next_back()?.range().end != row.range().end))
+        {
+            return None;
+        }
+    }
+    let reserve = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::ReserveSegment))?;
+    let theorem = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::TheoremItem))?;
+    let segment = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::QualifiedVariableSegment))?;
+    let token = |parent, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent) && row.child_ordinal() == ordinal)
+    };
+    let reserved_name = token(reserve.site(), 0)?.spelling();
+    let theorem_name = token(theorem.site(), 1)?.spelling();
+    let local_name = token(segment.site(), 0)?.spelling();
+    let qualification = token(segment.site(), 1)?.spelling();
+    let now = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::NowStatement))?;
+    let set_statements = rows
+        .iter()
+        .filter(|row| row.parent() == Some(now.site()) && matches!(row.kind(), K::SetStatement))
+        .collect::<Vec<_>>();
+    let [first_set, second_set] = set_statements.as_slice() else {
+        return None;
+    };
+    let first_equating = token(first_set.site(), 1)?;
+    let second_equating = token(second_set.site(), 1)?;
+    let first_name = token(first_equating.site(), 0)?.spelling();
+    let second_name = token(second_equating.site(), 0)?.spelling();
+    let first_rhs = token(token(first_equating.site(), 2)?.site(), 0)?.spelling();
+    let second_rhs = token(token(second_equating.site(), 2)?.site(), 0)?.spelling();
+    if local_name == reserved_name
+        || [reserved_name, local_name].contains(&first_name)
+        || [reserved_name, local_name, first_name].contains(&second_name)
+        || first_rhs != local_name
+        || second_rhs != first_name
+        || !matches!(qualification, "be" | "being")
+        || rows.first()?.spelling()
+            != format!(
+                "reserve {reserved_name} for set ; theorem {theorem_name} : thesis proof given {local_name} {qualification} set ; now set {first_name} = {local_name} ; set {second_name} = {first_name} ; thus thesis ; end ; thus thesis ; end ;",
+            )
+    {
         return None;
     }
     Some(build_source_proof_local_given_descendant_set_lower_output(
-        ast, module, shells, symbols, mutations,
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        &rows,
+        mutations,
     ))
 }
 
@@ -13448,21 +13580,84 @@ fn build_source_proof_local_given_descendant_set_lower_output(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
+    rows: &[&SourceNode],
     mutations: SourceProofLocalGivenDescendantSetMutations,
 ) -> Result<SourceProofLocalGivenDescendantSetLowerOutput, String> {
     let SourceProofLocalGivenDescendantSetMutations {
-        lower: mutation,
+        lower: _mutation,
         shell: shell_mutation,
         resolver: resolver_mutation,
         ..
     } = mutations;
-    if !exact_source_proof_local_given_descendant_set_surface_profile_with_mutation(
-        ast,
-        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
-        mutations.surface,
-    ) {
-        return Err("Task269SDP exact Surface identity changed after selection".to_owned());
-    }
+    use SurfaceNodeKind as K;
+
+    let role = |kind: SyntaxKind| {
+        rows.iter()
+            .find(|row| row.kind().syntax_kind() == kind)
+            .expect("selected descendant shape contains every role")
+    };
+    let reserve = role(SyntaxKind::ReserveItem);
+    let theorem = role(SyntaxKind::TheoremItem);
+    let proof = role(SyntaxKind::ProofBlock);
+    let given_statement = role(SyntaxKind::GivenStatement);
+    let segment = role(SyntaxKind::QualifiedVariableSegment);
+    let name = rows.iter().find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier))
+        .expect("selected segment contains one name");
+    let written_type = rows
+        .iter()
+        .find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::TypeExpression))
+        .expect("selected segment contains one type");
+    let type_head = rows
+        .iter()
+        .find(|row| row.parent() == Some(written_type.site()))
+        .expect("selected type contains one head");
+    let theorem_name = rows.iter().find(|row| row.parent() == Some(theorem.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier))
+        .expect("selected theorem contains one label").spelling();
+    let signature_payload = format!(
+        "node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens={};notation=_;arity=_;roles=FormulaExpression,ProofBlock",
+        theorem.spelling(),
+    );
+    let now = role(SyntaxKind::NowStatement);
+    let child = |parent, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent) && row.child_ordinal() == ordinal)
+            .expect("selected descendant role has every child")
+    };
+    let set_rows: [SourceProofLocalGivenDescendantSetLowerRow; 2] =
+        std::array::from_fn(|source_ordinal| {
+            let statement = rows
+                .iter()
+                .filter(|row| {
+                    row.parent() == Some(now.site()) && matches!(row.kind(), K::SetStatement)
+                })
+                .nth(source_ordinal)
+                .expect("selected Now contains two Set statements");
+            let equating = child(statement.site(), 1);
+            let set_name = child(equating.site(), 0);
+            let rhs = child(child(equating.site(), 2).site(), 0);
+            SourceProofLocalGivenDescendantSetLowerRow {
+                statement_range: statement.range(),
+                equating_range: equating.range(),
+                name_range: set_name.range(),
+                name_spelling: set_name.spelling().to_owned(),
+                rhs_range: rhs.range(),
+                rhs_spelling: rhs.spelling().to_owned(),
+                source_ordinal,
+            }
+        });
+    let inner_conclusion = rows
+        .iter()
+        .find(|row| {
+            row.parent() == Some(now.site()) && matches!(row.kind(), K::ConclusionStatement)
+        })
+        .expect("selected Now contains its conclusion");
+    let outer_conclusion = rows
+        .iter()
+        .find(|row| {
+            row.parent() == Some(proof.site()) && matches!(row.kind(), K::ConclusionStatement)
+        })
+        .expect("selected proof contains its conclusion");
     let [reserve_shell, theorem_shell] = shells.declarations() else {
         return Err("Task269SDP requires exactly two declaration shells".to_owned());
     };
@@ -13475,9 +13670,9 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         SourceProofLocalGivenDescendantSetShellProfile {
             ordinal: 0,
             kind: DeclarationShellKind::Reserve,
-            node_index: 39,
+            node_index: reserve.site().index(),
             syntax_kind: SyntaxKind::ReserveItem,
-            source_range: range(ast.source_id, 0, 18),
+            source_range: reserve.range(),
         },
         shell_mutation,
     )?;
@@ -13487,9 +13682,9 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         SourceProofLocalGivenDescendantSetShellProfile {
             ordinal: 1,
             kind: DeclarationShellKind::Theorem,
-            node_index: 64,
+            node_index: theorem.site().index(),
             syntax_kind: SyntaxKind::TheoremItem,
-            source_range: range(ast.source_id, 19, 179),
+            source_range: theorem.range(),
         },
         shell_mutation,
     )?;
@@ -13502,7 +13697,13 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         return Err("Task269SDP raw resolver module mismatch".to_owned());
     }
     let namespace = NamespacePath::new(module.path().as_str());
-    if ["y", "z", "q"].into_iter().any(|spelling| {
+    if [
+        name.spelling(),
+        set_rows[0].name_spelling.as_str(),
+        set_rows[1].name_spelling.as_str(),
+    ]
+    .into_iter()
+    .any(|spelling| {
         !symbols
             .symbols()
             .visible_candidates(&namespace, spelling)
@@ -13565,7 +13766,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
     }
     let owners = symbols
         .symbols()
-        .visible_candidates(&namespace, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_LABEL)
+        .visible_candidates(&namespace, theorem_name)
         .into_iter()
         .filter(|entry| entry.kind() == SymbolKind::Theorem)
         .collect::<Vec<_>>();
@@ -13592,7 +13793,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         owner.symbol().module() == &module,
         resolver_mutation,
         SourceProofLocalGivenDescendantSetResolverProfileMutation::SymbolModule,
-    ) || owner.primary_spelling() != SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_LABEL
+    ) || owner.primary_spelling() != theorem_name
         || !source_proof_local_given_descendant_set_resolver_guard(
             owner.notation_spelling().is_none(),
             resolver_mutation,
@@ -13610,14 +13811,14 @@ fn build_source_proof_local_given_descendant_set_lower_output(
             owner.signature(),
             Some(SignatureShell::Opaque { schema, payload })
                 if schema == "parser-signature-v1"
-                    && payload == SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SIGNATURE_PAYLOAD
+                    && payload == &signature_payload
         )
         || !source_proof_local_given_descendant_set_resolver_guard(
             owner.relations().is_empty(),
             resolver_mutation,
             SourceProofLocalGivenDescendantSetResolverProfileMutation::SymbolRelations,
         )
-        || checked_owner.source_range() != range(ast.source_id, 19, 179)
+        || checked_owner.source_range() != theorem.range()
         || checked_owner.origin() != owner.origin()
         || owner.origin().module_id() != &module
         || !source_proof_local_given_descendant_set_resolver_guard(
@@ -13625,7 +13826,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
             resolver_mutation,
             SourceProofLocalGivenDescendantSetResolverProfileMutation::SymbolOriginSource,
         )
-        || owner.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 19, 179))
+        || owner.origin().anchor() != &SourceAnchor::Range(theorem.range())
         || owner.origin().structural_path() != [2, 1]
         || !source_proof_local_given_descendant_set_resolver_guard(
             owner.origin().import_edge().is_none(),
@@ -13691,7 +13892,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
             contribution.kind(),
             ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
         )
-        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.anchor() != &SourceAnchor::Range(reserve.range())
         || !source_proof_local_given_descendant_set_resolver_guard(
             contribution.effects().symbols() == [owner.symbol().clone()],
             resolver_mutation,
@@ -13751,52 +13952,37 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         return Err("Task269SDP theorem contribution provenance mismatch".to_owned());
     }
 
+    // Rationale: Only private test corruption mutates the constructed lower output.
+    #[cfg_attr(not(test), allow(unused_mut))]
     let mut output = SourceProofLocalGivenDescendantSetLowerOutput {
         source_id: ast.source_id,
         module_id: module.clone(),
-        source_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SOURCE_FINGERPRINT.to_owned(),
-        surface_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SURFACE_FINGERPRINT.to_owned(),
+        source_fingerprint: source_sha256(source_text),
+        surface_fingerprint: source_sha256(&ast.snapshot_text()),
         theorem_symbol: owner.symbol().clone(),
         theorem_definition: definition.id(),
         contribution: contribution.id(),
-        theorem_range: range(ast.source_id, 19, 179),
-        proof_range: range(ast.source_id, 73, 178),
-        given_range: range(ast.source_id, 81, 99),
-        given_segment_range: range(ast.source_id, 87, 98),
-        given_name_range: range(ast.source_id, 87, 88),
-        given_name_spelling: "y".to_owned(),
-        given_type_range: range(ast.source_id, 95, 98),
-        given_type_head_range: range(ast.source_id, 95, 98),
-        given_type_spelling: "set".to_owned(),
-        given_source_ordinal: 1,
-        descendant_now_range: range(ast.source_id, 102, 159),
-        set_rows: [
-            SourceProofLocalGivenDescendantSetLowerRow {
-                statement_range: range(ast.source_id, 110, 120),
-                equating_range: range(ast.source_id, 114, 119),
-                name_range: range(ast.source_id, 114, 115),
-                name_spelling: "z".to_owned(),
-                rhs_range: range(ast.source_id, 118, 119),
-                rhs_spelling: "y".to_owned(),
-                source_ordinal: 0,
-            },
-            SourceProofLocalGivenDescendantSetLowerRow {
-                statement_range: range(ast.source_id, 125, 135),
-                equating_range: range(ast.source_id, 129, 134),
-                name_range: range(ast.source_id, 129, 130),
-                name_spelling: "q".to_owned(),
-                rhs_range: range(ast.source_id, 133, 134),
-                rhs_spelling: "z".to_owned(),
-                source_ordinal: 1,
-            },
-        ],
-        inner_conclusion_range: range(ast.source_id, 140, 152),
-        outer_conclusion_range: range(ast.source_id, 162, 174),
+        theorem_range: theorem.range(),
+        proof_range: proof.range(),
+        given_range: given_statement.range(),
+        given_segment_range: segment.range(),
+        given_name_range: name.range(),
+        given_name_spelling: name.spelling().to_owned(),
+        given_type_range: written_type.range(),
+        given_type_head_range: type_head.range(),
+        given_type_spelling: type_head.spelling().to_owned(),
+        given_source_ordinal: given_statement.child_ordinal(),
+        descendant_now_range: now.range(),
+        set_rows,
+        inner_conclusion_range: inner_conclusion.range(),
+        outer_conclusion_range: outer_conclusion.range(),
     };
-    mutate_source_proof_local_given_descendant_set_lower_output(&mut output, mutation);
+    #[cfg(test)]
+    mutate_source_proof_local_given_descendant_set_lower_output(&mut output, _mutation);
     validate_source_proof_local_given_descendant_set_lower_output(
         ast,
-        &module,
+        source_text,
+        rows,
         owner.symbol(),
         definition.id(),
         contribution.id(),
@@ -13913,6 +14099,7 @@ fn validate_source_proof_local_given_descendant_set_shell(
     Ok(())
 }
 
+#[cfg(test)]
 fn mutate_source_proof_local_given_descendant_set_lower_output(
     output: &mut SourceProofLocalGivenDescendantSetLowerOutput,
     mutation: SourceProofLocalGivenDescendantSetLowerMutation,
@@ -14062,53 +14249,98 @@ fn mutate_source_proof_local_given_descendant_set_lower_output(
 
 fn validate_source_proof_local_given_descendant_set_lower_output(
     ast: &SurfaceAst,
-    module: &ModuleId,
+    source_text: &str,
+    rows: &[&SourceNode],
     theorem_symbol: &SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
     output: &SourceProofLocalGivenDescendantSetLowerOutput,
 ) -> Result<(), String> {
-    let expected_rows = [
-        SourceProofLocalGivenDescendantSetLowerRow {
-            statement_range: range(ast.source_id, 110, 120),
-            equating_range: range(ast.source_id, 114, 119),
-            name_range: range(ast.source_id, 114, 115),
-            name_spelling: "z".to_owned(),
-            rhs_range: range(ast.source_id, 118, 119),
-            rhs_spelling: "y".to_owned(),
-            source_ordinal: 0,
-        },
-        SourceProofLocalGivenDescendantSetLowerRow {
-            statement_range: range(ast.source_id, 125, 135),
-            equating_range: range(ast.source_id, 129, 134),
-            name_range: range(ast.source_id, 129, 130),
-            name_spelling: "q".to_owned(),
-            rhs_range: range(ast.source_id, 133, 134),
-            rhs_spelling: "z".to_owned(),
-            source_ordinal: 1,
-        },
-    ];
+    use SurfaceNodeKind as K;
+
+    let module = theorem_symbol.module();
+    let invalid = || "Task269SDP private lower output mismatch".to_owned();
+    let role = |kind: SyntaxKind| {
+        rows.iter()
+            .find(|row| row.kind().syntax_kind() == kind)
+            .ok_or_else(invalid)
+    };
+    let theorem = role(SyntaxKind::TheoremItem)?;
+    let proof = role(SyntaxKind::ProofBlock)?;
+    let given_statement = role(SyntaxKind::GivenStatement)?;
+    let segment = role(SyntaxKind::QualifiedVariableSegment)?;
+    let name = rows.iter().find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)).ok_or_else(invalid)?;
+    let written_type = rows
+        .iter()
+        .find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::TypeExpression))
+        .ok_or_else(invalid)?;
+    let type_head = rows
+        .iter()
+        .find(|row| row.parent() == Some(written_type.site()) && matches!(row.kind(), K::TypeHead))
+        .ok_or_else(invalid)?;
+    let now = role(SyntaxKind::NowStatement)?;
+    let child = |parent, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent) && row.child_ordinal() == ordinal)
+            .expect("authenticated descendant role has every child")
+    };
+    let expected_rows: [SourceProofLocalGivenDescendantSetLowerRow; 2] =
+        std::array::from_fn(|source_ordinal| {
+            let statement = rows
+                .iter()
+                .filter(|row| {
+                    row.parent() == Some(now.site()) && matches!(row.kind(), K::SetStatement)
+                })
+                .nth(source_ordinal)
+                .expect("authenticated Now contains two Set statements");
+            let equating = child(statement.site(), 1);
+            let set_name = child(equating.site(), 0);
+            let rhs = child(child(equating.site(), 2).site(), 0);
+            SourceProofLocalGivenDescendantSetLowerRow {
+                statement_range: statement.range(),
+                equating_range: equating.range(),
+                name_range: set_name.range(),
+                name_spelling: set_name.spelling().to_owned(),
+                rhs_range: rhs.range(),
+                rhs_spelling: rhs.spelling().to_owned(),
+                source_ordinal,
+            }
+        });
+    let inner_conclusion = rows
+        .iter()
+        .find(|row| {
+            row.parent() == Some(now.site()) && matches!(row.kind(), K::ConclusionStatement)
+        })
+        .ok_or_else(invalid)?;
+    let outer_conclusion = rows
+        .iter()
+        .find(|row| {
+            row.parent() == Some(proof.site()) && matches!(row.kind(), K::ConclusionStatement)
+        })
+        .ok_or_else(invalid)?;
+    let source_fingerprint = source_sha256(source_text);
+    let surface_fingerprint = source_sha256(&ast.snapshot_text());
     if output.source_id != ast.source_id
         || output.module_id != *module
-        || output.source_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SOURCE_FINGERPRINT
-        || output.surface_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_SURFACE_FINGERPRINT
+        || output.source_fingerprint != source_fingerprint
+        || output.surface_fingerprint != surface_fingerprint
         || output.theorem_symbol != *theorem_symbol
         || output.theorem_definition != theorem_definition
         || output.contribution != contribution
-        || output.theorem_range != range(ast.source_id, 19, 179)
-        || output.proof_range != range(ast.source_id, 73, 178)
-        || output.given_range != range(ast.source_id, 81, 99)
-        || output.given_segment_range != range(ast.source_id, 87, 98)
-        || output.given_name_range != range(ast.source_id, 87, 88)
-        || output.given_name_spelling != "y"
-        || output.given_type_range != range(ast.source_id, 95, 98)
-        || output.given_type_head_range != range(ast.source_id, 95, 98)
-        || output.given_type_spelling != "set"
-        || output.given_source_ordinal != 1
-        || output.descendant_now_range != range(ast.source_id, 102, 159)
+        || output.theorem_range != theorem.range()
+        || output.proof_range != proof.range()
+        || output.given_range != given_statement.range()
+        || output.given_segment_range != segment.range()
+        || output.given_name_range != name.range()
+        || output.given_name_spelling != name.spelling()
+        || output.given_type_range != written_type.range()
+        || output.given_type_head_range != type_head.range()
+        || output.given_type_spelling != type_head.spelling()
+        || output.given_source_ordinal != given_statement.child_ordinal()
+        || output.descendant_now_range != now.range()
         || output.set_rows != expected_rows
-        || output.inner_conclusion_range != range(ast.source_id, 140, 152)
-        || output.outer_conclusion_range != range(ast.source_id, 162, 174)
+        || output.inner_conclusion_range != inner_conclusion.range()
+        || output.outer_conclusion_range != outer_conclusion.range()
     {
         return Err("Task269SDP private lower output mismatch".to_owned());
     }
@@ -14116,23 +14348,73 @@ fn validate_source_proof_local_given_descendant_set_lower_output(
         concat!(
             "source-proof-local-given-descendant-set-lower-debug-v1\n",
             "module: {}::{}\n",
-            "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
-            "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
-            "given range=81..99 segment=87..98 source_ordinal=1\n",
-            "given-name range=87..88 spelling=\"y\"\n",
-            "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
-            "descendant-now range=102..159\n",
-            "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
-            "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
-            "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
-            "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
-            "conclusions inner=140..152 outer=162..174\n",
+            "source-fingerprint: {:?}\n",
+            "surface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition={} contribution={} range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal={}\n",
+            "given-name range={}..{} spelling={:?}\n",
+            "given-type range={}..{} head={}..{} spelling={:?} form=bare\n",
+            "descendant-now range={}..{}\n",
+            "set#0 statement={}..{} equating={}..{} source_ordinal={}\n",
+            "set#0 name range={}..{} spelling={:?} rhs range={}..{} spelling={:?}\n",
+            "set#1 statement={}..{} equating={}..{} source_ordinal={}\n",
+            "set#1 name range={}..{} spelling={:?} rhs range={}..{} spelling={:?}\n",
+            "conclusions inner={}..{} outer={}..{}\n",
         ),
         module.package().as_str(),
         module.path().as_str(),
+        source_fingerprint,
+        surface_fingerprint,
         theorem_symbol.fqn().as_str(),
+        theorem_definition.index(),
+        contribution.index(),
+        theorem.range().start,
+        theorem.range().end,
+        proof.range().start,
+        proof.range().end,
+        given_statement.range().start,
+        given_statement.range().end,
+        segment.range().start,
+        segment.range().end,
+        given_statement.child_ordinal(),
+        name.range().start,
+        name.range().end,
+        name.spelling(),
+        written_type.range().start,
+        written_type.range().end,
+        type_head.range().start,
+        type_head.range().end,
+        type_head.spelling(),
+        now.range().start,
+        now.range().end,
+        expected_rows[0].statement_range.start,
+        expected_rows[0].statement_range.end,
+        expected_rows[0].equating_range.start,
+        expected_rows[0].equating_range.end,
+        expected_rows[0].source_ordinal,
+        expected_rows[0].name_range.start,
+        expected_rows[0].name_range.end,
+        expected_rows[0].name_spelling,
+        expected_rows[0].rhs_range.start,
+        expected_rows[0].rhs_range.end,
+        expected_rows[0].rhs_spelling,
+        expected_rows[1].statement_range.start,
+        expected_rows[1].statement_range.end,
+        expected_rows[1].equating_range.start,
+        expected_rows[1].equating_range.end,
+        expected_rows[1].source_ordinal,
+        expected_rows[1].name_range.start,
+        expected_rows[1].name_range.end,
+        expected_rows[1].name_spelling,
+        expected_rows[1].rhs_range.start,
+        expected_rows[1].rhs_range.end,
+        expected_rows[1].rhs_spelling,
+        inner_conclusion.range().start,
+        inner_conclusion.range().end,
+        outer_conclusion.range().start,
+        outer_conclusion.range().end,
     );
+
     if output.debug_text() != expected_debug {
         return Err("Task269SDP private lower debug grammar mismatch".to_owned());
     }
@@ -17209,6 +17491,7 @@ fn task258b3m2b2b3a_mutated_module(module: &ModuleId) -> ModuleId {
     )
 }
 
+#[cfg(test)]
 fn task258b3m2b2b3a_mutated_source_id(source_id: SourceId) -> SourceId {
     let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
         "mizar-session-build-snapshot-v1:{}",
@@ -19617,6 +19900,7 @@ fn task258b5b_statement_input(
     }
 }
 
+#[cfg(test)]
 const fn range(source_id: mizar_session::SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,

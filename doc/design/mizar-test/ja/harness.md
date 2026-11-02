@@ -5292,6 +5292,12 @@ Private Task269GCP lower routeは、reserve 1件と、単一名bare-set Given・
 Canonical digest/debug bytesとlower schemaは変えない。Historical exact-profile/expected-array controlはprivateな選択後error段階を維持し、実際のfrontend/raw-source faultは別に検査する。ラベルなし・異なるcondition、local reference不一致、裸のCRと他のsyntax shapeは対象外とする。
 GC/GCT/GCUはcanonical dependencyを維持し、noncanonical lower receiptを拒否する。Occurrence/capture payload、condition/label fact、thesis解釈、existential/Skolem意味、corpus/dispatch、proof/Core/VC/acceptance creditは追加しない。
 
+## Proof-local descendant Set source transport
+
+Private Task269SDP lower routeは、reserveとnamed thesis theorem各1件・bare-set Given・順序付きSet row 2件とinner thesis conclusionを含むnested Now・outer thesis conclusionについて、installed generic source tableのroleを読む。Set0のRHS名はGiven名、Set1のRHS名はSet0名に一致し、4変数名は相異なる。これは限定されたsyntax上のつながりであり、rangeとrow順序は実際のparent/childから導く。
+Raw tokenと整合するSP/TAB/LF・comment・`be`/`being`では実source/snapshot hashと動的name/signatureを使う。既存output/row schema・canonical digest/debug bytes・historical expected-arrayの選択後error段階は維持し、実際のfrontend/raw-source faultは別に検査する。
+既存の[Set/capture意味保留](../../mizar-checker/ja/source_proof_local_declaration.md#task-269sdp-descendantset-lower境界)を維持する。SDC/SDT/SDUはnoncanonical lower receiptを拒否し、syntax transportによるscope/capture field、Set binding/意味、推論型、fact/proof、corpus/dispatch、Core/VC/acceptance creditは追加しない。
+
 ## Proof-local Given leading-layout transport
 
 Private Task269GP lower routeは、reserve 1件と、未使用の単一名bare-set Given・ラベル付きthesis condition 1件・directな`thus thesis` conclusionを含むnamed thesis theorem 1件について、installed generic source tableのroleを読む。Fixture suffixを使わずrange・identifier・signatureを導き、raw tokenと整合するSP/TAB/LF・comment・`be`/`being`を移送する。裸のCRと他のsyntax shapeは対象外とする。

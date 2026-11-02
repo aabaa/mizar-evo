@@ -18,6 +18,9 @@ The runner-private GUP syntax transport follows the [harness boundary](../../miz
 ## Generic isolated Given-condition source boundary
 The runner-private GCP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-condition-source-transport). GC binding, GCT type and GCU term producers retain canonical dependency validation; noncanonical lower receipts add no condition fact, native binding/term, proof, dispatch or acceptance support.
 
+## Generic descendant source boundary
+The runner-private SDP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-descendant-set-source-transport). SDC/SDT/SDU retain canonical dependency validation and the existing Set/capture deferral; noncanonical lower receipts add no native binding, term, fact, proof, dispatch or acceptance support.
+
 ## Status and authority
 
 This living owner document freezes the completed Checker Task-269 proof-local
