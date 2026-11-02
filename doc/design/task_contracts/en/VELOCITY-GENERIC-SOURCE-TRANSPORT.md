@@ -43,6 +43,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] proof-local Let type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
 - [x] proof-local Given type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
 - [x] proof-local Given-use type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
+- [x] proof-local Given-condition type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger
