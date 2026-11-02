@@ -323,6 +323,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         match task258b3m2b2b3d_mutated_binding_env(&fixture.bindings, field) {
             Err(_) => task48_own_stage += 1,
             Ok(bindings) => {
+                assert_ne!(
+                    bindings.debug_text(),
+                    fixture.bindings.debug_text(),
+                    "Task48 handoff delta"
+                );
                 assert_eq!(
                     SourceStatementProducer::build(
                         fixture.statement_input(),
@@ -350,6 +355,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         match SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena) {
             Err(_) => task252_own_stage += 1,
             Ok(primary) => {
+                assert_ne!(
+                    primary.debug_text(),
+                    fixture.primary.debug_text(),
+                    "Task252 handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -529,6 +539,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         ) {
             Err(_) => task255_own_stage += 1,
             Ok(set_terms) => {
+                assert_ne!(
+                    set_terms.debug_text(),
+                    fixture.set_terms.debug_text(),
+                    "Task255 handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -570,6 +585,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         ) {
             Err(_) => task256_own_stage += 1,
             Ok(atomic) => {
+                assert_ne!(
+                    atomic.debug_text(),
+                    fixture.atomic.debug_text(),
+                    "Task256 handoff delta"
+                );
                 assert_eq!(
                     SourceStatementProducer::build(
                         fixture.statement_input(),
@@ -604,6 +624,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         ) {
             Err(_) => task258_own_stage += 1,
             Ok(mutated_statement) => {
+                assert_ne!(
+                    mutated_statement.debug_text(),
+                    statement.debug_text(),
+                    "Task258 handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -637,6 +662,11 @@ fn task258b3m2b2b3d_dependencies_qua_precedence_and_all_nodes_fail_closed() {
         ) {
             Err(_) => witness_own_stage += 1,
             Ok(mutated_witnesses) => {
+                assert_ne!(
+                    mutated_witnesses.debug_text(),
+                    witnesses.debug_text(),
+                    "witness handoff delta"
+                );
                 assert_eq!(
                     mutated_witnesses.validate_installation_with_set_term(
                         fixture.source,

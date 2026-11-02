@@ -1208,7 +1208,7 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        if source == SOURCE_STATEMENT_B3M2B2B3C_TEXT {
+        if source == SOURCE_STATEMENT_B3M2B2B3C_TEXT || source == SOURCE_STATEMENT_B3M2B2B3D_TEXT {
             let before = (case_ast.snapshot_text(), case_module.clone(), case_symbols.clone());
             assert!(source_statement_output_with_source(
                 &case_ast, case_module.clone(), &case_symbols, source,
@@ -1216,6 +1216,21 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
             assert!(source_statement_transport_detail_keys(
                 &case_ast, case_module.clone(), &case_symbols, source,
             ).is_none());
+            if source == SOURCE_STATEMENT_B3M2B2B3D_TEXT {
+                assert!(extract_qua_witness_source_statement(&case_ast, source).is_some());
+                assert_eq!(
+                    source_statement_b3m2b2b3d_output_with_mutation(
+                        &case_ast,
+                        case_module.clone(),
+                        &case_symbols,
+                        source,
+                        |_| {},
+                    )
+                    .expect("authentic retired Qua extraction")
+                    .expect_err("retired raw profile"),
+                    "source statement dependency mismatch"
+                );
+            }
             assert_eq!((case_ast.snapshot_text(), case_module, case_symbols), before);
             continue;
         }

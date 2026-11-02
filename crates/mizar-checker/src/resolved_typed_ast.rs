@@ -2960,7 +2960,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let legacy_set_witness_statement = false;
             #[cfg(test)]
             let legacy_set_witness_statement = source_statement.is_task_258b3m2b2b3b_profile()
-                || source_statement.is_task_258b3m2b2b3c_profile();
+                || source_statement.is_task_258b3m2b2b3c_profile()
+                || source_statement.is_task_258b3m2b2b3d_profile();
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
                 || source_statement.is_task_258b4b_profile()
                 || source_statement.is_task_258b4c_profile();
@@ -2976,7 +2977,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     && !native_set_witness_statement
                     && !source_statement.is_task_258b3m2b2b3a_profile()
                     && !legacy_set_witness_statement
-                    && !source_statement.is_task_258b3m2b2b3d_profile()
                     && !source_statement.is_task_258b3m2b2b3e_profile())
                 || (source_composite_formula.is_some() && !is_task_258b4)
                 || (source_formula_composition.is_some() && !is_task_258b4)
@@ -3121,7 +3121,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 (None, Some(witnesses))
                     if (source_statement.is_task_258b3m2b2b3a_profile()
                         || legacy_set_witness_statement
-                        || source_statement.is_task_258b3m2b2b3d_profile()
                         || source_statement.is_task_258b3m2b2b3e_profile())
                         && source_application.is_none()
                         && source_structure.is_none()

@@ -344,6 +344,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3C_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3D_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementQuaWitnessSmoke: x = x proof\n",
@@ -1992,7 +1993,9 @@ const SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementChoiceWitnessSmoke : x = x proof take the set ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3D_LABEL: &str = "FormulaStatementQuaWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3D_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementQuaWitnessSmoke : x = x proof take 4 qua set ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2336,6 +2339,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3CExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B3DExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2727,6 +2731,7 @@ impl From<SourceStatementB3M2B2B3CExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B3DExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3DExtraction) -> Self {
         Self {
@@ -2858,6 +2863,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatement
 pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3CRouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3DRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3ERouteInputs = SourceStatementB3RouteInputs;
 
@@ -5471,6 +5477,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B3BSurfaceMutation =
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3CSurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3DSurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
 pub(in crate::runner) type SourceStatementB3M2B2B3ESurfaceMutation =
@@ -13475,15 +13482,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B3D_TEXT {
-        return source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
         return source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
             ast,
@@ -13848,7 +13846,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_stage_mutation(
     source_text: &str,
     stage: SourceStatementB3M2B2B3DStage,
     field: usize,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3M2B2B3DRouteInputs, String>> {
     let extracted = extract_qua_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -13859,15 +13857,20 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_stage_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_witness_output_with_controls(
+    let mut captured = None;
+    let result = build_source_statement_witness_output_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         Some((stage, field)),
-        |_| {},
-    ))
+        |inputs| captured = Some(inputs.clone()),
+    );
+    Some(match captured {
+        Some(inputs) => Ok(inputs),
+        None => Err(result.expect_err("lower producer refused before capture")),
+    })
 }
 
 #[cfg(test)]
@@ -13878,139 +13881,51 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_lower_stage_muta
     source_text: &str,
     stage: SourceStatementB3M2B2B3DLowerStage,
     field: usize,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let baseline = match source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3M2B2B3DRouteInputs, String>> {
+    let mut captured = None;
+    let result = source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
         ast,
-        module.clone(),
+        module,
         symbols,
         source_text,
-        |_| {},
-    )? {
-        Ok(output) => output,
-        Err(error) => return Some(Err(error)),
+        |inputs| captured = Some(inputs.clone()),
+    )?;
+    let Some(mut inputs) = captured else {
+        return Some(Err(result.expect_err("refusal before lower capture")));
     };
-
-    match stage {
-        SourceStatementB3M2B2B3DLowerStage::Task48 => {
-            let parts = match mutate_task258b3m2b2b3b_binding_env(
-                baseline
-                    .typed_ast
-                    .source_statement()
-                    .expect("Task258B3M2B2B3D statement")
-                    .binding_env(),
-                field,
-            ) {
-                Ok(parts) => parts,
-                Err(error) => return Some(Err(error)),
-            };
-            let binding_env = match BindingEnv::try_new(parts) {
-                Ok(binding_env) => binding_env,
-                Err(error) => return Some(Err(format!("Task48: {error}"))),
-            };
-            source_statement_b3m2b2b3d_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.binding_env = binding_env,
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task48:") {
-                        error
-                    } else {
-                        format!("Task48: {error}")
-                    }
-                })
-            })
-        }
-        SourceStatementB3M2B2B3DLowerStage::Task252 => {
-            let mut input = task258b3m2b2b3b_primary_input(
-                baseline
-                    .typed_ast
-                    .source_term()
-                    .expect("Task258B3M2B2B3D primary terms"),
-            );
-            if let Err(error) = mutate_task258b3m2b2b3d_primary_input(&mut input, field) {
-                return Some(Err(error));
+    Some((|| {
+        match stage {
+            SourceStatementB3M2B2B3DLowerStage::Task48 => {
+                let parts = mutate_task258b3m2b2b3b_binding_env(&inputs.binding_env, field)?;
+                inputs.binding_env =
+                    BindingEnv::try_new(parts).map_err(|error| format!("Task48: {error}"))?;
             }
-            let primary = match SourcePrimaryTermProducer::build(
-                input,
-                baseline
-                    .typed_ast
-                    .source_statement()
-                    .expect("Task258B3M2B2B3D statement")
-                    .binding_env(),
-                baseline.typed_ast.nodes(),
-            ) {
-                Ok(primary) => primary,
-                Err(error) => return Some(Err(format!("Task252: {error}"))),
-            };
-            source_statement_b3m2b2b3d_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.primary = primary,
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task252:") {
-                        error
-                    } else {
-                        format!("Task252: {error}")
-                    }
-                })
-            })
-        }
-        SourceStatementB3M2B2B3DLowerStage::Task255 => {
-            let mut input = task258b3m2b2b3d_set_input(
-                baseline
-                    .typed_ast
-                    .source_set_term()
-                    .expect("Task258B3M2B2B3D set term"),
-            );
-            if let Err(error) = mutate_task258b3m2b2b3d_set_input(&mut input, field) {
-                return Some(Err(error));
+            SourceStatementB3M2B2B3DLowerStage::Task252 => {
+                let mut primary = task258b3m2b2b3b_primary_input(&inputs.primary);
+                mutate_task258b3m2b2b3d_primary_input(&mut primary, field)?;
+                inputs.primary =
+                    SourcePrimaryTermProducer::build(primary, &inputs.binding_env, &inputs.arena)
+                        .map_err(|error| format!("Task252: {error}"))?;
             }
-            let binding_env = baseline
-                .typed_ast
-                .source_statement()
-                .expect("Task258B3M2B2B3D statement")
-                .binding_env();
-            let primary = baseline
-                .typed_ast
-                .source_term()
-                .expect("Task258B3M2B2B3D primary terms");
-            let set_term = match SourceSetTermProducer::build(
-                input,
-                binding_env,
-                primary,
-                None,
-                None,
-                baseline.typed_ast.nodes(),
-            ) {
-                Ok(set_term) => set_term,
-                Err(error) => return Some(Err(format!("Task255: {error}"))),
-            };
-            source_statement_b3m2b2b3d_output_with_post_auth_family_mutation(
-                ast,
-                module,
-                symbols,
-                source_text,
-                move |input| input.set_term = Some(set_term),
-            )
-            .map(|result| {
-                result.map_err(|error| {
-                    if error.starts_with("Task255:") {
-                        error
-                    } else {
-                        format!("Task255: {error}")
-                    }
-                })
-            })
+            SourceStatementB3M2B2B3DLowerStage::Task255 => {
+                let mut set =
+                    task258b3m2b2b3d_set_input(inputs.set_term.as_ref().expect("Qua set"));
+                mutate_task258b3m2b2b3d_set_input(&mut set, field)?;
+                inputs.set_term = Some(
+                    SourceSetTermProducer::build(
+                        set,
+                        &inputs.binding_env,
+                        &inputs.primary,
+                        None,
+                        None,
+                        &inputs.arena,
+                    )
+                    .map_err(|error| format!("Task255: {error}"))?,
+                );
+            }
         }
-    }
+        Ok(inputs)
+    })())
 }
 
 #[cfg(test)]
@@ -14083,6 +13998,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16763,6 +16679,7 @@ fn build_source_statement_b3m2b2b3c_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b3d_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -18383,6 +18300,7 @@ fn build_source_statement_witness_output_with_controls(
             Some((SourceStatementB3M2B2B3AStage::Witness, _))
         ) {
             let stage = match extracted.task {
+                #[cfg(test)]
                 "Task258B3M2B2B3D" => "B3D",
                 "Task258B3M2B2B3E" => "B3E",
                 _ => "B3A",
@@ -19213,6 +19131,7 @@ const fn range(source_id: mizar_session::SourceId, start: usize, end: usize) -> 
     }
 }
 
+#[cfg(test)]
 fn exact_qua_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     exact_qua_witness_surface_profile_with_mutation(
         ast,
@@ -19221,6 +19140,7 @@ fn exact_qua_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> boo
     )
 }
 
+#[cfg(test)]
 fn exact_qua_witness_surface_profile_with_mutation(
     ast: &SurfaceAst,
     source_text: &str,
@@ -19466,6 +19386,7 @@ pub(in crate::runner) fn extract_qua_witness_source_statement_with_surface_mutat
     extract_qua_witness_source_statement(ast, source_text)
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_qua_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
