@@ -707,7 +707,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/ja/QUALITY-EXACT-PROFILE-RETIREMENT.md)。
 - [ ] **Task 282:** メタデータとホバーのための展開後の命題。契約:
   [AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md)。
-- [ ] **Task 283:** 2万行を超える checker ファイルの機械的分割 (light tier)。契約:
+- [x] **Task 283:** 2万行を超える checker ファイルの機械的分割 (light tier)。契約:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/ja/VELOCITY-LARGE-FILE-SPLIT.md)。
 - [ ] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。

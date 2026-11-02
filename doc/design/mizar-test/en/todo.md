@@ -1,6 +1,6 @@
 # mizar-test TODO
 
-- [ ] [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md).
+- [x] [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md).
 
 - [x] [TEST-FUNCTOR-RAW-PREFIX-BRIDGE](../../task_contracts/en/TEST-FUNCTOR-RAW-PREFIX-BRIDGE.md).
 

@@ -135,6 +135,8 @@ Task 24 では file split を行わない。
 - 安全な split は、public API、diagnostic、debug rendering を変えず、full Rust
   verification を行う dedicated move-only follow-up として扱うべきである。
 
+2026年11月 (VELOCITY-LARGE-FILE-SPLIT): `elaborator.rs` の test module は `src/elaborator/tests.rs` へ移した。production 部分は単独で 2 万行を超えるが、producer 境界での分割は機械的な移動ではなく owner の判断なので、1 ファイルのままとする。
+
 将来 task が split を行う場合は、module-boundary audit を更新し、移動した API に対して
 source/spec audit scope を再実行し、path/document 変更がある場合は bilingual
 documentation sync scope も再実行する。新しい spec task が明示的に変更しない限り、

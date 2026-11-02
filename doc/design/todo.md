@@ -142,7 +142,7 @@ Selected before any further per-element source-transport slice. Both tasks
 change how the remaining Task 257-279 families are produced and tested,
 not what they mean; the gate closes when both are done.
 
-1. [ ] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
+1. [x] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
    — mechanical test-module split of the Rust files over 20k lines; light
    tier.
 2. [ ] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)

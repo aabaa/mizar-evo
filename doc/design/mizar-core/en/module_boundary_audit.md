@@ -148,6 +148,8 @@ Rationale:
   ownership, unchanged public APIs, unchanged diagnostics, unchanged debug
   renderings, and full Rust verification.
 
+November 2026 (VELOCITY-LARGE-FILE-SPLIT): the `elaborator.rs` test module moved to `src/elaborator/tests.rs`; the production part stays above 20k lines in one file because splitting it along producer boundaries is an owner decision outside that mechanical task.
+
 If a future task performs a split, it must update the module-boundary audit,
 rerun the source/spec audit scope for moved APIs, rerun the bilingual
 documentation sync scope for any path/document changes, and keep the public

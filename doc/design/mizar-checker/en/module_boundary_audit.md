@@ -49,6 +49,8 @@ Details archived: [checker_module_boundary_audit_sections.md](../../archive/chec
 Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv). Its `lines` column is rounded up to the next multiple of 500 so that an ordinary task does not change the inventory.
 Historical details: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).
 
+Test modules of the large files live under `src/<module>/tests.rs` with one child file per test family (VELOCITY-LARGE-FILE-SPLIT, November 2026). `src/type_checker.rs` stays above 20k lines because its production part alone exceeds that; splitting it along producer boundaries is a separate owner decision, not a mechanical move.
+
 ## Task 277C Frozen Module Boundary
 
 Details archived: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).

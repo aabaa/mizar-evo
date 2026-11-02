@@ -85,7 +85,7 @@ fn checker_manifest_dependency_boundary_is_step5c11_scoped() {
 #[test]
 fn checker_task258b1_syntax_alias_remains_test_only() {
     let root = crate_root();
-    let source = read_to_string(&root.join("src/source_statement.rs"));
+    let source = read_to_string(&root.join("src/source_statement/tests.rs"));
     assert_eq!(
         source.matches("use mizar_syntax as syntax;").count(),
         1,

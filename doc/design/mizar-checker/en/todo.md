@@ -732,7 +732,7 @@ implementation commit does not satisfy a producer task.
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md).
 - [ ] **Task 282:** elaborated statements for metadata and hover. Contract:
   [AIREV-ELABORATED-STATEMENTS](../../task_contracts/en/AIREV-ELABORATED-STATEMENTS.md).
-- [ ] **Task 283:** mechanical split of the checker files over 20k lines
+- [x] **Task 283:** mechanical split of the checker files over 20k lines
   (light tier). Contract:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md).
 - [ ] **Task 284:** generic original-source transport producer and oracle;
