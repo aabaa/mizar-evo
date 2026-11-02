@@ -5654,11 +5654,9 @@ Comments, CR, internal/trailing edits and public 269GUP/Type admission stay outs
 
 ## Proof-local Given leading-layout transport
 
-The private Task269GP lower route admits leading SP/TAB/LF before its unchanged 129-byte suffix; all 48 Surface rows and shell/resolver/output ranges share that displacement.
-Every identity/signature/normality/source check remains. Outer selection uses the unmutated profile; selected Surface corruptions still reach the builder's existing Surface error.
-Fingerprints remain lowercase SHA-256 of actual raw-source and Surface snapshot UTF-8, using the existing formatter; canonical hashes/debug bytes and schema stay unchanged.
-Existing raw source passes only through private calls. The lower keeps syntax spelling y/type set and ordinal 1, with no binding scope, visibility, new field/API or dependency.
-Comments, CR, internal/trailing edits and public 269G/Type admission remain outside this slice; no binding/fact/proof/coverage or Task281 retirement credit follows.
+The private Task269GP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with an unused single-name bare-set Given, one labeled thesis condition and a direct `thus thesis` conclusion. It derives ranges, identifiers and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; bare CR and other syntax shapes remain excluded.
+Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the output schema remain unchanged. Historical expected-array mutations retain their private post-selection error stage alongside actual frontend/raw-source corruption checks.
+Public G/GT retain canonical dependency validation and reject noncanonical lower receipts. This adds no binding/Type/Typed-final, condition/label fact, thesis interpretation, corpus/dispatch, existential/Skolem, proof, Core/VC or acceptance credit.
 
 ## Checker Task 269GP Dormant Proof-`given` Lower Consumer
 

@@ -9,6 +9,9 @@ historical raw B3N profileとTask269A exact profile/runnerは既存private test�
 ## Generic isolated Let source boundary
 Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。C/CTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・proof・dispatch・acceptance supportは加えない。
 
+## Generic isolated Given source boundary
+Runner-private GP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-leading-layout-transport)に従う。G/GTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・condition fact・proof・dispatch・acceptance supportは加えない。
+
 ## 状態と authority
 
 このliving owner文書はChecker Task-269 proof-local declaration lineageの

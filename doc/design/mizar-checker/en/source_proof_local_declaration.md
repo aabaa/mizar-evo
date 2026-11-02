@@ -9,6 +9,9 @@ The historical raw B3N profile and Task269A exact profile/runner remain confined
 ## Generic isolated Let source boundary
 The runner-private CP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-let-leading-layout-transport). C/CT retain their canonical dependency checks; noncanonical lower receipts add no binding, proof, dispatch or acceptance support.
 
+## Generic isolated Given source boundary
+The runner-private GP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-leading-layout-transport). G/GT retain their canonical dependency checks; noncanonical lower receipts add no binding, condition fact, proof, dispatch or acceptance support.
+
 ## Status and authority
 
 This living owner document freezes the completed Checker Task-269 proof-local

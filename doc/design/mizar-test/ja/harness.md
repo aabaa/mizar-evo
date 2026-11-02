@@ -5290,11 +5290,9 @@ Comment/CR/internal/trailing編集とpublic 269GUP/Type admissionは対象外で
 
 ## Proof-local Given leading-layout transport
 
-Private Task269GP lower routeは未変更129-byte suffix前のSP/TAB/LFだけを許可し、Surface 48行とshell/resolver/output rangeに同じ移動量を使う。
-Identity/signature/normality/source検査を保つ。Outer selectionは未変更profileを使い、選択後Surface corruptionはbuilderの既存Surface errorに到達する。
-Fingerprintは既存formatterで実raw-source/Surface snapshot UTF-8の小文字SHA-256を計算し、canonical hash/debug bytesとschemaを維持する。
-既存raw sourceはprivate call間だけで渡す。Lowerはsyntax spelling y/type setとordinal 1を維持し、binding scope/visibility、新field/API/dependencyを追加しない。
-Comment/CR/internal/trailing編集とpublic 269G/Type admissionは対象外で、binding/fact/proof/coverageやTask281 retirement creditは追加しない。
+Private Task269GP lower routeは、reserve 1件と、未使用の単一名bare-set Given・ラベル付きthesis condition 1件・directな`thus thesis` conclusionを含むnamed thesis theorem 1件について、installed generic source tableのroleを読む。Fixture suffixを使わずrange・identifier・signatureを導き、raw tokenと整合するSP/TAB/LF・comment・`be`/`being`を移送する。裸のCRと他のsyntax shapeは対象外とする。
+Fingerprintは実際のraw-source UTF-8と`SurfaceAst::snapshot_text()` UTF-8の小文字SHA-256を維持し、canonical digest/debug bytesとoutput schemaは変えない。Historical expected-array mutationは、実際のfrontend/raw-source corruption検査とともにprivateな選択後error段階を維持する。
+Public G/GTはcanonical dependency検証を維持し、noncanonical lower receiptを拒否する。Binding/Type/Typed-final、condition/label fact、thesis解釈、corpus/dispatch、existential/Skolem、proof/Core/VC/acceptance creditは追加しない。
 
 ## Checker Task 269GP dormant proof-`given` lower consumer
 
