@@ -345,6 +345,15 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         .witnesses(&statement, fixture.witness_input())
         .expect("baseline");
     let baseline_debug = baseline.debug_text();
+    let replay = || {
+        assert_eq!(
+            fixture
+                .witnesses(&statement, fixture.witness_input())
+                .expect("pristine replay")
+                .debug_text(),
+            baseline_debug
+        );
+    };
 
     for mutation in 0..2 {
         let mut input = fixture.witness_input();
@@ -358,6 +367,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
             Err(SourceStatementWitnessError::InvalidAggregate),
             "aggregate {mutation}"
         );
+        replay();
     }
     let mut extra_name = fixture.witness_input();
     extra_name.names.push(SourceStatementWitnessNameInput {
@@ -371,6 +381,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         fixture.witnesses(&statement, extra_name),
         Err(SourceStatementWitnessError::InvalidAggregate)
     );
+    replay();
     for mutation in 0..15 {
         let mut input = fixture.witness_input();
         let row = &mut input.witnesses[0];
@@ -399,6 +410,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
             }),
             "witness field {mutation}"
         );
+        replay();
     }
     for term in [0, 1, 3, 4, 5, 6] {
         let mut input = fixture.witness_input();
@@ -411,6 +423,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
             }),
             "witness term substitution {term}"
         );
+        replay();
     }
     let mut foreign_context = fixture.witness_input();
     foreign_context.witnesses[0].binding_context = BindingContextId::new(2);
@@ -420,6 +433,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
             witness: SourceStatementWitnessId::new(0),
         })
     );
+    replay();
     let mut aggregate_first = fixture.witness_input();
     aggregate_first.witnesses.clear();
     aggregate_first.names.push(SourceStatementWitnessNameInput {
@@ -433,6 +447,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         fixture.witnesses(&statement, aggregate_first),
         Err(SourceStatementWitnessError::InvalidAggregate)
     );
+    replay();
     let mut aggregate_before_witness = fixture.witness_input();
     aggregate_before_witness.witnesses[0].ordinal = 1;
     aggregate_before_witness
@@ -442,6 +457,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         fixture.witnesses(&statement, aggregate_before_witness),
         Err(SourceStatementWitnessError::InvalidAggregate)
     );
+    replay();
     let mut dependency_first = fixture.witness_input();
     dependency_first.source_id = source_id(66);
     dependency_first.witnesses.clear();
@@ -449,6 +465,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         fixture.witnesses(&statement, dependency_first),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    replay();
 
     let mut stale_statement = baseline.clone();
     stale_statement.statement_fingerprint.push('x');
@@ -462,6 +479,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         ),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    replay();
     let mut stale_primary = baseline.clone();
     stale_primary.primary_term_fingerprint.push('x');
     assert_eq!(
@@ -474,6 +492,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         ),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    replay();
 
     let mut numeric_input = B3M2AFixture::primary_input(fixture.source, &fixture.module);
     numeric_input.terms[2].spelling = "102".to_owned();
@@ -492,6 +511,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
         ),
         Err(SourceStatementError::DependencyMismatch)
     );
+    replay();
 
     for index in 0..49 {
         for mutation in 0..5 {
@@ -526,6 +546,7 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
                 Err(SourceStatementWitnessError::DependencyMismatch),
                 "node {index} mutation {mutation}"
             );
+            replay();
         }
     }
     assert_eq!(
@@ -535,6 +556,71 @@ fn task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fa
             .debug_text(),
         baseline_debug
     );
+}
+
+#[test]
+fn task258b3m2a_statement_dependencies_and_candidate_aggregate_precede_witness_rows() {
+    let fixture = B3M2AFixture::new(72);
+    let foreign = B3Fixture::new(73);
+    let statement = fixture.statement();
+    let pristine = fixture.witness_input();
+    let baseline = fixture
+        .witnesses(&statement, pristine.clone())
+        .expect("baseline");
+    let replay = || {
+        assert_eq!(fixture.statement(), statement);
+        assert_eq!(fixture.witness_input(), pristine);
+        assert_eq!(
+            fixture.witnesses(&statement, fixture.witness_input()),
+            Ok(baseline.clone())
+        );
+    };
+    for mutation in 0..4 {
+        let mut input = fixture.statement_input();
+        let mut witness = fixture.witness_input();
+        if mutation == 0 {
+            witness.witnesses.clear();
+        } else if mutation == 3 {
+            input.candidate_facts.pop();
+        }
+        let built = SourceStatementProducer::build(
+            input,
+            &fixture.symbols,
+            if mutation == 0 {
+                &foreign.bindings
+            } else {
+                &fixture.bindings
+            },
+            if mutation == 1 {
+                &foreign.primary
+            } else {
+                &fixture.primary
+            },
+            if mutation == 2 {
+                &foreign.atomic
+            } else {
+                &fixture.atomic
+            },
+            &fixture.arena,
+        );
+        assert_eq!(
+            built.map(|statement| fixture.witnesses(&statement, witness)),
+            Err(if mutation == 3 {
+                SourceStatementError::InvalidAggregate
+            } else {
+                SourceStatementError::DependencyMismatch
+            }),
+            "statement fault {mutation} before witness admission"
+        );
+        replay();
+    }
+    let mut wrong_module = fixture.witness_input();
+    wrong_module.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("wrong"));
+    assert_eq!(
+        fixture.witnesses(&statement, wrong_module),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    replay();
 }
 
 #[test]

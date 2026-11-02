@@ -21,6 +21,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] bare unnamed finite enumeration witness: ordered references to the sole reserved set variable
 - [x] unused named finite enumeration witness: fresh name, same reserved-reference elements, no binding activation
 - [x] unused named bare-set Choice witness: preserve pending requests, no abbreviation activation
+- [x] dormant unnamed numeral witness: retire its raw profile into private tests; numeric semantics remain deferred
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

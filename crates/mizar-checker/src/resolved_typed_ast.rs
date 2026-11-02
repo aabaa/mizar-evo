@@ -3042,6 +3042,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let legacy_witness_statement = source_statement.is_task_258b3_profile()
                 || source_statement.is_task_258b3n_profile()
                 || source_statement.is_task_258b3m1_profile()
+                || source_statement.is_task_258b3m2a_profile()
                 || source_statement.is_task_258b3m2b1_profile()
                 || source_statement.is_task_258b3m2b2a_profile();
             let native_referenced_statement = original_statement
@@ -3070,9 +3071,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, Some(witnesses))
                     if source_application.is_none()
-                        && (native_witness_statement
-                            || legacy_witness_statement
-                            || source_statement.is_task_258b3m2a_profile()) =>
+                        && (native_witness_statement || legacy_witness_statement) =>
                 {
                     witnesses
                         .validate_installation_with_set_term(

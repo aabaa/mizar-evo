@@ -1819,6 +1819,19 @@ fn task258b3m2b2b2b_family_and_active_route_isolation_is_atomic() {
             task253_ast_from_source_text(source, 259_230 + source.len());
         let family_symbols =
             augment_type_elaboration_import_summaries(&family_ast, &family_module, family_symbols);
+        if source == SOURCE_STATEMENT_B3M2A_TEXT {
+            let before = (family_ast.snapshot_text(), family_module.clone(), family_symbols.clone());
+            assert!(extract_numeral_witness_source_statement(&family_ast, source).is_some());
+            assert!(source_statement_output_with_source(
+                &family_ast, family_module.clone(), &family_symbols, source,
+            ).is_none());
+            assert_eq!(source_statement_b3m2a_output_with_resolver_mutation(
+                &family_ast, family_module.clone(), &family_symbols, source, |symbols| symbols,
+            ).expect("authentic retired numeral extraction").expect_err("retired raw profile"),
+                "source statement dependency mismatch");
+            assert_eq!((family_ast.snapshot_text(), family_module.clone(), family_symbols.clone()), before);
+            continue;
+        }
         let family_typed = if source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT || source == SOURCE_STATEMENT_B3M2B1_TEXT || source == SOURCE_STATEMENT_B3M2B2A_TEXT {
             task258_native_output(&family_ast, &family_module).0
         } else {

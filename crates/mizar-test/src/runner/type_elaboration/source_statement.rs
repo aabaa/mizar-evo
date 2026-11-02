@@ -90,7 +90,9 @@ use mizar_session::{
     BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, SessionIdAllocator,
     SourceAnchor, SourceId, SourceRange,
 };
-use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind, SyntaxKind};
+#[cfg(test)]
+use mizar_syntax::SurfaceTokenKind;
+use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SyntaxKind};
 
 #[cfg(test)]
 use super::source_ast::subtree_has_recovery;
@@ -244,6 +246,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M1_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2A_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementNumeralWitnessSmoke: x = x proof\n",
@@ -1938,7 +1941,9 @@ const SOURCE_STATEMENT_B2_LABEL: &str = "FormulaStatementSingleAssumptionSmoke";
 const SOURCE_STATEMENT_B3_LABEL: &str = "FormulaStatementSingleWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3N_LABEL: &str = "FormulaStatementNamedWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2A_LABEL: &str = "FormulaStatementNumeralWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementNumeralWitnessSmoke : x = x proof take 101 ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2119,6 +2124,7 @@ pub(in crate::runner) struct SourceStatementB3NExtraction {
     pub(in crate::runner) name_site: TypedSiteRef,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2AExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2407,6 +2413,7 @@ struct SourceStatementWitnessExtraction {
     source_text: &'static str,
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2AExtraction) -> Self {
         Self {
@@ -2841,6 +2848,7 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) set_term: Option<SourceSetTermHandoff>,
 }
 
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
@@ -3815,6 +3823,7 @@ pub(in crate::runner) fn extract_named_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_numeral_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -3937,6 +3946,7 @@ pub(in crate::runner) fn extract_numeral_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 const TASK258B3M2A_SURFACE_RANGES: [(usize, usize); 49] = [
     (0, 7),
     (8, 9),
@@ -3989,6 +3999,7 @@ const TASK258B3M2A_SURFACE_RANGES: [(usize, usize); 49] = [
     (0, 106),
 ];
 
+#[cfg(test)]
 const TASK258B3M2A_TOKEN_TEXTS: [&str; 22] = [
     "reserve",
     "x",
@@ -4014,6 +4025,7 @@ const TASK258B3M2A_TOKEN_TEXTS: [&str; 22] = [
     ";",
 ];
 
+#[cfg(test)]
 fn task258b3m2a_token_kind(index: usize) -> SurfaceTokenKind {
     match index {
         0 | 2 | 3 | 5 | 11 | 12 | 15 | 20 => SurfaceTokenKind::ReservedWord,
@@ -4024,6 +4036,7 @@ fn task258b3m2a_token_kind(index: usize) -> SurfaceTokenKind {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2a_surface_kind(index: usize) -> SyntaxKind {
     match index {
         0..=21 => SyntaxKind::Token,
@@ -4049,6 +4062,7 @@ fn task258b3m2a_surface_kind(index: usize) -> SyntaxKind {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2a_surface_children(index: usize) -> &'static [usize] {
     match index {
         22 => &[3],
@@ -4084,6 +4098,7 @@ fn task258b3m2a_surface_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn exact_numeral_witness_surface_profile(ast: &SurfaceAst) -> bool {
     TASK258B3M2A_SURFACE_RANGES
         .iter()
@@ -13523,15 +13538,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2A_TEXT {
-        return source_statement_b3m2a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
 
     None
 }
@@ -14709,6 +14715,7 @@ pub(in crate::runner) fn source_statement_b3m2a_output_with_resolver_mutation(
     ))
 }
 
+#[cfg(test)]
 fn source_statement_b3m2a_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16674,6 +16681,7 @@ fn build_source_statement_b4a_output(
     })
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2a_output(
     ast: &SurfaceAst,
     module: ModuleId,

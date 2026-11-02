@@ -107,52 +107,91 @@ fn task258b3m2a_real_frontend_freezes_numeral_witness_contract() {
             .is_empty()
     );
 
-    let output = source_statement_output_with_source(
-        &ast,
+    let before = (
+        ast.snapshot_text(),
         module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-    )
-    .expect("Task258B3M2A selector")
-    .expect("Task258B3M2A route");
-    let statement = output.typed_ast.source_statement().expect("statement");
-    let primary = output.typed_ast.source_term().expect("primary terms");
-    let atomic = output
-        .typed_ast
-        .source_atomic_formula()
-        .expect("atomic formulas");
-    let witnesses = output
-        .typed_ast
-        .source_statement_witnesses()
-        .expect("witness handoff");
+        symbols.clone(),
+        resolver.clone(),
+    );
+    assert!(
+        source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        source_statement_transport_detail_keys(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+        )
+        .is_none()
+    );
+    let mut lower = None;
+    assert_eq!(
+        source_statement_b3m2a_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+            |input| lower = Some(input.clone()),
+        )
+        .expect("authentic lower extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch",
+    );
+    let lower = lower.expect("lower data before raw admission");
+    let statement = &lower.statement;
+    let primary = &lower.primary;
+    let atomic = &lower.atomic;
+    assert_eq!(
+        (statement.source_id, &statement.module_id),
+        (ast.source_id, &module)
+    );
+    assert_eq!(
+        (primary.source_id(), primary.module_id()),
+        (ast.source_id, &module)
+    );
+    assert_eq!(
+        (atomic.source_id(), atomic.module_id()),
+        (ast.source_id, &module)
+    );
+    assert_eq!(
+        (lower.witness.source_id, &lower.witness.module_id),
+        (ast.source_id, &module)
+    );
     assert_eq!(
         (
-            statement.binding_env().contexts().len(),
-            statement.binding_env().bindings().len(),
-            statement.binding_env().diagnostics().len(),
+            lower.binding_env.contexts().len(),
+            lower.binding_env.bindings().len(),
+            lower.binding_env.diagnostics().len(),
             primary.terms().len(),
             primary.references().len(),
             primary.numeric_type_requests().len(),
             atomic.formulas().len(),
             atomic.edges().len(),
-            atomic.requests().len(),
+            atomic.requests().len()
         ),
         (2, 1, 0, 5, 4, 1, 2, 4, 4)
     );
     assert_eq!(
         (
-            statement.owners().len(),
-            statement.statements().len(),
-            statement.contexts().len(),
-            statement.input_facts().len(),
-            statement.candidate_facts().len(),
-            witnesses.witnesses().len(),
-            witnesses.names().len(),
+            statement.owners.len(),
+            statement.statements.len(),
+            statement.contexts.len(),
+            statement.input_facts.len(),
+            statement.candidate_facts.len(),
+            lower.witness.witnesses.len(),
+            lower.witness.names.len()
         ),
         (1, 2, 2, 2, 2, 1, 0)
     );
-    let proof = statement
-        .binding_env()
+    let proof = lower
+        .binding_env
         .contexts()
         .get(mizar_checker::binding_env::BindingContextId::new(1))
         .expect("proof context");
@@ -321,314 +360,99 @@ fn task258b3m2a_real_frontend_freezes_numeral_witness_contract() {
         ]
     );
     for index in 0..2 {
-        let row = statement
-            .statements()
-            .get(mizar_checker::source_statement::SourceStatementId::new(
-                index,
-            ))
-            .expect("statement row");
+        let row = &statement.statements[index];
         assert_eq!(
             (
-                row.site().node().index(),
-                row.source_range().start,
-                row.source_range().end,
-                row.source_ordinal(),
+                row.site.node().index(),
+                row.source_range.start,
+                row.source_range.end,
+                row.source_ordinal
             ),
             (
                 [45, 43][index],
                 [19, 90][index],
                 [106, 101][index],
-                [0, 2][index],
+                [0, 2][index]
             )
         );
-        let fact = statement
-            .input_facts()
-            .get(mizar_checker::source_statement::SourceStatementInputFactId::new(index))
-            .expect("input fact");
         assert_eq!(
-            fact.uses()
+            statement.input_facts[index]
+                .uses
                 .iter()
-                .map(|reference| reference.index())
+                .map(|id| id.index())
                 .collect::<Vec<_>>(),
             if index == 0 { vec![0, 1] } else { vec![2, 3] }
         );
     }
-    let witness = witnesses
-        .witnesses()
-        .get(mizar_checker::source_statement::SourceStatementWitnessId::new(0))
-        .expect("witness");
+    let witness = &lower.witness.witnesses[0];
     assert_eq!(
         (
-            witness.owner().index(),
-            witness.binding_context().index(),
-            witness.term(),
-            witness.take_site().node().index(),
-            witness.take_range().start,
-            witness.take_range().end,
-            witness.site().node().index(),
-            witness.source_range().start,
-            witness.source_range().end,
+            witness.owner.index(),
+            witness.binding_context.index(),
+            witness.term,
+            witness.take_site.node().index(),
+            witness.take_range,
+            witness.site.node().index(),
+            witness.source_range
         ),
         (
             0,
             1,
             mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(
-                mizar_checker::source_term::SourcePrimaryTermId::new(2),
+                mizar_checker::source_term::SourcePrimaryTermId::new(2)
             ),
             35,
-            78,
-            87,
+            range(ast.source_id, 78, 87),
             34,
-            83,
-            86
+            range(ast.source_id, 83, 86)
         )
     );
     assert_eq!(
         (
-            witness.source_ordinal(),
-            witness.ordinal(),
-            witness.spelling(),
-            witness.kind(),
-            witness.name(),
+            witness.source_ordinal,
+            witness.ordinal,
+            witness.spelling.as_str(),
+            witness.kind,
+            witness.name
         ),
         (
             1,
             0,
             "101",
             mizar_checker::source_statement::SourceStatementWitnessKind::Unnamed,
-            None,
+            None
         )
     );
-    for (index, expected) in [
-        (30, "source.formula.atomic.equality"),
-        (32, "source.term.numeral"),
-        (33, "source.surface.unowned"),
-        (34, "source.statement-witness.item"),
-        (35, "source.statement-witness.take"),
-        (40, "source.formula.atomic.equality"),
-        (43, "source.statement.conclusion"),
-        (45, "source.statement.theorem"),
-    ] {
-        assert_eq!(
-            output
-                .typed_ast
-                .nodes()
-                .node(mizar_checker::typed_ast::TypedNodeId::new(index))
-                .expect("typed node")
-                .kind
-                .as_str(),
-            expected
-        );
-    }
-    assert_eq!(output.reference_use_ordinals, [1; 4]);
-    assert_eq!(
-        (output.left_lookup_ordinal, output.right_lookup_ordinal),
-        (1, 1)
-    );
-    assert_eq!(
-        source_statement_transport_detail_keys(&ast, module, &symbols, SOURCE_STATEMENT_B3M2A_TEXT,),
-        Some(Vec::new())
-    );
-    assert_eq!(
-        output.typed_ast.source_statement(),
-        output.resolved.source_statement()
-    );
-    assert_eq!(
-        output.typed_ast.source_statement_witnesses(),
-        output.resolved.source_statement_witnesses()
-    );
-    assert_eq!(
-        output.typed_ast.source_term(),
-        output.resolved.source_term()
-    );
-    assert_eq!(
-        output.typed_ast.source_atomic_formula(),
-        output.resolved.source_atomic_formula()
-    );
-    assert!(output.typed_ast.source_statement_references().is_none());
+    assert_eq!((ast.snapshot_text(), module, symbols, resolver), before);
 }
 
 #[test]
 fn task258b3m2a_validation_precedence_mutation_and_replay_fail_closed() {
     let (ast, module, _, symbols) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2A_TEXT, 258_901);
-    let baseline = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-    )
-    .expect("baseline selector")
-    .expect("baseline route");
-    let baseline_typed = baseline.typed_ast.debug_text();
-    let baseline_resolved = baseline.resolved.debug_text();
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
     let replay = || {
-        let output = source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-        )
-        .expect("replay selector")
-        .expect("replay route");
-        assert_eq!(output.typed_ast.debug_text(), baseline_typed);
-        assert_eq!(output.resolved.debug_text(), baseline_resolved);
+        assert_eq!(
+            source_statement_b3m2a_output_with_resolver_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2A_TEXT,
+                |symbols| symbols,
+            )
+            .expect("authentic resolver extraction")
+            .expect_err("retired raw profile"),
+            "source statement dependency mismatch"
+        );
+        assert_eq!(
+            (ast.snapshot_text(), module.clone(), symbols.clone()),
+            before
+        );
+        assert!(
+            extract_numeral_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2A_TEXT).is_some()
+        );
     };
-
-    let (foreign_ast, foreign_module, _, _) = task253_ast_from_source_text(SOURCE_STATEMENT_B3_TEXT, 258_902);
-    let (foreign, _) = task258_native_output(&foreign_ast, &foreign_module);
-    assert!(foreign.source_statement_witnesses().is_some(), "genuine native B3 foreign oracle");
-    let wrong_binding = foreign
-        .source_statement()
-        .expect("foreign statement")
-        .binding_env()
-        .clone();
-    let wrong_primary = foreign
-        .source_term()
-        .expect("foreign primary")
-        .clone();
-    let wrong_atomic = foreign
-        .source_atomic_formula()
-        .expect("foreign atomic")
-        .clone();
-
-    for (mutation, expected) in [(0, "dependency"), (1, "aggregate"), (2, "witness 0")] {
-        let error = source_statement_b3m2a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-            |input: &mut SourceStatementB3M2ARouteInputs| match mutation {
-                0 => {
-                    input.binding_env = wrong_binding.clone();
-                    input.witness.witnesses.clear();
-                }
-                1 => {
-                    input.witness.witnesses[0].ordinal = 1;
-                    input
-                        .witness
-                        .witnesses
-                        .push(input.witness.witnesses[0].clone());
-                }
-                2 => input.witness.witnesses[0].ordinal = 1,
-                _ => unreachable!(),
-            },
-        )
-        .expect("precedence selector")
-        .expect_err("mixed fault");
-        assert!(
-            error.to_ascii_lowercase().contains(expected),
-            "precedence {mutation}: {error}"
-        );
-        replay();
-    }
-
-    for (mutation, expected) in [
-        (0, "aggregate"),
-        (1, "aggregate"),
-        (2, "aggregate"),
-        (3, "dependency"),
-        (4, "dependency"),
-        (5, "aggregate"),
-    ] {
-        let error = source_statement_b3m2a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-            |input| match mutation {
-                0 => {
-                    input.witness.witnesses.clear();
-                }
-                1 => input
-                    .witness
-                    .witnesses
-                    .push(input.witness.witnesses[0].clone()),
-                2 => input.witness.names.push(
-                    mizar_checker::source_statement::SourceStatementWitnessNameInput {
-                        witness: mizar_checker::source_statement::SourceStatementWitnessId::new(0),
-                        site: input.witness.witnesses[0].site.clone(),
-                        source_range: input.witness.witnesses[0].source_range,
-                        spelling: "y".to_owned(),
-                        recovery: mizar_checker::source_statement::SourceStatementRecovery::Normal,
-                    },
-                ),
-                3 => input.primary = wrong_primary.clone(),
-                4 => input.atomic = wrong_atomic.clone(),
-                5 => {
-                    input.statement.candidate_facts.pop();
-                }
-                _ => unreachable!(),
-            },
-        )
-        .expect("aggregate/dependency selector")
-        .expect_err("aggregate/dependency mutation");
-        assert!(
-            error.to_ascii_lowercase().contains(expected),
-            "mutation {mutation}: {error}"
-        );
-        replay();
-    }
-
-    for mutation in 0..16 {
-        let error = source_statement_b3m2a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-            |input| {
-                let row = &mut input.witness.witnesses[0];
-                match mutation {
-                    0 => row.owner = mizar_checker::source_statement::SourceTheoremOwnerId::new(1),
-                    1 => row.binding_context = mizar_checker::binding_env::BindingContextId::new(0),
-                    2 => row.term =
-                        mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(
-                            mizar_checker::source_term::SourcePrimaryTermId::new(0),
-                        ),
-                    3 => row.take_site = row.site.clone(),
-                    4 => row.take_range.start += 1,
-                    5 => row.take_range.end -= 1,
-                    6 => row.site = row.take_site.clone(),
-                    7 => row.source_range.start += 1,
-                    8 => row.source_range.end -= 1,
-                    9 => row.source_ordinal = 2,
-                    10 => row.ordinal = 1,
-                    11 => row.spelling.push('z'),
-                    12 => {
-                        row.recovery =
-                            mizar_checker::source_statement::SourceStatementRecovery::Degraded
-                    }
-                    13 => {
-                        row.kind =
-                            mizar_checker::source_statement::SourceStatementWitnessKind::Named
-                    }
-                    14 => {
-                        row.name = Some(
-                            mizar_checker::source_statement::SourceStatementWitnessNameId::new(0),
-                        )
-                    }
-                    15 => {
-                        input.witness.module_id =
-                            ResolverModuleId::new(PackageId::new("pkg"), ModulePath::new("wrong"))
-                    }
-                    _ => unreachable!(),
-                }
-            },
-        )
-        .expect("witness selector")
-        .expect_err("witness mutation");
-        let expected = if mutation == 15 {
-            "dependency"
-        } else {
-            "witness 0"
-        };
-        assert!(
-            error.to_ascii_lowercase().contains(expected),
-            "witness field {mutation}: {error}"
-        );
-        replay();
-    }
-
+    replay();
     for mutation in [
         Task258B2ResolverMutation::Imported,
         Task258B2ResolverMutation::Missing,
@@ -648,26 +472,65 @@ fn task258b3m2a_validation_precedence_mutation_and_replay_fail_closed() {
         )
         .expect("resolver selector")
         .expect_err("resolver mutation");
-        assert!(
-            error.to_ascii_lowercase().contains("resolver")
-                || error.to_ascii_lowercase().contains("owner")
-                || error.to_ascii_lowercase().contains("label"),
-            "{mutation:?}: {error}"
-        );
+        let expected = if matches!(
+            mutation,
+            Task258B2ResolverMutation::Missing | Task258B2ResolverMutation::Duplicate,
+        ) {
+            "Task258B3M2A resolver theorem label mismatch"
+        } else {
+            "Task258B3M2A resolver theorem provenance mismatch"
+        };
+        assert_eq!(error, expected, "{mutation:?}");
         replay();
     }
-
-    let primary_input = task258b3m2a_primary_input(
-        baseline
-            .typed_ast
-            .source_term()
-            .expect("baseline primary terms"),
+    for mutation in [
+        Task258B3M2B2B3ALabelMutation::Namespace,
+        Task258B3M2B2B3ALabelMutation::PrimarySpelling,
+        Task258B3M2B2B3ALabelMutation::Contribution,
+        Task258B3M2B2B3ALabelMutation::OriginSource,
+        Task258B3M2B2B3ALabelMutation::OriginModule,
+        Task258B3M2B2B3ALabelMutation::OriginAnchor,
+        Task258B3M2B2B3ALabelMutation::OriginStructuralPath,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsMissing,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
+    ] {
+        let error = source_statement_b3m2a_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+            |symbols| task258b3m2b2b3a_mutate_label_resolver(symbols, mutation),
+        )
+        .expect("label extraction")
+        .expect_err("label preflight");
+        let expected = if matches!(
+            mutation,
+            Task258B3M2B2B3ALabelMutation::Namespace
+                | Task258B3M2B2B3ALabelMutation::PrimarySpelling,
+        ) {
+            "Task258B3M2A resolver theorem label mismatch"
+        } else {
+            "Task258B3M2A resolver theorem provenance mismatch"
+        };
+        assert_eq!(error, expected, "{mutation:?}");
+        replay();
+    }
+    let mut lower = None;
+    assert_eq!(
+        source_statement_b3m2a_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+            |input: &mut SourceStatementB3M2ARouteInputs| lower = Some(input.clone()),
+        )
+        .expect("authentic lower extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
     );
-    let binding_env = baseline
-        .typed_ast
-        .source_statement()
-        .expect("baseline statement")
-        .binding_env();
+    let lower = lower.expect("real lower data before raw admission");
+    let primary_input = task258b3m2a_primary_input(&lower.primary);
     for mutation in 0..8 {
         let mut input = primary_input.clone();
         match mutation {
@@ -688,8 +551,8 @@ fn task258b3m2a_validation_precedence_mutation_and_replay_fail_closed() {
         }
         let error = mizar_checker::source_term::SourcePrimaryTermProducer::build(
             input,
-            binding_env,
-            baseline.typed_ast.nodes(),
+            &lower.binding_env,
+            &lower.arena,
         )
         .expect_err("numeric request mutation");
         let expected_numeric_error = match &error {
@@ -707,83 +570,127 @@ fn task258b3m2a_validation_precedence_mutation_and_replay_fail_closed() {
         );
         replay();
     }
-
-    for index in 0..49 {
-        for mutation in 0..5 {
-            let error = source_statement_b3m2a_output_with_mutation(
-                &ast,
-                module.clone(),
-                &symbols,
-                SOURCE_STATEMENT_B3M2A_TEXT,
-                |input| {
-                    input.arena = mizar_checker::typed_ast::TypedArena::try_new(
-                        input.arena.root(),
-                        input
-                            .arena
-                            .iter()
-                            .map(|(id, row)| {
-                                let mut row = row.clone();
-                                if id.index() == index {
-                                    match mutation {
-                                        0 => {
-                                            let mizar_session::SourceAnchor::Range(mut range) =
-                                                row.anchor.clone()
-                                            else {
-                                                unreachable!("range anchor")
-                                            };
-                                            range.end += 1;
-                                            row.anchor = mizar_session::SourceAnchor::Range(range);
-                                        }
-                                        1 => row.recovery =
-                                            mizar_checker::typed_ast::NodeRecoveryState::Recovered,
-                                        2 => row.recovery =
-                                            mizar_checker::typed_ast::NodeRecoveryState::Degraded,
-                                        3 => row.kind = "source.task258b3m2a.mutated".into(),
-                                        4 if row.children.len() > 1 => row.children.swap(0, 1),
-                                        4 if row.children.len() == 1 => row.children.clear(),
-                                        4 => row.children.push(
-                                            mizar_checker::typed_ast::TypedNodeId::new(
-                                                usize::from(index == 0),
-                                            ),
-                                        ),
-                                        _ => unreachable!(),
-                                    }
-                                }
-                                row
-                            })
-                            .collect(),
-                    )
-                    .expect("structurally valid arena mutation");
-                },
-            )
-            .expect("arena selector")
-            .expect_err("arena mutation");
-            assert!(!error.is_empty(), "node {index} mutation {mutation}");
-        }
-        replay();
-    }
 }
 
 #[test]
 fn task258b3m2a_selector_and_byte_subtree_near_misses_are_exact() {
     let (ast, module, _, symbols) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2A_TEXT, 258_903);
-    let replay = source_statement_b3m2a_output_with_resolver_mutation(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-        |symbols| symbols,
-    )
-    .expect("resolver selector")
-    .expect("resolver replay");
     assert_eq!(
-        (
-            replay.typed_ast.nodes().len(),
-            replay.reference_use_ordinals.len(),
-        ),
-        (49, 4)
+        source_statement_b3m2a_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2A_TEXT,
+            |symbols| symbols,
+        )
+        .expect("resolver selector")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
     );
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    for byte in 0..SOURCE_STATEMENT_B3M2A_TEXT.len() {
+        let mut source = SOURCE_STATEMENT_B3M2A_TEXT.as_bytes().to_vec();
+        source[byte] = b'?';
+        let source = String::from_utf8(source).expect("ASCII source");
+        assert!(
+            extract_numeral_witness_source_statement(&ast, &source).is_none(),
+            "byte {byte}"
+        );
+        assert_eq!(
+            (ast.snapshot_text(), module.clone(), symbols.clone()),
+            before
+        );
+        assert!(
+            extract_numeral_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2A_TEXT).is_some()
+        );
+    }
+    for target in 0..49 {
+        for mutation in 0..4 {
+            let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+            let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
+            for (index, node) in ast.nodes().iter().enumerate() {
+                let mut kind = node.kind.clone();
+                let mut node_range = node.range;
+                let mut children = node
+                    .children
+                    .iter()
+                    .map(|id| rebuilt[id.index()])
+                    .collect::<Vec<_>>();
+                if index == target {
+                    match mutation {
+                        0 => match &mut kind {
+                            mizar_syntax::SurfaceNodeKind::Token(token) => {
+                                token.kind = mizar_syntax::SurfaceTokenKind::LexemeRun
+                            }
+                            _ => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
+                        },
+                        1 => node_range.end += 1,
+                        2 if matches!(kind, mizar_syntax::SurfaceNodeKind::Token(_)) => {
+                            let mizar_syntax::SurfaceNodeKind::Token(token) = &mut kind else {
+                                unreachable!()
+                            };
+                            token.text = "?".into();
+                        }
+                        2 if children.len() > 1 => children.swap(0, 1),
+                        2 if !children.is_empty() => children.clear(),
+                        2 if index > 0 => children.push(rebuilt[0]),
+                        2 => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
+                        3 => {}
+                        _ => unreachable!(),
+                    }
+                }
+                let id = if index == target && mutation == 3 {
+                    match kind {
+                        mizar_syntax::SurfaceNodeKind::Token(token) => {
+                            builder.add_recovered_token(token.kind, token.text, node_range)
+                        }
+                        _ => builder.add_recovery(
+                            mizar_syntax::SyntaxRecoveryKind::MissingTerm,
+                            node_range,
+                            children,
+                        ),
+                    }
+                } else {
+                    match kind {
+                        mizar_syntax::SurfaceNodeKind::Token(token) => {
+                            builder.add_token(token.kind, token.text, node_range)
+                        }
+                        structural => builder.add_node(structural, node_range, children),
+                    }
+                };
+                rebuilt.push(id);
+            }
+            let changed = builder.finish(
+                ast.root().map(|id| rebuilt[id.index()]),
+                ast.expression_root().map(|id| rebuilt[id.index()]),
+            );
+            assert!(
+                extract_numeral_witness_source_statement(&changed, SOURCE_STATEMENT_B3M2A_TEXT)
+                    .is_none(),
+                "node {target} mutation {mutation}"
+            );
+            assert!(
+                source_statement_b3m2a_output_with_resolver_mutation(
+                    &changed,
+                    module.clone(),
+                    &symbols,
+                    SOURCE_STATEMENT_B3M2A_TEXT,
+                    |symbols| symbols,
+                )
+                .is_none(),
+                "node {target} mutation {mutation} extraction gate"
+            );
+            assert_eq!(
+                (ast.snapshot_text(), module.clone(), symbols.clone()),
+                before
+            );
+            assert!(
+                extract_numeral_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2A_TEXT)
+                    .is_some()
+            );
+        }
+    }
     for (ordinal, source) in [
         SOURCE_STATEMENT_B3M2A_TEXT
             .trim_end_matches('\n')
@@ -968,10 +875,24 @@ fn task258b3m2a_selector_and_byte_subtree_near_misses_are_exact() {
             .is_none(),
             "{label}: exact-byte subtree route"
         );
-        if ["single variable witness", "identifier", "named witness", "multiple witness"].contains(&label) {
+        if [
+            "single variable witness",
+            "identifier",
+            "named witness",
+            "multiple witness",
+        ]
+        .contains(&label)
+        {
             let (typed, _) = task258_native_output(&near_ast, &near_module);
             assert_eq!(typed.source_statement().unwrap().statements().len(), 2);
-            assert_eq!(typed.source_statement_witnesses().unwrap().witnesses().len(), if label == "multiple witness" { 2 } else { 1 });
+            assert_eq!(
+                typed
+                    .source_statement_witnesses()
+                    .unwrap()
+                    .witnesses()
+                    .len(),
+                if label == "multiple witness" { 2 } else { 1 }
+            );
             assert!(typed.source_proof_local_declaration().is_none());
         }
         let selected =
@@ -988,130 +909,11 @@ fn task258b3m2a_selector_and_byte_subtree_near_misses_are_exact() {
 fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     let (ast, module, _, symbols) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2A_TEXT, 258_904);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-    )
-    .expect("B3M2A selector")
-    .expect("B3M2A route");
-    let statement = output
-        .typed_ast
-        .source_statement()
-        .expect("B3M2A statement")
-        .clone();
-    let witnesses = output
-        .typed_ast
-        .source_statement_witnesses()
-        .expect("B3M2A witnesses")
-        .clone();
-    let baseline_debug = output.typed_ast.debug_text();
-
-    for (ordinal, source) in [
-        SOURCE_STATEMENT_TEXT,
-        SOURCE_STATEMENT_B1_TEXT,
-        SOURCE_STATEMENT_B2_TEXT,
-        SOURCE_STATEMENT_B3_TEXT,
-        SOURCE_STATEMENT_B3N_TEXT,
-        SOURCE_STATEMENT_B3M1_TEXT,
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let (foreign_ast, foreign_module, _, foreign_symbols) =
-            task253_ast_from_source_text(source, 258_970 + ordinal);
-        let (foreign_typed, _) = if source == TASK258A_SOURCE || source == SOURCE_STATEMENT_B1_TEXT || source == SOURCE_STATEMENT_B2_TEXT || source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT {
-            task258_native_output(&foreign_ast, &foreign_module)
-        } else {
-            let output = source_statement_output_with_source(
-            &foreign_ast,
-            foreign_module,
-            &foreign_symbols,
-            source,
-        )
-        .expect("foreign selector")
-        .expect("foreign route");
-            (output.typed_ast, output.resolved)
-        };
-        let foreign_debug = foreign_typed.debug_text();
-        assert_eq!(
-            foreign_typed
-                .clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-            "foreign-first family {ordinal}"
-        );
-        assert_eq!(foreign_typed.debug_text(), foreign_debug);
-        if let Some(references) = foreign_typed.source_statement_references() {
-            assert_eq!(
-                output.typed_ast.clone().with_source_statement_references(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    references.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2A-first reference family {ordinal}"
-            );
-        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
-            assert_eq!(
-                output.typed_ast.clone().with_source_statement_witnesses(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    foreign_witnesses.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2A-first witness family {ordinal}"
-            );
-        } else {
-            assert_eq!(
-                output.typed_ast.clone().with_source_statement(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2A-first base family {ordinal}"
-            );
-        }
-        let foreign_binding = foreign_typed
-            .source_statement()
-            .expect("foreign statement")
-            .binding_env()
-            .clone();
-        let foreign_primary = foreign_typed
-            .source_term()
-            .expect("foreign primary")
-            .clone();
-        let foreign_atomic = foreign_typed
-            .source_atomic_formula()
-            .expect("foreign atomic")
-            .clone();
-        let error = source_statement_b3m2a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-            move |input| {
-                input.binding_env = foreign_binding;
-                input.primary = foreign_primary;
-                input.atomic = foreign_atomic;
-            },
-        )
-        .expect("cross-family selector")
-        .expect_err("cross-family lower tuple");
-        assert!(
-            error.to_ascii_lowercase().contains("dependency"),
-            "foreign family {ordinal}: {error}"
-        );
-        assert_eq!(output.typed_ast.debug_text(), baseline_debug);
-    }
-
+    assert!(extract_numeral_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2A_TEXT).is_some());
+    assert!(
+        source_statement_output_with_source(&ast, module, &symbols, SOURCE_STATEMENT_B3M2A_TEXT,)
+            .is_none()
+    );
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(Path::parent)
@@ -1168,139 +970,5 @@ fn task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     assert!(
         selected.is_empty(),
         "Task258B3M2A selected active cases: {selected:?}"
-    );
-}
-
-#[test]
-fn task258b3m2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable() {
-    let (ast, module, _, symbols) =
-        task253_ast_from_source_text(SOURCE_STATEMENT_B3M2A_TEXT, 258_905);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-    )
-    .expect("selector")
-    .expect("route");
-    assert_eq!(
-        output.typed_ast.clone().debug_text(),
-        output.typed_ast.debug_text()
-    );
-    assert_eq!(
-        output.resolved.clone().debug_text(),
-        output.resolved.debug_text()
-    );
-    assert_eq!(
-        output.typed_ast.source_statement(),
-        output.resolved.source_statement()
-    );
-    assert_eq!(
-        output.typed_ast.source_statement_witnesses(),
-        output.resolved.source_statement_witnesses()
-    );
-    assert_eq!(
-        output.typed_ast.source_term(),
-        output.resolved.source_term()
-    );
-    assert_eq!(
-        output.typed_ast.source_atomic_formula(),
-        output.resolved.source_atomic_formula()
-    );
-    assert!(output.typed_ast.source_statement_references().is_none());
-    assert!(output.resolved.expr_metadata().is_empty());
-    assert!(output.resolved.collection_candidates().is_empty());
-    assert!(output.resolved.expanded_candidates().is_empty());
-    assert!(output.resolved.template_expansions().is_empty());
-    assert!(output.resolved.viable_candidates().is_empty());
-    assert!(output.resolved.viability_decisions().is_empty());
-    assert!(output.resolved.specificity_graphs().is_empty());
-    assert!(output.resolved.resolved_overloads().is_empty());
-    assert!(output.resolved.inserted_coercions().is_empty());
-    assert!(output.resolved.cluster_facts().is_empty());
-    assert!(output.resolved.diagnostics().is_empty());
-    assert!(output.resolved.checked_formulas().is_empty());
-    assert!(output.resolved.statement_semantics().is_empty());
-    assert!(output.resolved.checked_proofs().is_empty());
-    assert!(output.resolved.checked_proof_nodes().is_empty());
-    assert!(output.resolved.checked_terminal_goals().is_empty());
-
-    let statement = output.typed_ast.source_statement().expect("statement");
-    assert_eq!(
-        statement
-            .input_facts()
-            .iter()
-            .map(|(_, fact)| {
-                fact.uses()
-                    .iter()
-                    .map(|reference| reference.index())
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>(),
-        [vec![0, 1], vec![2, 3]]
-    );
-    let primary = output.typed_ast.source_term().expect("primary");
-    assert_eq!(
-        primary
-            .references()
-            .iter()
-            .map(|(_, reference)| reference.term().index())
-            .collect::<Vec<_>>(),
-        [0, 1, 3, 4]
-    );
-    assert_eq!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2A_TEXT,
-        ),
-        Some(Vec::new())
-    );
-
-    let baseline_typed = output.typed_ast.debug_text();
-    let baseline_resolved = output.resolved.debug_text();
-    let witness_error = source_statement_b3m2a_output_with_mutation(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2A_TEXT,
-        |input| input.witness.witnesses[0].spelling.push('z'),
-    )
-    .expect("rollback selector")
-    .expect_err("invalid witness must roll back");
-    assert!(
-        witness_error.to_ascii_lowercase().contains("witness 0"),
-        "{witness_error}"
-    );
-
-    let mut numeric_input = task258b3m2a_primary_input(primary);
-    numeric_input.numeric_type_requests[0].spelling.push('z');
-    assert!(matches!(
-        mizar_checker::source_term::SourcePrimaryTermProducer::build(
-            numeric_input,
-            statement.binding_env(),
-            output.typed_ast.nodes(),
-        ),
-        Err(
-            mizar_checker::source_term::SourcePrimaryTermError::InvalidNumericTypeRequest {
-                request
-            }
-        ) if request.index() == 0
-    ));
-
-    let replay =
-        source_statement_output_with_source(&ast, module, &symbols, SOURCE_STATEMENT_B3M2A_TEXT)
-            .expect("replay selector")
-            .expect("replay");
-    assert_eq!(replay.typed_ast.debug_text(), baseline_typed);
-    assert_eq!(replay.resolved.debug_text(), baseline_resolved);
-    assert_eq!(
-        replay.typed_ast.source_statement_witnesses(),
-        output.typed_ast.source_statement_witnesses()
-    );
-    assert_eq!(
-        replay.typed_ast.source_term(),
-        output.typed_ast.source_term()
     );
 }

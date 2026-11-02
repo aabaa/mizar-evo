@@ -819,6 +819,7 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b3m2a_profile(&self) -> bool {
         self.binding_env.contexts().len() == 2
             && self.statements.len() == 2
@@ -4881,6 +4882,7 @@ enum StatementProfile {
     Task258B3N,
     #[cfg(test)]
     Task258B3M1,
+    #[cfg(test)]
     Task258B3M2A,
     #[cfg(test)]
     Task258B3M2B1,
@@ -5066,16 +5068,20 @@ fn validate_dependencies(
             return Ok(StatementProfile::Task258B3M1);
         }
     }
-    let b3m2a_binding = exact_binding_profile(StatementProfile::Task258B3M2A, source_id, bindings);
-    let b3m2a_primary = exact_primary_profile(StatementProfile::Task258B3M2A, primary_terms);
-    let b3m2a_atomic = exact_atomic_profile(
-        StatementProfile::Task258B3M2A,
-        atomic_formulas,
-        primary_terms,
-        arena,
-    );
-    if b3m2a_binding && b3m2a_primary && b3m2a_atomic {
-        return Ok(StatementProfile::Task258B3M2A);
+    #[cfg(test)]
+    {
+        let b3m2a_binding =
+            exact_binding_profile(StatementProfile::Task258B3M2A, source_id, bindings);
+        let b3m2a_primary = exact_primary_profile(StatementProfile::Task258B3M2A, primary_terms);
+        let b3m2a_atomic = exact_atomic_profile(
+            StatementProfile::Task258B3M2A,
+            atomic_formulas,
+            primary_terms,
+            arena,
+        );
+        if b3m2a_binding && b3m2a_primary && b3m2a_atomic {
+            return Ok(StatementProfile::Task258B3M2A);
+        }
     }
     #[cfg(test)]
     {
@@ -5268,6 +5274,7 @@ fn exact_binding_profile(
         StatementProfile::Task258B3N => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
@@ -5520,6 +5527,7 @@ fn exact_binding_profile(
                 return false;
             }
         }
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => {
             let Some(proof) = bindings.contexts().get(BindingContextId::new(1)) else {
                 return false;
@@ -5850,6 +5858,7 @@ fn exact_primary_profile(
     primary_terms: &SourcePrimaryTermHandoff,
 ) -> bool {
     match profile {
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => {
             return exact_task258b3m2a_primary_profile(primary_terms);
         }
@@ -5945,6 +5954,7 @@ fn exact_primary_profile(
             (101, 102),
             (105, 106),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
@@ -5980,6 +5990,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3N => &[0, 0, 1, 1, 1],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[0, 0, 1, 1, 1, 1],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
@@ -6026,6 +6037,7 @@ fn exact_primary_profile(
         StatementProfile::Task258B3N => &[&[], &[], &[0], &[0], &[0]],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[], &[], &[0], &[0], &[0], &[0]],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => unreachable!("handled above"),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => unreachable!("handled above"),
@@ -6092,6 +6104,7 @@ fn exact_primary_profile(
     true
 }
 
+#[cfg(test)]
 fn exact_task258b3m2a_primary_profile(primary_terms: &SourcePrimaryTermHandoff) -> bool {
     let expected_sites = [26, 28, 32, 36, 38];
     let expected_ranges = [(64, 65), (68, 69), (83, 86), (95, 96), (99, 100)];
@@ -6957,6 +6970,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3N => &[(62, 67), (95, 100)],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[(65, 70), (101, 106)],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[(64, 69), (95, 100)],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[(70, 75), (101, 106)],
@@ -6991,6 +7005,7 @@ fn exact_atomic_profile(
         StatementProfile::Task258B3N => &[0, 1],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[0, 1],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[0, 1],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[0, 1],
@@ -7048,6 +7063,7 @@ fn exact_atomic_profile(
             StatementProfile::Task258B3N if formula_index == 1 => 3,
             #[cfg(test)]
             StatementProfile::Task258B3M1 if formula_index == 1 => 4,
+            #[cfg(test)]
             StatementProfile::Task258B3M2A if formula_index == 1 => 3,
             #[cfg(test)]
             StatementProfile::Task258B3M2B1 if formula_index == 1 => 4,
@@ -7750,6 +7766,7 @@ fn validate_aggregate_lengths(
         StatementProfile::Task258B3N => (1, 2, 2, 2, 2),
         #[cfg(test)]
         StatementProfile::Task258B3M1 => (1, 2, 2, 2, 2),
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => (1, 2, 2, 2, 2),
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => (1, 2, 2, 2, 2),
@@ -7907,6 +7924,7 @@ fn validate_owner_rows(
             range(source_id, 19, 112),
             "FormulaStatementMultipleWitnessSmoke",
         ),
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => (
             range(source_id, 19, 106),
             "FormulaStatementNumeralWitnessSmoke",
@@ -8178,6 +8196,7 @@ fn validate_statement_rows(
                 "thus x = x ;",
             ),
         ],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[
             (
                 0,
@@ -8538,6 +8557,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3N => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
@@ -8606,6 +8626,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3N => &[&[false, true], &[false, false]],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[false, true], &[false, false]],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[&[false, true], &[false, false]],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[&[false, true], &[false, false]],
@@ -8655,6 +8676,7 @@ fn validate_statement_rows(
         StatementProfile::Task258B3N => &[&[true, true], &[false, true]],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[&[true, true], &[false, true]],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[&[true, true], &[false, true]],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[&[true, true], &[false, true]],
@@ -8742,6 +8764,7 @@ fn validate_context_rows(
         StatementProfile::Task258B3N => &[(0, 19, 106), (1, 90, 101)],
         #[cfg(test)]
         StatementProfile::Task258B3M1 => &[(0, 19, 112), (1, 96, 107)],
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => &[(0, 19, 106), (1, 90, 101)],
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => &[(0, 19, 112), (1, 96, 107)],
@@ -8805,6 +8828,7 @@ fn validate_input_fact_rows(
         StatementProfile::Task258B3N => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
@@ -8851,10 +8875,12 @@ fn validate_input_fact_rows(
             (StatementProfile::Task258B3, 1) => 3,
             #[cfg(test)]
             (StatementProfile::Task258B3N, 1) => 3,
+            #[cfg(test)]
             (StatementProfile::Task258B3M2A, 1) => 3,
             _ => index * 2,
         };
         let first_reference = match (profile, index) {
+            #[cfg(test)]
             (StatementProfile::Task258B3M2A, 1) => 2,
             #[cfg(test)]
             (StatementProfile::Task258B3M2B1, 1) => 3,
@@ -8929,6 +8955,7 @@ fn validate_candidate_fact_rows(
         StatementProfile::Task258B3N => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M1 => 2,
+        #[cfg(test)]
         StatementProfile::Task258B3M2A => 2,
         #[cfg(test)]
         StatementProfile::Task258B3M2B1 => 2,
@@ -9637,6 +9664,7 @@ const TASK258B3M1_NODE_RANGES: [(usize, usize); 56] = [
     (0, 112),
 ];
 
+#[cfg(test)]
 const TASK258B3M2A_NODE_RANGES: [(usize, usize); 49] = [
     (0, 7),
     (8, 9),
@@ -10347,6 +10375,7 @@ fn task258b3m1_node_kind(index: usize) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2a_node_children(index: usize) -> &'static [usize] {
     match index {
         22 => &[3],
@@ -10382,6 +10411,7 @@ fn task258b3m2a_node_children(index: usize) -> &'static [usize] {
     }
 }
 
+#[cfg(test)]
 fn task258b3m2a_node_kind(index: usize) -> &'static str {
     match index {
         26 | 28 | 36 | 38 => "source.term.variable-reference",
@@ -11466,6 +11496,7 @@ fn exact_task258b3m1_shared_arena(source_id: SourceId, arena: &TypedArena) -> bo
         })
 }
 
+#[cfg(test)]
 fn exact_task258b3m2a_shared_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != TASK258B3M2A_NODE_RANGES.len()
         || arena.root() != Some(crate::typed_ast::TypedNodeId::new(48))
@@ -11880,6 +11911,7 @@ enum WitnessProfile {
     Task258B3N,
     #[cfg(test)]
     Task258B3M1,
+    #[cfg(test)]
     Task258B3M2A,
     #[cfg(test)]
     Task258B3M2B1,
@@ -11899,6 +11931,7 @@ enum WitnessProfile {
     Task258B3M2B2B3E,
 }
 
+#[cfg(test)]
 struct ExpectedWitnessRow {
     term_index: usize,
     take_site: usize,
@@ -13054,20 +13087,7 @@ fn validate_witness_dependencies(
     {
         return Err(SourceStatementWitnessError::DependencyMismatch);
     }
-    let profile = if application.is_none()
-        && structure.is_none()
-        && set_terms.is_none()
-        && statements.is_task_258b3m2a_profile()
-        && exact_binding_profile(
-            StatementProfile::Task258B3M2A,
-            source_id,
-            statements.binding_env(),
-        )
-        && exact_primary_profile(StatementProfile::Task258B3M2A, primary_terms)
-        && exact_task258b3m2a_shared_arena(source_id, arena)
-    {
-        WitnessProfile::Task258B3M2A
-    } else if structure.is_none()
+    let profile = if structure.is_none()
         && set_terms.is_none()
         && statements.is_task_258b3m2b2b1a_profile()
         && exact_binding_profile(
@@ -13084,8 +13104,7 @@ fn validate_witness_dependencies(
                 primary_terms,
                 application,
             )
-        })
-    {
+        }) {
         WitnessProfile::Task258B3M2B2B1A
     } else if structure.is_none()
         && set_terms.is_none()
@@ -13238,6 +13257,19 @@ fn validate_witness_dependencies(
         {
             if application.is_none()
                 && structure.is_none()
+                && set_terms.is_none()
+                && statements.is_task_258b3m2a_profile()
+                && exact_binding_profile(
+                    StatementProfile::Task258B3M2A,
+                    source_id,
+                    statements.binding_env(),
+                )
+                && exact_primary_profile(StatementProfile::Task258B3M2A, primary_terms)
+                && exact_task258b3m2a_shared_arena(source_id, arena)
+            {
+                WitnessProfile::Task258B3M2A
+            } else if application.is_none()
+                && structure.is_none()
                 && statements.is_task_258b3m2b2b3b_profile()
                 && exact_binding_profile(
                     StatementProfile::Task258B3M2B2B3B,
@@ -13373,6 +13405,7 @@ fn validate_witness_dependencies(
         WitnessProfile::Task258B3M1 => {
             (range(source_id, 19, 112), 52, range(source_id, 96, 107), 50)
         }
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => {
             (range(source_id, 19, 106), 45, range(source_id, 90, 101), 43)
         }
@@ -13473,6 +13506,7 @@ fn validate_witness_aggregate(
         WitnessProfile::Task258B3N => (1, 1),
         #[cfg(test)]
         WitnessProfile::Task258B3M1 => (2, 1),
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => (1, 0),
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => (1, 0),
@@ -13611,16 +13645,19 @@ fn validate_witness_rows(
             arena,
         );
     }
+    #[cfg(test)]
     let Some(theorem) = statements.statements().get(SourceStatementId::new(0)) else {
         return Err(SourceStatementWitnessError::InvalidWitness {
             witness: SourceStatementWitnessId::new(0),
         });
     };
+    #[cfg(test)]
     let Some(conclusion) = statements.statements().get(SourceStatementId::new(1)) else {
         return Err(SourceStatementWitnessError::InvalidWitness {
             witness: SourceStatementWitnessId::new(0),
         });
     };
+    #[cfg(test)]
     let witness_count = match profile {
         #[cfg(test)]
         WitnessProfile::Task258B3 => 1,
@@ -13628,6 +13665,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3N => 1,
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => 1,
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => 1,
         #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => 1,
@@ -13666,6 +13704,7 @@ fn validate_witness_rows(
             unreachable!("comprehension witness returns above")
         }
     };
+    #[cfg(test)]
     for index in 0..witness_count {
         let id = SourceStatementWitnessId::new(index);
         let Some(witness) = witnesses.get(id) else {
@@ -13737,6 +13776,7 @@ fn validate_witness_rows(
                 take_children: &[12, 38, 16, 41, 18],
                 item_children: &[40],
             },
+            #[cfg(test)]
             (WitnessProfile::Task258B3M2A, 0) => ExpectedWitnessRow {
                 term_index: 2,
                 take_site: 35,
@@ -13898,6 +13938,7 @@ fn validate_witness_rows(
             return Err(invalid());
         }
     }
+    #[cfg(test)]
     let expected_source_ordinals: &[usize] = match profile {
         #[cfg(test)]
         WitnessProfile::Task258B3 => &[0, 1, 2],
@@ -13905,6 +13946,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3N => &[0, 1, 2],
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => &[0, 1, 2],
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => &[0, 1, 2],
         #[cfg(test)]
         WitnessProfile::Task258B3M2B2A => &[0, 1, 2],
@@ -13943,9 +13985,11 @@ fn validate_witness_rows(
             unreachable!("comprehension witness returns above")
         }
     };
+    #[cfg(test)]
     let actual_source_ordinals = std::iter::once(theorem.source_ordinal())
         .chain(witnesses.iter().map(|(_, witness)| witness.source_ordinal))
         .chain(std::iter::once(conclusion.source_ordinal()));
+    #[cfg(test)]
     let expected_witness_nodes = match profile {
         #[cfg(test)]
         WitnessProfile::Task258B3 => 2,
@@ -13953,6 +13997,7 @@ fn validate_witness_rows(
         WitnessProfile::Task258B3N => 3,
         #[cfg(test)]
         WitnessProfile::Task258B3M1 => 4,
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => 2,
         #[cfg(test)]
         WitnessProfile::Task258B3M2B1 => 2,
@@ -13991,6 +14036,7 @@ fn validate_witness_rows(
             unreachable!("comprehension witness returns above")
         }
     };
+    #[cfg(test)]
     if actual_source_ordinals.ne(expected_source_ordinals.iter().copied())
         || arena
             .iter()
@@ -15072,6 +15118,7 @@ fn validate_witness_name_rows(
         WitnessProfile::Task258B3N => range(source_id, 81, 82),
         #[cfg(test)]
         WitnessProfile::Task258B3M1 => range(source_id, 84, 85),
+        #[cfg(test)]
         WitnessProfile::Task258B3M2A => {
             unreachable!("Task258B3M2A has no witness-name rows")
         }

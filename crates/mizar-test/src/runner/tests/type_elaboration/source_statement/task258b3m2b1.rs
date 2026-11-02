@@ -611,6 +611,19 @@ fn task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders() {
     {
         let (foreign_ast, foreign_module, _, foreign_symbols) =
             task253_ast_from_source_text(source, 258_970 + ordinal);
+        if source == SOURCE_STATEMENT_B3M2A_TEXT {
+            let before = (foreign_ast.snapshot_text(), foreign_module.clone(), foreign_symbols.clone());
+            assert!(extract_numeral_witness_source_statement(&foreign_ast, source).is_some());
+            assert!(source_statement_output_with_source(
+                &foreign_ast, foreign_module.clone(), &foreign_symbols, source,
+            ).is_none());
+            assert_eq!(source_statement_b3m2a_output_with_resolver_mutation(
+                &foreign_ast, foreign_module.clone(), &foreign_symbols, source, |symbols| symbols,
+            ).expect("authentic retired numeral extraction").expect_err("retired raw profile"),
+                "source statement dependency mismatch");
+            assert_eq!((foreign_ast.snapshot_text(), foreign_module.clone(), foreign_symbols.clone()), before);
+            continue;
+        }
         let (foreign_typed, _) = if source == TASK258A_SOURCE || source == SOURCE_STATEMENT_B1_TEXT || source == SOURCE_STATEMENT_B2_TEXT || source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT {
             task258_native_output(&foreign_ast, &foreign_module)
         } else {

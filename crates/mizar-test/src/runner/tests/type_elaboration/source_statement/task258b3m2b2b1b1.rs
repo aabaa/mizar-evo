@@ -1162,6 +1162,19 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
             extract_wrapped_application_witness_source_statement(&ast, source).is_none(),
             "legacy family {ordinal} matched B1B1"
         );
+        if source == SOURCE_STATEMENT_B3M2A_TEXT {
+            let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+            assert!(extract_numeral_witness_source_statement(&ast, source).is_some());
+            assert!(source_statement_output_with_source(
+                &ast, module.clone(), &symbols, source,
+            ).is_none());
+            assert_eq!(source_statement_b3m2a_output_with_resolver_mutation(
+                &ast, module.clone(), &symbols, source, |symbols| symbols,
+            ).expect("authentic retired numeral extraction").expect_err("retired raw profile"),
+                "source statement dependency mismatch");
+            assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone()), before);
+            continue;
+        }
         let typed = if source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT || source == SOURCE_STATEMENT_B3M2B1_TEXT || source == SOURCE_STATEMENT_B3M2B2A_TEXT {
             task258_native_output(&ast, &module).0
         } else {
