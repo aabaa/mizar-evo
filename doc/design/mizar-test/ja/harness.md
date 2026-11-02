@@ -48,6 +48,8 @@ original empty-enumeration lower prerequisiteは全public lower呼出しより�
 
 raw B3B production routeは退役し、既存private Checker golden/行列にlegacy handoffを保持する。実Frontend source/hash/DTO/resolver snapshotとbyte/Surface/near-miss guardをraw変換なしのtest専用として残す。共有A/C/D/E認証はexact-list拒否を保持し、coherent extra effectのprivate admissionとは区別する。family-debugのB caseは既存の実native lower/pair/final helperを使い、source不変性・既存ordinal正規化・interleavingを保つ。他raw branch・他dormant row/detailとactive discoveryは変更しない。
 
+汎用転送 oracle (Task 284 設計)：runner は、有効な corpus case 全件とその metamorphic layout variant について checker の source node table と frontend `SurfaceAst` を比較する汎用 route 1 本を所有する。family の runner test は row の shape と role を検証し、literal offset は使わない。family の exact-offset runner oracle はその family の移行時に退役する。設計：[source statement](../../mizar-checker/ja/source_statement.md#generic-original-source-transport-task-284-設計)。
+
 ## Step 5C.4 mode semantic runner
 
 private route は従来7行を維持し、dependent-mode positive だけを `type_elaboration` / `type_check` に追加する。

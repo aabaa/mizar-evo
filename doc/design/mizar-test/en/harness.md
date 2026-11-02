@@ -55,6 +55,8 @@ After independent specification/test-intent/trust review, extend only the existi
 
 Raw B3B production routing is retired; existing private Checker goldens/matrices retain legacy handoffs. Keep the real-Frontend source/hash/DTO/resolver snapshot and byte/Surface/near-miss guards test-only without a raw conversion. Shared A/C/D/E authentication retains exact-list refusal, distinct from coherent-extra-effect private admission. Family-debug case B uses the existing genuine native lower/pair/final helper with source purity and unchanged ordinal normalization/interleavings; all other raw branches and dormant rows/details, along with active discovery, stay unchanged.
 
+Generic transport oracle (Task 284 design): the runner owns one generic route that, for every active corpus case and its metamorphic layout variants, compares the checker source node table with the frontend `SurfaceAst`; family runner tests assert row shape and roles, not literal offsets, and a family's exact-offset runner oracles retire with that family's migration. Design: [source statement](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design).
+
 ## Step 5C.4 mode semantic runner
 
 The private route preserves the original seven rows and adds only the dependent-mode positive

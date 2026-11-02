@@ -735,7 +735,7 @@ implementation commit does not satisfy a producer task.
 - [x] **Task 283:** mechanical split of the checker files over 20k lines
   (light tier). Contract:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md).
-- [ ] **Task 284:** generic original-source transport producer and oracle;
+- [~] **Task 284:** generic original-source transport producer and oracle;
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
 

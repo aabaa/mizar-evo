@@ -1,0 +1,188 @@
+# generator: manual inventory for VELOCITY-GENERIC-SOURCE-TRANSPORT step 1 (2026-11-02)
+# class: referenced = already matched by production checker code; a = derivable by the generic walk; b = needs an element rule; c = semantic, deferred
+kind	family	class	owner
+AlgorithmBody	referenced	referenced	existing source_* producer
+AlgorithmDecreasingClause	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+AlgorithmDefinition	referenced	referenced	existing source_* producer
+AlgorithmEnsuresClause	referenced	referenced	existing source_* producer
+AlgorithmParameters	referenced	referenced	existing source_* producer
+AlgorithmRequiresClause	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+AlgorithmStatementList	referenced	referenced	existing source_* producer
+AlgorithmTerminationClause	referenced	referenced	existing source_* producer
+AnnotatedAlgorithmStatement	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotatedDefinitionContent	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotatedRegistrationContent	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotatedStatement	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+Annotation	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotationArgument	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotationArgumentList	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotationLabel	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+AnnotationLabelList	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ApplicationTerm	referenced	referenced	existing source_* producer
+AssertStatement	referenced	referenced	existing source_* producer
+AssignmentStatement	referenced	referenced	existing source_* producer
+AssumptionStatement	referenced	referenced	existing source_* producer
+AttributeChain	referenced	referenced	existing source_* producer
+AttributeDefinition	referenced	referenced	existing source_* producer
+AttributePattern	referenced	referenced	existing source_* producer
+AttributeRedefinition	definition	b	checker Task 279 / Task 270
+AttributeRef	referenced	referenced	existing source_* producer
+AttributeTestChain	referenced	referenced	existing source_* producer
+BinaryFormula	referenced	referenced	existing source_* producer
+BinderExpression	expression	b	checker Task 257
+BreakStatement	referenced	referenced	existing source_* producer
+BuiltinPredicateApplication	referenced	referenced	existing source_* producer
+BulkReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+CaseItem	proof-skeleton	b	checker Task 272 / Task 269
+CaseReasoningStatement	proof-skeleton	b	checker Task 272 / Task 269
+ChoiceTerm	referenced	referenced	existing source_* producer
+ClaimBlockItem	referenced	referenced	existing source_* producer
+CoherenceCondition	referenced	referenced	existing source_* producer
+CompactStatement	referenced	referenced	existing source_* producer
+CompilationUnit	referenced	referenced	existing source_* producer
+ComprehensionVariableSegment	referenced	referenced	existing source_* producer
+ComputationJustification	referenced	referenced	existing source_* producer
+ComputationOption	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+ConclusionStatement	referenced	referenced	existing source_* producer
+ConditionList	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ConditionalRegistration	referenced	referenced	existing source_* producer
+ConsiderStatement	proof-skeleton	b	checker Task 272 / Task 269
+ContinueStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+CorrectnessCondition	referenced	referenced	existing source_* producer
+DefinitionBlockItem	referenced	referenced	existing source_* producer
+DefinitionParameter	referenced	referenced	existing source_* producer
+Equating	definition	b	checker Task 279 / Task 270
+ErrorRecovery	referenced	referenced	existing source_* producer
+ExistentialRegistration	referenced	referenced	existing source_* producer
+ExportItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+FailStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+FieldArgument	definition	b	checker Task 279 / Task 270
+FieldRedefinition	definition	b	checker Task 279 / Task 270
+FieldUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+ForCollectionStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+ForRangeStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+FormulaCase	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+FormulaConstant	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+FormulaDefiniens	referenced	referenced	existing source_* producer
+FormulaExpression	referenced	referenced	existing source_* producer
+FunctorDefinition	referenced	referenced	existing source_* producer
+FunctorPattern	referenced	referenced	existing source_* producer
+FunctorRedefinition	definition	b	checker Task 279 / Task 270
+FunctorialRegistration	referenced	referenced	existing source_* producer
+GivenStatement	proof-skeleton	b	checker Task 272 / Task 269
+GroupedReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+GroupedReferenceItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+HerebyStatement	proof-skeleton	b	checker Task 272 / Task 269
+IfStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+ImportAliasDecl	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ImportItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+InfixExpression	referenced	referenced	existing source_* producer
+InheritanceDefinition	definition	b	checker Task 279 / Task 270
+InheritanceTarget	definition	b	checker Task 279 / Task 270
+InlineFunctorDefinition	definition	b	checker Task 279 / Task 270
+InlinePredicateApplication	referenced	referenced	existing source_* producer
+InlinePredicateDefinition	definition	b	checker Task 279 / Task 270
+IsAssertion	referenced	referenced	existing source_* producer
+ItTerm	referenced	referenced	existing source_* producer
+ItemList	referenced	referenced	existing source_* producer
+IterativeEqualityStatement	proof-skeleton	b	checker Task 272 / Task 269
+IterativeEqualityStep	proof-skeleton	b	checker Task 272 / Task 269
+JustificationClause	referenced	referenced	existing source_* producer
+LemmaItem	referenced	referenced	existing source_* producer
+LetStatement	referenced	referenced	existing source_* producer
+LibraryAnnotation	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+LoopDecreasingClause	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+LoopInvariantClause	referenced	referenced	existing source_* producer
+Lvalue	referenced	referenced	existing source_* producer
+MatchCase	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+MatchEnding	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+MatchStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+ModeDefinition	referenced	referenced	existing source_* producer
+ModePattern	referenced	referenced	existing source_* producer
+ModeProperty	definition	b	checker Task 279 / Task 270
+ModuleBranchImport	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ModulePath	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+NamespacePath	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+NotationAlias	referenced	referenced	existing source_* producer
+NotationPattern	referenced	referenced	existing source_* producer
+NowStatement	proof-skeleton	b	checker Task 272 / Task 269
+NumeralTerm	referenced	referenced	existing source_* producer
+OperatorDeclaration	referenced	referenced	existing source_* producer
+ParameterPrefix	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ParenthesizedFormula	referenced	referenced	existing source_* producer
+ParenthesizedTerm	referenced	referenced	existing source_* producer
+PathSegment	referenced	referenced	existing source_* producer
+PlaceholderItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+PostfixExpression	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+PredicateApplication	referenced	referenced	existing source_* producer
+PredicateDefinition	referenced	referenced	existing source_* producer
+PredicateHead	referenced	referenced	existing source_* producer
+PredicatePattern	referenced	referenced	existing source_* producer
+PredicateRedefinition	referenced	referenced	existing source_* producer
+PredicateSegment	referenced	referenced	existing source_* producer
+PrefixExpression	referenced	referenced	existing source_* producer
+PrefixFormula	referenced	referenced	existing source_* producer
+ProofBlock	referenced	referenced	existing source_* producer
+ProofHintOption	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ProofHintOptionList	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+PropertyClause	referenced	referenced	existing source_* producer
+PropertyImplementation	referenced	referenced	existing source_* producer
+PropertyRedefinition	definition	b	checker Task 279 / Task 270
+Proposition	referenced	referenced	existing source_* producer
+QuaExpression	reconsider	b	checker Task 271
+QualifiedReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+QualifiedSymbol	referenced	referenced	existing source_* producer
+QualifiedVariableSegment	referenced	referenced	existing source_* producer
+QuantifiedFormula	referenced	referenced	existing source_* producer
+QuantifierVariableSegment	referenced	referenced	existing source_* producer
+ReconsiderItem	reconsider	b	checker Task 271
+ReconsiderStatement	reconsider	b	checker Task 271
+ReductionRegistration	referenced	referenced	existing source_* producer
+Reference	referenced	referenced	existing source_* producer
+ReferenceList	referenced	referenced	existing source_* producer
+RegistrationBlockItem	referenced	referenced	existing source_* producer
+RegistrationParameter	referenced	referenced	existing source_* producer
+RelativePrefix	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+ReserveItem	referenced	referenced	existing source_* producer
+ReserveSegment	referenced	referenced	existing source_* producer
+ReturnStatement	referenced	referenced	existing source_* producer
+Root	referenced	referenced	existing source_* producer
+SelectorAccess	referenced	referenced	existing source_* producer
+SetComprehension	referenced	referenced	existing source_* producer
+SetEnumeration	referenced	referenced	existing source_* producer
+SetStatement	proof-skeleton	b	checker Task 272 / Task 269
+SnapshotStatement	referenced	referenced	existing source_* producer
+StandaloneDiagnosticAnnotation	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+StatementItem	proof-skeleton	b	checker Task 272 / Task 269
+StructureConstructor	definition	b	checker Task 279 / Task 270
+StructureDefinition	referenced	referenced	existing source_* producer
+StructureField	referenced	referenced	existing source_* producer
+StructurePattern	referenced	referenced	existing source_* producer
+StructureProperty	definition	b	checker Task 279 / Task 270
+StructureUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
+SupposeItem	proof-skeleton	b	checker Task 272 / Task 269
+TakeStatement	referenced	referenced	existing source_* producer
+TemplateArgument	referenced	referenced	existing source_* producer
+TemplateArguments	referenced	referenced	existing source_* producer
+TemplateLoci	referenced	referenced	existing source_* producer
+TemplateLocus	referenced	referenced	existing source_* producer
+TemplateParameter	referenced	referenced	existing source_* producer
+TermCase	expression	b	checker Task 257
+TermDefiniens	referenced	referenced	existing source_* producer
+TermExpression	referenced	referenced	existing source_* producer
+TermList	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+TermPlaceholder	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+TermReference	referenced	referenced	existing source_* producer
+ThenStatement	proof-skeleton	b	checker Task 272 / Task 269
+TheoremItem	referenced	referenced	existing source_* producer
+Token	referenced	referenced	existing source_* producer
+TypeArguments	referenced	referenced	existing source_* producer
+TypeExpression	referenced	referenced	existing source_* producer
+TypeHead	referenced	referenced	existing source_* producer
+TypedParameter	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
+VariableBinding	referenced	referenced	existing source_* producer
+VariableDeclaration	referenced	referenced	existing source_* producer
+VisibilityMarker	referenced	referenced	existing source_* producer
+VisibleItem	referenced	referenced	existing source_* producer
+WhileStatement	referenced	referenced	existing source_* producer
+Witness	referenced	referenced	existing source_* producer

@@ -709,7 +709,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md)。
 - [x] **Task 283:** 2万行を超える checker ファイルの機械的分割 (light tier)。契約:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/ja/VELOCITY-LARGE-FILE-SPLIT.md)。
-- [ ] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
+- [~] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。
 
 ## Task 257B2 frozen-contract addendum

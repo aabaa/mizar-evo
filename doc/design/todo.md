@@ -145,7 +145,7 @@ not what they mean; the gate closes when both are done.
 1. [x] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
    — mechanical test-module split of the Rust files over 20k lines; light
    tier.
-2. [ ] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
+2. [~] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
    — one AST-walking producer and one shape oracle replace per-element
    transport slices and literal-offset profiles; subsumes checker Task 281.
 
