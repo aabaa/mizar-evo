@@ -1984,3 +1984,5 @@ native B3M2B1もこの厳密な正規base比較とatomic pairを維持し、一�
 二重group original-source witnessも同じ全canonical-base比較とstatement/witness atomic組み込みを再利用する。実outer/inner/leaf node、lower handoff、既存の`Unknown`/default node hintと空のsemantic/type/context tableをcanonical base内に保持し、TypedAst field/setter、detached attachment、semantic/type tableを追加しない。
 
 original空集合statement/witness pairも全canonical-base比較後にatomic代入する。実SourceSetと全primary fingerprintを保持し、この限定caseのset-aware companion検証を要求する。stale/partial/enriched/foreign/repeated receiverをhalf pairなしで拒否する。既存combined raw setterはresolved/arena root flagと独立にnative TheoremItem nodeを拒否し、歴史的raw tag/root方針を保つ。root metadataを落としてcanonical組込みを迂回させず、新field/API/caller-built source receiptを作らない。
+
+combined raw set/statement/witness setterの旧B3B admissionはCheckerのtest compilationだけに限定する。native-node/root guardは常に維持し、productionのoriginal-source構築と他raw-set familyの既存境界を保つ。

@@ -33,6 +33,8 @@ native original pairはlower baseが保持する認証済みbare empty Enumerati
 ## Private legacy empty-enumeration preservation
 旧source/schema/debug goldenと実frontendの証拠を区別する。内部handoff-field行列では実mutation・型付きproducerまたは下流validatorの拒否・入力不変性・正規入力の再生を確認し、producer成功時だけの条件分岐をcoverageと数えない。source-byte/surface認証とdormant runnerの責務は別途レビューしたretirementまで既存ownerに残し、共有family helperとsyntax-only final境界を保つ。
 
+旧raw B3B空集合のprofile・classifier・exact schemaはtest専用とし、productionは認証済みoriginal-source構築を使う。private legacy goldenと因果的拒否行列、native/legacy binding分離、全set依存と他raw familyを保つ。runnerのtest buildからCheckerのtest-only admissionを有効にしない。
+
 ## Original-source nested statement references
 native B1はsource順theorem/compact/inner-conclusion/outer-conclusionの4statement、B5Aは後続child proof内のdescendant conclusionを加える。実source/lowerから対応context・reserved guard・未検証candidateを作る。site/range/roleと全statement token正規化spellingは実値、statement ordinalはdense preorder。binding contextは実module/outer/child scopeとparentへ対応し、module reservationのvisibilityだけを継承する。
 proof labelはcompact statementと未検証candidate、citationは実direct citing conclusion（B5Aではdescendant）を所有し、実candidateのlabel scopeを使う。全Resolver replayで同scopeまたは祖先から子孫へのvisibilityを認証する。label `source_ordinal`/citation row `ordinal`はowned-table順、label `visible_after_ordinal`/candidate `ordinal()`は実resolver clockを保つ。variable/label scopeとhierarchical collector/flat node originを分け、cast/path改変でなく実site/range/source/moduleでjoinする。

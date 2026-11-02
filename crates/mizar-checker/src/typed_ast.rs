@@ -3206,8 +3206,12 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        #[cfg(not(test))]
+        let legacy_empty_set_witness_statement = false;
+        #[cfg(test)]
+        let legacy_empty_set_witness_statement = statements.is_task_258b3m2b2b3b_profile();
         if !statements.is_task_258b3m2b2b3a_profile()
-            && !statements.is_task_258b3m2b2b3b_profile()
+            && !legacy_empty_set_witness_statement
             && !statements.is_task_258b3m2b2b3c_profile()
             && !statements.is_task_258b3m2b2b3d_profile()
             && !statements.is_task_258b3m2b2b3e_profile()

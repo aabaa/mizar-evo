@@ -43,6 +43,8 @@ original empty-enumeration lower prerequisiteは全public lower呼出しより�
 独立specification/test-intent/trust review後だけ既存の実空集合lower capture六つを自身のoriginal-pair拒否からatomic pair/final成功へ拡張する。全lower/source/type/purity/controlと通常statement-free clone検証を保つ。歴史的B3B exact sourceのclassifier collisionを両originで追加し、元の六件を保つ。完全lower oracle全件の後にpublic pair八件を集め、全pair table・実set target・独立fact-reference clock/fingerprint・空semanticsを検証してからoriginal-statement final八件を集めclone replayを行う。collision pairは既存classifierの観測可能fieldと一致させ、一方または両方のroot flagを落としたraw setterで拒否する。negative-only receiverを使い実own-pair controlを保ちclassifier APIを公開しない。上位Reserve/Proof guardを保ち、実foreign/noncanonical/repeated/raw-install拒否と自身のpristine replayを追加する。このnative consumerではraw adapter/DTO guard/private golden/external causal matrixを変えず、検証移設とraw退役は後続作業に残す。
 
 
+raw B3B production routeは退役し、既存private Checker golden/行列にlegacy handoffを保持する。実Frontend source/hash/DTO/resolver snapshotとbyte/Surface/near-miss guardをraw変換なしのtest専用として残す。共有A/C/D/E認証はexact-list拒否を保持し、coherent extra effectのprivate admissionとは区別する。family-debugのB caseは既存の実native lower/pair/final helperを使い、source不変性・既存ordinal正規化・interleavingを保つ。他raw branch・他dormant row/detailとactive discoveryは変更しない。
+
 ## Step 5C.4 mode semantic runner
 
 private route は従来7行を維持し、dependent-mode positive だけを `type_elaboration` / `type_check` に追加する。
