@@ -212,7 +212,7 @@ fn match_explicit_formula_recovery_preserves_do_cases_otherwise_and_successors()
     }
     let body = ast.node_views().find(|v| v.kind() == &K::AlgorithmStatementList && v.children().first() == Some(&matches[0].id())).unwrap();
     assert_eq!(body.children().len(), 8);
-    for (pair, matching) in body.children().chunks_exact(2).zip(matches) {
+    for (pair, matching) in body.children().as_chunks::<2>().0.iter().zip(matches) {
         assert_eq!(pair[0], matching.id());
         let successor = ast.node_view(pair[1]).unwrap();
         assert!(successor.as_return_statement().is_some());
@@ -638,7 +638,7 @@ fn match_boolean_operand_recovery_preserves_do_and_all_successors() {
     }
     let body = ast.node_views().find(|v| v.kind() == &K::AlgorithmStatementList && v.children().first() == Some(&matches[0].id())).unwrap();
     assert_eq!(body.children().len(), 6);
-    for (pair, matching) in body.children().chunks_exact(2).zip(matches) {
+    for (pair, matching) in body.children().as_chunks::<2>().0.iter().zip(matches) {
         assert_eq!(pair[0], matching.id());
         let successor = ast.node_view(pair[1]).unwrap();
         assert!(successor.as_return_statement().is_some());
