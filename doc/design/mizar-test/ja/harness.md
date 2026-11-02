@@ -5286,6 +5286,12 @@ Private Task269GUP lower routeは、reserve 1件と、単一名bare-set Given・
 Fingerprintは実際のraw-source UTF-8と`SurfaceAst::snapshot_text()` UTF-8の小文字SHA-256を維持し、canonical digest/debug bytesとlower schemaは変えない。Historical expected-array mutationは、実際のfrontend/raw-source corruption検査とともにprivateな選択後error段階を維持する。
 既存GUP/GUPT/GU canonical donorはnoncanonical lower receiptを拒否する。Occurrence/capture payload、condition/label fact、thesis解釈、existential/Skolem意味、corpus/dispatch、proof/Core/VC/acceptance creditは追加しない。
 
+## Proof-local Given-condition source transport
+
+Private Task269GCP lower routeは、reserve 1件と、単一名bare-set Given・reference名が宣言名に一致するラベル付きequality condition 1件・directな`thus thesis` conclusionを含むnamed thesis theorem 1件について、installed generic source tableのroleを読む。実入力からrange・name・signature・raw/snapshot hashを導き、raw tokenと整合するSP/TAB/LF・comment・`be`/`being`をsyntax-onlyで移送する。
+Canonical digest/debug bytesとlower schemaは変えない。Historical exact-profile/expected-array controlはprivateな選択後error段階を維持し、実際のfrontend/raw-source faultは別に検査する。ラベルなし・異なるcondition、local reference不一致、裸のCRと他のsyntax shapeは対象外とする。
+GC/GCT/GCUはcanonical dependencyを維持し、noncanonical lower receiptを拒否する。Occurrence/capture payload、condition/label fact、thesis解釈、existential/Skolem意味、corpus/dispatch、proof/Core/VC/acceptance creditは追加しない。
+
 ## Proof-local Given leading-layout transport
 
 Private Task269GP lower routeは、reserve 1件と、未使用の単一名bare-set Given・ラベル付きthesis condition 1件・directな`thus thesis` conclusionを含むnamed thesis theorem 1件について、installed generic source tableのroleを読む。Fixture suffixを使わずrange・identifier・signatureを導き、raw tokenと整合するSP/TAB/LF・comment・`be`/`being`を移送する。裸のCRと他のsyntax shapeは対象外とする。

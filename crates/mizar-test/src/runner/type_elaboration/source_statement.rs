@@ -241,6 +241,7 @@ pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem ProofLocalGivenConditionUseSmoke: thesis proof\n",
@@ -11103,18 +11104,6 @@ fn validate_source_proof_local_given_use_lower_output(
     Ok(())
 }
 
-const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SOURCE_FINGERPRINT: &str =
-    "2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad";
-const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SURFACE_FINGERPRINT: &str =
-    "49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f";
-const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_LABEL: &str = "ProofLocalGivenConditionUseSmoke";
-const SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SIGNATURE_PAYLOAD: &str = concat!(
-    "node=TheoremItem;symbol=theorem;definition=theorem;",
-    "primary_tokens=theorem ProofLocalGivenConditionUseSmoke : thesis proof given y being set ",
-    "such that G : y = y ; thus thesis ; end ;;notation=_;arity=_;",
-    "roles=FormulaExpression,ProofBlock",
-);
-
 // Rationale: Task 269GCP freezes a distinct declaration-condition selector without publishing use semantics.
 #[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11250,7 +11239,7 @@ impl SourceProofLocalGivenConditionLowerOutput {
 }
 
 // Rationale: Task 269GCP surface corruption controls are exercised only by the private test seam.
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum SourceProofLocalGivenConditionSurfaceMutation {
     None,
@@ -11351,7 +11340,6 @@ pub(in crate::runner) enum SourceProofLocalGivenConditionResolverProfileMutation
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SourceProofLocalGivenConditionMutations {
-    surface: SourceProofLocalGivenConditionSurfaceMutation,
     lower: SourceProofLocalGivenConditionLowerMutation,
     shell: SourceProofLocalGivenConditionShellMutation,
     resolver: SourceProofLocalGivenConditionResolverProfileMutation,
@@ -11359,19 +11347,10 @@ struct SourceProofLocalGivenConditionMutations {
 
 impl SourceProofLocalGivenConditionMutations {
     const NONE: Self = Self {
-        surface: SourceProofLocalGivenConditionSurfaceMutation::None,
         lower: SourceProofLocalGivenConditionLowerMutation::None,
         shell: SourceProofLocalGivenConditionShellMutation::None,
         resolver: SourceProofLocalGivenConditionResolverProfileMutation::None,
     };
-
-    #[cfg(test)]
-    const fn surface(surface: SourceProofLocalGivenConditionSurfaceMutation) -> Self {
-        Self {
-            surface,
-            ..Self::NONE
-        }
-    }
 
     #[cfg(test)]
     const fn lower(lower: SourceProofLocalGivenConditionLowerMutation) -> Self {
@@ -11407,6 +11386,7 @@ struct SourceProofLocalGivenConditionShellProfile {
     source_range: SourceRange,
 }
 
+#[cfg(test)]
 fn exact_source_proof_local_given_condition_surface_profile(
     ast: &SurfaceAst,
     source_text: &str,
@@ -11418,6 +11398,7 @@ fn exact_source_proof_local_given_condition_surface_profile(
     )
 }
 
+#[cfg(test)]
 fn exact_source_proof_local_given_condition_surface_profile_with_mutation(
     ast: &SurfaceAst,
     source_text: &str,
@@ -11704,13 +11685,25 @@ pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_su
     source_text: &str,
     mutation: SourceProofLocalGivenConditionSurfaceMutation,
 ) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>> {
+    if !exact_source_proof_local_given_condition_surface_profile(ast, source_text) {
+        return None;
+    }
+    if !exact_source_proof_local_given_condition_surface_profile_with_mutation(
+        ast,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        mutation,
+    ) {
+        return Some(Err(
+            "Task269GCP exact Surface identity changed after selection".to_owned(),
+        ));
+    }
     source_proof_local_given_condition_lower_output_impl(
         ast,
         module,
         shells,
         symbols,
         source_text,
-        SourceProofLocalGivenConditionMutations::surface(mutation),
+        SourceProofLocalGivenConditionMutations::NONE,
     )
 }
 
@@ -11799,11 +11792,151 @@ fn source_proof_local_given_condition_lower_output_impl(
     source_text: &str,
     mutations: SourceProofLocalGivenConditionMutations,
 ) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>> {
-    if !exact_source_proof_local_given_condition_surface_profile(ast, source_text) {
+    use SurfaceNodeKind as K;
+    use SyntaxKind as S;
+
+    if ast.expression_root().is_some() {
+        return None;
+    }
+    let typed = source_proof_local_syntax_receiver(ast, &module, source_text)?;
+    let rows = typed.source_node_entries()?.collect::<Vec<_>>();
+    let condition_list = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::ConditionList))?;
+    let condition_proposition = rows.iter().find(|row| {
+        row.parent() == Some(condition_list.site()) && matches!(row.kind(), K::Proposition)
+    })?;
+    for row in &rows {
+        let expected: &[SyntaxKind] = match row.kind() {
+            K::Root => &[S::CompilationUnit],
+            K::CompilationUnit => &[S::ItemList],
+            K::ItemList => &[S::ReserveItem, S::TheoremItem],
+            K::ReserveItem => &[
+                S::TokenReservedWord,
+                S::ReserveSegment,
+                S::TokenReservedSymbol,
+            ],
+            K::ReserveSegment => &[S::TokenIdentifier, S::TokenReservedWord, S::TypeExpression],
+            K::TheoremItem => &[
+                S::TokenReservedWord,
+                S::TokenIdentifier,
+                S::TokenReservedSymbol,
+                S::FormulaExpression,
+                S::ProofBlock,
+                S::TokenReservedSymbol,
+            ],
+            K::ProofBlock => &[
+                S::TokenReservedWord,
+                S::GivenStatement,
+                S::ConclusionStatement,
+                S::TokenReservedWord,
+            ],
+            K::GivenStatement => &[
+                S::TokenReservedWord,
+                S::QualifiedVariableSegment,
+                S::TokenReservedWord,
+                S::ConditionList,
+                S::TokenReservedSymbol,
+            ],
+            K::QualifiedVariableSegment => {
+                &[S::TokenIdentifier, S::TokenReservedWord, S::TypeExpression]
+            }
+            K::ConclusionStatement => {
+                &[S::TokenReservedWord, S::Proposition, S::TokenReservedSymbol]
+            }
+            K::ConditionList => &[S::TokenReservedWord, S::Proposition],
+            K::Proposition
+                if rows.iter().any(|parent| {
+                    Some(parent.site()) == row.parent() && matches!(parent.kind(), K::ConditionList)
+                }) =>
+            {
+                &[
+                    S::TokenIdentifier,
+                    S::TokenReservedSymbol,
+                    S::FormulaExpression,
+                ]
+            }
+            K::Proposition => &[S::FormulaExpression],
+            K::FormulaExpression if row.parent() == Some(condition_proposition.site()) => {
+                &[S::BuiltinPredicateApplication]
+            }
+            K::FormulaExpression => &[S::FormulaConstant],
+            K::BuiltinPredicateApplication => {
+                &[S::TermExpression, S::TokenReservedSymbol, S::TermExpression]
+            }
+            K::TermExpression => &[S::TermReference],
+            K::TermReference => &[S::TokenIdentifier],
+            K::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis) => {
+                &[S::TokenReservedWord]
+            }
+            K::TypeExpression => &[S::TypeHead],
+            K::TypeHead => &[S::TokenReservedWord],
+            K::Token(_) => &[],
+            _ => return None,
+        };
+        let mut children = rows
+            .iter()
+            .filter(|child| child.parent() == Some(row.site()));
+        if row.recovery() != NodeRecoveryState::Normal
+            || row.range().source_id != ast.source_id
+            || source_text
+                .get(row.range().start..row.range().end)
+                .is_none()
+            || children
+                .clone()
+                .map(|child| match child.kind() {
+                    K::Token(token) => token.kind.syntax_kind(),
+                    kind => kind.syntax_kind(),
+                })
+                .ne(expected.iter().copied())
+            || (!expected.is_empty()
+                && (children.clone().next()?.range().start != row.range().start
+                    || children.next_back()?.range().end != row.range().end))
+        {
+            return None;
+        }
+    }
+    let reserve = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::ReserveSegment))?;
+    let theorem = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::TheoremItem))?;
+    let segment = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::QualifiedVariableSegment))?;
+    let token = |parent, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent) && row.child_ordinal() == ordinal)
+    };
+    let reserved_name = token(reserve.site(), 0)?.spelling();
+    let theorem_name = token(theorem.site(), 1)?.spelling();
+    let local_name = token(segment.site(), 0)?.spelling();
+    let qualification = token(segment.site(), 1)?.spelling();
+    let conditions = rows
+        .iter()
+        .find(|row| matches!(row.kind(), K::ConditionList))?;
+    let condition = rows.iter().find(|row| {
+        row.parent() == Some(conditions.site()) && matches!(row.kind(), K::Proposition)
+    })?;
+    let condition_label = token(condition.site(), 0)?.spelling();
+    if local_name == reserved_name
+        || !matches!(qualification, "be" | "being")
+        || rows.first()?.spelling()
+            != format!(
+                "reserve {reserved_name} for set ; theorem {theorem_name} : thesis proof given {local_name} {qualification} set such that {condition_label} : {local_name} = {local_name} ; thus thesis ; end ;",
+            )
+    {
         return None;
     }
     Some(build_source_proof_local_given_condition_lower_output(
-        ast, module, shells, symbols, mutations,
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        &rows,
+        mutations,
     ))
 }
 
@@ -11812,21 +11945,44 @@ fn build_source_proof_local_given_condition_lower_output(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
+    rows: &[&SourceNode],
     mutations: SourceProofLocalGivenConditionMutations,
 ) -> Result<SourceProofLocalGivenConditionLowerOutput, String> {
     let SourceProofLocalGivenConditionMutations {
-        lower: mutation,
+        lower: _mutation,
         shell: shell_mutation,
         resolver: resolver_mutation,
         ..
     } = mutations;
-    if !exact_source_proof_local_given_condition_surface_profile_with_mutation(
-        ast,
-        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
-        mutations.surface,
-    ) {
-        return Err("Task269GCP exact Surface identity changed after selection".to_owned());
-    }
+    use SurfaceNodeKind as K;
+
+    let role = |kind: SyntaxKind| {
+        rows.iter()
+            .find(|row| row.kind().syntax_kind() == kind)
+            .expect("selected Given-condition shape contains every role")
+    };
+    let reserve = role(SyntaxKind::ReserveItem);
+    let theorem = role(SyntaxKind::TheoremItem);
+    let proof = role(SyntaxKind::ProofBlock);
+    let given_statement = role(SyntaxKind::GivenStatement);
+    let segment = role(SyntaxKind::QualifiedVariableSegment);
+    let name = rows.iter().find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier))
+        .expect("selected segment contains one name");
+    let written_type = rows
+        .iter()
+        .find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::TypeExpression))
+        .expect("selected segment contains one type");
+    let type_head = rows
+        .iter()
+        .find(|row| row.parent() == Some(written_type.site()))
+        .expect("selected type contains one head");
+    let theorem_name = rows.iter().find(|row| row.parent() == Some(theorem.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier))
+        .expect("selected theorem contains one label").spelling();
+    let signature_payload = format!(
+        "node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens={};notation=_;arity=_;roles=FormulaExpression,ProofBlock",
+        theorem.spelling(),
+    );
     let [reserve_shell, theorem_shell] = shells.declarations() else {
         return Err("Task269GCP requires exactly two declaration shells".to_owned());
     };
@@ -11839,9 +11995,9 @@ fn build_source_proof_local_given_condition_lower_output(
         SourceProofLocalGivenConditionShellProfile {
             ordinal: 0,
             kind: DeclarationShellKind::Reserve,
-            node_index: 30,
+            node_index: reserve.site().index(),
             syntax_kind: SyntaxKind::ReserveItem,
-            source_range: range(ast.source_id, 0, 18),
+            source_range: reserve.range(),
         },
         shell_mutation,
     )?;
@@ -11851,9 +12007,9 @@ fn build_source_proof_local_given_condition_lower_output(
         SourceProofLocalGivenConditionShellProfile {
             ordinal: 1,
             kind: DeclarationShellKind::Theorem,
-            node_index: 50,
+            node_index: theorem.site().index(),
             syntax_kind: SyntaxKind::TheoremItem,
-            source_range: range(ast.source_id, 19, 133),
+            source_range: theorem.range(),
         },
         shell_mutation,
     )?;
@@ -11868,7 +12024,7 @@ fn build_source_proof_local_given_condition_lower_output(
     let namespace = NamespacePath::new(module.path().as_str());
     if !symbols
         .symbols()
-        .visible_candidates(&namespace, "y")
+        .visible_candidates(&namespace, name.spelling())
         .is_empty()
     {
         return Err("Task269GCP local y already resolves as a module symbol".to_owned());
@@ -11928,7 +12084,7 @@ fn build_source_proof_local_given_condition_lower_output(
     }
     let owners = symbols
         .symbols()
-        .visible_candidates(&namespace, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_LABEL)
+        .visible_candidates(&namespace, theorem_name)
         .into_iter()
         .filter(|entry| entry.kind() == SymbolKind::Theorem)
         .collect::<Vec<_>>();
@@ -11954,7 +12110,7 @@ fn build_source_proof_local_given_condition_lower_output(
         owner.symbol().module() == &module,
         resolver_mutation,
         SourceProofLocalGivenConditionResolverProfileMutation::SymbolModule,
-    ) || owner.primary_spelling() != SOURCE_PROOF_LOCAL_GIVEN_CONDITION_LABEL
+    ) || owner.primary_spelling() != theorem_name
         || !source_proof_local_given_condition_resolver_guard(
             owner.notation_spelling().is_none(),
             resolver_mutation,
@@ -11972,14 +12128,14 @@ fn build_source_proof_local_given_condition_lower_output(
             owner.signature(),
             Some(SignatureShell::Opaque { schema, payload })
                 if schema == "parser-signature-v1"
-                    && payload == SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SIGNATURE_PAYLOAD
+                    && payload == &signature_payload
         )
         || !source_proof_local_given_condition_resolver_guard(
             owner.relations().is_empty(),
             resolver_mutation,
             SourceProofLocalGivenConditionResolverProfileMutation::SymbolRelations,
         )
-        || checked_owner.source_range() != range(ast.source_id, 19, 133)
+        || checked_owner.source_range() != theorem.range()
         || checked_owner.origin() != owner.origin()
         || owner.origin().module_id() != &module
         || !source_proof_local_given_condition_resolver_guard(
@@ -11987,7 +12143,7 @@ fn build_source_proof_local_given_condition_lower_output(
             resolver_mutation,
             SourceProofLocalGivenConditionResolverProfileMutation::SymbolOriginSource,
         )
-        || owner.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 19, 133))
+        || owner.origin().anchor() != &SourceAnchor::Range(theorem.range())
         || owner.origin().structural_path() != [2, 1]
         || !source_proof_local_given_condition_resolver_guard(
             owner.origin().import_edge().is_none(),
@@ -12053,7 +12209,7 @@ fn build_source_proof_local_given_condition_lower_output(
             contribution.kind(),
             ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
         )
-        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.anchor() != &SourceAnchor::Range(reserve.range())
         || contribution.effects().symbols() != [owner.symbol().clone()]
         || contribution.effects().definitions() != [definition.id()]
         || !source_proof_local_given_condition_resolver_guard(
@@ -12105,29 +12261,33 @@ fn build_source_proof_local_given_condition_lower_output(
         return Err("Task269GCP theorem contribution provenance mismatch".to_owned());
     }
 
+    // Rationale: Only private test corruption mutates the constructed lower output.
+    #[cfg_attr(not(test), allow(unused_mut))]
     let mut output = SourceProofLocalGivenConditionLowerOutput {
         source_id: ast.source_id,
         module_id: module.clone(),
-        source_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SOURCE_FINGERPRINT.to_owned(),
-        surface_fingerprint: SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SURFACE_FINGERPRINT.to_owned(),
+        source_fingerprint: source_sha256(source_text),
+        surface_fingerprint: source_sha256(&ast.snapshot_text()),
         theorem_symbol: owner.symbol().clone(),
         theorem_definition: definition.id(),
         contribution: contribution.id(),
-        theorem_range: range(ast.source_id, 19, 133),
-        proof_range: range(ast.source_id, 68, 132),
-        given_range: range(ast.source_id, 76, 113),
-        segment_range: range(ast.source_id, 82, 93),
-        name_range: range(ast.source_id, 82, 83),
-        name_spelling: "y".to_owned(),
-        type_range: range(ast.source_id, 90, 93),
-        type_head_range: range(ast.source_id, 90, 93),
-        type_spelling: "set".to_owned(),
+        theorem_range: theorem.range(),
+        proof_range: proof.range(),
+        given_range: given_statement.range(),
+        segment_range: segment.range(),
+        name_range: name.range(),
+        name_spelling: name.spelling().to_owned(),
+        type_range: written_type.range(),
+        type_head_range: type_head.range(),
+        type_spelling: type_head.spelling().to_owned(),
         source_ordinal: 1,
     };
-    mutate_source_proof_local_given_condition_lower_output(&mut output, mutation);
+    #[cfg(test)]
+    mutate_source_proof_local_given_condition_lower_output(&mut output, _mutation);
     validate_source_proof_local_given_condition_lower_output(
         ast,
-        &module,
+        source_text,
+        rows,
         owner.symbol(),
         definition.id(),
         contribution.id(),
@@ -12244,6 +12404,7 @@ fn validate_source_proof_local_given_condition_shell(
     Ok(())
 }
 
+#[cfg(test)]
 fn mutate_source_proof_local_given_condition_lower_output(
     output: &mut SourceProofLocalGivenConditionLowerOutput,
     mutation: SourceProofLocalGivenConditionLowerMutation,
@@ -12331,28 +12492,53 @@ fn mutate_source_proof_local_given_condition_lower_output(
 
 fn validate_source_proof_local_given_condition_lower_output(
     ast: &SurfaceAst,
-    module: &ModuleId,
+    source_text: &str,
+    rows: &[&SourceNode],
     theorem_symbol: &SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
     output: &SourceProofLocalGivenConditionLowerOutput,
 ) -> Result<(), String> {
+    use SurfaceNodeKind as K;
+
+    let module = theorem_symbol.module();
+    let invalid = || "Task269GCP private lower output mismatch".to_owned();
+    let role = |kind: SyntaxKind| {
+        rows.iter()
+            .find(|row| row.kind().syntax_kind() == kind)
+            .ok_or_else(invalid)
+    };
+    let theorem = role(SyntaxKind::TheoremItem)?.range();
+    let proof = role(SyntaxKind::ProofBlock)?.range();
+    let given_statement = role(SyntaxKind::GivenStatement)?.range();
+    let segment = role(SyntaxKind::QualifiedVariableSegment)?;
+    let name = rows.iter().find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)).ok_or_else(invalid)?;
+    let written_type = rows
+        .iter()
+        .find(|row| row.parent() == Some(segment.site()) && matches!(row.kind(), K::TypeExpression))
+        .ok_or_else(invalid)?;
+    let type_head = rows
+        .iter()
+        .find(|row| row.parent() == Some(written_type.site()) && matches!(row.kind(), K::TypeHead))
+        .ok_or_else(invalid)?;
+    let source_fingerprint = source_sha256(source_text);
+    let surface_fingerprint = source_sha256(&ast.snapshot_text());
     if output.source_id != ast.source_id
         || output.module_id != *module
-        || output.source_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SOURCE_FINGERPRINT
-        || output.surface_fingerprint != SOURCE_PROOF_LOCAL_GIVEN_CONDITION_SURFACE_FINGERPRINT
+        || output.source_fingerprint != source_fingerprint
+        || output.surface_fingerprint != surface_fingerprint
         || output.theorem_symbol != *theorem_symbol
         || output.theorem_definition != theorem_definition
         || output.contribution != contribution
-        || output.theorem_range != range(ast.source_id, 19, 133)
-        || output.proof_range != range(ast.source_id, 68, 132)
-        || output.given_range != range(ast.source_id, 76, 113)
-        || output.segment_range != range(ast.source_id, 82, 93)
-        || output.name_range != range(ast.source_id, 82, 83)
-        || output.name_spelling != "y"
-        || output.type_range != range(ast.source_id, 90, 93)
-        || output.type_head_range != range(ast.source_id, 90, 93)
-        || output.type_spelling != "set"
+        || output.theorem_range != theorem
+        || output.proof_range != proof
+        || output.given_range != given_statement
+        || output.segment_range != segment.range()
+        || output.name_range != name.range()
+        || output.name_spelling != name.spelling()
+        || output.type_range != written_type.range()
+        || output.type_head_range != type_head.range()
+        || output.type_spelling != type_head.spelling()
         || output.source_ordinal != 1
     {
         return Err("Task269GCP private lower output mismatch".to_owned());
@@ -12361,16 +12547,34 @@ fn validate_source_proof_local_given_condition_lower_output(
         concat!(
             "source-proof-local-given-condition-lower-debug-v1\n",
             "module: {}::{}\n",
-            "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
-            "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
-            "given range=76..113 segment=82..93 source_ordinal=1\n",
-            "name range=82..83 spelling=\"y\"\n",
-            "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
+            "source-fingerprint: {:?}\n",
+            "surface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal=1\n",
+            "name range={}..{} spelling={:?}\n",
+            "type range={}..{} head={}..{} spelling={:?} form=bare\n",
         ),
         module.package().as_str(),
         module.path().as_str(),
+        source_fingerprint,
+        surface_fingerprint,
         theorem_symbol.fqn().as_str(),
+        theorem.start,
+        theorem.end,
+        proof.start,
+        proof.end,
+        given_statement.start,
+        given_statement.end,
+        segment.range().start,
+        segment.range().end,
+        name.range().start,
+        name.range().end,
+        name.spelling(),
+        written_type.range().start,
+        written_type.range().end,
+        type_head.range().start,
+        type_head.range().end,
+        type_head.spelling(),
     );
     if output.debug_text() != expected_debug {
         return Err("Task269GCP private lower debug grammar mismatch".to_owned());

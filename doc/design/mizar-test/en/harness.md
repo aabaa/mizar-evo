@@ -5650,6 +5650,12 @@ The private Task269GUP lower route reads installed generic source-table roles fo
 Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the lower schema remain unchanged. Historical expected-array mutations retain their private post-selection error stage alongside actual frontend/raw-source corruption checks.
 Existing GUP/GUPT/GU canonical donors reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
 
+## Proof-local Given-condition source transport
+
+The private Task269GCP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with a single-name bare-set Given, one labeled equality condition whose references match the declaration, and a direct `thus thesis` conclusion. It derives ranges, names, signatures and raw/snapshot hashes from actual inputs; raw-token-congruent SP/TAB/LF, comments and `be`/`being` share this syntax-only route.
+Canonical digest/debug bytes and the lower schema remain unchanged. Historical exact-profile/expected-array controls retain their private post-selection error stage, while actual frontend/raw-source faults are checked independently. Unlabeled/different conditions, mismatched local references, bare CR and other syntax shapes remain excluded.
+GC/GCT/GCU keep their canonical dependencies and reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
+
 ## Proof-local Given leading-layout transport
 
 The private Task269GP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with an unused single-name bare-set Given, one labeled thesis condition and a direct `thus thesis` conclusion. It derives ranges, identifiers and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; bare CR and other syntax shapes remain excluded.
