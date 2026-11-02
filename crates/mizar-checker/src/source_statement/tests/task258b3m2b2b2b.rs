@@ -110,6 +110,27 @@ fn task258b3m2b2b2b_exact_structure_selector_witness_api_debug_and_legacy_compat
     let statement = fixture.statement();
     assert!(statement.is_task_258b3m2b2b2b_profile());
     assert!(!statement.is_task_258b3m2b2b2a_profile());
+    let checked_owner = statement.checked_owner();
+    let owner = statement
+        .owners()
+        .get(SourceTheoremOwnerId::new(0))
+        .unwrap();
+    assert_eq!(checked_owner.symbol(), &fixture.theorem_symbol);
+    assert_eq!(owner.symbol(), checked_owner.symbol());
+    assert_eq!(owner.contribution(), fixture.theorem_contribution);
+    assert_eq!(checked_owner.source_range(), range(fixture.source, 48, 170));
+    assert_eq!(checked_owner.source_range(), owner.source_range());
+    assert_eq!(checked_owner.origin().structural_path(), [2, 1]);
+    assert_eq!(checked_owner.origin().source_id(), fixture.source);
+    assert_eq!(checked_owner.origin().module_id(), &fixture.module);
+    assert_eq!(
+        checked_owner.origin().anchor(),
+        &SourceAnchor::Range(owner.source_range())
+    );
+    assert!(checked_owner.origin().import_edge().is_none());
+    assert!(!checked_owner.origin().is_recovered());
+    assert_eq!(checked_owner.visibility(), Visibility::Public);
+    assert_eq!(checked_owner.export_status(), ExportStatus::Exported);
     assert_eq!(
         (
             statement.owners().len(),
@@ -158,15 +179,6 @@ fn task258b3m2b2b2b_exact_structure_selector_witness_api_debug_and_legacy_compat
     assert!(primary_line < structure_line && structure_line < witness_line);
     assert!(!debug.contains("\napplication-fingerprint:"));
     assert!(debug.contains(" term=structure#0 "));
-    assert_eq!(
-        SourceStatementWitnessProducer::build(
-            fixture.witness_input(),
-            &statement,
-            &fixture.primary,
-            &fixture.arena,
-        ),
-        Err(SourceStatementWitnessError::DependencyMismatch)
-    );
 
     let constructor_fixture = B3M2B2B2AFixture::new(215);
     let constructor_statement = constructor_fixture.statement();
@@ -225,8 +237,33 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
             &fixture.arena,
         )
         .expect("baseline revalidation");
-    let statement_debug = statement.debug_text();
-    let witness_debug = baseline.debug_text();
+    let typed = fixture
+        .empty_typed()
+        .with_source_structure_statement_witnesses(
+            fixture.structure.clone(),
+            statement.clone(),
+            baseline.clone(),
+        )
+        .expect("baseline typed");
+    let resolved = assemble_empty_resolved(&typed).expect("baseline resolved");
+    let assert_clean_replay = || {
+        let replay_statement = fixture.statement();
+        assert_eq!(replay_statement, statement);
+        let replay_witnesses = fixture
+            .witnesses(&replay_statement, fixture.witness_input())
+            .expect("producer replay");
+        assert_eq!(replay_witnesses, baseline);
+        let replay_typed = fixture
+            .empty_typed()
+            .with_source_structure_statement_witnesses(
+                fixture.structure.clone(),
+                replay_statement,
+                replay_witnesses,
+            )
+            .expect("whole installation replay");
+        assert_eq!(replay_typed, typed);
+        assert_eq!(assemble_empty_resolved(&replay_typed), Ok(resolved.clone()));
+    };
 
     let foreign_binding = b3m2b2b2a_binding_env(fixture.source, &fixture.module);
     let mut binding_and_aggregate = fixture.statement_input();
@@ -268,6 +305,29 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         Err(SourceStatementError::DependencyMismatch),
         "Task252 mismatch precedes aggregate validation"
     );
+    let foreign = B3M2B2B2BFixture::new(221);
+    for (bindings, primary, atomic) in [
+        (&foreign_binding, &fixture.primary, &fixture.atomic),
+        (&fixture.bindings, &substituted_primary, &fixture.atomic),
+        (&fixture.bindings, &fixture.primary, &foreign.atomic),
+    ] {
+        assert_ne!(
+            (bindings, primary, atomic),
+            (&fixture.bindings, &fixture.primary, &fixture.atomic)
+        );
+        assert_eq!(
+            SourceStatementProducer::build(
+                fixture.statement_input(),
+                &fixture.symbols,
+                bindings,
+                primary,
+                atomic,
+                &fixture.arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch)
+        );
+        assert_clean_replay();
+    }
     let mut invalid_reference = B3M2B2B2BFixture::primary_input(fixture.source, &fixture.module);
     invalid_reference.references[2].role = SourcePrimaryTermReferenceRole::LocalConstant;
     assert!(
@@ -379,37 +439,52 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         "excludes the selector witness subtree",
     );
 
-    let mut aggregate_before_owner = fixture.statement_input();
-    aggregate_before_owner.owners[0].spelling.push('x');
-    aggregate_before_owner.statements.clear();
-    assert_eq!(
+    let mut missing_witness = fixture.witness_input();
+    missing_witness.witnesses.clear();
+    assert_ne!(missing_witness, fixture.witness_input());
+    let publish_with_missing_witness = |input| {
         SourceStatementProducer::build(
-            aggregate_before_owner,
+            input,
             &fixture.symbols,
             &fixture.bindings,
             &fixture.primary,
             &fixture.atomic,
             &fixture.arena,
-        ),
+        )
+        .map(|statement| fixture.witnesses(&statement, missing_witness.clone()))
+    };
+    let mut aggregate_before_owner = fixture.statement_input();
+    aggregate_before_owner.owners[0].spelling.push('x');
+    aggregate_before_owner.statements.clear();
+    assert_eq!(
+        publish_with_missing_witness(aggregate_before_owner),
         Err(SourceStatementError::InvalidAggregate)
     );
     let mut owner_before_statement = fixture.statement_input();
     owner_before_statement.owners[0].spelling.push('x');
     owner_before_statement.statements[0].spelling.push('x');
-    assert!(matches!(
-        SourceStatementProducer::build(
-            owner_before_statement,
-            &fixture.symbols,
-            &fixture.bindings,
-            &fixture.primary,
-            &fixture.atomic,
-            &fixture.arena,
-        ),
-        Err(SourceStatementError::InvalidOwner { .. })
-    ));
+    assert_eq!(
+        publish_with_missing_witness(owner_before_statement),
+        Err(SourceStatementError::InvalidOwner {
+            owner: SourceTheoremOwnerId::new(0)
+        })
+    );
+    let mut owner_before_witness = fixture.statement_input();
+    owner_before_witness.owners[0].spelling.push('!');
+    assert_eq!(
+        publish_with_missing_witness(owner_before_witness),
+        Err(SourceStatementError::InvalidOwner {
+            owner: SourceTheoremOwnerId::new(0)
+        })
+    );
+    assert_clean_replay();
 
     type BaseMutation = (&'static str, fn(&mut SourceStatementHandoffInput));
-    let base_mutations: [BaseMutation; 25] = [
+    let base_mutations: [BaseMutation; 27] = [
+        ("owners clear", |input| input.owners.clear()),
+        ("candidate ordinal", |input| {
+            input.candidate_facts[1].ordinal = 1
+        }),
         ("owner site", |input| input.owners[0].site = node(74)),
         ("owner range", |input| input.owners[0].source_range.end -= 1),
         ("owner spelling", |input| input.owners[0].spelling.push('x')),
@@ -481,21 +556,45 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
     for (label, mutate) in base_mutations {
         let mut input = fixture.statement_input();
         mutate(&mut input);
-        assert!(
-            SourceStatementProducer::build(
-                input,
-                &fixture.symbols,
-                &fixture.bindings,
-                &fixture.primary,
-                &fixture.atomic,
-                &fixture.arena,
-            )
-            .is_err(),
-            "Task258 base {label}"
+        assert_ne!(input, fixture.statement_input(), "base {label} mutation");
+        let result = SourceStatementProducer::build(
+            input,
+            &fixture.symbols,
+            &fixture.bindings,
+            &fixture.primary,
+            &fixture.atomic,
+            &fixture.arena,
         );
+        let expected = match label {
+            "owners clear" => SourceStatementError::InvalidAggregate,
+            "candidate ordinal" => SourceStatementError::InvalidCandidateFact {
+                fact: SourceStatementCandidateFactId::new(1),
+            },
+            "owner spelling" => SourceStatementError::InvalidOwner {
+                owner: SourceTheoremOwnerId::new(0),
+            },
+            "statement ordinal" => SourceStatementError::InvalidStatement {
+                statement: SourceStatementId::new(0),
+            },
+            "context range" => SourceStatementError::InvalidContext {
+                context: SourceStatementContextId::new(1),
+            },
+            "input uses" => SourceStatementError::InvalidInputFact {
+                fact: SourceStatementInputFactId::new(1),
+            },
+            _ => {
+                assert!(result.is_err(), "Task258 base {label}");
+                assert_clean_replay();
+                continue;
+            }
+        };
+        assert_eq!(result, Err(expected), "Task258 base {label}");
+        assert_clean_replay();
     }
 
-    let witness_mutations: [fn(&mut SourceStatementWitnessInput); 15] = [
+    let witness_mutations: [fn(&mut SourceStatementWitnessInput); 17] = [
+        |row| row.take_site = node(73),
+        |row| row.site = node(73),
         |row| row.owner = SourceTheoremOwnerId::new(1),
         |row| row.term = SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2)),
         |row| row.term = SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(1)),
@@ -515,14 +614,28 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         |row| row.recovery = SourceStatementRecovery::Degraded,
         |row| row.name = Some(SourceStatementWitnessNameId::new(0)),
     ];
-    for mutate in witness_mutations {
+    for (mutation, mutate) in witness_mutations.into_iter().enumerate() {
         let mut input = fixture.witness_input();
         mutate(&mut input.witnesses[0]);
-        assert!(
-            fixture.witnesses(&statement, input).is_err(),
-            "witness mutation must fail"
+        assert_ne!(
+            input,
+            fixture.witness_input(),
+            "witness mutation {mutation}"
         );
+        assert_eq!(
+            fixture.witnesses(&statement, input),
+            Err(SourceStatementWitnessError::InvalidWitness {
+                witness: SourceStatementWitnessId::new(0),
+            }),
+            "witness mutation {mutation} must fail"
+        );
+        assert_clean_replay();
     }
+    assert_eq!(
+        fixture.witnesses(&statement, missing_witness),
+        Err(SourceStatementWitnessError::InvalidAggregate)
+    );
+    assert_clean_replay();
     let mut dependency_before_aggregate = fixture.witness_input();
     dependency_before_aggregate.source_id = source_id(999_218);
     dependency_before_aggregate.witnesses.clear();
@@ -572,7 +685,17 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         );
     }
 
-    let foreign = B3M2B2B2BFixture::new(221);
+    assert_eq!(
+        SourceStatementWitnessProducer::build(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_clean_replay();
+    assert_ne!(foreign.structure, fixture.structure);
     assert_eq!(
         SourceStatementWitnessProducer::build_with_structure(
             fixture.witness_input(),
@@ -583,6 +706,7 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         ),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    assert_clean_replay();
 
     for (label, local, fqn, path, export, pad_contribution) in [
         (
@@ -645,6 +769,7 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
             &fixture.arena,
         )
         .unwrap_or_else(|error| panic!("{label} lower handoff failed: {error}"));
+        assert_ne!(structure, fixture.structure, "{label} lower mutation");
         assert_eq!(
             SourceStatementWitnessProducer::build_with_structure(
                 fixture.witness_input(),
@@ -681,6 +806,7 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
             &fixture.arena,
         )
         .unwrap_or_else(|error| panic!("{label} lower handoff failed: {error}"));
+        assert_ne!(structure, fixture.structure, "{label} lower mutation");
         assert_eq!(
             SourceStatementWitnessProducer::build_with_structure(
                 fixture.witness_input(),
@@ -807,19 +933,31 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
             ("links.initial_obligations", obligations_mutated),
             ("links.diagnostics", diagnostics_mutated),
         ] {
-            assert!(
-                baseline
-                    .validate_installation_with_structure(
-                        fixture.source,
-                        &fixture.module,
-                        &statement,
-                        &fixture.primary,
-                        Some(&fixture.structure),
-                        &mutated,
-                    )
-                    .is_err(),
-                "node {index} {field}"
+            assert_ne!(mutated, fixture.arena, "node {index} {field} mutation");
+            assert_eq!(
+                SourceStatementWitnessProducer::build_with_structure(
+                    fixture.witness_input(),
+                    &statement,
+                    &fixture.primary,
+                    &fixture.structure,
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} producer"
             );
+            assert_eq!(
+                baseline.validate_installation_with_structure(
+                    fixture.source,
+                    &fixture.module,
+                    &statement,
+                    &fixture.primary,
+                    Some(&fixture.structure),
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} installation"
+            );
+            assert_clean_replay();
         }
     }
     let wrong_root = TypedArena::try_new(
@@ -827,26 +965,29 @@ fn task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_n
         fixture.arena.iter().map(|(_, row)| row.clone()).collect(),
     )
     .expect("wrong-root arena remains structurally valid");
-    assert!(
-        baseline
-            .validate_installation_with_structure(
-                fixture.source,
-                &fixture.module,
-                &statement,
-                &fixture.primary,
-                Some(&fixture.structure),
-                &wrong_root,
-            )
-            .is_err()
-    );
-    assert_eq!(fixture.statement().debug_text(), statement_debug);
+    assert_ne!(wrong_root, fixture.arena);
     assert_eq!(
-        fixture
-            .witnesses(&statement, fixture.witness_input())
-            .expect("clean replay")
-            .debug_text(),
-        witness_debug
+        SourceStatementWitnessProducer::build_with_structure(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.structure,
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    assert_eq!(
+        baseline.validate_installation_with_structure(
+            fixture.source,
+            &fixture.module,
+            &statement,
+            &fixture.primary,
+            Some(&fixture.structure),
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_clean_replay();
 }
 
 #[test]

@@ -302,6 +302,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2A_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2B_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -1978,7 +1979,9 @@ const SOURCE_STATEMENT_B3M2B2B2A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureConstructorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2B_LABEL: &str = "FormulaStatementStructureSelectorWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureSelectorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) . x ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2259,6 +2262,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2AExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B2BExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2596,6 +2600,7 @@ impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2BExtraction) -> Self {
         Self {
@@ -2885,6 +2890,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatement
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
@@ -5139,6 +5145,7 @@ pub(in crate::runner) fn extract_structure_constructor_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_structure_selector_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13510,15 +13517,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
-        return source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2B2B2A_TEXT {
         return source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
             ast,
@@ -14297,6 +14295,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2b_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16612,6 +16611,7 @@ fn build_source_statement_b3m2b2b2a_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b2b_output(
     ast: &SurfaceAst,
     module: ModuleId,

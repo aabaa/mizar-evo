@@ -1795,18 +1795,9 @@ fn task258b3m2b2b2c_family_and_active_route_isolation_is_atomic() {
     .unwrap()
     .clone();
     let (selector_ast, selector_module, selector_symbols) = task258b3m2b2b2b_fixture(259_322);
-    let selector_structure = source_statement_output_with_source(
-        &selector_ast,
-        selector_module.clone(),
-        &selector_symbols,
-        SOURCE_STATEMENT_B3M2B2B2B_TEXT,
-    )
-    .expect("selector selector")
-    .expect("selector")
-    .typed_ast
-    .source_structure()
-    .unwrap()
-    .clone();
+    let selector_structure = task258b3m2b2b2b_lower_inputs(
+        &selector_ast, &selector_module, &selector_symbols,
+    ).structure.expect("authenticated selector lower structure");
     for foreign in [constructor_structure, selector_structure] {
         let error = source_statement_b3m2b2b2c_output_with_mutation(
             &ast,
@@ -1850,7 +1841,15 @@ fn task258b3m2b2b2c_family_and_active_route_isolation_is_atomic() {
                 |input| input.structure = Some(update_structure.clone()),
             )
         };
-        assert!(matches!(result, Some(Err(_))), "reverse family hybrid");
+        assert_eq!(
+            result.expect("authentic reverse family hybrid extraction")
+                .expect_err("reverse family lower dependency must fail"),
+            if source == SOURCE_STATEMENT_B3M2B2B2A_TEXT {
+                "Task258B3M2B2B2A lower dependency mismatch"
+            } else {
+                "Task258B3M2B2B2B lower dependency mismatch"
+            }
+        );
     }
 
     let (application_ast, application_module, application_symbols) =
@@ -1887,6 +1886,13 @@ fn task258b3m2b2b2c_family_and_active_route_isolation_is_atomic() {
             task253_ast_from_source_text(source, 259_330 + source.len());
         let family_symbols =
             augment_type_elaboration_import_summaries(&family_ast, &family_module, family_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
+            let lower = task258b3m2b2b2b_lower_inputs(&family_ast, &family_module, &family_symbols);
+            assert!(lower.application.is_none() && lower.set_term.is_none());
+            let structure = lower.structure.expect("authenticated selector lower structure");
+            assert_eq!((structure.terms().len(), structure.field_updates().len()), (2, 0));
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
             let lower = task258b3m2b2b2c_lower_inputs(&family_ast, &family_module, &family_symbols);
             assert!(lower.application.is_none() && lower.set_term.is_none());

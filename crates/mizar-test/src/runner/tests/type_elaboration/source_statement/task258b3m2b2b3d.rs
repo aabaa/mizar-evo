@@ -832,6 +832,13 @@ fn task258b3m2b2b3d_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
+            let lower = task258b3m2b2b2b_lower_inputs(&case_ast, &case_module, &case_symbols);
+            assert!(lower.application.is_none() && lower.set_term.is_none());
+            let structure = lower.structure.expect("authenticated selector lower structure");
+            assert_eq!((structure.terms().len(), structure.field_updates().len()), (2, 0));
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
             let lower = task258b3m2b2b2c_lower_inputs(&case_ast, &case_module, &case_symbols);
             assert_eq!(
