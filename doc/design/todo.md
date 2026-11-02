@@ -136,6 +136,19 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
 
+### Velocity gate — November 2026 [ ]
+
+Selected before any further per-element source-transport slice. Both tasks
+change how the remaining Task 257-279 families are produced and tested,
+not what they mean; the gate closes when both are done.
+
+1. [ ] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
+   — mechanical test-module split of the Rust files over 20k lines; light
+   tier.
+2. [ ] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
+   — one AST-walking producer and one shape oracle replace per-element
+   transport slices and literal-offset profiles; subsumes checker Task 281.
+
 ### Step 1 — Soundness contract closure [x]
 
 Close the kernel-audit F1/F2/F7/F8 findings on the trusted boundary before any
