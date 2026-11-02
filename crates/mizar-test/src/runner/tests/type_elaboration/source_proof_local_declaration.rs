@@ -1082,16 +1082,10 @@ fn task269cp_lower_transports_leading_space_tab_lf_layouts() {
             "{layout} stale canonical AST/source pair selected");
     }
 
-    for (index, unsupported) in [
-        format!(":: prefix comment\n{source}"),
-        format!("\r{source}"),
-        source.replacen("  let y be set;", "   let y be set;", 1),
-        format!("{source} "),
-    ].into_iter().enumerate() {
-        let (ast, module, shells, symbols) = task253_ast_from_source_text(&unsupported, 269_590 + index);
-        assert!(source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &unsupported).is_none(),
-            "unsupported Task269CP layout {index} selected");
-    }
+    let unsupported = format!("\r{source}");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&unsupported, 269_591);
+    assert!(source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &unsupported).is_none(),
+        "unsupported Task269CP CR layout selected");
 
     let outcomes = prepared.iter().map(|(_, _, shifted_source, ast, module, shells, symbols)| {
         source_proof_local_let_lower_output(ast, module.clone(), shells, symbols, shifted_source)
@@ -1178,6 +1172,145 @@ fn task269cp_lower_transports_leading_space_tab_lf_layouts() {
     }
 }
 
+#[test]
+fn task269cp_generic_roles_transport_frontend_normal_let_sources() {
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceNodeKind as K;
+
+    let source = SOURCE_PROOF_LOCAL_LET_TEXT;
+    let cases = [
+        ("prefix_comment", format!(":: prefix comment\n{source}")),
+        ("internal_indent", source.replacen("  let y be set;", "   let y be set;", 1)),
+        ("trailing_space", format!("{source} ")),
+        ("no_terminal_lf", source.trim_end_matches('\n').to_owned()),
+        ("extra_terminal_lf", format!("{source}\n")),
+        ("local_name", source.replace("let y be set;", "let z be set;")),
+        ("being", source.replace("let y be set;", "let y being set;")),
+        ("long_names", source.replace("FormulaStatementLetSmoke", "LongerTransportedTheorem")
+            .replace("x", "reserved_value").replace("let y be", "let unused_local be")),
+        ("interior_comment", source.replace("  let y", "  :: unused local\n\tlet y")),
+        ("mixed_layout", source.replace("y be set", "y\tbeing\n    set").replace("x = x", "x\t=\n x")),
+    ];
+    for (index, (label, source)) in cases.into_iter().enumerate() {
+        let ordinal = 269_800 + index;
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(diagnostics, 0, "{label} must be frontend-normal");
+        assert!(ast.expression_root().is_none(), "{label}");
+        let before = (ast.clone(), shells.clone(), symbols.clone());
+        // Preserve the six retired selector negatives through their private historical route.
+        if index < 6 {
+            assert!(source_proof_local_let_lower_output_with_surface_mutation(
+                &ast, module.clone(), &shells, &symbols, &source, SourceProofLocalLetSurfaceMutation::None,
+            ).is_none(), "{label} historical exact selector stays private");
+        }
+        let output = source_proof_local_let_lower_output(&ast, module.clone(), &shells, &symbols, &source)
+            .expect("generic Let shape").expect("generic Let transport");
+
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("generic source arena");
+        let nodes = TypedArena::try_new(
+            ast.root().map(|root| TypedNodeId::new(root.index())),
+            resolved.arena().iter().map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone()).with_resolved_node(id)
+                    .with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())
+                    .with_recovery(if ast.nodes()[id.index()].recovered {
+                        NodeRecoveryState::Recovered
+                    } else { NodeRecoveryState::Normal })
+            }).collect(),
+        ).expect("syntax-only typed arena");
+        let mut typed = TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id, module_id: module.clone(), resolved_root: Some(resolved.arena().root()),
+            source_context: None, source_type: None, source_attribute: None, nodes,
+            contexts: Default::default(), types: Default::default(), facts: Default::default(),
+            coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+        }).expect("syntax-only receiver");
+        typed.install_source_nodes(&resolved).expect("shared source-node installation");
+        let rows = typed.source_node_entries().unwrap().collect::<Vec<_>>();
+        assert_eq!(rows.len(), ast.nodes().len(), "{label} complete rooted census");
+        for (preorder, row) in rows.iter().enumerate() {
+            let node = &ast.nodes()[row.site().index()];
+            assert_eq!((row.kind(), row.range(), row.preorder_ordinal(), row.recovery()),
+                (&node.kind, node.range, preorder, NodeRecoveryState::Normal), "{label} actual AST/table row");
+            if let Some(parent) = row.parent() {
+                assert_eq!(ast.nodes()[parent.index()].children[row.child_ordinal()].index(), row.site().index(),
+                    "{label} actual parent/child role");
+            }
+        }
+        let role = |kind, parent| {
+            let matches = rows.iter().copied().filter(|row| row.kind() == &kind && row.parent() == parent).collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{label} unique {kind:?} role");
+            matches[0]
+        };
+        let root = role(K::Root, None);
+        let unit = role(K::CompilationUnit, Some(root.site()));
+        let items = role(K::ItemList, Some(unit.site()));
+        let reserve = role(K::ReserveItem, Some(items.site()));
+        let theorem = role(K::TheoremItem, Some(items.site()));
+        let proof = role(K::ProofBlock, Some(theorem.site()));
+        let declaration = role(K::LetStatement, Some(proof.site()));
+        let segment = role(K::QualifiedVariableSegment, Some(declaration.site()));
+        let name = rows.iter().copied().find(|row| row.parent() == Some(segment.site()) && row.child_ordinal() == 0).unwrap();
+        assert!(matches!(name.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::Identifier));
+        let ty = role(K::TypeExpression, Some(segment.site()));
+        let head = role(K::TypeHead, Some(ty.site()));
+        for (actual, row) in [output.theorem_range(), output.proof_range(), output.let_range(), output.segment_range(),
+            output.name_range(), output.type_range(), output.type_head_range()].into_iter()
+            .zip([theorem, proof, declaration, segment, name, ty, head]) {
+            assert_eq!(actual, row.range(), "{label} authenticated role range");
+            assert_eq!(actual.source_id, ast.source_id, "{label}");
+        }
+        assert_eq!((output.source_id(), output.module_id(), output.source_ordinal()), (ast.source_id, &module, 1), "{label}");
+        assert_eq!((output.local().spelling(), output.local().scope().path(), output.local().visible_after_ordinal()),
+            (name.spelling(), [0].as_slice(), 1), "{label}");
+        assert_eq!(output.local().declaration_range(), name.range(), "{label}");
+        assert_eq!(output.source_fingerprint(), sha256_text(&source), "{label} raw source");
+        assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()), "{label} actual AST");
+        for (shell, row) in shells.declarations().iter().zip([reserve, theorem]) {
+            assert_eq!((shell.node_id().index(), shell.range()), (row.site().index(), row.range()), "{label} shell role");
+        }
+        let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+        let theorem_name = rows.iter().find(|row| row.parent() == Some(theorem.site()) && row.child_ordinal() == 1).unwrap().spelling();
+        let owners = symbols.symbols().visible_candidates(&namespace, theorem_name);
+        let [owner] = owners.as_slice() else { panic!("{label} theorem owner"); };
+        let definition = symbols.definitions().by_symbol(owner.symbol()).unwrap();
+        let contribution = symbols.contributions().get(owner.contribution()).unwrap();
+        assert_eq!((output.theorem_symbol(), output.theorem_definition(), output.contribution()),
+            (owner.symbol(), definition.id(), contribution.id()), "{label}");
+        assert_eq!(owner.origin().anchor(), &mizar_session::SourceAnchor::Range(theorem.range()), "{label}");
+        assert_eq!(definition.origin(), owner.origin(), "{label}");
+        assert_eq!(contribution.anchor(), &mizar_session::SourceAnchor::Range(reserve.range()), "{label}");
+        assert_eq!(owner.signature(), Some(&mizar_resolve::env::SignatureShell::Opaque {
+            schema: "parser-signature-v1".to_owned(),
+            payload: format!("node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens={};notation=_;arity=_;roles=FormulaExpression,ProofBlock", theorem.spelling()),
+        }), "{label} normalized actual token signature");
+        let ranges = [theorem, proof, declaration, segment, name, ty, head].map(|row| row.range());
+        let [t, p, l, s, n, y, h] = ranges;
+        assert_eq!(output.debug_text(), format!(concat!(
+            "source-proof-local-let-lower-debug-v1\nmodule: {}::{}\nsource-fingerprint: {:?}\nsurface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "let range={}..{} segment={}..{} source_ordinal=1\n",
+            "name range={}..{} spelling={:?} scope=[0] visible_after=1\n",
+            "type range={}..{} head={}..{} spelling=\"set\" form=bare\n"),
+            module.package().as_str(), module.path().as_str(), sha256_text(&source), sha256_text(&ast.snapshot_text()),
+            owner.symbol().fqn().as_str(), t.start, t.end, p.start, p.end, l.start, l.end, s.start, s.end,
+            n.start, n.end, name.spelling(), y.start, y.end, h.start, h.end), "{label} exact debug grammar");
+        let (fresh_ast, fresh_module, fresh_shells, fresh_symbols, fresh_diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(fresh_diagnostics, 0, "{label}");
+        assert_eq!(source_proof_local_let_lower_output(&fresh_ast, fresh_module, &fresh_shells, &fresh_symbols, &source)
+            .expect("fresh generic selector").expect("fresh generic lower"), output, "{label} fresh whole-output replay");
+        for outcome in [
+            source_proof_local_let_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_let_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+        ] {
+            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string())),
+                "{label} C/CT dependency boundary");
+        }
+        assert_eq!((ast, shells, symbols), before, "{label} input purity");
+    }
+}
+
 fn task269cp_range_tuple(
     source_range: mizar_session::SourceRange,
 ) -> (mizar_session::SourceId, usize, usize) {
@@ -1210,9 +1343,65 @@ fn task269cp_ast_with_expression_root(
 }
 
 #[test]
+fn task269cp_actual_rebuilt_ast_and_raw_source_corruption_fail_closed() {
+    let source = SOURCE_PROOF_LOCAL_LET_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 269_820);
+    let before = (ast.clone(), shells.clone(), symbols.clone());
+    for (index, node) in ast.nodes().iter().enumerate() {
+        for mutation in 0..4 {
+            let changed = task258_mutated_surface(&ast, index, mutation);
+            assert_ne!(changed, ast, "actual node {index} mutation {mutation}");
+            assert!(source_proof_local_let_lower_output(&changed, module.clone(), &shells, &symbols, source).is_none(),
+                "actual node {index} {:?} mutation {mutation} selected", node.kind);
+        }
+    }
+    let no_root = task258_mutated_surface(&ast, ast.nodes().len(), 0);
+    assert!(source_proof_local_let_lower_output(&no_root, module.clone(), &shells, &symbols, source).is_none());
+    // Rebuild real ranges with a foreign source identity, rather than mutating an expected profile.
+    let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
+    let allocator = InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(269_821);
+    allocator.next_source_id(snapshot).unwrap();
+    let foreign_source = allocator.next_source_id(snapshot).unwrap();
+    assert_ne!(foreign_source, ast.source_id);
+    for node in ast.nodes() {
+        let range = mizar_session::SourceRange { source_id: foreign_source, ..node.range };
+        let children = node.children.iter().map(|child| rebuilt[child.index()]).collect();
+        rebuilt.push(match &node.kind {
+            mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(token.kind, token.text.clone(), range),
+            kind => builder.add_node(kind.clone(), range, children),
+        });
+    }
+    let wrong_source = builder.finish(ast.root().map(|root| rebuilt[root.index()]), None);
+    assert!(source_proof_local_let_lower_output(&wrong_source, module.clone(), &shells, &symbols, source).is_none());
+    for (label, raw) in [
+        ("same_length_token_change", source.replace("let y", "let z")),
+        ("omitted_gap_code", source.replace("  let", "? let")),
+        ("malformed_gap_delimiter", source.replace("  let", ": let")),
+        ("commented_out_tokens", source.replace("  let", "::let")),
+        ("trailing_code", format!("{source}?")),
+    ] {
+        assert!(source_proof_local_let_lower_output(&ast, module.clone(), &shells, &symbols, &raw).is_none(),
+            "{label} stale AST/raw-source pair selected");
+    }
+    let trivia_only = source.replace("  let", "\t let");
+    let output = source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &trivia_only)
+        .expect("token-equivalent trivia is congruent").expect("authenticated trivia transport");
+    assert_eq!(output.source_fingerprint(), sha256_text(&trivia_only));
+    assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()));
+    assert_eq!((ast, shells, symbols), before, "actual corruption routes preserve inputs");
+}
+
+#[test]
 fn task269cp_surface_resolver_and_local_corruption_matrix_fails_closed() {
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_510);
+    let legacy = source_proof_local_let_lower_output_with_surface_mutation(
+        &ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_LET_TEXT,
+        SourceProofLocalLetSurfaceMutation::None,
+    ).expect("historical selector without expected-profile mutation").expect("historical lower");
+    assert_task269cp_exact_lower_output(&ast, &module, &legacy);
     for index in 0..51 {
         for mutation in [
             SourceProofLocalLetSurfaceMutation::NodeKind(index),
@@ -1962,9 +2151,6 @@ fn task269cp_symbols_with_visible_y(
 #[test]
 fn task269cp_near_misses_and_neighbor_families_remain_isolated() {
     let near_misses = [
-        SOURCE_PROOF_LOCAL_LET_TEXT.trim_end_matches('\n').to_owned(),
-        format!("{SOURCE_PROOF_LOCAL_LET_TEXT}\n"),
-        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set, z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be empty set;"),
@@ -1983,9 +2169,10 @@ fn task269cp_near_misses_and_neighbor_families_remain_isolated() {
             "thus x = x proof\n    let y be set;\n    thus x = x;\n  end;",
         ),
     ];
+    assert_eq!(near_misses.len(), 14);
     for (ordinal, source) in near_misses.into_iter().enumerate() {
         let (ast, module, shells, symbols) =
-            task253_ast_from_source_text(&source, 269_520 + ordinal);
+            task253_ast_from_source_text(&source, 269_523 + ordinal);
         assert!(
             source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &source).is_none(),
             "Task269CP selected near miss {ordinal}"
@@ -3378,8 +3565,12 @@ fn task269c_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
 
 #[test]
 fn task269c_near_miss_neighbor_and_active_routes_remain_isolated() {
+    let renamed = SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&renamed, 269_640);
+    assert_eq!(source_proof_local_let_binding_output(&ast, module, &shells, &symbols, &renamed)
+        .expect("Task269C renamed local reaches dependency validation").unwrap_err(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string());
     let near_misses = [
-        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set such that x = x;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set by A;"),
@@ -3387,7 +3578,7 @@ fn task269c_near_miss_neighbor_and_active_routes_remain_isolated() {
     ];
     for (ordinal, source) in near_misses.into_iter().enumerate() {
         let (ast, module, shells, symbols) =
-            task253_ast_from_source_text(&source, 269_640 + ordinal);
+            task253_ast_from_source_text(&source, 269_641 + ordinal);
         assert!(
             source_proof_local_let_binding_output(
                 &ast,
@@ -4253,8 +4444,12 @@ fn task269ct_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
 
 #[test]
 fn task269ct_near_miss_task269c_and_active_routes_remain_isolated() {
+    let renamed = SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&renamed, 269_740);
+    assert_eq!(source_proof_local_let_type_output(&ast, module, &shells, &symbols, &renamed)
+        .expect("Task269CT renamed local reaches dependency validation").unwrap_err(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string());
     let near_misses = [
-        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
         SOURCE_PROOF_LOCAL_LET_TEXT.replace(
             "let y be set;",
@@ -4265,7 +4460,7 @@ fn task269ct_near_miss_task269c_and_active_routes_remain_isolated() {
     ];
     for (ordinal, source) in near_misses.into_iter().enumerate() {
         let (ast, module, shells, symbols) =
-            task253_ast_from_source_text(&source, 269_740 + ordinal);
+            task253_ast_from_source_text(&source, 269_741 + ordinal);
         assert!(
             source_proof_local_let_type_output(&ast, module, &shells, &symbols, &source).is_none(),
             "Task269CT selected near miss {ordinal}",

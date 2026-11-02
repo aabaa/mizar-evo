@@ -5606,11 +5606,9 @@ adding a fifth test or an active dispatch edge.
 
 ## Proof-local Let leading-layout transport
 
-The private Task269CP lower route admits leading SP/TAB/LF before its unchanged 100-byte suffix; all 51 Surface rows and shell/resolver/output/local ranges share that displacement.
-Every kind/child/normality/source/identity/signature/path/ordinal/scope check and error boundary remains; comments, CR, internal and trailing edits stay outside the slice.
-Fingerprints retain lowercase SHA-256 over raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8. Actual inputs are hashed in construction/revalidation; canonical digests/debug bytes and the schema remain unchanged.
-Only existing private calls forward raw source; the output gains no field/API. Hash computation uses the test crate's library dependency, with no production subprocess.
-Shifted lower receipts remain rejected by public 269C; no binding/Type/Typed-final, corpus/dispatch, fact, assumption, thesis, proof, Core/VC or acceptance credit is added.
+The private Task269CP lower route reads the installed generic source table for one reserve and one named theorem with an unused single-name bare-set Let and a direct reserved-variable equality conclusion. It derives source roles and ranges without a fixture suffix; normal layouts, comments, identifiers and `be`/`being` are transported after complete lexer/token congruence checks. Bare CR and other syntax shapes remain excluded.
+Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the output schema remain unchanged. Historical exact-selector and corruption controls remain private tests alongside actual frontend/source corruption checks.
+Public C/CT retain canonical dependency validation and reject noncanonical lower receipts. This adds no binding/Type/Typed-final, corpus/dispatch, fact, assumption, thesis, proof, Core/VC or acceptance credit.
 
 ## Checker Task 269C frozen dormant harness
 

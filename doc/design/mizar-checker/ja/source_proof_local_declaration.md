@@ -6,6 +6,9 @@
 ## Native named-witness boundary
 historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
 
+## Generic isolated Let source boundary
+Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。C/CTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・proof・dispatch・acceptance supportは加えない。
+
 ## 状態と authority
 
 このliving owner文書はChecker Task-269 proof-local declaration lineageの

@@ -5245,11 +5245,9 @@ focused/full crate testはPASSし、5件目のtestやactive dispatch edgeは追�
 
 ## Proof-local Let leading-layout transport
 
-Private Task269CP lower routeは未変更100-byte suffix前のSP/TAB/LFだけを許可し、Surface 51行とshell/resolver/output/local rangeに同じ移動量を使う。
-Kind/child/normality/source/identity/signature/path/ordinal/scope検査とerror境界を保ち、comment/CR/internal/trailing編集は対象外とする。
-Fingerprintはraw-source UTF-8と`SurfaceAst::snapshot_text()` UTF-8の小文字SHA-256を維持し、構築/再検証で実入力をhashする。Canonical digest/debug bytesとschemaは変えない。
-Raw sourceは既存private call間だけで渡し、output field/APIを追加しない。Hashはtest crateのlibrary dependencyを使い、production subprocessは使わない。
-移送済みlower receiptもpublic 269Cは拒否し、binding/Type/Typed-final、corpus/dispatch、fact/assumption/thesis/proof/Core/VC/acceptance creditは追加しない。
+Private Task269CP lower routeは、reserve 1件と、未使用の単一名bare-set Letおよびreserved variableのdirect equality conclusionを含むnamed theorem 1件について、installed generic source tableを読む。Fixture suffixを使わずsource roleとrangeを導き、正常なlayout・comment・identifier・`be`/`being`を完全なlexer/token照合後に移送する。裸のCRと他のsyntax shapeは対象外とする。
+Fingerprintは実際のraw-source UTF-8と`SurfaceAst::snapshot_text()` UTF-8の小文字SHA-256を維持し、canonical digest/debug bytesとoutput schemaは変えない。Historical exact-selectorとcorruption controlは、実際のfrontend/source corruption検査とともにprivate testに残す。
+Public C/CTはcanonical dependency検証を維持し、noncanonical lower receiptを拒否する。Binding/Type/Typed-final、corpus/dispatch、fact/assumption/thesis/proof/Core/VC/acceptance creditは追加しない。
 
 ## Checker Task 269C frozen dormant harness
 

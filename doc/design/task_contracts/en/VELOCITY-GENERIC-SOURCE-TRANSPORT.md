@@ -35,6 +35,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] dormant connective-grouping upper statement: retire final raw B4 profile; preserve independent lower transport
 - [x] dormant imported-theorem citation: retire raw B5B; preserve native local references and import provenance tests
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
+- [x] isolated unused proof-local Let syntax: generic table sites and lexical layouts/names; C/CT canonical dependency boundary unchanged
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger
