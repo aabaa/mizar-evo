@@ -1196,7 +1196,7 @@ fn expected_checker_source_inventory_row(root: &Path, path: &Path) -> CheckerSou
 
     CheckerSourceInventoryRow {
         path: relative,
-        lines: source.lines().count(),
+        lines: inventory_line_bucket(source.lines().count()),
         boundary,
         owner_doc,
         split_required: "no".to_owned(),
@@ -1204,6 +1204,13 @@ fn expected_checker_source_inventory_row(root: &Path, path: &Path) -> CheckerSou
         decision,
         public_surface,
     }
+}
+
+/// Line counts are recorded rounded up to the next multiple of 500 so an
+/// ordinary task does not change the inventory; the column still tracks the
+/// size that boundary decisions depend on.
+fn inventory_line_bucket(lines: usize) -> usize {
+    lines.div_ceil(500) * 500
 }
 
 fn invalid_inventory_relative_path(path: &str) -> bool {

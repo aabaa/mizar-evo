@@ -448,8 +448,8 @@ fn timeout_cancellation_crash_missing_and_permission_fail_closed() {
     let dir = TestDir::new();
     let sleep = dir.executable("sleep", "#!/bin/sh\n/bin/sleep 5\n", true);
     let limits = BackendResourceLimits::new()
-        .with_wall_timeout(Duration::from_millis(30))
-        .with_kill_grace(Duration::from_millis(30));
+        .with_wall_timeout(Duration::from_millis(300))
+        .with_kill_grace(Duration::from_millis(100));
     let result = run_backend(run_input(
         sleep,
         Vec::new(),
@@ -465,7 +465,7 @@ fn timeout_cancellation_crash_missing_and_permission_fail_closed() {
     let token = BackendCancellationToken::new();
     let canceller = token.clone();
     let handle = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(30));
+        thread::sleep(Duration::from_millis(100));
         canceller.cancel();
     });
     let result = run_backend(BackendRunInput::new(
@@ -475,7 +475,7 @@ fn timeout_cancellation_crash_missing_and_permission_fail_closed() {
         BackendCommand::new(sleep, Vec::new()).expect("command"),
         BackendResourceLimits::new()
             .with_wall_timeout(Duration::from_secs(5))
-            .with_kill_grace(Duration::from_millis(30)),
+            .with_kill_grace(Duration::from_millis(100)),
         BackendIoMode::Stdin,
         token,
     ));
@@ -533,9 +533,11 @@ fn private_problem_file_is_cleaned_after_timeout_cancellation_crash_and_spawn_fa
         Vec::new(),
         BackendIoMode::PrivateProblemFile,
         b"p".to_vec(),
+        // The script must print its problem path before the wall timeout
+        // fires, so leave headroom for process startup under a loaded test run.
         BackendResourceLimits::new()
-            .with_wall_timeout(Duration::from_millis(30))
-            .with_kill_grace(Duration::from_millis(30)),
+            .with_wall_timeout(Duration::from_millis(300))
+            .with_kill_grace(Duration::from_millis(100)),
     ));
     assert_eq!(timed_out.status(), BackendRunStatus::Timeout);
     assert_private_problem_path_cleaned(&timed_out);
@@ -544,7 +546,7 @@ fn private_problem_file_is_cleaned_after_timeout_cancellation_crash_and_spawn_fa
     let token = BackendCancellationToken::new();
     let canceller = token.clone();
     let handle = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(30));
+        thread::sleep(Duration::from_millis(100));
         canceller.cancel();
     });
     let cancelled = run_backend(BackendRunInput::new(
@@ -554,7 +556,7 @@ fn private_problem_file_is_cleaned_after_timeout_cancellation_crash_and_spawn_fa
         BackendCommand::new(cancel_script, Vec::new()).expect("command"),
         BackendResourceLimits::new()
             .with_wall_timeout(Duration::from_secs(5))
-            .with_kill_grace(Duration::from_millis(30)),
+            .with_kill_grace(Duration::from_millis(100)),
         BackendIoMode::PrivateProblemFile,
         token,
     ));

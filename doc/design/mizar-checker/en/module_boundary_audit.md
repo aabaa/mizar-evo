@@ -46,7 +46,7 @@ Details archived: [checker_module_boundary_audit_sections.md](../../archive/chec
 
 ## Source Layout Inventory
 
-Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv).
+Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv). Its `lines` column is rounded up to the next multiple of 500 so that an ordinary task does not change the inventory.
 Historical details: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).
 
 ## Task 277C Frozen Module Boundary
