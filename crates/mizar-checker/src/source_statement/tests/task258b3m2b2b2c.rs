@@ -157,6 +157,208 @@ fn task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nod
         )
         .expect("baseline revalidation");
 
+    let base = fixture.empty_typed();
+    let typed = base
+        .clone()
+        .with_source_structure_statement_witnesses(
+            fixture.structure.clone(),
+            statement.clone(),
+            baseline.clone(),
+        )
+        .expect("pristine installation");
+    let resolved = assemble_empty_resolved(&typed).expect("pristine final");
+    let assert_clean_replay = || {
+        let replay_statement = fixture.statement();
+        assert_eq!(replay_statement, statement);
+        let replay = fixture
+            .witnesses(&replay_statement, fixture.witness_input())
+            .expect("pristine witness replay");
+        assert_eq!(replay, baseline);
+        assert_eq!(fixture.empty_typed(), base);
+        let replay_typed = base
+            .clone()
+            .with_source_structure_statement_witnesses(
+                fixture.structure.clone(),
+                replay_statement,
+                replay,
+            )
+            .expect("whole installation replay");
+        assert_eq!(replay_typed, typed);
+        assert_eq!(assemble_empty_resolved(&replay_typed), Ok(resolved.clone()));
+    };
+
+    // Preserve the old runner's five lower, six statement and sixteen witness causes.
+    let foreign = B3M2B2B2CFixture::new(999_225);
+    for (bindings, primary, atomic) in [
+        (&foreign.bindings, &fixture.primary, &fixture.atomic),
+        (&fixture.bindings, &foreign.primary, &fixture.atomic),
+        (&fixture.bindings, &fixture.primary, &foreign.atomic),
+    ] {
+        assert_ne!(
+            (bindings, primary, atomic),
+            (&fixture.bindings, &fixture.primary, &fixture.atomic)
+        );
+        assert_eq!(
+            SourceStatementProducer::build(
+                fixture.statement_input(),
+                &fixture.symbols,
+                bindings,
+                primary,
+                atomic,
+                &fixture.arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch)
+        );
+        assert_clean_replay();
+    }
+    assert_eq!(
+        SourceStatementWitnessProducer::build(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_clean_replay();
+    assert_ne!(foreign.structure, fixture.structure);
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_structure(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &foreign.structure,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_clean_replay();
+    for mutation in 5..11 {
+        let mut input = fixture.statement_input();
+        let expected = match mutation {
+            5 => {
+                input.owners.clear();
+                SourceStatementError::InvalidAggregate
+            }
+            6 => {
+                input.owners[0].spelling.push('x');
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                }
+            }
+            7 => {
+                input.statements[0].source_ordinal = 1;
+                SourceStatementError::InvalidStatement {
+                    statement: SourceStatementId::new(0),
+                }
+            }
+            8 => {
+                input.contexts[1].source_range.start += 1;
+                SourceStatementError::InvalidContext {
+                    context: SourceStatementContextId::new(1),
+                }
+            }
+            9 => {
+                input.input_facts[1].uses.swap(0, 1);
+                SourceStatementError::InvalidInputFact {
+                    fact: SourceStatementInputFactId::new(1),
+                }
+            }
+            10 => {
+                input.candidate_facts[1].ordinal = 1;
+                SourceStatementError::InvalidCandidateFact {
+                    fact: SourceStatementCandidateFactId::new(1),
+                }
+            }
+            _ => unreachable!(),
+        };
+        assert_ne!(
+            input,
+            fixture.statement_input(),
+            "statement mutation {mutation}"
+        );
+        assert_eq!(
+            SourceStatementProducer::build(
+                input,
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            ),
+            Err(expected),
+            "statement mutation {mutation}"
+        );
+        assert_clean_replay();
+    }
+    for mutation in 11..27 {
+        let mut input = fixture.witness_input();
+        if mutation == 11 {
+            input.witnesses.clear();
+        } else {
+            let row = &mut input.witnesses[0];
+            match mutation {
+                12 => {
+                    row.term =
+                        SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(4))
+                }
+                13 => {
+                    row.term =
+                        SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(1))
+                }
+                14 => {
+                    row.term = SourceStatementWitnessTermTarget::Application(
+                        SourceFunctorApplicationId::new(0),
+                    )
+                }
+                15 => row.owner = SourceTheoremOwnerId::new(1),
+                16 => row.binding_context = BindingContextId::new(0),
+                17 => {
+                    row.take_site = statement
+                        .statements()
+                        .get(SourceStatementId::new(1))
+                        .unwrap()
+                        .site()
+                        .clone()
+                }
+                18 => row.take_range.start += 1,
+                19 => {
+                    row.site = statement
+                        .statements()
+                        .get(SourceStatementId::new(1))
+                        .unwrap()
+                        .site()
+                        .clone()
+                }
+                20 => row.source_range.end -= 1,
+                21 => row.source_ordinal = 0,
+                22 => row.ordinal = 1,
+                23 => row.spelling.push('x'),
+                24 => row.kind = SourceStatementWitnessKind::Named,
+                25 => row.recovery = SourceStatementRecovery::Degraded,
+                26 => row.name = Some(SourceStatementWitnessNameId::new(0)),
+                _ => unreachable!(),
+            }
+        }
+        assert_ne!(
+            input,
+            fixture.witness_input(),
+            "witness mutation {mutation}"
+        );
+        assert_eq!(
+            fixture.witnesses(&statement, input),
+            Err(if mutation == 11 {
+                SourceStatementWitnessError::InvalidAggregate
+            } else {
+                SourceStatementWitnessError::InvalidWitness {
+                    witness: SourceStatementWitnessId::new(0),
+                }
+            }),
+            "witness mutation {mutation}"
+        );
+        assert_clean_replay();
+    }
+
     let mut dependency_before_aggregate = fixture.witness_input();
     dependency_before_aggregate.source_id = source_id(999_225);
     dependency_before_aggregate.witnesses.clear();
@@ -164,10 +366,6 @@ fn task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nod
         fixture.witnesses(&statement, dependency_before_aggregate),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
-    let mut invalid_witness = fixture.witness_input();
-    invalid_witness.witnesses[0].source_range.end -= 1;
-    assert!(fixture.witnesses(&statement, invalid_witness).is_err());
-
     let (_, _, structure_symbol, structure_contribution, _) =
         structure_witness_symbol_env_with_structure_identity(
             fixture.source,
@@ -330,21 +528,61 @@ fn task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nod
             ("links.initial_obligations", obligations_mutated),
             ("links.diagnostics", diagnostics_mutated),
         ] {
-            assert!(
-                baseline
-                    .validate_installation_with_structure(
-                        fixture.source,
-                        &fixture.module,
-                        &statement,
-                        &fixture.primary,
-                        Some(&fixture.structure),
-                        &mutated,
-                    )
-                    .is_err(),
-                "node {index} {field}"
+            assert_ne!(mutated, fixture.arena, "node {index} {field} mutation");
+            assert_eq!(
+                SourceStatementWitnessProducer::build_with_structure(
+                    fixture.witness_input(),
+                    &statement,
+                    &fixture.primary,
+                    &fixture.structure,
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} constructor"
             );
+            assert_eq!(
+                baseline.validate_installation_with_structure(
+                    fixture.source,
+                    &fixture.module,
+                    &statement,
+                    &fixture.primary,
+                    Some(&fixture.structure),
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} installer"
+            );
+            assert_clean_replay();
         }
     }
+    let wrong_root = TypedArena::try_new(
+        Some(TypedNodeId::new(84)),
+        fixture.arena.iter().map(|(_, row)| row.clone()).collect(),
+    )
+    .expect("wrong-root arena remains structurally valid");
+    assert_ne!(wrong_root, fixture.arena);
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_structure(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.structure,
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_eq!(
+        baseline.validate_installation_with_structure(
+            fixture.source,
+            &fixture.module,
+            &statement,
+            &fixture.primary,
+            Some(&fixture.structure),
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_clean_replay();
 }
 
 #[test]

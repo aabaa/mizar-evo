@@ -1744,6 +1744,50 @@ fn task258b3m2b2b2c_fixture(
     (ast, module, symbols)
 }
 
+fn task258b3m2b2b2c_lower_inputs(
+    ast: &SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &SymbolEnv,
+) -> SourceStatementB3M2B2B2CRouteInputs {
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    let mut captured = None;
+    assert!(
+        source_statement_output_with_source(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B2C_TEXT
+        )
+        .is_none()
+    );
+    assert!(
+        source_statement_transport_detail_keys(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B2C_TEXT
+        )
+        .is_none()
+    );
+    assert_eq!(
+        source_statement_b3m2b2b2c_output_with_mutation(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B2C_TEXT,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic update extraction")
+        .expect_err("retired update raw admission"),
+        "source statement dependency mismatch"
+    );
+    assert_eq!(
+        (ast.snapshot_text(), module.clone(), symbols.clone()),
+        before
+    );
+    captured.expect("authenticated lower inputs before retired update admission")
+}
+
 fn task258b3m2b2b2c_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 7] {
     let module = mizar_checker::binding_env::BindingContextId::new(0);
     let proof = mizar_checker::binding_env::BindingContextId::new(1);

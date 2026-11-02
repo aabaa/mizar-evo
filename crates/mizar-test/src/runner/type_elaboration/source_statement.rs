@@ -311,6 +311,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2B_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2C_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -1982,7 +1983,9 @@ const SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureSelectorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) . x ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2C_LABEL: &str = "FormulaStatementStructureUpdateWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2275,6 +2278,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2BExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B2CExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2631,6 +2635,7 @@ impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2CExtraction) -> Self {
         Self {
@@ -2881,6 +2886,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatement
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
@@ -5309,6 +5315,7 @@ pub(in crate::runner) fn extract_structure_selector_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_structure_update_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13503,15 +13510,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
-        return source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
         return source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
             ast,
@@ -14171,7 +14169,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_resolver_mutatio
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3M2B2B2CRouteInputs, String>> {
     let extracted = extract_structure_update_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14182,13 +14180,26 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2c_output(
+    let mut captured = None;
+    let result = build_source_statement_witness_output_with_controls(
         ast,
         module,
         &symbols,
-        extracted,
+        extracted.into(),
         |_| {},
-    ))
+        None,
+        |inputs| captured = Some(inputs.clone()),
+    );
+    Some(match captured {
+        Some(inputs) => {
+            assert_eq!(
+                result.expect_err("retired raw profile"),
+                "source statement dependency mismatch"
+            );
+            Ok(inputs)
+        }
+        None => Err(result.expect_err("lower producer refused before capture")),
+    })
 }
 
 #[cfg(test)]
@@ -14205,6 +14216,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16610,6 +16622,7 @@ fn build_source_statement_b3m2b2b2b_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b2c_output(
     ast: &SurfaceAst,
     module: ModuleId,

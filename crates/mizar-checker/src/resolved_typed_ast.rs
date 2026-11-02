@@ -2964,6 +2964,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || source_statement.is_task_258b3m2b2b3c_profile()
                 || source_statement.is_task_258b3m2b2b3d_profile()
                 || source_statement.is_task_258b3m2b2b3e_profile();
+            let structure_witness_profile = source_statement.is_task_258b3m2b2b2a_profile()
+                || source_statement.is_task_258b3m2b2b2b_profile();
+            #[cfg(test)]
+            let structure_witness_profile =
+                structure_witness_profile || source_statement.is_task_258b3m2b2b2c_profile();
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
                 || source_statement.is_task_258b4b_profile()
                 || source_statement.is_task_258b4c_profile();
@@ -2971,10 +2976,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
-                || (source_structure.is_some()
-                    && !source_statement.is_task_258b3m2b2b2a_profile()
-                    && !source_statement.is_task_258b3m2b2b2b_profile()
-                    && !source_statement.is_task_258b3m2b2b2c_profile())
+                || (source_structure.is_some() && !structure_witness_profile)
                 || (source_set_term.is_some()
                     && !native_set_witness_statement
                     && !legacy_set_witness_statement)
@@ -3104,9 +3106,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
                 }
                 (None, Some(witnesses))
-                    if (source_statement.is_task_258b3m2b2b2a_profile()
-                        || source_statement.is_task_258b3m2b2b2b_profile()
-                        || source_statement.is_task_258b3m2b2b2c_profile())
+                    if structure_witness_profile
                         && source_application.is_none()
                         && source_structure.is_some() =>
                 {
