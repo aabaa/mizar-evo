@@ -1361,6 +1361,48 @@ fn task258b3m2b2b1b1_fixture(
     (ast, module, symbols)
 }
 
+fn task258b3m2b2b1b1_assert_retired(
+    ast: &SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &SymbolEnv,
+) {
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    for _ in 0..2 {
+        assert!(
+            extract_wrapped_application_witness_source_statement(
+                ast,
+                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
+            )
+            .is_some()
+        );
+        assert!(
+            source_statement_output_with_source(
+                ast,
+                module.clone(),
+                symbols,
+                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
+            )
+            .is_none()
+        );
+        assert_eq!(
+            source_statement_b3m2b2b1b1_output_with_mutation(
+                ast,
+                module.clone(),
+                symbols,
+                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
+                |_| {},
+            )
+            .expect("authentic wrapped extraction")
+            .expect_err("retired raw profile"),
+            "source statement dependency mismatch"
+        );
+        assert_eq!(
+            (ast.snapshot_text(), module.clone(), symbols.clone()),
+            before
+        );
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task258B3M2B2B1B1ResolverMutation {
     LocalAndFqn,

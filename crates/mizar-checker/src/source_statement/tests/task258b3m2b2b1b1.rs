@@ -293,17 +293,105 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
         .expect("revalidation");
     let statement_debug = statement.debug_text();
     let witness_debug = baseline.debug_text();
+    let typed_debug = fixture
+        .empty_typed()
+        .with_source_application_statement_witnesses(
+            fixture.application.clone(),
+            statement.clone(),
+            baseline.clone(),
+        )
+        .expect("baseline installation")
+        .debug_text();
     let assert_clean_replay = || {
         let replay_statement = fixture.statement();
         assert_eq!(replay_statement.debug_text(), statement_debug);
+        let replay_witnesses = fixture
+            .witnesses(&replay_statement, fixture.witness_input())
+            .expect("clean replay");
+        assert_eq!(replay_witnesses.debug_text(), witness_debug);
         assert_eq!(
             fixture
-                .witnesses(&replay_statement, fixture.witness_input())
-                .expect("clean replay")
+                .empty_typed()
+                .with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    replay_statement,
+                    replay_witnesses,
+                )
+                .expect("clean installation replay")
                 .debug_text(),
-            witness_debug
+            typed_debug,
         );
     };
+
+    let foreign = B3M2B2B1B1Fixture::new(999_204);
+    let wrong_arena = B3M2B2B1AFixture::new(204);
+    for (label, bindings, primary, atomic, arena) in [
+        (
+            "foreign binding",
+            &foreign.bindings,
+            &fixture.primary,
+            &fixture.atomic,
+            &fixture.arena,
+        ),
+        (
+            "foreign arena",
+            &fixture.bindings,
+            &fixture.primary,
+            &fixture.atomic,
+            &wrong_arena.arena,
+        ),
+        (
+            "foreign primary",
+            &fixture.bindings,
+            &foreign.primary,
+            &fixture.atomic,
+            &fixture.arena,
+        ),
+        (
+            "foreign atomic",
+            &fixture.bindings,
+            &fixture.primary,
+            &foreign.atomic,
+            &fixture.arena,
+        ),
+    ] {
+        assert_eq!(
+            SourceStatementProducer::build(
+                fixture.statement_input(),
+                &fixture.symbols,
+                bindings,
+                primary,
+                atomic,
+                arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch),
+            "{label}"
+        );
+        assert_clean_replay();
+    }
+    assert_eq!(
+        SourceStatementWitnessProducer::build(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch),
+        "missing application"
+    );
+    assert_clean_replay();
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_application(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &foreign.application,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch),
+        "foreign application"
+    );
+    assert_clean_replay();
 
     let b1a_binding = b3m2b2b1a_binding_env(fixture.source, &fixture.module);
     let mut binding_and_aggregate = fixture.statement_input();
@@ -332,6 +420,7 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
         &fixture.arena,
     )
     .expect("coherent Task252 term/request substitution");
+    assert_ne!(substituted_primary, fixture.primary);
     let mut primary_and_aggregate = fixture.statement_input();
     primary_and_aggregate.statements.clear();
     assert_eq!(
@@ -416,6 +505,129 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
     assert_clean_replay();
+
+    // These are the five actual imported Resolver identity substitutions.
+    for mutation in [
+        "local/fqn",
+        "structural path",
+        "signature",
+        "export",
+        "contribution",
+    ] {
+        let selected = fixture
+            .symbols
+            .symbols()
+            .get(&fixture.functor_symbol)
+            .expect("imported ++");
+        let mut indexes = SymbolEnvIndexes {
+            imports: fixture.symbols.imports().clone(),
+            symbols: Default::default(),
+            labels: fixture.symbols.labels().clone(),
+            definitions: fixture.symbols.definitions().clone(),
+            contributions: fixture.symbols.contributions().clone(),
+            ..Default::default()
+        };
+        let contribution = if mutation == "contribution" {
+            indexes.contributions.insert(
+                selected.symbol().module().clone(),
+                ContributionKind::ImportedSource {
+                    source_id: fixture.source,
+                },
+                selected.origin().anchor().clone(),
+            )
+        } else {
+            selected.contribution()
+        };
+        let symbol = if mutation == "local/fqn" {
+            SymbolId::new(
+                selected.symbol().module().clone(),
+                LocalSymbolId::new("summary:parser.type_fixtures#parse-only#++:substitute"),
+                FullyQualifiedName::new("parser.type_fixtures::++#substitute"),
+            )
+        } else {
+            selected.symbol().clone()
+        };
+        let origin = SemanticOrigin::new(
+            selected.origin().source_id(),
+            selected.origin().module_id().clone(),
+            selected.origin().anchor().clone(),
+            if mutation == "structural path" {
+                vec![13]
+            } else {
+                vec![12]
+            },
+        );
+        let mut replacement = SymbolEntry::new(
+            symbol.clone(),
+            selected.kind(),
+            selected.namespace().clone(),
+            selected.primary_spelling(),
+            origin,
+            contribution,
+        )
+        .with_visibility(selected.visibility())
+        .with_export_status(if mutation == "export" {
+            ExportStatus::ReExported
+        } else {
+            selected.export_status()
+        });
+        if mutation == "signature" {
+            replacement = replacement.with_signature(mizar_resolve::env::SignatureShell::Pending);
+        }
+        assert_ne!(&replacement, selected, "Resolver {mutation}");
+        for entry in fixture.symbols.symbols().iter() {
+            indexes
+                .symbols
+                .insert(if entry.symbol() == selected.symbol() {
+                    replacement.clone()
+                } else {
+                    entry.clone()
+                });
+        }
+        indexes
+            .contributions
+            .add_symbol(contribution, symbol.clone());
+        let symbols = SymbolEnv::new(fixture.module.clone(), indexes);
+        let application = SourceFunctorApplicationProducer::build(
+            B3M2B2B1B1Fixture::application_input(
+                fixture.source,
+                &fixture.module,
+                symbol,
+                contribution,
+            ),
+            &symbols,
+            &fixture.bindings,
+            &fixture.primary,
+            &fixture.arena,
+        );
+        if mutation == "contribution" {
+            assert_eq!(
+                application,
+                Err(
+                    crate::source_application::SourceFunctorApplicationError::InvalidCandidate {
+                        candidate: SourceFunctorCandidateId::new(0),
+                    }
+                ),
+                "Resolver {mutation} loses its authentic import edge"
+            );
+        } else {
+            let application =
+                application.expect("coherent Resolver substitution reaches lower handoff");
+            assert_ne!(application, fixture.application, "Resolver {mutation}");
+            assert_eq!(
+                SourceStatementWitnessProducer::build_with_application(
+                    fixture.witness_input(),
+                    &statement,
+                    &fixture.primary,
+                    &application,
+                    &fixture.arena,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "Resolver {mutation}"
+            );
+        }
+        assert_clean_replay();
+    }
 
     let atomic_input = || {
         let mut edges = Vec::new();
@@ -562,7 +774,7 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
     ));
     assert_clean_replay();
     type BaseMutation = (&'static str, fn(&mut SourceStatementHandoffInput));
-    let base_mutations: [BaseMutation; 5] = [
+    let base_mutations: [BaseMutation; 10] = [
         ("owner", |input: &mut SourceStatementHandoffInput| {
             input.owners[0].source_range.end -= 1
         }),
@@ -579,11 +791,45 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
             input.candidate_facts[1].formula =
                 SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
         }),
+        ("owner spelling", |input| input.owners[0].spelling.push('x')),
+        ("owners", |input| input.owners.clear()),
+        ("statement ordinal", |input| {
+            input.statements[0].source_ordinal = 1
+        }),
+        ("context range", |input| {
+            input.contexts[1].source_range.start += 1
+        }),
+        ("candidate ordinal", |input| {
+            input.candidate_facts[1].ordinal = 1
+        }),
     ];
     for (label, mutate) in base_mutations {
         let mut input = fixture.statement_input();
         mutate(&mut input);
-        assert!(
+        assert_ne!(input, fixture.statement_input(), "{label}");
+        let expected = match label {
+            "owners" => SourceStatementError::InvalidAggregate,
+            "statement ordinal" => SourceStatementError::InvalidStatement {
+                statement: SourceStatementId::new(0),
+            },
+            "owner" | "owner spelling" => SourceStatementError::InvalidOwner {
+                owner: SourceTheoremOwnerId::new(0),
+            },
+            "statement" => SourceStatementError::InvalidStatement {
+                statement: SourceStatementId::new(1),
+            },
+            "context" | "context range" => SourceStatementError::InvalidContext {
+                context: SourceStatementContextId::new(1),
+            },
+            "input" => SourceStatementError::InvalidInputFact {
+                fact: SourceStatementInputFactId::new(1),
+            },
+            "candidate" | "candidate ordinal" => SourceStatementError::InvalidCandidateFact {
+                fact: SourceStatementCandidateFactId::new(1),
+            },
+            _ => unreachable!(),
+        };
+        assert_eq!(
             SourceStatementProducer::build(
                 input,
                 &fixture.symbols,
@@ -591,8 +837,8 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
                 &fixture.primary,
                 &fixture.atomic,
                 &fixture.arena,
-            )
-            .is_err(),
+            ),
+            Err(expected),
             "Task258 base {label} corruption"
         );
         assert_clean_replay();
@@ -618,6 +864,12 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
         |row: &mut SourceStatementWitnessInput| {
             row.term = SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2))
         },
+        |row: &mut SourceStatementWitnessInput| {
+            row.term =
+                SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId::new(1))
+        },
+        |row: &mut SourceStatementWitnessInput| row.source_range.start += 1,
+        |row: &mut SourceStatementWitnessInput| row.source_ordinal = 0,
         |row: &mut SourceStatementWitnessInput| row.binding_context = BindingContextId::new(0),
         |row: &mut SourceStatementWitnessInput| row.site = node(51),
         |row: &mut SourceStatementWitnessInput| row.take_site = node(52),
@@ -625,13 +877,22 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
     ] {
         let mut input = fixture.witness_input();
         mutate(&mut input.witnesses[0]);
+        assert_ne!(input, fixture.witness_input());
         assert_eq!(
             fixture.witnesses(&statement, input),
             Err(SourceStatementWitnessError::InvalidWitness {
                 witness: SourceStatementWitnessId::new(0),
             })
         );
+        assert_clean_replay();
     }
+    let mut empty_witnesses = fixture.witness_input();
+    empty_witnesses.witnesses.clear();
+    assert_eq!(
+        fixture.witnesses(&statement, empty_witnesses),
+        Err(SourceStatementWitnessError::InvalidAggregate)
+    );
+    assert_clean_replay();
     let mut nonempty_names = fixture.witness_input();
     nonempty_names.names.push(SourceStatementWitnessNameInput {
         witness: SourceStatementWitnessId::new(0),
@@ -706,6 +967,18 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
             ("recovery", recovery_mutated),
             ("children", children_mutated),
         ] {
+            assert_ne!(mutated, fixture.arena, "node {index} {field} mutation");
+            assert_eq!(
+                SourceStatementWitnessProducer::build_with_application(
+                    fixture.witness_input(),
+                    &statement,
+                    &fixture.primary,
+                    &fixture.application,
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} constructor",
+            );
             assert!(
                 baseline
                     .validate_installation_with_application(
@@ -719,6 +992,7 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
                     .is_err(),
                 "node {index} {field}"
             );
+            assert_clean_replay();
         }
     }
     let wrong_root = TypedArena::try_new(
@@ -726,6 +1000,17 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
         fixture.arena.iter().map(|(_, row)| row.clone()).collect(),
     )
     .expect("wrong-root arena remains structurally valid");
+    assert_ne!(wrong_root, fixture.arena);
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_application(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.application,
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
     assert!(
         baseline
             .validate_installation_with_application(
@@ -738,6 +1023,7 @@ fn task258b3m2b2b1b1_dependencies_wrapped_application_witness_precedence_and_all
             )
             .is_err()
     );
+    assert_clean_replay();
     assert_eq!(
         fixture
             .witnesses(&statement, fixture.witness_input())

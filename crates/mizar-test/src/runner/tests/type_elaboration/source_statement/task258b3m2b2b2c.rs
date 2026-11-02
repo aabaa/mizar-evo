@@ -1925,6 +1925,10 @@ fn task258b3m2b2b2c_family_and_active_route_isolation_is_atomic() {
             task253_ast_from_source_text(source, 259_330 + source.len());
         let family_symbols =
             augment_type_elaboration_import_summaries(&family_ast, &family_module, family_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B1B1_TEXT {
+            task258b3m2b2b1b1_assert_retired(&family_ast, &family_module, &family_symbols);
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2A_TEXT {
             let before = (family_ast.snapshot_text(), family_module.clone(), family_symbols.clone());
             assert!(extract_numeral_witness_source_statement(&family_ast, source).is_some());
