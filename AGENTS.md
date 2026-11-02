@@ -23,6 +23,10 @@ Where the two differ, the protocol wins.
 - A task contract is at most 60 lines per language. Link it only from
   `doc/design/todo.md`, crate plans, crate todos, or the coverage audit.
   Module documents never point back at contracts.
+- Declare the gate tier (full, pattern, or light) in the contract or commit
+  body. A slice that repeats a reviewed family's pattern for one more input
+  shape is pattern tier, and one family contract covers its slices
+  (protocol: "Gate Tiering", "Canonical Task Contracts").
 - End every commit body with `volume: prod +N test +N doc +N` (added lines from
   `git diff --numstat`: non-test `crates/**/src`, tests and `.miz`/`.toml`
   fixtures, `doc/`).
@@ -87,7 +91,11 @@ Its operational summary is:
   checks are edit-loop feedback; heavy groups are additional, not cumulative.
   Record deferred groups/reasons/deadlines and the trigger for each full run.
 - Run affected long tests immediately. Verification-policy/selection changes
-  or unbounded impact require full `cargo test` immediately.
+  or named unbounded impact require full `cargo test` immediately.
+- Full `cargo test` is not a per-task step. Run it only on a named cadence
+  trigger (tenth task, integration/exit, policy/selection change, full-failure
+  repair, named unbounded impact) and record the trigger. A family slice under
+  a frozen contract is bounded by its focused checks.
 - Count all repository-changing tasks, including docs. Full must pass before
   completing the tenth task since the last full success, and before shared
   push/merge, release, or crate/milestone exit.

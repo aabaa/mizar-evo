@@ -345,6 +345,15 @@ The contract must identify:
 - `doc/design/spec_coverage_audit.md` impact when there is one
 - required review roles, verification commands, and exit criteria
 
+A family contract owns an ordered list of pattern-tier slices (see Gate
+Tiering) that share one producer/test pattern: one `<task-id>`, one EN/JA
+pair within the 60-line limit, one checklist line per slice, and one
+crate-plan and crate-TODO link added when the family opens. Each slice is
+committed separately and named in its commit body; ticking its checklist
+line is the only per-slice documentation update unless an owner document's
+boundary changes. Module, harness, and plan documents are updated when the
+family opens and closes, not per slice.
+
 A contract never carries completion evidence, measured counts, digests, gate
 tallies, scores, review outcomes, model names, reasoning settings, or the
 next-task handoff. Those go in the commit body (see the `volume:` line in
@@ -541,6 +550,15 @@ test-runner threads and required test coverage.
   Missing or ambiguous full-success/count evidence requires a full run before
   further deferral. Only a full success covering all outstanding changes
   resets the count.
+- **Not a per-task step:** full `cargo test` runs only on one of the triggers
+  above (tenth task, integration/exit, policy/selection change, full-failure
+  repair, or impact that cannot be bounded), and the commit body names the
+  trigger. A task boundary, a review round, or caution alone is not a
+  trigger. "Cannot be bounded" must name the unbounded obligation; a slice
+  that extends an existing producer/test family under a frozen contract is
+  bounded by that family's focused checks. After a review fix, rerun only the
+  checks whose inputs the fix changed; a documentation-only fix reruns only
+  the documentation/ledger checks.
 
 Record the last full-success revision plus dirty-diff identity if applicable,
 outstanding task count, commands/results/log paths, and the reason each long
@@ -615,6 +633,36 @@ recovery, or public API of a semantic authority; soundness or fail-closed
 boundaries; or activation of a previously inactive case. When the tier is
 ambiguous, the task is full-gate.
 
+### Pattern gates (bounded repeat of a reviewed family)
+
+A task qualifies for the pattern tier when it repeats, for one further input
+shape, a producer/test pattern that a completed full-tier task in the same
+family already established: the contract names that predecessor; the change
+stays in the predecessor's owner module, its runner consumer, and their
+tests; it adds no public type, field, API, diagnostic, or semantic class
+beyond the predecessor's; and it touches no `doc/spec`, `.miz` expectation,
+trace status, or coverage credit (a new fixture of the same family may be
+activated). Transport of the next syntax element, witness form, or layout
+variant of an established family is the expected case.
+
+Pattern-tier requirements (all mandatory):
+
+1. a contract that names the predecessor and the one input shape added; a
+   family contract (see Canonical Task Contracts) may list several slices;
+2. one combined specification/test-intent and trust review before
+   implementation, and one combined implementation and test-sufficiency
+   review after it (re-review only on findings);
+3. one volume and scope review per three pattern slices, or immediately when
+   a slice exceeds any budget in Volume And Scope Review;
+4. required verification under [Verification Cadence](#verification-cadence);
+   the family's focused checks bound the impact, so full `cargo test` follows
+   the cadence triggers only;
+5. a task-only commit naming the tier, the predecessor, and the slice.
+
+Not required in the pattern tier: the nine-gate tally, the quality-score
+evaluation, a separate consistency review when no owner document changed,
+and frozen-doc prerequisite commits.
+
 ### Light gates (zero-credit structural transport)
 
 A task qualifies for the light tier only when it moves, links, archives,
@@ -643,11 +691,12 @@ repetition to "NO FINDINGS".
 
 ### One-way promotion rule
 
-Tiering is monotonic toward safety. The moment a task gains semantic credit
-or touches a protected surface — however small — it is promoted to full
-gates for its entire remaining scope, including work already done under the
-light tier, which must be re-reviewed at the full tier. A full-gate task is
-never demoted mid-task, and a light-tier declaration never authorizes the
+Tiering is monotonic toward safety. The moment a pattern- or light-tier
+task gains semantic credit, adds a public seam, or touches a protected
+surface — however small — it is promoted to full gates for its entire
+remaining scope, including work already done under the lower tier, which
+must be re-reviewed at the full tier. A full-gate task is never demoted
+mid-task, and a pattern- or light-tier declaration never authorizes the
 protected edits listed above.
 
 ## Crate Exit Gates
@@ -675,8 +724,9 @@ deferred with a reason.
 ## Quality Score
 
 After hard gates pass, a read-only review agent should assign a crate quality
-score out of 100. The score applies to full-tier work; a light-tier task (see
-Gate Tiering) requires its single equivalence review instead of a score. The crate is complete only if:
+score out of 100. The score applies to full-tier work; a pattern-tier task
+requires its two combined reviews and a light-tier task its single
+equivalence review instead of a score (see Gate Tiering). The crate is complete only if:
 
 ```text
 hard gates pass
