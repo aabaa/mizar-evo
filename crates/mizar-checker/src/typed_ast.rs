@@ -1929,13 +1929,17 @@ impl TypedAst {
         symbols: &mizar_resolve::env::SymbolEnv,
         scope: &mizar_resolve::names::ResolvedVariableScope,
     ) -> Result<Self, TypedAstError> {
-        let (statement, references, witnesses, canonical) =
+        let (statement, references, witnesses, mut canonical) =
             SourceStatementHandoff::from_original(source, symbols, scope)
                 .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        let source_nodes = canonical
+            .source_nodes
+            .take()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
         if self != canonical {
             return Err(TypedAstError::InvalidSourceStatement);
         }
-        self.install_source_nodes(source)?;
+        self.source_nodes = Some(source_nodes);
         self.source_statement = Some(statement);
         self.source_statement_references = references;
         self.source_statement_witnesses = witnesses;

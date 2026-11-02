@@ -6760,7 +6760,7 @@ impl TermFormulaChecker {
             },
         };
         let invalid = || SourceStatementError::DependencyMismatch;
-        let (bindings, _, typed) =
+        let (bindings, _, mut typed) =
             Self::check_source_theorem_equalities(source, symbols, scope).map_err(|_| invalid())?;
         if !source
             .arena()
@@ -6769,12 +6769,13 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
-        let mut sites = source
-            .arena()
+        typed.install_source_nodes(source).map_err(|_| invalid())?;
+        let source_nodes = typed.source_nodes().ok_or_else(invalid)?;
+        let sites = source_nodes
             .iter()
-            .filter(|(_, node)| {
+            .filter(|node| {
                 matches!(
-                    node.kind(),
+                    node.kind,
                     K::TheoremItem
                         | K::CompactStatement
                         | K::AssumptionStatement
@@ -6783,36 +6784,26 @@ impl TermFormulaChecker {
                 )
             })
             .collect::<Vec<_>>();
-        sites.sort_by_key(|(_, node)| match node.origin().anchor() {
-            SourceAnchor::Range(range) => range.start,
-            _ => usize::MAX,
-        });
-        let (theorem_id, theorem) = *sites.first().ok_or_else(invalid)?;
-        let K::Token(label) = source
-            .arena()
-            .node(theorem.children()[1])
-            .ok_or_else(invalid)?
-            .kind()
-        else {
-            return Err(invalid());
-        };
+        let theorem_row = *sites.first().ok_or_else(invalid)?;
+        let theorem = source.arena().node(theorem_row.site).ok_or_else(invalid)?;
+        let label = source_nodes
+            .iter()
+            .find(|node| node.site == theorem.children()[1])
+            .ok_or_else(invalid)?;
         let symbol = symbols
             .symbols()
             .iter()
-            .find(|entry| entry.primary_spelling() == label.text.as_ref())
+            .find(|entry| entry.primary_spelling() == label.spelling)
             .ok_or_else(invalid)?;
-        let SourceAnchor::Range(owner_range) = theorem.origin().anchor() else {
-            return Err(invalid());
-        };
         let mut input = SourceStatementHandoffInput {
             source_id: source.source_id(),
             module_id: source.module().clone(),
             owners: vec![SourceTheoremOwnerInput {
                 symbol: symbol.symbol().clone(),
                 contribution: symbol.contribution(),
-                site: TypedSiteRef::Node(TypedNodeId::new(theorem_id.index())),
-                source_range: *owner_range,
-                spelling: label.text.to_string(),
+                site: TypedSiteRef::Node(TypedNodeId::new(theorem_row.site.index())),
+                source_range: theorem_row.range,
+                spelling: label.spelling.clone(),
                 role: SourceTheoremRole::Theorem,
                 status: SourceTheoremStatus::Unmodified,
                 recovery: SourceStatementRecovery::Normal,
@@ -6825,11 +6816,10 @@ impl TermFormulaChecker {
         let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
         let primary = typed.source_term().ok_or_else(invalid)?;
         let mut witnesses = None;
-        for (source_ordinal, (id, node)) in sites.into_iter().enumerate() {
-            let SourceAnchor::Range(range) = node.origin().anchor() else {
-                return Err(invalid());
-            };
-            if node.kind() == &K::TakeStatement {
+        for (source_ordinal, row) in sites.into_iter().enumerate() {
+            let range = row.range;
+            if row.kind == K::TakeStatement {
+                let node = source.arena().node(row.site).ok_or_else(invalid)?;
                 if witnesses.is_some() {
                     return Err(invalid());
                 }
@@ -6841,6 +6831,10 @@ impl TermFormulaChecker {
                     .copied()
                     .enumerate()
                 {
+                    let witness_row = source_nodes
+                        .iter()
+                        .find(|node| node.site == witness_id)
+                        .ok_or_else(invalid)?;
                     let witness = source.arena().node(witness_id).ok_or_else(invalid)?;
                     let (name, expression_id) = match witness.children() {
                         [expression] => (None, *expression),
@@ -6849,7 +6843,7 @@ impl TermFormulaChecker {
                     };
                     let expression = source.arena().node(expression_id).ok_or_else(invalid)?;
                     let term_site = expression.children()[0];
-                    let (target, context, spelling) = if let Some((term_id, term)) = primary
+                    let (target, context) = if let Some((term_id, term)) = primary
                         .terms()
                         .iter()
                         .find(|(_, term)| term.site().node().index() == term_site.index())
@@ -6857,7 +6851,6 @@ impl TermFormulaChecker {
                         (
                             SourceStatementWitnessTermTarget::Primary(term_id),
                             term.context(),
-                            term.spelling(),
                         )
                     } else {
                         let (term_id, term) = typed
@@ -6873,26 +6866,19 @@ impl TermFormulaChecker {
                         (
                             SourceStatementWitnessTermTarget::SetTerm(term_id),
                             term.context(),
-                            term.spelling(),
                         )
-                    };
-                    let SourceAnchor::Range(witness_range) = witness.origin().anchor() else {
-                        return Err(invalid());
                     };
                     let item_names = match name {
                         Some(id) => {
-                            let name = source.arena().node(id).ok_or_else(invalid)?;
-                            let K::Token(token) = name.kind() else {
-                                return Err(invalid());
-                            };
-                            let SourceAnchor::Range(range) = name.origin().anchor() else {
-                                return Err(invalid());
-                            };
+                            let name = source_nodes
+                                .iter()
+                                .find(|node| node.site == id)
+                                .ok_or_else(invalid)?;
                             vec![SourceStatementWitnessNameInput {
                                 witness: SourceStatementWitnessId::new(ordinal),
-                                site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
-                                source_range: *range,
-                                spelling: token.text.to_string(),
+                                site: TypedSiteRef::Node(TypedNodeId::new(name.site.index())),
+                                source_range: name.range,
+                                spelling: name.spelling.clone(),
                                 recovery: SourceStatementRecovery::Normal,
                             }]
                         }
@@ -6902,16 +6888,13 @@ impl TermFormulaChecker {
                         owner: SourceTheoremOwnerId::new(0),
                         binding_context: context,
                         term: target,
-                        take_site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
-                        take_range: *range,
-                        site: TypedSiteRef::Node(TypedNodeId::new(witness_id.index())),
-                        source_range: *witness_range,
+                        take_site: TypedSiteRef::Node(TypedNodeId::new(row.site.index())),
+                        take_range: range,
+                        site: TypedSiteRef::Node(TypedNodeId::new(witness_row.site.index())),
+                        source_range: witness_row.range,
                         source_ordinal,
                         ordinal,
-                        spelling: item_names.first().map_or_else(
-                            || spelling.to_owned(),
-                            |name| format!("{} = {}", name.spelling, spelling),
-                        ),
+                        spelling: witness_row.spelling.clone(),
                         kind: if name.is_some() {
                             SourceStatementWitnessKind::Named
                         } else {
@@ -6939,21 +6922,6 @@ impl TermFormulaChecker {
                         && formula.source_range().end <= range.end
                 })
                 .ok_or_else(invalid)?;
-            let mut tokens = source
-                .arena()
-                .iter()
-                .filter_map(|(_, token_node)| {
-                    let K::Token(token) = token_node.kind() else {
-                        return None;
-                    };
-                    let SourceAnchor::Range(token_range) = token_node.origin().anchor() else {
-                        return None;
-                    };
-                    (token_range.start >= range.start && token_range.end <= range.end)
-                        .then_some((token_range.start, token.text.as_ref()))
-                })
-                .collect::<Vec<_>>();
-            tokens.sort_by_key(|(start, _)| *start);
             let statement = SourceStatementId::new(ordinal);
             let context = SourceStatementContextId::new(ordinal);
             let target = SourceStatementFormulaTarget::Atomic(formula_id);
@@ -6984,15 +6952,11 @@ impl TermFormulaChecker {
                 owner: SourceTheoremOwnerId::new(0),
                 context,
                 formula: target,
-                site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
-                source_range: *range,
+                site: TypedSiteRef::Node(TypedNodeId::new(row.site.index())),
+                source_range: range,
                 source_ordinal,
-                spelling: tokens
-                    .into_iter()
-                    .map(|(_, text)| text)
-                    .collect::<Vec<_>>()
-                    .join(" "),
-                kind: match node.kind() {
+                spelling: row.spelling.clone(),
+                kind: match row.kind {
                     K::TheoremItem => SourceStatementKind::TheoremProposition,
                     K::CompactStatement => SourceStatementKind::ProofStepProposition,
                     K::AssumptionStatement => SourceStatementKind::Assumption,
@@ -7003,7 +6967,7 @@ impl TermFormulaChecker {
             input.contexts.push(SourceStatementContextInput {
                 statement,
                 binding_context: formula.context(),
-                source_range: *range,
+                source_range: range,
                 visible_bindings: bindings
                     .contexts()
                     .get(formula.context())
@@ -7029,10 +6993,9 @@ impl TermFormulaChecker {
                     formula: target,
                 });
         }
-        let references = if source
-            .arena()
+        let references = if source_nodes
             .iter()
-            .any(|(_, node)| node.kind() == &K::CompactStatement)
+            .any(|node| node.kind == K::CompactStatement)
         {
             let (_, labels, resolution) =
                 mizar_resolve::symbols::source_proof_inputs(source, symbols)

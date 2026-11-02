@@ -1,6 +1,6 @@
 # Task VELOCITY-GENERIC-SOURCE-TRANSPORT: one producer and one oracle for original-source transport
 Canonical language: English; [Japanese pointer](../ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
-Status: in progress; steps 1-3 complete. Tier: full for steps 2-3; pattern tier for the family slices below. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
+Status: in progress; steps 1-3 complete. Tier: full for steps 2-3 and the initial shared native statement consumer; pattern tier for subsequent single-shape family slices. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
 Dependencies: VELOCITY-LARGE-FILE-SPLIT. Subsumes checker Task 281 ([QUALITY-EXACT-PROFILE-RETIREMENT](./QUALITY-EXACT-PROFILE-RETIREMENT.md)); its exit criterion is exit criterion 3 below.
 Readiness: step 1 froze the producer, boundary and oracle contract in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design) and the classification ledger `tests/coverage/source_transport_classification.tsv`; statement/witness migration may start.
 Authority: [source statement design](../../mizar-checker/en/source_statement.md); [resolved typed AST](../../mizar-checker/en/resolved_typed_ast.md); the specification sections cited by the existing per-element contracts; [authority order](../../autonomous_crate_development.md#authority-order).
@@ -16,6 +16,7 @@ Gap: `design_drift`. Original-source transport is implemented one syntax element
 - [x] step 1 design and classification ledger
 - [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
 - [x] step 3 generic runner oracle and metamorphic route
+- [x] initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

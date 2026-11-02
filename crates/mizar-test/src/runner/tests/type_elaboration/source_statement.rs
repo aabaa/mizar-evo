@@ -287,10 +287,38 @@ fn task258_native_output(
         &source, &symbols, &scope,
     )
     .expect("native equality base");
-    let typed = base
+    let typed = base.clone()
         .with_source_statement_from_original(&source, &symbols, &scope)
         .expect("native statement installation");
     let statement = typed.source_statement().expect("installed native statement");
+    let entries = typed.source_node_entries().expect("installed source table").collect::<Vec<_>>();
+    let mut preinstalled = base.clone();
+    preinstalled.install_source_nodes(&source).expect("independent canonical source table");
+    assert_eq!(preinstalled.source_node_entries().unwrap().collect::<Vec<_>>(), entries);
+    assert_eq!(preinstalled.with_source_statement_from_original(&source, &symbols, &scope),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+    assert_eq!(typed.clone().with_source_statement_from_original(&source, &symbols, &scope),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+    assert_eq!(base.with_source_statement_from_original(&source, &symbols, &scope).unwrap(), typed);
+    let sites = entries.iter().filter(|(_, kind, ..)| matches!(kind,
+        mizar_syntax::SurfaceNodeKind::TheoremItem | mizar_syntax::SurfaceNodeKind::CompactStatement
+        | mizar_syntax::SurfaceNodeKind::AssumptionStatement | mizar_syntax::SurfaceNodeKind::ConclusionStatement
+        | mizar_syntax::SurfaceNodeKind::TakeStatement)).collect::<Vec<_>>();
+    let mut statement_index = 0;
+    for (source_ordinal, entry) in sites.iter().enumerate() {
+        if matches!(entry.1, mizar_syntax::SurfaceNodeKind::TakeStatement) { continue; }
+        let row = statement.statements().get(mizar_checker::source_statement::SourceStatementId::new(statement_index)).unwrap();
+        assert_eq!((row.site().node().index(), row.source_range(), row.source_ordinal(), row.spelling()),
+            (entry.0.index(), entry.2, source_ordinal, entry.7));
+        assert_eq!(row.owner().index(), 0);
+        statement_index += 1;
+    }
+    assert_eq!(statement_index, statement.statements().len());
+    let owner = statement.owners().iter().next().unwrap().1;
+    assert_eq!((owner.site().node().index(), owner.source_range()), (sites[0].0.index(), sites[0].2));
+    let owner_label = &ast.nodes()[ast.nodes()[sites[0].0.index()].children[1].index()];
+    let mizar_syntax::SurfaceNodeKind::Token(label) = &owner_label.kind else { panic!("native theorem label") };
+    assert_eq!(owner.spelling(), label.text.as_ref());
     assert_eq!(typed.source_term().expect("native primary terms").references().iter()
         .map(|(_, reference)| (reference.lexical_scope().unwrap(), reference.use_ordinal(), reference.binding().index()))
         .collect::<Vec<_>>(), scope.references().iter()
@@ -326,6 +354,11 @@ fn task258_native_output(
         assert_eq!(row.take_range(), take.range);
         assert_eq!(row.ordinal(), ordinal);
         assert_eq!(row.source_range(), witness.range);
+        let entry = entries.iter().find(|entry| entry.0.index() == witness_id.index()).unwrap();
+        assert_eq!((entry.2, entry.3.map(|site| site.index()), entry.7),
+            (row.source_range(), Some(take_index), row.spelling()));
+        assert_eq!(row.owner().index(), 0);
+        assert_eq!(row.source_ordinal(), sites.iter().position(|entry| entry.0.index() == take_index).unwrap());
         match witness.children.as_slice() {
             [rhs] => {
                 assert!(matches!(ast.nodes()[rhs.index()].kind, mizar_syntax::ast::SurfaceNodeKind::TermExpression));
@@ -347,6 +380,9 @@ fn task258_native_output(
                 assert_eq!(name.source_range(), name_node.range);
                 assert_eq!(name.source_range().source_id, ast.source_id);
                 assert_eq!(name.spelling(), token.text.as_ref());
+                let entry = entries.iter().find(|entry| entry.0.index() == name.site().node().index()).unwrap();
+                assert_eq!((entry.2, entry.3.map(|site| site.index()), entry.7),
+                    (name.source_range(), Some(witness_id.index()), name.spelling()));
                 assert!(!typed.source_term().unwrap().terms().iter().any(|(_, term)| term.site() == name.site()));
                 assert_eq!(statement.binding_env().bindings().len(), 1);
                 named += 1;
