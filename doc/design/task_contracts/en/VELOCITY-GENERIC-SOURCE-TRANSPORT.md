@@ -18,7 +18,8 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
 - [x] step 3 generic runner oracle and metamorphic route
 - [x] initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
-- [x] finite enumeration witness: ordered references to the sole reserved set variable; numeric/grouped/named/multiple-witness forms deferred
+- [x] bare unnamed finite enumeration witness: ordered references to the sole reserved set variable
+- [x] unused named finite enumeration witness: fresh name, same reserved-reference elements, no binding activation
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

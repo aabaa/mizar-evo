@@ -2281,7 +2281,12 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .typed_ast
                 .source_statement_witnesses()
                 .is_some_and(|witnesses| {
-                    witnesses.names().is_empty()
+                    (witnesses.names().is_empty()
+                        || self.inputs.typed_ast.source_set_term().is_some_and(|sets| {
+                            sets.terms().iter().all(|(_, term)| {
+                                term.kind() == crate::source_set_term::SourceSetTermKind::Enumeration
+                            })
+                        }))
                         && witnesses.witnesses().len() == 1
                         && witnesses.witnesses().iter().all(|(_, witness)| {
                             matches!(

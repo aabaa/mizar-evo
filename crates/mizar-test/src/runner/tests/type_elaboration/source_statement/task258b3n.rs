@@ -686,6 +686,19 @@ fn task258b3n_selector_and_byte_subtree_near_misses_are_exact() {
                             assert_eq!(resolved.source_statement_witnesses(), Some(mixed));
                             assert!(typed.source_proof_local_declaration().is_none());
                             assert!(resolved.source_proof_local_declaration().is_none());
+                        } else if ordinal == 3 {
+                            // EN15.4.4/15.11.5 retain a fresh unused name over the enumeration.
+                            let (typed, resolved) = task258_native_output(&near_ast, &near_module);
+                            let named = typed.source_statement_witnesses().unwrap();
+                            assert_eq!((named.witnesses().len(), named.names().len()), (1, 1));
+                            let row = named.witnesses().iter().next().unwrap().1;
+                            assert_eq!(
+                                row.kind(),
+                                mizar_checker::source_statement::SourceStatementWitnessKind::Named
+                            );
+                            assert_eq!(resolved.source_statement_witnesses(), Some(named));
+                            assert!(typed.source_proof_local_declaration().is_none());
+                            assert!(resolved.source_proof_local_declaration().is_none());
                         } else {
                             assert!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &env, &scope).is_err(), "native near miss {ordinal} bounded intake refusal");
                         }

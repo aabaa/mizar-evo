@@ -6860,7 +6860,9 @@ impl TermFormulaChecker {
                             .iter()
                             .find(|(_, term)| term.site().node().index() == term_site.index())
                             .ok_or_else(invalid)?;
-                        if name.is_some() {
+                        if name.is_some()
+                            && term.kind() != crate::source_set_term::SourceSetTermKind::Enumeration
+                        {
                             return Err(invalid());
                         }
                         (
@@ -7365,8 +7367,9 @@ impl TermFormulaChecker {
                 let [_, witness, _] = take.children() else {
                     return Err(invalid());
                 };
-                let [operand] = node(*witness)?.children() else {
-                    return Err(invalid());
+                let operand = match node(*witness)?.children() {
+                    [operand] | [_, _, operand] => operand,
+                    _ => return Err(invalid()),
                 };
                 let [term] = node(*operand)?.children() else {
                     return Err(invalid());
@@ -18616,7 +18619,6 @@ impl SourceVariableSemanticsChecker {
                         || enumerations != [*term]
                         || takes.len() != 1
                         || take.children().len() != 3
-                        || node(witness)?.children() != [operand]
                         || node(operand)?.kind() != &K::TermExpression
                         || source
                             .arena()

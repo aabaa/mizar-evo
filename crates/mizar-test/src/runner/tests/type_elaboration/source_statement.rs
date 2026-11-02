@@ -409,20 +409,24 @@ fn source_statement_native_finite_enumeration_original_transport() {
     use mizar_syntax::SurfaceNodeKind as K;
     // EN13.4.1/13.8.6: ordered finite term lists preserve occurrences, not set deduplication.
     for count in 0..=3 {
-        for variant in 0..3 {
-            let name = if variant == 0 { "x" } else { "parcel" };
-            let elements = vec![name; count].join(if variant == 2 {
+        for variant in 0..6 {
+            let named = variant >= 3;
+            let layout = variant % 3;
+            let name = if layout == 0 { "x" } else { "parcel" };
+            let elements = vec![name; count].join(if layout == 2 {
                 ", :: next occurrence\n"
             } else {
                 ", "
             });
+            // EN15.4.4/15.11.5: the unused name is syntax; activation remains downstream.
+            let prefix = if named { "item = " } else { "" };
             let text = format!(
-                "reserve {name} for set;\ntheorem Finite{variant}: {name} = {name} proof\n take {{{elements}}};\n thus {name} = {name}; end;"
+                "reserve {name} for set;\ntheorem Finite{variant}: {name} = {name} proof\n take {prefix}{{{elements}}};\n thus {name} = {name}; end;"
             );
             let (ast, module, _, _, diagnostics) =
                 task253_ast_from_source_text_with_diagnostic_count(
                     &text,
-                    47_000 + count * 3 + variant,
+                    47_000 + count * 6 + variant,
                 );
             assert_eq!(diagnostics, 0);
             let (source, symbols) =
@@ -587,6 +591,58 @@ fn source_statement_native_finite_enumeration_original_transport() {
                 ),
                 (1, 2)
             );
+            let witnesses = typed.source_statement_witnesses().unwrap();
+            assert_eq!(witnesses.names().len(), usize::from(named));
+            if named {
+                let witness = ast
+                    .node_views()
+                    .find(|node| node.kind() == &K::Witness)
+                    .unwrap();
+                for child in witness.children() {
+                    let entry = typed
+                        .source_node_entries()
+                        .unwrap()
+                        .find(|entry| Some(entry.site()) == source.resolved_node_for(*child))
+                        .unwrap();
+                    assert_eq!(
+                        (entry.parent(), entry.range()),
+                        (
+                            source.resolved_node_for(witness.id()),
+                            ast.node(*child).unwrap().range
+                        )
+                    );
+                }
+            }
+            assert!(
+                statements
+                    .binding_env()
+                    .bindings()
+                    .iter()
+                    .all(|(_, row)| row.spelling != "item")
+            );
+            assert!(
+                primary
+                    .terms()
+                    .iter()
+                    .all(|(_, row)| row.spelling() != "item")
+            );
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                "theorems.equality.unsupported_source_types"
+            );
+            for check in [
+                TermFormulaChecker::check_source_theorem_equalities_with_expression_metadata,
+                TermFormulaChecker::check_source_theorem_equalities_with_local_contexts,
+                TermFormulaChecker::check_source_theorem_equalities_with_scoped_inference,
+            ] {
+                assert_eq!(
+                    check(&source, &symbols, &scope).unwrap_err(),
+                    "theorems.equality.unsupported_source_types"
+                );
+            }
             assert_eq!(statements.statements().len(), 2);
             assert_eq!(
                 typed
@@ -634,7 +690,15 @@ fn source_statement_native_finite_enumeration_original_transport() {
         "{x, 0, x}",
         "{x, (x), x}",
         "{x, {x}, x}",
-        "item = {x, x}",
+        "item = {x, 0}",
+        "item = {x, (x)}",
+        "item = {x, {x}}",
+        "item = ({x})",
+        "item = {x}, x",
+        "item = {x where x is set}",
+        "item = the set",
+        "x = {x, x}",
+        "item = {item, x}",
         "{x, x}, {x}",
         "{x where x is set}",
     ]
@@ -651,13 +715,38 @@ fn source_statement_native_finite_enumeration_original_transport() {
             mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
                 .unwrap()
                 .unwrap();
-        let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+        let Ok((scope, _, _)) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols) else {
+            assert_eq!(witness, "item = {item, x}");
+            continue;
+        };
         assert_eq!(
             TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
                 .unwrap_err(),
             "theorems.equality.unsupported_source_types",
             "{witness}"
         );
+    }
+    for (index, witness) in ["item = {x,}", "item = {x", "item ="]
+        .into_iter()
+        .enumerate()
+    {
+        let text = format!(
+            "reserve x for set; theorem Malformed: x = x proof take {witness}; thus x = x; end;"
+        );
+        let (ast, module, _, _, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&text, 49_000 + index);
+        assert!(diagnostics > 0);
+        assert!(ast.node_views().any(|node| node.is_recovered()));
+        if let Ok(Some((source, symbols))) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
+            && let Ok((scope, _, _)) =
+                mizar_resolve::symbols::source_proof_inputs(&source, &symbols)
+        {
+            assert!(
+                TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                    .is_err()
+            );
+        }
     }
 }
 

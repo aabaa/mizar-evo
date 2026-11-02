@@ -1795,7 +1795,52 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
             frontend.source.clone(),
         );
         let lower = TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope);
-        if name == "multiple elements" {
+        if name == "named" {
+            // EN15.4.4/15.11.5 retain the identifier without abbreviation activation.
+            let (_, inference, base) = lower.as_ref().map_err(|error| error.to_owned())?;
+            let pair = base
+                .clone()
+                .with_source_statement_from_original(&source, &symbols, &scope)
+                .expect("named native pair");
+            let witnesses = pair.source_statement_witnesses().unwrap();
+            let row = witnesses.witnesses().iter().next().unwrap().1;
+            assert_eq!(row.kind(), SourceStatementWitnessKind::Named);
+            assert_eq!(witnesses.names().len(), 1);
+            assert_eq!(
+                witnesses
+                    .names()
+                    .get(row.name().unwrap())
+                    .unwrap()
+                    .spelling(),
+                "item"
+            );
+            assert_eq!(pair.source_set_term(), base.source_set_term());
+            assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
+            let resolved = super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                &pair,
+                Vec::new(),
+            )?;
+            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+            assert_eq!(resolved.source_statement(), pair.source_statement());
+            assert!(
+                resolved.checked_formulas().is_empty()
+                    && resolved.statement_semantics().is_empty()
+                    && resolved.checked_proofs().is_empty()
+            );
+            assert_eq!(
+                super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &pair.clone(),
+                    Vec::new()
+                )?,
+                resolved
+            );
+            assert_eq!(
+                base.clone()
+                    .with_source_statement_from_original(&source, &symbols, &scope)
+                    .expect("named native pair"),
+                pair
+            );
+        } else if name == "multiple elements" {
             // EN13.4.1/13.8.6 retain both occurrences in the finite term list.
             let (_, inference, base) = lower.as_ref().map_err(|error| error.to_owned())?;
             let primary = base.source_term().unwrap();
