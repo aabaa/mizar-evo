@@ -41,6 +41,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] isolated Given-condition syntax: actual condition-reference sites and raw hashes; preserve GC/GCT/GCU canonical dependencies
 - [x] descendant Given/Now/Set-chain syntax: generic sites and ordering; preserve canonical donors and deferred Set/capture semantics
 - [x] proof-local Let type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
+- [x] proof-local Given type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger

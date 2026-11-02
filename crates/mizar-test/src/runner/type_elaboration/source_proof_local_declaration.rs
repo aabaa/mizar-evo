@@ -2430,7 +2430,12 @@ fn source_proof_local_given_type_output_impl(
                 _ => return Err("Task269GT reserve type range is missing".to_owned()),
             };
             let local_range = lower.type_range();
-            let arena = task269gt_arena(ast.source_id, mutation)?;
+            let root_range = ast
+                .root()
+                .and_then(|root| ast.node(root))
+                .ok_or_else(|| "Task269GT source root is missing".to_owned())?
+                .range;
+            let arena = task269gt_arena(reserve_range, local_range, root_range, mutation)?;
             let mut input =
                 task269gt_type_input(ast.source_id, module.clone(), reserve_range, local_range);
             if mutation == SourceProofLocalGivenTypeRouteMutation::WrongDependencyModule {
@@ -2505,18 +2510,16 @@ fn task269gt_type_input(
 }
 
 fn task269gt_arena(
-    source_id: mizar_session::SourceId,
+    reserve_range: SourceRange,
+    local_range: SourceRange,
+    root_range: SourceRange,
     mutation: SourceProofLocalGivenTypeRouteMutation,
 ) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
     let reserve = builder
         .push(TypedNode::new(
             "source.proof-local.given.reserve-type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 14,
-                end: 17,
-            }),
+            SourceAnchor::Range(reserve_range),
         ))
         .map_err(|error| error.to_string())?;
     let local = builder
@@ -2526,22 +2529,14 @@ fn task269gt_arena(
             } else {
                 "source.proof-local.given.type"
             },
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 84,
-                end: 87,
-            }),
+            SourceAnchor::Range(local_range),
         ))
         .map_err(|error| error.to_string())?;
     let root = builder
         .push(
             TypedNode::new(
                 "source.proof-local.given.type-root",
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 128,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![reserve, local]),
         )
