@@ -764,18 +764,10 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
         )
         .is_none()
     );
-    let b1a = source_statement_output_with_source(
-        &b1a_ast,
-        b1a_module,
-        &b1a_symbols,
-        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-    )
-    .expect("B1A compatibility selector")
-    .expect("B1A compatibility output");
+    let b1a = task258b3m2b2b1a_lower_inputs(&b1a_ast, &b1a_module, &b1a_symbols);
     assert_eq!(
-        b1a.typed_ast
-            .source_application()
-            .expect("B1A application")
+        b1a.application
+            .expect("B1A lower application")
             .wrappers()
             .len(),
         0
@@ -849,17 +841,9 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
     .expect("foreign lower capture");
     let (wrong_arena_ast, wrong_arena_module, wrong_arena_symbols) =
         task258b3m2b2b1a_fixture(258_985);
-    let wrong_arena = source_statement_output_with_source(
-        &wrong_arena_ast,
-        wrong_arena_module,
-        &wrong_arena_symbols,
-        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-    )
-    .expect("bare selector")
-    .expect("bare output")
-    .typed_ast
-    .nodes()
-    .clone();
+    let wrong_arena =
+        task258b3m2b2b1a_lower_inputs(&wrong_arena_ast, &wrong_arena_module, &wrong_arena_symbols)
+            .arena;
     let stale_binding_env = stale.binding_env;
     let stale_primary = stale.primary;
     let stale_application = stale.application.expect("foreign application");
@@ -1158,16 +1142,7 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
     }
 
     let (b1a_ast, b1a_module, b1a_symbols) = task258b3m2b2b1a_fixture(259_008);
-    assert!(
-        source_statement_output_with_source(
-            &b1a_ast,
-            b1a_module,
-            &b1a_symbols,
-            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-        )
-        .expect("canonical B1A selector")
-        .is_ok()
-    );
+    task258b3m2b2b1a_lower_inputs(&b1a_ast, &b1a_module, &b1a_symbols);
 }
 
 #[test]
@@ -1206,6 +1181,44 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
             extract_wrapped_application_witness_source_statement(&ast, source).is_none(),
             "legacy family {ordinal} matched B1B1"
         );
+        if source == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
+            let bare = task258b3m2b2b1a_lower_inputs(&ast, &module, &symbols);
+            for (primary, bindings, arena) in [
+                (&bare.primary, &b1b1.binding_env, &b1b1.arena),
+                (&b1b1.primary, &bare.binding_env, &bare.arena),
+            ] {
+                assert!(
+                    matches!(
+                        mizar_checker::source_term::SourcePrimaryTermProducer::build(
+                            task258b3m2a_primary_input(primary),
+                            bindings,
+                            arena,
+                        ),
+                        Err(mizar_checker::source_term::SourcePrimaryTermError::InvalidTransaction)
+                    ),
+                    "family {ordinal} bare lower handoff order"
+                );
+            }
+            let replay = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+                &b1b1_ast,
+                b1b1_module.clone(),
+                &b1b1_symbols,
+                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
+                |symbols| symbols,
+            )
+            .expect("wrapped extraction")
+            .expect("wrapped replay lower capture");
+            assert_eq!(format!("{replay:?}"), b1b1_baseline);
+            assert_eq!(
+                (
+                    b1b1_ast.snapshot_text(),
+                    b1b1_module.clone(),
+                    b1b1_symbols.clone()
+                ),
+                before
+            );
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2A_TEXT {
             let before = (ast.snapshot_text(), module.clone(), symbols.clone());
             assert!(extract_numeral_witness_source_statement(&ast, source).is_some());

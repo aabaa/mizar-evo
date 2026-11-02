@@ -3071,9 +3071,11 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        let application_profile = statements.is_task_258b3m2b2b1a_profile();
+        #[cfg(not(test))]
+        let application_profile = false;
         #[cfg(test)]
-        let application_profile = application_profile || statements.is_task_258b3m2b2b1b1_profile();
+        let application_profile =
+            statements.is_task_258b3m2b2b1a_profile() || statements.is_task_258b3m2b2b1b1_profile();
         if !application_profile {
             return Err(TypedAstError::InvalidSourceStatement);
         }

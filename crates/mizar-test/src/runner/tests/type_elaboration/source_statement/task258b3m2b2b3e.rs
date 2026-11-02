@@ -1055,18 +1055,9 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        source_statement_output_with_source(
-            &case_ast,
-            case_module,
-            &case_symbols,
-            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-        )
-        .expect("application selector")
-        .expect("application route")
-        .typed_ast
-        .source_application()
-        .expect("application")
-        .clone()
+        task258b3m2b2b1a_lower_inputs(&case_ast, &case_module, &case_symbols)
+            .application
+            .expect("genuine bare application")
     };
     let structure = {
         let (case_ast, case_module, _, case_symbols, diagnostics) =
@@ -1167,6 +1158,10 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
+            task258b3m2b2b1a_lower_inputs(&case_ast, &case_module, &case_symbols);
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B3A_TEXT
             || source == SOURCE_STATEMENT_B3M2B2B3C_TEXT
             || source == SOURCE_STATEMENT_B3M2B2B3D_TEXT

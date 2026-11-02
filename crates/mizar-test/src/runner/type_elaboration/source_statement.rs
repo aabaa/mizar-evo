@@ -273,6 +273,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2A_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B1A_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -1956,7 +1957,9 @@ const SOURCE_STATEMENT_B3M2A_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B3M2B1_LABEL: &str = "FormulaStatementParenthesizedWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2A_LABEL: &str = "FormulaStatementNestedParenthesizedWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B1A_LABEL: &str = "FormulaStatementApplicationWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B1A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementApplicationWitnessSmoke : x = x proof take 1 ++ 2 ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2193,6 +2196,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2AExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B1AExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2469,6 +2473,7 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B1AExtraction) -> Self {
         Self {
@@ -2870,6 +2875,7 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
 
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
@@ -4643,6 +4649,7 @@ pub(in crate::runner) fn extract_nested_parenthesized_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_application_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13523,15 +13530,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
-        return source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
 
     None
 }
@@ -14493,7 +14491,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_resolver_mutatio
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3M2B2B1ARouteInputs, String>> {
     let extracted = extract_application_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14504,15 +14502,29 @@ pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b1a_output(
+    let mut captured = None;
+    let result = build_source_statement_witness_output_with_controls(
         ast,
         module,
         &symbols,
-        extracted,
+        extracted.into(),
         |_| {},
-    ))
+        None,
+        |inputs| captured = Some(inputs.clone()),
+    );
+    Some(match captured {
+        Some(inputs) => {
+            assert_eq!(
+                result.expect_err("retired raw profile"),
+                "source statement dependency mismatch"
+            );
+            Ok(inputs)
+        }
+        None => Err(result.expect_err("lower producer refused before capture")),
+    })
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16556,6 +16568,7 @@ fn build_source_statement_b3m2a_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b1a_output(
     ast: &SurfaceAst,
     module: ModuleId,

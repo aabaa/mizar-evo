@@ -26,6 +26,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] dormant unnamed comprehension witness: retire its raw profile into private tests; generator and proof semantics remain deferred
 - [x] dormant numeric enumeration witness: retire its raw profile into private tests; numeric payload and witness semantics remain deferred
 - [x] dormant wrapped application witness: retire its raw profile into private tests; bare application and lower APIs remain unchanged
+- [x] dormant bare application witness: retire its raw profile into private tests; preserve authenticated lower donors and native paths
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

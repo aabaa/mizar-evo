@@ -1334,19 +1334,10 @@ fn task258b3m2b2b2a_family_and_active_route_isolation_is_atomic() {
     }
     let (application_ast, application_module, application_symbols) =
         task258b3m2b2b1a_fixture(259_105);
-    let application_output = source_statement_output_with_source(
-        &application_ast,
-        application_module,
-        &application_symbols,
-        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-    )
-    .expect("application selector")
-    .expect("application output");
-    let application = application_output
-        .typed_ast
-        .source_application()
-        .expect("application")
-        .clone();
+    let application =
+        task258b3m2b2b1a_lower_inputs(&application_ast, &application_module, &application_symbols)
+            .application
+            .expect("genuine bare application");
     let error = source_statement_b3m2b2b2a_output_with_mutation(
         &ast,
         module.clone(),
@@ -1374,6 +1365,10 @@ fn task258b3m2b2b2a_family_and_active_route_isolation_is_atomic() {
             task253_ast_from_source_text(source, 259_120 + source.len());
         let family_symbols =
             augment_type_elaboration_import_summaries(&family_ast, &family_module, family_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
+            task258b3m2b2b1a_lower_inputs(&family_ast, &family_module, &family_symbols);
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B1B1_TEXT {
             task258b3m2b2b1b1_assert_retired(&family_ast, &family_module, &family_symbols);
             continue;

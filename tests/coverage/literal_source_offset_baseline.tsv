@@ -7,7 +7,7 @@ crates/mizar-checker/src/source_mode_definition.rs	11
 crates/mizar-checker/src/source_predicate_definition.rs	13
 crates/mizar-checker/src/source_proof_local_declaration.rs	67
 crates/mizar-checker/src/source_property_implementation.rs	9
-crates/mizar-checker/src/source_statement.rs	102
+crates/mizar-checker/src/source_statement.rs	77
 crates/mizar-checker/src/source_structure_definition.rs	2
 crates/mizar-checker/src/source_term.rs	7
 crates/mizar-checker/src/source_type.rs	15
@@ -24,6 +24,6 @@ crates/mizar-test/src/runner/type_elaboration/source_context.rs	1
 crates/mizar-test/src/runner/type_elaboration/source_mode_definition.rs	26
 crates/mizar-test/src/runner/type_elaboration/source_predicate_definition.rs	27
 crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs	34
-crates/mizar-test/src/runner/type_elaboration/source_statement.rs	121
+crates/mizar-test/src/runner/type_elaboration/source_statement.rs	117
 crates/mizar-test/src/runner/type_elaboration/source_structure.rs	13
 crates/mizar-test/src/runner/type_elaboration/source_structure_definition.rs	3

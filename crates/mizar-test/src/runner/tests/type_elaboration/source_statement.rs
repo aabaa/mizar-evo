@@ -1345,6 +1345,82 @@ fn task258b3m2b2b1a_fixture(
     (ast, module, symbols)
 }
 
+fn task258b3m2b2b1a_lower_inputs(
+    ast: &SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &SymbolEnv,
+) -> SourceStatementB3M2B2B1ARouteInputs {
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    let capture = || {
+        source_statement_b3m2b2b1a_output_with_resolver_mutation(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+            |symbols| symbols,
+        )
+        .expect("authentic bare extraction")
+        .expect("authenticated bare lower capture")
+    };
+    let lower = capture();
+    assert!(
+        source_statement_output_with_source(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        source_statement_transport_detail_keys(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+        )
+        .is_none()
+    );
+    assert_eq!(
+        source_statement_b3m2b2b1a_output_with_mutation(
+            ast,
+            module.clone(),
+            symbols,
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+            |_| {},
+        )
+        .expect("authentic bare extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
+    );
+    let application = lower
+        .application
+        .as_ref()
+        .expect("genuine bare application");
+    assert_eq!(
+        (
+            application.applications().len(),
+            application.wrappers().len()
+        ),
+        (1, 0)
+    );
+    assert_eq!(
+        application
+            .applications()
+            .get(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
+            .expect("bare lower application 0")
+            .form(),
+        mizar_checker::source_application::SourceFunctorApplicationForm::Infix,
+    );
+    assert!(lower.structure.is_none() && lower.set_term.is_none());
+    assert_eq!(format!("{:?}", capture()), format!("{lower:?}"));
+    assert_eq!(
+        (ast.snapshot_text(), module.clone(), symbols.clone()),
+        before
+    );
+    lower
+}
+
 fn task258b3m2b2b1b1_fixture(
     source_ordinal: usize,
 ) -> (

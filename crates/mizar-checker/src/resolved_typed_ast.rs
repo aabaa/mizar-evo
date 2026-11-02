@@ -3052,10 +3052,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .nodes()
                     .iter()
                     .any(|(_, node)| node.kind.as_str() == "CompactStatement");
-            let application_witness_profile = source_statement.is_task_258b3m2b2b1a_profile();
+            #[cfg(not(test))]
+            let application_witness_profile = false;
             #[cfg(test)]
-            let application_witness_profile =
-                application_witness_profile || source_statement.is_task_258b3m2b2b1b1_profile();
+            let application_witness_profile = source_statement.is_task_258b3m2b2b1a_profile()
+                || source_statement.is_task_258b3m2b2b1b1_profile();
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()

@@ -105,6 +105,33 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
             &fixture.arena,
         )
         .expect("revalidation");
+    let typed = fixture
+        .empty_typed()
+        .with_source_application_statement_witnesses(
+            fixture.application.clone(),
+            statement.clone(),
+            baseline.clone(),
+        )
+        .expect("baseline installation");
+    let assert_clean_replay = || {
+        let replay_statement = fixture.statement();
+        assert_eq!(replay_statement, statement);
+        let replay = fixture
+            .witnesses(&replay_statement, fixture.witness_input())
+            .expect("pristine witness replay");
+        assert_eq!(replay, baseline);
+        assert_eq!(
+            fixture
+                .empty_typed()
+                .with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    replay_statement,
+                    replay,
+                )
+                .expect("whole installation replay"),
+            typed,
+        );
+    };
 
     for mutate in [
         |row: &mut SourceStatementWitnessInput| {
@@ -116,16 +143,21 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
         },
         |row: &mut SourceStatementWitnessInput| row.binding_context = BindingContextId::new(0),
         |row: &mut SourceStatementWitnessInput| row.site = node(47),
+        |row: &mut SourceStatementWitnessInput| row.source_range.start += 1,
+        |row: &mut SourceStatementWitnessInput| row.spelling.push('x'),
+        |row: &mut SourceStatementWitnessInput| row.source_ordinal = 0,
         |row: &mut SourceStatementWitnessInput| row.take_site = node(48),
     ] {
         let mut input = fixture.witness_input();
         mutate(&mut input.witnesses[0]);
+        assert_ne!(input, fixture.witness_input());
         assert_eq!(
             fixture.witnesses(&statement, input),
             Err(SourceStatementWitnessError::InvalidWitness {
                 witness: SourceStatementWitnessId::new(0),
             })
         );
+        assert_clean_replay();
     }
     let mut dependency_before_aggregate = fixture.witness_input();
     dependency_before_aggregate.source_id = source_id(999_198);
@@ -402,6 +434,18 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
             ("recovery", recovery_mutated),
             ("children", children_mutated),
         ] {
+            assert_ne!(mutated, fixture.arena, "node {index} {field} mutation");
+            assert_eq!(
+                SourceStatementWitnessProducer::build_with_application(
+                    fixture.witness_input(),
+                    &statement,
+                    &fixture.primary,
+                    &fixture.application,
+                    &mutated,
+                ),
+                Err(SourceStatementWitnessError::DependencyMismatch),
+                "node {index} {field} constructor",
+            );
             assert!(
                 baseline
                     .validate_installation_with_application(
@@ -415,6 +459,7 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
                     .is_err(),
                 "node {index} {field}"
             );
+            assert_clean_replay();
         }
     }
     let wrong_root = TypedArena::try_new(
@@ -422,6 +467,17 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
         fixture.arena.iter().map(|(_, row)| row.clone()).collect(),
     )
     .expect("wrong-root arena remains structurally valid");
+    assert_ne!(wrong_root, fixture.arena);
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_application(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &fixture.application,
+            &wrong_root,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
     assert!(
         baseline
             .validate_installation_with_application(
@@ -434,6 +490,7 @@ fn task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fa
             )
             .is_err()
     );
+    assert_clean_replay();
 }
 
 #[test]

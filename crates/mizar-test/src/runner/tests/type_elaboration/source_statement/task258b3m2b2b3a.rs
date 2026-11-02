@@ -1508,18 +1508,10 @@ fn task258b3m2b2b3a_family_and_active_route_isolation_is_atomic() {
     let (ast, module, symbols, b3a) = task258b3m2b2b3a_lower_inputs(259_420);
     let (application_ast, application_module, application_symbols) =
         task258b3m2b2b1a_fixture(259_420);
-    let application = source_statement_output_with_source(
-        &application_ast,
-        application_module.clone(),
-        &application_symbols,
-        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-    )
-    .expect("application selector")
-    .expect("application")
-    .typed_ast
-    .source_application()
-    .expect("application handoff")
-    .clone();
+    let application =
+        task258b3m2b2b1a_lower_inputs(&application_ast, &application_module, &application_symbols)
+            .application
+            .expect("genuine bare application");
     let (structure_ast, structure_module, structure_symbols) = task258b3m2b2b2a_fixture(259_420);
     let structure = source_statement_output_with_source(
         &structure_ast,
@@ -1636,6 +1628,10 @@ fn task258b3m2b2b3a_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
+            task258b3m2b2b1a_lower_inputs(&case_ast, &case_module, &case_symbols);
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
             let before = (
                 case_ast.snapshot_text(),
