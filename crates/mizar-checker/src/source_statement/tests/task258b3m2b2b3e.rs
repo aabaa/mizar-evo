@@ -330,6 +330,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         match task258b3m2b2b3d_mutated_binding_env(&fixture.bindings, field) {
             Err(_) => own_stage[0] += 1,
             Ok(bindings) => {
+                assert_ne!(
+                    bindings.debug_text(),
+                    fixture.bindings.debug_text(),
+                    "Task48 field {field} handoff delta"
+                );
                 assert_eq!(
                     SourceStatementProducer::build(
                         fixture.statement_input(),
@@ -353,6 +358,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         match SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena) {
             Err(_) => own_stage[1] += 1,
             Ok(primary) => {
+                assert_ne!(
+                    primary.debug_text(),
+                    fixture.primary.debug_text(),
+                    "Task252 field {field} handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -383,6 +393,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         ) {
             Err(_) => own_stage[2] += 1,
             Ok(set_terms) => {
+                assert_ne!(
+                    set_terms.debug_text(),
+                    fixture.set_terms.debug_text(),
+                    "Task255 field {field} handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -420,6 +435,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         ) {
             Err(_) => own_stage[3] += 1,
             Ok(atomic) => {
+                assert_ne!(
+                    atomic.debug_text(),
+                    fixture.atomic.debug_text(),
+                    "Task256 field {field} handoff delta"
+                );
                 assert_eq!(
                     SourceStatementProducer::build(
                         fixture.statement_input(),
@@ -450,6 +470,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         ) {
             Err(_) => own_stage[4] += 1,
             Ok(mutated_statement) => {
+                assert_ne!(
+                    mutated_statement.debug_text(),
+                    statement.debug_text(),
+                    "Task258 field {field} handoff delta"
+                );
                 assert_eq!(
                     witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -479,6 +504,11 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         ) {
             Err(_) => own_stage[5] += 1,
             Ok(mutated_witnesses) => {
+                assert_ne!(
+                    mutated_witnesses.debug_text(),
+                    witnesses.debug_text(),
+                    "B3E witness field {field} handoff delta"
+                );
                 assert_eq!(
                     mutated_witnesses.validate_installation_with_set_term(
                         fixture.source,
@@ -520,32 +550,45 @@ fn task258b3m2b2b3e_dependencies_generator_precedence_and_all_nodes_fail_closed(
         "at least one well-formed mutation must reach the B3E guard"
     );
 
-    for field in [11, 12, 13, 21, 23, 34, 35, 36, 39, 40, 41, 42] {
-        let mut input = B3M2B2B3EFixture::set_input(fixture.source, &fixture.module);
-        task258b3m2b2b3e_mutate_set_input(&mut input, field);
-        if let Ok(near_miss) = SourceSetTermProducer::build(
-            input,
-            &fixture.bindings,
+    let mut renamed_input = B3M2B2B3EFixture::set_input(fixture.source, &fixture.module);
+    renamed_input.generators[0].spelling = "candidate256".to_owned();
+    renamed_input.terms[0].spelling = "{ 3 where candidate256 is set }".to_owned();
+    let renamed_set_terms = SourceSetTermProducer::build(
+        renamed_input,
+        &fixture.bindings,
+        &fixture.primary,
+        None,
+        None,
+        &fixture.arena,
+    )
+    .expect("coherent generator rename remains valid lower syntax metadata");
+    assert_ne!(
+        renamed_set_terms.debug_text(),
+        fixture.set_terms.debug_text()
+    );
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_set_term(
+            fixture.witness_input(),
+            &statement,
             &fixture.primary,
-            None,
-            None,
+            &renamed_set_terms,
             &fixture.arena,
-        ) {
-            assert_eq!(
-                witnesses.validate_installation_with_set_term(
-                    fixture.source,
-                    &fixture.module,
-                    &statement,
-                    &fixture.primary,
-                    Some(&near_miss),
-                    &fixture.arena,
-                ),
-                Err(SourceStatementWitnessError::DependencyMismatch),
-                "post-auth near miss {field}"
-            );
-        }
-        validate(&fixture.arena).expect("near-miss replay");
-    }
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_eq!(
+        witnesses.validate_installation_with_set_term(
+            fixture.source,
+            &fixture.module,
+            &statement,
+            &fixture.primary,
+            Some(&renamed_set_terms),
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch)
+    );
+    assert_eq!(fixture.witnesses(&statement), Ok(witnesses.clone()));
+    validate(&fixture.arena).expect("pristine installation replay");
     let mut dependency_before_aggregate = fixture.witness_input();
     dependency_before_aggregate.source_id = source_id(999_248);
     dependency_before_aggregate.witnesses.clear();

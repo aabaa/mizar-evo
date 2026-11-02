@@ -1740,6 +1740,34 @@ fn task258b3m2b2b3_family_debug(family: usize, ordinal: usize) -> String {
         assert_eq!((ast.snapshot_text(), module, symbols), before);
         return format!("retired Qua: {error}; {source}");
     }
+    if family == 4 {
+        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+        assert!(extract_comprehension_witness_source_statement(&ast, source).is_some());
+        assert!(
+            source_statement_output_with_source(&ast, module.clone(), &symbols, source).is_none()
+        );
+        assert!(
+            source_statement_transport_detail_keys(&ast, module.clone(), &symbols, source)
+                .is_none()
+        );
+        let mut captured = None;
+        let error = source_statement_b3m2b2b3e_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            source,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic retired Comprehension extraction")
+        .expect_err("retired raw profile");
+        assert_eq!(error, "source statement dependency mismatch");
+        assert_eq!((ast.snapshot_text(), module, symbols), before);
+        return format!(
+            "retired Comprehension: {error}; {:?}",
+            captured.expect("genuine lower capture")
+        )
+        .replace(&ordinal.to_string(), "<ordinal>");
+    }
     if family == 1 || family == 2 {
         let before = (ast.snapshot_text(), module.clone(), symbols.clone());
         let (typed, resolved) = task258_native_output(&ast, &module);
@@ -1862,24 +1890,34 @@ fn task258b3m2b2b3e_fixture(
     (ast, module, symbols)
 }
 
-fn task258b3m2b2b3e_output(
+fn task258b3m2b2b3e_lower_inputs(
     source_ordinal: usize,
 ) -> (
     mizar_syntax::ast::SurfaceAst,
     mizar_resolve::resolved_ast::ModuleId,
     mizar_resolve::env::SymbolEnv,
-    SourceStatementRouteOutput,
+    SourceStatementB3M2B2B3ERouteInputs,
 ) {
     let (ast, module, symbols) = task258b3m2b2b3e_fixture(source_ordinal);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2B2B3E_TEXT,
+    let mut captured = None;
+    assert_eq!(
+        source_statement_b3m2b2b3e_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3E_TEXT,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic Comprehension extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
+    );
+    (
+        ast,
+        module,
+        symbols,
+        captured.expect("genuine lower inputs before raw admission"),
     )
-    .expect("Task258B3M2B2B3E selector")
-    .unwrap_or_else(|error| panic!("Task258B3M2B2B3E route failed: {error}"));
-    (ast, module, symbols, output)
 }
 
 fn task258b4a_output(
@@ -2818,4 +2856,73 @@ fn task258b5b_reference_with_mutation(
         scope,
     )
     .with_expectation(expectation)
+}
+fn task258_mutated_surface(
+    ast: &mizar_syntax::SurfaceAst,
+    target: usize,
+    mutation: usize,
+) -> mizar_syntax::SurfaceAst {
+    let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
+    for (index, node) in ast.nodes().iter().enumerate() {
+        let mut kind = node.kind.clone();
+        let mut node_range = node.range;
+        let mut children = node
+            .children
+            .iter()
+            .map(|id| rebuilt[id.index()])
+            .collect::<Vec<_>>();
+        if target == ast.nodes().len() && ast.root().is_some_and(|root| index == root.index()) {
+            children.clear();
+        }
+        if index == target {
+            match mutation {
+                0 => match &mut kind {
+                    mizar_syntax::SurfaceNodeKind::Token(token) => {
+                        token.kind = mizar_syntax::SurfaceTokenKind::LexemeRun
+                    }
+                    _ => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
+                },
+                1 => node_range.end += 1,
+                2 if matches!(kind, mizar_syntax::SurfaceNodeKind::Token(_)) => {
+                    let mizar_syntax::SurfaceNodeKind::Token(token) = &mut kind else {
+                        unreachable!()
+                    };
+                    token.text = "?".into();
+                }
+                2 if children.len() > 1 => children.swap(0, 1),
+                2 if !children.is_empty() => children.clear(),
+                2 if index > 0 => children.push(rebuilt[0]),
+                2 => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
+                3 => {}
+                _ => unreachable!(),
+            }
+        }
+        let id = if index == target && mutation == 3 {
+            match kind {
+                mizar_syntax::SurfaceNodeKind::Token(token) => {
+                    builder.add_recovered_token(token.kind, token.text, node_range)
+                }
+                _ => builder.add_recovery(
+                    mizar_syntax::SyntaxRecoveryKind::MissingTerm,
+                    node_range,
+                    children,
+                ),
+            }
+        } else {
+            match kind {
+                mizar_syntax::SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text, node_range)
+                }
+                structural => builder.add_node(structural, node_range, children),
+            }
+        };
+        rebuilt.push(id);
+    }
+    builder.finish(
+        ast.root()
+            .filter(|_| target != ast.nodes().len())
+            .map(|id| rebuilt[id.index()]),
+        ast.expression_root().map(|id| rebuilt[id.index()]),
+    )
 }

@@ -607,64 +607,7 @@ fn task258b3m2a_selector_and_byte_subtree_near_misses_are_exact() {
     }
     for target in 0..49 {
         for mutation in 0..4 {
-            let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
-            let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
-            for (index, node) in ast.nodes().iter().enumerate() {
-                let mut kind = node.kind.clone();
-                let mut node_range = node.range;
-                let mut children = node
-                    .children
-                    .iter()
-                    .map(|id| rebuilt[id.index()])
-                    .collect::<Vec<_>>();
-                if index == target {
-                    match mutation {
-                        0 => match &mut kind {
-                            mizar_syntax::SurfaceNodeKind::Token(token) => {
-                                token.kind = mizar_syntax::SurfaceTokenKind::LexemeRun
-                            }
-                            _ => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
-                        },
-                        1 => node_range.end += 1,
-                        2 if matches!(kind, mizar_syntax::SurfaceNodeKind::Token(_)) => {
-                            let mizar_syntax::SurfaceNodeKind::Token(token) = &mut kind else {
-                                unreachable!()
-                            };
-                            token.text = "?".into();
-                        }
-                        2 if children.len() > 1 => children.swap(0, 1),
-                        2 if !children.is_empty() => children.clear(),
-                        2 if index > 0 => children.push(rebuilt[0]),
-                        2 => kind = mizar_syntax::SurfaceNodeKind::AttributeChain,
-                        3 => {}
-                        _ => unreachable!(),
-                    }
-                }
-                let id = if index == target && mutation == 3 {
-                    match kind {
-                        mizar_syntax::SurfaceNodeKind::Token(token) => {
-                            builder.add_recovered_token(token.kind, token.text, node_range)
-                        }
-                        _ => builder.add_recovery(
-                            mizar_syntax::SyntaxRecoveryKind::MissingTerm,
-                            node_range,
-                            children,
-                        ),
-                    }
-                } else {
-                    match kind {
-                        mizar_syntax::SurfaceNodeKind::Token(token) => {
-                            builder.add_token(token.kind, token.text, node_range)
-                        }
-                        structural => builder.add_node(structural, node_range, children),
-                    }
-                };
-                rebuilt.push(id);
-            }
-            let changed = builder.finish(
-                ast.root().map(|id| rebuilt[id.index()]),
-                ast.expression_root().map(|id| rebuilt[id.index()]),
-            );
+            let changed = task258_mutated_surface(&ast, target, mutation);
             assert!(
                 extract_numeral_witness_source_statement(&changed, SOURCE_STATEMENT_B3M2A_TEXT)
                     .is_none(),

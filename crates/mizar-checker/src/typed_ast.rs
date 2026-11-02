@@ -3287,11 +3287,9 @@ impl TypedAst {
         #[cfg(test)]
         let legacy_set_witness_statement = statements.is_task_258b3m2b2b3b_profile()
             || statements.is_task_258b3m2b2b3c_profile()
-            || statements.is_task_258b3m2b2b3d_profile();
-        if !statements.is_task_258b3m2b2b3a_profile()
-            && !legacy_set_witness_statement
-            && !statements.is_task_258b3m2b2b3e_profile()
-        {
+            || statements.is_task_258b3m2b2b3d_profile()
+            || statements.is_task_258b3m2b2b3e_profile();
+        if !statements.is_task_258b3m2b2b3a_profile() && !legacy_set_witness_statement {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         witnesses
