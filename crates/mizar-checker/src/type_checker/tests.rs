@@ -22,6 +22,7 @@ use mizar_session::{
     BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, InMemorySessionIdAllocator,
     ModulePath, PackageId, SessionIdAllocator, SourceAnchor, SourceId,
 };
+use mizar_syntax as syntax;
 include!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/support/source_variable_semantics_unit.rs"
@@ -198,7 +199,13 @@ fn generic_source_nodes_keep_actual_root_order_token_spelling_and_recovery() {
 #[test]
 fn generic_source_nodes_refuse_malformed_handoffs_atomically() {
     let source = source_id();
-    for fault in ["reversed", "overlap", "outside", "duplicate", "unreachable"] {
+    for fault in [
+        "reversed",
+        "overlap",
+        "outside",
+        "duplicate",
+        "detached-token",
+    ] {
         let mut builder = SurfaceAstBuilder::new(source);
         let first = builder.add_token(SurfaceTokenKind::Identifier, "first", range(source, 2, 7));
         let second = builder.add_token(
@@ -219,8 +226,12 @@ fn generic_source_nodes_refuse_malformed_handoffs_atomically() {
         if fault == "duplicate" {
             children.push(structural);
         }
-        if fault == "unreachable" {
-            builder.add_node(K::Annotation, range(source, 1, 2), vec![]);
+        if fault == "detached-token" {
+            builder.add_token(
+                SurfaceTokenKind::Identifier,
+                "detached",
+                range(source, 15, 16),
+            );
         }
         let root = builder.add_node(K::Root, range(source, 0, 16), children);
         let ast = builder.finish(Some(root), None);
@@ -230,6 +241,143 @@ fn generic_source_nodes_refuse_malformed_handoffs_atomically() {
         assert!(typed.install_source_nodes(&source).is_err(), "{fault}");
         assert_eq!(typed, before, "{fault}");
         assert!(typed.source_nodes().is_none());
+    }
+}
+
+#[test]
+fn generic_source_nodes_ignore_detached_speculative_structures_sharing_actual_tokens() {
+    let source = source_id();
+    let mut builder = SurfaceAstBuilder::new(source);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 2, 3));
+    let selected = builder.add_node(K::TermExpression, range(source, 2, 3), vec![token]);
+    builder.add_node(K::TermReference, range(source, 2, 3), vec![token]);
+    let root = builder.add_node(K::Root, range(source, 0, 5), vec![token, selected]);
+    let ast = builder.finish(Some(root), Some(selected));
+    let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+    let mut typed = source_nodes_typed(&source, |_| {});
+    typed.install_source_nodes(&source).unwrap();
+    let rows = typed.source_nodes().unwrap();
+    assert_eq!(
+        rows.iter().map(|row| row.site.index()).collect::<Vec<_>>(),
+        [3, 1, 0]
+    );
+    assert_eq!(rows[1].parent, Some(rows[0].site));
+    assert_eq!(rows[1].child_ordinal, 1);
+    assert_eq!(rows[2].parent, Some(rows[1].site));
+    let mut typed = source_nodes_typed(&source, |nodes| {
+        nodes[2].anchor = SourceAnchor::Range(range(source.source_id(), 3, 4));
+    });
+    let before = typed.clone();
+    assert!(typed.install_source_nodes(&source).is_err());
+    assert_eq!(typed, before);
+}
+
+#[test]
+fn generic_source_nodes_preserve_next_token_and_eof_recovery_insertion_ranges() {
+    for (wrapper, eof) in [(false, false), (true, false), (true, true)] {
+        let source = source_id();
+        let mut builder = SurfaceAstBuilder::new(source);
+        let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 2, 3));
+        let point = if eof { 3 } else { 8 };
+        let marker = builder.add_recovery(
+            syntax::SyntaxRecoveryKind::MissingItem,
+            range(source, point, point),
+            vec![],
+        );
+        let child = if wrapper {
+            builder.add_node(
+                K::CorrectnessCondition,
+                range(source, point, point),
+                vec![marker],
+            )
+        } else {
+            marker
+        };
+        let parent = builder.add_node(K::Proposition, range(source, 2, 3), vec![token, child]);
+        let mut children = vec![token, parent];
+        if !eof {
+            children.push(builder.add_token(
+                SurfaceTokenKind::Identifier,
+                "next",
+                range(source, 8, 12),
+            ));
+        }
+        let root = builder.add_node(K::Root, range(source, 0, 15), children);
+        let ast = builder.finish(Some(root), None);
+        let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+        let mut typed = source_nodes_typed(&source, |_| {});
+        typed.install_source_nodes(&source).unwrap();
+        let rows = typed.source_nodes().unwrap();
+        let parent = &rows[1];
+        let child = &rows[3];
+        let marker = &rows[if wrapper { 4 } else { 3 }];
+        assert_eq!(parent.range, range(source.source_id(), 2, 3));
+        assert_eq!(child.parent, Some(parent.site));
+        assert_eq!(child.child_ordinal, 1);
+        assert_eq!(child.range, range(source.source_id(), point, point));
+        assert_eq!(marker.recovery, NodeRecoveryState::Recovered);
+        if wrapper {
+            assert_eq!(child.recovery, NodeRecoveryState::Normal);
+            assert_eq!(marker.parent, Some(child.site));
+        }
+        assert!(
+            rows.iter()
+                .enumerate()
+                .all(|(i, row)| row.preorder_ordinal == i)
+        );
+    }
+}
+
+#[test]
+fn generic_source_nodes_refuse_non_insertion_children_beyond_consumed_parent() {
+    for fault in [
+        "normal-empty",
+        "nonempty-recovery",
+        "wrong-next-token",
+        "wrong-eof",
+        "outside-root",
+    ] {
+        let source = source_id();
+        let mut builder = SurfaceAstBuilder::new(source);
+        let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 2, 3));
+        let point = if matches!(fault, "wrong-next-token" | "wrong-eof") {
+            6
+        } else {
+            8
+        };
+        let child = if fault == "normal-empty" {
+            builder.add_node(K::CorrectnessCondition, range(source, point, point), vec![])
+        } else {
+            builder.add_recovery(
+                syntax::SyntaxRecoveryKind::MissingItem,
+                range(
+                    source,
+                    point,
+                    point + usize::from(fault == "nonempty-recovery"),
+                ),
+                vec![],
+            )
+        };
+        let parent = builder.add_node(K::Proposition, range(source, 2, 3), vec![token, child]);
+        let mut children = vec![token, parent];
+        if fault != "wrong-eof" {
+            children.push(builder.add_token(
+                SurfaceTokenKind::Identifier,
+                "next",
+                range(source, 8, 12),
+            ));
+        }
+        let root = builder.add_node(
+            K::Root,
+            range(source, 0, if fault == "outside-root" { 7 } else { 15 }),
+            children,
+        );
+        let ast = builder.finish(Some(root), None);
+        let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+        let mut typed = source_nodes_typed(&source, |_| {});
+        let before = typed.clone();
+        assert!(typed.install_source_nodes(&source).is_err(), "{fault}");
+        assert_eq!(typed, before, "{fault}");
     }
 }
 

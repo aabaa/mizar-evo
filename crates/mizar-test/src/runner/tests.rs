@@ -143,6 +143,355 @@ fn step5c11_plan() -> &'static crate::harness::TestPlan {
     PLAN.get_or_init(|| build_test_plan(&step5c11_config()).unwrap())
 }
 
+#[test]
+fn generic_source_transport_matches_active_frontends_and_layout_variants() {
+    use mizar_checker::typed_ast::{
+        NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
+    };
+    use mizar_resolve::resolved_ast::{ModuleId, SurfaceResolvedArena};
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind};
+
+    let mut config = step5c11_config();
+    config.profile = TestProfile::Full;
+    let root = &config.workspace_root;
+    let plan = build_test_plan(&config).unwrap();
+    assert_eq!(plan.error_count(), 0, "{:?}", plan.diagnostics);
+    let cases = super::active_parse_only_cases(&plan)
+        .chain(super::active_declaration_symbol_cases(&plan))
+        .chain(super::active_type_elaboration_cases(&plan))
+        .chain(super::active_formula_statement_cases(root, &plan))
+        .chain(super::active_proof_verification_cases(&plan))
+        .chain(plan.cases.iter().filter(|case| {
+            super::step5c11_registration_admitted(root, case)
+                || super::step5c13_overload_admitted(root, case)
+        }));
+    let mut count = 0;
+    let mut recovered_cases = 0;
+    for (ordinal, case) in cases.enumerate() {
+        let original = run_frontend(root, case, ordinal).unwrap();
+        let ast = original.ast.as_ref();
+        recovered_cases +=
+            usize::from(ast.is_some_and(|ast| ast.nodes().iter().any(|node| node.recovered)));
+        let check = |frontend: &super::shared::FrontendRun, label: &str| {
+            let Some(ast) = frontend.ast.as_ref() else {
+                assert!(
+                    !frontend.diagnostics.is_empty(),
+                    "{} {label} rejected frontend",
+                    case.id.0
+                );
+                assert_eq!(
+                    super::shared::assertion_diagnostic_codes(case, &frontend.diagnostics),
+                    case.expectation.diagnostic_codes
+                );
+                return;
+            };
+            let module = ModuleId::new(
+                PackageId::new("source-transport"),
+                ModulePath::new("corpus"),
+            );
+            let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+            let recovery = |recovered| {
+                if recovered {
+                    NodeRecoveryState::Recovered
+                } else {
+                    NodeRecoveryState::Normal
+                }
+            };
+            let nodes = TypedArena::try_new(
+                Some(TypedNodeId::new(ast.root().unwrap().index())),
+                source
+                    .arena()
+                    .iter()
+                    .map(|(id, node)| {
+                        TypedNode::new("syntax", node.origin().anchor().clone())
+                            .with_resolved_node(id)
+                            .with_children(
+                                node.children()
+                                    .iter()
+                                    .map(|child| TypedNodeId::new(child.index()))
+                                    .collect(),
+                            )
+                            .with_recovery(recovery(ast.nodes()[id.index()].recovered))
+                    })
+                    .collect(),
+            )
+            .unwrap();
+            let mut typed = TypedAst::try_new(TypedAstParts {
+                source_id: ast.source_id,
+                module_id: module,
+                resolved_root: Some(source.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes,
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .unwrap();
+            assert!(typed.source_node_entries().is_none());
+            typed
+                .install_source_nodes(&source)
+                .unwrap_or_else(|error| panic!("{} {label}: {error:?}", case.id.0));
+            let entries = typed.source_node_entries().unwrap();
+            let root_id = ast.root().unwrap();
+            let root_range = ast.node(root_id).unwrap().range;
+            let mut reachable = std::collections::BTreeSet::new();
+            let mut pending = vec![root_id];
+            while let Some(id) = pending.pop() {
+                if reachable.insert(id) {
+                    pending.extend(ast.node(id).unwrap().children.iter().copied());
+                }
+            }
+            assert_eq!(
+                entries.len(),
+                reachable.len(),
+                "{} {label} rooted census",
+                case.id.0
+            );
+            let mut tokens = ast.token_views().collect::<Vec<_>>();
+            tokens.sort_by_key(|view| (view.range().start, view.range().end));
+            assert!(
+                tokens.iter().all(|token| reachable.contains(&token.id())),
+                "every stored frontend token is rooted"
+            );
+            let recovery_points = reachable
+                .iter()
+                .filter(|id| {
+                    let range = ast.node(**id).unwrap().range;
+                    if range.start != range.end {
+                        return false;
+                    }
+                    let mut descendants = vec![**id];
+                    while let Some(id) = descendants.pop() {
+                        let node = ast.node(id).unwrap();
+                        if node.range != range
+                            || if matches!(node.kind, K::ErrorRecovery(_)) {
+                                !node.recovered
+                            } else {
+                                node.children.is_empty()
+                            }
+                        {
+                            return false;
+                        }
+                        descendants.extend(node.children.iter().copied());
+                    }
+                    true
+                })
+                .copied()
+                .collect::<std::collections::BTreeSet<_>>();
+            let mut parents = vec![None; ast.nodes().len()];
+            for view in ast
+                .node_views()
+                .filter(|view| reachable.contains(&view.id()) && view.id() != root_id)
+            {
+                let mut end = view.range().start;
+                for (ordinal, child) in view.children().iter().enumerate() {
+                    assert!(
+                        parents[child.index()]
+                            .replace((view.id(), ordinal))
+                            .is_none()
+                    );
+                    let range = ast.node(*child).unwrap().range;
+                    let insertion_point = tokens
+                        .iter()
+                        .find(|token| token.range().start >= view.range().end)
+                        .map_or_else(
+                            || {
+                                tokens
+                                    .last()
+                                    .map_or(root_range.start, |token| token.range().end)
+                            },
+                            |token| token.range().start,
+                        );
+                    let contained =
+                        view.range().start <= range.start && range.end <= view.range().end;
+                    let insertion = recovery_points.contains(child)
+                        && range.start == insertion_point
+                        && root_range.start <= range.start
+                        && range.end <= root_range.end;
+                    assert!(
+                        range.start >= end && (contained || insertion),
+                        "{} {label} ordered siblings and contained/recovery range",
+                        case.id.0
+                    );
+                    end = range.end;
+                }
+            }
+            for (ordinal, child) in ast.node(root_id).unwrap().children.iter().enumerate() {
+                let range = ast.node(*child).unwrap().range;
+                assert!(root_range.start <= range.start && range.end <= root_range.end);
+                if parents[child.index()].is_none() {
+                    parents[child.index()] = Some((root_id, ordinal));
+                } else {
+                    assert!(matches!(
+                        ast.node(*child).unwrap().kind,
+                        K::Token(_) | K::ErrorRecovery(_)
+                    ));
+                }
+            }
+            assert!(parents[root_id.index()].is_none());
+            // Lexicographic child paths give preorder independently of the producer's walk.
+            let mut expected = ast
+                .node_views()
+                .filter(|view| reachable.contains(&view.id()))
+                .map(|view| {
+                    let mut path = Vec::new();
+                    let mut cursor = view.id();
+                    while cursor != root_id {
+                        let (parent, ordinal) = parents[cursor.index()].expect("actual node owner");
+                        path.push(ordinal);
+                        cursor = parent;
+                        assert!(path.len() < ast.nodes().len(), "cyclic frontend ownership");
+                    }
+                    path.reverse();
+                    (path, view)
+                })
+                .collect::<Vec<_>>();
+            expected.sort_by(|left, right| left.0.cmp(&right.0));
+            for token in &tokens {
+                let range = token.range();
+                assert_eq!(range.source_id, ast.source_id);
+                assert_eq!(
+                    frontend.source_text.get(range.start..range.end),
+                    Some(token.as_token().unwrap().text.as_ref())
+                );
+            }
+            assert!(
+                tokens
+                    .windows(2)
+                    .all(|pair| pair[0].range().end <= pair[1].range().start)
+            );
+            let mut token_count = 0;
+            for (preorder, (entry, (_, view))) in entries.zip(expected).enumerate() {
+                let parent = parents[view.id().index()];
+                let spelling = tokens
+                    .iter()
+                    .filter(|token| {
+                        token.range().start >= view.range().start
+                            && token.range().end <= view.range().end
+                    })
+                    .map(|token| token.as_token().unwrap().text.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                assert_eq!(
+                    entry,
+                    (
+                        source.resolved_node_for(view.id()).unwrap(),
+                        view.kind(),
+                        view.range(),
+                        parent.map(|(id, _)| source.resolved_node_for(id).unwrap()),
+                        parent.map_or(0, |(_, ordinal)| ordinal),
+                        preorder,
+                        recovery(view.is_recovered()),
+                        spelling.as_str(),
+                    ),
+                    "{} {label} node {:?}",
+                    case.id.0,
+                    view.id()
+                );
+                token_count += usize::from(matches!(entry.1, K::Token(_)));
+            }
+            assert_eq!(token_count, tokens.len(), "root token aliases count once");
+        };
+        check(&original, "original");
+        let mut tokens = ast
+            .into_iter()
+            .flat_map(|ast| ast.token_views())
+            .collect::<Vec<_>>();
+        tokens.sort_by_key(|view| (view.range().start, view.range().end));
+        let gap = tokens.windows(2).find_map(|pair| {
+            let left = pair[0];
+            let right = pair[1];
+            if left.as_token().unwrap().kind == SurfaceTokenKind::AnnotationMarker {
+                return None;
+            }
+            let gap = original
+                .source_text
+                .get(left.range().end..right.range().start)?;
+            (!gap.is_empty()
+                && gap
+                    .bytes()
+                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n')))
+            .then_some(left.range().end)
+        });
+        for (label, start, replacement) in [
+            ("leading_line", 0, "\n"),
+            gap.map_or(("leading_lines", 0, "\n\n"), |start| {
+                ("intertoken_comment", start, " :: transport\n")
+            }),
+        ] {
+            let edits = [metamorphic_edits::Edit {
+                start,
+                end: start,
+                replacement: replacement.to_owned(),
+            }];
+            let text = metamorphic_edits::apply(&original.source_text, &edits);
+            let variant = metamorphic_guard::with_source(case, &text, || {
+                run_frontend(root, case, ordinal).unwrap()
+            });
+            match (ast, variant.ast.as_ref()) {
+                (Some(ast), Some(variant_ast)) => {
+                    assert_eq!(
+                        ast.nodes().len(),
+                        variant_ast.nodes().len(),
+                        "{} {label}",
+                        case.id.0
+                    );
+                    for (original, changed) in ast.nodes().iter().zip(variant_ast.nodes()) {
+                        assert_eq!(
+                            (&original.kind, &original.children, original.recovered),
+                            (&changed.kind, &changed.children, changed.recovered),
+                            "{} {label} topology/recovery/token text",
+                            case.id.0
+                        );
+                    }
+                }
+                (None, None) => {
+                    assert_eq!(original.diagnostics.len(), variant.diagnostics.len());
+                    for (before, after) in original.diagnostics.iter().zip(&variant.diagnostics) {
+                        assert_eq!((&before.code, before.class), (&after.code, after.class));
+                        let mizar_frontend::orchestration::DiagnosticLocation::SourceRange(range) =
+                            before.location
+                        else {
+                            panic!("loaded corpus diagnostic must have a source range");
+                        };
+                        assert_eq!(
+                            after.location,
+                            mizar_frontend::orchestration::DiagnosticLocation::SourceRange(
+                                metamorphic_edits::mapped_range(range, &edits)
+                            )
+                        );
+                        assert_eq!(
+                            after.secondary,
+                            before
+                                .secondary
+                                .iter()
+                                .map(|anchor| match anchor {
+                                    mizar_session::SourceAnchor::Range(range) =>
+                                        mizar_session::SourceAnchor::Range(
+                                            metamorphic_edits::mapped_range(*range, &edits)
+                                        ),
+                                    _ => panic!("loaded corpus secondary must have a source range"),
+                                })
+                                .collect::<Vec<_>>()
+                        );
+                    }
+                }
+                _ => panic!("{} {label} changed frontend AST availability", case.id.0),
+            }
+            check(&variant, label);
+        }
+        count += 1;
+    }
+    assert!(
+        count > 0 && recovered_cases > 0,
+        "corpus includes parser recovery"
+    );
+}
 fn step5c11_source_case(family: &str) -> (crate::harness::TestCase, String) {
     let plan = step5c11_plan();
     let id = format!("pass_advanced_semantics_{family}_registration_001");

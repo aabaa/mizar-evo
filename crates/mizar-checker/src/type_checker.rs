@@ -67,8 +67,8 @@ pub(crate) fn source_nodes(
     {
         return Err(invalid());
     }
-    let mut owners = BTreeMap::new();
     let mut tokens = Vec::new();
+    let mut recovery_only = BTreeSet::new();
     for (id, current) in arena.iter() {
         let span = range(id)?;
         let recovered = current.recovery() == RecoveryState::Recovered;
@@ -105,19 +105,17 @@ pub(crate) fn source_nodes(
             }
             tokens.push((id, span, token.text.as_ref()));
         }
-        let mut children = BTreeSet::new();
-        let mut end = span.start;
-        for child in current.children() {
-            let child_span = range(*child)?;
-            if !children.insert(*child)
-                || child_span.start < span.start
-                || child_span.end > span.end
-                || (id != root && child_span.start < end)
-                || (id != root && owners.insert(*child, id).is_some())
-            {
-                return Err(invalid());
+        // Lowering is child-first, so only actual insertion-marker subtrees qualify.
+        if span.start == span.end
+            && if current.children().is_empty() {
+                recovered && matches!(current.kind(), K::ErrorRecovery(_))
+            } else {
+                current.children().iter().all(|child| {
+                    recovery_only.contains(child) && range(*child).is_ok_and(|child| child == span)
+                })
             }
-            end = child_span.end;
+        {
+            recovery_only.insert(id);
         }
     }
     tokens.sort_by_key(|(id, span, _)| (span.start, span.end, id.index()));
@@ -126,6 +124,40 @@ pub(crate) fn source_nodes(
         .any(|pair| pair[0].1.end > pair[1].1.start)
     {
         return Err(invalid());
+    }
+    let mut reachable = BTreeSet::new();
+    let mut pending = vec![root];
+    while let Some(id) = pending.pop() {
+        if reachable.insert(id) {
+            pending.extend(node(id)?.children());
+        }
+    }
+    let root_span = range(root)?;
+    let mut owners = BTreeMap::new();
+    for (id, current) in arena.iter().filter(|(id, _)| reachable.contains(id)) {
+        let span = range(id)?;
+        let mut children = BTreeSet::new();
+        let mut end = span.start;
+        for child in current.children() {
+            let child_span = range(*child)?;
+            let insertion = recovery_only.contains(child)
+                && child_span.start >= root_span.start
+                && child_span.end <= root_span.end
+                && Some(child_span.start)
+                    == tokens
+                        .get(tokens.partition_point(|(_, token, _)| token.start < span.end))
+                        .map(|(_, token, _)| token.start)
+                        .or_else(|| tokens.last().map(|(_, token, _)| token.end));
+            if !children.insert(*child)
+                || child_span.start < span.start
+                || (child_span.end > span.end && !insertion)
+                || (id != root && child_span.start < end)
+                || (id != root && owners.insert(*child, id).is_some())
+            {
+                return Err(invalid());
+            }
+            end = child_span.end;
+        }
     }
     let mut rows = Vec::with_capacity(arena.len());
     let mut seen = BTreeSet::new();
@@ -167,7 +199,7 @@ pub(crate) fn source_nodes(
             pending.push((*child, Some(id), ordinal));
         }
     }
-    if seen.len() != arena.len()
+    if seen.len() != reachable.len()
         || rows
             .iter()
             .filter(|row| matches!(row.kind, K::Token(_)))

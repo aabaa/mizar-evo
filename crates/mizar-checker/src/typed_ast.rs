@@ -301,7 +301,41 @@ impl TypedAst {
         self.source_nodes.as_deref()
     }
 
-    pub(crate) fn install_source_nodes(
+    // reason: Borrow existing row fields without adding a public mirror type.
+    #[allow(clippy::type_complexity)]
+    pub fn source_node_entries(
+        &self,
+    ) -> Option<
+        impl ExactSizeIterator<
+            Item = (
+                ResolvedNodeId,
+                &SurfaceNodeKind,
+                SourceRange,
+                Option<ResolvedNodeId>,
+                usize,
+                usize,
+                NodeRecoveryState,
+                &str,
+            ),
+        >,
+    > {
+        self.source_nodes.as_ref().map(|rows| {
+            rows.iter().map(|row| {
+                (
+                    row.site,
+                    &row.kind,
+                    row.range,
+                    row.parent,
+                    row.child_ordinal,
+                    row.preorder_ordinal,
+                    row.recovery,
+                    row.spelling.as_str(),
+                )
+            })
+        })
+    }
+
+    pub fn install_source_nodes(
         &mut self,
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
     ) -> Result<(), TypedAstError> {

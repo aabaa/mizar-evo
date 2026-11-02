@@ -18,6 +18,12 @@
 物理的な arena 表現の決定を記録し、type inference、registration firing、
 overload selection、言語意味論、証明挙動を追加せずにこれらの構造を実装する。
 
+## 汎用 source transport の検査
+
+`install_source_nodes` は [source transport の不変条件](source_statement.md#generic-original-source-transport-task-284-設計) に従う認証済み syntax-only table を atomic に install する。
+`source_node_entries` は site、kind、range、parent、child ordinal、preorder ordinal、recovery、spelling の借用 tuple を公開し、row 型は private のままとする。
+install は型・statement・proof status を与えず、canonical debug serialization を変更しない。
+
 ## 境界
 
 `TypedAst` が所有するもの:

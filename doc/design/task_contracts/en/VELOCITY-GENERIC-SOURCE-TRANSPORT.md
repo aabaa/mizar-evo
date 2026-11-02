@@ -1,21 +1,21 @@
 # Task VELOCITY-GENERIC-SOURCE-TRANSPORT: one producer and one oracle for original-source transport
 Canonical language: English; [Japanese pointer](../ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
-Status: in progress; steps 1-2 complete. Tier: full for steps 2-3; pattern tier for the family slices below. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
+Status: in progress; steps 1-3 complete. Tier: full for steps 2-3; pattern tier for the family slices below. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
 Dependencies: VELOCITY-LARGE-FILE-SPLIT. Subsumes checker Task 281 ([QUALITY-EXACT-PROFILE-RETIREMENT](./QUALITY-EXACT-PROFILE-RETIREMENT.md)); its exit criterion is exit criterion 3 below.
-Readiness: step 1 froze the producer, boundary and oracle contract in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design) and the classification ledger `tests/coverage/source_transport_classification.tsv`; step 3 may start.
+Readiness: step 1 froze the producer, boundary and oracle contract in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design) and the classification ledger `tests/coverage/source_transport_classification.tsv`; statement/witness migration may start.
 Authority: [source statement design](../../mizar-checker/en/source_statement.md); [resolved typed AST](../../mizar-checker/en/resolved_typed_ast.md); the specification sections cited by the existing per-element contracts; [authority order](../../autonomous_crate_development.md#authority-order).
 Gap: `design_drift`. Original-source transport is implemented one syntax element at a time (Mode, Functor, Property, Structure, and Attribute coordinates; empty and singleton enumeration and bare-set choice witnesses), each as a lower/pair/preservation triple with hand-written literal-offset oracles. This dominated the week ending 2026-11-02 without moving the roadmap.
 
 ## Scope
 1. Design (docs-only commit): inventory the syntax elements and witness/layout forms of Tasks 257-279 that still lack original-source transport. Classify each as (a) derivable by a generic walk over the authenticated frontend tree, (b) needing an element-specific rule, or (c) semantic and deferred. Record the result in the source statement design document and freeze the generic producer's input/output contract and its refusal conditions.
 2. Generic producer: one crate-private walk over the authenticated `TypedAst`/frontend handoff that derives sites, ranges, parents, and ordering for every (a) element from the actual tree, replacing the per-element `from_original`-style constructors. Element-specific rules (b) plug into the walk and do not duplicate it.
-3. Generic oracle: tests compare producer output with the frontend's own spans and structure for every active corpus case (shape, containment, ordering, and metamorphic layout variants), replacing literal-offset profiles. Retire the `exact_*_profile` functions and lower `tests/coverage/literal_source_offset_baseline.tsv` to zero for the affected modules.
+3. Generic oracle: tests compare producer output with the frontend's own spans and structure for every active corpus case (Root-reachable shape, documented recovery anchors, ordering, and metamorphic layout variants; unrecoverable frontend absence retains its diagnostics), replacing literal-offset profiles. Retire the `exact_*_profile` functions and lower `tests/coverage/literal_source_offset_baseline.tsv` to zero for the affected modules.
 4. Unit of work: a remaining (b) element is one pattern-tier slice under one family contract; the lower/pair/preservation triple is no longer the unit.
 
 ## Family slices
 - [x] step 1 design and classification ledger
 - [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
-- [ ] step 3 generic runner oracle and metamorphic route
+- [x] step 3 generic runner oracle and metamorphic route
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
