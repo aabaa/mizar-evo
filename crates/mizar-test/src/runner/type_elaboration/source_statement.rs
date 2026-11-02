@@ -377,10 +377,13 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3E_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B4A_TEXT: &str =
     "theorem FormulaQuantifierBoundUsePayloadBoundary: for x being set holds x = x;\n\n";
 
+#[cfg(test)]
 const SOURCE_STATEMENT_B4A_LABEL: &str = "FormulaQuantifierBoundUsePayloadBoundary";
+#[cfg(test)]
 const SOURCE_STATEMENT_B4A_SPELLING: &str =
     "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;";
 pub(in crate::runner) const SOURCE_STATEMENT_B4B_TEXT: &str = concat!(
@@ -403,6 +406,7 @@ const SOURCE_STATEMENT_B4C_SPELLING: &str = concat!(
     "theorem FormulaNestedQuantifierPayloadBoundary : ",
     "for x being set st x = x ex y being set st for r st r = y holds x = r ;",
 );
+#[cfg(test)]
 const TASK258B4A_SURFACE_KINDS: [&str; 26] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
     "Token(SurfaceToken { kind: Identifier, text: \"FormulaQuantifierBoundUsePayloadBoundary\" })",
@@ -431,6 +435,7 @@ const TASK258B4A_SURFACE_KINDS: [&str; 26] = [
     "CompilationUnit",
     "Root",
 ];
+#[cfg(test)]
 const TASK258B4A_SURFACE_RANGES: [(usize, usize); 26] = [
     (0, 7),
     (8, 48),
@@ -459,6 +464,7 @@ const TASK258B4A_SURFACE_RANGES: [(usize, usize); 26] = [
     (0, 78),
     (0, 78),
 ];
+#[cfg(test)]
 const TASK258B4A_SURFACE_CHILDREN: [&[usize]; 26] = [
     &[],
     &[],
@@ -488,6 +494,7 @@ const TASK258B4A_SURFACE_CHILDREN: [&[usize]; 26] = [
     &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 24],
 ];
 
+#[cfg(test)]
 fn exact_task258b4a_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     source_text == SOURCE_STATEMENT_B4A_TEXT
         && source_text.len() == 80
@@ -3008,14 +3015,10 @@ fn source_statement_transport_output_is_valid(
                 == output.resolved.source_composite_formula()
             && output.typed_ast.source_formula_composition()
                 == output.resolved.source_formula_composition()
-            && ((source_text == SOURCE_STATEMENT_B4A_TEXT
-                && output.left_lookup_ordinal == 1
-                && output.right_lookup_ordinal == 1
-                && output.reference_use_ordinals == [1, 1])
-                || (source_text == SOURCE_STATEMENT_B4B_TEXT
-                    && output.left_lookup_ordinal == 0
-                    && output.right_lookup_ordinal == 0
-                    && output.reference_use_ordinals.is_empty())
+            && ((source_text == SOURCE_STATEMENT_B4B_TEXT
+                && output.left_lookup_ordinal == 0
+                && output.right_lookup_ordinal == 0
+                && output.reference_use_ordinals.is_empty())
                 || (source_text == SOURCE_STATEMENT_B4C_TEXT
                     && output.left_lookup_ordinal == 2
                     && output.right_lookup_ordinal == 2
@@ -13526,15 +13529,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B4A_TEXT {
-        return source_statement_b4a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
 
     None
 }
@@ -14852,6 +14846,7 @@ pub(in crate::runner) fn source_statement_b4b_output_with_resolver_mutation(
     ))
 }
 
+#[cfg(test)]
 fn source_statement_b4a_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16366,6 +16361,7 @@ fn build_source_statement_b4b_output(
     })
 }
 
+#[cfg(test)]
 fn build_source_statement_b4a_output(
     ast: &SurfaceAst,
     module: ModuleId,

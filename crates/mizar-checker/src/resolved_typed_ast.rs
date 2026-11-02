@@ -2250,7 +2250,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .typed_ast
                 .source_statement()
                 .is_some_and(|statement| {
-                    statement.is_task_258b4a_profile()
+                    #[cfg(not(test))]
+                    let universal_statement_profile = false;
+                    #[cfg(test)]
+                    let universal_statement_profile = statement.is_task_258b4a_profile();
+                    universal_statement_profile
                         || statement.is_task_258b4b_profile()
                         || statement.is_task_258b4c_profile()
                 });
@@ -2970,7 +2974,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let structure_witness_profile = source_statement.is_task_258b3m2b2b2a_profile()
                 || source_statement.is_task_258b3m2b2b2b_profile()
                 || source_statement.is_task_258b3m2b2b2c_profile();
-            let is_task_258b4 = source_statement.is_task_258b4a_profile()
+            #[cfg(not(test))]
+            let universal_statement_profile = false;
+            #[cfg(test)]
+            let universal_statement_profile = source_statement.is_task_258b4a_profile();
+            let is_task_258b4 = universal_statement_profile
                 || source_statement.is_task_258b4b_profile()
                 || source_statement.is_task_258b4c_profile();
             if self.inputs.typed_ast.source_context().is_some()

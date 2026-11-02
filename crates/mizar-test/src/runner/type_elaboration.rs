@@ -582,7 +582,7 @@ pub(super) use source_statement::{
     SourceStatementB3M2B2B3DSurfaceMutation, SourceStatementB3M2B2B3EExtraction,
     SourceStatementB3M2B2B3ELowerStage, SourceStatementB3M2B2B3ERouteInputs,
     SourceStatementB3M2B2B3EStage, SourceStatementB3M2B2B3ESurfaceMutation,
-    SourceStatementB3NExtraction, SourceStatementB4ASurfaceMutation,
+    SourceStatementB3NExtraction, SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BSurfaceMutation, SourceStatementB4CSurfaceMutation,
     SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction, SourceStatementRouteOutput,

@@ -605,12 +605,8 @@ fn task258b4b_source_resolver_and_active_b2_near_misses_stay_isolated() {
         .is_none()
     );
     assert_eq!(
-        (
-            b4a.left_lookup_ordinal,
-            b4a.right_lookup_ordinal,
-            b4a.reference_use_ordinals.as_slice(),
-        ),
-        (1, 1, [1, 1].as_slice())
+        b4a.primary.references().iter().map(|(_, row)| row.use_ordinal()).collect::<Vec<_>>(),
+        [1, 1]
     );
 
     let (ast, module, symbols, baseline) = task258b4b_output(266_210);
@@ -707,13 +703,8 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
         .source_statement()
         .expect("B4B statement")
         .clone();
-    let b4a_statement = b4a
-        .typed_ast
-        .source_statement()
-        .expect("B4A statement")
-        .clone();
     let b4b_before = b4b.typed_ast.debug_text();
-    let b4a_before = b4a.typed_ast.debug_text();
+    let b4a_before = format!("{b4a:?}");
     let b4b_lower = source_formula_composition_output_with_source(
         &b4b_ast,
         b4b_module.clone(),
@@ -731,36 +722,11 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
     .expect("B4A lower selector")
     .expect("B4A lower route");
     assert_eq!(
-        b4b_lower
-            .typed_ast
-            .clone()
-            .with_source_statement(b4a_statement.clone())
-            .expect_err("B4B lower then B4A statement must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
         b4a_lower
             .typed_ast
             .clone()
             .with_source_statement(b4b_statement.clone())
             .expect_err("B4A lower then B4B statement must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        b4b.typed_ast
-            .clone()
-            .with_source_formula_composition_statement(
-                b4a.typed_ast
-                    .source_composite_formula()
-                    .expect("B4A composite")
-                    .clone(),
-                b4a.typed_ast
-                    .source_formula_composition()
-                    .expect("B4A composition")
-                    .clone(),
-                b4a_statement.clone(),
-            )
-            .expect_err("B4B then B4A must fail"),
         TypedAstError::InvalidSourceStatement
     );
     let (atomic_ast, atomic_module, _, _, diagnostics) =
@@ -799,7 +765,7 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
         TypedAstError::InvalidSourceStatement
     );
     assert_eq!(
-        b4a.typed_ast
+        b4a_lower.typed_ast
             .clone()
             .with_source_formula_composition_statement(
                 b4b.typed_ast
@@ -822,22 +788,15 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
             &b4b_symbols,
             SOURCE_STATEMENT_B4B_TEXT,
             |input| {
-                input.composite = b4a
-                    .typed_ast
-                    .source_composite_formula()
-                    .expect("B4A composite")
-                    .clone();
-                input.composition = b4a
-                    .typed_ast
-                    .source_formula_composition()
-                    .expect("B4A composition")
-                    .clone();
+                input.composite = b4a.composite.clone();
+                input.composition = b4a.composition.clone();
             },
         )
         .expect("B4B cross-family selector")
         .is_err()
     );
-    assert!(
+    let mut changed_b4a = None;
+    assert_eq!(
         source_statement_b4a_output_with_mutation(
             &b4a_ast,
             b4a_module.clone(),
@@ -854,13 +813,16 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
                     .source_formula_composition()
                     .expect("B4B composition")
                     .clone();
+                changed_b4a = Some(format!("{input:?}"));
             },
         )
         .expect("B4A cross-family selector")
-        .is_err()
+        .expect_err("retired raw B4A"),
+        "source statement dependency mismatch"
     );
+    assert_ne!(changed_b4a.expect("genuine changed B4A tuple"), b4a_before);
     assert_eq!(b4b.typed_ast.debug_text(), b4b_before);
-    assert_eq!(b4a.typed_ast.debug_text(), b4a_before);
+    assert_eq!(format!("{b4a:?}"), b4a_before);
     assert_eq!(
         b4b.typed_ast
             .source_composite_formula()
@@ -872,9 +834,7 @@ fn task258b4b_cross_family_b4a_orders_and_ownership_are_atomic() {
         SourceFormulaRootOwnership::UnassignedStatement
     );
     assert_eq!(
-        b4a.typed_ast
-            .source_composite_formula()
-            .expect("B4A composite")
+        b4a.composite
             .roots()
             .get(SourceFormulaRootId::new(0))
             .expect("B4A root")
@@ -984,7 +944,6 @@ fn task258b4b_final_clone_debug_and_semantic_outputs_are_stable() {
             &b4a_symbols,
             SOURCE_STATEMENT_B4A_TEXT,
         )
-        .expect("B4A detail selector")
-        .is_empty()
+        .is_none()
     );
 }

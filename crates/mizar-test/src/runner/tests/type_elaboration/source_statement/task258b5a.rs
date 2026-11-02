@@ -1551,18 +1551,6 @@ fn task258b5a_b1_profile_installation_orders_and_ownership_are_atomic() {
         mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
     );
     assert_eq!(task248.typed_ast.debug_text(), before);
-    let (_, _, _, b4a) = task258b4a_output(258_530);
-    let b4a_statement = b4a
-        .typed_ast
-        .source_statement()
-        .expect("B4A statement")
-        .clone();
-    assert_eq!(
-        task258_reference_syntax_base(&b5a)
-            .with_source_statement(b4a_statement)
-            .expect_err("B4A statement on B5A lower profile"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
     assert_eq!(b1.source_statement(), Some(&b1_statement));
     assert_eq!(
         b1.source_statement_references(),

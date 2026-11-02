@@ -28,7 +28,7 @@ use super::{
     SourceStatementB3M2B2B3EExtraction, SourceStatementB3M2B2B3ELowerStage,
     SourceStatementB3M2B2B3ERouteInputs, SourceStatementB3M2B2B3EStage,
     SourceStatementB3M2B2B3ESurfaceMutation, SourceStatementB3NExtraction,
-    SourceStatementB4ASurfaceMutation,
+    SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BSurfaceMutation, SourceStatementB4CSurfaceMutation,
     SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
@@ -2173,21 +2173,40 @@ fn task258b4a_output(
     SurfaceAst,
     ResolverModuleId,
     SymbolEnv,
-    SourceStatementRouteOutput,
+    SourceStatementB4ARouteInputs,
 ) {
     let (ast, module, _, symbols, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B4A_TEXT, seed);
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B4A_TEXT,
+    let mut captured = None;
+    assert_eq!(
+        source_statement_b4a_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B4A_TEXT,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic Task258B4A extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
+    );
+    assert!(
+        source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B4A_TEXT,
+        )
+        .is_none()
+    );
+    (
+        ast,
+        module,
+        symbols,
+        captured.expect("genuine B4A lower inputs before raw admission"),
     )
-    .expect("Task258B4A selector")
-    .expect("Task258B4A output");
-    (ast, module, symbols, output)
 }
 
 fn task258b4b_output(

@@ -1140,6 +1140,7 @@ impl SourceStatementHandoff {
             && self.formula_composition_fingerprint.is_some()
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b4a_profile(&self) -> bool {
         self.has_task_258b4_shape()
             && self.binding_env.contexts().len() == 2
@@ -7313,15 +7314,18 @@ fn exact_atomic_profile(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task258B4Profile {
+    #[cfg(test)]
     QuantifierBoundUse,
     ConnectiveGrouping,
     NestedQuantifier,
 }
 
 fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Profile> {
+    #[cfg(test)]
     if statement.is_task_258b4a_profile() {
-        Some(Task258B4Profile::QuantifierBoundUse)
-    } else if statement.is_task_258b4b_profile() {
+        return Some(Task258B4Profile::QuantifierBoundUse);
+    }
+    if statement.is_task_258b4b_profile() {
         Some(Task258B4Profile::ConnectiveGrouping)
     } else if statement.is_task_258b4c_profile() {
         Some(Task258B4Profile::NestedQuantifier)
@@ -7333,16 +7337,17 @@ fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Pro
 fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task258B4Profile> {
     let owner = input.owners.first();
     let statement = input.statements.first();
+    #[cfg(test)]
     if owner.is_some_and(|owner| {
         owner.source_range == range(input.source_id, 0, 78)
             && owner.spelling == "FormulaQuantifierBoundUsePayloadBoundary"
     }) || statement.is_some_and(|statement| {
         statement.spelling
             == "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;"
-    })
-    {
-        Some(Task258B4Profile::QuantifierBoundUse)
-    } else if owner.is_some_and(|owner| {
+    }) {
+        return Some(Task258B4Profile::QuantifierBoundUse);
+    }
+    if owner.is_some_and(|owner| {
         owner.source_range == range(input.source_id, 0, 165)
             && owner.spelling == "FormulaConnectiveGroupingPayloadBoundary"
     }) || statement.is_some_and(|statement| {
@@ -7391,6 +7396,7 @@ fn validate_task_258b4_dependencies(
         composition_bound_uses_len,
         arena_len,
     ) = match profile {
+        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (2, 1, 4, 2, 2, 0, 1, 2, 2, 1, 2, 26),
         Task258B4Profile::ConnectiveGrouping => (2, 1, 4, 16, 0, 16, 8, 16, 16, 8, 0, 124),
         Task258B4Profile::NestedQuantifier => (4, 4, 0, 6, 6, 0, 3, 6, 6, 3, 6, 66),
@@ -7420,6 +7426,7 @@ fn validate_task_258b4_dependencies(
         || composite_formulas.source_id() != source_id
         || composite_formulas.module_id() != module_id
         || match profile {
+            #[cfg(test)]
             Task258B4Profile::QuantifierBoundUse => !composite_formulas.is_task_257b1_profile(),
             Task258B4Profile::ConnectiveGrouping => !composite_formulas.is_task_257b2_profile(),
             Task258B4Profile::NestedQuantifier => !composite_formulas.is_task_257b3_profile(),
@@ -7481,15 +7488,16 @@ fn validate_task_258b4_dependencies(
         type_site_id,
         type_head_site,
     ) = match profile {
+        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (20, (50, 77), 14, 4, 13, 12),
         Task258B4Profile::ConnectiveGrouping => (118, (50, 164), 58, 4, 57, 56),
         Task258B4Profile::NestedQuantifier => (60, (67, 136), 38, 9, 37, 36),
     };
     let (formula_context, formula_spelling, binder_range, identifier_range, type_range) =
         match profile {
-            Task258B4Profile::QuantifierBoundUse | Task258B4Profile::ConnectiveGrouping => {
-                (0, "for holds", (54, 65), (54, 55), (62, 65))
-            }
+            #[cfg(test)]
+            Task258B4Profile::QuantifierBoundUse => (0, "for holds", (54, 65), (54, 55), (62, 65)),
+            Task258B4Profile::ConnectiveGrouping => (0, "for holds", (54, 65), (54, 55), (62, 65)),
             Task258B4Profile::NestedQuantifier => (0, "for st", (71, 82), (71, 72), (79, 82)),
         };
     if formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(formula_site))
@@ -7525,6 +7533,7 @@ fn validate_task_258b4_arena_partition(
     arena: &TypedArena,
 ) -> bool {
     let (lower_owned, theorem_site): (&[usize], usize) = match profile {
+        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (&[4, 12, 13, 14, 15, 17, 19, 20], 22),
         Task258B4Profile::ConnectiveGrouping => (
             &[
@@ -7645,6 +7654,7 @@ fn validate_task_258b4_primary_atomic_sites(
         atomic_ranges: &'static [(usize, usize)],
     }
     let sites = match profile {
+        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => SiteProfile {
             term_sites: &[15, 17],
             term_ranges: &[(72, 73), (76, 77)],
@@ -7756,6 +7766,7 @@ fn validate_task_258b4_rows(
         structural_path,
         visible_binding,
     ) = match profile {
+        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (
             0,
             78,
@@ -7994,6 +8005,7 @@ fn validate_resolver_owner(
         })
     };
     let expected_contribution_range = match owner.spelling.as_str() {
+        #[cfg(test)]
         "FormulaQuantifierBoundUsePayloadBoundary" => range(input.source_id, 0, 78),
         "FormulaConnectiveGroupingPayloadBoundary" => range(input.source_id, 0, 165),
         "FormulaStatementApplicationWitnessSmoke"

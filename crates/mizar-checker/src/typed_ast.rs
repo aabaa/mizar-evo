@@ -1741,6 +1741,11 @@ impl TypedAst {
         composition: SourceFormulaCompositionHandoff,
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
+        #[cfg(not(test))]
+        let universal_statement_profile = false;
+        #[cfg(test)]
+        let universal_statement_profile =
+            composite.is_task_257b1_profile() && statement.is_task_258b4a_profile();
         if self.source_nested_fraenkel_capture_identity.is_some() {
             return Err(TypedAstError::InvalidSourceStatement);
         }
@@ -1777,7 +1782,7 @@ impl TypedAst {
             || !self.coercions.is_empty()
             || !self.initial_obligations.is_empty()
             || !self.diagnostics.is_empty()
-            || !((composite.is_task_257b1_profile() && statement.is_task_258b4a_profile())
+            || !(universal_statement_profile
                 || (composite.is_task_257b2_profile() && statement.is_task_258b4b_profile())
                 || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile()))
         {

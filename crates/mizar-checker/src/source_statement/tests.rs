@@ -13655,7 +13655,7 @@ fn b3m2b2b3a_symbol_env(
     )
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Task258B4AFixture {
     source: SourceId,
     module: ModuleId,

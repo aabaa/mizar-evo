@@ -1117,6 +1117,21 @@ fn task_258b5a_b1_same_scope_cross_profile_installation_is_atomic() {
         .expect("Task258B5A references");
     let b1_base = b1.empty_typed();
     let b5a_base = b5a.empty_typed();
+    let b5a_pristine = b5a_base
+        .clone()
+        .with_source_statement_references(b5a.statement.clone(), b5a_references.clone())
+        .expect("pristine B5A pair");
+    let b5a_final = assemble_empty_resolved(&b5a_pristine).expect("pristine B5A final");
+    let b4a = Task258B4AFixture::new(50_006);
+    let foreign_statement = b4a.statement();
+    let run = || {
+        b5a_base
+            .clone()
+            .with_source_statement(foreign_statement.clone())
+    };
+    assert_eq!(run(), Err(TypedAstError::InvalidSourceStatement));
+    assert_eq!(run(), run(), "B4A statement on B5A lower replay");
+    assert_eq!(foreign_statement, b4a.statement());
     assert_eq!(
         b5a_base
             .clone()
@@ -1136,11 +1151,12 @@ fn task_258b5a_b1_same_scope_cross_profile_installation_is_atomic() {
             .with_source_statement_references(b1.statement.clone(), b1_references)
             .is_ok()
     );
-    assert!(
-        b5a.empty_typed()
-            .with_source_statement_references(b5a.statement.clone(), b5a_references)
-            .is_ok()
-    );
+    let replay = b5a
+        .empty_typed()
+        .with_source_statement_references(b5a.statement.clone(), b5a_references)
+        .expect("pristine B5A pair replay");
+    assert_eq!(replay, b5a_pristine);
+    assert_eq!(assemble_empty_resolved(&replay), Ok(b5a_final));
 }
 
 #[test]
@@ -1304,6 +1320,16 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
     let other = Task258B4AFixture::new(50_101);
     let foreign = Fixture::new(50_201);
     let baseline = fixture.statement();
+    let pristine_fixture = fixture.clone();
+    let pristine_typed = fixture.typed();
+    let pristine_final = assemble_empty_resolved(&pristine_typed).expect("pristine final");
+    let assert_pristine = || {
+        assert_eq!(fixture, pristine_fixture);
+        assert_eq!(fixture.statement(), baseline);
+        let replay = fixture.typed();
+        assert_eq!(replay, pristine_typed);
+        assert_eq!(assemble_empty_resolved(&replay), Ok(pristine_final.clone()));
+    };
     for mutation in 0..38 {
         let mut input = fixture.input();
         let expected = match mutation {
@@ -1535,9 +1561,134 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
             }
             _ => unreachable!(),
         };
+        assert_ne!(
+            input,
+            fixture.input(),
+            "input mutation {mutation} actual delta"
+        );
+        let input_before = input.clone();
         let run = || fixture.build_statement(input.clone());
         assert_eq!(run(), Err(expected.clone()), "input mutation {mutation}");
         assert_eq!(run(), run(), "input mutation {mutation} replay");
+        assert_eq!(input, input_before, "input mutation {mutation} purity");
+        assert_pristine();
+    }
+
+    for mutation in [
+        "Imported",
+        "Missing",
+        "Duplicate",
+        "WrongPath",
+        "WrongKind",
+        "Private",
+        "Recovered",
+    ] {
+        let label = fixture
+            .symbols
+            .labels()
+            .iter()
+            .next()
+            .expect("B4A theorem label");
+        let origin = match mutation {
+            "Imported" => {
+                let mut nodes = ResolvedArenaBuilder::new();
+                let owner = nodes
+                    .push(ResolvedNode::new(
+                        syntax::SurfaceNodeKind::ImportAliasDecl,
+                        Vec::new(),
+                        label.origin().clone(),
+                    ))
+                    .expect("imported-label owner");
+                let mut imports = ResolvedImports::new();
+                let import = imports.push_import(ResolvedImport::new(
+                    owner,
+                    range(fixture.source, 0, 1),
+                    "import statement.fixture;",
+                    None,
+                    ImportResolution::Resolved(fixture.module.clone()),
+                    label.origin().clone(),
+                ));
+                label.origin().clone().with_import_edge(import)
+            }
+            "Recovered" => label.origin().clone().recovered(),
+            _ => label.origin().clone(),
+        };
+        let mut labels = LabelIndex::new();
+        if mutation != "Missing" {
+            labels.insert(
+                LabelEntry::new(
+                    if mutation == "WrongPath" {
+                        LabelOriginPath::new("task258b2::wrong::theorem::origin")
+                    } else {
+                        label.origin_path().clone()
+                    },
+                    if mutation == "WrongKind" {
+                        LabelKind::ProofStep
+                    } else {
+                        label.kind()
+                    },
+                    label.namespace().clone(),
+                    label.primary_spelling(),
+                    origin,
+                    label.contribution(),
+                )
+                .with_visibility(if mutation == "Private" {
+                    Visibility::Private
+                } else {
+                    label.visibility()
+                })
+                .with_export_status(label.export_status()),
+            );
+        }
+        if mutation == "Duplicate" {
+            labels.insert(
+                LabelEntry::new(
+                    LabelOriginPath::new("task258b2::duplicate::theorem::origin"),
+                    label.kind(),
+                    label.namespace().clone(),
+                    label.primary_spelling(),
+                    label.origin().clone(),
+                    label.contribution(),
+                )
+                .with_visibility(label.visibility())
+                .with_export_status(label.export_status()),
+            );
+        }
+        let mut corrupted = fixture.clone();
+        corrupted.symbols = SymbolEnv::new(
+            fixture.module.clone(),
+            SymbolEnvIndexes {
+                imports: fixture.symbols.imports().clone(),
+                exports: fixture.symbols.exports().clone(),
+                symbols: fixture.symbols.symbols().clone(),
+                labels,
+                definitions: fixture.symbols.definitions().clone(),
+                overloads: fixture.symbols.overloads().clone(),
+                registrations: fixture.symbols.registrations().clone(),
+                lexical_summaries: fixture.symbols.lexical_summaries().clone(),
+                namespace_graph: fixture.symbols.namespace_graph().clone(),
+                declaration_dependencies: fixture.symbols.declaration_dependencies().clone(),
+                contributions: fixture.symbols.contributions().clone(),
+                module_summaries: fixture.symbols.module_summaries().clone(),
+            },
+        );
+        assert_ne!(
+            corrupted.symbols, fixture.symbols,
+            "resolver {mutation} actual delta"
+        );
+        assert_eq!(corrupted.input(), fixture.input());
+        let before = corrupted.clone();
+        let run = || corrupted.build_statement(corrupted.input());
+        assert_eq!(
+            run(),
+            Err(SourceStatementError::InvalidOwner {
+                owner: SourceTheoremOwnerId::new(0)
+            }),
+            "resolver {mutation}"
+        );
+        assert_eq!(run(), run(), "resolver {mutation} replay");
+        assert_eq!(corrupted, before, "resolver {mutation} purity");
+        assert_pristine();
     }
 
     for mutation in 0..8 {
@@ -1566,6 +1717,11 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
             }
             _ => unreachable!(),
         }
+        assert_ne!(
+            corrupted, baseline,
+            "fingerprint mutation {mutation} actual delta"
+        );
+        let corrupted_before = corrupted.clone();
         let run = || {
             corrupted.validate_installation_with_formula_composition(
                 fixture.source,
@@ -1583,6 +1739,88 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
             "fingerprint mutation {mutation}"
         );
         assert_eq!(run(), run(), "mutation {mutation} replay");
+        assert_eq!(
+            corrupted, corrupted_before,
+            "fingerprint mutation {mutation} purity"
+        );
+        assert_pristine();
+    }
+
+    // Only nodes owned by the lower tuple or theorem are normative here.
+    for node_index in [4, 12, 13, 14, 15, 17, 19, 20, 22] {
+        for mutate_kind in [false, true] {
+            let mut nodes = fixture
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            if mutate_kind {
+                nodes[node_index].kind = "source.statement.corrupted".into();
+            } else {
+                nodes[node_index].anchor = SourceAnchor::Range(range(fixture.source, 0, 0));
+            }
+            let arena = TypedArena::try_new(None, nodes).expect("owned-node mutation");
+            assert_ne!(
+                arena, fixture.arena,
+                "node {node_index} kind={mutate_kind} actual delta"
+            );
+            let arena_before = arena.clone();
+            let expected = if node_index == 22 && !mutate_kind {
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                }
+            } else {
+                SourceStatementError::DependencyMismatch
+            };
+            let produce = || {
+                SourceStatementProducer::build_with_formula_composition(
+                    fixture.input(),
+                    &fixture.symbols,
+                    &fixture.bindings,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.composite,
+                    &fixture.composition,
+                    &arena,
+                )
+            };
+            let install = || {
+                baseline.validate_installation_with_formula_composition(
+                    fixture.source,
+                    &fixture.module,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.composite,
+                    &fixture.composition,
+                    &arena,
+                )
+            };
+            assert_eq!(
+                produce(),
+                Err(expected.clone()),
+                "node {node_index} kind={mutate_kind} producer"
+            );
+            assert_eq!(
+                produce(),
+                produce(),
+                "node {node_index} kind={mutate_kind} producer replay"
+            );
+            assert_eq!(
+                install(),
+                Err(expected),
+                "node {node_index} kind={mutate_kind} installer"
+            );
+            assert_eq!(
+                install(),
+                install(),
+                "node {node_index} kind={mutate_kind} installer replay"
+            );
+            assert_eq!(
+                arena, arena_before,
+                "node {node_index} kind={mutate_kind} purity"
+            );
+            assert_pristine();
+        }
     }
 
     let rooted_arena = TypedArena::try_new(
@@ -1621,6 +1859,7 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
             &rooted_arena,
         )
         .expect("rooted Task257B1 remains valid");
+    let rooted_before = rooted_arena.clone();
     let rooted_run = || {
         SourceStatementProducer::build_with_formula_composition(
             fixture.input(),
@@ -1635,9 +1874,53 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
     };
     assert_eq!(rooted_run(), Err(SourceStatementError::DependencyMismatch));
     assert_eq!(rooted_run(), rooted_run(), "rooted lower replay");
+    let rooted_install = || {
+        baseline.validate_installation_with_formula_composition(
+            fixture.source,
+            &fixture.module,
+            &fixture.primary,
+            &fixture.atomic,
+            &fixture.composite,
+            &fixture.composition,
+            &rooted_arena,
+        )
+    };
+    assert_ne!(rooted_arena, fixture.arena);
+    assert_eq!(
+        rooted_install(),
+        Err(SourceStatementError::DependencyMismatch)
+    );
+    assert_eq!(
+        rooted_install(),
+        rooted_install(),
+        "rooted retained installer replay"
+    );
+    assert_eq!(rooted_arena, rooted_before);
+    assert_pristine();
 
     let (relocated_arena, relocated_primary, relocated_atomic, relocated_composition) =
         fixture.coherent_relocated_primary_lower();
+    assert_ne!(
+        (
+            &relocated_arena,
+            &relocated_primary,
+            &relocated_atomic,
+            &relocated_composition
+        ),
+        (
+            &fixture.arena,
+            &fixture.primary,
+            &fixture.atomic,
+            &fixture.composition
+        ),
+        "relocated lower actual delta"
+    );
+    let relocated_before = (
+        relocated_arena.clone(),
+        relocated_primary.clone(),
+        relocated_atomic.clone(),
+        relocated_composition.clone(),
+    );
     let relocated_run = || {
         SourceStatementProducer::build_with_formula_composition(
             fixture.input(),
@@ -1655,7 +1938,36 @@ fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
         Err(SourceStatementError::DependencyMismatch)
     );
     assert_eq!(relocated_run(), relocated_run(), "relocated lower replay");
-    assert_eq!(fixture.statement().debug_text(), baseline.debug_text());
+    let relocated_install = || {
+        baseline.validate_installation_with_formula_composition(
+            fixture.source,
+            &fixture.module,
+            &relocated_primary,
+            &relocated_atomic,
+            &fixture.composite,
+            &relocated_composition,
+            &relocated_arena,
+        )
+    };
+    assert_eq!(
+        relocated_install(),
+        Err(SourceStatementError::DependencyMismatch)
+    );
+    assert_eq!(
+        relocated_install(),
+        relocated_install(),
+        "relocated retained installer replay"
+    );
+    assert_eq!(
+        (
+            relocated_arena,
+            relocated_primary,
+            relocated_atomic,
+            relocated_composition
+        ),
+        relocated_before
+    );
+    assert_pristine();
 }
 
 #[test]
@@ -1725,7 +2037,7 @@ fn task_258b4a_cross_family_installation_and_route_isolation_are_atomic() {
     .expect("atomic Task256")
     .with_source_statement(atomic_statement.clone())
     .expect("atomic Task258 family");
-    let atomic_before = atomic_typed.debug_text();
+    let atomic_before = atomic_typed.clone();
     assert_eq!(
         atomic_typed
             .clone()
@@ -1736,15 +2048,18 @@ fn task_258b4a_cross_family_installation_and_route_isolation_are_atomic() {
             ),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(atomic_typed.debug_text(), atomic_before);
-    let paired_before = paired.debug_text();
+    assert_eq!(atomic_typed, atomic_before);
+    let paired_before = paired.clone();
     assert_eq!(
         paired.clone().with_source_statement(atomic_statement),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(paired.debug_text(), paired_before);
+    assert_eq!(paired, paired_before);
     let replay = fixture.typed();
-    assert_eq!(paired.debug_text(), replay.debug_text());
+    assert_eq!(paired, replay);
+    assert_eq!(base, fixture.typed_base());
+    let paired_final = assemble_empty_resolved(&paired).expect("paired final");
+    assert_eq!(assemble_empty_resolved(&replay), Ok(paired_final));
     assert_eq!(
         atomic
             .build(atomic.input())
@@ -1836,8 +2151,15 @@ fn task_258b4a_final_clone_revalidates_composite_root_and_empty_semantics() {
             }
             _ => unreachable!(),
         }
+        assert_ne!(
+            stale_statement,
+            fixture.statement(),
+            "final mutation {mutation} actual delta"
+        );
         let mut stale_typed = typed.clone();
         stale_typed.inject_source_statement_for_test(stale_statement);
+        assert_ne!(stale_typed, typed);
+        let stale_before = stale_typed.clone();
         let run = || assemble_empty_resolved(&stale_typed);
         assert_eq!(
             run(),
@@ -1845,6 +2167,9 @@ fn task_258b4a_final_clone_revalidates_composite_root_and_empty_semantics() {
             "final statement mutation {mutation}"
         );
         assert_eq!(run(), run(), "final statement mutation {mutation} replay");
+        assert_eq!(stale_typed, stale_before);
+        assert_eq!(fixture.typed(), typed);
+        assert_eq!(assemble_empty_resolved(&typed), Ok(resolved.clone()));
     }
     for partial in 0..3 {
         let mut stale_typed = typed.clone();
@@ -1854,6 +2179,8 @@ fn task_258b4a_final_clone_revalidates_composite_root_and_empty_semantics() {
             2 => stale_typed.remove_source_atomic_formula_for_test(),
             _ => unreachable!(),
         }
+        assert_ne!(stale_typed, typed, "partial tuple {partial} actual delta");
+        let stale_before = stale_typed.clone();
         let run = || assemble_empty_resolved(&stale_typed);
         assert_eq!(
             run(),
@@ -1861,13 +2188,11 @@ fn task_258b4a_final_clone_revalidates_composite_root_and_empty_semantics() {
             "partial lower tuple {partial}"
         );
         assert_eq!(run(), run(), "partial lower tuple {partial} replay");
+        assert_eq!(stale_typed, stale_before);
+        assert_eq!(fixture.typed(), typed);
+        assert_eq!(assemble_empty_resolved(&typed), Ok(resolved.clone()));
     }
-    assert_eq!(
-        assemble_empty_resolved(&typed)
-            .expect("clean replay")
-            .debug_text(),
-        resolved.debug_text()
-    );
+    assert_eq!(assemble_empty_resolved(&typed), Ok(resolved));
 }
 
 #[test]
@@ -2057,8 +2382,57 @@ fn task_258b4b_connective_grouping_root_corruption_matrix_fails_atomically() {
 fn task_258b4b_cross_family_and_b4a_installation_orders_are_atomic() {
     let fixture = Task258B4BFixture::new();
     let b4a = Task258B4AFixture::new(50_004);
+    let a_before = b4a.clone();
+    let hybrid = || {
+        SourceStatementProducer::build_with_formula_composition(
+            b4a.input(),
+            &b4a.symbols,
+            &b4a.bindings,
+            &b4a.primary,
+            &b4a.atomic,
+            &fixture.composite,
+            &fixture.composition,
+            &b4a.arena,
+        )
+    };
+    assert_eq!(hybrid(), Err(SourceStatementError::DependencyMismatch));
+    assert_eq!(
+        hybrid(),
+        hybrid(),
+        "foreign lower pair on B4A producer replay"
+    );
+    assert_eq!(b4a, a_before);
     let base = fixture.typed_base();
     let paired = fixture.typed();
+    let a_paired = b4a.typed();
+    let a_final = assemble_empty_resolved(&a_paired).expect("pristine B4A final");
+    assert_eq!(
+        a_paired.clone().with_source_formula_composition_statement(
+            fixture.composite.clone(),
+            fixture.composition.clone(),
+            fixture.statement(),
+        ),
+        Err(TypedAstError::InvalidSourceStatement)
+    );
+    assert_eq!(a_paired, b4a.typed());
+    assert_eq!(assemble_empty_resolved(&a_paired), Ok(a_final));
+    let pristine_final = assemble_empty_resolved(&paired).expect("pristine paired final");
+    let lower = base
+        .clone()
+        .with_source_formula_composition(fixture.composite.clone(), fixture.composition.clone())
+        .expect("independent lower-only tuple");
+    assert_eq!(
+        lower.clone().with_source_statement(b4a.statement()),
+        Err(TypedAstError::InvalidSourceStatement)
+    );
+    assert_eq!(
+        paired.clone().with_source_formula_composition_statement(
+            b4a.composite.clone(),
+            b4a.composition.clone(),
+            b4a.statement(),
+        ),
+        Err(TypedAstError::InvalidSourceStatement)
+    );
     assert!(
         paired
             .source_statement()
@@ -2094,13 +2468,24 @@ fn task_258b4b_cross_family_and_b4a_installation_orders_are_atomic() {
         ),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    let before = paired.debug_text();
+    let before = paired.clone();
     assert_eq!(
         paired.clone().with_source_statement(b4a.statement()),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(paired.debug_text(), before);
-    assert_eq!(fixture.typed().debug_text(), before);
+    assert_eq!(paired, before);
+    let replay = fixture.typed();
+    assert_eq!(replay, before);
+    assert_eq!(assemble_empty_resolved(&replay), Ok(pristine_final));
+    assert_eq!(base, fixture.typed_base());
+    assert_eq!(
+        lower,
+        base.with_source_formula_composition(
+            fixture.composite.clone(),
+            fixture.composition.clone(),
+        )
+        .expect("lower-only pristine replay")
+    );
     assert!(b4a.statement().is_task_258b4a_profile());
     assert!(!b4a.statement().is_task_258b4b_profile());
 }
@@ -2420,8 +2805,45 @@ fn task_258b4c_cross_family_b4a_b4b_installation_orders_are_atomic() {
     let fixture = Task258B4CFixture::new();
     let b4a = Task258B4AFixture::new(50_005);
     let b4b = Task258B4BFixture::new();
+    let a_before = b4a.clone();
+    let hybrid = || {
+        SourceStatementProducer::build_with_formula_composition(
+            b4a.input(),
+            &b4a.symbols,
+            &b4a.bindings,
+            &b4a.primary,
+            &b4a.atomic,
+            &fixture.composite,
+            &fixture.composition,
+            &b4a.arena,
+        )
+    };
+    assert_eq!(hybrid(), Err(SourceStatementError::DependencyMismatch));
+    assert_eq!(
+        hybrid(),
+        hybrid(),
+        "foreign lower pair on B4A producer replay"
+    );
+    assert_eq!(b4a, a_before);
     let base = fixture.typed_base();
     let paired = fixture.typed();
+    let pristine_final = assemble_empty_resolved(&paired).expect("pristine paired final");
+    let lower = base
+        .clone()
+        .with_source_formula_composition(fixture.composite.clone(), fixture.composition.clone())
+        .expect("independent lower-only tuple");
+    assert_eq!(
+        lower.clone().with_source_statement(b4a.statement()),
+        Err(TypedAstError::InvalidSourceStatement)
+    );
+    assert_eq!(
+        paired.clone().with_source_formula_composition_statement(
+            b4a.composite.clone(),
+            b4a.composition.clone(),
+            b4a.statement(),
+        ),
+        Err(TypedAstError::InvalidSourceStatement)
+    );
     assert!(
         paired
             .source_statement()
@@ -2467,7 +2889,7 @@ fn task_258b4c_cross_family_b4a_b4b_installation_orders_are_atomic() {
         ),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    let before = paired.debug_text();
+    let before = paired.clone();
     assert_eq!(
         paired.clone().with_source_statement(b4a.statement()),
         Err(TypedAstError::InvalidSourceStatement)
@@ -2476,8 +2898,19 @@ fn task_258b4c_cross_family_b4a_b4b_installation_orders_are_atomic() {
         paired.clone().with_source_statement(b4b.statement()),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(paired.debug_text(), before);
-    assert_eq!(fixture.typed().debug_text(), before);
+    assert_eq!(paired, before);
+    let replay = fixture.typed();
+    assert_eq!(replay, before);
+    assert_eq!(assemble_empty_resolved(&replay), Ok(pristine_final));
+    assert_eq!(base, fixture.typed_base());
+    assert_eq!(
+        lower,
+        base.with_source_formula_composition(
+            fixture.composite.clone(),
+            fixture.composition.clone(),
+        )
+        .expect("lower-only pristine replay")
+    );
     assert!(b4a.statement().is_task_258b4a_profile());
     assert!(b4b.statement().is_task_258b4b_profile());
     assert!(!fixture.statement().is_task_258b4a_profile());

@@ -702,12 +702,8 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         .is_none()
     );
     assert_eq!(
-        (
-            b4a.left_lookup_ordinal,
-            b4a.right_lookup_ordinal,
-            b4a.reference_use_ordinals.as_slice(),
-        ),
-        (1, 1, [1, 1].as_slice())
+        b4a.primary.references().iter().map(|(_, row)| row.use_ordinal()).collect::<Vec<_>>(),
+        [1, 1]
     );
     let (b4b_ast, b4b_module, b4b_symbols, b4b) = task258b4b_output(266_721);
     assert!(
@@ -852,18 +848,13 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
         .source_statement()
         .expect("B4C statement")
         .clone();
-    let b4a_statement = b4a
-        .typed_ast
-        .source_statement()
-        .expect("B4A statement")
-        .clone();
     let b4b_statement = b4b
         .typed_ast
         .source_statement()
         .expect("B4B statement")
         .clone();
     let b4c_before = b4c.typed_ast.debug_text();
-    let b4a_before = b4a.typed_ast.debug_text();
+    let b4a_before = format!("{b4a:?}");
     let b4b_before = b4b.typed_ast.debug_text();
     let b4c_lower = source_formula_composition_output_with_source(
         &b4c_ast,
@@ -889,16 +880,14 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     )
     .expect("B4B lower selector")
     .expect("B4B lower route");
-    for foreign in [b4a_statement.clone(), b4b_statement.clone()] {
-        assert_eq!(
-            b4c_lower
-                .typed_ast
-                .clone()
-                .with_source_statement(foreign)
-                .expect_err("B4C lower then foreign statement must fail"),
-            TypedAstError::InvalidSourceStatement
-        );
-    }
+    assert_eq!(
+        b4c_lower
+            .typed_ast
+            .clone()
+            .with_source_statement(b4b_statement.clone())
+            .expect_err("B4C lower then foreign statement must fail"),
+        TypedAstError::InvalidSourceStatement
+    );
     for lower in [&b4a_lower, &b4b_lower] {
         assert_eq!(
             lower
@@ -909,23 +898,6 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
             TypedAstError::InvalidSourceStatement
         );
     }
-    assert_eq!(
-        b4c.typed_ast
-            .clone()
-            .with_source_formula_composition_statement(
-                b4a.typed_ast
-                    .source_composite_formula()
-                    .expect("B4A composite")
-                    .clone(),
-                b4a.typed_ast
-                    .source_formula_composition()
-                    .expect("B4A composition")
-                    .clone(),
-                b4a_statement.clone(),
-            )
-            .expect_err("B4C then B4A must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
     assert_eq!(
         b4c.typed_ast
             .clone()
@@ -1012,16 +984,8 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
             &b4c_symbols,
             SOURCE_STATEMENT_B4C_TEXT,
             |input| {
-                input.composite = b4a
-                    .typed_ast
-                    .source_composite_formula()
-                    .expect("B4A composite")
-                    .clone();
-                input.composition = b4a
-                    .typed_ast
-                    .source_formula_composition()
-                    .expect("B4A composition")
-                    .clone();
+                input.composite = b4a.composite.clone();
+                input.composition = b4a.composition.clone();
             },
         )
         .expect("B4C/B4A selector")
@@ -1049,7 +1013,8 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
         .expect("B4C/B4B selector")
         .is_err()
     );
-    assert!(
+    let mut changed_b4a = None;
+    assert_eq!(
         source_statement_b4a_output_with_mutation(
             &b4a_ast,
             b4a_module.clone(),
@@ -1066,11 +1031,14 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
                     .source_formula_composition()
                     .expect("B4C composition")
                     .clone();
+                changed_b4a = Some(format!("{input:?}"));
             },
         )
         .expect("B4A/B4C selector")
-        .is_err()
+        .expect_err("retired raw B4A"),
+        "source statement dependency mismatch"
     );
+    assert_ne!(changed_b4a.expect("genuine changed B4A tuple"), b4a_before);
     assert!(
         source_statement_b4b_output_with_mutation(
             &b4b_ast,
@@ -1124,54 +1092,36 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
             "B4C telemetry hybrid {left}/{right}/{references:?} replay"
         );
     }
-    for (ast, module, symbols, source_text, hybrids) in [
-        (
-            &b4a_ast,
-            b4a_module.clone(),
-            &b4a_symbols,
-            SOURCE_STATEMENT_B4A_TEXT,
-            vec![(0, 0, Vec::new()), (2, 2, vec![2, 2, 4, 4, 4, 4])],
-        ),
-        (
-            &b4b_ast,
-            b4b_module.clone(),
-            &b4b_symbols,
-            SOURCE_STATEMENT_B4B_TEXT,
-            vec![(1, 1, vec![1, 1]), (2, 2, vec![2, 2, 4, 4, 4, 4])],
-        ),
+    for (left, right, references) in [
+        (1, 1, vec![1, 1]),
+        (2, 2, vec![2, 2, 4, 4, 4, 4]),
     ] {
-        for (left, right, references) in hybrids {
-            let run = || {
-                source_statement_transport_detail_keys_with_output_mutation_for_test(
-                    ast,
-                    module.clone(),
-                    symbols,
-                    source_text,
-                    |output| {
-                        output.left_lookup_ordinal = left;
-                        output.right_lookup_ordinal = right;
-                        output.reference_use_ordinals = references.clone();
-                    },
-                )
-                .expect("foreign telemetry selector")
-            };
-            assert!(
-                !run().is_empty(),
-                "{source_text:?} telemetry hybrid {left}/{right}/{references:?}"
-            );
-            assert_eq!(run(), run(), "foreign telemetry replay");
-        }
+        let run = || {
+            source_statement_transport_detail_keys_with_output_mutation_for_test(
+                &b4b_ast,
+                b4b_module.clone(),
+                &b4b_symbols,
+                SOURCE_STATEMENT_B4B_TEXT,
+                |output| {
+                    output.left_lookup_ordinal = left;
+                    output.right_lookup_ordinal = right;
+                    output.reference_use_ordinals = references.clone();
+                },
+            )
+            .expect("foreign telemetry selector")
+        };
+        assert!(
+            !run().is_empty(),
+            "B4B telemetry hybrid {left}/{right}/{references:?}"
+        );
+        assert_eq!(run(), run(), "foreign telemetry replay");
     }
     assert_eq!(b4c.typed_ast.debug_text(), b4c_before);
-    assert_eq!(b4a.typed_ast.debug_text(), b4a_before);
+    assert_eq!(format!("{b4a:?}"), b4a_before);
     assert_eq!(b4b.typed_ast.debug_text(), b4b_before);
-    for output in [&b4a, &b4b, &b4c] {
+    for composite in [&b4a.composite, b4b.typed_ast.source_composite_formula().unwrap(), b4c.typed_ast.source_composite_formula().unwrap()] {
         assert_eq!(
-            output
-                .typed_ast
-                .source_composite_formula()
-                .expect("composite")
-                .roots()
+            composite.roots()
                 .get(SourceFormulaRootId::new(0))
                 .expect("root")
                 .ownership(),
@@ -1281,8 +1231,7 @@ fn task258b4c_final_clone_debug_and_semantic_outputs_are_stable() {
             &b4a_symbols,
             SOURCE_STATEMENT_B4A_TEXT,
         )
-        .expect("B4A detail selector")
-        .is_empty()
+        .is_none()
     );
     let (b4b_ast, b4b_module, b4b_symbols, _) = task258b4b_output(266_902);
     assert!(

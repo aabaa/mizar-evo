@@ -60,6 +60,9 @@ bare B1A・wrapped B1B1 statement/witnessのprofile・classifier・setter/final�
 ## Private legacy structure preservation
 休眠2A constructor・2B selector・2C update statement/witnessのprofile・classifier・組み込み/final許可はChecker内テスト専用とする。最後の本番callerが退役した共通raw witness内部処理もテスト専用とする。runner adapterは実source/Surface/resolver認証と独立したlower handoffを保持する。public raw methodのsignatureを保ち、退役profileを拒否する。native original-source構築・検証は維持し、functional-copy・constructor/selector/member/replacement/result型決定とwitness/proof semanticsは延期する。
 
+## Private legacy composite statement preservation
+B4A explicit-universal upperのprofile・classifier・組み込み/final許可はChecker内テスト専用とする。runner adapterはraw拒否の前にsource/Surface認証、実resolver入力と独立したTask-257B1 lower tupleを保持し、upper owner/label guardはChecker内テストに保持する。B4B/C共通処理とpublic composite producer/installer methodは維持する。activeなsingle-LF caseはlower-onlyのままとし、native composite statement構築は延期する。lower binding規則とproof境界は既存ownerに保持する。
+
 ## Original-source nested statement references
 native B1はsource順theorem/compact/inner-conclusion/outer-conclusionの4statement、B5Aは後続child proof内のdescendant conclusionを加える。実source/lowerから対応context・reserved guard・未検証candidateを作る。site/range/roleと全statement token正規化spellingは実値、statement ordinalはdense preorder。binding contextは実module/outer/child scopeとparentへ対応し、module reservationのvisibilityだけを継承する。
 proof labelはcompact statementと未検証candidate、citationは実direct citing conclusion（B5Aではdescendant）を所有し、実candidateのlabel scopeを使う。全Resolver replayで同scopeまたは祖先から子孫へのvisibilityを認証する。label `source_ordinal`/citation row `ordinal`はowned-table順、label `visible_after_ordinal`/candidate `ordinal()`は実resolver clockを保つ。variable/label scopeとhierarchical collector/flat node originを分け、cast/path改変でなく実site/range/source/moduleでjoinする。
