@@ -3372,8 +3372,9 @@ reserve/theorem structure and the replayed raw declaration environment before
 real immutable composition. Its internal selector is AST-only. Layout/comments
 and the middle existential name with its one use may vary. Fixed x/r and all six
 lookup binding IDs/roles stay unchanged; colliding names are outside this family.
-B4C retains its exact dormant selector, using raw symbols below its enriched
-statement environment. Original source fingerprints and semantic boundaries remain.
+The Checker-test-only B4C upper profile retains a private runner adapter, using
+raw symbols below its enriched statement environment before raw refusal.
+Production has no B4C upper dispatch. Original source fingerprints and semantic boundaries remain.
 
 ## Checker Task 257B3 Frozen Harness Boundary
 

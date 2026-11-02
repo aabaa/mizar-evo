@@ -1169,6 +1169,7 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b4c_profile(&self) -> bool {
         self.has_task_258b4_shape()
             && self.binding_env.contexts().len() == 4
@@ -7317,6 +7318,7 @@ enum Task258B4Profile {
     #[cfg(test)]
     QuantifierBoundUse,
     ConnectiveGrouping,
+    #[cfg(test)]
     NestedQuantifier,
 }
 
@@ -7327,9 +7329,11 @@ fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Pro
     }
     if statement.is_task_258b4b_profile() {
         Some(Task258B4Profile::ConnectiveGrouping)
-    } else if statement.is_task_258b4c_profile() {
-        Some(Task258B4Profile::NestedQuantifier)
     } else {
+        #[cfg(test)]
+        if statement.is_task_258b4c_profile() {
+            return Some(Task258B4Profile::NestedQuantifier);
+        }
         None
     }
 }
@@ -7356,16 +7360,18 @@ fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task2
     })
     {
         Some(Task258B4Profile::ConnectiveGrouping)
-    } else if owner.is_some_and(|owner| {
-        owner.source_range == range(input.source_id, 19, 137)
-            && owner.spelling == "FormulaNestedQuantifierPayloadBoundary"
-    }) || statement.is_some_and(|statement| {
-        statement.spelling
-            == "theorem FormulaNestedQuantifierPayloadBoundary : for x being set st x = x ex y being set st for r st r = y holds x = r ;"
-    })
-    {
-        Some(Task258B4Profile::NestedQuantifier)
     } else {
+        #[cfg(test)]
+        if owner.is_some_and(|owner| {
+            owner.source_range == range(input.source_id, 19, 137)
+                && owner.spelling == "FormulaNestedQuantifierPayloadBoundary"
+        }) || statement.is_some_and(|statement| {
+            statement.spelling
+                == "theorem FormulaNestedQuantifierPayloadBoundary : for x being set st x = x ex y being set st for r st r = y holds x = r ;"
+        })
+        {
+            return Some(Task258B4Profile::NestedQuantifier);
+        }
         None
     }
 }
@@ -7399,6 +7405,7 @@ fn validate_task_258b4_dependencies(
         #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (2, 1, 4, 2, 2, 0, 1, 2, 2, 1, 2, 26),
         Task258B4Profile::ConnectiveGrouping => (2, 1, 4, 16, 0, 16, 8, 16, 16, 8, 0, 124),
+        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (4, 4, 0, 6, 6, 0, 3, 6, 6, 3, 6, 66),
     };
     if bindings.source_id() != source_id
@@ -7429,6 +7436,7 @@ fn validate_task_258b4_dependencies(
             #[cfg(test)]
             Task258B4Profile::QuantifierBoundUse => !composite_formulas.is_task_257b1_profile(),
             Task258B4Profile::ConnectiveGrouping => !composite_formulas.is_task_257b2_profile(),
+            #[cfg(test)]
             Task258B4Profile::NestedQuantifier => !composite_formulas.is_task_257b3_profile(),
         }
         || formula_composition.source_id() != source_id
@@ -7491,6 +7499,7 @@ fn validate_task_258b4_dependencies(
         #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (20, (50, 77), 14, 4, 13, 12),
         Task258B4Profile::ConnectiveGrouping => (118, (50, 164), 58, 4, 57, 56),
+        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (60, (67, 136), 38, 9, 37, 36),
     };
     let (formula_context, formula_spelling, binder_range, identifier_range, type_range) =
@@ -7498,6 +7507,7 @@ fn validate_task_258b4_dependencies(
             #[cfg(test)]
             Task258B4Profile::QuantifierBoundUse => (0, "for holds", (54, 65), (54, 55), (62, 65)),
             Task258B4Profile::ConnectiveGrouping => (0, "for holds", (54, 65), (54, 55), (62, 65)),
+            #[cfg(test)]
             Task258B4Profile::NestedQuantifier => (0, "for st", (71, 82), (71, 72), (79, 82)),
         };
     if formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(formula_site))
@@ -7543,6 +7553,7 @@ fn validate_task_258b4_arena_partition(
             ],
             120,
         ),
+        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (
             &[
                 9, 17, 22, 32, 33, 36, 37, 38, 39, 41, 43, 44, 45, 46, 47, 48, 50, 52, 53, 55, 57,
@@ -7551,6 +7562,7 @@ fn validate_task_258b4_arena_partition(
             62,
         ),
     };
+    #[cfg(test)]
     const TASK258B4C_ARENA_RANGES: [(usize, usize); 66] = [
         (0, 7),
         (8, 9),
@@ -7619,8 +7631,13 @@ fn validate_task_258b4_arena_partition(
         (0, 137),
         (0, 137),
     ];
+    #[cfg(not(test))]
+    let _ = source_id;
     arena.iter().all(|(id, node)| {
         let id = id.index();
+        #[cfg(not(test))]
+        let exact_profile = true;
+        #[cfg(test)]
         let exact_profile = profile != Task258B4Profile::NestedQuantifier
             || (node.anchor
                 == SourceAnchor::Range(range(
@@ -7695,6 +7712,7 @@ fn validate_task_258b4_primary_atomic_sites(
                 (157, 162),
             ],
         },
+        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => SiteProfile {
             term_sites: &[39, 41, 48, 50, 53, 55],
             term_ranges: &[
@@ -7791,6 +7809,7 @@ fn validate_task_258b4_rows(
             &[2, 0][..],
             None,
         ),
+        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (
             19,
             137,

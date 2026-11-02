@@ -1744,8 +1744,9 @@ impl TypedAst {
         #[cfg(not(test))]
         let universal_statement_profile = false;
         #[cfg(test)]
-        let universal_statement_profile =
-            composite.is_task_257b1_profile() && statement.is_task_258b4a_profile();
+        let universal_statement_profile = (composite.is_task_257b1_profile()
+            && statement.is_task_258b4a_profile())
+            || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile());
         if self.source_nested_fraenkel_capture_identity.is_some() {
             return Err(TypedAstError::InvalidSourceStatement);
         }
@@ -1783,8 +1784,7 @@ impl TypedAst {
             || !self.initial_obligations.is_empty()
             || !self.diagnostics.is_empty()
             || !(universal_statement_profile
-                || (composite.is_task_257b2_profile() && statement.is_task_258b4b_profile())
-                || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile()))
+                || (composite.is_task_257b2_profile() && statement.is_task_258b4b_profile()))
         {
             return Err(TypedAstError::InvalidSourceStatement);
         }

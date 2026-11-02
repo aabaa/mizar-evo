@@ -14108,7 +14108,7 @@ impl Task258B4AFixture {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Task258B4BFixture {
     source: SourceId,
     module: ModuleId,
@@ -14459,7 +14459,7 @@ impl Task258B4BFixture {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Task258B4CFixture {
     source: SourceId,
     module: ModuleId,

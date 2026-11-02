@@ -29,7 +29,7 @@ use super::{
     SourceStatementB3M2B2B3ERouteInputs, SourceStatementB3M2B2B3EStage,
     SourceStatementB3M2B2B3ESurfaceMutation, SourceStatementB3NExtraction,
     SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
-    SourceStatementB4BSurfaceMutation, SourceStatementB4CSurfaceMutation,
+    SourceStatementB4BSurfaceMutation, SourceStatementB4CRouteInputs, SourceStatementB4CSurfaceMutation,
     SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
     SourceStatementRouteOutput, TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
@@ -2238,21 +2238,40 @@ fn task258b4c_output(
     SurfaceAst,
     ResolverModuleId,
     SymbolEnv,
-    SourceStatementRouteOutput,
+    SourceStatementB4CRouteInputs,
 ) {
     let (ast, module, _, symbols, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B4C_TEXT, seed);
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B4C_TEXT,
+    let mut captured = None;
+    assert_eq!(
+        source_statement_b4c_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B4C_TEXT,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic Task258B4C extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
+    );
+    assert!(
+        source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B4C_TEXT,
+        )
+        .is_none()
+    );
+    (
+        ast,
+        module,
+        symbols,
+        captured.expect("genuine B4C lower inputs before raw admission"),
     )
-    .expect("Task258B4C selector")
-    .expect("Task258B4C output");
-    (ast, module, symbols, output)
 }
 
 fn task258_reference_syntax_base(

@@ -2253,10 +2253,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     #[cfg(not(test))]
                     let universal_statement_profile = false;
                     #[cfg(test)]
-                    let universal_statement_profile = statement.is_task_258b4a_profile();
-                    universal_statement_profile
-                        || statement.is_task_258b4b_profile()
-                        || statement.is_task_258b4c_profile()
+                    let universal_statement_profile =
+                        statement.is_task_258b4a_profile() || statement.is_task_258b4c_profile();
+                    universal_statement_profile || statement.is_task_258b4b_profile()
                 });
         let original_statement = self.inputs.typed_ast.resolved_root().is_some()
             && self.inputs.typed_ast.source_statement().is_some();
@@ -2977,10 +2976,10 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             #[cfg(not(test))]
             let universal_statement_profile = false;
             #[cfg(test)]
-            let universal_statement_profile = source_statement.is_task_258b4a_profile();
-            let is_task_258b4 = universal_statement_profile
-                || source_statement.is_task_258b4b_profile()
+            let universal_statement_profile = source_statement.is_task_258b4a_profile()
                 || source_statement.is_task_258b4c_profile();
+            let is_task_258b4 =
+                universal_statement_profile || source_statement.is_task_258b4b_profile();
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()

@@ -397,11 +397,14 @@ const SOURCE_STATEMENT_B4B_SPELLING: &str = concat!(
     "( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ",
     "( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;",
 );
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B4C_TEXT: &str = concat!(
     "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: ",
     "for x being set st x = x ex y being set st for r st r = y holds x = r;\n\n",
 );
+#[cfg(test)]
 const SOURCE_STATEMENT_B4C_LABEL: &str = "FormulaNestedQuantifierPayloadBoundary";
+#[cfg(test)]
 const SOURCE_STATEMENT_B4C_SPELLING: &str = concat!(
     "theorem FormulaNestedQuantifierPayloadBoundary : ",
     "for x being set st x = x ex y being set st for r st r = y holds x = r ;",
@@ -874,6 +877,7 @@ fn exact_task258b4b_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool
         })
 }
 
+#[cfg(test)]
 const TASK258B4C_SURFACE_KINDS: [&str; 66] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
     "Token(SurfaceToken { kind: Identifier, text: \"r\" })",
@@ -942,6 +946,7 @@ const TASK258B4C_SURFACE_KINDS: [&str; 66] = [
     "CompilationUnit",
     "Root",
 ];
+#[cfg(test)]
 const TASK258B4C_SURFACE_RANGES: [(usize, usize); 66] = [
     (0, 7),
     (8, 9),
@@ -1010,6 +1015,7 @@ const TASK258B4C_SURFACE_RANGES: [(usize, usize); 66] = [
     (0, 137),
     (0, 137),
 ];
+#[cfg(test)]
 const TASK258B4C_SURFACE_CHILDREN: [&[usize]; 66] = [
     &[],
     &[],
@@ -1082,6 +1088,7 @@ const TASK258B4C_SURFACE_CHILDREN: [&[usize]; 66] = [
     ],
 ];
 
+#[cfg(test)]
 fn exact_task258b4c_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     source_text == SOURCE_STATEMENT_B4C_TEXT
         && source_text.len() == 139
@@ -2875,6 +2882,7 @@ pub(in crate::runner) struct SourceStatementB4ARouteInputs {
 }
 
 pub(in crate::runner) type SourceStatementB4BRouteInputs = SourceStatementB4ARouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB4CRouteInputs = SourceStatementB4ARouteInputs;
 
 #[derive(Debug, Clone)]
@@ -3015,14 +3023,10 @@ fn source_statement_transport_output_is_valid(
                 == output.resolved.source_composite_formula()
             && output.typed_ast.source_formula_composition()
                 == output.resolved.source_formula_composition()
-            && ((source_text == SOURCE_STATEMENT_B4B_TEXT
-                && output.left_lookup_ordinal == 0
-                && output.right_lookup_ordinal == 0
-                && output.reference_use_ordinals.is_empty())
-                || (source_text == SOURCE_STATEMENT_B4C_TEXT
-                    && output.left_lookup_ordinal == 2
-                    && output.right_lookup_ordinal == 2
-                    && output.reference_use_ordinals == [2, 2, 4, 4, 4, 4])))
+            && source_text == SOURCE_STATEMENT_B4B_TEXT
+            && output.left_lookup_ordinal == 0
+            && output.right_lookup_ordinal == 0
+            && output.reference_use_ordinals.is_empty())
             || (output.typed_ast.source_statement_references().is_none()
                 && output.typed_ast.source_statement_witnesses().is_none()
                 && output
@@ -13511,15 +13515,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B4C_TEXT {
-        return source_statement_b4c_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B4B_TEXT {
         return source_statement_b4b_output_with_source_and_mutation_impl(
             ast,
@@ -14629,6 +14624,7 @@ fn source_statement_b3m2a_output_with_source_and_mutation_impl(
     ))
 }
 
+#[cfg(test)]
 fn source_statement_b4c_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -15643,6 +15639,7 @@ fn validate_task258b5a_resolver_env(
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_task258b4c_raw_resolver_env(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -15782,6 +15779,7 @@ fn validate_task258b4b_raw_resolver_env(
     Ok(())
 }
 
+#[cfg(test)]
 fn build_source_statement_b4c_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -15990,7 +15988,7 @@ fn build_source_statement_b4c_output(
         },
     };
     mutate(&mut inputs);
-    let statement = SourceStatementProducer::build_with_formula_composition(
+    let error = SourceStatementProducer::build_with_formula_composition(
         inputs.statement,
         symbols,
         &inputs.binding_env,
@@ -16000,82 +15998,8 @@ fn build_source_statement_b4c_output(
         &inputs.composition,
         &inputs.arena,
     )
-    .map_err(|error| error.to_string())?;
-    let reference_use_ordinals = inputs
-        .primary
-        .references()
-        .iter()
-        .map(|(_, row)| row.use_ordinal())
-        .collect::<Vec<_>>();
-    let [left_lookup_ordinal, right_lookup_ordinal, 4, 4, 4, 4] = reference_use_ordinals.as_slice()
-    else {
-        return Err("Task258B4C lower reference profile mismatch".to_owned());
-    };
-    if *left_lookup_ordinal != 2 || *right_lookup_ordinal != 2 {
-        return Err("Task258B4C lower reference profile mismatch".to_owned());
-    }
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_formula_composition_statement(inputs.composite, inputs.composition, statement)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_composite_formula() != resolved.source_composite_formula()
-        || typed_ast.source_formula_composition() != resolved.source_formula_composition()
-        || typed_ast.source_statement_references().is_some()
-        || typed_ast.source_statement_witnesses().is_some()
-        || !typed_ast.contexts().is_empty()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258B4C immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-        left_lookup_ordinal: *left_lookup_ordinal,
-        right_lookup_ordinal: *right_lookup_ordinal,
-        reference_use_ordinals,
-    })
+    .expect_err("retired raw Task258B4C profile");
+    Err(error.to_string())
 }
 
 fn build_source_statement_b4b_output(
