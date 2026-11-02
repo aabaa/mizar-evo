@@ -1795,7 +1795,54 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
             frontend.source.clone(),
         );
         let lower = TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope);
-        if name == "choice" {
+        if name == "multiple elements" {
+            // EN13.4.1/13.8.6 retain both occurrences in the finite term list.
+            let (_, inference, base) = lower.as_ref().map_err(|error| error.to_owned())?;
+            let primary = base.source_term().unwrap();
+            let set = base.source_set_term().unwrap();
+            assert_eq!(
+                (
+                    primary.terms().len(),
+                    primary.references().len(),
+                    set.edges().len()
+                ),
+                (6, 6, 2)
+            );
+            assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(set.terms().iter().next().unwrap().1.spelling(), "{ x , x }");
+            assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
+            let pair = base
+                .clone()
+                .with_source_statement_from_original(&source, &symbols, &scope)
+                .expect("finite native pair");
+            let resolved =
+                super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &pair,
+                    Vec::new(),
+                )?;
+            assert_eq!(pair.source_set_term(), base.source_set_term());
+            assert_eq!(resolved.source_set_term(), pair.source_set_term());
+            assert_eq!(resolved.source_statement(), pair.source_statement());
+            assert_eq!(
+                resolved.source_statement_witnesses(),
+                pair.source_statement_witnesses()
+            );
+            assert!(
+                resolved.checked_formulas().is_empty()
+                    && resolved.statement_semantics().is_empty()
+                    && resolved.checked_proofs().is_empty()
+            );
+            assert_eq!(
+                base.clone()
+                    .with_source_statement_from_original(&source, &symbols, &scope),
+                Ok(pair)
+            );
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                    .as_ref(),
+                Ok(lower.as_ref().unwrap())
+            );
+        } else if name == "choice" {
             let (bindings, inference, base) = lower.as_ref().map_err(|error| error.to_owned())?;
             assert_eq!(
                 (inference.source_id(), inference.module_id()),

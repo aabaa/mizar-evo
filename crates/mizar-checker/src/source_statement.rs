@@ -1328,31 +1328,42 @@ impl SourceStatementHandoff {
             let enumeration = match enumerations.as_slice() {
                 [] => None,
                 [(id, node)] if witness && witness_count == 1 && !named_witness => {
-                    let element = match node.children.as_slice() {
-                        [_, _] => None,
-                        [_, expression, _] => {
-                            let expression = arena.node(*expression).ok_or_else(invalid)?;
-                            let [site] = expression.children.as_slice() else {
-                                return Err(invalid());
-                            };
-                            let (_, term) = primary_terms
-                                .terms()
-                                .iter()
-                                .find(|(_, term)| term.site().node() == *site)
-                                .ok_or_else(invalid)?;
-                            if expression.kind.as_str() != "TermExpression"
-                                || expression.recovery != NodeRecoveryState::Normal
-                                || expression.anchor != SourceAnchor::Range(term.source_range())
-                                || term.kind() != SourcePrimaryTermKind::VariableReference
-                                || term.parent().is_some()
+                    let [_, contents @ .., _] = node.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if !contents.is_empty() && contents.len() % 2 == 0 {
+                        return Err(invalid());
+                    }
+                    let mut elements = Vec::new();
+                    for (index, child) in contents.iter().enumerate() {
+                        let expression = arena.node(*child).ok_or_else(invalid)?;
+                        if index % 2 == 1 {
+                            if expression.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "," })"#
                             {
                                 return Err(invalid());
                             }
-                            Some(term)
+                            continue;
                         }
-                        _ => return Err(invalid()),
-                    };
-                    Some((*id, element))
+                        let [site] = expression.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let (_, term) = primary_terms
+                            .terms()
+                            .iter()
+                            .find(|(_, term)| term.site().node() == *site)
+                            .ok_or_else(invalid)?;
+                        if expression.kind.as_str() != "TermExpression"
+                            || expression.recovery != NodeRecoveryState::Normal
+                            || expression.anchor != SourceAnchor::Range(term.source_range())
+                            || term.kind() != SourcePrimaryTermKind::VariableReference
+                            || term.parent().is_some()
+                        {
+                            return Err(invalid());
+                        }
+                        elements.push(term);
+                    }
+                    Some((*id, elements))
                 }
                 _ => return Err(invalid()),
             };
@@ -1544,17 +1555,17 @@ impl SourceStatementHandoff {
                 || module_context.visible_bindings != [binding.id]
                 || primary_terms.terms().len()
                     != count * 2 + witness_count
-                        - usize::from(
-                            enumeration.is_some_and(|(_, element)| element.is_none())
-                                || choice.is_some(),
-                        )
+                        - usize::from(enumeration.is_some() || choice.is_some())
+                        + enumeration
+                            .as_ref()
+                            .map_or(0, |(_, elements)| elements.len())
                         + groups.len()
                 || primary_terms.references().len()
                     != count * 2 + witness_count
-                        - usize::from(
-                            enumeration.is_some_and(|(_, element)| element.is_none())
-                                || choice.is_some(),
-                        )
+                        - usize::from(enumeration.is_some() || choice.is_some())
+                        + enumeration
+                            .as_ref()
+                            .map_or(0, |(_, elements)| elements.len())
                 || !primary_terms.numeric_type_requests().is_empty()
                 || atomic_formulas.formulas().len() != count
                 || atomic_formulas.edges().len() != count * 2
@@ -1795,7 +1806,7 @@ impl SourceStatementHandoff {
                         || !(matches!(
                             term.kind.as_str(),
                             "source.term.variable-reference" | "source.term.parenthesized"
-                        ) || enumeration.is_some_and(|(id, _)| id == *term_id)
+                        ) || enumeration.as_ref().is_some_and(|(id, _)| *id == *term_id)
                             || choice == Some(*term_id))
                         || expression.anchor != term.anchor
                         || item_range.source_id != source_id
@@ -1987,11 +1998,19 @@ impl SourceStatementHandoff {
                                 "theorem {} : {} proof take {} ; thus {} ; end ;",
                                 owner.spelling,
                                 formula.spelling(),
-                                if let Some((_, element)) = enumeration {
-                                    element.map_or_else(
-                                        || "{ }".to_owned(),
-                                        |term| format!("{{ {} }}", term.spelling()),
-                                    )
+                                if let Some((_, elements)) = &enumeration {
+                                    if elements.is_empty() {
+                                        "{ }".to_owned()
+                                    } else {
+                                        format!(
+                                            "{{ {} }}",
+                                            elements
+                                                .iter()
+                                                .map(|term| term.spelling())
+                                                .collect::<Vec<_>>()
+                                                .join(" , ")
+                                        )
+                                    }
                                 } else if choice.is_some() {
                                     "the set".to_owned()
                                 } else {
@@ -2509,24 +2528,22 @@ impl SourceStatementWitnessHandoff {
                     let (id, term) = set.terms().iter().next().ok_or_else(invalid)?;
                     let choice = term.kind() == SourceSetTermKind::Choice;
                     let request = set.requests().iter().next().ok_or_else(invalid)?.1;
-                    let element = if let Some((_, edge)) = set.edges().iter().next() {
+                    let mut elements = Vec::new();
+                    for (ordinal, (_, edge)) in set.edges().iter().enumerate() {
                         let SourceSetTarget::Primary(primary_id) = edge.target() else {
                             return Err(invalid());
                         };
-                        if set.edges().len() != 1
-                            || edge.term() != id
-                            || edge.ordinal() != 0
+                        if edge.term() != id
+                            || edge.ordinal() != ordinal
                             || edge.role() != SourceSetEdgeRole::EnumerationElement
                         {
                             return Err(invalid());
                         }
-                        Some((
+                        elements.push((
                             primary_id,
                             primary_terms.terms().get(primary_id).ok_or_else(invalid)?,
-                        ))
-                    } else {
-                        None
-                    };
+                        ));
+                    }
                     if fingerprint != set.debug_text()
                         || set.terms().len() != 1
                         || !matches!(
@@ -2539,10 +2556,18 @@ impl SourceStatementWitnessHandoff {
                             != if choice {
                                 "the set".to_owned()
                             } else {
-                                element.map_or_else(
-                                    || "{ }".to_owned(),
-                                    |(_, child)| format!("{{ {} }}", child.spelling()),
-                                )
+                                if elements.is_empty() {
+                                    "{ }".to_owned()
+                                } else {
+                                    format!(
+                                        "{{ {} }}",
+                                        elements
+                                            .iter()
+                                            .map(|(_, child)| child.spelling())
+                                            .collect::<Vec<_>>()
+                                            .join(" , ")
+                                    )
+                                }
                             }
                         || term.context() != BindingContextId::new(1)
                         || !set.wrappers().is_empty()
@@ -2561,8 +2586,8 @@ impl SourceStatementWitnessHandoff {
                         || request.type_site() != choice.then_some(SourceSetTypeSiteId::new(0))
                         || self.witnesses.len() != 1
                         || !self.names.is_empty()
-                        || primary_terms.terms().len() != 4 + usize::from(element.is_some())
-                        || primary_terms.references().len() != 4 + usize::from(element.is_some())
+                        || primary_terms.terms().len() != 4 + elements.len()
+                        || primary_terms.references().len() != 4 + elements.len()
                     {
                         return Err(invalid());
                     }
@@ -2593,7 +2618,7 @@ impl SourceStatementWitnessHandoff {
                     } else if !set.type_sites().is_empty() {
                         return Err(invalid());
                     }
-                    Some((id, term, element))
+                    Some((id, term, elements))
                 }
                 _ => return Err(invalid()),
             };
@@ -2654,8 +2679,9 @@ impl SourceStatementWitnessHandoff {
                     return Err(invalid());
                 };
                 let (target, binding_context, term_range, term_spelling, reference) =
-                    if let Some((id, term, _)) =
-                        set_term.filter(|(_, term, _)| term.kind() == SourceSetTermKind::Choice)
+                    if let Some((id, term, _)) = set_term
+                        .as_ref()
+                        .filter(|(_, term, _)| term.kind() == SourceSetTermKind::Choice)
                     {
                         let node = arena.node(*term_site).ok_or_else(invalid)?;
                         let [keyword, target_id] = node.children.as_slice() else {
@@ -2715,24 +2741,22 @@ impl SourceStatementWitnessHandoff {
                             return Err(invalid());
                         }
                         (
-                            SourceStatementWitnessTermTarget::SetTerm(id),
+                            SourceStatementWitnessTermTarget::SetTerm(*id),
                             term.context(),
                             range,
                             term.spelling(),
                             None,
                         )
-                    } else if let Some((id, term, element)) = set_term {
+                    } else if let Some((id, term, elements)) = &set_term {
                         let node = arena.node(*term_site).ok_or_else(invalid)?;
-                        let (open, close, element_expression) =
-                            match (node.children.as_slice(), element) {
-                                ([open, close], None) => (*open, *close, None),
-                                ([open, expression, close], Some(_)) => {
-                                    (*open, *close, Some(*expression))
-                                }
-                                _ => return Err(invalid()),
-                            };
-                        let open = arena.node(open).ok_or_else(invalid)?;
-                        let close = arena.node(close).ok_or_else(invalid)?;
+                        let [open, contents @ .., close] = node.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        if contents.len() != elements.len().saturating_mul(2).saturating_sub(1) {
+                            return Err(invalid());
+                        }
+                        let open = arena.node(*open).ok_or_else(invalid)?;
+                        let close = arena.node(*close).ok_or_else(invalid)?;
                         let SourceAnchor::Range(open_range) = open.anchor else {
                             return Err(invalid());
                         };
@@ -2762,15 +2786,16 @@ impl SourceStatementWitnessHandoff {
                         {
                             return Err(invalid());
                         }
-                        let reference = if let Some((primary_id, child)) = element {
-                            let expression = arena
-                                .node(element_expression.ok_or_else(invalid)?)
-                                .ok_or_else(invalid)?;
+                        let mut previous_end = open_range.end;
+                        let mut element_reference = None;
+                        for (ordinal, (primary_id, child)) in elements.iter().enumerate() {
+                            let expression =
+                                arena.node(contents[ordinal * 2]).ok_or_else(invalid)?;
                             let child_node = arena.node(child.site().node()).ok_or_else(invalid)?;
                             let (reference_id, reference) = primary_terms
                                 .references()
                                 .iter()
-                                .find(|(_, reference)| reference.term() == primary_id)
+                                .find(|(_, reference)| reference.term() == *primary_id)
                                 .ok_or_else(invalid)?;
                             let context = statements
                                 .binding_env()
@@ -2796,32 +2821,54 @@ impl SourceStatementWitnessHandoff {
                                 || child.recovery() != SourcePrimaryTermRecovery::Normal
                                 || child.parent().is_some()
                                 || child.context() != term.context()
-                                || child.source_ordinal() != 2
+                                || child.source_ordinal() != ordinal + 2
                                 || range.source_id != source_id
-                                || range.start < open_range.end
+                                || range.start < previous_end
                                 || range.end > close_range.start
                                 || range.start >= range.end
-                                || reference_id.index() != 2
-                                || reference.use_ordinal() != 2
+                                || reference_id.index() != ordinal + 2
+                                || reference.use_ordinal() != ordinal + 2
                                 || reference.binding() != BindingId::new(0)
                                 || reference.role() != SourcePrimaryTermReferenceRole::Variable
                                 || reference.lexical_scope() != context.lexical_scope.as_ref()
                                 || !context.visible_bindings.contains(&binding.id)
                                 || child.spelling() != binding.spelling
                                 || !is_descendant(arena, *term_site, child.site().node())
+                                || statements
+                                    .input_facts()
+                                    .iter()
+                                    .any(|(_, fact)| fact.uses().contains(&reference_id))
                             {
                                 return Err(invalid());
                             }
-                            Some((reference_id, child.spelling()))
-                        } else {
-                            None
-                        };
+                            previous_end = range.end;
+                            if ordinal + 1 < elements.len() {
+                                let comma =
+                                    arena.node(contents[ordinal * 2 + 1]).ok_or_else(invalid)?;
+                                let SourceAnchor::Range(comma_range) = comma.anchor else {
+                                    return Err(invalid());
+                                };
+                                if comma.kind.as_str()
+                                    != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "," })"#
+                                    || comma.recovery != NodeRecoveryState::Normal
+                                    || !comma.children.is_empty()
+                                    || comma_range.source_id != source_id
+                                    || comma_range.start < previous_end
+                                    || comma_range.end.checked_sub(comma_range.start) != Some(1)
+                                    || comma_range.end > close_range.start
+                                {
+                                    return Err(invalid());
+                                }
+                                previous_end = comma_range.end;
+                            }
+                            element_reference = Some((reference_id, child.spelling()));
+                        }
                         (
-                            SourceStatementWitnessTermTarget::SetTerm(id),
+                            SourceStatementWitnessTermTarget::SetTerm(*id),
                             term.context(),
                             term.source_range(),
                             term.spelling(),
-                            reference,
+                            element_reference,
                         )
                     } else {
                         let (term_id, term) = primary_terms
@@ -3026,7 +3073,10 @@ impl SourceStatementWitnessHandoff {
                     operands.push(operand.spelling());
                 }
                 let equality = format!("{} = {}", operands[0], operands[1]);
-                if set_term.is_some_and(|(_, term, _)| term.kind() == SourceSetTermKind::Choice) {
+                if set_term
+                    .as_ref()
+                    .is_some_and(|(_, term, _)| term.kind() == SourceSetTermKind::Choice)
+                {
                     let conclusion_node =
                         arena.node(conclusion.site().node()).ok_or_else(invalid)?;
                     for (parent, kind, parts) in [

@@ -13,10 +13,12 @@ Gap: `design_drift`. Original-source transport is implemented one syntax element
 4. Unit of work: a remaining (b) element is one pattern-tier slice under one family contract; the lower/pair/preservation triple is no longer the unit.
 
 ## Family slices
+Pattern predecessor: the completed initial shared native statement consumer; subsequent slices repeat its authenticated table and oracle pattern.
 - [x] step 1 design and classification ledger
 - [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
 - [x] step 3 generic runner oracle and metamorphic route
 - [x] initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
+- [x] finite enumeration witness: ordered references to the sole reserved set variable; numeric/grouped/named/multiple-witness forms deferred
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

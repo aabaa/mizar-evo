@@ -403,6 +403,264 @@ fn task258_native_output(
     (typed, resolved)
 }
 
+#[test]
+fn source_statement_native_finite_enumeration_original_transport() {
+    use mizar_checker::{source_set_term::*, source_term::*, type_checker::*};
+    use mizar_syntax::SurfaceNodeKind as K;
+    // EN13.4.1/13.8.6: ordered finite term lists preserve occurrences, not set deduplication.
+    for count in 0..=3 {
+        for variant in 0..3 {
+            let name = if variant == 0 { "x" } else { "parcel" };
+            let elements = vec![name; count].join(if variant == 2 {
+                ", :: next occurrence\n"
+            } else {
+                ", "
+            });
+            let text = format!(
+                "reserve {name} for set;\ntheorem Finite{variant}: {name} = {name} proof\n take {{{elements}}};\n thus {name} = {name}; end;"
+            );
+            let (ast, module, _, _, diagnostics) =
+                task253_ast_from_source_text_with_diagnostic_count(
+                    &text,
+                    47_000 + count * 3 + variant,
+                );
+            assert_eq!(diagnostics, 0);
+            let (source, symbols) =
+                mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
+                    .unwrap()
+                    .unwrap();
+            let (scope, _, _) =
+                mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+            let before = (
+                source.clone(),
+                symbols.clone(),
+                scope.clone(),
+                ast.snapshot_text(),
+            );
+            let (typed, resolved) = task258_native_output(&ast, &module);
+            let (_, inference, lower) =
+                TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                    .unwrap();
+            assert_eq!(typed.source_term(), lower.source_term());
+            assert_eq!(typed.source_set_term(), lower.source_set_term());
+            assert_eq!(typed.source_atomic_formula(), lower.source_atomic_formula());
+            let primary = typed.source_term().unwrap();
+            let set = typed.source_set_term().unwrap();
+            let (set_id, enumeration) = set.terms().iter().next().unwrap();
+            let actual = ast
+                .node_views()
+                .find(|node| node.kind() == &K::SetEnumeration)
+                .unwrap();
+            assert_eq!(enumeration.source_range(), actual.range());
+            assert_eq!(enumeration.kind(), SourceSetTermKind::Enumeration);
+            assert_eq!(
+                enumeration.spelling(),
+                if count == 0 {
+                    "{ }".to_owned()
+                } else {
+                    format!("{{ {} }}", vec![name; count].join(" , "))
+                }
+            );
+            assert_eq!(
+                (
+                    set.terms().len(),
+                    set.edges().len(),
+                    set.requests().len(),
+                    primary.terms().len(),
+                    primary.references().len()
+                ),
+                (1, count, 1, 4 + count, 4 + count)
+            );
+            assert!(
+                set.wrappers().is_empty()
+                    && set.generators().is_empty()
+                    && set.conditions().is_empty()
+                    && set.type_sites().is_empty()
+            );
+            assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+            let (_, request) = set.requests().iter().next().unwrap();
+            assert_eq!(
+                (
+                    request.term(),
+                    request.ordinal(),
+                    request.kind(),
+                    request.generator(),
+                    request.type_site()
+                ),
+                (set_id, 0, SourceSetRequestKind::ResultType, None, None)
+            );
+            let expressions = actual
+                .children()
+                .iter()
+                .filter(|id| ast.node(**id).unwrap().kind == K::TermExpression)
+                .collect::<Vec<_>>();
+            assert_eq!(expressions.len(), count);
+            let mut sites = std::collections::BTreeSet::new();
+            let mut references = std::collections::BTreeSet::new();
+            for (ordinal, ((_, edge), expression)) in
+                set.edges().iter().zip(expressions).enumerate()
+            {
+                let expression_site = *expression;
+                let expression = ast.node(expression_site).unwrap();
+                let reference_site = expression.children[0];
+                let SourceSetTarget::Primary(id) = edge.target() else {
+                    panic!("finite enumeration primary")
+                };
+                let child = primary.terms().get(id).unwrap();
+                let (_, reference) = primary
+                    .references()
+                    .iter()
+                    .find(|(_, row)| row.term() == id)
+                    .unwrap();
+                let actual_reference = scope
+                    .references()
+                    .iter()
+                    .find(|row| {
+                        source.resolved_node_for(row.node())
+                            == source.resolved_node_for(reference_site)
+                    })
+                    .unwrap();
+                assert!(sites.insert(child.site().node()));
+                assert!(references.insert(reference.use_ordinal()));
+                assert_eq!(
+                    (edge.term(), edge.ordinal(), edge.role()),
+                    (set_id, ordinal, SourceSetEdgeRole::EnumerationElement)
+                );
+                assert_eq!(
+                    typed
+                        .nodes()
+                        .node(child.site().node())
+                        .unwrap()
+                        .resolved_node,
+                    source.resolved_node_for(reference_site)
+                );
+                assert_eq!(
+                    (
+                        child.source_range(),
+                        child.spelling(),
+                        child.kind(),
+                        child.role(),
+                        child.context(),
+                        child.source_ordinal()
+                    ),
+                    (
+                        expression.range,
+                        name,
+                        SourcePrimaryTermKind::VariableReference,
+                        SourcePrimaryTermRole::Value,
+                        enumeration.context(),
+                        actual_reference.ordinal()
+                    )
+                );
+                assert_eq!(
+                    (
+                        reference.use_ordinal(),
+                        reference.lexical_scope(),
+                        reference.binding().index()
+                    ),
+                    (
+                        actual_reference.ordinal(),
+                        Some(actual_reference.scope()),
+                        actual_reference.binding().index()
+                    )
+                );
+                let entry = typed
+                    .source_node_entries()
+                    .unwrap()
+                    .find(|row| Some(row.site()) == source.resolved_node_for(reference_site))
+                    .unwrap();
+                assert_eq!(entry.range(), ast.node(reference_site).unwrap().range);
+                assert_eq!(entry.parent(), source.resolved_node_for(expression_site));
+            }
+            let statements = typed.source_statement().unwrap();
+            assert_eq!(
+                SourceVariableSemanticsChecker::source_theorem_binding_env(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                "theorems.equality.unsupported_source_types"
+            );
+            assert_eq!(
+                (
+                    statements.binding_env().bindings().len(),
+                    statements.binding_env().contexts().len()
+                ),
+                (1, 2)
+            );
+            assert_eq!(statements.statements().len(), 2);
+            assert_eq!(
+                typed
+                    .source_statement_witnesses()
+                    .unwrap()
+                    .witnesses()
+                    .len(),
+                1
+            );
+            assert_eq!(
+                (
+                    statements.input_facts().len(),
+                    statements.candidate_facts().len()
+                ),
+                (2, 2)
+            );
+            assert!(statements.input_facts().iter().all(|(_, fact)| {
+                fact.uses()
+                    .iter()
+                    .all(|reference| !references.contains(&reference.index()))
+            }));
+            assert!(statements.candidate_facts().iter().all(|(_, fact)| fact.kind() == mizar_checker::source_statement::SourceStatementCandidateFactKind::UnverifiedProposition));
+            assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
+            assert!(
+                inference
+                    .formulas()
+                    .iter()
+                    .all(|(_, row)| row.status == FormulaStatus::Checked && row.facts.is_empty())
+            );
+            assert!(typed.facts().is_empty() && typed.initial_obligations().is_empty());
+            assert!(
+                resolved.checked_formulas().is_empty()
+                    && resolved.statement_semantics().is_empty()
+                    && resolved.checked_proofs().is_empty()
+            );
+            assert_eq!(resolved.source_set_term(), typed.source_set_term());
+            assert_eq!(
+                assemble_empty_resolved_typed_ast(&typed, Vec::new()).unwrap(),
+                resolved
+            );
+            assert_eq!((source, symbols, scope, ast.snapshot_text()), before);
+        }
+    }
+    for (index, witness) in [
+        "{x, 0, x}",
+        "{x, (x), x}",
+        "{x, {x}, x}",
+        "item = {x, x}",
+        "{x, x}, {x}",
+        "{x where x is set}",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let text = format!(
+            "reserve x for set; theorem Refused: x = x proof take {witness}; thus x = x; end;"
+        );
+        let (ast, module, _, _, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&text, 48_000 + index);
+        assert_eq!(diagnostics, 0);
+        let (source, symbols) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module)
+                .unwrap()
+                .unwrap();
+        let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+        assert_eq!(
+            TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                .unwrap_err(),
+            "theorems.equality.unsupported_source_types",
+            "{witness}"
+        );
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum Task258B2ResolverMutation {
     Imported,

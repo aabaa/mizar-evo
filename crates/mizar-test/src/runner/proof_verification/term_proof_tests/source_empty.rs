@@ -1749,7 +1749,8 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
             ast.snapshot_text(),
         );
         let lower = TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope);
-        if name == "singleton" {
+        if name == "singleton" || name == "nonempty" {
+            let count = if name == "singleton" { 1 } else { 2 };
             let (bindings, inference, base) = lower.as_ref().map_err(|error| error.to_owned())?;
             let primary = base.source_term().unwrap();
             let set = base.source_set_term().unwrap();
@@ -1762,7 +1763,7 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
                     set.edges().len(),
                     set.requests().len()
                 ),
-                (1, 5, 5, 1, 1, 1)
+                (1, 4 + count, 4 + count, 1, count, 1)
             );
             assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
             assert!(
@@ -1774,26 +1775,55 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
             let (set_id, enumeration) = set.terms().iter().next().unwrap();
             assert_eq!(
                 (enumeration.kind(), enumeration.spelling()),
-                (SourceSetTermKind::Enumeration, "{ x }")
-            );
-            let (_, edge) = set.edges().iter().next().unwrap();
-            assert_eq!(
-                (edge.term(), edge.ordinal(), edge.role(), edge.target()),
                 (
-                    set_id,
-                    0,
-                    SourceSetEdgeRole::EnumerationElement,
-                    SourceSetTarget::Primary(SourcePrimaryTermId::new(2))
+                    SourceSetTermKind::Enumeration,
+                    if count == 1 { "{ x }" } else { "{ x , x }" }
                 )
             );
-            assert_eq!(
-                primary
-                    .terms()
-                    .get(SourcePrimaryTermId::new(2))
-                    .unwrap()
-                    .source_range(),
-                scope.references()[2].range()
-            );
+            for (ordinal, (_, edge)) in set.edges().iter().enumerate() {
+                let primary_id = SourcePrimaryTermId::new(2 + ordinal);
+                let child = primary.terms().get(primary_id).unwrap();
+                let (_, reference) = primary
+                    .references()
+                    .iter()
+                    .find(|(_, row)| row.term() == primary_id)
+                    .unwrap();
+                assert_eq!(
+                    (edge.term(), edge.ordinal(), edge.role(), edge.target()),
+                    (
+                        set_id,
+                        ordinal,
+                        SourceSetEdgeRole::EnumerationElement,
+                        SourceSetTarget::Primary(primary_id)
+                    )
+                );
+                assert_eq!(
+                    (
+                        child.source_range(),
+                        child.source_ordinal(),
+                        child.context(),
+                        child.spelling()
+                    ),
+                    (
+                        scope.references()[2 + ordinal].range(),
+                        2 + ordinal,
+                        enumeration.context(),
+                        "x"
+                    )
+                );
+                assert_eq!(
+                    (
+                        reference.use_ordinal(),
+                        reference.lexical_scope(),
+                        reference.binding().index()
+                    ),
+                    (
+                        scope.references()[2 + ordinal].ordinal(),
+                        Some(scope.references()[2 + ordinal].scope()),
+                        scope.references()[2 + ordinal].binding().index()
+                    )
+                );
+            }
             let (_, request) = set.requests().iter().next().unwrap();
             assert_eq!(
                 (
@@ -1812,7 +1842,7 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
                     inference.type_entries().len(),
                     inference.normalized_types().len()
                 ),
-                (6, 2, 12, 1)
+                (5 + count, 2, 10 + 2 * count, 1)
             );
             assert!(
                 inference
