@@ -318,6 +318,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2C_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3A_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementSetEnumerationWitnessSmoke: x = x proof\n",
@@ -1980,7 +1981,9 @@ const SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3A_LABEL: &str = "FormulaStatementSetEnumerationWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2283,6 +2286,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2CExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B3AExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2656,6 +2660,7 @@ impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B3AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3AExtraction) -> Self {
         Self {
@@ -2865,6 +2870,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatemen
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3CRouteInputs = SourceStatementB3RouteInputs;
@@ -5490,6 +5496,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B3DSurfaceMutation =
 pub(in crate::runner) type SourceStatementB3M2B2B3ESurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
 
+#[cfg(test)]
 fn exact_set_enumeration_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     exact_set_enumeration_witness_surface_profile_with_mutation(
         ast,
@@ -5498,6 +5505,7 @@ fn exact_set_enumeration_witness_surface_profile(ast: &SurfaceAst, source_text: 
     )
 }
 
+#[cfg(test)]
 fn exact_set_enumeration_witness_surface_profile_with_mutation(
     ast: &SurfaceAst,
     source_text: &str,
@@ -5752,6 +5760,7 @@ pub(in crate::runner) fn extract_set_enumeration_witness_source_statement_with_s
     extract_set_enumeration_witness_source_statement(ast, source_text)
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_set_enumeration_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13480,15 +13489,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
-        return source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
     if source_text == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
         return source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
             ast,
@@ -14019,7 +14019,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_stage_mutation(
     source_text: &str,
     stage: SourceStatementB3M2B2B3AStage,
     field: usize,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3M2B2B3ARouteInputs, String>> {
     let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14030,15 +14030,32 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_stage_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_witness_output_with_controls(
+    let mut captured = None;
+    let result = build_source_statement_witness_output_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         Some((stage, field)),
-        |_| {},
-    ))
+        |inputs| captured = Some(inputs.clone()),
+    );
+    Some(match captured {
+        Some(inputs) => {
+            let expected = match stage {
+                SourceStatementB3M2B2B3AStage::Task256 => {
+                    "Task256: source statement dependency mismatch"
+                }
+                SourceStatementB3M2B2B3AStage::Task258 => {
+                    "Task258: source statement dependency mismatch"
+                }
+                SourceStatementB3M2B2B3AStage::Witness => "source statement dependency mismatch",
+            };
+            assert_eq!(result.expect_err("retired raw profile"), expected);
+            Ok(inputs)
+        }
+        None => Err(result.expect_err("lower producer refused before capture")),
+    })
 }
 
 #[cfg(test)]
@@ -14111,6 +14128,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16576,6 +16594,7 @@ fn build_source_statement_b3m2b2b2c_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b3a_output(
     ast: &SurfaceAst,
     module: ModuleId,

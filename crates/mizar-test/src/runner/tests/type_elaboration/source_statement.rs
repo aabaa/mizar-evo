@@ -1655,24 +1655,57 @@ fn task258b3m2b2b3a_fixture(
     (ast, module, symbols)
 }
 
-fn task258b3m2b2b3a_output(
+fn task258b3m2b2b3a_lower_inputs(
     source_ordinal: usize,
 ) -> (
     mizar_syntax::ast::SurfaceAst,
     mizar_resolve::resolved_ast::ModuleId,
     mizar_resolve::env::SymbolEnv,
-    SourceStatementRouteOutput,
+    SourceStatementB3M2B2B3ARouteInputs,
 ) {
     let (ast, module, symbols) = task258b3m2b2b3a_fixture(source_ordinal);
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2B2B3A_TEXT,
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    assert!(
+        source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3A_TEXT
+        )
+        .is_none()
+    );
+    assert!(
+        source_statement_transport_detail_keys(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3A_TEXT
+        )
+        .is_none()
+    );
+    let mut captured = None;
+    assert_eq!(
+        source_statement_b3m2b2b3a_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3A_TEXT,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic numeric enumeration extraction")
+        .expect_err("retired raw profile"),
+        "source statement dependency mismatch"
+    );
+    assert_eq!(
+        (ast.snapshot_text(), module.clone(), symbols.clone()),
+        before
+    );
+    (
+        ast,
+        module,
+        symbols,
+        captured.expect("genuine lower inputs before raw admission"),
     )
-    .expect("Task258B3M2B2B3A selector")
-    .unwrap_or_else(|error| panic!("Task258B3M2B2B3A route failed: {error}"));
-    (ast, module, symbols, output)
 }
 
 fn task258b3m2b2b3b_fixture(
@@ -1717,6 +1750,34 @@ fn task258b3m2b2b3_family_debug(family: usize, ordinal: usize) -> String {
     let (ast, module, _, symbols, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(source, ordinal);
     assert_eq!(diagnostics, 0);
+    if family == 0 {
+        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+        assert!(extract_set_enumeration_witness_source_statement(&ast, source).is_some());
+        assert!(
+            source_statement_output_with_source(&ast, module.clone(), &symbols, source).is_none()
+        );
+        assert!(
+            source_statement_transport_detail_keys(&ast, module.clone(), &symbols, source)
+                .is_none()
+        );
+        let mut captured = None;
+        let error = source_statement_b3m2b2b3a_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            source,
+            |inputs| captured = Some(inputs.clone()),
+        )
+        .expect("authentic retired numeric enumeration extraction")
+        .expect_err("retired raw profile");
+        assert_eq!(error, "source statement dependency mismatch");
+        assert_eq!((ast.snapshot_text(), module, symbols), before);
+        return format!(
+            "retired numeric enumeration: {error}; {:?}",
+            captured.expect("genuine lower capture")
+        )
+        .replace(&ordinal.to_string(), "<ordinal>");
+    }
     if family == 3 {
         let before = (ast.snapshot_text(), module.clone(), symbols.clone());
         assert!(extract_qua_witness_source_statement(&ast, source).is_some());

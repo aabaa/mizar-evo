@@ -762,12 +762,10 @@ fn task258b3m2b2b3e_comprehension_and_byte_subtree_near_misses_are_exact() {
 
     // These lower handoffs come from their own routes; the choice donor uses original-source
     // recollection and public native lower before entering the B3E post-auth boundary.
-    let zero_generator = task258b3m2b2b3a_output(262_020)
+    let zero_generator = task258b3m2b2b3a_lower_inputs(262_020)
         .3
-        .typed_ast
-        .source_set_term()
-        .expect("zero-generator lower handoff")
-        .clone();
+        .set_term
+        .expect("zero-generator lower handoff");
     let wrong_generator_and_type = {
         use mizar_checker::source_set_term::{
             SourceSetRequestKind, SourceSetTermId, SourceSetTermKind, SourceSetTermRecovery,
@@ -1169,7 +1167,8 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        if source == SOURCE_STATEMENT_B3M2B2B3C_TEXT
+        if source == SOURCE_STATEMENT_B3M2B2B3A_TEXT
+            || source == SOURCE_STATEMENT_B3M2B2B3C_TEXT
             || source == SOURCE_STATEMENT_B3M2B2B3D_TEXT
             || source == SOURCE_STATEMENT_B3M2B2B3E_TEXT
         {
@@ -1224,6 +1223,23 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
                         |_| {},
                     )
                     .expect("authentic retired Comprehension extraction")
+                    .expect_err("retired raw profile"),
+                    "source statement dependency mismatch"
+                );
+            }
+            if source == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
+                assert!(
+                    extract_set_enumeration_witness_source_statement(&case_ast, source).is_some()
+                );
+                assert_eq!(
+                    source_statement_b3m2b2b3a_output_with_mutation(
+                        &case_ast,
+                        case_module.clone(),
+                        &case_symbols,
+                        source,
+                        |_| {},
+                    )
+                    .expect("authentic numeric enumeration extraction")
                     .expect_err("retired raw profile"),
                     "source statement dependency mismatch"
                 );

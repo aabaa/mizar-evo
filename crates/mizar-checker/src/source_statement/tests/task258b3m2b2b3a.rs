@@ -1,4 +1,9 @@
 use super::*;
+use crate::{
+    source_atomic_formula::SourceAtomicFormulaError,
+    source_set_term::{SourceSetEdgeId, SourceSetRequestId, SourceSetTermError},
+    source_term::{SourceNumericTypeRequestId, SourcePrimaryTermError},
+};
 
 #[test]
 fn task258b3m2b2b3a_exact_set_enumeration_witness_api_debug_and_legacy_compatibility_are_stable() {
@@ -466,25 +471,59 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
         );
     }
 
+    let base = fixture.empty_typed();
+    let installed = base
+        .clone()
+        .with_source_set_term_statement_witnesses(
+            fixture.set_terms.clone(),
+            statement.clone(),
+            witnesses.clone(),
+        )
+        .expect("pristine installation");
+    let replay = || {
+        let pristine = B3M2B2B3AFixture::new(231);
+        assert_eq!(pristine.primary, fixture.primary);
+        assert_eq!(pristine.set_terms, fixture.set_terms);
+        assert_eq!(pristine.atomic, fixture.atomic);
+        let pristine_statement = pristine.statement();
+        let pristine_witnesses = pristine
+            .witnesses(&pristine_statement)
+            .expect("pristine witness");
+        assert_eq!(pristine_statement, statement);
+        assert_eq!(pristine_witnesses, witnesses);
+        assert_eq!(
+            fixture.empty_typed(),
+            base,
+            "rejected inputs preserve dependencies"
+        );
+        assert_eq!(
+            pristine
+                .empty_typed()
+                .with_source_set_term_statement_witnesses(
+                    pristine.set_terms.clone(),
+                    pristine_statement,
+                    pristine_witnesses,
+                ),
+            Ok(installed.clone()),
+        );
+    };
+
+    // Leaf spellings and numeric requests must agree with their owning DTO invariants.
     for term in 0..6 {
         let mut input = B3M2B2B3AFixture::primary_input(fixture.source, &fixture.module);
         input.terms[term].spelling.push('!');
-        if let Ok(primary) =
-            SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena)
-        {
-            assert_eq!(
-                witnesses.validate_installation_with_set_term(
-                    fixture.source,
-                    &fixture.module,
-                    &statement,
-                    &primary,
-                    Some(&fixture.set_terms),
-                    &fixture.arena,
-                ),
-                Err(SourceStatementWitnessError::DependencyMismatch),
-                "Task252 term {term}"
-            );
-        }
+        assert_ne!(
+            input,
+            B3M2B2B3AFixture::primary_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena),
+            Err(SourcePrimaryTermError::InvalidTerm {
+                term: SourcePrimaryTermId::new(term)
+            }),
+            "Task252 term {term}",
+        );
+        replay();
     }
     for reference in 0..4 {
         let mut primary = fixture.primary.clone();
@@ -506,22 +545,18 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
     for request in 0..2 {
         let mut input = B3M2B2B3AFixture::primary_input(fixture.source, &fixture.module);
         input.numeric_type_requests[request].spelling.push('!');
-        if let Ok(primary) =
-            SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena)
-        {
-            assert_eq!(
-                witnesses.validate_installation_with_set_term(
-                    fixture.source,
-                    &fixture.module,
-                    &statement,
-                    &primary,
-                    Some(&fixture.set_terms),
-                    &fixture.arena,
-                ),
-                Err(SourceStatementWitnessError::DependencyMismatch),
-                "Task252 numeric request {request}"
-            );
-        }
+        assert_ne!(
+            input,
+            B3M2B2B3AFixture::primary_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourcePrimaryTermProducer::build(input, &fixture.bindings, &fixture.arena),
+            Err(SourcePrimaryTermError::InvalidNumericTypeRequest {
+                request: SourceNumericTypeRequestId::new(request)
+            }),
+            "Task252 numeric request {request}",
+        );
+        replay();
     }
 
     for (label, mutate) in [
@@ -536,109 +571,154 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
     ] {
         let mut input = B3M2B2B3AFixture::set_input(fixture.source, &fixture.module);
         mutate(&mut input);
-        if let Ok(set_terms) = SourceSetTermProducer::build(
+        assert_ne!(
             input,
-            &fixture.bindings,
-            &fixture.primary,
-            None,
-            None,
-            &fixture.arena,
-        ) {
-            assert_eq!(
-                witnesses.validate_installation_with_set_term(
-                    fixture.source,
-                    &fixture.module,
-                    &statement,
-                    &fixture.primary,
-                    Some(&set_terms),
-                    &fixture.arena,
-                ),
-                Err(SourceStatementWitnessError::DependencyMismatch),
-                "{label}"
-            );
-        }
+            B3M2B2B3AFixture::set_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourceSetTermProducer::build(
+                input,
+                &fixture.bindings,
+                &fixture.primary,
+                None,
+                None,
+                &fixture.arena,
+            ),
+            Err(match label {
+                "Task255 term" => SourceSetTermError::InvalidTerm {
+                    term: SourceSetTermId::new(0)
+                },
+                "Task255 edge 0" => SourceSetTermError::ReorderedEdge {
+                    edge: SourceSetEdgeId::new(0)
+                },
+                "Task255 edge 1" => SourceSetTermError::ReorderedEdge {
+                    edge: SourceSetEdgeId::new(1)
+                },
+                _ => SourceSetTermError::ReorderedRequest {
+                    request: SourceSetRequestId::new(0)
+                },
+            }),
+            "{label}",
+        );
+        replay();
     }
+
+    // An empty set table is valid transport, but omits this witness's required set term.
+    let mut missing_set_input = B3M2B2B3AFixture::set_input(fixture.source, &fixture.module);
+    missing_set_input.terms.clear();
+    missing_set_input.edges.clear();
+    missing_set_input.requests.clear();
+    assert_ne!(
+        missing_set_input,
+        B3M2B2B3AFixture::set_input(fixture.source, &fixture.module)
+    );
+    let missing_set = SourceSetTermProducer::build(
+        missing_set_input,
+        &fixture.bindings,
+        &fixture.primary,
+        None,
+        None,
+        &fixture.arena,
+    )
+    .expect("zero-table set transport is valid");
+    assert_ne!(missing_set, fixture.set_terms);
+    assert_eq!(
+        SourceStatementWitnessProducer::build_with_set_term(
+            fixture.witness_input(),
+            &statement,
+            &fixture.primary,
+            &missing_set,
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch),
+    );
+    assert_eq!(
+        witnesses.validate_installation_with_set_term(
+            fixture.source,
+            &fixture.module,
+            &statement,
+            &fixture.primary,
+            Some(&missing_set),
+            &fixture.arena,
+        ),
+        Err(SourceStatementWitnessError::DependencyMismatch),
+    );
+    replay();
 
     for formula in 0..2 {
         let mut input = B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module);
         input.formulas[formula].spelling.push('!');
-        if let Ok(atomic) = SourceAtomicFormulaProducer::build(
+        assert_ne!(
             input,
-            &fixture.bindings,
-            &fixture.symbols,
-            &fixture.primary,
-            None,
-            None,
-            None,
-            &fixture.arena,
-        ) {
-            assert_eq!(
-                SourceStatementProducer::build(
-                    fixture.statement_input(),
-                    &fixture.symbols,
-                    &fixture.bindings,
-                    &fixture.primary,
-                    &atomic,
-                    &fixture.arena,
-                ),
-                Err(SourceStatementError::DependencyMismatch),
-                "Task256 formula {formula}"
-            );
-        }
+            B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourceAtomicFormulaProducer::build(
+                input,
+                &fixture.bindings,
+                &fixture.symbols,
+                &fixture.primary,
+                None,
+                None,
+                None,
+                &fixture.arena,
+            ),
+            Err(SourceAtomicFormulaError::InvalidFormula {
+                formula: SourceAtomicFormulaId::new(formula)
+            }),
+            "Task256 formula {formula}",
+        );
+        replay();
     }
     for edge in 0..4 {
         let mut input = B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module);
         input.edges[edge].ordinal = 999;
-        if let Ok(atomic) = SourceAtomicFormulaProducer::build(
+        assert_ne!(
             input,
-            &fixture.bindings,
-            &fixture.symbols,
-            &fixture.primary,
-            None,
-            None,
-            None,
-            &fixture.arena,
-        ) {
-            assert_eq!(
-                SourceStatementProducer::build(
-                    fixture.statement_input(),
-                    &fixture.symbols,
-                    &fixture.bindings,
-                    &fixture.primary,
-                    &atomic,
-                    &fixture.arena,
-                ),
-                Err(SourceStatementError::DependencyMismatch),
-                "Task256 edge {edge}"
-            );
-        }
+            B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourceAtomicFormulaProducer::build(
+                input,
+                &fixture.bindings,
+                &fixture.symbols,
+                &fixture.primary,
+                None,
+                None,
+                None,
+                &fixture.arena,
+            ),
+            Err(SourceAtomicFormulaError::ReorderedEdge {
+                edge: SourceAtomicEdgeId::new(edge)
+            }),
+            "Task256 edge {edge}",
+        );
+        replay();
     }
     for request in 0..4 {
         let mut input = B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module);
         input.requests[request].ordinal = 999;
-        if let Ok(atomic) = SourceAtomicFormulaProducer::build(
+        assert_ne!(
             input,
-            &fixture.bindings,
-            &fixture.symbols,
-            &fixture.primary,
-            None,
-            None,
-            None,
-            &fixture.arena,
-        ) {
-            assert_eq!(
-                SourceStatementProducer::build(
-                    fixture.statement_input(),
-                    &fixture.symbols,
-                    &fixture.bindings,
-                    &fixture.primary,
-                    &atomic,
-                    &fixture.arena,
-                ),
-                Err(SourceStatementError::DependencyMismatch),
-                "Task256 request {request}"
-            );
-        }
+            B3M2B2B3AFixture::atomic_input(fixture.source, &fixture.module)
+        );
+        assert_eq!(
+            SourceAtomicFormulaProducer::build(
+                input,
+                &fixture.bindings,
+                &fixture.symbols,
+                &fixture.primary,
+                None,
+                None,
+                None,
+                &fixture.arena,
+            ),
+            Err(SourceAtomicFormulaError::ReorderedRequest {
+                request: SourceAtomicRequestId::new(request)
+            }),
+            "Task256 request {request}",
+        );
+        replay();
     }
 
     for (label, mutate) in [
@@ -674,27 +754,94 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
     ] {
         let mut input = fixture.statement_input();
         mutate(&mut input);
-        if let Ok(mutated_statement) = SourceStatementProducer::build(
+        assert_ne!(input, fixture.statement_input());
+        assert_eq!(
+            SourceStatementProducer::build(
+                input,
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            ),
+            Err(match label {
+                "Task258 owner" => SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0)
+                },
+                "Task258 statement 0" => SourceStatementError::InvalidStatement {
+                    statement: SourceStatementId::new(0)
+                },
+                "Task258 statement 1" => SourceStatementError::InvalidStatement {
+                    statement: SourceStatementId::new(1)
+                },
+                "Task258 context 0" => SourceStatementError::InvalidContext {
+                    context: SourceStatementContextId::new(0)
+                },
+                "Task258 context 1" => SourceStatementError::InvalidContext {
+                    context: SourceStatementContextId::new(1)
+                },
+                "Task258 input fact 0" => SourceStatementError::InvalidInputFact {
+                    fact: SourceStatementInputFactId::new(0)
+                },
+                "Task258 input fact 1" => SourceStatementError::InvalidInputFact {
+                    fact: SourceStatementInputFactId::new(1)
+                },
+                "Task258 candidate 0" => SourceStatementError::InvalidCandidateFact {
+                    fact: SourceStatementCandidateFactId::new(0)
+                },
+                _ => SourceStatementError::InvalidCandidateFact {
+                    fact: SourceStatementCandidateFactId::new(1)
+                },
+            }),
+            "{label}",
+        );
+        replay();
+    }
+
+    // The four omitted mutations are identical to their A-specific cases above.
+    for field in (0..62).filter(|field| ![40, 45, 50, 54].contains(field)) {
+        let mut input = fixture.statement_input();
+        task258b3m2b2b3d_mutate_statement_input(&mut input, field);
+        assert_ne!(
             input,
-            &fixture.symbols,
-            &fixture.bindings,
-            &fixture.primary,
-            &fixture.atomic,
-            &fixture.arena,
-        ) {
-            assert_eq!(
-                witnesses.validate_installation_with_set_term(
-                    fixture.source,
-                    &fixture.module,
-                    &mutated_statement,
-                    &fixture.primary,
-                    Some(&fixture.set_terms),
-                    &fixture.arena,
-                ),
-                Err(SourceStatementWitnessError::DependencyMismatch),
-                "{label}"
-            );
-        }
+            fixture.statement_input(),
+            "Task258 field {field} delta"
+        );
+        assert!(
+            SourceStatementProducer::build(
+                input,
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            )
+            .is_err(),
+            "Task258 field {field} must fail at its owning producer",
+        );
+        replay();
+    }
+    // Preserve aggregate and alternative-target duties absent from the direct cases below.
+    for field in [0, 1, 4, 6, 7, 14, 18, 19, 20] {
+        let mut input = fixture.witness_input();
+        task258b3m2b2b3d_mutate_witness_input(&mut input, field);
+        assert_ne!(
+            input,
+            fixture.witness_input(),
+            "witness field {field} delta"
+        );
+        assert!(
+            SourceStatementWitnessProducer::build_with_set_term(
+                input,
+                &statement,
+                &fixture.primary,
+                &fixture.set_terms,
+                &fixture.arena,
+            )
+            .is_err(),
+            "witness field {field} must fail at its owning producer",
+        );
+        replay();
     }
 
     for (label, mutate) in [
@@ -740,6 +887,7 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
     ] {
         let mut input = fixture.witness_input();
         mutate(&mut input);
+        assert_ne!(input, fixture.witness_input(), "witness {label} delta");
         assert!(
             SourceStatementWitnessProducer::build_with_set_term(
                 input,
@@ -751,10 +899,12 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
             .is_err(),
             "witness {label}"
         );
+        replay();
     }
     let mut dependency_before_aggregate = fixture.witness_input();
     dependency_before_aggregate.source_id = source_id(999_233);
     dependency_before_aggregate.witnesses.clear();
+    assert_ne!(dependency_before_aggregate, fixture.witness_input());
     assert_eq!(
         SourceStatementWitnessProducer::build_with_set_term(
             dependency_before_aggregate,
@@ -765,6 +915,7 @@ fn task258b3m2b2b3a_dependencies_set_enumeration_witness_precedence_and_all_node
         ),
         Err(SourceStatementWitnessError::DependencyMismatch)
     );
+    replay();
     witnesses
         .validate_installation_with_set_term(
             fixture.source,
