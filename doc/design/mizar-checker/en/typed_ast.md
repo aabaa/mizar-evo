@@ -24,9 +24,10 @@ selection, language semantics, or proof behavior.
 
 `install_source_nodes` atomically installs the authenticated syntax-only table
 with the [source transport invariants](source_statement.md#generic-original-source-transport-task-284-design).
-`source_node_entries` exposes borrowed tuples of site, kind, range, parent,
-child ordinal, preorder ordinal, recovery and spelling; the row type stays
-private. Installation grants no typing, statement or proof status and leaves
+`source_node_entries` exposes borrowed `SourceNode` rows with getters for site,
+kind, range, parent, child ordinal, preorder ordinal, recovery and spelling.
+Fields are private outside Checker; the public row provides read-only access.
+Installation grants no typing, statement or proof status and leaves
 canonical debug serialization unchanged.
 
 ## Boundary

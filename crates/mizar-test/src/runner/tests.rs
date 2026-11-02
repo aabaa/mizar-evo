@@ -378,7 +378,16 @@ fn generic_source_transport_matches_active_frontends_and_layout_variants() {
                     .collect::<Vec<_>>()
                     .join(" ");
                 assert_eq!(
-                    entry,
+                    (
+                        entry.site(),
+                        entry.kind(),
+                        entry.range(),
+                        entry.parent(),
+                        entry.child_ordinal(),
+                        entry.preorder_ordinal(),
+                        entry.recovery(),
+                        entry.spelling(),
+                    ),
                     (
                         source.resolved_node_for(view.id()).unwrap(),
                         view.kind(),
@@ -393,7 +402,7 @@ fn generic_source_transport_matches_active_frontends_and_layout_variants() {
                     case.id.0,
                     view.id()
                 );
-                token_count += usize::from(matches!(entry.1, K::Token(_)));
+                token_count += usize::from(matches!(entry.kind(), K::Token(_)));
             }
             assert_eq!(token_count, tokens.len(), "root token aliases count once");
         };

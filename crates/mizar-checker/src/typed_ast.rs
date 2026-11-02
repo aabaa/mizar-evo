@@ -151,7 +151,7 @@ impl fmt::Debug for InstalledSourceNestedFraenkelCaptureIdentity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SourceNode {
+pub struct SourceNode {
     pub(crate) site: ResolvedNodeId,
     pub(crate) kind: SurfaceNodeKind,
     pub(crate) range: SourceRange,
@@ -160,6 +160,40 @@ pub(crate) struct SourceNode {
     pub(crate) preorder_ordinal: usize,
     pub(crate) recovery: NodeRecoveryState,
     pub(crate) spelling: String,
+}
+
+impl SourceNode {
+    pub const fn site(&self) -> ResolvedNodeId {
+        self.site
+    }
+
+    pub const fn kind(&self) -> &SurfaceNodeKind {
+        &self.kind
+    }
+
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+
+    pub const fn parent(&self) -> Option<ResolvedNodeId> {
+        self.parent
+    }
+
+    pub const fn child_ordinal(&self) -> usize {
+        self.child_ordinal
+    }
+
+    pub const fn preorder_ordinal(&self) -> usize {
+        self.preorder_ordinal
+    }
+
+    pub const fn recovery(&self) -> NodeRecoveryState {
+        self.recovery
+    }
+
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -301,38 +335,8 @@ impl TypedAst {
         self.source_nodes.as_deref()
     }
 
-    // reason: Borrow existing row fields without adding a public mirror type.
-    #[allow(clippy::type_complexity)]
-    pub fn source_node_entries(
-        &self,
-    ) -> Option<
-        impl ExactSizeIterator<
-            Item = (
-                ResolvedNodeId,
-                &SurfaceNodeKind,
-                SourceRange,
-                Option<ResolvedNodeId>,
-                usize,
-                usize,
-                NodeRecoveryState,
-                &str,
-            ),
-        >,
-    > {
-        self.source_nodes.as_ref().map(|rows| {
-            rows.iter().map(|row| {
-                (
-                    row.site,
-                    &row.kind,
-                    row.range,
-                    row.parent,
-                    row.child_ordinal,
-                    row.preorder_ordinal,
-                    row.recovery,
-                    row.spelling.as_str(),
-                )
-            })
-        })
+    pub fn source_node_entries(&self) -> Option<impl ExactSizeIterator<Item = &SourceNode>> {
+        self.source_nodes.as_ref().map(|rows| rows.iter())
     }
 
     pub fn install_source_nodes(
