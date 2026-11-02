@@ -110,6 +110,10 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             };
             assert_eq!(source.matches(permitted).count(), 1);
             source.replace(permitted, "")
+        } else if path == root.join("src/typed_ast.rs") {
+            let permitted = "use mizar_syntax::ast::SurfaceNodeKind;";
+            assert_eq!(source.matches(permitted).count(), 1);
+            source.replace(permitted, "")
         } else {
             source
         };

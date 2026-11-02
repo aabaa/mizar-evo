@@ -43,6 +43,142 @@ use std::{
     fmt::{self, Write as _},
 };
 
+/// Carries syntax identity without admitting any node's semantic role.
+pub(crate) fn source_nodes(
+    source: &SurfaceResolvedArena,
+    typed: &crate::typed_ast::TypedAst,
+) -> Result<Vec<crate::typed_ast::SourceNode>, String> {
+    use crate::typed_ast::SourceNode;
+    use mizar_resolve::resolved_ast::RecoveryState;
+
+    let invalid = || "source_nodes.invalid_source_association".to_owned();
+    let arena = source.arena();
+    let root = arena.root();
+    let node = |id| arena.node(id).ok_or_else(invalid);
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(range) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    if typed.source_id() != source.source_id()
+        || typed.module_id() != source.module()
+        || typed.resolved_root() != Some(root)
+        || typed.nodes().root() != Some(TypedNodeId::new(root.index()))
+        || typed.nodes().len() != arena.len()
+    {
+        return Err(invalid());
+    }
+    let mut owners = BTreeMap::new();
+    let mut tokens = Vec::new();
+    for (id, current) in arena.iter() {
+        let span = range(id)?;
+        let recovered = current.recovery() == RecoveryState::Recovered;
+        let expected_recovery = if recovered {
+            NodeRecoveryState::Recovered
+        } else {
+            NodeRecoveryState::Normal
+        };
+        let target = typed
+            .nodes()
+            .node(TypedNodeId::new(id.index()))
+            .ok_or_else(invalid)?;
+        if current.origin().source_id() != source.source_id()
+            || current.origin().module_id() != source.module()
+            || current.origin().import_edge().is_some()
+            || current.origin().is_recovered() != recovered
+            || span.source_id != source.source_id()
+            || span.start > span.end
+            || matches!(current.kind(), K::Root) != (id == root)
+            || target.resolved_node != Some(id)
+            || target.anchor != *current.origin().anchor()
+            || target.recovery != expected_recovery
+            || current
+                .children()
+                .iter()
+                .map(|child| child.index())
+                .ne(target.children.iter().map(|child| child.index()))
+        {
+            return Err(invalid());
+        }
+        if let K::Token(token) = current.kind() {
+            if !current.children().is_empty() {
+                return Err(invalid());
+            }
+            tokens.push((id, span, token.text.as_ref()));
+        }
+        let mut children = BTreeSet::new();
+        let mut end = span.start;
+        for child in current.children() {
+            let child_span = range(*child)?;
+            if !children.insert(*child)
+                || child_span.start < span.start
+                || child_span.end > span.end
+                || (id != root && child_span.start < end)
+                || (id != root && owners.insert(*child, id).is_some())
+            {
+                return Err(invalid());
+            }
+            end = child_span.end;
+        }
+    }
+    tokens.sort_by_key(|(id, span, _)| (span.start, span.end, id.index()));
+    if tokens
+        .windows(2)
+        .any(|pair| pair[0].1.end > pair[1].1.start)
+    {
+        return Err(invalid());
+    }
+    let mut rows = Vec::with_capacity(arena.len());
+    let mut seen = BTreeSet::new();
+    let mut pending = vec![(root, None, 0)];
+    while let Some((id, parent, child_ordinal)) = pending.pop() {
+        if !seen.insert(id) {
+            return Err(invalid());
+        }
+        let current = node(id)?;
+        let span = range(id)?;
+        rows.push(SourceNode {
+            site: id,
+            kind: current.kind().clone(),
+            range: span,
+            parent,
+            child_ordinal,
+            preorder_ordinal: rows.len(),
+            recovery: if current.recovery() == RecoveryState::Recovered {
+                NodeRecoveryState::Recovered
+            } else {
+                NodeRecoveryState::Normal
+            },
+            spelling: tokens
+                .iter()
+                .filter(|(_, token_span, _)| {
+                    token_span.start >= span.start && token_span.end <= span.end
+                })
+                .map(|(_, _, text)| *text)
+                .collect::<Vec<_>>()
+                .join(" "),
+        });
+        for (ordinal, child) in current.children().iter().enumerate().rev() {
+            if id == root && owners.contains_key(child) {
+                if !matches!(node(*child)?.kind(), K::Token(_) | K::ErrorRecovery(_)) {
+                    return Err(invalid());
+                }
+                continue;
+            }
+            pending.push((*child, Some(id), ordinal));
+        }
+    }
+    if seen.len() != arena.len()
+        || rows
+            .iter()
+            .filter(|row| matches!(row.kind, K::Token(_)))
+            .count()
+            != tokens.len()
+    {
+        return Err(invalid());
+    }
+    Ok(rows)
+}
+
 /// Returns the real registration closure for authenticated original theorem typing.
 pub fn check_source_theorem_registration_closure(
     source: &SurfaceResolvedArena,

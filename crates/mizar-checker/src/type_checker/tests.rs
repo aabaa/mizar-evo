@@ -27,6 +27,359 @@ include!(concat!(
     "/tests/support/source_variable_semantics_unit.rs"
 ));
 
+fn source_nodes_typed(
+    source: &SurfaceResolvedArena,
+    edit: impl FnOnce(&mut Vec<crate::typed_ast::TypedNode>),
+) -> crate::typed_ast::TypedAst {
+    use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode};
+    let mut nodes = source
+        .arena()
+        .iter()
+        .map(|(id, node)| {
+            TypedNode::new("semantic-kind", node.origin().anchor().clone())
+                .with_resolved_node(id)
+                .with_children(
+                    node.children()
+                        .iter()
+                        .map(|id| TypedNodeId::new(id.index()))
+                        .collect(),
+                )
+                .with_recovery(if node.origin().is_recovered() {
+                    NodeRecoveryState::Recovered
+                } else {
+                    NodeRecoveryState::Normal
+                })
+        })
+        .collect();
+    edit(&mut nodes);
+    TypedAst::try_new(TypedAstParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(Some(TypedNodeId::new(source.arena().root().index())), nodes)
+            .unwrap(),
+        contexts: LocalTypeContextTable::default(),
+        types: TypeTable::default(),
+        facts: TypeFactTable::default(),
+        coercions: CoercionTable::default(),
+        initial_obligations: InitialObligationTable::default(),
+        diagnostics: TypeDiagnosticTable::default(),
+    })
+    .unwrap()
+}
+
+#[test]
+fn generic_source_nodes_transport_every_class_a_kind_without_semantic_admission() {
+    use mizar_syntax as syntax;
+    let kinds = vec![
+        K::AnnotatedAlgorithmStatement,
+        K::AnnotatedDefinitionContent,
+        K::AnnotatedRegistrationContent,
+        K::AnnotatedStatement,
+        K::Annotation,
+        K::AnnotationArgument,
+        K::AnnotationArgumentList,
+        K::AnnotationLabel,
+        K::AnnotationLabelList,
+        K::BulkReference,
+        K::ConditionList,
+        K::ExportItem,
+        K::GroupedReference,
+        K::GroupedReferenceItem,
+        K::ImportAliasDecl,
+        K::ImportItem,
+        K::LibraryAnnotation,
+        K::ModuleBranchImport,
+        K::ModulePath,
+        K::NamespacePath,
+        K::ParameterPrefix,
+        K::PlaceholderItem,
+        K::PostfixExpression(syntax::ast::SurfacePostfixOperator {
+            spelling: "!".into(),
+            precedence: 1,
+        }),
+        K::ProofHintOption,
+        K::ProofHintOptionList,
+        K::QualifiedReference,
+        K::RelativePrefix,
+        K::StandaloneDiagnosticAnnotation,
+        K::TermList,
+        K::TermPlaceholder,
+        K::TypedParameter,
+    ];
+    let source = source_id();
+    let mut builder = SurfaceAstBuilder::new(source);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "actual", range(source, 3, 9));
+    let mut child = token;
+    for kind in &kinds {
+        child = builder.add_node(kind.clone(), range(source, 3, 9), vec![child]);
+    }
+    // The lexical root entry aliases the token owned by the structural subtree.
+    let root = builder.add_node(K::Root, range(source, 3, 9), vec![token, child]);
+    let ast = builder.finish(Some(root), None);
+    let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+    let mut typed = source_nodes_typed(&source, |_| {});
+    let debug = typed.debug_text();
+    typed.install_source_nodes(&source).unwrap();
+    let rows = typed.source_nodes().unwrap();
+    assert_eq!(rows.len(), kinds.len() + 2);
+    assert_eq!(rows[0].site, source.arena().root());
+    assert_eq!(rows[0].parent, None);
+    assert_eq!(rows[1].child_ordinal, 1);
+    for (ordinal, row) in rows.iter().enumerate() {
+        assert_eq!(row.preorder_ordinal, ordinal);
+        assert_eq!(row.range, range(source.source_id(), 3, 9));
+        assert_eq!(row.spelling, "actual");
+        assert_eq!(row.recovery, NodeRecoveryState::Normal);
+        if ordinal > 0 {
+            assert_eq!(row.parent, Some(rows[ordinal - 1].site));
+        }
+    }
+    assert_eq!(
+        rows[1..rows.len() - 1]
+            .iter()
+            .map(|row| &row.kind)
+            .collect::<Vec<_>>(),
+        kinds.iter().rev().collect::<Vec<_>>()
+    );
+    assert!(typed.source_statement().is_none());
+    assert_eq!(typed.debug_text(), debug);
+    let installed = typed.clone();
+    assert!(typed.install_source_nodes(&source).is_err());
+    assert_eq!(typed, installed);
+}
+
+#[test]
+fn generic_source_nodes_keep_actual_root_order_token_spelling_and_recovery() {
+    use mizar_syntax as syntax;
+    let source = source_id();
+    let mut builder = SurfaceAstBuilder::new(source);
+    // Allocation and root order intentionally differ from lexical order.
+    let late =
+        builder.add_recovered_token(SurfaceTokenKind::Identifier, "late", range(source, 12, 16));
+    let early = builder.add_token(SurfaceTokenKind::Identifier, "early", range(source, 2, 7));
+    let structural = builder.add_node(K::Annotation, range(source, 2, 7), vec![early]);
+    let recovery = builder.add_recovery(
+        syntax::SyntaxRecoveryKind::MissingItem,
+        range(source, 17, 17),
+        vec![],
+    );
+    let root = builder.add_node(
+        K::Root,
+        range(source, 0, 18),
+        vec![late, early, structural, recovery],
+    );
+    let ast = builder.finish(Some(root), None);
+    let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+    let mut typed = source_nodes_typed(&source, |_| {});
+    typed.install_source_nodes(&source).unwrap();
+    let rows = typed.source_nodes().unwrap();
+    assert_eq!(
+        rows.iter().map(|row| row.site.index()).collect::<Vec<_>>(),
+        [4, 0, 2, 1, 3]
+    );
+    assert_eq!(rows[0].spelling, "early late");
+    assert_eq!(rows[1].spelling, "late");
+    assert_eq!(rows[1].parent, Some(rows[0].site));
+    assert_eq!(rows[1].child_ordinal, 0);
+    assert_eq!(rows[1].recovery, NodeRecoveryState::Recovered);
+    assert_eq!(rows[2].child_ordinal, 2);
+    assert_eq!(rows[3].parent, Some(rows[2].site));
+    assert_eq!(rows[4].child_ordinal, 3);
+    assert_eq!(rows[4].recovery, NodeRecoveryState::Recovered);
+    assert_eq!(rows[4].spelling, "");
+    assert!(typed.facts().is_empty());
+    assert!(typed.initial_obligations().is_empty());
+}
+
+#[test]
+fn generic_source_nodes_refuse_malformed_handoffs_atomically() {
+    let source = source_id();
+    for fault in ["reversed", "overlap", "outside", "duplicate", "unreachable"] {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let first = builder.add_token(SurfaceTokenKind::Identifier, "first", range(source, 2, 7));
+        let second = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "second",
+            range(source, if fault == "overlap" { 6 } else { 9 }, 15),
+        );
+        let mut children = vec![first, second];
+        if fault == "reversed" {
+            children.reverse();
+        }
+        let structural = builder.add_node(
+            K::TermList,
+            range(source, 0, if fault == "outside" { 14 } else { 16 }),
+            children,
+        );
+        let mut children = vec![structural];
+        if fault == "duplicate" {
+            children.push(structural);
+        }
+        if fault == "unreachable" {
+            builder.add_node(K::Annotation, range(source, 1, 2), vec![]);
+        }
+        let root = builder.add_node(K::Root, range(source, 0, 16), children);
+        let ast = builder.finish(Some(root), None);
+        let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+        let mut typed = source_nodes_typed(&source, |_| {});
+        let before = typed.clone();
+        assert!(typed.install_source_nodes(&source).is_err(), "{fault}");
+        assert_eq!(typed, before, "{fault}");
+        assert!(typed.source_nodes().is_none());
+    }
+}
+
+#[test]
+fn generic_source_nodes_refuse_foreign_typed_associations_atomically() {
+    let source_id = source_id();
+    let ast = source_variable_type_projection_ast(source_id);
+    let source = SurfaceResolvedArena::lower(&ast, &module_id()).unwrap();
+    for fault in ["resolved", "anchor", "children", "recovery", "count"] {
+        let mut typed = source_nodes_typed(&source, |nodes| match fault {
+            "resolved" => nodes[0].resolved_node = nodes[1].resolved_node,
+            "anchor" => nodes[0].anchor = SourceAnchor::Range(range(source_id, 1, 2)),
+            "children" => nodes.last_mut().unwrap().children.clear(),
+            "recovery" => nodes[0].recovery = NodeRecoveryState::Recovered,
+            "count" => nodes.push(nodes[0].clone()),
+            _ => unreachable!(),
+        });
+        let before = typed.clone();
+        assert!(typed.install_source_nodes(&source).is_err(), "{fault}");
+        assert_eq!(typed, before, "{fault}");
+    }
+    let other_module = ModuleId::new(module_id().package().clone(), ModulePath::new("foreign"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &other_module).unwrap();
+    let mut typed = source_nodes_typed(&source, |_| {});
+    let before = typed.clone();
+    assert!(typed.install_source_nodes(&foreign).is_err());
+    assert_eq!(typed, before);
+    let foreign_ast = source_variable_type_projection_ast(source_ids_pair().1);
+    let foreign = SurfaceResolvedArena::lower(&foreign_ast, &module_id()).unwrap();
+    assert!(typed.install_source_nodes(&foreign).is_err());
+    assert_eq!(typed, before);
+}
+
+#[test]
+fn generic_source_nodes_install_with_original_statement_after_canonical_comparison() {
+    let source_id = source_id();
+    let build = |recovered| {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let reserve = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedWord,
+            "reserve",
+            0,
+        );
+        let x = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::Identifier,
+            "x",
+            8,
+        );
+        let for_kw = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            10,
+        );
+        let set = source_variable_type(&mut builder, source_id, 14, "set");
+        let segment = builder.add_node(
+            K::ReserveSegment,
+            range(source_id, 8, 17),
+            vec![x, for_kw, set],
+        );
+        let semi = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            17,
+        );
+        let reserve = builder.add_node(
+            K::ReserveItem,
+            range(source_id, 0, 18),
+            vec![reserve, segment, semi],
+        );
+        let theorem = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            19,
+        );
+        let label = if recovered {
+            builder.add_recovered_token(SurfaceTokenKind::Identifier, "T", range(source_id, 27, 28))
+        } else {
+            source_variable_token(
+                &mut builder,
+                source_id,
+                SurfaceTokenKind::Identifier,
+                "T",
+                27,
+            )
+        };
+        let colon = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            28,
+        );
+        let equality = source_variable_equality(&mut builder, source_id, 30, "x", "x");
+        let semi = source_variable_token(
+            &mut builder,
+            source_id,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            35,
+        );
+        let theorem = builder.add_node(
+            K::TheoremItem,
+            range(source_id, 19, 36),
+            vec![theorem, label, colon, equality, semi],
+        );
+        source_variable_finish(builder, source_id, 0, 37, vec![reserve, theorem])
+    };
+    let ast = build(false);
+    let (source, symbols) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module_id())
+            .unwrap()
+            .unwrap();
+    let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &symbols).unwrap();
+    let (_, _, base) =
+        TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope).unwrap();
+    assert!(base.source_nodes().is_none());
+    let recovered = SurfaceResolvedArena::lower(&build(true), &module_id()).unwrap();
+    assert_eq!(
+        base.clone()
+            .with_source_statement_from_original(&recovered, &symbols, &scope),
+        Err(crate::typed_ast::TypedAstError::InvalidSourceStatement)
+    );
+    let installed = base
+        .clone()
+        .with_source_statement_from_original(&source, &symbols, &scope)
+        .unwrap();
+    assert_eq!(
+        installed.source_nodes().unwrap(),
+        source_nodes(&source, &base).unwrap()
+    );
+    assert!(installed.source_statement().is_some());
+    let mut preinstalled = base.clone();
+    preinstalled.install_source_nodes(&source).unwrap();
+    assert_eq!(
+        preinstalled.with_source_statement_from_original(&source, &symbols, &scope),
+        Err(crate::typed_ast::TypedAstError::InvalidSourceStatement)
+    );
+    assert!(base.source_nodes().is_none());
+}
+
 #[test]
 fn declarations_attach_types_and_context_snapshots_are_deterministic() {
     let source = source_id();

@@ -1,8 +1,8 @@
 # Task VELOCITY-GENERIC-SOURCE-TRANSPORT: one producer and one oracle for original-source transport
 Canonical language: English; [Japanese pointer](../ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
-Status: in progress; step 1 complete. Tier: full for steps 2-3; pattern tier for the family slices below. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
+Status: in progress; steps 1-2 complete. Tier: full for steps 2-3; pattern tier for the family slices below. Primary owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md), [Core plan](../../mizar-core/en/00.crate_plan.md).
 Dependencies: VELOCITY-LARGE-FILE-SPLIT. Subsumes checker Task 281 ([QUALITY-EXACT-PROFILE-RETIREMENT](./QUALITY-EXACT-PROFILE-RETIREMENT.md)); its exit criterion is exit criterion 3 below.
-Readiness: step 1 froze the producer, boundary and oracle contract in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design) and the classification ledger `tests/coverage/source_transport_classification.tsv`; step 2 may start.
+Readiness: step 1 froze the producer, boundary and oracle contract in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design) and the classification ledger `tests/coverage/source_transport_classification.tsv`; step 3 may start.
 Authority: [source statement design](../../mizar-checker/en/source_statement.md); [resolved typed AST](../../mizar-checker/en/resolved_typed_ast.md); the specification sections cited by the existing per-element contracts; [authority order](../../autonomous_crate_development.md#authority-order).
 Gap: `design_drift`. Original-source transport is implemented one syntax element at a time (Mode, Functor, Property, Structure, and Attribute coordinates; empty and singleton enumeration and bare-set choice witnesses), each as a lower/pair/preservation triple with hand-written literal-offset oracles. This dominated the week ending 2026-11-02 without moving the roadmap.
 
@@ -14,7 +14,7 @@ Gap: `design_drift`. Original-source transport is implemented one syntax element
 
 ## Family slices
 - [x] step 1 design and classification ledger
-- [ ] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
+- [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
 - [ ] step 3 generic runner oracle and metamorphic route
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)

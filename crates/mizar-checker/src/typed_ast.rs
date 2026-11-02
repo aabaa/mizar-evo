@@ -51,6 +51,7 @@ use crate::{
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::SurfaceNodeKind;
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -150,10 +151,23 @@ impl fmt::Debug for InstalledSourceNestedFraenkelCaptureIdentity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SourceNode {
+    pub(crate) site: ResolvedNodeId,
+    pub(crate) kind: SurfaceNodeKind,
+    pub(crate) range: SourceRange,
+    pub(crate) parent: Option<ResolvedNodeId>,
+    pub(crate) child_ordinal: usize,
+    pub(crate) preorder_ordinal: usize,
+    pub(crate) recovery: NodeRecoveryState,
+    pub(crate) spelling: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
+    source_nodes: Option<Vec<SourceNode>>,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
     source_attribute: Option<SourceAttributeHandoff>,
@@ -223,6 +237,7 @@ impl TypedAst {
             source_id: parts.source_id,
             module_id: parts.module_id,
             resolved_root: parts.resolved_root,
+            source_nodes: None,
             source_context: parts.source_context,
             source_type: parts.source_type,
             source_attribute: parts.source_attribute,
@@ -280,6 +295,23 @@ impl TypedAst {
 
     pub const fn resolved_root(&self) -> Option<ResolvedNodeId> {
         self.resolved_root
+    }
+
+    pub(crate) fn source_nodes(&self) -> Option<&[SourceNode]> {
+        self.source_nodes.as_deref()
+    }
+
+    pub(crate) fn install_source_nodes(
+        &mut self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    ) -> Result<(), TypedAstError> {
+        if self.source_nodes().is_some() {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let rows = crate::type_checker::source_nodes(source, self)
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_nodes = Some(rows);
+        Ok(())
     }
 
     pub const fn source_context(&self) -> Option<&SourceBindingContextHandoff> {
@@ -1869,6 +1901,7 @@ impl TypedAst {
         if self != canonical {
             return Err(TypedAstError::InvalidSourceStatement);
         }
+        self.install_source_nodes(source)?;
         self.source_statement = Some(statement);
         self.source_statement_references = references;
         self.source_statement_witnesses = witnesses;
