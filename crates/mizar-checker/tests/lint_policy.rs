@@ -1210,11 +1210,11 @@ fn expected_checker_source_inventory_row(root: &Path, path: &Path) -> CheckerSou
     }
 }
 
-/// Line counts are recorded rounded up to the next multiple of 500 so an
+/// Line counts are recorded rounded up to the next multiple of 2000 so an
 /// ordinary task does not change the inventory; the column still tracks the
 /// size that boundary decisions depend on.
 fn inventory_line_bucket(lines: usize) -> usize {
-    lines.div_ceil(500) * 500
+    lines.div_ceil(2000) * 2000
 }
 
 fn invalid_inventory_relative_path(path: &str) -> bool {
