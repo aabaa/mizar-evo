@@ -315,6 +315,8 @@ fn source_term_parts_for_roots_with_recovery(
     Ok(SourceTermParts { arena, handoff })
 }
 
+// Rationale: preserve the independent contextual lower bridge after raw statement retirement.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn source_term_parts_for_context_roots(
     ast: &SurfaceAst,
     module: ModuleId,

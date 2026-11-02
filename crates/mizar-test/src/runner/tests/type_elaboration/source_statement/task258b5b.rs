@@ -165,7 +165,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
         sha256_text(SOURCE_STATEMENT_B5B_TEXT),
         "671e940c9dc749757dc8fddcc30a1a230aecb650058e64d6f1e73c1c66e93e9e"
     );
-    let (ast, module, raw, enriched) = task258b5b_exact_env(258_560);
+    let (ast, module, raw, enriched, inputs) = task258b5b_exact_env(258_560);
     assert!(task258b5b_surface_profile_with_mutation_for_test(
         &ast,
         SOURCE_STATEMENT_B5B_TEXT,
@@ -254,73 +254,15 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             .expect("B5B lower-stage opt-in"),
         enriched
     );
-    assert_eq!(
-        source_statement_b5b_output_with_raw_resolver_mutation(
-            &ast,
-            module.clone(),
-            &raw,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |symbols| symbols,
-        )
-        .expect("raw B5B selector")
-        .expect("raw B5B route")
-        .reference_use_ordinals,
-        [1; 4]
-    );
-    let output = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("B5B selector")
-    .unwrap_or_else(|error| panic!("B5B route failed: {error}"));
-    assert_eq!(
-        (
-            output.left_lookup_ordinal,
-            output.right_lookup_ordinal,
-            output.reference_use_ordinals.as_slice(),
-        ),
-        (1, 1, &[1, 1, 1, 1][..])
-    );
-    let statement = output.typed_ast.source_statement().expect("B5B statement");
-    let references = output
-        .typed_ast
-        .source_statement_references()
-        .expect("B5B references");
-    assert_eq!(
-        (
-            statement.binding_env().contexts().len(),
-            statement.binding_env().bindings().len(),
-            statement.binding_env().diagnostics().len(),
-            output
-                .typed_ast
-                .source_term()
-                .expect("Task252")
-                .terms()
-                .len(),
-            output
-                .typed_ast
-                .source_term()
-                .expect("Task252")
-                .references()
-                .len(),
-            output
-                .typed_ast
-                .source_term()
-                .expect("Task252")
-                .numeric_type_requests()
-                .len(),
-        ),
-        (2, 1, 0, 4, 4, 0)
-    );
-    let module_context = statement
-        .binding_env()
+    assert!(source_statement_output_with_source(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
+    assert!(source_statement_transport_detail_keys(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
+    let binding_env = &inputs.binding_env;
+    assert_eq!((binding_env.contexts().len(), binding_env.bindings().len(), binding_env.diagnostics().len()), (2, 1, 0));
+    let module_context = binding_env
         .contexts()
         .get(mizar_checker::binding_env::BindingContextId::new(0))
         .expect("module context");
-    let proof_context = statement
-        .binding_env()
+    let proof_context = binding_env
         .contexts()
         .get(mizar_checker::binding_env::BindingContextId::new(1))
         .expect("proof context");
@@ -370,49 +312,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             mizar_checker::binding_env::BindingContextRecovery::Normal,
         )
     );
-    assert_eq!(
-        (
-            statement.owners().len(),
-            statement.statements().len(),
-            statement.contexts().len(),
-            statement.input_facts().len(),
-            statement.candidate_facts().len(),
-            references.labels().len(),
-            references.citations().len(),
-        ),
-        (1, 2, 2, 2, 2, 0, 1)
-    );
-    let owner = statement
-        .owners()
-        .get(mizar_checker::source_statement::SourceTheoremOwnerId::new(
-            0,
-        ))
-        .expect("B5B owner");
-    assert_eq!(
-        (
-            owner.site().node().index(),
-            owner.source_range().start,
-            owner.source_range().end,
-            owner.spelling(),
-            owner.contribution().index(),
-            owner.role(),
-            owner.status(),
-            owner.recovery(),
-            statement.checked_owner().origin().structural_path(),
-        ),
-        (
-            53,
-            48,
-            145,
-            "FormulaStatementImportedPublicTheoremCitationSmoke",
-            0,
-            mizar_checker::source_statement::SourceTheoremRole::Theorem,
-            mizar_checker::source_statement::SourceTheoremStatus::Unmodified,
-            mizar_checker::source_statement::SourceStatementRecovery::Normal,
-            &[2, 1][..],
-        )
-    );
-    let primary = output.typed_ast.source_term().expect("Task252");
+    let primary = &inputs.primary;
     assert_eq!(
         primary
             .terms()
@@ -453,7 +353,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             (3, 3, 0, Some(vec![0]), 1),
         ]
     );
-    let atomic = output.typed_ast.source_atomic_formula().expect("Task256");
+    let atomic = &inputs.atomic;
     assert_eq!(
         (
             atomic.formulas().len(),
@@ -515,126 +415,20 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             )
         );
     }
-    assert_eq!(
-        statement
-            .statements()
-            .iter()
-            .map(|(id, row)| (
-                id.index(),
-                row.context().index(),
-                row.site().node().index(),
-                row.source_range().start,
-                row.source_range().end,
-                row.source_ordinal(),
-                row.spelling(),
-                row.kind(),
-            ))
-            .collect::<Vec<_>>(),
-        [
-            (
-                0,
-                0,
-                53,
-                48,
-                145,
-                0,
-                "theorem FormulaStatementImportedPublicTheoremCitationSmoke : x = x proof thus x = x by Ref ; end ;",
-                mizar_checker::source_statement::SourceStatementKind::TheoremProposition,
-            ),
-            (
-                1,
-                1,
-                51,
-                122,
-                140,
-                1,
-                "thus x = x by Ref ;",
-                mizar_checker::source_statement::SourceStatementKind::Conclusion,
-            ),
-        ]
-    );
-    for index in 0..2 {
-        let row = statement
-            .statements()
-            .get(mizar_checker::source_statement::SourceStatementId::new(
-                index,
-            ))
-            .expect("statement row");
-        let context = statement
-            .contexts()
-            .get(mizar_checker::source_statement::SourceStatementContextId::new(index))
-            .expect("context row");
-        let input = statement
-            .input_facts()
-            .get(mizar_checker::source_statement::SourceStatementInputFactId::new(index))
-            .expect("input row");
-        let candidate = statement
-            .candidate_facts()
-            .get(mizar_checker::source_statement::SourceStatementCandidateFactId::new(index))
-            .expect("candidate row");
-        assert_eq!(row.formula(), candidate.formula());
-        assert_eq!(
-            (context.statement().index(), input.statement().index()),
-            (index, index)
-        );
-        assert_eq!(
-            (input.context().index(), candidate.context().index()),
-            (index, index)
-        );
-        assert_eq!((input.ordinal(), candidate.ordinal()), (0, 0));
-        assert_eq!(
-            input.uses().iter().map(|id| id.index()).collect::<Vec<_>>(),
-            [2 * index, 2 * index + 1]
-        );
-    }
-    let owned = output
-        .typed_ast
-        .nodes()
+    let owned = inputs.arena
         .iter()
         .filter(|(_, row)| row.kind.as_str() != "source.surface.unowned")
         .map(|(id, _)| id.index())
         .collect::<Vec<_>>();
     assert_eq!(owned, [35, 37, 40, 41, 43, 46, 51, 53]);
     assert_eq!(
-        output
-            .typed_ast
-            .nodes()
+        inputs.arena
             .iter()
             .filter(|(_, row)| row.kind.as_str() == "source.surface.unowned")
             .count(),
         49
     );
-    let citation = references
-        .citations()
-        .get(mizar_checker::source_statement::SourceStatementCitationId::new(0))
-        .expect("imported citation");
-    assert_eq!(
-        (
-            citation.statement().index(),
-            citation.context().index(),
-            citation.target(),
-            citation.label_ref().index(),
-            citation.proof_scope().path(),
-            citation.source_range().start,
-            citation.source_range().end,
-            citation.ordinal(),
-            citation.kind(),
-            citation.recovery(),
-        ),
-        (
-            1,
-            1,
-            mizar_checker::source_statement::SourceStatementCitationTarget::Imported,
-            0,
-            &[0][..],
-            136,
-            139,
-            0,
-            mizar_checker::source_statement::SourceStatementCitationKind::SimpleImported,
-            mizar_checker::source_statement::SourceStatementRecovery::Normal,
-        )
-    );
-    let projection = references.label_projection();
+    let projection = &inputs.projection;
     assert!(matches!(
         projection.source(),
         mizar_resolve::labels::LabelProjectionSource::Imported
@@ -681,7 +475,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             false,
         )
     );
-    let reference = references.reference_candidate();
+    let reference = &inputs.reference;
     assert_eq!(
         (
             reference.site().node().index(),
@@ -716,7 +510,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             proof_scope: Some(scope)
         } if scope.path() == [0]
     ));
-    let resolver_ast = references.resolver_ast();
+    let resolver_ast = &inputs.resolver_ast;
     assert_eq!(
         (
             resolver_ast.nodes().root().index(),
@@ -730,16 +524,15 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
     );
     assert_eq!(
         (
-            references.label_resolution().index().len(),
-            references.label_resolution().table().len(),
-            references
-                .label_resolution()
+            inputs.resolution.index().len(),
+            inputs.resolution.table().len(),
+            inputs.resolution
                 .ids()
                 .iter()
                 .map(|id| id.index())
                 .collect::<Vec<_>>(),
-            references.label_resolution().diagnostics().len(),
-            references.label_resolution().has_unresolved(),
+            inputs.resolution.diagnostics().len(),
+            inputs.resolution.has_unresolved(),
         ),
         (1, 1, vec![0], 0, false)
     );
@@ -831,63 +624,28 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             assert_eq!(node.reference_key(), None);
         }
     }
-    let expected_reference_debug =
-        task258b5b_expected_reference_debug(&module, references.statement_fingerprint());
-    assert_eq!(references.debug_text(), expected_reference_debug);
-    assert_eq!(
-        output
-            .typed_ast
-            .debug_text()
-            .matches("source-statement-reference-debug-v1")
-            .count(),
-        1
-    );
-    assert!(!references.debug_text().contains("\nlabel#0 "));
+    assert_eq!(inputs.reference_input.citations[0].ordinal, 0);
+    assert_eq!(inputs.reference.ordinal(), 1);
+    assert_eq!(inputs.clone().primary, inputs.primary);
 }
 
 #[test]
 fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
-    let (ast, module, raw, enriched) = task258b5b_exact_env(258_570);
-    let baseline = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("B5B selector")
-    .expect("B5B baseline");
-    let baseline_debug = baseline.typed_ast.debug_text();
-    let baseline_resolved_debug = baseline.resolved.debug_text();
-    let baseline_references = baseline
-        .typed_ast
-        .source_statement_references()
-        .expect("B5B references");
-    let import_id = baseline_references
-        .resolver_ast()
-        .imports()
-        .imports()
-        .next()
-        .expect("B5B import")
-        .0;
-    let wrong_node = baseline_references
-        .resolver_ast()
-        .nodes()
-        .iter()
-        .find_map(|(id, _)| (id.index() == 47).then_some(id))
-        .expect("B5B adjacent node");
+    let (ast, module, raw, enriched, baseline) = task258b5b_exact_env(258_570);
+    let baseline_debug = format!("{baseline:?}");
+    let import_id = baseline.resolver_ast.imports().imports().next().expect("B5B import").0;
+    let wrong_node = baseline.resolver_ast.nodes().iter().find_map(|(id, _)| (id.index() == 47).then_some(id)).expect("B5B adjacent node");
     let wrong_contribution = enriched
         .contributions()
         .iter()
         .find_map(|record| (record.id().index() == 1).then_some(record.id()))
         .expect("B5B foreign contribution");
 
+    // Raw dependency, row, reference and provenance guards are exercised at their
+    // private Checker owner. Here the real captured drafts remain mutation inputs.
     for context_index in 0..2 {
         let mutated = task258b5a_binding_env_with_context_recovery(
-            baseline
-                .typed_ast
-                .source_statement()
-                .expect("B5B statement")
-                .binding_env(),
+            &baseline.binding_env,
             context_index,
         );
         assert!(
@@ -896,7 +654,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| inputs.binding_env = mutated,
+                |inputs| { assert_ne!(inputs.binding_env, mutated); inputs.binding_env = mutated; },
             )
             .expect("Task48 context selector")
             .is_err(),
@@ -904,11 +662,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
         );
     }
     let mutated_binding = task258b5a_binding_env_with_binding_recovery(
-        baseline
-            .typed_ast
-            .source_statement()
-            .expect("B5B statement")
-            .binding_env(),
+        &baseline.binding_env,
     );
     assert!(
         source_statement_b5b_output_with_mutation(
@@ -916,49 +670,62 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
             module.clone(),
             &enriched,
             SOURCE_STATEMENT_B5B_TEXT,
-            |inputs| inputs.binding_env = mutated_binding,
+            |inputs| { assert_ne!(inputs.binding_env, mutated_binding); inputs.binding_env = mutated_binding; },
         )
         .expect("Task48 binding selector")
         .is_err()
     );
 
-    let baseline_primary = baseline.typed_ast.source_term().expect("Task252");
-    let baseline_binding = baseline
-        .typed_ast
-        .source_statement()
-        .expect("B5B statement")
-        .binding_env();
+    let baseline_primary = &baseline.primary;
+    let baseline_binding = &baseline.binding_env;
     for index in 0..4 {
         let mut input = task258b3m2a_primary_input(baseline_primary);
         input.terms[index].source_ordinal = 4;
-        assert!(
-            mizar_checker::source_term::SourcePrimaryTermProducer::build(
+        assert_ne!(format!("{input:?}"), format!("{:?}", task258b3m2a_primary_input(baseline_primary)));
+        let result = mizar_checker::source_term::SourcePrimaryTermProducer::build(
+                input.clone(),
+                baseline_binding,
+                &baseline.arena,
+            );
+        assert_eq!(result, Err(mizar_checker::source_term::SourcePrimaryTermError::InvalidTerm { term: mizar_checker::source_term::SourcePrimaryTermId::new(index) }), "Task252 term {index}");
+        assert_eq!(mizar_checker::source_term::SourcePrimaryTermProducer::build(
                 input,
                 baseline_binding,
-                baseline.typed_ast.nodes(),
-            )
-            .is_err(),
-            "Task252 term {index}"
-        );
+                &baseline.arena,
+            ), result, "Task252 term {index} replay");
         let mut input = task258b3m2a_primary_input(baseline_primary);
         input.references[index].term =
             mizar_checker::source_term::SourcePrimaryTermId::new((index + 1) % 4);
-        assert!(
-            mizar_checker::source_term::SourcePrimaryTermProducer::build(
+        assert_ne!(format!("{input:?}"), format!("{:?}", task258b3m2a_primary_input(baseline_primary)));
+        let result = mizar_checker::source_term::SourcePrimaryTermProducer::build(
+                input.clone(),
+                baseline_binding,
+                &baseline.arena,
+            );
+        assert_eq!(result, Err(mizar_checker::source_term::SourcePrimaryTermError::InvalidReference { reference: mizar_checker::source_term::SourcePrimaryTermReferenceId::new((index + 1).min(3)) }), "Task252 reference {index}");
+        assert_eq!(mizar_checker::source_term::SourcePrimaryTermProducer::build(
                 input,
                 baseline_binding,
-                baseline.typed_ast.nodes(),
-            )
-            .is_err(),
-            "Task252 reference {index}"
-        );
+                &baseline.arena,
+            ), result, "Task252 reference {index} replay");
     }
-    let baseline_atomic = baseline.typed_ast.source_atomic_formula().expect("Task256");
+    let baseline_atomic = &baseline.atomic;
     for index in 0..2 {
         let mut input = task258b3m2b1_atomic_input(baseline_atomic);
         input.formulas[index].source_ordinal = 2;
-        assert!(
-            mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+        assert_ne!(format!("{input:?}"), format!("{:?}", task258b3m2b1_atomic_input(baseline_atomic)));
+        let result = mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+                input.clone(),
+                baseline_binding,
+                &enriched,
+                baseline_primary,
+                None,
+                None,
+                None,
+                &baseline.arena,
+            );
+        assert_eq!(result, Err(mizar_checker::source_atomic_formula::SourceAtomicFormulaError::InvalidFormula { formula: mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(index) }), "Task256 formula {index}");
+        assert_eq!(mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
                 input,
                 baseline_binding,
                 &enriched,
@@ -966,17 +733,25 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 None,
                 None,
                 None,
-                baseline.typed_ast.nodes(),
-            )
-            .is_err(),
-            "Task256 formula {index}"
-        );
+                &baseline.arena,
+            ), result, "Task256 formula {index} replay");
     }
     for index in 0..4 {
         let mut input = task258b3m2b1_atomic_input(baseline_atomic);
         input.edges[index].ordinal = 2;
-        assert!(
-            mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+        assert_ne!(format!("{input:?}"), format!("{:?}", task258b3m2b1_atomic_input(baseline_atomic)));
+        let result = mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+                input.clone(),
+                baseline_binding,
+                &enriched,
+                baseline_primary,
+                None,
+                None,
+                None,
+                &baseline.arena,
+            );
+        assert_eq!(result, Err(mizar_checker::source_atomic_formula::SourceAtomicFormulaError::ReorderedEdge { edge: mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(index) }), "Task256 edge {index}");
+        assert_eq!(mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
                 input,
                 baseline_binding,
                 &enriched,
@@ -984,15 +759,23 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 None,
                 None,
                 None,
-                baseline.typed_ast.nodes(),
-            )
-            .is_err(),
-            "Task256 edge {index}"
-        );
+                &baseline.arena,
+            ), result, "Task256 edge {index} replay");
         let mut input = task258b3m2b1_atomic_input(baseline_atomic);
         input.requests[index].ordinal = 2;
-        assert!(
-            mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+        assert_ne!(format!("{input:?}"), format!("{:?}", task258b3m2b1_atomic_input(baseline_atomic)));
+        let result = mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
+                input.clone(),
+                baseline_binding,
+                &enriched,
+                baseline_primary,
+                None,
+                None,
+                None,
+                &baseline.arena,
+            );
+        assert_eq!(result, Err(mizar_checker::source_atomic_formula::SourceAtomicFormulaError::ReorderedRequest { request: mizar_checker::source_atomic_formula::SourceAtomicRequestId::new(index) }), "Task256 request {index}");
+        assert_eq!(mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(
                 input,
                 baseline_binding,
                 &enriched,
@@ -1000,12 +783,12 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 None,
                 None,
                 None,
-                baseline.typed_ast.nodes(),
-            )
-            .is_err(),
-            "Task256 request {index}"
-        );
+                &baseline.arena,
+            ), result, "Task256 request {index} replay");
     }
+
+    assert_eq!(mizar_checker::source_term::SourcePrimaryTermProducer::build(task258b3m2a_primary_input(baseline_primary), baseline_binding, &baseline.arena).expect("pristine primary replay"), *baseline_primary);
+    assert_eq!(mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(task258b3m2b1_atomic_input(baseline_atomic), baseline_binding, &enriched, baseline_primary, None, None, None, &baseline.arena).expect("pristine atomic replay"), *baseline_atomic);
 
     for row in 0..2 {
         for family in 0..4 {
@@ -1014,7 +797,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| match family {
+                |inputs| { let before = format!("{inputs:?}"); match family {
                     0 => inputs.statement.statements[row].source_ordinal = 2,
                     1 => {
                         inputs.statement.contexts[row].binding_context =
@@ -1023,7 +806,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                     2 => inputs.statement.input_facts[row].uses.swap(0, 1),
                     3 => inputs.statement.candidate_facts[row].ordinal = 1,
                     _ => unreachable!(),
-                },
+                }; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("Task258 row selector");
             assert!(result.is_err(), "Task258 family {family} row {row}");
@@ -1035,7 +818,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
             module.clone(),
             &enriched,
             SOURCE_STATEMENT_B5B_TEXT,
-            |inputs| match mutation {
+            |inputs| { let before = format!("{inputs:?}"); match mutation {
                 0 => inputs.reference_input.labels.push(
                     mizar_checker::source_statement::SourceStatementLabelInput {
                         statement: mizar_checker::source_statement::SourceStatementId::new(0),
@@ -1079,7 +862,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                         mizar_checker::source_statement::SourceStatementRecovery::Degraded
                 }
                 _ => unreachable!(),
-            },
+            }; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
         )
         .expect("citation selector");
         assert!(result.is_err(), "citation mutation {mutation}");
@@ -1087,11 +870,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
 
     for mutation in TASK258B5B_IMPORT_MUTATIONS.iter().copied() {
         let mutated = task258b5b_resolver_ast_with_import_mutation(
-            baseline
-                .typed_ast
-                .source_statement_references()
-                .expect("B5B references")
-                .resolver_ast(),
+            &baseline.resolver_ast,
             &module,
             mutation,
         );
@@ -1102,7 +881,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| inputs.resolver_ast = mutated,
+                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("import mutation selector")
             .is_err(),
@@ -1111,11 +890,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
     }
     for mutation in TASK258B5B_RESOLVER_NODE_MUTATIONS.iter().copied() {
         let mutated = task258b5b_resolver_ast_with_node_mutation(
-            baseline
-                .typed_ast
-                .source_statement_references()
-                .expect("B5B references")
-                .resolver_ast(),
+            &baseline.resolver_ast,
             mutation,
         );
         let rejected = match mutated {
@@ -1125,7 +900,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| inputs.resolver_ast = mutated,
+                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("resolver-node mutation selector")
             .is_err(),
@@ -1139,15 +914,15 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| {
+                |inputs| { let before = format!("{inputs:?}");
                     inputs.projection = task258b5b_projection_with_mutation(
                         &inputs.projection,
                         &module,
                         wrong_contribution,
                         import_id,
                         mutation,
-                    )
-                },
+                    );
+                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("projection selector")
             .is_err(),
@@ -1161,15 +936,15 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| {
+                |inputs| { let before = format!("{inputs:?}");
                     inputs.reference = task258b5b_reference_with_mutation(
                         &inputs.reference,
                         &module,
                         wrong_node,
                         import_id,
                         mutation,
-                    )
-                },
+                    );
+                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("reference selector")
             .is_err(),
@@ -1183,7 +958,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| {
+                |inputs| { let before = format!("{inputs:?}");
                     if mutation == 0 {
                         inputs.reference_input.citations[0].ordinal = 1;
                     } else {
@@ -1195,7 +970,7 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
                             Task258B5BReferenceMutation::SourceOrdinal,
                         );
                     }
-                },
+                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("independent ordinal selector")
             .is_err(),
@@ -1216,17 +991,14 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
         .expect("raw resolver selector")
         .is_err()
     );
-    let replay =
-        source_statement_output_with_source(&ast, module, &enriched, SOURCE_STATEMENT_B5B_TEXT)
-            .expect("replay selector")
-            .expect("replay");
-    assert_eq!(replay.typed_ast.debug_text(), baseline_debug);
-    assert_eq!(replay.resolved.debug_text(), baseline_resolved_debug);
+    let (_, _, _, _, replay) = task258b5b_exact_env(258_570);
+    assert_eq!(format!("{baseline:?}"), baseline_debug);
+    assert_eq!(format!("{replay:?}"), baseline_debug);
 }
 
 #[test]
 fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
-    let (exact_ast, exact_module, raw, enriched) = task258b5b_exact_env(258_580);
+    let (exact_ast, exact_module, raw, enriched, _) = task258b5b_exact_env(258_580);
     let normal = augment_type_elaboration_import_summaries(&exact_ast, &exact_module, raw.clone());
     assert!(
         source_statement_output_with_source(
@@ -1235,8 +1007,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
             &raw,
             SOURCE_STATEMENT_B5B_TEXT,
         )
-        .expect("raw B5B selector")
-        .is_err()
+        .is_none()
     );
     assert!(
         source_statement_output_with_source(
@@ -1245,8 +1016,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
             &normal,
             SOURCE_STATEMENT_B5B_TEXT,
         )
-        .expect("normal B5B selector")
-        .is_err()
+        .is_none()
     );
     assert!(
         source_statement_output_with_source(
@@ -1255,9 +1025,12 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
             &enriched,
             SOURCE_STATEMENT_B5B_TEXT,
         )
-        .expect("enriched B5B selector")
-        .is_ok()
+        .is_none()
     );
+
+    for symbols in [&raw, &normal] {
+        assert_eq!(source_statement_b5b_output_with_mutation(&exact_ast, exact_module.clone(), symbols, SOURCE_STATEMENT_B5B_TEXT, |_| {}).expect("strict B5B opt-in selector").expect_err("raw/default resolver must fail preflight"), "Task258B5B opt-in resolver profile mismatch");
+    }
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -1393,7 +1166,9 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
             .is_none(),
             "{label} loaded-source isolation"
         );
+        assert!(extract_imported_public_theorem_citation_source_statement(&exact_ast, &source).is_none(), "{label} loaded-source extraction");
         let (ast, module, _, raw) = task253_ast_from_source_text(&source, 258_583);
+        assert!(extract_imported_public_theorem_citation_source_statement(&ast, &source).is_none(), "{label} parsed-source extraction");
         let symbols = super::import_fixtures::
             augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
                 &ast, &module, raw,
@@ -1431,18 +1206,22 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
                 |symbols| {
-                    task258b5b_mutate_imported_label(
+                    let mutated = task258b5b_mutate_imported_label(
                         &symbols,
                         &exact_module,
                         foreign_source,
                         mutation,
-                    )
+                    );
+                    assert_ne!(mutated, symbols, "actual opt-in environment mutation");
+                    mutated
                 },
             )
             .expect("B5B resolver selector")
             .expect_err("B5B resolver mutation")
         };
-        assert_eq!(run(), run(), "{mutation:?}");
+        let error = run();
+        assert_ne!(error, mizar_checker::source_statement::SourceStatementError::DependencyMismatch.to_string(), "{mutation:?} must fail real resolver preflight");
+        assert_eq!(error, run(), "{mutation:?}");
     }
     let (b1_ast, b1_module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_584);
@@ -1452,6 +1231,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
         task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_585);
     let (b5a, _) = task258_native_output(&b5a_ast, &b5a_module);
     assert_eq!(b5a.source_term().unwrap().references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), (0..10).collect::<Vec<_>>());
+    assert!(extract_imported_public_theorem_citation_source_statement(&b1_ast, SOURCE_STATEMENT_B5B_TEXT).is_none());
     assert!(
         source_statement_output_with_source(
             &b1_ast,
@@ -1471,19 +1251,12 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
     let (b5a_ast, b5a_module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_590);
     let (b5a, _) = task258_native_output(&b5a_ast, &b5a_module);
-    let (b5b_ast, b5b_module, _, b5b_symbols) = task258b5b_exact_env(258_590);
-    let b5b = source_statement_output_with_source(
-        &b5b_ast,
-        b5b_module,
-        &b5b_symbols,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("B5B selector")
-    .expect("B5B output");
-    assert_eq!(b1.source_id(), b5b.typed_ast.source_id());
-    assert_eq!(b1.module_id(), b5b.typed_ast.module_id());
-    assert_eq!(b5a.source_id(), b5b.typed_ast.source_id());
-    assert_eq!(b5a.module_id(), b5b.typed_ast.module_id());
+    let (b5b_ast, b5b_module, _, b5b_symbols, _) = task258b5b_exact_env(258_590);
+    assert_eq!(b1.source_id(), b5b_ast.source_id);
+    assert_eq!(b1.module_id(), &b5b_module);
+    assert_eq!(b5a.source_id(), b5b_ast.source_id);
+    assert_eq!(b5a.module_id(), &b5b_module);
+    assert!(source_statement_output_with_source(&b5b_ast, b5b_module, &b5b_symbols, SOURCE_STATEMENT_B5B_TEXT).is_none());
     let b1_statement = b1
         .source_statement()
         .expect("B1 statement")
@@ -1500,16 +1273,6 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
         .source_statement_references()
         .expect("B5A references")
         .clone();
-    let b5b_statement = b5b
-        .typed_ast
-        .source_statement()
-        .expect("B5B statement")
-        .clone();
-    let b5b_references = b5b
-        .typed_ast
-        .source_statement_references()
-        .expect("B5B references")
-        .clone();
     assert_eq!(task258_reference_syntax_base(&b1)
         .with_source_statement_references(b1_statement.clone(), b1_references.clone()),
         Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
@@ -1517,97 +1280,12 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
         Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
     assert_eq!(task258_reference_syntax_base(&b5a).with_source_statement_references(b5a_statement.clone(), b5a_references.clone()), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
     assert_eq!(task258_reference_syntax_base(&b5a).with_source_statement(b5a_statement.clone()), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-    {
-        let (base, statement, references) =
-            (&b5b.typed_ast, b5b_statement.clone(), b5b_references.clone());
-        assert!(
-            task258_reference_syntax_base(base)
-                .with_source_statement_references(statement.clone(), references.clone())
-                .is_ok()
-        );
-        assert_eq!(
-            task258_reference_syntax_base(base)
-                .with_source_statement(statement)
-                .expect_err("partial reference-family installation"),
-            mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-        );
-    }
-    for (label, base, statement, references) in [
-        (
-            "B5B pair on B1 base",
-            &b1,
-            b5b_statement.clone(),
-            b5b_references.clone(),
-        ),
-        (
-            "B1 pair on B5B base",
-            &b5b.typed_ast,
-            b1_statement.clone(),
-            b1_references.clone(),
-        ),
-        (
-            "B1 statement with B5B references",
-            &b1,
-            b1_statement.clone(),
-            b5b_references.clone(),
-        ),
-        (
-            "B5B statement with B1 references",
-            &b5b.typed_ast,
-            b5b_statement.clone(),
-            b1_references.clone(),
-        ),
-        (
-            "B5B pair on B5A base",
-            &b5a,
-            b5b_statement.clone(),
-            b5b_references.clone(),
-        ),
-        (
-            "B5A pair on B5B base",
-            &b5b.typed_ast,
-            b5a_statement.clone(),
-            b5a_references.clone(),
-        ),
-        (
-            "B5A statement with B5B references",
-            &b5a,
-            b5a_statement.clone(),
-            b5b_references.clone(),
-        ),
-        (
-            "B5B statement with B5A references",
-            &b5b.typed_ast,
-            b5b_statement.clone(),
-            b5a_references.clone(),
-        ),
-    ] {
-        assert_eq!(
-            task258_reference_syntax_base(base)
-                .with_source_statement_references(statement, references)
-                .unwrap_err(),
-            mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement,
-            "{label}"
-        );
-    }
-    let installed = task258_reference_syntax_base(&b5b.typed_ast)
-        .with_source_statement_references(b5b_statement.clone(), b5b_references.clone())
-        .expect("matching B5B pair");
-    let installed_debug = installed.debug_text();
-    assert_eq!(
-        installed
-            .clone()
-            .with_source_statement_references(b5b_statement.clone(), b5b_references.clone())
-            .expect_err("duplicate B5B pair"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(installed.debug_text(), installed_debug);
+    // Accepted B5B pair, cross-profile and duplicate directions live in Checker.
     let task248 = task248_real_output();
     let before = task248.typed_ast.debug_text();
     for (label, statement, references) in [
         ("Task248/B1", b1_statement.clone(), b1_references.clone()),
         ("Task248/B5A", b5a_statement.clone(), b5a_references.clone()),
-        ("Task248/B5B", b5b_statement.clone(), b5b_references.clone()),
     ] {
         assert_eq!(
             task248
@@ -1630,95 +1308,18 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
         b5a.source_statement_references(),
         Some(&b5a_references)
     );
-    assert_eq!(b5b.typed_ast.source_statement(), Some(&b5b_statement));
-    assert_eq!(
-        b5b.typed_ast.source_statement_references(),
-        Some(&b5b_references)
-    );
 }
 
 #[test]
 fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
-    let (ast, module, _, enriched) = task258b5b_exact_env(258_600);
-    let first = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("B5B selector")
-    .expect("B5B output");
-    let second = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("B5B replay selector")
-    .expect("B5B replay");
-    assert_eq!(first.typed_ast, first.typed_ast.clone());
-    assert_eq!(first.resolved, first.resolved.clone());
-    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
-    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
-    let final_references = first
-        .typed_ast
-        .source_statement_references()
-        .expect("B5B references");
-    let replay_references = second
-        .typed_ast
-        .source_statement_references()
-        .expect("B5B replay references");
-    let final_reference_debug = final_references.debug_text();
-    assert_eq!(
-        final_reference_debug,
-        task258b5b_expected_reference_debug(&module, final_references.statement_fingerprint())
-    );
-    assert_eq!(final_reference_debug, replay_references.debug_text());
-    assert!(final_reference_debug.contains("label_node=absent"));
-    assert!(final_reference_debug.contains("resolver-projection source=imported"));
-    assert!(final_reference_debug.contains("target=imported"));
-    assert!(!final_reference_debug.contains("\nlabel#0 "));
-    assert_eq!(first.reference_use_ordinals, [1; 4]);
-    assert_eq!(
-        (first.left_lookup_ordinal, first.right_lookup_ordinal),
-        (1, 1)
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-        )
-        .expect("B5B transport")
-        .is_empty()
-    );
-    assert_eq!(
-        source_statement_transport_detail_keys_with_output_mutation_for_test(
-            &ast,
-            module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |output| {
-                output.reference_use_ordinals.pop();
-            },
-        )
-        .expect("mutated B5B telemetry"),
-        ["type_elaboration.checker.typed_ast_invalid"]
-    );
-    let final_import = final_references
-        .resolver_ast()
-        .imports()
-        .imports()
-        .next()
-        .expect("B5B import")
-        .0;
-    let wrong_node = final_references
-        .resolver_ast()
-        .nodes()
-        .iter()
-        .find_map(|(id, _)| (id.index() == 47).then_some(id))
-        .expect("B5B adjacent resolver node");
+    let (ast, module, _, enriched, first) = task258b5b_exact_env(258_600);
+    let pristine = format!("{first:?}");
+    assert_eq!(format!("{:?}", first.clone()), pristine);
+    let (_, _, _, _, second) = task258b5b_exact_env(258_600);
+    assert_eq!(format!("{second:?}"), pristine);
+    assert!(source_statement_transport_detail_keys(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
+    let final_import = first.resolver_ast.imports().imports().next().expect("B5B import").0;
+    let wrong_node = first.resolver_ast.nodes().iter().find_map(|(id, _)| (id.index() == 47).then_some(id)).expect("B5B adjacent resolver node");
     let wrong_contribution = enriched
         .contributions()
         .iter()
@@ -1726,7 +1327,7 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
         .expect("B5B non-label contribution");
     for mutation in TASK258B5B_IMPORT_MUTATIONS.iter().copied() {
         let mutated = task258b5b_resolver_ast_with_import_mutation(
-            final_references.resolver_ast(),
+            &first.resolver_ast,
             &module,
             mutation,
         );
@@ -1737,7 +1338,7 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| inputs.resolver_ast = mutated,
+                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("final import mutation selector")
             .is_err(),
@@ -1746,7 +1347,7 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
     }
     for mutation in TASK258B5B_RESOLVER_NODE_MUTATIONS.iter().copied() {
         let mutated =
-            task258b5b_resolver_ast_with_node_mutation(final_references.resolver_ast(), mutation);
+            task258b5b_resolver_ast_with_node_mutation(&first.resolver_ast, mutation);
         let rejected = match mutated {
             Err(_) => true,
             Ok(mutated) => source_statement_b5b_output_with_mutation(
@@ -1754,7 +1355,7 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| inputs.resolver_ast = mutated,
+                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("final resolver-node mutation selector")
             .is_err(),
@@ -1768,15 +1369,15 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| {
+                |inputs| { let before = format!("{inputs:?}");
                     inputs.projection = task258b5b_projection_with_mutation(
                         &inputs.projection,
                         &module,
                         wrong_contribution,
                         final_import,
                         mutation,
-                    )
-                },
+                    );
+                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("final projection mutation selector")
             .is_err(),
@@ -1790,110 +1391,24 @@ fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
                 module.clone(),
                 &enriched,
                 SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| {
+                |inputs| { let before = format!("{inputs:?}");
                     inputs.reference = task258b5b_reference_with_mutation(
                         &inputs.reference,
                         &module,
                         wrong_node,
                         final_import,
                         mutation,
-                    )
-                },
+                    );
+                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
             )
             .expect("final reference mutation selector")
             .is_err(),
             "final reference mutation {mutation:?}"
         );
     }
-    let post_mutation_replay = source_statement_output_with_source(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-    )
-    .expect("post-mutation replay selector")
-    .expect("post-mutation replay");
-    assert_eq!(
-        post_mutation_replay.typed_ast.debug_text(),
-        first.typed_ast.debug_text()
-    );
-    assert_eq!(
-        post_mutation_replay.resolved.debug_text(),
-        first.resolved.debug_text()
-    );
-    assert_eq!(
-        post_mutation_replay
-            .typed_ast
-            .source_statement_references()
-            .expect("post-mutation B5B references")
-            .debug_text(),
-        final_reference_debug
-    );
-    assert!(first.typed_ast.source_context().is_none());
-    assert!(first.typed_ast.source_type().is_none());
-    assert!(first.typed_ast.source_attribute().is_none());
-    assert!(first.typed_ast.source_evidence().is_none());
-    assert!(first.typed_ast.source_application().is_none());
-    assert!(first.typed_ast.source_structure().is_none());
-    assert!(first.typed_ast.source_set_term().is_none());
-    assert!(first.typed_ast.source_statement_witnesses().is_none());
-    assert!(first.typed_ast.source_composite_formula().is_none());
-    assert!(first.typed_ast.source_formula_composition().is_none());
-    assert!(first.typed_ast.facts().is_empty());
-    assert!(first.typed_ast.diagnostics().is_empty());
-    assert!(first.resolved.expr_metadata().is_empty());
-    assert!(first.resolved.collection_candidates().is_empty());
-    assert!(first.resolved.expanded_candidates().is_empty());
-    assert!(first.resolved.template_expansions().is_empty());
-    assert!(first.resolved.viable_candidates().is_empty());
-    assert!(first.resolved.viability_decisions().is_empty());
-    assert!(first.resolved.specificity_graphs().is_empty());
-    assert!(first.resolved.resolved_overloads().is_empty());
-    assert!(first.resolved.inserted_coercions().is_empty());
-    assert!(first.resolved.cluster_facts().is_empty());
-    assert!(first.resolved.diagnostics().is_empty());
-    assert!(first.resolved.checked_formulas().is_empty());
-    assert!(first.resolved.statement_semantics().is_empty());
-    assert!(first.resolved.checked_proofs().is_empty());
-    assert!(first.resolved.checked_proof_nodes().is_empty());
-    assert!(first.resolved.checked_terminal_goals().is_empty());
-
-    let (b5a_ast, b5a_module, _, _) =
-        task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_601);
-    let (b5a, b5a_resolved) = task258_native_output(&b5a_ast, &b5a_module);
-    let hybrid = source_statement_transport_detail_keys_with_output_mutation_for_test(
-        &ast,
-        module.clone(),
-        &enriched,
-        SOURCE_STATEMENT_B5B_TEXT,
-        |output| {
-            output.typed_ast = b5a.clone();
-            output.resolved = b5a_resolved.clone();
-            output.left_lookup_ordinal = 1;
-            output.right_lookup_ordinal = 1;
-            output.reference_use_ordinals = vec![1; 4];
-        },
-    )
-    .expect("B5B/B5A final transport");
-    assert!(
-        !hybrid.is_empty(),
-        "B5A typed/resolved pair plus B5B telemetry passed under B5B source"
-    );
-    assert_eq!(
-        hybrid,
-        source_statement_transport_detail_keys_with_output_mutation_for_test(
-            &ast,
-            module,
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |output| {
-                output.typed_ast = b5a.clone();
-                output.resolved = b5a_resolved.clone();
-                output.left_lookup_ordinal = 1;
-                output.right_lookup_ordinal = 1;
-                output.reference_use_ordinals = vec![1; 4];
-            },
-        )
-        .expect("B5B/B5A final transport replay")
-    );
+    let (_, _, _, _, replay) = task258b5b_exact_env(258_600);
+    assert_eq!(format!("{first:?}"), pristine);
+    assert_eq!(format!("{replay:?}"), pristine);
+    // Immutable final corruption, complete debug and empty semantics are checked
+    // by the private Checker final owner; these loops re-enter the raw producer.
 }

@@ -3044,7 +3044,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let legacy_nested_statement = false;
             #[cfg(test)]
             let legacy_nested_statement = source_statement.is_task_258b1_profile()
-                || source_statement.is_task_258b5a_profile();
+                || source_statement.is_task_258b5a_profile()
+                || source_statement.is_task_258b5b_profile();
             #[cfg(not(test))]
             let legacy_witness_statement = false;
             #[cfg(test)]
@@ -3070,9 +3071,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 (Some(references), None)
                     if source_application.is_none()
                         && !native_witness_statement
-                        && (native_referenced_statement
-                            || legacy_nested_statement
-                            || source_statement.is_task_258b5b_profile()) =>
+                        && (native_referenced_statement || legacy_nested_statement) =>
                 {
                     references
                         .validate_installation(

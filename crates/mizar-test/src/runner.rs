@@ -29,10 +29,7 @@ use formula_statement::{
     formula_statement_failure_diagnostic, run_formula_statement_case,
     source_variable_semantics_detail_keys, validate_active_formula_statement_tags,
 };
-use import_fixtures::{
-    ParseOnlyImportProvider, augment_type_elaboration_import_summaries,
-    augment_type_elaboration_import_summaries_with_imported_public_theorem_label,
-};
+use import_fixtures::{ParseOnlyImportProvider, augment_type_elaboration_import_summaries};
 use parse_only::{
     is_step5c3_parse_only_case, is_step5c3_parse_only_workspace_member, is_step5c4_parse_only_case,
     is_step5c4_parse_only_workspace_member, parse_only_failure_diagnostic, run_parse_only_case,
@@ -213,7 +210,7 @@ use type_elaboration::{
     SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BRouteInputs, SourceStatementB4BSurfaceMutation,
     SourceStatementB4CRouteInputs, SourceStatementB4CSurfaceMutation, SourceStatementB5AExtraction,
-    SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
+    SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction, SourceStatementB5BRouteInputs,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction, SourceStructureRouteOutput,
     SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
     SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
@@ -556,9 +553,8 @@ use type_elaboration::{
     source_statement_b5b_output_with_raw_resolver_mutation,
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_source, source_statement_resolver_env_for_test,
-    source_statement_transport_detail_keys_with_output_mutation_for_test, source_structure_output,
-    source_structure_output_with_mutation, source_term_output, source_term_output_with_mutation,
-    source_three_edge_local_mode_asserted_head_output,
+    source_structure_output, source_structure_output_with_mutation, source_term_output,
+    source_term_output_with_mutation, source_three_edge_local_mode_asserted_head_output,
     source_three_edge_local_mode_radix_asserted_head_output,
     source_three_edge_local_mode_reserved_variable_equality_output,
     source_three_edge_local_mode_reserved_variable_inequality_output,
@@ -2864,15 +2860,8 @@ fn type_elaboration_detail_keys(
         }
         return step5c7_term_detail_keys(&ast, &resolver.module, &resolver.env);
     }
-    let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
-        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
-            &ast,
-            &resolver.module,
-            resolver.env.clone(),
-        )
-    } else {
-        augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone())
-    };
+    let symbols =
+        augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone());
     if formula_statement::is_step5c10_candidate(case) {
         if !formula_statement::step5_formula_admitted(Some(workspace_root), case)
             || !resolver.detail_keys.is_empty()

@@ -8691,9 +8691,7 @@ struct B5BFixture {
 }
 
 impl B5BFixture {
-    fn new(source_ordinal: usize) -> Self {
-        let source = source_id(source_ordinal);
-        let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("statement.fixture"));
+    fn new(source: SourceId, module: ModuleId) -> Self {
         let (symbol, contribution, imported_contribution, symbols) =
             b5b_symbol_env(source, &module);
         let bindings = b5b_binding_env(source, &module);

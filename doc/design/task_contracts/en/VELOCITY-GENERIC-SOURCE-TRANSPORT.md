@@ -33,6 +33,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] dormant explicit-universal upper statement: retire raw B4A; preserve active lower-only universal transport
 - [x] dormant nested-quantifier upper statement: retire raw B4C; preserve active lower-only nested transport
 - [x] dormant connective-grouping upper statement: retire final raw B4 profile; preserve independent lower transport
+- [x] dormant imported-theorem citation: retire raw B5B; preserve native local references and import provenance tests
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

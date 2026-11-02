@@ -30,7 +30,7 @@ use super::{
     SourceStatementB3M2B2B3ESurfaceMutation, SourceStatementB3NExtraction,
     SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BRouteInputs, SourceStatementB4BSurfaceMutation, SourceStatementB4CRouteInputs, SourceStatementB4CSurfaceMutation,
-    SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
+    SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction, SourceStatementB5BRouteInputs,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
     TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
@@ -113,7 +113,6 @@ use super::{
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_source, source_statement_resolver_env_for_test,
     source_statement_transport_detail_keys,
-    source_statement_transport_detail_keys_with_output_mutation_for_test,
     task258b4a_surface_profile_with_mutation_for_test,
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
@@ -2715,6 +2714,7 @@ fn task258b5b_exact_env(
     mizar_resolve::resolved_ast::ModuleId,
     SymbolEnv,
     SymbolEnv,
+    SourceStatementB5BRouteInputs,
 ) {
     let (ast, module, _, raw) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B5B_TEXT, source_id_seed);
@@ -2724,20 +2724,14 @@ fn task258b5b_exact_env(
             &module,
             raw.clone(),
         );
-    (ast, module, raw, enriched)
-}
-
-fn task258b5b_expected_reference_debug(
-    module: &mizar_resolve::resolved_ast::ModuleId,
-    statement_fingerprint: &str,
-) -> String {
-    format!(
-        "source-statement-reference-debug-v1\nmodule: {}::{}\nstatement-fingerprint: {:?}\nresolver-ast root=56 nodes=57 name_refs=0 label_refs=1 imports=1 exports=0 label_node=absent reference_node=48 reference_state=resolved reference_key=label#0\nresolver-projection source=imported origin=summary:parser.type_fixtures::Ref:label:Ref module=parser.type_fixtures namespace={} range=7..27 contribution=2 path=[1,0] kind=theorem visibility=public export=exported spelling=\"Ref\"\nresolver-reference node=48 range=136..139 source_ordinal=1 scope=[0] expectation=proof-or-theorem spelling=\"Ref\"\nresolver-result index=1 references=1 ids=[0] diagnostics=0\ncitation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136..139 ordinal=0 kind=simple-imported recovery=normal\n",
-        module.package().as_str(),
-        module.path().as_str(),
-        statement_fingerprint,
-        module.path().as_str(),
-    )
+    let mut captured = None;
+    let result = source_statement_b5b_output_with_mutation(
+        &ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT,
+        |inputs| captured = Some(inputs.clone()),
+    ).expect("exact B5B lower selector");
+    assert_eq!(result.expect_err("retired raw B5B producer accepted"),
+        mizar_checker::source_statement::SourceStatementError::DependencyMismatch.to_string());
+    (ast, module, raw, enriched, captured.expect("genuine B5B lower inputs"))
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2844,14 +2838,24 @@ fn task258b5b_resolver_ast_with_import_mutation(
         resolution,
         origin,
     ));
-    mizar_resolve::resolved_ast::ResolvedAst::try_new(
+    let result = mizar_resolve::resolved_ast::ResolvedAst::try_new(
         resolver_ast.source_id(),
         resolver_ast.module_id().clone(),
         resolver_ast.nodes().clone(),
         resolver_ast.name_refs().clone(),
         resolver_ast.label_refs().clone(),
         imports,
-    )
+    );
+    let expected_error = match mutation {
+        Task258B5BImportMutation::OriginSource => Some(mizar_resolve::resolved_ast::ResolvedAstError::OriginSourceMismatch),
+        Task258B5BImportMutation::OriginModule => Some(mizar_resolve::resolved_ast::ResolvedAstError::OriginModuleMismatch),
+        _ => None,
+    };
+    match expected_error {
+        Some(error) => assert_eq!(result, Err(error), "{mutation:?} constructor"),
+        None => assert_ne!(result.as_ref().expect("admitted B5B resolver mutation"), resolver_ast, "{mutation:?} delta"),
+    }
+    result
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2925,14 +2929,29 @@ fn task258b5b_resolver_ast_with_node_mutation(
     let arena = builder
         .finish(ids[resolver_ast.nodes().root().index()])
         .expect("coherent B5B resolver arena mutation");
-    mizar_resolve::resolved_ast::ResolvedAst::try_new(
+    let result = mizar_resolve::resolved_ast::ResolvedAst::try_new(
         resolver_ast.source_id(),
         resolver_ast.module_id().clone(),
         arena,
         resolver_ast.name_refs().clone(),
         resolver_ast.label_refs().clone(),
         resolver_ast.imports().clone(),
-    )
+    );
+    let expected_error = match mutation {
+        Task258B5BResolverNodeMutation::Resolution => None,
+        Task258B5BResolverNodeMutation::ReferenceKey => Some(mizar_resolve::resolved_ast::ResolvedAstError::NodeReferenceSiteMismatch {
+            node: resolver_ast.label_refs().iter().next().expect("B5B reference").1.site().node(),
+            key: mizar_resolve::resolved_ast::NodeReferenceKey::Import(import_id),
+        }),
+        Task258B5BResolverNodeMutation::Linkage => Some(mizar_resolve::resolved_ast::ResolvedAstError::NodeReferenceSiteMismatch {
+            node: ids[47], key: reference_key,
+        }),
+    };
+    match expected_error {
+        Some(error) => assert_eq!(result, Err(error), "{mutation:?} constructor"),
+        None => assert_ne!(result.as_ref().expect("admitted B5B resolver mutation"), resolver_ast, "{mutation:?} delta"),
+    }
+    result
 }
 
 #[derive(Debug, Clone, Copy)]

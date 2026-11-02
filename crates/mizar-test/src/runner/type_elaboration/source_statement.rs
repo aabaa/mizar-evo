@@ -1,5 +1,7 @@
+#[cfg(test)]
 use std::collections::BTreeMap;
 
+use mizar_checker::type_checker::CheckedStatementOwner;
 #[cfg(test)]
 use mizar_checker::{
     binding_env::{
@@ -38,6 +40,7 @@ use mizar_checker::{
     },
     typed_ast::TypedNodeId,
 };
+#[cfg(test)]
 use mizar_checker::{
     binding_env::{
         BindingContextDraft, BindingContextId, BindingContextLayer, BindingContextOwner,
@@ -64,14 +67,11 @@ use mizar_checker::{
         SourceTheoremRole, SourceTheoremStatus,
     },
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermReferenceId},
-    type_checker::CheckedStatementOwner,
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
         TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts, TypedSiteRef,
     },
 };
-#[cfg(test)]
-use mizar_resolve::env::SymbolEnvIndexes;
 use mizar_resolve::{
     declarations::{
         DeclarationShell, DeclarationShellKind, DeclarationShellSet,
@@ -82,25 +82,29 @@ use mizar_resolve::{
         ExportStatus, NamespacePath, SignatureShell, SourceContributionId, SourceContributionIndex,
         SymbolEnv, SymbolKind, Visibility,
     },
+    names::{LocalTermBinding, LocalTermScope},
+    resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin, SymbolId},
+};
+#[cfg(test)]
+use mizar_resolve::{
+    env::SymbolEnvIndexes,
     labels::{
         LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
         LabelScopePath,
     },
-    names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{
-        FullyQualifiedName, ImportResolution, LabelKind, LabelOriginPath, LocalSymbolId, ModuleId,
-        NameRefTable, NodeReferenceKey, NodeResolutionState, RecoveryState, ReferenceSite,
-        ResolvedArena, ResolvedArenaBuilder, ResolvedAst, ResolvedImport, ResolvedImports,
-        ResolvedNode, SemanticOrigin, SymbolId,
+        ImportResolution, LabelKind, LabelOriginPath, NameRefTable, NodeReferenceKey,
+        NodeResolutionState, RecoveryState, ReferenceSite, ResolvedArena, ResolvedArenaBuilder,
+        ResolvedAst, ResolvedImport, ResolvedImports, ResolvedNode,
     },
 };
 use mizar_session::{
     BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, SessionIdAllocator,
     SourceAnchor, SourceId, SourceRange,
 };
+use mizar_syntax::{SurfaceAst, SyntaxKind};
 #[cfg(test)]
-use mizar_syntax::SurfaceTokenKind;
-use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SyntaxKind};
+use mizar_syntax::{SurfaceNodeKind, SurfaceTokenKind};
 
 #[cfg(test)]
 use super::source_ast::subtree_has_recovery;
@@ -132,6 +136,7 @@ use super::{
     },
 };
 
+#[cfg(test)]
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
@@ -169,6 +174,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B5A_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B5B_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -1441,6 +1447,7 @@ fn exact_task258b5a_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool
         })
 }
 
+#[cfg(test)]
 const TASK258B5B_SURFACE_KINDS: [&str; 57] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"import\" })",
     "Token(SurfaceToken { kind: Identifier, text: \"parser\" })",
@@ -1501,6 +1508,7 @@ const TASK258B5B_SURFACE_KINDS: [&str; 57] = [
     "Root",
 ];
 
+#[cfg(test)]
 const TASK258B5B_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 6),
     (7, 13),
@@ -1561,6 +1569,7 @@ const TASK258B5B_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 145),
 ];
 
+#[cfg(test)]
 const TASK258B5B_SURFACE_CHILDREN: [&[usize]; 57] = [
     &[],
     &[],
@@ -1624,6 +1633,7 @@ const TASK258B5B_SURFACE_CHILDREN: [&[usize]; 57] = [
     ],
 ];
 
+#[cfg(test)]
 fn exact_task258b5b_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     source_text == SOURCE_STATEMENT_B5B_TEXT
         && source_text.len() == 146
@@ -1971,7 +1981,9 @@ const SOURCE_STATEMENT_SPELLING: &str =
 const SOURCE_STATEMENT_B1_LABEL: &str = "FormulaStatementNestedContextSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B5A_LABEL: &str = "FormulaStatementAncestorLabelDescendantCitationSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B5B_LABEL: &str = "FormulaStatementImportedPublicTheoremCitationSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B5B_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementImportedPublicTheoremCitationSmoke : x = x proof thus x = x by Ref ; end ;",
     "thus x = x by Ref ;",
@@ -2119,6 +2131,7 @@ pub(in crate::runner) struct SourceStatementB5AExtraction {
     pub(in crate::runner) proof_ranges: [SourceRange; 3],
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB5BExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2897,6 +2910,7 @@ pub(in crate::runner) type SourceStatementB4BRouteInputs = SourceStatementB4ARou
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB4CRouteInputs = SourceStatementB4ARouteInputs;
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB1RouteInputs {
     pub(in crate::runner) binding_env: BindingEnv,
@@ -2911,6 +2925,7 @@ pub(in crate::runner) struct SourceStatementB1RouteInputs {
     pub(in crate::runner) reference_input: SourceStatementReferenceHandoffInput,
 }
 
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB5BRouteInputs = SourceStatementB1RouteInputs;
 
 #[cfg(test)]
@@ -3004,147 +3019,20 @@ pub(in crate::runner) const TASK258B3M2B2B3E_TASK258_FIELD_COUNT: usize = 62;
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3E_WITNESS_FIELD_COUNT: usize = 21;
 
+#[cfg(test)]
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementRouteOutput {
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
-    pub(in crate::runner) left_lookup_ordinal: usize,
-    pub(in crate::runner) right_lookup_ordinal: usize,
-    pub(in crate::runner) reference_use_ordinals: Vec<usize>,
-}
-
-fn source_statement_transport_output_is_valid(
-    source_text: &str,
-    output: &SourceStatementRouteOutput,
-) -> bool {
-    output.typed_ast.source_statement().is_some()
-        && output.typed_ast.source_statement() == output.resolved.source_statement()
-        && ((output.typed_ast.source_statement_references().is_none()
-            && output.typed_ast.source_statement_witnesses().is_none()
-            && output
-                .typed_ast
-                .source_statement()
-                .is_some_and(|statement| {
-                    statement.statements().len() == 1
-                        && statement.composite_formula_fingerprint().is_none()
-                        && statement.formula_composition_fingerprint().is_none()
-                })
-            && output.typed_ast.source_composite_formula().is_none()
-            && output.typed_ast.source_formula_composition().is_none()
-            && output.left_lookup_ordinal == 1
-            && output.right_lookup_ordinal == 2
-            && output.reference_use_ordinals == [1, 2])
-            || (output.typed_ast.source_statement_references().is_none()
-                && output.typed_ast.source_statement_witnesses().is_none()
-                && output
-                    .typed_ast
-                    .source_statement()
-                    .is_some_and(|statement| statement.statements().len() == 3)
-                && output.left_lookup_ordinal == 1
-                && output.right_lookup_ordinal == 1
-                && output.reference_use_ordinals == [1; 6])
-            || (output.typed_ast.source_statement_references().is_some()
-                && output.typed_ast.source_statement_witnesses().is_none()
-                && output.typed_ast.source_statement_references()
-                    == output.resolved.source_statement_references()
-                && output.typed_ast.source_term() == output.resolved.source_term()
-                && output.typed_ast.source_atomic_formula()
-                    == output.resolved.source_atomic_formula()
-                && output.left_lookup_ordinal == 1
-                && output.right_lookup_ordinal == 1
-                && source_statement_reference_transport_profile_is_exact(source_text, output))
-            || (output.typed_ast.source_statement_references().is_none()
-                && output.typed_ast.source_statement_witnesses().is_some()
-                && output.typed_ast.source_statement_witnesses()
-                    == output.resolved.source_statement_witnesses()
-                && output
-                    .typed_ast
-                    .source_statement()
-                    .is_some_and(|statement| statement.statements().len() == 2)
-                && output.left_lookup_ordinal == 1
-                && output.right_lookup_ordinal == 1
-                && (output.reference_use_ordinals == [1; 4]
-                    || output.reference_use_ordinals == [1; 5]
-                    || output.reference_use_ordinals == [1; 6])))
-}
-
-fn source_statement_reference_transport_profile_is_exact(
-    source_text: &str,
-    output: &SourceStatementRouteOutput,
-) -> bool {
-    let Some(statement) = output.typed_ast.source_statement() else {
-        return false;
-    };
-    let Some(references) = output.typed_ast.source_statement_references() else {
-        return false;
-    };
-    let Some(owner) = statement.owners().get(SourceTheoremOwnerId::new(0)) else {
-        return false;
-    };
-    source_text == SOURCE_STATEMENT_B5B_TEXT
-        && statement.owners().len() == 1
-        && references.labels().is_empty()
-        && references.citations().len() == 1
-        && statement.binding_env().contexts().len() == 2
-        && statement.statements().len() == 2
-        && statement.contexts().len() == 2
-        && statement.input_facts().len() == 2
-        && statement.candidate_facts().len() == 2
-        && owner.spelling() == SOURCE_STATEMENT_B5B_LABEL
-        && owner.source_range() == range(statement.source_id(), 48, 145)
-        && output.reference_use_ordinals == [1; 4]
-}
-
-fn source_statement_transport_detail_keys_for_output(
-    source_text: &str,
-    output: &SourceStatementRouteOutput,
-) -> Vec<String> {
-    if source_statement_transport_output_is_valid(source_text, output) {
-        Vec::new()
-    } else {
-        vec!["type_elaboration.checker.typed_ast_invalid".to_owned()]
-    }
 }
 
 pub(in crate::runner) fn source_statement_transport_detail_keys(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
+    _ast: &SurfaceAst,
+    _module: ModuleId,
+    _symbols: &SymbolEnv,
+    _source_text: &str,
 ) -> Option<Vec<String>> {
-    match source_statement_output_with_source(ast, module, symbols, source_text) {
-        None => None,
-        Some(Ok(output)) => Some(source_statement_transport_detail_keys_for_output(
-            source_text,
-            &output,
-        )),
-        Some(Err(_)) => Some(vec![
-            "type_elaboration.checker.typed_ast_invalid".to_owned(),
-        ]),
-    }
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_transport_detail_keys_with_output_mutation_for_test(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementRouteOutput),
-) -> Option<Vec<String>> {
-    match source_statement_output_with_source(ast, module, symbols, source_text) {
-        None => None,
-        Some(Ok(mut output)) => {
-            mutate(&mut output);
-            Some(source_statement_transport_detail_keys_for_output(
-                source_text,
-                &output,
-            ))
-        }
-        Some(Err(_)) => Some(vec![
-            "type_elaboration.checker.typed_ast_invalid".to_owned(),
-        ]),
-    }
+    None
 }
 
 #[cfg(test)]
@@ -3455,6 +3343,7 @@ pub(in crate::runner) fn extract_ancestor_label_descendant_citation_source_state
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_imported_public_theorem_citation_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13464,6 +13353,7 @@ fn validate_source_proof_local_given_descendant_set_lower_output(
     Ok(())
 }
 
+#[cfg(test)]
 fn exact_surface_node(
     ast: &SurfaceAst,
     kind: SurfaceNodeKind,
@@ -13480,6 +13370,7 @@ fn exact_surface_node(
     Some(*entry)
 }
 
+#[cfg(test)]
 fn surface_is_descendant(
     ast: &SurfaceAst,
     ancestor: mizar_syntax::SurfaceNodeId,
@@ -13492,22 +13383,13 @@ fn surface_is_descendant(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn source_statement_output_with_source(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
+    _ast: &SurfaceAst,
+    _module: ModuleId,
+    _symbols: &SymbolEnv,
+    _source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
-    if source_text == SOURCE_STATEMENT_B5B_TEXT {
-        return source_statement_b5b_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
-
     None
 }
 
@@ -14928,6 +14810,7 @@ pub(in crate::runner) fn source_statement_b5b_output_with_mutation(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b5b_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -15237,6 +15120,7 @@ fn validate_task258b5b_raw_resolver_env(
     validate_task258b5b_local_owner(ast, module, symbols)
 }
 
+#[cfg(test)]
 fn validate_task258b5b_local_owner(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -15304,6 +15188,7 @@ fn validate_task258b5b_local_owner(
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_task258b5b_enriched_resolver_env(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -16354,7 +16239,7 @@ fn build_source_statement_b4a_output(
         .iter()
         .map(|(_, row)| row.use_ordinal())
         .collect::<Vec<_>>();
-    let [left_lookup_ordinal, right_lookup_ordinal] = reference_use_ordinals.as_slice() else {
+    let [_, _] = reference_use_ordinals.as_slice() else {
         return Err("Task258B4A lower reference profile mismatch".to_owned());
     };
     let typed_ast = TypedAst::try_new(TypedAstParts {
@@ -16415,9 +16300,6 @@ fn build_source_statement_b4a_output(
     Ok(SourceStatementRouteOutput {
         typed_ast,
         resolved,
-        left_lookup_ordinal: *left_lookup_ordinal,
-        right_lookup_ordinal: *right_lookup_ordinal,
-        reference_use_ordinals,
     })
 }
 
@@ -18147,12 +18029,6 @@ fn build_source_statement_witness_output_with_controls(
             error.to_string()
         }
     })?;
-    let reference_use_ordinals = inputs
-        .primary
-        .references()
-        .iter()
-        .map(|(_, reference)| reference.use_ordinal())
-        .collect::<Vec<_>>();
     let typed_ast = TypedAst::try_new(TypedAstParts {
         source_id: ast.source_id,
         module_id: module,
@@ -18260,12 +18136,10 @@ fn build_source_statement_witness_output_with_controls(
     Ok(SourceStatementRouteOutput {
         typed_ast,
         resolved,
-        left_lookup_ordinal: reference_use_ordinals[0],
-        right_lookup_ordinal: reference_use_ordinals[1],
-        reference_use_ordinals,
     })
 }
 
+#[cfg(test)]
 fn build_source_statement_b5b_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -18428,12 +18302,6 @@ fn build_source_statement_b5b_output(
         &inputs.arena,
     )
     .map_err(|error| error.to_string())?;
-    let reference_use_ordinals = inputs
-        .primary
-        .references()
-        .iter()
-        .map(|(_, reference)| reference.use_ordinal())
-        .collect::<Vec<_>>();
     let typed_ast = TypedAst::try_new(TypedAstParts {
         source_id: ast.source_id,
         module_id: module,
@@ -18512,12 +18380,10 @@ fn build_source_statement_b5b_output(
     Ok(SourceStatementRouteOutput {
         typed_ast,
         resolved,
-        left_lookup_ordinal: reference_use_ordinals[0],
-        right_lookup_ordinal: reference_use_ordinals[1],
-        reference_use_ordinals,
     })
 }
 
+#[cfg(test)]
 fn task258b5b_resolver_bundle(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -18650,6 +18516,7 @@ fn task258b5b_resolver_bundle(
     Ok((resolver_ast, projection, reference, resolution))
 }
 
+#[cfg(test)]
 fn task258b5b_resolved_arena(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -18833,6 +18700,7 @@ fn task258b3_statement_input(
     }
 }
 
+#[cfg(test)]
 fn task258b5b_atomic_input(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -18892,6 +18760,7 @@ fn task258b5b_atomic_input(
     }
 }
 
+#[cfg(test)]
 fn task258b5b_statement_input(
     ast: &SurfaceAst,
     module: ModuleId,

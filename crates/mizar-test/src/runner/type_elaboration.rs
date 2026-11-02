@@ -537,6 +537,7 @@ pub(super) use source_set_term::{
     synthetic_source_set_term_output, synthetic_source_set_term_output_with_mutation,
 };
 pub(super) use source_set_term::{source_set_term_transport_detail_keys, step5c7_term_detail_keys};
+pub(super) use source_statement::source_statement_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_statement::{
     SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
@@ -550,7 +551,7 @@ pub(super) use source_statement::{
     SOURCE_STATEMENT_B3M2B2B3C_TEXT, SOURCE_STATEMENT_B3M2B2B3D_TEXT,
     SOURCE_STATEMENT_B3M2B2B3E_TEXT, SOURCE_STATEMENT_B3N_TEXT, SOURCE_STATEMENT_B4A_TEXT,
     SOURCE_STATEMENT_B4B_TEXT, SOURCE_STATEMENT_B4C_TEXT, SOURCE_STATEMENT_B5A_TEXT,
-    SOURCE_STATEMENT_TEXT, SourceProofLocalGivenConditionLowerMutation,
+    SOURCE_STATEMENT_B5B_TEXT, SOURCE_STATEMENT_TEXT, SourceProofLocalGivenConditionLowerMutation,
     SourceProofLocalGivenConditionLowerOutput,
     SourceProofLocalGivenConditionResolverProfileMutation,
     SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
@@ -585,7 +586,7 @@ pub(super) use source_statement::{
     SourceStatementB3NExtraction, SourceStatementB4ARouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BRouteInputs, SourceStatementB4BSurfaceMutation,
     SourceStatementB4CRouteInputs, SourceStatementB4CSurfaceMutation, SourceStatementB5AExtraction,
-    SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
+    SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction, SourceStatementB5BRouteInputs,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
     TASK258B3M2B2B3A_TASK256_FIELD_COUNT, TASK258B3M2B2B3A_TASK258_FIELD_COUNT,
     TASK258B3M2B2B3A_WITNESS_FIELD_COUNT, TASK258B3M2B2B3D_TASK48_FIELD_COUNT,
@@ -689,16 +690,12 @@ pub(super) use source_statement::{
     source_statement_b5b_output_with_raw_resolver_mutation,
     source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_source, source_statement_resolver_env_for_test,
-    source_statement_transport_detail_keys_with_output_mutation_for_test,
     task258b4a_surface_profile_with_mutation_for_test,
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
     task258b5a_surface_profile_with_mutation_for_test,
     task258b5b_surface_profile_with_mutation_for_test, validate_task258b5a_enriched_resolver_env,
     validate_task258b5a_raw_resolver_env,
-};
-pub(super) use source_statement::{
-    SOURCE_STATEMENT_B5B_TEXT, source_statement_transport_detail_keys,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]
