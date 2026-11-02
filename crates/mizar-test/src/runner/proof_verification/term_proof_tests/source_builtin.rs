@@ -36,12 +36,16 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         SourceVersion, ToolchainInfo, WorkspaceRoot, hash_text,
     };
     use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind};
-    // EN13.5/17.3.4: the written bare set is inhabited; EN15/16 still own proof acceptance.
+    // EN15.4.4/15.11.5 retain an unused name; EN13.5/17.3.4 do not discharge proof requests.
     let original =
         "reserve x for set;\ntheorem Choice: x = x proof\n take the set;\n thus x = x;\nend;\n";
+    let named = original.replace("take the set", "take item = the set");
     let texts = [original.to_owned(),
         original.replace("Choice", "RenamedChoice").replace('x', "parcel"),
-        "reserve\r\n parcel\tfor :: reservation\r\n set;\r\ntheorem LayoutChoice: parcel = parcel proof :: actual source\r\n take the :: target\r\n set; thus parcel = parcel; end;".to_owned()];
+        "reserve\r\n parcel\tfor :: reservation\r\n set;\r\ntheorem LayoutChoice: parcel = parcel proof :: actual source\r\n take the :: target\r\n set; thus parcel = parcel; end;".to_owned(),
+        named.clone(),
+        named.replace("Choice", "RenamedChoice").replace('x', "parcel").replace("item", "specimen"),
+        "reserve\r\n parcel\tfor :: reservation\r\n set;\r\ntheorem LayoutChoice: parcel = parcel proof :: actual source\r\n take specimen :: name\r\n = the :: target\r\n set; thus parcel = parcel; end;".to_owned()];
     let temporary = std::process::Command::new("mktemp")
         .arg("-d")
         .output()
@@ -109,6 +113,9 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                 assert_eq!(fs::read_to_string(&path).unwrap(), *text);
             }
             let ast = frontend.ast.as_ref().unwrap();
+            let named = ast
+                .node_views()
+                .any(|view| view.kind() == &K::Witness && view.children().len() == 3);
             assert!(ast.node_views().all(|view| !view.is_recovered()));
             let module = ModuleId::new(
                 frontend.source.package_id.clone(),
@@ -123,7 +130,8 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                 (source.source_id(), source.module()),
                 (frontend.source.source_id, &module)
             );
-            // The historical 52-node shape is a parser oracle, never a producer selector.
+            // Node counts are parser oracles, never producer selectors.
+            let node_count = 52 + 2 * usize::from(named);
             assert_eq!(
                 (
                     ast.nodes().len(),
@@ -131,7 +139,7 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                     scopes.len(),
                     parents.len()
                 ),
-                (52, 52, 52, 51)
+                (node_count, node_count, node_count, node_count - 1)
             );
             assert_eq!(
                 source.resolved_node_for(ast.root().unwrap()),
@@ -188,7 +196,7 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                     count
                 );
             }
-            assert_eq!(ast.node_views().filter(|view| matches!(view.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)).count(), 6);
+            assert_eq!(ast.node_views().filter(|view| matches!(view.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)).count(), 6 + usize::from(named));
             assert_eq!(
                 (
                     scope.bindings().len(),
@@ -226,8 +234,38 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             };
             let witness = ast.node(*witness_id).unwrap();
             assert_eq!(witness.kind, K::Witness);
-            let [expression_id] = witness.children.as_slice() else {
-                panic!("unnamed witness")
+            let expression_id = match witness.children.as_slice() {
+                [expression] => expression,
+                [name, equals, expression] => {
+                    let name = ast.node(*name).unwrap();
+                    let equals = ast.node(*equals).unwrap();
+                    assert!(
+                        matches!(&name.kind, K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                    );
+                    assert_eq!(equals.token_text(), Some("="));
+                    assert!(
+                        matches!(&equals.kind, K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol)
+                    );
+                    assert_eq!(witness.range.start, name.range.start);
+                    assert!(
+                        name.range.end <= equals.range.start
+                            && equals.range.end <= ast.node(*expression).unwrap().range.start
+                    );
+                    assert!(
+                        !scope
+                            .bindings()
+                            .iter()
+                            .any(|binding| Some(binding.spelling()) == name.token_text())
+                    );
+                    assert!(
+                        !scope
+                            .references()
+                            .iter()
+                            .any(|reference| Some(reference.spelling()) == name.token_text())
+                    );
+                    expression
+                }
+                _ => panic!("one witness"),
             };
             let expression = ast.node(*expression_id).unwrap();
             assert_eq!(expression.kind, K::TermExpression);
@@ -236,6 +274,11 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             };
             let choice = ast.node(*choice_id).unwrap();
             assert_eq!(choice.kind, K::ChoiceTerm);
+            assert_eq!(expression.range, choice.range);
+            assert_eq!(witness.range.end, expression.range.end);
+            if !named {
+                assert_eq!(witness.range, expression.range);
+            }
             let [the_token, target_id] = choice.children.as_slice() else {
                 panic!("written target")
             };
@@ -325,8 +368,8 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             ));
         }
     }
-    assert_eq!(cases.len(), 6);
-    // Every actual source/symbol/scope batch and all six public results precede success.
+    assert_eq!(cases.len(), 12);
+    // Every actual source/symbol/scope batch and public result precedes success.
     let lowers = cases
         .iter()
         .map(|(_, source, symbols, scope, ..)| {
@@ -373,7 +416,10 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             })
             .unwrap();
         assert_ne!(reserve_type.id(), target_id);
-        assert_eq!((typed.len(), base.nodes().len()), (52, 52));
+        assert_eq!(
+            (typed.len(), base.nodes().len()),
+            (ast.nodes().len(), ast.nodes().len())
+        );
         assert_eq!(base.resolved_root(), Some(source.arena().root()));
         assert_eq!(base.nodes().root(), Some(typed[&source.arena().root()]));
         assert_eq!(
@@ -1083,6 +1129,13 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         );
         assert!(witnesses.application_fingerprint().is_none());
         assert!(witnesses.structure_fingerprint().is_none());
+        let ast = frontend.ast.as_ref().unwrap();
+        let take = ast
+            .node_views()
+            .find(|view| view.kind() == &K::TakeStatement)
+            .unwrap();
+        let witness_site = ast.node(take.children()[1]).unwrap();
+        let named = witness_site.children.len() == 3;
         assert_eq!(
             (
                 statement.owners().len(),
@@ -1093,9 +1146,8 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                 witnesses.witnesses().len(),
                 witnesses.names().len()
             ),
-            (1, 2, 2, 2, 2, 1, 0)
+            (1, 2, 2, 2, 2, 1, usize::from(named))
         );
-        let ast = frontend.ast.as_ref().unwrap();
         let typed = base
             .nodes()
             .iter()
@@ -1128,12 +1180,7 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         assert_eq!(owner.recovery(), SourceStatementRecovery::Normal);
         let (witness_id, witness) = witnesses.witnesses().iter().next().unwrap();
         assert_eq!(witness_id.index(), 0);
-        let take = ast
-            .node_views()
-            .find(|view| view.kind() == &K::TakeStatement)
-            .unwrap();
-        let witness_site = ast.node(take.children()[1]).unwrap();
-        let expression = ast.node(witness_site.children[0]).unwrap();
+        let expression = ast.node(*witness_site.children.last().unwrap()).unwrap();
         let (set_id, choice) = set.terms().iter().next().unwrap();
         assert_eq!(
             witness.term(),
@@ -1157,10 +1204,48 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             typed[&source.resolved_node_for(take.children()[1]).unwrap()]
         );
         assert_eq!(witness.source_range(), witness_site.range);
-        assert_eq!(witness.spelling(), choice.spelling());
-        assert_eq!(witness.kind(), SourceStatementWitnessKind::Unnamed);
+        if named {
+            let (name_id, name) = witnesses.names().iter().next().unwrap();
+            let token = ast.node(witness_site.children[0]).unwrap();
+            let equals = ast.node(witness_site.children[1]).unwrap();
+            assert_eq!(name_id.index(), 0);
+            assert_eq!(witness.name(), Some(name_id));
+            assert_eq!(name.witness(), witness_id);
+            assert_eq!(
+                name.site().node(),
+                typed[&source.resolved_node_for(witness_site.children[0]).unwrap()]
+            );
+            assert_eq!(name.source_range(), token.range);
+            assert_eq!(Some(name.spelling()), token.token_text());
+            assert_eq!(name.recovery(), SourceStatementRecovery::Normal);
+            assert_eq!(equals.token_text(), Some("="));
+            assert!(
+                name.source_range().end <= equals.range.start
+                    && equals.range.end <= expression.range.start
+            );
+            assert_eq!(
+                witness.spelling(),
+                format!("{} = {}", name.spelling(), choice.spelling())
+            );
+            assert_eq!(witness.kind(), SourceStatementWitnessKind::Named);
+            assert!(
+                bindings
+                    .bindings()
+                    .iter()
+                    .all(|(_, binding)| binding.spelling != name.spelling())
+            );
+            assert!(
+                primary
+                    .terms()
+                    .iter()
+                    .all(|(_, term)| term.spelling() != name.spelling())
+            );
+        } else {
+            assert_eq!(witness.spelling(), choice.spelling());
+            assert_eq!(witness.kind(), SourceStatementWitnessKind::Unnamed);
+            assert!(witness.name().is_none());
+        }
         assert_eq!(witness.recovery(), SourceStatementRecovery::Normal);
-        assert!(witness.name().is_none());
         assert_eq!(
             bindings
                 .contexts()
@@ -1567,219 +1652,223 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         }
     };
     // Public parts cannot retain a native pair; these are canonical-intake controls.
-    let target = &cases[0];
-    let base = &lowers[0].as_ref().unwrap().2;
-    let installed = pairs[0].as_ref().unwrap();
-    let statement = installed.source_statement().unwrap();
-    let witnesses = installed.source_statement_witnesses().unwrap();
-    assert_eq!(
-        installed
-            .clone()
-            .with_source_statement_from_original(&target.1, &target.2, &target.3),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    pristine();
-    assert_eq!(
-        base.clone().with_source_statement(statement.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    pristine();
-    assert_eq!(
-        base.clone()
-            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    pristine();
-    assert_eq!(
-        base.clone().with_source_set_term_statement_witnesses(
-            base.source_set_term().unwrap().clone(),
-            statement.clone(),
-            witnesses.clone()
-        ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    pristine();
-    // A coherent lower from another capture is still a stale receiver for this source.
-    assert_eq!(
-        lowers[2]
-            .as_ref()
-            .unwrap()
-            .2
-            .clone()
-            .with_source_statement_from_original(&target.1, &target.2, &target.3),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    pristine();
-    // Negative receivers alone use public reconstruction; no native pair can travel in public parts.
-    for control in [
-        "missing-primary",
-        "missing-atomic",
-        "missing-set",
-        "enriched",
-        "resolved-rootless",
-        "typed-rootless",
-        "rootless",
-        "punctuation",
-        "substituted-primary",
-        "substituted-atomic",
-        "substituted-set",
-    ] {
-        let mut nodes = base
-            .nodes()
-            .iter()
-            .map(|(_, row)| row.clone())
-            .collect::<Vec<_>>();
-        if control == "punctuation" {
-            let ast = target.0.ast.as_ref().unwrap();
-            let token = ast
-                .node_views()
-                .find(|view| matches!(view.kind(), K::Token(token) if token.text.as_ref() == ";"))
-                .unwrap();
-            let resolved = target.1.resolved_node_for(token.id()).unwrap();
-            let row = nodes
-                .iter_mut()
-                .find(|row| row.resolved_node == Some(resolved))
-                .unwrap();
-            assert_eq!(row.kind.as_str(), format!("{:?}", token.kind()));
-            row.kind = mizar_checker::typed_ast::TypedNodeKind::new(
-                "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
-            );
-        }
-        let mut types = base.types().clone();
-        if control == "enriched" {
-            let entry = lowers[0]
-                .as_ref()
-                .unwrap()
-                .1
-                .type_entries()
-                .iter()
-                .next()
-                .unwrap()
-                .1;
-            types = TypeTable::new();
-            types.insert(TypeEntryDraft {
-                owner: entry.owner.clone(),
-                expected: entry.expected,
-                actual: entry.actual,
-                status: entry.status,
-                provenance: entry.provenance.clone(),
-            });
-        }
-        let mut receiver = TypedAst::try_new(TypedAstParts {
-            source_id: base.source_id(),
-            module_id: base.module_id().clone(),
-            resolved_root: if ["resolved-rootless", "rootless"].contains(&control) {
-                None
-            } else {
-                base.resolved_root()
-            },
-            source_context: None,
-            source_type: None,
-            source_attribute: None,
-            nodes: TypedArena::try_new(
-                if ["typed-rootless", "rootless"].contains(&control) {
-                    None
-                } else {
-                    base.nodes().root()
-                },
-                nodes,
-            )
-            .unwrap(),
-            contexts: base.contexts().clone(),
-            types,
-            facts: base.facts().clone(),
-            coercions: base.coercions().clone(),
-            initial_obligations: base.initial_obligations().clone(),
-            diagnostics: base.diagnostics().clone(),
-        })
-        .unwrap();
-        let alternate = &lowers[2].as_ref().unwrap().2;
-        if control == "substituted-primary" {
-            assert_eq!(
-                receiver.with_source_term(alternate.source_term().unwrap().clone()),
-                Err(TypedAstError::InvalidSourceTerm)
-            );
-            pristine();
-            continue;
-        }
-        if control != "missing-primary" {
-            receiver = receiver
-                .with_source_term(base.source_term().unwrap().clone())
-                .unwrap();
-            if control == "substituted-atomic" {
-                assert_eq!(
-                    receiver.with_source_atomic_formula(
-                        alternate.source_atomic_formula().unwrap().clone()
-                    ),
-                    Err(TypedAstError::InvalidSourceAtomicFormula)
-                );
-                pristine();
-                continue;
-            }
-            if control != "missing-atomic" {
-                receiver = receiver
-                    .with_source_atomic_formula(base.source_atomic_formula().unwrap().clone())
-                    .unwrap();
-            }
-            if control == "substituted-set" {
-                assert_eq!(
-                    receiver.with_source_set_term(alternate.source_set_term().unwrap().clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm)
-                );
-                pristine();
-                continue;
-            }
-            if ["resolved-rootless", "typed-rootless", "rootless"].contains(&control) {
-                let before = receiver.clone();
-                assert!(
-                    receiver
-                        .nodes()
-                        .iter()
-                        .any(|(_, row)| row.kind.as_str() == "TheoremItem")
-                );
-                assert_eq!(
-                    receiver.clone().with_source_statement(statement.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver
-                        .clone()
-                        .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver.clone().with_source_set_term_statement_witnesses(
-                        base.source_set_term().unwrap().clone(),
-                        statement.clone(),
-                        witnesses.clone()
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-            }
-            if control != "missing-set" {
-                receiver = receiver
-                    .with_source_set_term(base.source_set_term().unwrap().clone())
-                    .unwrap();
-            }
-        }
-        let before = receiver.clone();
-        assert_ne!(&receiver, base, "actual receiver change {control}");
-        // Punctuation keeps a valid graph and all lower handoffs: the canonical-base gate rejects it.
+    for case_index in [0, 6] {
+        let target = &cases[case_index];
+        let base = &lowers[case_index].as_ref().unwrap().2;
+        let installed = pairs[case_index].as_ref().unwrap();
+        let statement = installed.source_statement().unwrap();
+        let witnesses = installed.source_statement_witnesses().unwrap();
         assert_eq!(
-            receiver
+            installed
                 .clone()
                 .with_source_statement_from_original(&target.1, &target.2, &target.3),
-            Err(TypedAstError::InvalidSourceStatement),
-            "canonical receiver {control}"
+            Err(TypedAstError::InvalidSourceStatement)
         );
-        assert_eq!(receiver, before);
         pristine();
+        assert_eq!(
+            base.clone().with_source_statement(statement.clone()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        assert_eq!(
+            base.clone()
+                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        assert_eq!(
+            base.clone().with_source_set_term_statement_witnesses(
+                base.source_set_term().unwrap().clone(),
+                statement.clone(),
+                witnesses.clone()
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        // A coherent lower from another capture is still a stale receiver for this source.
+        assert_eq!(
+            lowers[2]
+                .as_ref()
+                .unwrap()
+                .2
+                .clone()
+                .with_source_statement_from_original(&target.1, &target.2, &target.3),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        // Negative receivers alone use public reconstruction; no native pair can travel in public parts.
+        for control in [
+            "missing-primary",
+            "missing-atomic",
+            "missing-set",
+            "enriched",
+            "resolved-rootless",
+            "typed-rootless",
+            "rootless",
+            "punctuation",
+            "substituted-primary",
+            "substituted-atomic",
+            "substituted-set",
+        ] {
+            let mut nodes = base
+                .nodes()
+                .iter()
+                .map(|(_, row)| row.clone())
+                .collect::<Vec<_>>();
+            if control == "punctuation" {
+                let ast = target.0.ast.as_ref().unwrap();
+                let token = ast
+                    .node_views()
+                    .find(
+                        |view| matches!(view.kind(), K::Token(token) if token.text.as_ref() == ";"),
+                    )
+                    .unwrap();
+                let resolved = target.1.resolved_node_for(token.id()).unwrap();
+                let row = nodes
+                    .iter_mut()
+                    .find(|row| row.resolved_node == Some(resolved))
+                    .unwrap();
+                assert_eq!(row.kind.as_str(), format!("{:?}", token.kind()));
+                row.kind = mizar_checker::typed_ast::TypedNodeKind::new(
+                    "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+                );
+            }
+            let mut types = base.types().clone();
+            if control == "enriched" {
+                let entry = lowers[case_index]
+                    .as_ref()
+                    .unwrap()
+                    .1
+                    .type_entries()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1;
+                types = TypeTable::new();
+                types.insert(TypeEntryDraft {
+                    owner: entry.owner.clone(),
+                    expected: entry.expected,
+                    actual: entry.actual,
+                    status: entry.status,
+                    provenance: entry.provenance.clone(),
+                });
+            }
+            let mut receiver = TypedAst::try_new(TypedAstParts {
+                source_id: base.source_id(),
+                module_id: base.module_id().clone(),
+                resolved_root: if ["resolved-rootless", "rootless"].contains(&control) {
+                    None
+                } else {
+                    base.resolved_root()
+                },
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    if ["typed-rootless", "rootless"].contains(&control) {
+                        None
+                    } else {
+                        base.nodes().root()
+                    },
+                    nodes,
+                )
+                .unwrap(),
+                contexts: base.contexts().clone(),
+                types,
+                facts: base.facts().clone(),
+                coercions: base.coercions().clone(),
+                initial_obligations: base.initial_obligations().clone(),
+                diagnostics: base.diagnostics().clone(),
+            })
+            .unwrap();
+            let alternate = &lowers[2].as_ref().unwrap().2;
+            if control == "substituted-primary" {
+                assert_eq!(
+                    receiver.with_source_term(alternate.source_term().unwrap().clone()),
+                    Err(TypedAstError::InvalidSourceTerm)
+                );
+                pristine();
+                continue;
+            }
+            if control != "missing-primary" {
+                receiver = receiver
+                    .with_source_term(base.source_term().unwrap().clone())
+                    .unwrap();
+                if control == "substituted-atomic" {
+                    assert_eq!(
+                        receiver.with_source_atomic_formula(
+                            alternate.source_atomic_formula().unwrap().clone()
+                        ),
+                        Err(TypedAstError::InvalidSourceAtomicFormula)
+                    );
+                    pristine();
+                    continue;
+                }
+                if control != "missing-atomic" {
+                    receiver = receiver
+                        .with_source_atomic_formula(base.source_atomic_formula().unwrap().clone())
+                        .unwrap();
+                }
+                if control == "substituted-set" {
+                    assert_eq!(
+                        receiver.with_source_set_term(alternate.source_set_term().unwrap().clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm)
+                    );
+                    pristine();
+                    continue;
+                }
+                if ["resolved-rootless", "typed-rootless", "rootless"].contains(&control) {
+                    let before = receiver.clone();
+                    assert!(
+                        receiver
+                            .nodes()
+                            .iter()
+                            .any(|(_, row)| row.kind.as_str() == "TheoremItem")
+                    );
+                    assert_eq!(
+                        receiver.clone().with_source_statement(statement.clone()),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                    assert_eq!(
+                        receiver
+                            .clone()
+                            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                    assert_eq!(
+                        receiver.clone().with_source_set_term_statement_witnesses(
+                            base.source_set_term().unwrap().clone(),
+                            statement.clone(),
+                            witnesses.clone()
+                        ),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                }
+                if control != "missing-set" {
+                    receiver = receiver
+                        .with_source_set_term(base.source_set_term().unwrap().clone())
+                        .unwrap();
+                }
+            }
+            let before = receiver.clone();
+            assert_ne!(&receiver, base, "actual receiver change {control}");
+            // Punctuation keeps a valid graph and all lower handoffs: the canonical-base gate rejects it.
+            assert_eq!(
+                receiver
+                    .clone()
+                    .with_source_statement_from_original(&target.1, &target.2, &target.3),
+                Err(TypedAstError::InvalidSourceStatement),
+                "canonical receiver {control}"
+            );
+            assert_eq!(receiver, before);
+            pristine();
+        }
     }
     for (frontend, source, symbols, scope, ..) in &cases {
         let unsupported = "theorems.equality.unsupported_source_types";
@@ -1863,9 +1952,14 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         ),
         ("grouped", original.replace("the set", "(the set)")),
         (
-            "named",
-            original.replace("take the set", "take item = the set"),
+            "reserved name collision",
+            original.replace("take the set", "take x = the set"),
         ),
+        (
+            "name used as alias",
+            named.replace("thus x = x", "thus item = item"),
+        ),
+        ("grouped named", named.replace("the set", "(the set)")),
         (
             "multiple",
             original.replace("take the set", "take the set, the set"),
@@ -1922,6 +2016,25 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             frontend.source.module_path.clone(),
         );
         let (source, symbols) = source_theorem_module_original_inputs(ast, &module)?.unwrap();
+        if name == "name used as alias" {
+            let before = (
+                source.clone(),
+                symbols.clone(),
+                ast.snapshot_text(),
+                frontend.source.clone(),
+            );
+            source.validate_against(ast, &module).unwrap();
+            assert_eq!(
+                source_proof_inputs(&source, &symbols).unwrap_err(),
+                "source proof occurrences do not match the original source"
+            );
+            assert_eq!(
+                (source, symbols, ast.snapshot_text(), frontend.source),
+                before
+            );
+            pristine();
+            continue;
+        }
         let (scope, labels, resolution) = source_proof_inputs(&source, &symbols)?;
         source.validate_against(ast, &module).unwrap();
         validate_source_proof_occurrences(&source, &symbols, &scope)?;

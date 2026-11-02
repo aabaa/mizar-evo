@@ -1770,10 +1770,11 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
             );
             assert_eq!(pair.source_set_term(), base.source_set_term());
             assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
-            let resolved = super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
-                &pair,
-                Vec::new(),
-            )?;
+            let resolved =
+                super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &pair,
+                    Vec::new(),
+                )?;
             assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
             assert_eq!(resolved.source_statement(), pair.source_statement());
             assert!(

@@ -2284,7 +2284,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     (witnesses.names().is_empty()
                         || self.inputs.typed_ast.source_set_term().is_some_and(|sets| {
                             sets.terms().iter().all(|(_, term)| {
-                                term.kind() == crate::source_set_term::SourceSetTermKind::Enumeration
+                                matches!(
+                                    term.kind(),
+                                    crate::source_set_term::SourceSetTermKind::Enumeration
+                                        | crate::source_set_term::SourceSetTermKind::Choice
+                                )
                             })
                         }))
                         && witnesses.witnesses().len() == 1

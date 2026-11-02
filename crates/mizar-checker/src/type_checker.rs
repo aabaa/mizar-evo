@@ -6861,7 +6861,11 @@ impl TermFormulaChecker {
                             .find(|(_, term)| term.site().node().index() == term_site.index())
                             .ok_or_else(invalid)?;
                         if name.is_some()
-                            && term.kind() != crate::source_set_term::SourceSetTermKind::Enumeration
+                            && !matches!(
+                                term.kind(),
+                                crate::source_set_term::SourceSetTermKind::Enumeration
+                                    | crate::source_set_term::SourceSetTermKind::Choice
+                            )
                         {
                             return Err(invalid());
                         }
@@ -7425,8 +7429,9 @@ impl TermFormulaChecker {
                 let [_, witness, _] = take.children() else {
                     return Err(invalid());
                 };
-                let [operand] = node(*witness)?.children() else {
-                    return Err(invalid());
+                let operand = match node(*witness)?.children() {
+                    [operand] | [_, _, operand] => operand,
+                    _ => return Err(invalid()),
                 };
                 let [term] = node(*operand)?.children() else {
                     return Err(invalid());
@@ -18575,7 +18580,8 @@ impl SourceVariableSemanticsChecker {
                         || !enumerations.is_empty()
                         || takes.len() != 1
                         || take.children().len() != 3
-                        || node(witness)?.children() != [operand]
+                        || (node(witness)?.children().len() == 1
+                            && node(witness)?.children() != [operand])
                         || node(operand)?.kind() != &K::TermExpression
                         || node(*target)?.kind() != &K::TypeExpression
                         || node(*head)?.kind() != &K::TypeHead
@@ -18587,7 +18593,8 @@ impl SourceVariableSemanticsChecker {
                         || !matches!(node(*set)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "set")
                         || range(keyword)?.end > range(witness)?.start
                         || range(witness)?.end > range(semicolon)?.start
-                        || range(witness)? != range(operand)?
+                        || (node(witness)?.children().len() == 1
+                            && range(witness)? != range(operand)?)
                         || range(operand)? != range(*term)?
                         || range(*term)?.start != range(*the)?.start
                         || range(*the)?.end > range(*target)?.start

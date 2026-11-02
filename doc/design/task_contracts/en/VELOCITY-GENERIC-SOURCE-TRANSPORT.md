@@ -20,6 +20,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
 - [x] bare unnamed finite enumeration witness: ordered references to the sole reserved set variable
 - [x] unused named finite enumeration witness: fresh name, same reserved-reference elements, no binding activation
+- [x] unused named bare-set Choice witness: preserve pending requests, no abbreviation activation
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

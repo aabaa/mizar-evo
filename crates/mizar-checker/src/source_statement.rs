@@ -1373,9 +1373,7 @@ impl SourceStatementHandoff {
                 .collect::<Vec<_>>();
             let choice = match choices.as_slice() {
                 [] => None,
-                [(id, node)]
-                    if witness && witness_count == 1 && !named_witness && enumeration.is_none() =>
-                {
+                [(id, node)] if witness && witness_count == 1 && enumeration.is_none() => {
                     let [keyword, target] = node.children.as_slice() else {
                         return Err(invalid());
                     };
@@ -2585,7 +2583,6 @@ impl SourceStatementWitnessHandoff {
                         || request.generator().is_some()
                         || request.type_site() != choice.then_some(SourceSetTypeSiteId::new(0))
                         || self.witnesses.len() != 1
-                        || (choice && !self.names.is_empty())
                         || primary_terms.terms().len() != 4 + elements.len()
                         || primary_terms.references().len() != 4 + elements.len()
                     {
@@ -2708,8 +2705,7 @@ impl SourceStatementWitnessHandoff {
                         };
                         let range = term.source_range();
                         let target_range = type_site.source_range();
-                        if name_site.is_some()
-                            || term.site() != &TypedSiteRef::Node(*term_site)
+                        if term.site() != &TypedSiteRef::Node(*term_site)
                             || node.kind.as_str() != "source.term.set.choice"
                             || node.anchor != SourceAnchor::Range(range)
                             || [node, keyword, target, head, token]
