@@ -3177,9 +3177,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        let structure_witness_profile = statements.is_task_258b3m2b2b2a_profile();
+        #[cfg(not(test))]
+        let structure_witness_profile = false;
         #[cfg(test)]
-        let structure_witness_profile = structure_witness_profile
+        let structure_witness_profile = statements.is_task_258b3m2b2b2a_profile()
             || statements.is_task_258b3m2b2b2b_profile()
             || statements.is_task_258b3m2b2b2c_profile();
         if !structure_witness_profile {

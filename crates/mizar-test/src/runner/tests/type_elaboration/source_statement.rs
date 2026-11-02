@@ -719,12 +719,27 @@ fn source_statement_native_finite_enumeration_original_transport() {
             assert_eq!(witness, "item = {item, x}");
             continue;
         };
-        assert_eq!(
-            TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
-                .unwrap_err(),
-            "theorems.equality.unsupported_source_types",
-            "{witness}"
-        );
+        let lower =
+            TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope);
+        if witness == "item = the set" {
+            // EN13.5/15.4.4: retain the already admitted named Choice transport case.
+            let (_, _, lower) = lower.expect("fresh unused named Choice lower transport");
+            let (typed, resolved) = task258_native_output(&ast, &module);
+            assert_eq!(typed.source_set_term(), lower.source_set_term());
+            let set = typed.source_set_term().unwrap();
+            let witnesses = typed.source_statement_witnesses().unwrap();
+            assert_eq!((set.terms().len(), witnesses.witnesses().len(), witnesses.names().len()), (1, 1, 1));
+            assert_eq!(set.terms().iter().next().unwrap().1.kind(), SourceSetTermKind::Choice);
+            assert_eq!(witnesses.witnesses().iter().next().unwrap().1.kind(),
+                mizar_checker::source_statement::SourceStatementWitnessKind::Named);
+            assert_eq!(witnesses.names().iter().next().unwrap().1.spelling(), "item");
+            assert_eq!(typed.source_statement().unwrap().binding_env().bindings().len(), 1);
+            assert_eq!(set.requests().iter().map(|(_, row)| row.kind()).collect::<Vec<_>>(),
+                [SourceSetRequestKind::ChoiceNonempty, SourceSetRequestKind::ResultType]);
+            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+        } else {
+            assert_eq!(lower.unwrap_err(), "theorems.equality.unsupported_source_types", "{witness}");
+        }
     }
     for (index, witness) in ["item = {x,}", "item = {x", "item ="]
         .into_iter()
@@ -1686,6 +1701,43 @@ fn task258b3m2b2b2a_substituted_structure_env(
     SymbolEnv::new(symbols.module_id().clone(), indexes)
 }
 
+fn task258b3m2b2b2_lower_inputs(
+    ast: &SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &SymbolEnv,
+    source: &str,
+) -> SourceStatementB3M2B2B2ARouteInputs {
+    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
+    assert!(source_statement_output_with_source(ast, module.clone(), symbols, source).is_none());
+    assert!(source_statement_transport_detail_keys(ast, module.clone(), symbols, source).is_none());
+    let mut captured = None;
+    let capture = |inputs: &mut SourceStatementB3M2B2B2ARouteInputs| captured = Some(inputs.clone());
+    let result = match source {
+        SOURCE_STATEMENT_B3M2B2B2A_TEXT => source_statement_b3m2b2b2a_output_with_mutation(
+            ast, module.clone(), symbols, source, capture,
+        ),
+        SOURCE_STATEMENT_B3M2B2B2B_TEXT => source_statement_b3m2b2b2b_output_with_mutation(
+            ast, module.clone(), symbols, source, capture,
+        ),
+        SOURCE_STATEMENT_B3M2B2B2C_TEXT => source_statement_b3m2b2b2c_output_with_mutation(
+            ast, module.clone(), symbols, source, capture,
+        ),
+        _ => panic!("unowned structure witness shape"),
+    };
+    assert_eq!(result.expect("authentic extraction").expect_err("retired raw admission"),
+        "source statement dependency mismatch");
+    assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone()), before);
+    captured.expect("authenticated lower inputs before retired raw admission")
+}
+
+fn task258b3m2b2b2a_lower_inputs(
+    ast: &SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &SymbolEnv,
+) -> SourceStatementB3M2B2B2ARouteInputs {
+    task258b3m2b2b2_lower_inputs(ast, module, symbols, SOURCE_STATEMENT_B3M2B2B2A_TEXT)
+}
+
 fn task258b3m2b2b2a_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 6] {
     let module = mizar_checker::binding_env::BindingContextId::new(0);
     let proof = mizar_checker::binding_env::BindingContextId::new(1);
@@ -1720,43 +1772,7 @@ fn task258b3m2b2b2b_lower_inputs(
     module: &mizar_resolve::resolved_ast::ModuleId,
     symbols: &SymbolEnv,
 ) -> SourceStatementB3M2B2B2BRouteInputs {
-    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    let mut captured = None;
-    assert!(
-        source_statement_output_with_source(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2B_TEXT
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2B_TEXT
-        )
-        .is_none()
-    );
-    assert_eq!(
-        source_statement_b3m2b2b2b_output_with_mutation(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2B_TEXT,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic selector extraction")
-        .expect_err("retired selector raw admission"),
-        "source statement dependency mismatch"
-    );
-    assert_eq!(
-        (ast.snapshot_text(), module.clone(), symbols.clone()),
-        before
-    );
-    captured.expect("authenticated lower inputs before retired selector admission")
+    task258b3m2b2b2_lower_inputs(ast, module, symbols, SOURCE_STATEMENT_B3M2B2B2B_TEXT)
 }
 
 fn task258b3m2b2b2b_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 6] {
@@ -1793,43 +1809,7 @@ fn task258b3m2b2b2c_lower_inputs(
     module: &mizar_resolve::resolved_ast::ModuleId,
     symbols: &SymbolEnv,
 ) -> SourceStatementB3M2B2B2CRouteInputs {
-    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    let mut captured = None;
-    assert!(
-        source_statement_output_with_source(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2C_TEXT
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2C_TEXT
-        )
-        .is_none()
-    );
-    assert_eq!(
-        source_statement_b3m2b2b2c_output_with_mutation(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B2C_TEXT,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic update extraction")
-        .expect_err("retired update raw admission"),
-        "source statement dependency mismatch"
-    );
-    assert_eq!(
-        (ast.snapshot_text(), module.clone(), symbols.clone()),
-        before
-    );
-    captured.expect("authenticated lower inputs before retired update admission")
+    task258b3m2b2b2_lower_inputs(ast, module, symbols, SOURCE_STATEMENT_B3M2B2B2C_TEXT)
 }
 
 fn task258b3m2b2b2c_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 7] {

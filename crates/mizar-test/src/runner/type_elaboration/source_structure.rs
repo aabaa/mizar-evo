@@ -1522,6 +1522,8 @@ pub(super) struct ImportedStructureConstructorSite {
     pub(super) constructor: usize,
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn imported_structure_constructor_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1544,6 +1546,8 @@ pub(super) fn imported_structure_constructor_owned_node_kinds(
     ]))
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 #[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
 pub(super) fn imported_structure_constructor_handoff_in_context(
     ast: &SurfaceAst,
@@ -1580,6 +1584,8 @@ pub(super) struct ImportedStructureSelectorSite {
     pub(super) selector: usize,
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn imported_structure_selector_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1606,6 +1612,8 @@ pub(super) fn imported_structure_selector_owned_node_kinds(
     ]))
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 #[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
 pub(super) fn imported_structure_selector_handoff_in_context(
     ast: &SurfaceAst,
@@ -1642,6 +1650,8 @@ pub(super) struct ImportedStructureUpdateSite {
     pub(super) update: usize,
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn imported_structure_update_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1672,6 +1682,8 @@ pub(super) fn imported_structure_update_owned_node_kinds(
     ]))
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 #[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
 pub(super) fn imported_structure_update_handoff_in_context(
     ast: &SurfaceAst,

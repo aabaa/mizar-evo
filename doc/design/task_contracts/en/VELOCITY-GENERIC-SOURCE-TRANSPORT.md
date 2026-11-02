@@ -29,6 +29,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] dormant bare application witness: retire its raw profile into private tests; preserve authenticated lower donors and native paths
 - [x] dormant structure-update witness: retire its raw profile into private tests; preserve independent lower structure handoffs
 - [x] dormant structure-selector witness: retire its raw profile into private tests; preserve independent lower structure handoffs
+- [x] dormant structure-constructor witness: retire the final raw witness profile and now-unused shared raw internals into private tests
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families

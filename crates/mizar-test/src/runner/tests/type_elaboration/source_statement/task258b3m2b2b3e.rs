@@ -1068,18 +1068,8 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        source_statement_output_with_source(
-            &case_ast,
-            case_module,
-            &case_symbols,
-            SOURCE_STATEMENT_B3M2B2B2A_TEXT,
-        )
-        .expect("structure selector")
-        .expect("structure route")
-        .typed_ast
-        .source_structure()
-        .expect("structure")
-        .clone()
+        task258b3m2b2b2a_lower_inputs(&case_ast, &case_module, &case_symbols)
+        .structure.expect("genuine constructor structure")
     };
     let set = set.clone();
     for tuple in 0u8..8 {
@@ -1158,6 +1148,13 @@ fn task258b3m2b2b3e_family_and_active_route_isolation_is_atomic() {
         assert_eq!(diagnostics, 0);
         let case_symbols =
             augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B2A_TEXT {
+            let lower = task258b3m2b2b2a_lower_inputs(&case_ast, &case_module, &case_symbols);
+            assert!(lower.application.is_none() && lower.set_term.is_none());
+            let structure = lower.structure.expect("genuine constructor structure");
+            assert_eq!((structure.terms().len(), structure.field_updates().len()), (1, 0));
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
             let lower = task258b3m2b2b2b_lower_inputs(&case_ast, &case_module, &case_symbols);
             assert!(lower.application.is_none() && lower.set_term.is_none());

@@ -1653,19 +1653,8 @@ fn task258b3m2b2b2b_family_and_active_route_isolation_is_atomic() {
 
     let (constructor_ast, constructor_module, constructor_symbols) =
         task258b3m2b2b2a_fixture(259_221);
-    let constructor = source_statement_output_with_source(
-        &constructor_ast,
-        constructor_module.clone(),
-        &constructor_symbols,
-        SOURCE_STATEMENT_B3M2B2B2A_TEXT,
-    )
-    .expect("constructor selector")
-    .expect("constructor route");
-    let constructor_structure = constructor
-        .typed_ast
-        .source_structure()
-        .expect("constructor structure")
-        .clone();
+    let constructor = task258b3m2b2b2a_lower_inputs(&constructor_ast, &constructor_module, &constructor_symbols);
+    let constructor_structure = constructor.structure.expect("genuine constructor structure");
     let selector_structure = baseline.structure.as_ref().expect("selector structure").clone();
     let selector_rejects_constructor = source_statement_b3m2b2b2b_output_with_mutation(
         &ast,
@@ -1721,6 +1710,13 @@ fn task258b3m2b2b2b_family_and_active_route_isolation_is_atomic() {
             task253_ast_from_source_text(source, 259_230 + source.len());
         let family_symbols =
             augment_type_elaboration_import_summaries(&family_ast, &family_module, family_symbols);
+        if source == SOURCE_STATEMENT_B3M2B2B2A_TEXT {
+            let lower = task258b3m2b2b2a_lower_inputs(&family_ast, &family_module, &family_symbols);
+            assert!(lower.application.is_none() && lower.set_term.is_none());
+            let structure = lower.structure.expect("genuine constructor structure");
+            assert_eq!((structure.terms().len(), structure.field_updates().len()), (1, 0));
+            continue;
+        }
         if source == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
             let lower = task258b3m2b2b2b_lower_inputs(&family_ast, &family_module, &family_symbols);
             assert!(lower.application.is_none() && lower.set_term.is_none());

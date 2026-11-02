@@ -1391,6 +1391,8 @@ pub(super) struct WrappedImportedApplicationSite {
     pub(super) wrapper: usize,
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn wrapped_imported_source_application_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1452,6 +1454,8 @@ pub(super) fn unwrapped_imported_source_application_handoff_in_context(
     ))
 }
 
+// Rationale: the independent lower API remains available after raw statement consumers retire.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn wrapped_imported_source_application_handoff_in_context(
     ast: &SurfaceAst,
     module: &ModuleId,

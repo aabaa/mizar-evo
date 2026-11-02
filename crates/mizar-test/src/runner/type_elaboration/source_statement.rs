@@ -8,13 +8,27 @@ use mizar_checker::{
         BindingDiagnosticTable, BindingDraft, BindingKind, BindingRecoveryState, BindingStatus,
         BindingTable, BindingTypeSite, CapturedFreeVariables,
     },
+    source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
+    source_atomic_formula::{
+        SourceAssertionAttributeInput, SourceAssertionAttributePolarityInput,
+        SourceAssertionTypeHead, SourceAssertionTypeSiteInput, SourceAtomicWrapperInput,
+        SourcePredicateCandidateInput, SourcePredicateHeadId, SourcePredicateHeadInput,
+        SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
+    },
     source_set_term::{
         SourceSetConditionInput, SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId,
         SourceSetGeneratorInput, SourceSetRequestInput, SourceSetRequestKind, SourceSetTarget,
-        SourceSetTermHandoffInput, SourceSetTermInput, SourceSetTermKind, SourceSetTermProducer,
-        SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner, SourceSetTypeRole,
-        SourceSetTypeSiteId, SourceSetTypeSiteInput, SourceSetWrapperInput,
+        SourceSetTermHandoff, SourceSetTermHandoffInput, SourceSetTermId, SourceSetTermInput,
+        SourceSetTermKind, SourceSetTermProducer, SourceSetTermRecovery, SourceSetTypeHead,
+        SourceSetTypeOwner, SourceSetTypeRole, SourceSetTypeSiteId, SourceSetTypeSiteInput,
+        SourceSetWrapperInput,
     },
+    source_statement::{
+        SourceStatementWitnessHandoffInput, SourceStatementWitnessInput,
+        SourceStatementWitnessKind, SourceStatementWitnessNameId, SourceStatementWitnessNameInput,
+        SourceStatementWitnessProducer, SourceStatementWitnessTermTarget,
+    },
+    source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::{
         SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermInput,
         SourcePrimaryTermKind, SourcePrimaryTermProducer, SourcePrimaryTermRecovery,
@@ -29,20 +43,15 @@ use mizar_checker::{
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
-    source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_atomic_formula::{
-        SourceAssertionAttributeInput, SourceAssertionAttributePolarityInput,
-        SourceAssertionTypeHead, SourceAssertionTypeSiteInput, SourceAtomicEdgeId,
-        SourceAtomicEdgeInput, SourceAtomicEdgeRole, SourceAtomicFormulaHandoff,
-        SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId, SourceAtomicFormulaInput,
-        SourceAtomicFormulaKind, SourceAtomicFormulaProducer, SourceAtomicFormulaRecovery,
-        SourceAtomicRequestInput, SourceAtomicRequestKind, SourceAtomicTermTarget,
-        SourceAtomicWrapperInput, SourcePredicateCandidateInput, SourcePredicateHeadId,
-        SourcePredicateHeadInput, SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
+        SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
+        SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
+        SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
+        SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
+        SourceAtomicTermTarget,
     },
     source_composite_formula::{SourceCompositeFormulaHandoff, SourceCompositeFormulaId},
     source_formula_composition::SourceFormulaCompositionHandoff,
-    source_set_term::{SourceSetTermHandoff, SourceSetTermId},
     source_statement::{
         SourceStatementCandidateFactInput, SourceStatementCandidateFactKind,
         SourceStatementCitationInput, SourceStatementCitationKind, SourceStatementCitationTarget,
@@ -50,13 +59,9 @@ use mizar_checker::{
         SourceStatementHandoffInput, SourceStatementId, SourceStatementInput,
         SourceStatementInputFactInput, SourceStatementInputFactKind, SourceStatementKind,
         SourceStatementProducer, SourceStatementRecovery, SourceStatementReferenceHandoffInput,
-        SourceStatementReferenceProducer, SourceStatementWitnessHandoffInput,
-        SourceStatementWitnessInput, SourceStatementWitnessKind, SourceStatementWitnessNameId,
-        SourceStatementWitnessNameInput, SourceStatementWitnessProducer,
-        SourceStatementWitnessTermTarget, SourceTheoremOwnerId, SourceTheoremOwnerInput,
+        SourceStatementReferenceProducer, SourceTheoremOwnerId, SourceTheoremOwnerInput,
         SourceTheoremRole, SourceTheoremStatus,
     },
-    source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermReferenceId},
     type_checker::CheckedStatementOwner,
     typed_ast::{
@@ -104,17 +109,14 @@ use super::source_formula::{
 #[cfg(test)]
 use mizar_checker::type_checker::FormulaKind;
 
+#[cfg(test)]
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
     source_application::{
         WrappedImportedApplicationSite, unwrapped_imported_source_application_handoff_in_context,
         unwrapped_imported_source_application_owned_node_kinds,
         wrapped_imported_source_application_handoff_in_context,
         wrapped_imported_source_application_owned_node_kinds,
     },
-    source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
-    source_formula_composition::source_formula_composition_output_with_source,
-    source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_set_term::source_set_term_output_with_source_term_in_context,
     source_structure::{
         ImportedStructureConstructorSite, ImportedStructureSelectorSite,
@@ -124,6 +126,13 @@ use super::{
         imported_structure_selector_owned_node_kinds, imported_structure_update_handoff_in_context,
         imported_structure_update_owned_node_kinds,
     },
+};
+
+use super::{
+    checker_handoff::assemble_empty_resolved_typed_ast,
+    source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
+    source_formula_composition::source_formula_composition_output_with_source,
+    source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_term::source_term_parts_for_context_roots,
 };
 
@@ -293,6 +302,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B1B1_TEXT: &str = concat!(
     "end;\n",
 );
 
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2A_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -1974,7 +1984,9 @@ const SOURCE_STATEMENT_B3M2B2B1B1_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementParenthesizedApplicationWitnessSmoke : x = x proof take ( 1 ++ 2 ) ; thus x = x ; end ;",
     "thus x = x ;",
 ];
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2A_LABEL: &str = "FormulaStatementStructureConstructorWitnessSmoke";
+#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureConstructorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) ; thus x = x ; end ;",
     "thus x = x ;",
@@ -2243,6 +2255,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B1B1Extraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B2AExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
@@ -2402,6 +2415,7 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3EExtraction {
     pub(in crate::runner) proof_range: SourceRange,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 struct SourceStatementWitnessItemExtraction {
     site: TypedSiteRef,
@@ -2410,6 +2424,7 @@ struct SourceStatementWitnessItemExtraction {
     spelling: &'static str,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 struct SourceStatementWitnessExtraction {
     theorem_site: TypedSiteRef,
@@ -2561,6 +2576,7 @@ impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtract
     }
 }
 
+#[cfg(test)]
 impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2AExtraction) -> Self {
         Self {
@@ -2870,6 +2886,7 @@ pub(in crate::runner) struct SourceStatementB1RouteInputs {
 
 pub(in crate::runner) type SourceStatementB5BRouteInputs = SourceStatementB1RouteInputs;
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) binding_env: BindingEnv,
@@ -2889,6 +2906,7 @@ pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3Ro
 pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
@@ -2903,8 +2921,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B3DRouteInputs = SourceStatement
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3ERouteInputs = SourceStatementB3RouteInputs;
 
-// Rationale: these variants type the exhaustive test-only lower-stage mutation seam and are intentionally dormant in non-test builds.
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum SourceStatementB3M2B2B3AStage {
     Task256,
@@ -4970,6 +4987,7 @@ pub(in crate::runner) fn extract_wrapped_application_witness_source_statement(
     })
 }
 
+#[cfg(test)]
 pub(in crate::runner) fn extract_structure_constructor_witness_source_statement(
     ast: &SurfaceAst,
     source_text: &str,
@@ -13517,15 +13535,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B3M2B2B2A_TEXT {
-        return source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
 
     None
 }
@@ -14376,6 +14385,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2a_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16601,6 +16611,7 @@ fn build_source_statement_b3m2b2b1b1_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+#[cfg(test)]
 fn build_source_statement_b3m2b2b2a_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -17334,6 +17345,7 @@ fn mutate_task258b3m2b2b3e_set_input(
     Ok(())
 }
 
+#[cfg(test)]
 fn mutate_task258b3m2b2b3a_atomic_input(
     input: &mut SourceAtomicFormulaHandoffInput,
     owner_symbol: &SymbolId,
@@ -17493,6 +17505,7 @@ fn mutate_task258b3m2b2b3a_atomic_input(
     Ok(())
 }
 
+#[cfg(test)]
 fn mutate_task258b3m2b2b3a_statement_input(
     input: &mut SourceStatementHandoffInput,
     field: usize,
@@ -17602,6 +17615,7 @@ fn mutate_task258b3m2b2b3a_statement_input(
     Ok(())
 }
 
+#[cfg(test)]
 fn mutate_task258b3m2b2b3a_witness_input(
     input: &mut SourceStatementWitnessHandoffInput,
     field: usize,
@@ -17651,6 +17665,7 @@ fn mutate_task258b3m2b2b3a_witness_input(
     Ok(())
 }
 
+#[cfg(test)]
 fn build_source_statement_witness_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -17669,6 +17684,7 @@ fn build_source_statement_witness_output(
     )
 }
 
+#[cfg(test)]
 fn build_source_statement_witness_output_with_controls(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -18838,6 +18854,7 @@ fn task258b5b_resolved_arena(
     builder.finish(root).map_err(|error| error.to_string())
 }
 
+#[cfg(test)]
 fn task258b3_atomic_input(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -18898,6 +18915,7 @@ fn task258b3_atomic_input(
     }
 }
 
+#[cfg(test)]
 fn task258b3_statement_input(
     ast: &SurfaceAst,
     module: ModuleId,

@@ -2964,9 +2964,10 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || source_statement.is_task_258b3m2b2b3c_profile()
                 || source_statement.is_task_258b3m2b2b3d_profile()
                 || source_statement.is_task_258b3m2b2b3e_profile();
-            let structure_witness_profile = source_statement.is_task_258b3m2b2b2a_profile();
+            #[cfg(not(test))]
+            let structure_witness_profile = false;
             #[cfg(test)]
-            let structure_witness_profile = structure_witness_profile
+            let structure_witness_profile = source_statement.is_task_258b3m2b2b2a_profile()
                 || source_statement.is_task_258b3m2b2b2b_profile()
                 || source_statement.is_task_258b3m2b2b2c_profile();
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
