@@ -5848,7 +5848,7 @@ fn task258b3_selector_rejects_named_multiple_and_cross_slice_sources() {
                             } else if ordinal == 4 {
                                 use mizar_checker::source_set_term::{SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget, SourceSetTermKind};
                                 use mizar_checker::type_checker::{FormulaStatus, NormalizedTypeStatus, TermFormulaChecker, TermKind, TermStatus, TypeHeadRef};
-                                use mizar_checker::typed_ast::{TypeEntryActual, TypeStatus, TypedAstError};
+                                use mizar_checker::typed_ast::{TypeEntryActual, TypeStatus};
                                 let lower = TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).expect("singleton native lower");
                                 let (bindings, inference, base) = &lower;
                                 let primary = base.source_term().unwrap();
@@ -5890,7 +5890,14 @@ fn task258b3_selector_rejects_named_multiple_and_cross_slice_sources() {
                                     assert!(formula.deferred.is_empty() && formula.facts.is_empty() && formula.candidate_set.is_none());
                                 }
                                 assert!(inference.diagnostics().is_empty() && inference.facts().is_empty() && inference.candidate_sets().is_empty());
-                                assert_eq!(base.clone().with_source_statement_from_original(&original, &symbols, &scope), Err(TypedAstError::InvalidSourceStatement));
+                                let typed = base.clone().with_source_statement_from_original(&original, &symbols, &scope).expect("singleton own native pair");
+                                let resolved = assemble_empty_resolved_typed_ast(&typed, Vec::new()).expect("singleton own native final");
+                                assert_eq!(task258_native_output(&ast, &module), (typed.clone(), resolved.clone()));
+                                assert_eq!(typed.source_set_term(), base.source_set_term());
+                                assert_eq!(typed.source_statement(), resolved.source_statement());
+                                assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
+                                assert!(resolved.expr_metadata().is_empty() && resolved.statement_semantics().is_empty() && resolved.checked_proofs().is_empty());
+                                assert_eq!(assemble_empty_resolved_typed_ast(&typed.clone(), Vec::new()).unwrap(), resolved);
                                 assert_eq!(TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).as_ref(), Ok(&lower));
                             } else {
                             assert!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).is_err(), "near miss {ordinal} bounded native refusal");

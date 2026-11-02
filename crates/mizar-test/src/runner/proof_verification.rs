@@ -16853,14 +16853,16 @@ mod term_proof_tests {
             binding_env::*,
             source_atomic_formula::*,
             source_set_term::*,
+            source_statement::*,
             source_term::*,
             type_checker::{
                 FormulaStatus, NormalizedTypeStatus, SourceVariableSemanticsChecker,
                 TermFormulaChecker, TermKind, TermReference, TermStatus, TypeHeadRef,
             },
             typed_ast::{
-                NodeRecoveryState, TypeEntryActual, TypeProvenance, TypeRuleId, TypeStatus,
-                TypedAst, TypedAstError, TypedAstParts, TypedNodeLinks, TypedSiteRef, TypingState,
+                NodeRecoveryState, TypeEntryActual, TypeEntryDraft, TypeProvenance, TypeRuleId,
+                TypeStatus, TypeTable, TypedArena, TypedAst, TypedAstError, TypedAstParts,
+                TypedNodeLinks, TypedSiteRef, TypingState,
             },
         };
         use mizar_frontend::{
@@ -17721,13 +17723,563 @@ mod term_proof_tests {
                 )
             );
         }
-        // Every full lower oracle above precedes all upper and original-pair refusal checks.
+        // Collect every own-source attempt before the future-success assertion.
+        let pairs = cases
+            .iter()
+            .zip(&lowers)
+            .map(|((_, source, symbols, scope, ..), lower)| {
+                lower
+                    .as_ref()
+                    .unwrap()
+                    .2
+                    .clone()
+                    .with_source_statement_from_original(source, symbols, scope)
+            })
+            .collect::<Vec<_>>();
+        let errors = pairs
+            .iter()
+            .filter_map(|result| result.as_ref().err())
+            .collect::<Vec<_>>();
+        assert!(
+            errors.is_empty(),
+            "native singleton enumeration witness original pair: {errors:?}"
+        );
+        // All pair tables and source joins precede every original-statement final call.
+        for (
+            (
+                (
+                    frontend,
+                    source,
+                    symbols,
+                    scope,
+                    labels,
+                    resolution,
+                    scopes,
+                    parents,
+                    inputs_before,
+                ),
+                lower,
+            ),
+            pair,
+        ) in cases.iter().zip(&lowers).zip(&pairs)
+        {
+            let (bindings, _, base) = lower.as_ref().unwrap();
+            let installed = pair.as_ref().unwrap();
+            let before = (base.clone(), installed.clone());
+            assert_eq!(installed.source_id(), base.source_id());
+            assert_eq!(installed.module_id(), base.module_id());
+            assert_eq!(installed.resolved_root(), base.resolved_root());
+            assert_eq!(installed.nodes(), base.nodes());
+            assert_eq!(installed.source_term(), base.source_term());
+            assert_eq!(installed.source_set_term(), base.source_set_term());
+            assert_eq!(
+                installed.source_atomic_formula(),
+                base.source_atomic_formula()
+            );
+            assert!(
+                installed.types().is_empty()
+                    && installed.contexts().is_empty()
+                    && installed.facts().is_empty()
+                    && installed.coercions().is_empty()
+                    && installed.initial_obligations().is_empty()
+                    && installed.diagnostics().is_empty()
+            );
+            let statement = installed.source_statement().unwrap();
+            let witnesses = installed.source_statement_witnesses().unwrap();
+            let primary = base.source_term().unwrap();
+            let set = base.source_set_term().unwrap();
+            let atomic = base.source_atomic_formula().unwrap();
+            assert_eq!(statement.source_id(), source.source_id());
+            assert_eq!(statement.module_id(), source.module());
+            assert_eq!(statement.binding_env(), bindings);
+            assert_eq!(statement.binding_fingerprint(), bindings.debug_text());
+            assert_eq!(statement.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(statement.atomic_formula_fingerprint(), atomic.debug_text());
+            assert!(statement.composite_formula_fingerprint().is_none());
+            assert!(statement.formula_composition_fingerprint().is_none());
+            assert_eq!(witnesses.source_id(), source.source_id());
+            assert_eq!(witnesses.module_id(), source.module());
+            assert_eq!(witnesses.statement_fingerprint(), statement.debug_text());
+            assert_eq!(witnesses.primary_term_fingerprint(), primary.debug_text());
+            assert_eq!(
+                witnesses.set_term_fingerprint(),
+                Some(set.debug_text().as_str())
+            );
+            assert!(witnesses.application_fingerprint().is_none());
+            assert!(witnesses.structure_fingerprint().is_none());
+            assert_eq!(
+                (
+                    statement.owners().len(),
+                    statement.statements().len(),
+                    statement.contexts().len(),
+                    statement.input_facts().len(),
+                    statement.candidate_facts().len(),
+                    witnesses.witnesses().len(),
+                    witnesses.names().len()
+                ),
+                (1, 2, 2, 2, 2, 1, 0)
+            );
+            let ast = frontend.ast.as_ref().unwrap();
+            let typed = base
+                .nodes()
+                .iter()
+                .map(|(id, row)| (row.resolved_node.unwrap(), id))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let mut sites = ast
+                .node_views()
+                .filter(|view| matches!(view.kind(), K::TheoremItem | K::ConclusionStatement))
+                .collect::<Vec<_>>();
+            sites.sort_by_key(|view| view.range().start);
+            let (owner_id, owner) = statement.owners().iter().next().unwrap();
+            assert_eq!(owner_id.index(), 0);
+            let projection = &labels.projections()[0];
+            let symbol = symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.contribution() == projection.contribution())
+                .unwrap();
+            assert_eq!(owner.symbol(), symbol.symbol());
+            assert_eq!(owner.symbol(), statement.checked_owner().symbol());
+            assert_eq!(owner.contribution(), projection.contribution());
+            assert_eq!(owner.spelling(), projection.primary_spelling());
+            assert_eq!(owner.source_range(), sites[0].range());
+            assert_eq!(
+                owner.site().node(),
+                typed[&source.resolved_node_for(sites[0].id()).unwrap()]
+            );
+            assert_eq!(owner.role(), SourceTheoremRole::Theorem);
+            assert_eq!(owner.status(), SourceTheoremStatus::Unmodified);
+            assert_eq!(owner.recovery(), SourceStatementRecovery::Normal);
+            let (witness_id, witness) = witnesses.witnesses().iter().next().unwrap();
+            assert_eq!(witness_id.index(), 0);
+            let take = ast
+                .node_views()
+                .find(|view| view.kind() == &K::TakeStatement)
+                .unwrap();
+            let witness_site = ast.node(take.children()[1]).unwrap();
+            let expression = ast.node(witness_site.children[0]).unwrap();
+            let (set_id, enumeration) = set.terms().iter().next().unwrap();
+            assert_eq!(
+                witness.term(),
+                SourceStatementWitnessTermTarget::SetTerm(set_id)
+            );
+            assert_eq!(set_id.index(), 0);
+            assert_eq!(
+                enumeration.site().node(),
+                typed[&source.resolved_node_for(expression.children[0]).unwrap()]
+            );
+            assert_eq!(witness.owner(), owner_id);
+            assert_eq!(witness.binding_context(), enumeration.context());
+            assert_eq!((witness.source_ordinal(), witness.ordinal()), (1, 0));
+            assert_eq!(
+                witness.take_site().node(),
+                typed[&source.resolved_node_for(take.id()).unwrap()]
+            );
+            assert_eq!(witness.take_range(), take.range());
+            assert_eq!(
+                witness.site().node(),
+                typed[&source.resolved_node_for(take.children()[1]).unwrap()]
+            );
+            assert_eq!(witness.source_range(), witness_site.range);
+            assert_eq!(witness.spelling(), enumeration.spelling());
+            assert_eq!(witness.kind(), SourceStatementWitnessKind::Unnamed);
+            assert_eq!(witness.recovery(), SourceStatementRecovery::Normal);
+            assert!(witness.name().is_none());
+            assert_eq!(
+                bindings
+                    .contexts()
+                    .get(witness.binding_context())
+                    .unwrap()
+                    .lexical_scope
+                    .as_ref(),
+                scopes.get(&take.id())
+            );
+            let (_, edge) = set.edges().iter().next().unwrap();
+            let SourceSetTarget::Primary(element_id) = edge.target() else {
+                panic!("actual singleton element")
+            };
+            let element = primary.terms().get(element_id).unwrap();
+            assert_eq!(
+                (edge.term(), edge.ordinal(), edge.role()),
+                (set_id, 0, SourceSetEdgeRole::EnumerationElement)
+            );
+            assert_eq!(element_id.index(), 2);
+            let actual_enumeration = ast.node(expression.children[0]).unwrap();
+            let actual_element = ast.node(actual_enumeration.children[1]).unwrap();
+            assert_eq!(
+                element.site().node(),
+                typed[&source
+                    .resolved_node_for(actual_element.children[0])
+                    .unwrap()]
+            );
+            assert_eq!(
+                enumeration.spelling(),
+                format!("{{ {} }}", element.spelling())
+            );
+            assert_eq!(element.context(), witness.binding_context());
+            assert_eq!(primary.references().len(), 5);
+            for ((id, reference), occurrence) in primary.references().iter().zip(scope.references())
+            {
+                let term = primary.terms().get(reference.term()).unwrap();
+                assert_eq!(reference.use_ordinal(), occurrence.ordinal());
+                assert_eq!(reference.lexical_scope(), Some(occurrence.scope()));
+                assert_eq!(
+                    (term.source_ordinal(), term.source_range(), term.spelling()),
+                    (id.index(), occurrence.range(), occurrence.spelling())
+                );
+            }
+            let equalities = (0..2)
+                .map(|index| {
+                    let left = primary
+                        .terms()
+                        .get(SourcePrimaryTermId::new([0, 3][index]))
+                        .unwrap();
+                    let right = primary
+                        .terms()
+                        .get(SourcePrimaryTermId::new([1, 4][index]))
+                        .unwrap();
+                    let spelling = format!("{} = {}", left.spelling(), right.spelling());
+                    assert_eq!(
+                        atomic
+                            .formulas()
+                            .get(SourceAtomicFormulaId::new(index))
+                            .unwrap()
+                            .spelling(),
+                        spelling
+                    );
+                    spelling
+                })
+                .collect::<Vec<_>>();
+            for (index, ((id, row), site)) in statement.statements().iter().zip(sites).enumerate() {
+                assert_eq!(
+                    (id.index(), row.context().index(), row.source_ordinal()),
+                    (index, index, [0, 2][index])
+                );
+                assert_eq!(row.owner(), owner_id);
+                assert_eq!(
+                    row.site().node(),
+                    typed[&source.resolved_node_for(site.id()).unwrap()]
+                );
+                assert_eq!(row.source_range(), site.range());
+                assert_eq!(
+                    row.kind(),
+                    if index == 0 {
+                        SourceStatementKind::TheoremProposition
+                    } else {
+                        SourceStatementKind::Conclusion
+                    }
+                );
+                assert_eq!(row.recovery(), SourceStatementRecovery::Normal);
+                assert_eq!(
+                    row.formula(),
+                    SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index))
+                );
+                assert_eq!(
+                    row.spelling(),
+                    if index == 0 {
+                        format!(
+                            "theorem {} : {} proof take {} ; thus {} ; end ;",
+                            owner.spelling(),
+                            equalities[0],
+                            witness.spelling(),
+                            equalities[1]
+                        )
+                    } else {
+                        format!("thus {} ;", equalities[1])
+                    }
+                );
+                let context = statement.contexts().get(row.context()).unwrap();
+                assert_eq!(context.statement(), id);
+                assert_eq!(context.source_range(), row.source_range());
+                assert_eq!(context.binding_context().index(), index);
+                assert_eq!(context.visible_bindings(), &[BindingId::new(0)]);
+                let binding_context = bindings.contexts().get(context.binding_context()).unwrap();
+                assert_eq!(binding_context.visible_bindings, context.visible_bindings());
+                if index == 1 {
+                    assert_eq!(binding_context.parent, Some(BindingContextId::new(0)));
+                    assert_eq!(
+                        binding_context.lexical_scope.as_ref(),
+                        scopes.get(&take.id())
+                    );
+                }
+                let (fact_id, fact) = statement.input_facts().iter().nth(index).unwrap();
+                assert_eq!(fact_id.index(), index);
+                assert_eq!(
+                    (
+                        fact.statement(),
+                        fact.context(),
+                        fact.ordinal(),
+                        fact.binding()
+                    ),
+                    (id, row.context(), 0, BindingId::new(0))
+                );
+                assert_eq!(fact.kind(), SourceStatementInputFactKind::ReservedTypeGuard);
+                assert_eq!(
+                    fact.uses().iter().map(|id| id.index()).collect::<Vec<_>>(),
+                    [[0, 1], [3, 4]][index]
+                );
+                let (candidate_id, candidate) =
+                    statement.candidate_facts().iter().nth(index).unwrap();
+                assert_eq!(candidate_id.index(), index);
+                assert_eq!(
+                    (
+                        candidate.statement(),
+                        candidate.context(),
+                        candidate.ordinal(),
+                        candidate.formula()
+                    ),
+                    (id, row.context(), 0, row.formula())
+                );
+                assert_eq!(
+                    candidate.kind(),
+                    SourceStatementCandidateFactKind::UnverifiedProposition
+                );
+            }
+            assert_eq!(
+                base.clone()
+                    .with_source_statement_from_original(source, symbols, scope),
+                Ok(installed.clone())
+            );
+            assert_eq!((base, installed), (&before.0, &before.1));
+            assert_eq!(
+                (
+                    source,
+                    symbols,
+                    scope,
+                    labels,
+                    resolution,
+                    scopes,
+                    parents,
+                    ast.snapshot_text(),
+                    &frontend.source
+                ),
+                (
+                    &inputs_before.0,
+                    &inputs_before.1,
+                    &inputs_before.2,
+                    &inputs_before.3,
+                    &inputs_before.4,
+                    &inputs_before.5,
+                    &inputs_before.6,
+                    inputs_before.7.clone(),
+                    &inputs_before.8
+                )
+            );
+        }
+        let finals = pairs
+            .iter()
+            .map(|pair| {
+                super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    pair.as_ref().unwrap(),
+                    Vec::new(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let errors = finals
+            .iter()
+            .filter_map(|result| result.as_ref().err())
+            .collect::<Vec<_>>();
+        assert!(
+            errors.is_empty(),
+            "native singleton enumeration witness original final: {errors:?}"
+        );
+        for (((case, lower), pair), resolved) in cases.iter().zip(&lowers).zip(&pairs).zip(&finals)
+        {
+            let (frontend, source, symbols, scope, labels, resolution, scopes, parents, before) =
+                case;
+            let base = &lower.as_ref().unwrap().2;
+            let installed = pair.as_ref().unwrap();
+            let resolved = resolved.as_ref().unwrap();
+            assert_eq!(resolved.source_id(), source.source_id());
+            assert_eq!(resolved.module_id(), source.module());
+            assert_eq!(resolved.nodes().len(), base.nodes().len());
+            assert_eq!(
+                resolved
+                    .nodes()
+                    .node(resolved.nodes().root().unwrap())
+                    .unwrap()
+                    .typed_node,
+                base.nodes().root().unwrap()
+            );
+            let mut seen = std::collections::BTreeSet::new();
+            for (_, node) in resolved.nodes().iter() {
+                assert!(seen.insert(node.typed_node));
+                let original = base.nodes().node(node.typed_node).unwrap();
+                assert_eq!(
+                    mizar_session::SourceAnchor::Range(node.source_range),
+                    original.anchor
+                );
+                assert_eq!(
+                    node.children
+                        .iter()
+                        .map(|child| resolved.nodes().node(*child).unwrap().typed_node)
+                        .collect::<Vec<_>>(),
+                    original.children
+                );
+                assert_eq!(
+                    node.recovery,
+                    mizar_checker::resolved_typed_ast::ResolvedNodeRecovery::Normal
+                );
+                assert!(
+                    node.final_type.is_none()
+                        && node.metadata.is_none()
+                        && node.diagnostics.is_empty()
+                );
+                assert_eq!(original.typing, TypingState::Unknown);
+                assert_eq!(original.links, TypedNodeLinks::default());
+            }
+            assert_eq!(seen, base.nodes().iter().map(|(id, _)| id).collect());
+            assert_eq!(resolved.source_statement(), installed.source_statement());
+            assert_eq!(
+                resolved.source_statement_witnesses(),
+                installed.source_statement_witnesses()
+            );
+            assert_eq!(resolved.source_term(), installed.source_term());
+            assert_eq!(resolved.source_set_term(), installed.source_set_term());
+            assert_eq!(
+                resolved.source_atomic_formula(),
+                installed.source_atomic_formula()
+            );
+            assert!(
+                resolved.source_context().is_none()
+                    && resolved.source_type().is_none()
+                    && resolved.source_attribute().is_none()
+                    && resolved.source_evidence().is_none()
+                    && resolved.source_template().is_none()
+                    && resolved.source_application().is_none()
+                    && resolved.source_structure().is_none()
+                    && resolved.source_attribute_definition().is_none()
+                    && resolved.source_predicate_definition().is_none()
+                    && resolved.source_functor_definition().is_none()
+                    && resolved.source_mode_definition().is_none()
+                    && resolved.source_structure_definition().is_none()
+                    && resolved.source_composite_formula().is_none()
+                    && resolved.source_formula_composition().is_none()
+                    && resolved.source_statement_references().is_none()
+                    && resolved.source_proof_local_declaration().is_none()
+                    && resolved.source_property_implementation().is_none()
+                    && resolved.source_nested_fraenkel_capture_identity().is_none()
+                    && resolved.source_condition_formula_composition().is_none()
+                    && resolved.source_predicate_chain_composition().is_none()
+                    && resolved.source_proof_local_let_binding().is_none()
+                    && resolved.source_proof_local_let_type().is_none()
+                    && resolved.source_proof_local_given_binding().is_none()
+                    && resolved.source_proof_local_given_type().is_none()
+                    && resolved.source_proof_local_given_use_type().is_none()
+                    && resolved.source_proof_local_given_use_term().is_none()
+                    && resolved
+                        .source_proof_local_given_condition_binding()
+                        .is_none()
+                    && resolved.source_proof_local_given_condition_type().is_none()
+                    && resolved
+                        .source_proof_local_given_condition_use_term()
+                        .is_none()
+                    && resolved
+                        .source_proof_local_given_descendant_binding()
+                        .is_none()
+                    && resolved
+                        .source_proof_local_given_descendant_type()
+                        .is_none()
+                    && resolved
+                        .source_proof_local_given_descendant_use_term()
+                        .is_none()
+            );
+            assert!(
+                resolved.expr_metadata().is_empty()
+                    && resolved.collection_candidates().is_empty()
+                    && resolved.expanded_candidates().is_empty()
+                    && resolved.template_expansions().is_empty()
+                    && resolved.viable_candidates().is_empty()
+                    && resolved.viability_decisions().is_empty()
+                    && resolved.specificity_graphs().is_empty()
+                    && resolved.resolved_overloads().is_empty()
+                    && resolved.inserted_coercions().is_empty()
+                    && resolved.cluster_facts().is_empty()
+                    && resolved.diagnostics().is_empty()
+                    && resolved.checked_formulas().is_empty()
+                    && resolved.statement_semantics().is_empty()
+                    && resolved.checked_proofs().is_empty()
+                    && resolved.checked_proof_nodes().is_empty()
+                    && resolved.checked_terminal_goals().is_empty()
+            );
+            assert_eq!(
+                super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &installed.clone(),
+                    Vec::new()
+                )?,
+                *resolved
+            );
+            let replay = base
+                .clone()
+                .with_source_statement_from_original(source, symbols, scope)
+                .unwrap();
+            assert_eq!(&replay, installed);
+            assert_eq!(
+                super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &replay,
+                    Vec::new()
+                )?,
+                *resolved
+            );
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)
+                    .as_ref(),
+                Ok(lower.as_ref().unwrap())
+            );
+            assert_eq!(
+                (
+                    source,
+                    symbols,
+                    scope,
+                    labels,
+                    resolution,
+                    scopes,
+                    parents,
+                    frontend.ast.as_ref().unwrap().snapshot_text(),
+                    &frontend.source
+                ),
+                (
+                    &before.0,
+                    &before.1,
+                    &before.2,
+                    &before.3,
+                    &before.4,
+                    &before.5,
+                    &before.6,
+                    before.7.clone(),
+                    &before.8
+                )
+            );
+        }
+        // Every full lower and original-pair oracle precedes the higher Reserve/Proof refusals.
         for (
             (frontend, source, symbols, scope, labels, resolution, scopes, parents, before),
             result,
         ) in cases.iter().zip(&lowers)
         {
             let pristine = || {
+                let index = cases
+                    .iter()
+                    .position(|case| case.1.source_id() == source.source_id())
+                    .unwrap();
+                assert_eq!(
+                    result
+                        .as_ref()
+                        .unwrap()
+                        .2
+                        .clone()
+                        .with_source_statement_from_original(source, symbols, scope)
+                        .as_ref(),
+                    Ok(pairs[index].as_ref().unwrap())
+                );
+                assert_eq!(
+                    super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                        &pairs[index].as_ref().unwrap().clone(),
+                        Vec::new()
+                    )
+                    .as_ref(),
+                    Ok(finals[index].as_ref().unwrap())
+                );
                 assert_eq!(
                     TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)
                         .as_ref(),
@@ -17781,16 +18333,6 @@ mod term_proof_tests {
                 unsupported
             );
             pristine();
-            assert_eq!(
-                result
-                    .as_ref()
-                    .unwrap()
-                    .2
-                    .clone()
-                    .with_source_statement_from_original(source, symbols, scope),
-                Err(TypedAstError::InvalidSourceStatement)
-            );
-            pristine();
             let policy = mizar_proof::policy::VerifierPolicy::default();
             let registry = SnapshotRegistry::new();
             let unit = &frontend.source;
@@ -17839,6 +18381,28 @@ mod term_proof_tests {
                 result,
             ) in cases.iter().zip(&lowers)
             {
+                let index = cases
+                    .iter()
+                    .position(|case| case.1.source_id() == source.source_id())
+                    .unwrap();
+                assert_eq!(
+                    result
+                        .as_ref()
+                        .unwrap()
+                        .2
+                        .clone()
+                        .with_source_statement_from_original(source, symbols, scope)
+                        .as_ref(),
+                    Ok(pairs[index].as_ref().unwrap())
+                );
+                assert_eq!(
+                    super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                        &pairs[index].as_ref().unwrap().clone(),
+                        Vec::new()
+                    )
+                    .as_ref(),
+                    Ok(finals[index].as_ref().unwrap())
+                );
                 assert_eq!(
                     TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)
                         .as_ref(),
@@ -17870,6 +18434,202 @@ mod term_proof_tests {
                 );
             }
         };
+        let target = &cases[0];
+        let base = &lowers[0].as_ref().unwrap().2;
+        let installed = pairs[0].as_ref().unwrap();
+        let statement = installed.source_statement().unwrap();
+        let witnesses = installed.source_statement_witnesses().unwrap();
+        assert_eq!(
+            installed
+                .clone()
+                .with_source_statement_from_original(&target.1, &target.2, &target.3),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        // A coherent lower from another capture is still a stale receiver for this source.
+        assert_eq!(
+            lowers[2]
+                .as_ref()
+                .unwrap()
+                .2
+                .clone()
+                .with_source_statement_from_original(&target.1, &target.2, &target.3),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        pristine();
+        // Negative receivers alone use public reconstruction; no native pair can travel in public parts.
+        for control in [
+            "missing-primary",
+            "missing-atomic",
+            "missing-set",
+            "enriched",
+            "resolved-rootless",
+            "typed-rootless",
+            "rootless",
+            "punctuation",
+            "substituted-primary",
+            "substituted-atomic",
+            "substituted-set",
+        ] {
+            let mut nodes = base
+                .nodes()
+                .iter()
+                .map(|(_, row)| row.clone())
+                .collect::<Vec<_>>();
+            if control == "punctuation" {
+                let ast = target.0.ast.as_ref().unwrap();
+                let token = ast
+                    .node_views()
+                    .find(
+                        |view| matches!(view.kind(), K::Token(token) if token.text.as_ref() == ";"),
+                    )
+                    .unwrap();
+                let resolved = target.1.resolved_node_for(token.id()).unwrap();
+                let row = nodes
+                    .iter_mut()
+                    .find(|row| row.resolved_node == Some(resolved))
+                    .unwrap();
+                assert_eq!(row.kind.as_str(), format!("{:?}", token.kind()));
+                row.kind = mizar_checker::typed_ast::TypedNodeKind::new(
+                    "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+                );
+            }
+            let mut types = base.types().clone();
+            if control == "enriched" {
+                let entry = lowers[0]
+                    .as_ref()
+                    .unwrap()
+                    .1
+                    .type_entries()
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .1;
+                types = TypeTable::new();
+                types.insert(TypeEntryDraft {
+                    owner: entry.owner.clone(),
+                    expected: entry.expected,
+                    actual: entry.actual,
+                    status: entry.status,
+                    provenance: entry.provenance.clone(),
+                });
+            }
+            let mut receiver = TypedAst::try_new(TypedAstParts {
+                source_id: base.source_id(),
+                module_id: base.module_id().clone(),
+                resolved_root: if ["resolved-rootless", "rootless"].contains(&control) {
+                    None
+                } else {
+                    base.resolved_root()
+                },
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    if ["typed-rootless", "rootless"].contains(&control) {
+                        None
+                    } else {
+                        base.nodes().root()
+                    },
+                    nodes,
+                )
+                .unwrap(),
+                contexts: base.contexts().clone(),
+                types,
+                facts: base.facts().clone(),
+                coercions: base.coercions().clone(),
+                initial_obligations: base.initial_obligations().clone(),
+                diagnostics: base.diagnostics().clone(),
+            })
+            .unwrap();
+            let alternate = &lowers[2].as_ref().unwrap().2;
+            if control == "substituted-primary" {
+                assert_eq!(
+                    receiver.with_source_term(alternate.source_term().unwrap().clone()),
+                    Err(TypedAstError::InvalidSourceTerm)
+                );
+                pristine();
+                continue;
+            }
+            if control != "missing-primary" {
+                receiver = receiver
+                    .with_source_term(base.source_term().unwrap().clone())
+                    .unwrap();
+                if control == "substituted-atomic" {
+                    assert_eq!(
+                        receiver.with_source_atomic_formula(
+                            alternate.source_atomic_formula().unwrap().clone()
+                        ),
+                        Err(TypedAstError::InvalidSourceAtomicFormula)
+                    );
+                    pristine();
+                    continue;
+                }
+                if control != "missing-atomic" {
+                    receiver = receiver
+                        .with_source_atomic_formula(base.source_atomic_formula().unwrap().clone())
+                        .unwrap();
+                }
+                if control == "substituted-set" {
+                    assert_eq!(
+                        receiver.with_source_set_term(alternate.source_set_term().unwrap().clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm)
+                    );
+                    pristine();
+                    continue;
+                }
+                if ["resolved-rootless", "typed-rootless", "rootless"].contains(&control) {
+                    let before = receiver.clone();
+                    assert!(
+                        receiver
+                            .nodes()
+                            .iter()
+                            .any(|(_, row)| row.kind.as_str() == "TheoremItem")
+                    );
+                    assert_eq!(
+                        receiver.clone().with_source_statement(statement.clone()),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                    assert_eq!(
+                        receiver
+                            .clone()
+                            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                    assert_eq!(
+                        receiver.clone().with_source_set_term_statement_witnesses(
+                            base.source_set_term().unwrap().clone(),
+                            statement.clone(),
+                            witnesses.clone()
+                        ),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, before);
+                    pristine();
+                }
+                if control != "missing-set" {
+                    receiver = receiver
+                        .with_source_set_term(base.source_set_term().unwrap().clone())
+                        .unwrap();
+                }
+            }
+            let before = receiver.clone();
+            assert_ne!(&receiver, base, "actual receiver change {control}");
+            // Punctuation keeps a valid graph and all lower handoffs: the canonical-base gate rejects it.
+            assert_eq!(
+                receiver
+                    .clone()
+                    .with_source_statement_from_original(&target.1, &target.2, &target.3),
+                Err(TypedAstError::InvalidSourceStatement),
+                "canonical receiver {control}"
+            );
+            assert_eq!(receiver, before);
+            pristine();
+        }
         for (name, witness) in [
             ("grouped singleton", "({x})"),
             ("grouped element", "{(x)}"),
@@ -18043,12 +18803,41 @@ mod term_proof_tests {
                 .with_source_statement_from_original(&source, &symbols, &scope),
             Err(TypedAstError::InvalidSourceStatement)
         );
+        pristine();
+        let foreign_pair = foreign_lower
+            .2
+            .clone()
+            .with_source_statement_from_original(&source, &symbols, &scope)
+            .unwrap();
+        let foreign_final = super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+            &foreign_pair,
+            Vec::new(),
+        )?;
+        assert_eq!(
+            foreign_pair.source_set_term(),
+            foreign_lower.2.source_set_term()
+        );
+        assert_eq!(
+            foreign_final.source_statement(),
+            foreign_pair.source_statement()
+        );
+        assert_eq!(
+            foreign_final.source_statement_witnesses(),
+            foreign_pair.source_statement_witnesses()
+        );
         assert_eq!(
             foreign_lower
                 .2
                 .clone()
                 .with_source_statement_from_original(&source, &symbols, &scope),
-            Err(TypedAstError::InvalidSourceStatement)
+            Ok(foreign_pair.clone())
+        );
+        assert_eq!(
+            super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                &foreign_pair.clone(),
+                Vec::new()
+            )?,
+            foreign_final
         );
         assert_eq!(
             TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope).as_ref(),
@@ -19948,10 +20737,36 @@ mod term_proof_tests {
                         && inference.facts().is_empty()
                         && inference.candidate_sets().is_empty()
                 );
+                let pair = base
+                    .clone()
+                    .with_source_statement_from_original(&source, &symbols, &scope)
+                    .expect("singleton own native pair");
+                let resolved = super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &pair,
+                    Vec::new(),
+                )?;
+                assert_eq!(pair.source_set_term(), base.source_set_term());
+                assert_eq!(resolved.source_statement(), pair.source_statement());
+                assert_eq!(
+                    resolved.source_statement_witnesses(),
+                    pair.source_statement_witnesses()
+                );
+                assert!(
+                    resolved.expr_metadata().is_empty()
+                        && resolved.statement_semantics().is_empty()
+                        && resolved.checked_proofs().is_empty()
+                );
                 assert_eq!(
                     base.clone()
                         .with_source_statement_from_original(&source, &symbols, &scope),
-                    Err(TypedAstError::InvalidSourceStatement)
+                    Ok(pair.clone())
+                );
+                assert_eq!(
+                    super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                        &pair.clone(),
+                        Vec::new()
+                    )?,
+                    resolved
                 );
                 assert_eq!(
                     TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)

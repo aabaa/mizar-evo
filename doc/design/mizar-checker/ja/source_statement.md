@@ -30,6 +30,9 @@ native B3M2B1は同じ一行unnamed witness transportを拡張するが、target
 ## Original-source empty-enumeration witness
 native original pairはlower baseが保持する認証済みbare empty Enumerationだけを認め、既存SetTerm target 0と全set/primary/statement fingerprintをset-aware validatorで検証する。実Take/Witness/TermExpression/set site・proof context・rangeにあるNormal unnamed witness一つを要求し、source/within-Take ordinal `1/0`と空namesを保つ。実variable reference四つのclock `0..3`、statement source ordinal `0/2`、equality primary `[0,1]`と`[2,3]`、reserved input-fact reference `[0,1]`と`[2,3]`を保つ。setはprimary/reference/input factを所有しない。空schema・canonical `{ }` spelling・immediate typed childrenを認証し、header/conclusion spellingは実atomic primary operandから独立に導く。未検証candidate/guard intent・全rooted source ownership・canonical receiver比較とatomic代入を維持し、binder/substitution/proof resultを作らない。他set形と全raw profileはこのnative caseの対象外とする。
 
+## Original-source singleton-enumeration witness
+native original pairは認証済みlowerのbare単元集合witnessも受け入れる。実element expressionとreserved-reference primaryを唯一のEnumerationElement edge、set site/range/contextとcanonical spellingへjoinし、独立clockを持つ実reference五つと全lower fingerprintを保つ。statement/equality input-fact referenceは`[0,1]`と`[3,4]`とし、witnessだけのreference `2`はfact/bindingを導入しない。既存SetTerm target、statement ordinal `0/2`、witness ordinal `1/0`、全base atomic installerとsyntax-only original final replayを保ち、全raw profile・root非依存native-node guard・上位proof境界を変えない。
+
 ## Private legacy empty-enumeration preservation
 旧source/schema/debug goldenと実frontendの証拠を区別する。内部handoff-field行列では実mutation・型付きproducerまたは下流validatorの拒否・入力不変性・正規入力の再生を確認し、producer成功時だけの条件分岐をcoverageと数えない。source-byte/surface認証とdormant runnerの責務は別途レビューしたretirementまで既存ownerに残し、共有family helperとsyntax-only final境界を保つ。
 
