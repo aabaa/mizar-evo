@@ -5289,13 +5289,10 @@ fn task269gup_lower_transports_leading_space_tab_lf_layouts() {
             "{layout} stale canonical AST/source pair selected");
     }
 
-    let internal = source.replacen("  given y being set", "   given y being set", 1);
-    assert_ne!(internal, source, "internal layout replacement must match");
-    for (index, unsupported) in [format!(":: prefix comment\n{source}"), format!("\r{source}"), internal, format!("{source} ")].into_iter().enumerate() {
-        let (ast, module, shells, symbols) = task253_ast_from_source_text(&unsupported, 269_970 + index);
-        assert!(source_proof_local_given_use_lower_output(&ast, module, &shells, &symbols, &unsupported).is_none(),
-            "unsupported Task269GUP layout {index} selected");
-    }
+    let unsupported = format!("\r{source}");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&unsupported, 269_971);
+    assert!(source_proof_local_given_use_lower_output(&ast, module, &shells, &symbols, &unsupported).is_none(),
+        "unsupported Task269GUP CR layout selected");
 
     let outcomes = prepared.iter().map(|(_, _, shifted_source, ast, module, shells, symbols)| {
         source_proof_local_given_use_lower_output(ast, (*module).clone(), shells, symbols, shifted_source)
@@ -5380,6 +5377,248 @@ fn task269gup_lower_transports_leading_space_tab_lf_layouts() {
             "{layout} public Task269GUP dependency boundary");
     }
 }
+
+#[test]
+fn task269gup_generic_roles_transport_frontend_normal_given_use_sources() {
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceNodeKind as K;
+
+    let source = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT;
+    let cases = [
+        ("prefix_comment", format!(":: prefix comment\n{source}"), 269_970),
+        ("internal_indent", source.replacen("  given y being set", "   given y being set", 1), 269_972),
+        ("trailing_space", format!("{source} "), 269_973),
+        ("condition_label", source.replace("such that G:", "such that H:"), 271_803),
+        ("coherent_local_name", source.replace("given y being set", "given z being set").replace("thus y = y;", "thus z = z;"), 271_804),
+        ("be", source.replace("given y being set", "given y be set"), 271_805),
+        ("reserve_name", source.replace("reserve x for set", "reserve unused_reserved for set"), 271_806),
+        ("long_names", source.replace("FormulaStatementGivenSmoke", "LongerTransportedGivenUseTheorem")
+            .replace("given y being", "given used_local being").replace("thus y = y;", "thus used_local = used_local;")
+            .replace("G: thesis", "ConditionLabel: thesis"), 271_807),
+        ("interior_comment", source.replace("  given y", "  :: witness and later uses\n\tgiven y"), 271_808),
+        ("trailing_comment", format!("{source}:: trailing comment\n"), 271_809),
+        ("mixed_layout", source.replace("y being set", "y\tbe\n    set").replace("thus y = y;", "thus y\t=\n y;"), 271_810),
+        ("no_terminal_lf", source.trim_end_matches('\n').to_owned(), 271_811),
+        ("extra_terminal_lf", format!("{source}\n"), 271_812),
+    ];
+    for (index, (label, source, ordinal)) in cases.into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(diagnostics, 0, "{label} must be frontend-normal");
+        assert!(ast.expression_root().is_none(), "{label}");
+        let before = (ast.clone(), shells.clone(), symbols.clone());
+        // Preserve the four retired selector negatives through their private historical route.
+        if index < 4 {
+            assert!(source_proof_local_given_use_lower_output_with_surface_mutation(
+                &ast, module.clone(), &shells, &symbols, &source, SourceProofLocalGivenUseSurfaceMutation::None,
+            ).is_none(), "{label} historical exact selector stays private");
+        }
+        let output = source_proof_local_given_use_lower_output(&ast, module.clone(), &shells, &symbols, &source)
+            .expect("generic Given-use shape").expect("generic Given-use transport");
+
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("generic source arena");
+        let nodes = TypedArena::try_new(
+            ast.root().map(|root| TypedNodeId::new(root.index())),
+            resolved.arena().iter().map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone()).with_resolved_node(id)
+                    .with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())
+                    .with_recovery(if ast.nodes()[id.index()].recovered {
+                        NodeRecoveryState::Recovered
+                    } else { NodeRecoveryState::Normal })
+            }).collect(),
+        ).expect("syntax-only typed arena");
+        let mut typed = TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id, module_id: module.clone(), resolved_root: Some(resolved.arena().root()),
+            source_context: None, source_type: None, source_attribute: None, nodes,
+            contexts: Default::default(), types: Default::default(), facts: Default::default(),
+            coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+        }).expect("syntax-only receiver");
+        typed.install_source_nodes(&resolved).expect("shared source-node installation");
+        let rows = typed.source_node_entries().unwrap().collect::<Vec<_>>();
+        assert_eq!(rows.len(), ast.nodes().len(), "{label} complete rooted census");
+        for (preorder, row) in rows.iter().enumerate() {
+            let node = &ast.nodes()[row.site().index()];
+            assert_eq!((row.kind(), row.range(), row.preorder_ordinal(), row.recovery()),
+                (&node.kind, node.range, preorder, NodeRecoveryState::Normal), "{label} actual AST/table row");
+            if let Some(parent) = row.parent() {
+                assert_eq!(ast.nodes()[parent.index()].children[row.child_ordinal()].index(), row.site().index(),
+                    "{label} actual parent/child role");
+            }
+        }
+        let role = |kind, parent| {
+            let matches = rows.iter().copied().filter(|row| row.kind() == &kind && row.parent() == parent).collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{label} unique {kind:?} role");
+            matches[0]
+        };
+        let root = role(K::Root, None);
+        let unit = role(K::CompilationUnit, Some(root.site()));
+        let items = role(K::ItemList, Some(unit.site()));
+        let reserve = role(K::ReserveItem, Some(items.site()));
+        let theorem = role(K::TheoremItem, Some(items.site()));
+        let proof = role(K::ProofBlock, Some(theorem.site()));
+        let declaration = role(K::GivenStatement, Some(proof.site()));
+        let segment = role(K::QualifiedVariableSegment, Some(declaration.site()));
+        let name = rows.iter().copied().find(|row| row.parent() == Some(segment.site()) && row.child_ordinal() == 0).unwrap();
+        assert!(matches!(name.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::Identifier));
+        let ty = role(K::TypeExpression, Some(segment.site()));
+        let head = role(K::TypeHead, Some(ty.site()));
+        let conditions = role(K::ConditionList, Some(declaration.site()));
+        let condition = role(K::Proposition, Some(conditions.site()));
+        let condition_label = rows.iter().copied().find(|row| row.parent() == Some(condition.site()) && row.child_ordinal() == 0).unwrap();
+        assert!(matches!(condition_label.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::Identifier));
+        let conclusion = role(K::ConclusionStatement, Some(proof.site()));
+        let conclusion_proposition = role(K::Proposition, Some(conclusion.site()));
+        for parent in [theorem, condition] {
+            let formula = role(K::FormulaExpression, Some(parent.site()));
+            let thesis = role(K::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis), Some(formula.site()));
+            assert_eq!(thesis.spelling(), "thesis", "{label} thesis role");
+        }
+        let conclusion_formula = role(K::FormulaExpression, Some(conclusion_proposition.site()));
+        let equality = role(K::BuiltinPredicateApplication, Some(conclusion_formula.site()));
+        let terms = rows.iter().copied().filter(|row| row.parent() == Some(equality.site()) && matches!(row.kind(), K::TermExpression)).collect::<Vec<_>>();
+        assert_eq!(terms.iter().map(|row| row.child_ordinal()).collect::<Vec<_>>(), [0, 2], "{label} two ordered local-use roles");
+        for term in terms {
+            let reference = role(K::TermReference, Some(term.site()));
+            assert_eq!(reference.spelling(), name.spelling(), "{label} coherent declaration and actual reference");
+            assert_eq!(source.get(reference.range().start..reference.range().end), Some(name.spelling()), "{label} local-use raw slice");
+        }
+        let equals = rows.iter().find(|row| row.parent() == Some(equality.site()) && row.child_ordinal() == 1).unwrap();
+        assert!(matches!(equals.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "="));
+        let reserve_segment = role(K::ReserveSegment, Some(reserve.site()));
+        let reserved_name = rows.iter().find(|row| row.parent() == Some(reserve_segment.site()) && row.child_ordinal() == 0).unwrap();
+        assert_ne!(name.spelling(), reserved_name.spelling(), "{label} local differs from reserved variable");
+        for (actual, row) in [output.theorem_range(), output.proof_range(), output.given_range(), output.segment_range(),
+            output.name_range(), output.type_range(), output.type_head_range()].into_iter()
+            .zip([theorem, proof, declaration, segment, name, ty, head]) {
+            assert_eq!(actual, row.range(), "{label} authenticated role range");
+            assert_eq!(actual.source_id, ast.source_id, "{label}");
+        }
+        assert_eq!((output.source_id(), output.module_id(), output.source_ordinal()), (ast.source_id, &module, 1), "{label}");
+        assert_eq!((output.name_spelling(), output.type_spelling()), (name.spelling(), head.spelling()), "{label}");
+        assert_eq!(output.source_fingerprint(), sha256_text(&source), "{label} raw source");
+        assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()), "{label} actual AST");
+        for (shell, row) in shells.declarations().iter().zip([reserve, theorem]) {
+            assert_eq!((shell.node_id().index(), shell.range()), (row.site().index(), row.range()), "{label} shell role");
+        }
+        let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+        assert!(symbols.symbols().visible_candidates(&namespace, name.spelling()).is_empty(), "{label} local stays unpublished");
+        assert!(symbols.symbols().visible_candidates(&namespace, condition_label.spelling()).is_empty(), "{label} condition label stays unpublished");
+        assert!(symbols.labels().visible_candidates(&namespace, condition_label.spelling()).is_empty(), "{label} no module condition label");
+        let theorem_name = rows.iter().find(|row| row.parent() == Some(theorem.site()) && row.child_ordinal() == 1).unwrap().spelling();
+        let owners = symbols.symbols().visible_candidates(&namespace, theorem_name);
+        let [owner] = owners.as_slice() else { panic!("{label} theorem owner"); };
+        let definition = symbols.definitions().by_symbol(owner.symbol()).unwrap();
+        let contribution = symbols.contributions().get(owner.contribution()).unwrap();
+        assert_eq!((output.theorem_symbol(), output.theorem_definition(), output.contribution()),
+            (owner.symbol(), definition.id(), contribution.id()), "{label}");
+        assert_eq!(owner.origin().anchor(), &mizar_session::SourceAnchor::Range(theorem.range()), "{label}");
+        assert_eq!(definition.origin(), owner.origin(), "{label}");
+        assert_eq!(contribution.anchor(), &mizar_session::SourceAnchor::Range(reserve.range()), "{label}");
+        assert_eq!(owner.signature(), Some(&mizar_resolve::env::SignatureShell::Opaque {
+            schema: "parser-signature-v1".to_owned(),
+            payload: format!("node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens={};notation=_;arity=_;roles=FormulaExpression,ProofBlock", theorem.spelling()),
+        }), "{label} normalized actual token signature");
+        let ranges = [theorem, proof, declaration, segment, name, ty, head].map(|row| row.range());
+        let [t, p, l, s, n, y, h] = ranges;
+        assert_eq!(output.debug_text(), format!(concat!(
+            "source-proof-local-given-use-lower-debug-v1\nmodule: {}::{}\nsource-fingerprint: {:?}\nsurface-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range={}..{} proof={}..{}\n",
+            "given range={}..{} segment={}..{} source_ordinal=1\n",
+            "name range={}..{} spelling={:?}\n",
+            "type range={}..{} head={}..{} spelling=\"set\" form=bare\n"),
+            module.package().as_str(), module.path().as_str(), sha256_text(&source), sha256_text(&ast.snapshot_text()),
+            owner.symbol().fqn().as_str(), t.start, t.end, p.start, p.end, l.start, l.end, s.start, s.end,
+            n.start, n.end, name.spelling(), y.start, y.end, h.start, h.end), "{label} exact debug grammar");
+        let (fresh_ast, fresh_module, fresh_shells, fresh_symbols, fresh_diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, ordinal);
+        assert_eq!(fresh_diagnostics, 0, "{label}");
+        assert_eq!(source_proof_local_given_use_lower_output(&fresh_ast, fresh_module, &fresh_shells, &fresh_symbols, &source)
+            .expect("fresh generic selector").expect("fresh generic lower"), output, "{label} fresh whole-output replay");
+        for outcome in [
+            source_proof_local_given_use_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_use_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+        ] {
+            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string())),
+                "{label} GUP/GUPT/GU dependency boundary");
+        }
+        assert_eq!((ast, shells, symbols), before, "{label} input purity");
+    }
+}
+
+#[test]
+fn task269gup_actual_rebuilt_ast_and_raw_source_corruption_fail_closed() {
+    let source = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 271_820);
+    let before = (ast.clone(), shells.clone(), symbols.clone());
+    for (index, node) in ast.nodes().iter().enumerate() {
+        for mutation in 0..4 {
+            let changed = task258_mutated_surface(&ast, index, mutation);
+            assert_ne!(changed, ast, "actual node {index} mutation {mutation}");
+            assert!(source_proof_local_given_use_lower_output(&changed, module.clone(), &shells, &symbols, source).is_none(),
+                "actual node {index} {:?} mutation {mutation} selected", node.kind);
+        }
+    }
+    let no_root = task258_mutated_surface(&ast, ast.nodes().len(), 0);
+    assert!(source_proof_local_given_use_lower_output(&no_root, module.clone(), &shells, &symbols, source).is_none());
+    // Rebuild actual foreign ranges and each thesis discriminant independently.
+    let allocator = InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(271_821);
+    allocator.next_source_id(snapshot).unwrap();
+    let foreign_source = allocator.next_source_id(snapshot).unwrap();
+    assert_ne!(foreign_source, ast.source_id);
+    let thesis_nodes = ast.nodes().iter().enumerate().filter_map(|(index, node)|
+        matches!(node.kind, mizar_syntax::SurfaceNodeKind::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis)).then_some(Some(index)));
+    for target in std::iter::once(None).chain(thesis_nodes) {
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::<mizar_syntax::SurfaceBuilderNodeId>::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let range = if target.is_none() { mizar_session::SourceRange { source_id: foreign_source, ..node.range } } else { node.range };
+            let kind = if target == Some(index) {
+                mizar_syntax::SurfaceNodeKind::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Contradiction)
+            } else { node.kind.clone() };
+            let children = node.children.iter().map(|child| rebuilt[child.index()]).collect();
+            rebuilt.push(match kind {
+                mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(token.kind, token.text, range),
+                kind => builder.add_node(kind, range, children),
+            });
+        }
+        let changed = builder.finish(ast.root().map(|root| rebuilt[root.index()]), None);
+        assert_ne!(changed, ast);
+        assert!(source_proof_local_given_use_lower_output(&changed, module.clone(), &shells, &symbols, source).is_none(),
+            "actual source/discriminant corruption {target:?} selected");
+    }
+    for (label, raw) in [
+        ("same_length_token_change", source.replace("given y", "given z")),
+        ("omitted_gap_code", source.replace("  given", "? given")),
+        ("malformed_gap_delimiter", source.replace("  given", ": given")),
+        ("commented_out_tokens", source.replace("  given", "::given")),
+        ("trailing_code", format!("{source}?")),
+    ] {
+        assert!(source_proof_local_given_use_lower_output(&ast, module.clone(), &shells, &symbols, &raw).is_none(),
+            "{label} stale AST/raw-source pair selected");
+    }
+    for (index, mismatched) in [
+        source.replace("thus y = y;", "thus z = y;"),
+        source.replace("thus y = y;", "thus y = z;"),
+        source.replace("given y being", "given x being").replace("thus y = y;", "thus x = x;"),
+    ].into_iter().enumerate() {
+        let (changed, changed_module, changed_shells, changed_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&mismatched, 271_830 + index);
+        assert_eq!(diagnostics, 0, "normal local-use mismatch {index}");
+        assert!(source_proof_local_given_use_lower_output(&changed, changed_module, &changed_shells, &changed_symbols, &mismatched).is_none(),
+            "local-use/reserved-name mismatch {index} selected");
+    }
+    let trivia_only = source.replace("  given", "\t given");
+    let output = source_proof_local_given_use_lower_output(&ast, module, &shells, &symbols, &trivia_only)
+        .expect("token-equivalent trivia is congruent").expect("authenticated trivia transport");
+    assert_eq!(output.source_fingerprint(), sha256_text(&trivia_only));
+    assert_eq!(output.surface_fingerprint(), sha256_text(&ast.snapshot_text()));
+    assert_eq!((ast, shells, symbols), before, "actual corruption routes preserve inputs");
+}
+
+
 
 #[test]
 fn source_proof_local_given_use_binding_profile_is_exact_and_private() {
@@ -6030,18 +6269,22 @@ fn source_proof_local_given_use_binding_profile_rejects_every_corruption() {
 
 #[test]
 fn source_proof_local_given_use_binding_profile_isolates_old_and_near_miss_sources() {
+    let renamed = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&renamed, 269_960 + 2);
+    assert_eq!(source_proof_local_given_use_binding_output(&ast, module, &shells, &symbols, &renamed)
+        .expect("Task269GUP condition-label rename reaches dependency validation").unwrap_err(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string());
     let near_misses = [
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
+        (0, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set")),
+        (1, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set")),
+        (3, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;")),
+        (4, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;")),
+        (5, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
             "given y being set such that G: thesis;",
             "consider y being set such that thesis;",
-        ),
+        )),
     ];
-    for (ordinal, source) in near_misses.into_iter().enumerate() {
+    for (ordinal, source) in near_misses {
         let (ast, module, shells, symbols) =
             task253_ast_from_source_text(&source, 269_960 + ordinal);
         assert!(
@@ -8328,18 +8571,22 @@ fn task269gupt_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
 
 #[test]
 fn task269gupt_near_miss_task269gup_and_active_routes_remain_isolated() {
+    let renamed = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&renamed, 270_030 + 2);
+    assert_eq!(source_proof_local_given_use_type_output(&ast, module, &shells, &symbols, &renamed)
+        .expect("Task269GUPT condition-label rename reaches dependency validation").unwrap_err(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string());
     let near_misses = [
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
+        (0, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set")),
+        (1, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set")),
+        (3, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;")),
+        (4, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;")),
+        (5, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
             "given y being set such that G: thesis;",
             "consider y being set such that thesis;",
-        ),
+        )),
     ];
-    for (ordinal, source) in near_misses.into_iter().enumerate() {
+    for (ordinal, source) in near_misses {
         let (ast, module, shells, symbols) =
             task253_ast_from_source_text(&source, 270_030 + ordinal);
         assert!(
@@ -9224,18 +9471,22 @@ fn task269gu_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
 
 #[test]
 fn task269gu_near_miss_gupt_and_active_routes_remain_isolated() {
+    let renamed = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:");
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&renamed, 270_130 + 2);
+    assert_eq!(source_proof_local_given_use_term_output(&ast, module, &shells, &symbols, &renamed)
+        .expect("Task269GU condition-label rename reaches dependency validation").unwrap_err(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string());
     let near_misses = [
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("such that G:", "such that H:"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;"),
-        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
+        (0, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given z being set")),
+        (1, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("given y being set", "given y, z being set")),
+        (3, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus thesis;")),
+        (4, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace("thus y = y;", "thus x = x;")),
+        (5, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT.replace(
             "given y being set such that G: thesis;",
             "consider y being set such that thesis;",
-        ),
+        )),
     ];
-    for (ordinal, source) in near_misses.into_iter().enumerate() {
+    for (ordinal, source) in near_misses {
         let (ast, module, shells, symbols) =
             task253_ast_from_source_text(&source, 270_130 + ordinal);
         assert!(

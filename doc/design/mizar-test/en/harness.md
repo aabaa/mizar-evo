@@ -5646,11 +5646,9 @@ active-route isolation, and exhaustive semantic emptiness. Runner library is
 
 ## Proof-local Given-use leading-layout transport
 
-The private Task269GUP lower route admits leading SP/TAB/LF before its unchanged 128-byte suffix; all 54 Surface rows and shell/resolver/output ranges share the displacement.
-All identity/signature/normality/source checks remain. Outer selection uses the unmutated profile; selected Surface corruptions keep the builder's existing Surface error.
-The existing formatter hashes actual raw-source and Surface snapshot UTF-8 as lowercase SHA-256; canonical hashes/debug bytes and schema remain unchanged.
-Existing raw source passes through private calls only. The lower retains syntax spelling y/type set and ordinal 1, with no binding scope, visibility, use-term publication, new field/API or dependency.
-Comments, CR, internal/trailing edits and public 269GUP/Type admission stay outside this slice; no later-use semantics, binding/fact/proof/coverage or Task281 retirement credit follows.
+The private Task269GUP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with a single-name bare-set Given, one labeled thesis condition and a direct equality conclusion whose two reference names match the declaration. It derives ranges, names and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; declaration-only name mismatches, bare CR and other syntax shapes remain excluded.
+Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the lower schema remain unchanged. Historical expected-array mutations retain their private post-selection error stage alongside actual frontend/raw-source corruption checks.
+Existing GUP/GUPT/GU canonical donors reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
 
 ## Proof-local Given leading-layout transport
 

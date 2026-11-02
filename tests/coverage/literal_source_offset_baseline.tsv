@@ -23,6 +23,6 @@ crates/mizar-test/src/runner/type_elaboration/source_context.rs	1
 crates/mizar-test/src/runner/type_elaboration/source_mode_definition.rs	26
 crates/mizar-test/src/runner/type_elaboration/source_predicate_definition.rs	27
 crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs	34
-crates/mizar-test/src/runner/type_elaboration/source_statement.rs	66
+crates/mizar-test/src/runner/type_elaboration/source_statement.rs	64
 crates/mizar-test/src/runner/type_elaboration/source_structure.rs	13
 crates/mizar-test/src/runner/type_elaboration/source_structure_definition.rs	3

@@ -37,6 +37,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [ ] statement/witness family migration; retire its exact profiles and baseline rows
 - [x] isolated unused proof-local Let syntax: generic table sites and lexical layouts/names; C/CT canonical dependency boundary unchanged
 - [x] isolated unused proof-local Given syntax: generic table sites and lexical layouts/names; G/GT canonical dependency boundary unchanged
+- [x] isolated Given-use syntax: generic sites with matching declaration/use names; share receiver at three real consumers, preserve canonical donors
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger

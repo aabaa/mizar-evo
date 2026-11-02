@@ -12,6 +12,9 @@ Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harn
 ## Generic isolated Given source boundary
 Runner-private GP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-leading-layout-transport)に従う。G/GTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・condition fact・proof・dispatch・acceptance supportは加えない。
 
+## Generic isolated Given-use source boundary
+Runner-private GUP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-use-leading-layout-transport)に従う。GUP binding・GUPT type・GU term producerはcanonical dependency検証を維持し、noncanonical lower receiptによるnative binding・term・proof・dispatch・acceptance supportは加えない。
+
 ## 状態と authority
 
 このliving owner文書はChecker Task-269 proof-local declaration lineageの

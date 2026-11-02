@@ -12,6 +12,9 @@ The runner-private CP syntax transport follows the [harness boundary](../../miza
 ## Generic isolated Given source boundary
 The runner-private GP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-leading-layout-transport). G/GT retain their canonical dependency checks; noncanonical lower receipts add no binding, condition fact, proof, dispatch or acceptance support.
 
+## Generic isolated Given-use source boundary
+The runner-private GUP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-use-leading-layout-transport). GUP binding, GUPT type and GU term producers retain canonical dependency validation; noncanonical lower receipts add no native binding, term, proof, dispatch or acceptance support.
+
 ## Status and authority
 
 This living owner document freezes the completed Checker Task-269 proof-local
