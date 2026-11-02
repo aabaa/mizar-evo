@@ -9,6 +9,9 @@ transport 専用の `build` とは別に、`check_membership_proof` は既存の
 ## Original-source empty-enumeration input
 original equality intakeは認証済みempty witnessの実typed site/range・proof binding context・Normal recovery・canonical `{ }` spellingから既存Enumeration rowを構築する。source ordinalは0で、wrapper/generator/written type site/condition/child edgeは空、term 0に属する未関連ResultType requestを一つ持つ。このsyntax-free producerは既存public transactionで全実primary dependencyとarenaを検証し、original-source adapter・新schema・numeric/reference childを追加しない。[TypeChecker](type_checker.md#original-source-empty-enumeration-lower-acquisition)がintrinsic result typingを別に所有し、このhandoffはrequest intentを保持してsethood fact・witness substitution・proof creditを与えない。
 
+## Original-source singleton-enumeration input
+original intakeは実reserved-reference primaryへ向くEnumerationElement edge一つ、そのchildから導くcanonical spelling、未関連ResultType request一つを持つEnumerationを渡す。実proof context/site/rangeと全primary fingerprintを保ち、wrapper/generator/written type site/conditionは空とする。既存transactionがこのschemaを認証し、[TypeChecker](type_checker.md#original-source-singleton-enumeration-lower-acquisition)がintrinsic result typeと後段admission境界を所有する。
+
 ## スコープ
 
 Checker Task 255 は、source set enumeration、0または1件のfrozen source

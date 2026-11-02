@@ -18,6 +18,8 @@ Native B3M2B1 retains preorder primary IDs/source ordinals `0..5`: wrapper 2 pre
 For an original-source unnamed witness with a finite depth `d` of transparent groups, retain `d+5` preorder primaries: wrapper IDs `2..d+1`, actual reference leaf `d+2`, and conclusion leaves `d+3,d+4`. Actual references target `[0,1,d+2,d+3,d+4]` with Resolver clocks `0..4` and genuine scopes; depth two retains `2 -> 3 -> 4`. TypeChecker authenticates the complete source chain. This syntax-free producer consumes the existing private site/range/child tuples once, without a literal depth cap or new abstraction. Reject unmatched, duplicate, cyclic, disconnected or unused relations through earlier-parent, strict-range and single-child validation. Wrappers add no reference, binding or numeric request; clocks never derive from primary IDs.
 The original empty-enumeration lower profile contributes no primary or reference for the set witness: retain only its four actual theorem/conclusion variable occurrences, native clocks `0..3`, complete source/scope/binding joins and no numeric requests. The [intake](type_checker.md#original-source-empty-enumeration-lower-acquisition) authenticates the nonreference witness and owns its separate set handoff/type; this producer remains syntax-free and unchanged.
 
+The original singleton-enumeration lower profile retains all five actual reserved references, including the element, through this unchanged producer. The enumeration has no primary/reference of its own; the [intake](type_checker.md#original-source-singleton-enumeration-lower-acquisition) owns its actual element edge and intrinsic type.
+
 ## Purpose And Authority
 
 The public `source_term` module implements Checker Task 252. It transports

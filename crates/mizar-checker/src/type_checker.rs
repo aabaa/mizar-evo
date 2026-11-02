@@ -7223,7 +7223,7 @@ impl TermFormulaChecker {
             .filter(|(_, current)| current.kind() == &K::SetEnumeration)
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
-        let empty_enumeration = match enumerations.as_slice() {
+        let witness_enumeration = match enumerations.as_slice() {
             [] => None,
             [enumeration] if witness_reserved && !assumption_reserved && groups.is_empty() => {
                 let mut takes = source
@@ -7240,20 +7240,22 @@ impl TermFormulaChecker {
                 let [term] = node(*operand)?.children() else {
                     return Err(invalid());
                 };
-                let [open, close] = node(*enumeration)?.children() else {
-                    return Err(invalid());
+                let (open, element, close) = match node(*enumeration)?.children() {
+                    [open, close] => (*open, None, *close),
+                    [open, element, close] => (*open, Some(*element), *close),
+                    _ => return Err(invalid()),
                 };
                 if takes.next().is_some()
                     || witness_count != 1
                     || node(*witness)?.kind() != &K::Witness
                     || node(*operand)?.kind() != &K::TermExpression
                     || term != enumeration
-                    || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
-                    || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
+                    || !matches!(node(open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
+                    || !matches!(node(close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
                 {
                     return Err(invalid());
                 }
-                Some((*operand, *enumeration))
+                Some((*operand, *enumeration, element))
             }
             _ => return Err(invalid()),
         };
@@ -7340,7 +7342,7 @@ impl TermFormulaChecker {
                 }
                 SurfaceTokenKind::ReservedSymbol
                     if [":", ";", ",", "="].contains(&token.text.as_ref())
-                        || (empty_enumeration.is_some()
+                        || (witness_enumeration.is_some()
                             && ["{", "}"].contains(&token.text.as_ref()))
                         || (!parenthesized_witness.is_empty()
                             && ["(", ")"].contains(&token.text.as_ref())) =>
@@ -7486,10 +7488,10 @@ impl TermFormulaChecker {
                     true
                 }
                 (K::TermExpression, ["SetEnumeration"]) => {
-                    empty_enumeration.is_some_and(|(operand, _)| id == operand)
+                    witness_enumeration.is_some_and(|(operand, _, _)| id == operand)
                 }
-                (K::SetEnumeration, ["{", "}"]) => {
-                    empty_enumeration.is_some_and(|(_, enumeration)| id == enumeration)
+                (K::SetEnumeration, ["{", "}"] | ["{", "TermExpression", "}"]) => {
+                    witness_enumeration.is_some_and(|(_, enumeration, _)| id == enumeration)
                 }
                 (
                     K::FormulaExpression,
@@ -7585,7 +7587,10 @@ impl TermFormulaChecker {
                         }
                         _ => return Err(invalid()),
                     };
-                    if empty_enumeration.is_some_and(|(empty, _)| operand == empty) {
+                    if let Some((enumeration_operand, _, element)) = witness_enumeration
+                        && operand == enumeration_operand
+                    {
+                        operands.extend(element);
                         continue;
                     }
                     operands.push(match parenthesized_witness.first() {
@@ -7993,7 +7998,7 @@ impl TermFormulaChecker {
                     .map_err(|error| error.to_string())?
             }
         };
-        let set = if let Some((_, enumeration)) = empty_enumeration {
+        let set = if let Some((_, enumeration, element)) = witness_enumeration {
             let (scopes, _) =
                 mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
             let local = scopes
@@ -8031,6 +8036,26 @@ impl TermFormulaChecker {
                     TypeHeadInput::BuiltinSet,
                 )),
             );
+            let (spelling, edges) = match element {
+                Some(element) => {
+                    let term = node(element)?.children()[0];
+                    let (id, primary) = primary
+                        .terms()
+                        .iter()
+                        .find(|(_, primary)| primary.site() == &site(term))
+                        .ok_or_else(invalid)?;
+                    (
+                        format!("{{ {} }}", primary.spelling()),
+                        vec![SourceSetEdgeInput {
+                            term: SourceSetTermId::new(0),
+                            ordinal: 0,
+                            role: SourceSetEdgeRole::EnumerationElement,
+                            target: SourceSetTarget::Primary(id),
+                        }],
+                    )
+                }
+                None => ("{ }".to_owned(), Vec::new()),
+            };
             Some(
                 SourceSetTermProducer::build(
                     SourceSetTermHandoffInput {
@@ -8042,14 +8067,14 @@ impl TermFormulaChecker {
                             source_ordinal: 0,
                             context,
                             recovery: SourceSetTermRecovery::Normal,
-                            spelling: "{ }".to_owned(),
+                            spelling,
                             kind: SourceSetTermKind::Enumeration,
                         }],
                         wrappers: Vec::new(),
                         generators: Vec::new(),
                         type_sites: Vec::new(),
                         conditions: Vec::new(),
-                        edges: Vec::new(),
+                        edges,
                         requests: vec![SourceSetRequestInput {
                             term: SourceSetTermId::new(0),
                             ordinal: 0,
@@ -18155,7 +18180,7 @@ impl SourceVariableSemanticsChecker {
             .filter(|(_, node)| node.kind() == &K::SetEnumeration)
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
-        let mut empty_enumeration = false;
+        let mut witness_enumeration = false;
         for (_, take) in &takes {
             let (keyword, witnesses, semicolon) = match take.children() {
                 [keyword, witness, semicolon] => (*keyword, vec![*witness], *semicolon),
@@ -18198,10 +18223,12 @@ impl SourceVariableSemanticsChecker {
                     return Err(invalid());
                 };
                 if node(*term)?.kind() == &K::SetEnumeration {
-                    let [open, close] = node(*term)?.children() else {
-                        return Err(invalid());
+                    let (open, element, close) = match node(*term)?.children() {
+                        [open, close] => (*open, None, *close),
+                        [open, element, close] => (*open, Some(*element), *close),
+                        _ => return Err(invalid()),
                     };
-                    if empty_enumeration
+                    if witness_enumeration
                         || enumerations != [*term]
                         || takes.len() != 1
                         || take.children().len() != 3
@@ -18211,12 +18238,13 @@ impl SourceVariableSemanticsChecker {
                             .arena()
                             .iter()
                             .any(|(_, node)| node.kind() == &K::ParenthesizedTerm)
-                        || !matches!(node(*open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
-                        || !matches!(node(*close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
+                        || !matches!(node(open)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "{")
+                        || !matches!(node(close)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "}")
                     {
                         return Err(invalid());
                     }
-                    empty_enumeration = true;
+                    witness_enumeration = true;
+                    operand_sites.extend(element);
                     continue;
                 }
                 let mut operand = operand;
@@ -18245,7 +18273,7 @@ impl SourceVariableSemanticsChecker {
                 operand_sites.push(operand);
             }
         }
-        if enumerations.len() != usize::from(empty_enumeration) {
+        if enumerations.len() != usize::from(witness_enumeration) {
             return Err(invalid());
         }
         operand_sites.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));

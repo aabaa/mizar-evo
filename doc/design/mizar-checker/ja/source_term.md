@@ -17,6 +17,8 @@ native B3M2B1はsource順primary ID/source ordinal `0..5`を保持し、wrapper 
 original-sourceの単一unnamed witnessでtransparent groupの有限深さを`d`とし、preorder primaryを`d+5`件、wrapper IDを`2..d+1`、実reference leafを`d+2`、conclusion leafを`d+3,d+4`とする。実referenceは`[0,1,d+2,d+3,d+4]`へjoinし、Resolver clock `0..4`と実scopeを保つ。深さ2のchainは`2 -> 3 -> 4`である。TypeCheckerが全source chainを認証し、syntax-free producerは既存private site/range/child tupleを深さの固定上限や新abstractionなしで一度消費する。先行parent・厳密包含range・単一child検証により不一致・重複・循環・非連結・未使用relationを拒否する。wrapperはreference/binding/numeric requestを増やさず、clockをprimary IDから導かない。
 original empty-enumeration lower profileのset witnessはprimary/referenceを増やさない。theorem/conclusionの実variable occurrence四つ、native clock `0..3`、全source/scope/binding joinと空numeric requestを保つ。[intake](type_checker.md#original-source-empty-enumeration-lower-acquisition)がnonreference witnessと別set handoff/typeを認証・所有し、このproducerはsyntax-freeのまま変更しない。
 
+original singleton-enumeration lower profileは要素を含む実reserved reference五つをこの未変更producerで保持する。enumeration自身のprimary/referenceは作らず、[intake](type_checker.md#original-source-singleton-enumeration-lower-acquisition)が実element edgeとintrinsic typeを所有する。
+
 ## 目的とauthority
 
 public `source_term` moduleはChecker Task 252を実装する。variable/local-constant

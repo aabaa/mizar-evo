@@ -10,6 +10,9 @@ direct set bounds, and premise citations before Core normalization; arbitrary gu
 ## Original-source empty-enumeration input
 The original equality intake constructs the existing Enumeration row from the authenticated empty witness's actual typed site/range, proof binding context, Normal recovery and canonical `{ }` spelling. Its source ordinal is zero; wrappers, generators, written type sites, conditions and child edges are empty, with one unassociated ResultType request for term zero. This syntax-free producer validates the whole genuine primary dependency and arena through its existing public transaction; no original-source adapter, new schema or numeric/reference child is introduced. [TypeChecker](type_checker.md#original-source-empty-enumeration-lower-acquisition) separately owns intrinsic result typing; this handoff retains request intent and grants no sethood fact, witness substitution or proof credit.
 
+## Original-source singleton-enumeration input
+The original intake supplies one Enumeration with one EnumerationElement edge to the genuine reserved-reference primary, canonical spelling derived from that child, and one unassociated ResultType request. Preserve its actual proof context/site/range and complete primary fingerprint; wrappers, generators, written type sites and conditions remain empty. The unchanged transaction authenticates this schema; [TypeChecker](type_checker.md#original-source-singleton-enumeration-lower-acquisition) owns the intrinsic result type and downstream admission boundaries.
+
 ## Scope
 
 Checker Task 255 owns a syntax-free immutable description of source set

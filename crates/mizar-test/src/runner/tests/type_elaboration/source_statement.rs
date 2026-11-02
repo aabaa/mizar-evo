@@ -5761,14 +5761,14 @@ fn task258b3_selector_rejects_named_multiple_and_cross_slice_sources() {
     for (ordinal, source) in near_misses.iter().enumerate() {
         assert!(extract_single_witness_source_statement(&exact_ast, source).is_none(), "near miss {ordinal} exact AST");
         let (frontend, module) = capture(source, ordinal + 1);
-        if ordinal == 3 {
+        if ordinal == 3 || ordinal == 4 {
             assert!(frontend.diagnostics.is_empty());
-            let ast = frontend.ast.as_ref().expect("single-group source AST");
+            let ast = frontend.ast.as_ref().expect("native witness source AST");
             assert!(ast.nodes().iter().all(|node| !node.recovered));
             let (original, symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
-                .expect("single-group original collection").expect("single-group original inputs");
+                .expect("native witness original collection").expect("native witness original inputs");
             mizar_resolve::symbols::source_proof_inputs(&original, &symbols)
-                .expect("single-group original occurrences");
+                .expect("native witness original occurrences");
         }
         if let Some(ast) = frontend.ast {
             assert!(extract_single_witness_source_statement(&ast, source).is_none(), "near miss {ordinal} parsed AST");
@@ -5845,6 +5845,53 @@ fn task258b3_selector_rejects_named_multiple_and_cross_slice_sources() {
                                 assert_eq!(task258_native_output(&ast, &module), (typed.clone(), resolved.clone()));
                                 assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
                                 assert!(resolved.expr_metadata().is_empty() && resolved.statement_semantics().is_empty() && resolved.checked_proofs().is_empty());
+                            } else if ordinal == 4 {
+                                use mizar_checker::source_set_term::{SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget, SourceSetTermKind};
+                                use mizar_checker::type_checker::{FormulaStatus, NormalizedTypeStatus, TermFormulaChecker, TermKind, TermStatus, TypeHeadRef};
+                                use mizar_checker::typed_ast::{TypeEntryActual, TypeStatus, TypedAstError};
+                                let lower = TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).expect("singleton native lower");
+                                let (bindings, inference, base) = &lower;
+                                let primary = base.source_term().unwrap();
+                                let set = base.source_set_term().unwrap();
+                                assert_eq!((bindings.bindings().len(), primary.terms().len(), primary.references().len(), primary.numeric_type_requests().len()), (1, 5, 5, 0));
+                                assert_eq!(scope.references().len(), 5);
+                                for ((_, reference), occurrence) in primary.references().iter().zip(scope.references()) {
+                                    let term = primary.terms().get(reference.term()).unwrap();
+                                    assert_eq!((term.site().node().index(), term.source_range(), term.spelling()), (occurrence.node().index(), occurrence.range(), occurrence.spelling()));
+                                    assert_eq!((reference.use_ordinal(), reference.lexical_scope()), (occurrence.ordinal(), Some(occurrence.scope())));
+                                }
+                                assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+                                assert_eq!((set.terms().len(), set.edges().len(), set.requests().len()), (1, 1, 1));
+                                assert!(set.wrappers().is_empty() && set.generators().is_empty() && set.type_sites().is_empty() && set.conditions().is_empty());
+                                let (id, enumeration) = set.terms().iter().next().unwrap();
+                                assert_eq!((enumeration.kind(), enumeration.spelling()), (SourceSetTermKind::Enumeration, "{ x }"));
+                                let (element_id, element) = primary.terms().iter().find(|(_, term)| term.site().node().index() == scope.references()[2].node().index()).unwrap();
+                                let (_, edge) = set.edges().iter().next().unwrap();
+                                assert_eq!((edge.term(), edge.ordinal(), edge.role(), edge.target()), (id, 0, SourceSetEdgeRole::EnumerationElement, SourceSetTarget::Primary(element_id)));
+                                assert_eq!(enumeration.context(), element.context());
+                                let (_, request) = set.requests().iter().next().unwrap();
+                                assert_eq!((request.term(), request.ordinal(), request.kind(), request.generator(), request.type_site()), (id, 0, SourceSetRequestKind::ResultType, None, None));
+                                assert_eq!((inference.terms().len(), inference.formulas().len(), inference.type_entries().len(), inference.normalized_types().len()), (6, 2, 12, 1));
+                                let (normalized_id, normalized) = inference.normalized_types().iter().next().unwrap();
+                                assert_eq!((&normalized.head, normalized.status), (&TypeHeadRef::BuiltinSet, NormalizedTypeStatus::Known));
+                                for (_, entry) in inference.type_entries().iter() {
+                                    assert_eq!((entry.status, entry.actual), (TypeStatus::Known, TypeEntryActual::Known(normalized_id)));
+                                }
+                                for (_, term) in inference.terms().iter() {
+                                    assert_eq!(term.status, TermStatus::Inferred);
+                                    assert!(term.deferred.is_empty() && term.candidate_set.is_none());
+                                    assert_eq!(inference.type_entries().get(term.type_entry).unwrap().owner, term.site);
+                                }
+                                let checked = inference.terms().iter().find(|(_, term)| term.site == *enumeration.site()).unwrap().1;
+                                assert_eq!(checked.kind, TermKind::SetEnumeration);
+                                assert!(checked.reference.is_none());
+                                for (_, formula) in inference.formulas().iter() {
+                                    assert_eq!(formula.status, FormulaStatus::Checked);
+                                    assert!(formula.deferred.is_empty() && formula.facts.is_empty() && formula.candidate_set.is_none());
+                                }
+                                assert!(inference.diagnostics().is_empty() && inference.facts().is_empty() && inference.candidate_sets().is_empty());
+                                assert_eq!(base.clone().with_source_statement_from_original(&original, &symbols, &scope), Err(TypedAstError::InvalidSourceStatement));
+                                assert_eq!(TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).as_ref(), Ok(&lower));
                             } else {
                             assert!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).is_err(), "near miss {ordinal} bounded native refusal");
                             }
