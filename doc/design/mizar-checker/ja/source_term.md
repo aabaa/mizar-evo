@@ -19,6 +19,8 @@ original empty-enumeration lower profileのset witnessはprimary/referenceを増
 
 original singleton-enumeration lower profileは要素を含む実reserved reference五つをこの未変更producerで保持する。enumeration自身のprimary/referenceは作らず、[intake](type_checker.md#original-source-singleton-enumeration-lower-acquisition)が実element edgeとintrinsic typeを所有する。
 
+original bare-set choice lower profileは実theorem/conclusion reference四つとnative clockだけを既存producerで保持し、choice/written targetからprimary・reference・bindingを作らない。[intake](type_checker.md#original-source-builtin-set-choice-lower-acquisition)がsource認証・target typing・inhabitationを所有する。
+
 ## 目的とauthority
 
 public `source_term` moduleはChecker Task 252を実装する。variable/local-constant

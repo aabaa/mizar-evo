@@ -20,6 +20,8 @@ The original empty-enumeration lower profile contributes no primary or reference
 
 The original singleton-enumeration lower profile retains all five actual reserved references, including the element, through this unchanged producer. The enumeration has no primary/reference of its own; the [intake](type_checker.md#original-source-singleton-enumeration-lower-acquisition) owns its actual element edge and intrinsic type.
 
+The original bare-set choice lower profile retains only its four actual theorem/conclusion references and native clocks through this unchanged producer; the choice and its written target add no primary, reference or binding. The [intake](type_checker.md#original-source-builtin-set-choice-lower-acquisition) owns source authentication, target typing and inhabitation.
+
 ## Purpose And Authority
 
 The public `source_term` module implements Checker Task 252. It transports

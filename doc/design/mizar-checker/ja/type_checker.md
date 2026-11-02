@@ -3231,3 +3231,6 @@ native B3M2B1は唯一のbare-set reserved identifierを包む`ParenthesizedTerm
 
 ## Original-source singleton-enumeration lower acquisition
 original equality lowerは唯一のreserved identifierを要素とするbare unnamed単元集合witnessも認証する。全grammar/identifier censusと実occurrence五つを保ち、独立reserved-binding readerはenumerationではなく内部の実referenceをoperandに含める。実Primary element edgeとenumeration自身のsite/rangeのintrinsic BuiltinSetからSourceSet Enumeration一つを構築し、variable-use typeはReserveのwritten siteを保つ。完全inferenceとcanonical syntax-only tableを維持し、original statement pair・上位Reserve/Proof admission・raw profile撤去は別段階とする。
+
+## Original-source builtin-set choice lower acquisition
+original equality lowerと独立reserved-binding readerはbare unnamed `the set` witness一つを認証し、実reserved-variable occurrence四つをchoice primary/bindingを作らず保持する。実ChoiceTermとwritten target expression/headだけをSourceSet用にretagし、全original graph・source/scope census・syntax-only baseを保つ。Choice result inputはReserve-use typingやcanonical normalized provenanceから独立に、実written target site/rangeから導く。完全inferenceの前に実SymbolEnv databaseから既存builtin-set existential gateを評価し、正確なBuiltinSet/Builtin evidenceとregistration/fact/diagnosticなしの単一satisfied結果を要求する。SourceSet ChoiceNonempty/ResultTypeはrequest intentを保持し、Core stable identity・local semantic fact・Core obligation・native pair/final admission・proof/Driver acceptanceは別段階に残す。

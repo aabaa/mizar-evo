@@ -7259,6 +7259,59 @@ impl TermFormulaChecker {
             }
             _ => return Err(invalid()),
         };
+        let choices = source
+            .arena()
+            .iter()
+            .filter(|(_, current)| current.kind() == &K::ChoiceTerm)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let witness_choice = match choices.as_slice() {
+            [] => None,
+            [choice]
+                if witness_reserved
+                    && !assumption_reserved
+                    && groups.is_empty()
+                    && enumerations.is_empty() =>
+            {
+                let mut takes = source
+                    .arena()
+                    .iter()
+                    .filter(|(_, current)| current.kind() == &K::TakeStatement);
+                let (_, take) = takes.next().ok_or_else(invalid)?;
+                let [_, witness, _] = take.children() else {
+                    return Err(invalid());
+                };
+                let [operand] = node(*witness)?.children() else {
+                    return Err(invalid());
+                };
+                let [term] = node(*operand)?.children() else {
+                    return Err(invalid());
+                };
+                let [keyword, target] = node(*choice)?.children() else {
+                    return Err(invalid());
+                };
+                let [head] = node(*target)?.children() else {
+                    return Err(invalid());
+                };
+                let [token] = node(*head)?.children() else {
+                    return Err(invalid());
+                };
+                if takes.next().is_some()
+                    || witness_count != 1
+                    || node(*witness)?.kind() != &K::Witness
+                    || node(*operand)?.kind() != &K::TermExpression
+                    || term != choice
+                    || node(*target)?.kind() != &K::TypeExpression
+                    || node(*head)?.kind() != &K::TypeHead
+                    || !matches!(node(*keyword)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "the")
+                    || !matches!(node(*token)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "set")
+                {
+                    return Err(invalid());
+                }
+                Some((*operand, *choice, *target, *head))
+            }
+            _ => return Err(invalid()),
+        };
         let mut parenthesized_witness = Vec::new();
         if !groups.is_empty() {
             if !witness_reserved || witness_count != 1 {
@@ -7336,7 +7389,8 @@ impl TermFormulaChecker {
                     .contains(&token.text.as_ref())
                         || (reserved && token.text.as_ref() == "reserve")
                         || (assumption_reserved && token.text.as_ref() == "assume")
-                        || (witness_reserved && token.text.as_ref() == "take") =>
+                        || (witness_reserved && token.text.as_ref() == "take")
+                        || (witness_choice.is_some() && token.text.as_ref() == "the") =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -7493,6 +7547,12 @@ impl TermFormulaChecker {
                 (K::SetEnumeration, ["{", "}"] | ["{", "TermExpression", "}"]) => {
                     witness_enumeration.is_some_and(|(_, enumeration, _)| id == enumeration)
                 }
+                (K::TermExpression, ["ChoiceTerm"]) => {
+                    witness_choice.is_some_and(|(operand, _, _, _)| id == operand)
+                }
+                (K::ChoiceTerm, ["the", "TypeExpression"]) => {
+                    witness_choice.is_some_and(|(_, choice, _, _)| id == choice)
+                }
                 (
                     K::FormulaExpression,
                     ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
@@ -7518,6 +7578,15 @@ impl TermFormulaChecker {
                 K::TermReference => "source.term.variable-reference".to_owned(),
                 K::ParenthesizedTerm => "source.term.parenthesized".to_owned(),
                 K::SetEnumeration => "source.term.set.enumeration".to_owned(),
+                K::ChoiceTerm => "source.term.set.choice".to_owned(),
+                K::TypeExpression
+                    if witness_choice.is_some_and(|(_, _, target, _)| id == target) =>
+                {
+                    "source.term.set.target-type".to_owned()
+                }
+                K::TypeHead if witness_choice.is_some_and(|(_, _, _, head)| id == head) => {
+                    "source.term.set.target-type-head".to_owned()
+                }
                 K::BuiltinPredicateApplication => {
                     equalities.push(id);
                     "source.formula.atomic.equality".to_owned()
@@ -7591,6 +7660,11 @@ impl TermFormulaChecker {
                         && operand == enumeration_operand
                     {
                         operands.extend(element);
+                        continue;
+                    }
+                    if witness_choice
+                        .is_some_and(|(choice_operand, _, _, _)| operand == choice_operand)
+                    {
                         continue;
                     }
                     operands.push(match parenthesized_witness.first() {
@@ -7998,12 +8072,20 @@ impl TermFormulaChecker {
                     .map_err(|error| error.to_string())?
             }
         };
-        let set = if let Some((_, enumeration, element)) = witness_enumeration {
+        let set = if let Some(set_term) = witness_enumeration
+            .map(|(_, term, _)| term)
+            .or_else(|| witness_choice.map(|(_, term, _, _)| term))
+        {
+            use crate::registration_resolution::{
+                ExistentialGateBaseEvidence, ExistentialGateBaseEvidenceCoverage,
+                ExistentialGateBaseEvidenceKind, ExistentialGateInput, ExistentialGateOutput,
+                ExistentialGateStatus, RegistrationDatabase,
+            };
             let (scopes, _) =
                 mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
             let local = scopes
                 .iter()
-                .find(|(node, _)| source.resolved_node_for(**node) == Some(enumeration))
+                .find(|(node, _)| source.resolved_node_for(**node) == Some(set_term))
                 .map(|(_, local)| local)
                 .ok_or_else(invalid)?;
             let proof = source
@@ -8022,75 +8104,177 @@ impl TermFormulaChecker {
             if contexts.next().is_some() {
                 return Err(invalid());
             }
-            terms.push(
-                TermInput::new(
-                    site(enumeration),
-                    context,
-                    range(enumeration)?,
-                    TermKind::SetEnumeration,
-                )
-                .with_result_type(TypeExpressionInput::new(
-                    site(enumeration),
-                    range(enumeration)?,
-                    "set",
-                    TypeHeadInput::BuiltinSet,
-                )),
-            );
-            let (spelling, edges) = match element {
-                Some(element) => {
-                    let term = node(element)?.children()[0];
-                    let (id, primary) = primary
-                        .terms()
-                        .iter()
-                        .find(|(_, primary)| primary.site() == &site(term))
-                        .ok_or_else(invalid)?;
-                    (
-                        format!("{{ {} }}", primary.spelling()),
-                        vec![SourceSetEdgeInput {
-                            term: SourceSetTermId::new(0),
-                            ordinal: 0,
-                            role: SourceSetEdgeRole::EnumerationElement,
-                            target: SourceSetTarget::Primary(id),
-                        }],
+            if let Some((_, choice, target, head)) = witness_choice {
+                let database = RegistrationDatabase::from_symbol_env(symbols, []);
+                let gates = ExistentialGateOutput::evaluate(
+                    &database,
+                    [ExistentialGateInput::new(
+                        site(choice),
+                        range(choice)?,
+                        "builtin.set",
+                        "builtin.set",
+                        [],
                     )
+                    .with_base_evidence(ExistentialGateBaseEvidence::new(
+                        ExistentialGateBaseEvidenceKind::BuiltinSet,
+                        "builtin.set",
+                        ExistentialGateBaseEvidenceCoverage::Builtin,
+                    ))],
+                );
+                if gates.len() != 1
+                    || !gates.diagnostics().is_empty()
+                    || gates.iter().any(|gate| {
+                        gate.status() != ExistentialGateStatus::Satisfied
+                            || gate.registration().is_some()
+                            || gate.base_evidence_kind()
+                                != Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+                            || gate.base_evidence_coverage()
+                                != Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+                            || !gate.facts().is_empty()
+                            || !gate.diagnostics().is_empty()
+                    })
+                {
+                    return Err(invalid());
                 }
-                None => ("{ }".to_owned(), Vec::new()),
-            };
-            Some(
-                SourceSetTermProducer::build(
-                    SourceSetTermHandoffInput {
-                        source_id: source.source_id(),
-                        module_id: source.module().clone(),
-                        terms: vec![SourceSetTermInput {
-                            site: site(enumeration),
-                            source_range: range(enumeration)?,
-                            source_ordinal: 0,
-                            context,
-                            recovery: SourceSetTermRecovery::Normal,
-                            spelling,
-                            kind: SourceSetTermKind::Enumeration,
-                        }],
-                        wrappers: Vec::new(),
-                        generators: Vec::new(),
-                        type_sites: Vec::new(),
-                        conditions: Vec::new(),
-                        edges,
-                        requests: vec![SourceSetRequestInput {
-                            term: SourceSetTermId::new(0),
-                            ordinal: 0,
-                            kind: SourceSetRequestKind::ResultType,
-                            generator: None,
-                            type_site: None,
-                        }],
-                    },
-                    &bindings,
-                    &primary,
-                    None,
-                    None,
-                    &arena,
+                terms.push(
+                    TermInput::new(site(choice), context, range(choice)?, TermKind::Choice)
+                        .with_result_type(TypeExpressionInput::new(
+                            site(target),
+                            range(target)?,
+                            "set",
+                            TypeHeadInput::BuiltinSet,
+                        )),
+                );
+                Some(
+                    SourceSetTermProducer::build(
+                        SourceSetTermHandoffInput {
+                            source_id: source.source_id(),
+                            module_id: source.module().clone(),
+                            terms: vec![SourceSetTermInput {
+                                site: site(choice),
+                                source_range: range(choice)?,
+                                source_ordinal: 0,
+                                context,
+                                recovery: SourceSetTermRecovery::Normal,
+                                spelling: "the set".to_owned(),
+                                kind: SourceSetTermKind::Choice,
+                            }],
+                            wrappers: Vec::new(),
+                            generators: Vec::new(),
+                            type_sites: vec![SourceSetTypeSiteInput {
+                                owner: SourceSetTypeOwner::Term {
+                                    term: SourceSetTermId::new(0),
+                                    role: SourceSetTypeRole::ChoiceTarget,
+                                },
+                                site: site(target),
+                                source_range: range(target)?,
+                                spelling: "set".to_owned(),
+                                head_site: site(head),
+                                head_range: range(head)?,
+                                head_spelling: "set".to_owned(),
+                                context,
+                                recovery: SourceSetTermRecovery::Normal,
+                                head: SourceSetTypeHead::BuiltinSet,
+                            }],
+                            conditions: Vec::new(),
+                            edges: Vec::new(),
+                            requests: vec![
+                                SourceSetRequestInput {
+                                    term: SourceSetTermId::new(0),
+                                    ordinal: 0,
+                                    kind: SourceSetRequestKind::ChoiceNonempty,
+                                    generator: None,
+                                    type_site: Some(SourceSetTypeSiteId::new(0)),
+                                },
+                                SourceSetRequestInput {
+                                    term: SourceSetTermId::new(0),
+                                    ordinal: 1,
+                                    kind: SourceSetRequestKind::ResultType,
+                                    generator: None,
+                                    type_site: None,
+                                },
+                            ],
+                        },
+                        &bindings,
+                        &primary,
+                        None,
+                        None,
+                        &arena,
+                    )
+                    .map_err(|error| error.to_string())?,
                 )
-                .map_err(|error| error.to_string())?,
-            )
+            } else {
+                let (_, enumeration, element) = witness_enumeration.ok_or_else(invalid)?;
+                terms.push(
+                    TermInput::new(
+                        site(enumeration),
+                        context,
+                        range(enumeration)?,
+                        TermKind::SetEnumeration,
+                    )
+                    .with_result_type(TypeExpressionInput::new(
+                        site(enumeration),
+                        range(enumeration)?,
+                        "set",
+                        TypeHeadInput::BuiltinSet,
+                    )),
+                );
+                let (spelling, edges) = match element {
+                    Some(element) => {
+                        let term = node(element)?.children()[0];
+                        let (id, primary) = primary
+                            .terms()
+                            .iter()
+                            .find(|(_, primary)| primary.site() == &site(term))
+                            .ok_or_else(invalid)?;
+                        (
+                            format!("{{ {} }}", primary.spelling()),
+                            vec![SourceSetEdgeInput {
+                                term: SourceSetTermId::new(0),
+                                ordinal: 0,
+                                role: SourceSetEdgeRole::EnumerationElement,
+                                target: SourceSetTarget::Primary(id),
+                            }],
+                        )
+                    }
+                    None => ("{ }".to_owned(), Vec::new()),
+                };
+                Some(
+                    SourceSetTermProducer::build(
+                        SourceSetTermHandoffInput {
+                            source_id: source.source_id(),
+                            module_id: source.module().clone(),
+                            terms: vec![SourceSetTermInput {
+                                site: site(enumeration),
+                                source_range: range(enumeration)?,
+                                source_ordinal: 0,
+                                context,
+                                recovery: SourceSetTermRecovery::Normal,
+                                spelling,
+                                kind: SourceSetTermKind::Enumeration,
+                            }],
+                            wrappers: Vec::new(),
+                            generators: Vec::new(),
+                            type_sites: Vec::new(),
+                            conditions: Vec::new(),
+                            edges,
+                            requests: vec![SourceSetRequestInput {
+                                term: SourceSetTermId::new(0),
+                                ordinal: 0,
+                                kind: SourceSetRequestKind::ResultType,
+                                generator: None,
+                                type_site: None,
+                            }],
+                        },
+                        &bindings,
+                        &primary,
+                        None,
+                        None,
+                        &arena,
+                    )
+                    .map_err(|error| error.to_string())?,
+                )
+            }
         } else {
             None
         };
@@ -18180,6 +18364,13 @@ impl SourceVariableSemanticsChecker {
             .filter(|(_, node)| node.kind() == &K::SetEnumeration)
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
+        let choices = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::ChoiceTerm)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let mut witness_choice = false;
         let mut witness_enumeration = false;
         for (_, take) in &takes {
             let (keyword, witnesses, semicolon) = match take.children() {
@@ -18222,6 +18413,46 @@ impl SourceVariableSemanticsChecker {
                 let [term] = node(operand)?.children() else {
                     return Err(invalid());
                 };
+                if node(*term)?.kind() == &K::ChoiceTerm {
+                    let [the, target] = node(*term)?.children() else {
+                        return Err(invalid());
+                    };
+                    let [head] = node(*target)?.children() else {
+                        return Err(invalid());
+                    };
+                    let [set] = node(*head)?.children() else {
+                        return Err(invalid());
+                    };
+                    if witness_choice
+                        || choices != [*term]
+                        || !enumerations.is_empty()
+                        || takes.len() != 1
+                        || take.children().len() != 3
+                        || node(witness)?.children() != [operand]
+                        || node(operand)?.kind() != &K::TermExpression
+                        || node(*target)?.kind() != &K::TypeExpression
+                        || node(*head)?.kind() != &K::TypeHead
+                        || source
+                            .arena()
+                            .iter()
+                            .any(|(_, node)| node.kind() == &K::ParenthesizedTerm)
+                        || !matches!(node(*the)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "the")
+                        || !matches!(node(*set)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "set")
+                        || range(keyword)?.end > range(witness)?.start
+                        || range(witness)?.end > range(semicolon)?.start
+                        || range(witness)? != range(operand)?
+                        || range(operand)? != range(*term)?
+                        || range(*term)?.start != range(*the)?.start
+                        || range(*the)?.end > range(*target)?.start
+                        || range(*term)?.end != range(*target)?.end
+                        || range(*target)? != range(*head)?
+                        || range(*head)? != range(*set)?
+                    {
+                        return Err(invalid());
+                    }
+                    witness_choice = true;
+                    continue;
+                }
                 if node(*term)?.kind() == &K::SetEnumeration {
                     let (open, element, close) = match node(*term)?.children() {
                         [open, close] => (*open, None, *close),
@@ -18273,7 +18504,9 @@ impl SourceVariableSemanticsChecker {
                 operand_sites.push(operand);
             }
         }
-        if enumerations.len() != usize::from(witness_enumeration) {
+        if enumerations.len() != usize::from(witness_enumeration)
+            || choices.len() != usize::from(witness_choice)
+        {
             return Err(invalid());
         }
         operand_sites.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));

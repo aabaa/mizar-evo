@@ -12,6 +12,9 @@ original equality intakeは認証済みempty witnessの実typed site/range・pro
 ## Original-source singleton-enumeration input
 original intakeは実reserved-reference primaryへ向くEnumerationElement edge一つ、そのchildから導くcanonical spelling、未関連ResultType request一つを持つEnumerationを渡す。実proof context/site/rangeと全primary fingerprintを保ち、wrapper/generator/written type site/conditionは空とする。既存transactionがこのschemaを認証し、[TypeChecker](type_checker.md#original-source-singleton-enumeration-lower-acquisition)がintrinsic result typeと後段admission境界を所有する。
 
+## Original-source builtin-set choice input
+実equality intakeは実proof site/range/contextのChoice一つ、written bare BuiltinSet ChoiceTarget expression/headの組一つ、ChoiceNonempty(type-site zero)の後にResultTypeという順のrequestを渡す。実reference四つの全primary fingerprint、canonical `the set` spelling、Normal recoveryと空wrapper/generator/condition/edge tableを保つ。既存transactionはsource intentを検証し、[TypeChecker](type_checker.md#original-source-builtin-set-choice-lower-acquisition)がtarget typingとbuiltin inhabitation gateを所有する。ここではrequest-discharge statusやsemantic choice valueを追加しない。
+
 ## スコープ
 
 Checker Task 255 は、source set enumeration、0または1件のfrozen source

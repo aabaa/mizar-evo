@@ -13,6 +13,9 @@ The original equality intake constructs the existing Enumeration row from the au
 ## Original-source singleton-enumeration input
 The original intake supplies one Enumeration with one EnumerationElement edge to the genuine reserved-reference primary, canonical spelling derived from that child, and one unassociated ResultType request. Preserve its actual proof context/site/range and complete primary fingerprint; wrappers, generators, written type sites and conditions remain empty. The unchanged transaction authenticates this schema; [TypeChecker](type_checker.md#original-source-singleton-enumeration-lower-acquisition) owns the intrinsic result type and downstream admission boundaries.
 
+## Original-source builtin-set choice input
+The genuine equality intake supplies one Choice at its actual proof site/range/context, one written bare BuiltinSet ChoiceTarget expression/head pair, and ordered ChoiceNonempty(type-site zero) then ResultType requests. Keep the complete four-reference primary fingerprint, canonical `the set` spelling, Normal recovery and empty wrapper/generator/condition/edge tables. This unchanged transaction validates source intent; [TypeChecker](type_checker.md#original-source-builtin-set-choice-lower-acquisition) owns target typing and the builtin inhabitation gate, with no request-discharge status or semantic choice value added here.
+
 ## Scope
 
 Checker Task 255 owns a syntax-free immutable description of source set
