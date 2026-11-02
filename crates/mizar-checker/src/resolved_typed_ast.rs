@@ -2245,17 +2245,17 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         {
             return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
         }
+        #[cfg(not(test))]
+        let has_task_258b4_statement = false;
+        #[cfg(test)]
         let has_task_258b4_statement =
             self.inputs
                 .typed_ast
                 .source_statement()
                 .is_some_and(|statement| {
-                    #[cfg(not(test))]
-                    let universal_statement_profile = false;
-                    #[cfg(test)]
-                    let universal_statement_profile =
-                        statement.is_task_258b4a_profile() || statement.is_task_258b4c_profile();
-                    universal_statement_profile || statement.is_task_258b4b_profile()
+                    statement.is_task_258b4a_profile()
+                        || statement.is_task_258b4b_profile()
+                        || statement.is_task_258b4c_profile()
                 });
         let original_statement = self.inputs.typed_ast.resolved_root().is_some()
             && self.inputs.typed_ast.source_statement().is_some();
@@ -2974,12 +2974,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || source_statement.is_task_258b3m2b2b2b_profile()
                 || source_statement.is_task_258b3m2b2b2c_profile();
             #[cfg(not(test))]
-            let universal_statement_profile = false;
+            let is_task_258b4 = false;
             #[cfg(test)]
-            let universal_statement_profile = source_statement.is_task_258b4a_profile()
+            let is_task_258b4 = source_statement.is_task_258b4a_profile()
+                || source_statement.is_task_258b4b_profile()
                 || source_statement.is_task_258b4c_profile();
-            let is_task_258b4 =
-                universal_statement_profile || source_statement.is_task_258b4b_profile();
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()

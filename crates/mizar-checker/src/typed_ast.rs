@@ -1735,15 +1735,24 @@ impl TypedAst {
         Ok(self)
     }
 
+    #[cfg(not(test))]
+    pub fn with_source_formula_composition_statement(
+        self,
+        composite: SourceCompositeFormulaHandoff,
+        composition: SourceFormulaCompositionHandoff,
+        statement: SourceStatementHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let _ = (composite, composition, statement);
+        Err(TypedAstError::InvalidSourceStatement)
+    }
+
+    #[cfg(test)]
     pub fn with_source_formula_composition_statement(
         mut self,
         composite: SourceCompositeFormulaHandoff,
         composition: SourceFormulaCompositionHandoff,
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
-        #[cfg(not(test))]
-        let universal_statement_profile = false;
-        #[cfg(test)]
         let universal_statement_profile = (composite.is_task_257b1_profile()
             && statement.is_task_258b4a_profile())
             || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile());

@@ -15,6 +15,8 @@ use mizar_checker::{
         SourcePredicateCandidateInput, SourcePredicateHeadId, SourcePredicateHeadInput,
         SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
+    source_composite_formula::{SourceCompositeFormulaHandoff, SourceCompositeFormulaId},
+    source_formula_composition::SourceFormulaCompositionHandoff,
     source_set_term::{
         SourceSetConditionInput, SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId,
         SourceSetGeneratorInput, SourceSetRequestInput, SourceSetRequestKind, SourceSetTarget,
@@ -34,6 +36,7 @@ use mizar_checker::{
         SourcePrimaryTermKind, SourcePrimaryTermProducer, SourcePrimaryTermRecovery,
         SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
+    typed_ast::TypedNodeId,
 };
 use mizar_checker::{
     binding_env::{
@@ -50,8 +53,6 @@ use mizar_checker::{
         SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
         SourceAtomicTermTarget,
     },
-    source_composite_formula::{SourceCompositeFormulaHandoff, SourceCompositeFormulaId},
-    source_formula_composition::SourceFormulaCompositionHandoff,
     source_statement::{
         SourceStatementCandidateFactInput, SourceStatementCandidateFactKind,
         SourceStatementCitationInput, SourceStatementCitationKind, SourceStatementCitationTarget,
@@ -66,9 +67,11 @@ use mizar_checker::{
     type_checker::CheckedStatementOwner,
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-        TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts, TypedNodeId, TypedSiteRef,
+        TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts, TypedSiteRef,
     },
 };
+#[cfg(test)]
+use mizar_resolve::env::SymbolEnvIndexes;
 use mizar_resolve::{
     declarations::{
         DeclarationShell, DeclarationShellKind, DeclarationShellSet,
@@ -77,7 +80,7 @@ use mizar_resolve::{
     env::{
         ContributionKind, DefinitionId, DefinitionIndex, DefinitionKind, DefinitionShell,
         ExportStatus, NamespacePath, SignatureShell, SourceContributionId, SourceContributionIndex,
-        SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility,
+        SymbolEnv, SymbolKind, Visibility,
     },
     labels::{
         LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
@@ -117,6 +120,7 @@ use super::{
         wrapped_imported_source_application_handoff_in_context,
         wrapped_imported_source_application_owned_node_kinds,
     },
+    source_formula_composition::source_formula_composition_output_with_source,
     source_set_term::source_set_term_output_with_source_term_in_context,
     source_structure::{
         ImportedStructureConstructorSite, ImportedStructureSelectorSite,
@@ -131,7 +135,6 @@ use super::{
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
-    source_formula_composition::source_formula_composition_output_with_source,
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_term::source_term_parts_for_context_roots,
 };
@@ -386,12 +389,15 @@ const SOURCE_STATEMENT_B4A_LABEL: &str = "FormulaQuantifierBoundUsePayloadBounda
 #[cfg(test)]
 const SOURCE_STATEMENT_B4A_SPELLING: &str =
     "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;";
+#[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B4B_TEXT: &str = concat!(
     "theorem FormulaConnectiveGroupingPayloadBoundary: for x being set holds ",
     "((0 = 0 & ... & 0 = 3) or (0 = 0 or ... or 0 = 3)) iff ",
     "((0 = 0 & 0 = 0) or (0 = 0 or 0 = 0));\n\n",
 );
+#[cfg(test)]
 const SOURCE_STATEMENT_B4B_LABEL: &str = "FormulaConnectiveGroupingPayloadBoundary";
+#[cfg(test)]
 const SOURCE_STATEMENT_B4B_SPELLING: &str = concat!(
     "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ",
     "( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ",
@@ -521,6 +527,7 @@ fn exact_task258b4a_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool
         })
 }
 
+#[cfg(test)]
 const TASK258B4B_SURFACE_KINDS: [&str; 124] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
     "Token(SurfaceToken { kind: Identifier, text: \"FormulaConnectiveGroupingPayloadBoundary\" })",
@@ -648,6 +655,7 @@ const TASK258B4B_SURFACE_KINDS: [&str; 124] = [
     "Root",
 ];
 
+#[cfg(test)]
 const TASK258B4B_SURFACE_RANGES: [(usize, usize); 124] = [
     (0, 7),
     (8, 48),
@@ -775,6 +783,7 @@ const TASK258B4B_SURFACE_RANGES: [(usize, usize); 124] = [
     (0, 165),
 ];
 
+#[cfg(test)]
 const TASK258B4B_SURFACE_CHILDREN: [&[usize]; 67] = [
     &[6],
     &[56],
@@ -845,6 +854,7 @@ const TASK258B4B_SURFACE_CHILDREN: [&[usize]; 67] = [
     &[121],
 ];
 
+#[cfg(test)]
 fn exact_task258b4b_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     source_text == SOURCE_STATEMENT_B4B_TEXT
         && source_text.len() == 167
@@ -2870,6 +2880,7 @@ impl From<SourceStatementB3M2B2B3EExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB4ARouteInputs {
     pub(in crate::runner) binding_env: BindingEnv,
@@ -2881,6 +2892,7 @@ pub(in crate::runner) struct SourceStatementB4ARouteInputs {
     pub(in crate::runner) statement: SourceStatementHandoffInput,
 }
 
+#[cfg(test)]
 pub(in crate::runner) type SourceStatementB4BRouteInputs = SourceStatementB4ARouteInputs;
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB4CRouteInputs = SourceStatementB4ARouteInputs;
@@ -3014,34 +3026,14 @@ fn source_statement_transport_output_is_valid(
                 .source_statement()
                 .is_some_and(|statement| {
                     statement.statements().len() == 1
-                        && statement.composite_formula_fingerprint().is_some()
-                        && statement.formula_composition_fingerprint().is_some()
+                        && statement.composite_formula_fingerprint().is_none()
+                        && statement.formula_composition_fingerprint().is_none()
                 })
-            && output.typed_ast.source_composite_formula().is_some()
-            && output.typed_ast.source_formula_composition().is_some()
-            && output.typed_ast.source_composite_formula()
-                == output.resolved.source_composite_formula()
-            && output.typed_ast.source_formula_composition()
-                == output.resolved.source_formula_composition()
-            && source_text == SOURCE_STATEMENT_B4B_TEXT
-            && output.left_lookup_ordinal == 0
-            && output.right_lookup_ordinal == 0
-            && output.reference_use_ordinals.is_empty())
-            || (output.typed_ast.source_statement_references().is_none()
-                && output.typed_ast.source_statement_witnesses().is_none()
-                && output
-                    .typed_ast
-                    .source_statement()
-                    .is_some_and(|statement| {
-                        statement.statements().len() == 1
-                            && statement.composite_formula_fingerprint().is_none()
-                            && statement.formula_composition_fingerprint().is_none()
-                    })
-                && output.typed_ast.source_composite_formula().is_none()
-                && output.typed_ast.source_formula_composition().is_none()
-                && output.left_lookup_ordinal == 1
-                && output.right_lookup_ordinal == 2
-                && output.reference_use_ordinals == [1, 2])
+            && output.typed_ast.source_composite_formula().is_none()
+            && output.typed_ast.source_formula_composition().is_none()
+            && output.left_lookup_ordinal == 1
+            && output.right_lookup_ordinal == 2
+            && output.reference_use_ordinals == [1, 2])
             || (output.typed_ast.source_statement_references().is_none()
                 && output.typed_ast.source_statement_witnesses().is_none()
                 && output
@@ -13515,15 +13507,6 @@ pub(in crate::runner) fn source_statement_output_with_source(
             |_| {},
         );
     }
-    if source_text == SOURCE_STATEMENT_B4B_TEXT {
-        return source_statement_b4b_output_with_source_and_mutation_impl(
-            ast,
-            module,
-            symbols,
-            source_text,
-            |_| {},
-        );
-    }
 
     None
 }
@@ -14752,6 +14735,7 @@ pub(in crate::runner) fn source_statement_b4c_output_with_raw_resolver_mutation(
     ))
 }
 
+#[cfg(test)]
 fn source_statement_b4b_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -15028,6 +15012,7 @@ fn enrich_source_statement_resolver_env(
     )
 }
 
+#[cfg(test)]
 fn enrich_source_statement_resolver_env_for_owner(
     module: &ModuleId,
     symbols: &SymbolEnv,
@@ -15721,6 +15706,7 @@ pub(in crate::runner) fn source_statement_b4b_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
 fn validate_task258b4b_raw_resolver_env(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -16002,6 +15988,7 @@ fn build_source_statement_b4c_output(
     Err(error.to_string())
 }
 
+#[cfg(test)]
 fn build_source_statement_b4b_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -16207,7 +16194,7 @@ fn build_source_statement_b4b_output(
         },
     };
     mutate(&mut inputs);
-    let statement = SourceStatementProducer::build_with_formula_composition(
+    let error = SourceStatementProducer::build_with_formula_composition(
         inputs.statement,
         symbols,
         &inputs.binding_env,
@@ -16217,72 +16204,8 @@ fn build_source_statement_b4b_output(
         &inputs.composition,
         &inputs.arena,
     )
-    .map_err(|error| error.to_string())?;
-    if !inputs.primary.references().is_empty() {
-        return Err("Task258B4B lower reference profile mismatch".to_owned());
-    }
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_formula_composition_statement(inputs.composite, inputs.composition, statement)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_composite_formula() != resolved.source_composite_formula()
-        || typed_ast.source_formula_composition() != resolved.source_formula_composition()
-        || typed_ast.source_statement_references().is_some()
-        || typed_ast.source_statement_witnesses().is_some()
-        || !typed_ast.contexts().is_empty()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258B4B immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-        left_lookup_ordinal: 0,
-        right_lookup_ordinal: 0,
-        reference_use_ordinals: Vec::new(),
-    })
+    .expect_err("retired raw Task258B4B profile");
+    Err(error.to_string())
 }
 
 #[cfg(test)]

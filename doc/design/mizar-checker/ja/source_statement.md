@@ -61,7 +61,7 @@ bare B1A・wrapped B1B1 statement/witnessのprofile・classifier・setter/final�
 休眠2A constructor・2B selector・2C update statement/witnessのprofile・classifier・組み込み/final許可はChecker内テスト専用とする。最後の本番callerが退役した共通raw witness内部処理もテスト専用とする。runner adapterは実source/Surface/resolver認証と独立したlower handoffを保持する。public raw methodのsignatureを保ち、退役profileを拒否する。native original-source構築・検証は維持し、functional-copy・constructor/selector/member/replacement/result型決定とwitness/proof semanticsは延期する。
 
 ## Private legacy composite statement preservation
-B4A explicit-universalとB4C nested-quantifier upperのprofile・classifier・組み込み/final許可はChecker内テスト専用とする。runner adapterはraw拒否の前にsource/Surface認証、実resolver入力と独立したTask-257B1/B3 lower tupleを保持し、upper owner/label guardは既存の非公開ownerに保持する。B4B共通処理とpublic composite producer/installer methodは維持する。activeなsingle-LF caseはlower-onlyのままとし、native composite statement構築は延期する。lower binding規則とproof境界は既存ownerに保持する。
+B4A explicit-universal、B4B connective-groupingとB4C nested-quantifier upperのprofile・共通raw classifier/revalidation・組み込み/final許可はChecker内テスト専用とする。runner adapterはraw拒否の前にsource/Surface認証、実resolver入力と独立したTask-257B1/B2/B3 lower tupleを保持し、upper owner/label guardは既存の非公開ownerに保持する。public composite producer/installerのsignatureは維持し、退役したraw admissionを拒否する。activeなsingle-LF caseはlower-onlyのままとし、native composite statement構築は延期する。lower binding規則とproof境界は既存ownerに保持する。
 
 ## Original-source nested statement references
 native B1はsource順theorem/compact/inner-conclusion/outer-conclusionの4statement、B5Aは後続child proof内のdescendant conclusionを加える。実source/lowerから対応context・reserved guard・未検証candidateを作る。site/range/roleと全statement token正規化spellingは実値、statement ordinalはdense preorder。binding contextは実module/outer/child scopeとparentへ対応し、module reservationのvisibilityだけを継承する。

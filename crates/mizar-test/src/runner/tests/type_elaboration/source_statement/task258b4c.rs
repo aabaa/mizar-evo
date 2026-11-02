@@ -798,14 +798,9 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         )
         .is_none()
     );
-    assert_eq!(
-        (
-            b4b.left_lookup_ordinal,
-            b4b.right_lookup_ordinal,
-            b4b.reference_use_ordinals.as_slice(),
-        ),
-        (0, 0, [].as_slice())
-    );
+    assert_eq!(b4b.primary.terms().len(), 16);
+    assert_eq!(b4b.primary.numeric_type_requests().len(), 16);
+    assert!(b4b.primary.references().is_empty());
 
     let (ast, module, symbols, baseline) = task258b4c_output(266_730);
     let pre_enriched = source_statement_b4c_resolver_env_for_test(
@@ -991,14 +986,9 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     let (b4c_ast, b4c_module, b4c_symbols, b4c) = task258b4c_output(266_800);
     let (b4a_ast, b4a_module, b4a_symbols, b4a) = task258b4a_output(266_801);
     let (b4b_ast, b4b_module, b4b_symbols, b4b) = task258b4b_output(266_802);
-    let b4b_statement = b4b
-        .typed_ast
-        .source_statement()
-        .expect("B4B statement")
-        .clone();
     let b4c_before = format!("{b4c:?}");
     let b4a_before = format!("{b4a:?}");
-    let b4b_before = b4b.typed_ast.clone();
+    let b4b_before = format!("{b4b:?}");
     let b4c_lower = source_formula_composition_output_with_source(
         &b4c_ast,
         b4c_module.clone(),
@@ -1023,14 +1013,6 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     )
     .expect("B4B lower selector")
     .expect("B4B lower route");
-    assert_eq!(
-        b4c_lower
-            .typed_ast
-            .clone()
-            .with_source_statement(b4b_statement)
-            .expect_err("B4C lower then foreign statement must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
     let (atomic_ast, atomic_module, _, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_TEXT, 266_803);
     assert_eq!(diagnostics, 0);
@@ -1053,10 +1035,7 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     // These are genuine foreign lower donors captured before retired raw admission.
     for (composite, composition) in [
         (&b4a.composite, &b4a.composition),
-        (
-            b4b.typed_ast.source_composite_formula().unwrap(),
-            b4b.typed_ast.source_formula_composition().unwrap(),
-        ),
+        (&b4b.composite, &b4b.composition),
     ] {
         let run = || {
             let mut changed = None;
@@ -1104,7 +1083,8 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     };
     assert_eq!(run_a(), run_a(), "A/C draft replay");
     let run_b = || {
-        source_statement_b4b_output_with_mutation(
+        let mut changed = None;
+        let error = source_statement_b4b_output_with_mutation(
             &b4b_ast,
             b4b_module.clone(),
             &b4b_symbols,
@@ -1113,44 +1093,23 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
                 let before = format!("{input:?}");
                 input.composite = b4c.composite.clone();
                 input.composition = b4c.composition.clone();
-                assert_ne!(format!("{input:?}"), before, "actual C lower donor delta");
+                let after = format!("{input:?}");
+                assert_ne!(after, before, "actual C lower donor delta");
+                changed = Some(after);
             },
         )
         .expect("B4B/B4C selector")
-        .expect_err("live B refuses C lower pair")
+        .expect_err("retired raw B4B");
+        assert_eq!(error, "source statement dependency mismatch");
+        changed.expect("genuine changed B4B tuple")
     };
-    assert_eq!(run_b(), "source statement dependency mismatch");
-    assert_eq!(run_b(), run_b(), "live B/C producer refusal replay");
-    for (left, right, references) in [
-        (1, 1, vec![1, 1]),
-        (2, 2, vec![2, 2, 4, 4, 4, 4]),
-    ] {
-        let run = || {
-            source_statement_transport_detail_keys_with_output_mutation_for_test(
-                &b4b_ast,
-                b4b_module.clone(),
-                &b4b_symbols,
-                SOURCE_STATEMENT_B4B_TEXT,
-                |output| {
-                    output.left_lookup_ordinal = left;
-                    output.right_lookup_ordinal = right;
-                    output.reference_use_ordinals = references.clone();
-                },
-            )
-            .expect("foreign telemetry selector")
-        };
-        assert!(
-            !run().is_empty(),
-            "B4B telemetry hybrid {left}/{right}/{references:?}"
-        );
-        assert_eq!(run(), run(), "foreign telemetry replay");
-    }
+    assert_eq!(run_b(), run_b(), "B/C draft replay");
     assert_eq!(format!("{b4c:?}"), b4c_before);
     assert_eq!(format!("{b4a:?}"), b4a_before);
-    assert_eq!(b4b.typed_ast, b4b_before);
+    assert_eq!(format!("{b4b:?}"), b4b_before);
     for composite in [
         &b4a.composite,
-        b4b.typed_ast.source_composite_formula().unwrap(),
+        &b4b.composite,
         &b4c.composite,
     ] {
         assert_eq!(
@@ -1197,16 +1156,8 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
     let (atomic_replay, atomic_final_replay) = task258_native_output(&atomic_ast, &atomic_module);
     assert_eq!(atomic_replay, atomic_typed);
     assert_eq!(atomic_final_replay, atomic_resolved);
-    let replay_b = source_statement_output_with_source(
-        &b4b_ast,
-        b4b_module,
-        &b4b_symbols,
-        SOURCE_STATEMENT_B4B_TEXT,
-    )
-    .expect("live B replay selector")
-    .expect("live B pristine replay");
-    assert_eq!(replay_b.typed_ast, b4b.typed_ast);
-    assert_eq!(replay_b.resolved, b4b.resolved);
+    let (_, _, _, replay_b) = task258b4b_output(266_802);
+    assert_eq!(format!("{replay_b:?}"), b4b_before);
 }
 
 #[test]
@@ -1321,7 +1272,6 @@ fn task258b4c_final_clone_debug_and_semantic_outputs_are_stable() {
             &b4b_symbols,
             SOURCE_STATEMENT_B4B_TEXT,
         )
-        .expect("B4B detail selector")
-        .is_empty()
+        .is_none()
     );
 }

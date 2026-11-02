@@ -12,10 +12,7 @@ use crate::{
         SourceAtomicFormulaKind, SourceAtomicFormulaRecovery, SourceAtomicRequestKind,
         SourceAtomicTermTarget,
     },
-    source_composite_formula::{
-        SourceCompositeFormulaHandoff, SourceCompositeFormulaId, SourceCompositeFormulaKind,
-        SourceCompositeFormulaRecovery, SourceFormulaRootOwnership,
-    },
+    source_composite_formula::{SourceCompositeFormulaHandoff, SourceCompositeFormulaId},
     source_formula_composition::SourceFormulaCompositionHandoff,
     source_set_term::{
         SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget, SourceSetTermHandoff,
@@ -33,6 +30,9 @@ use crate::{
 };
 #[cfg(test)]
 use crate::{
+    source_composite_formula::{
+        SourceCompositeFormulaKind, SourceCompositeFormulaRecovery, SourceFormulaRootOwnership,
+    },
     source_set_term::SourceSetGeneratorId,
     source_structure::{
         SourceFieldUpdateId, SourceStructureEdgeRole, SourceStructureMemberId,
@@ -1130,6 +1130,7 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     fn has_task_258b4_shape(&self) -> bool {
         self.owners.len() == 1
             && self.statements.len() == 1
@@ -1155,6 +1156,7 @@ impl SourceStatementHandoff {
                 })
     }
 
+    #[cfg(test)]
     pub(crate) fn is_task_258b4b_profile(&self) -> bool {
         self.has_task_258b4_shape()
             && self.binding_env.contexts().len() == 2
@@ -2241,6 +2243,31 @@ impl SourceStatementHandoff {
         )
     }
 
+    #[cfg(not(test))]
+    #[allow(clippy::too_many_arguments)] // Rationale: revalidate the complete frozen paired lower-family transaction.
+    pub(crate) fn validate_installation_with_formula_composition(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        composite_formulas: &SourceCompositeFormulaHandoff,
+        formula_composition: &SourceFormulaCompositionHandoff,
+        arena: &TypedArena,
+    ) -> Result<(), SourceStatementError> {
+        let _ = (
+            source_id,
+            module_id,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+            formula_composition,
+            arena,
+        );
+        Err(SourceStatementError::DependencyMismatch)
+    }
+
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)] // Rationale: revalidate the complete frozen paired lower-family transaction.
     pub(crate) fn validate_installation_with_formula_composition(
         &self,
@@ -4347,6 +4374,32 @@ impl SourceStatementProducer {
         })
     }
 
+    #[cfg(not(test))]
+    #[allow(clippy::too_many_arguments)] // Rationale: the composite-root transaction must reauthenticate every frozen lower-family dependency explicitly.
+    pub fn build_with_formula_composition(
+        input: SourceStatementHandoffInput,
+        symbols: &SymbolEnv,
+        bindings: &BindingEnv,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        composite_formulas: &SourceCompositeFormulaHandoff,
+        formula_composition: &SourceFormulaCompositionHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourceStatementHandoff, SourceStatementError> {
+        let _ = (
+            input,
+            symbols,
+            bindings,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+            formula_composition,
+            arena,
+        );
+        Err(SourceStatementError::DependencyMismatch)
+    }
+
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)] // Rationale: the composite-root transaction must reauthenticate every frozen lower-family dependency explicitly.
     pub fn build_with_formula_composition(
         input: SourceStatementHandoffInput,
@@ -7313,24 +7366,22 @@ fn exact_atomic_profile(
     true
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task258B4Profile {
-    #[cfg(test)]
     QuantifierBoundUse,
     ConnectiveGrouping,
-    #[cfg(test)]
     NestedQuantifier,
 }
 
+#[cfg(test)]
 fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Profile> {
-    #[cfg(test)]
     if statement.is_task_258b4a_profile() {
         return Some(Task258B4Profile::QuantifierBoundUse);
     }
     if statement.is_task_258b4b_profile() {
         Some(Task258B4Profile::ConnectiveGrouping)
     } else {
-        #[cfg(test)]
         if statement.is_task_258b4c_profile() {
             return Some(Task258B4Profile::NestedQuantifier);
         }
@@ -7338,10 +7389,10 @@ fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Pro
     }
 }
 
+#[cfg(test)]
 fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task258B4Profile> {
     let owner = input.owners.first();
     let statement = input.statements.first();
-    #[cfg(test)]
     if owner.is_some_and(|owner| {
         owner.source_range == range(input.source_id, 0, 78)
             && owner.spelling == "FormulaQuantifierBoundUsePayloadBoundary"
@@ -7361,7 +7412,6 @@ fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task2
     {
         Some(Task258B4Profile::ConnectiveGrouping)
     } else {
-        #[cfg(test)]
         if owner.is_some_and(|owner| {
             owner.source_range == range(input.source_id, 19, 137)
                 && owner.spelling == "FormulaNestedQuantifierPayloadBoundary"
@@ -7376,6 +7426,7 @@ fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task2
     }
 }
 
+#[cfg(test)]
 #[allow(clippy::too_many_arguments)] // Rationale: each B4 profile must reauthenticate the complete matched lower-family tuple.
 fn validate_task_258b4_dependencies(
     profile: Task258B4Profile,
@@ -7402,10 +7453,8 @@ fn validate_task_258b4_dependencies(
         composition_bound_uses_len,
         arena_len,
     ) = match profile {
-        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (2, 1, 4, 2, 2, 0, 1, 2, 2, 1, 2, 26),
         Task258B4Profile::ConnectiveGrouping => (2, 1, 4, 16, 0, 16, 8, 16, 16, 8, 0, 124),
-        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (4, 4, 0, 6, 6, 0, 3, 6, 6, 3, 6, 66),
     };
     if bindings.source_id() != source_id
@@ -7433,10 +7482,8 @@ fn validate_task_258b4_dependencies(
         || composite_formulas.source_id() != source_id
         || composite_formulas.module_id() != module_id
         || match profile {
-            #[cfg(test)]
             Task258B4Profile::QuantifierBoundUse => !composite_formulas.is_task_257b1_profile(),
             Task258B4Profile::ConnectiveGrouping => !composite_formulas.is_task_257b2_profile(),
-            #[cfg(test)]
             Task258B4Profile::NestedQuantifier => !composite_formulas.is_task_257b3_profile(),
         }
         || formula_composition.source_id() != source_id
@@ -7496,18 +7543,14 @@ fn validate_task_258b4_dependencies(
         type_site_id,
         type_head_site,
     ) = match profile {
-        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (20, (50, 77), 14, 4, 13, 12),
         Task258B4Profile::ConnectiveGrouping => (118, (50, 164), 58, 4, 57, 56),
-        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (60, (67, 136), 38, 9, 37, 36),
     };
     let (formula_context, formula_spelling, binder_range, identifier_range, type_range) =
         match profile {
-            #[cfg(test)]
             Task258B4Profile::QuantifierBoundUse => (0, "for holds", (54, 65), (54, 55), (62, 65)),
             Task258B4Profile::ConnectiveGrouping => (0, "for holds", (54, 65), (54, 55), (62, 65)),
-            #[cfg(test)]
             Task258B4Profile::NestedQuantifier => (0, "for st", (71, 82), (71, 72), (79, 82)),
         };
     if formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(formula_site))
@@ -7537,13 +7580,13 @@ fn validate_task_258b4_dependencies(
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_task_258b4_arena_partition(
     profile: Task258B4Profile,
     source_id: SourceId,
     arena: &TypedArena,
 ) -> bool {
     let (lower_owned, theorem_site): (&[usize], usize) = match profile {
-        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (&[4, 12, 13, 14, 15, 17, 19, 20], 22),
         Task258B4Profile::ConnectiveGrouping => (
             &[
@@ -7553,7 +7596,6 @@ fn validate_task_258b4_arena_partition(
             ],
             120,
         ),
-        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (
             &[
                 9, 17, 22, 32, 33, 36, 37, 38, 39, 41, 43, 44, 45, 46, 47, 48, 50, 52, 53, 55, 57,
@@ -7562,7 +7604,6 @@ fn validate_task_258b4_arena_partition(
             62,
         ),
     };
-    #[cfg(test)]
     const TASK258B4C_ARENA_RANGES: [(usize, usize); 66] = [
         (0, 7),
         (8, 9),
@@ -7631,13 +7672,8 @@ fn validate_task_258b4_arena_partition(
         (0, 137),
         (0, 137),
     ];
-    #[cfg(not(test))]
-    let _ = source_id;
     arena.iter().all(|(id, node)| {
         let id = id.index();
-        #[cfg(not(test))]
-        let exact_profile = true;
-        #[cfg(test)]
         let exact_profile = profile != Task258B4Profile::NestedQuantifier
             || (node.anchor
                 == SourceAnchor::Range(range(
@@ -7658,6 +7694,7 @@ fn validate_task_258b4_arena_partition(
     })
 }
 
+#[cfg(test)]
 fn validate_task_258b4_primary_atomic_sites(
     profile: Task258B4Profile,
     source_id: SourceId,
@@ -7671,7 +7708,6 @@ fn validate_task_258b4_primary_atomic_sites(
         atomic_ranges: &'static [(usize, usize)],
     }
     let sites = match profile {
-        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => SiteProfile {
             term_sites: &[15, 17],
             term_ranges: &[(72, 73), (76, 77)],
@@ -7712,7 +7748,6 @@ fn validate_task_258b4_primary_atomic_sites(
                 (157, 162),
             ],
         },
-        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => SiteProfile {
             term_sites: &[39, 41, 48, 50, 53, 55],
             term_ranges: &[
@@ -7745,6 +7780,7 @@ fn validate_task_258b4_primary_atomic_sites(
             })
 }
 
+#[cfg(test)]
 #[allow(clippy::too_many_arguments)] // Rationale: each frozen one-row profile is validated as one indivisible publication boundary.
 fn validate_task_258b4_rows(
     profile: Task258B4Profile,
@@ -7784,7 +7820,6 @@ fn validate_task_258b4_rows(
         structural_path,
         visible_binding,
     ) = match profile {
-        #[cfg(test)]
         Task258B4Profile::QuantifierBoundUse => (
             0,
             78,
@@ -7809,7 +7844,6 @@ fn validate_task_258b4_rows(
             &[2, 0][..],
             None,
         ),
-        #[cfg(test)]
         Task258B4Profile::NestedQuantifier => (
             19,
             137,
@@ -8026,6 +8060,7 @@ fn validate_resolver_owner(
     let expected_contribution_range = match owner.spelling.as_str() {
         #[cfg(test)]
         "FormulaQuantifierBoundUsePayloadBoundary" => range(input.source_id, 0, 78),
+        #[cfg(test)]
         "FormulaConnectiveGroupingPayloadBoundary" => range(input.source_id, 0, 165),
         "FormulaStatementApplicationWitnessSmoke"
         | "FormulaStatementParenthesizedApplicationWitnessSmoke"
