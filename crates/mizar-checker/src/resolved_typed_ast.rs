@@ -2274,6 +2274,24 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .nodes()
                 .iter()
                 .any(|(_, node)| node.kind.as_str() == "TakeStatement");
+        let native_set_witness_statement = native_witness_statement
+            && self.inputs.typed_ast.source_set_term().is_some()
+            && self
+                .inputs
+                .typed_ast
+                .source_statement_witnesses()
+                .is_some_and(|witnesses| {
+                    witnesses.names().is_empty()
+                        && witnesses.witnesses().len() == 1
+                        && witnesses.witnesses().iter().all(|(_, witness)| {
+                            matches!(
+                                witness.term(),
+                                crate::source_statement::SourceStatementWitnessTermTarget::SetTerm(
+                                    _
+                                )
+                            )
+                        })
+                });
         if original_statement
             && (self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
@@ -2282,7 +2300,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || self.inputs.typed_ast.source_template().is_some()
                 || self.inputs.typed_ast.source_application().is_some()
                 || self.inputs.typed_ast.source_structure().is_some()
-                || self.inputs.typed_ast.source_set_term().is_some()
+                || (self.inputs.typed_ast.source_set_term().is_some()
+                    && !native_set_witness_statement)
                 || self
                     .inputs
                     .typed_ast
@@ -2940,6 +2959,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     && !source_statement.is_task_258b3m2b2b2b_profile()
                     && !source_statement.is_task_258b3m2b2b2c_profile())
                 || (source_set_term.is_some()
+                    && !native_set_witness_statement
                     && !source_statement.is_task_258b3m2b2b3a_profile()
                     && !source_statement.is_task_258b3m2b2b3b_profile()
                     && !source_statement.is_task_258b3m2b2b3c_profile()
@@ -3042,11 +3062,12 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                             || source_statement.is_task_258b3m2a_profile()) =>
                 {
                     witnesses
-                        .validate_installation(
+                        .validate_installation_with_set_term(
                             source_id,
                             &module_id,
                             source_statement,
                             source_term,
+                            source_set_term.as_ref(),
                             self.inputs.typed_ast.nodes(),
                         )
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?

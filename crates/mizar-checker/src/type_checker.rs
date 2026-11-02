@@ -6681,11 +6681,33 @@ impl TermFormulaChecker {
                     };
                     let expression = source.arena().node(expression_id).ok_or_else(invalid)?;
                     let term_site = expression.children()[0];
-                    let (term_id, term) = primary
+                    let (target, context, spelling) = if let Some((term_id, term)) = primary
                         .terms()
                         .iter()
                         .find(|(_, term)| term.site().node().index() == term_site.index())
-                        .ok_or_else(invalid)?;
+                    {
+                        (
+                            SourceStatementWitnessTermTarget::Primary(term_id),
+                            term.context(),
+                            term.spelling(),
+                        )
+                    } else {
+                        let (term_id, term) = typed
+                            .source_set_term()
+                            .ok_or_else(invalid)?
+                            .terms()
+                            .iter()
+                            .find(|(_, term)| term.site().node().index() == term_site.index())
+                            .ok_or_else(invalid)?;
+                        if name.is_some() {
+                            return Err(invalid());
+                        }
+                        (
+                            SourceStatementWitnessTermTarget::SetTerm(term_id),
+                            term.context(),
+                            term.spelling(),
+                        )
+                    };
                     let SourceAnchor::Range(witness_range) = witness.origin().anchor() else {
                         return Err(invalid());
                     };
@@ -6710,8 +6732,8 @@ impl TermFormulaChecker {
                     };
                     rows.push(SourceStatementWitnessInput {
                         owner: SourceTheoremOwnerId::new(0),
-                        binding_context: term.context(),
-                        term: SourceStatementWitnessTermTarget::Primary(term_id),
+                        binding_context: context,
+                        term: target,
                         take_site: TypedSiteRef::Node(TypedNodeId::new(id.index())),
                         take_range: *range,
                         site: TypedSiteRef::Node(TypedNodeId::new(witness_id.index())),
@@ -6719,8 +6741,8 @@ impl TermFormulaChecker {
                         source_ordinal,
                         ordinal,
                         spelling: item_names.first().map_or_else(
-                            || term.spelling().to_owned(),
-                            |name| format!("{} = {}", name.spelling, term.spelling()),
+                            || spelling.to_owned(),
+                            |name| format!("{} = {}", name.spelling, spelling),
                         ),
                         kind: if name.is_some() {
                             SourceStatementWitnessKind::Named

@@ -552,7 +552,7 @@ impl SourceStatementHandoff {
                     primary_term_fingerprint: primary.debug_text(),
                     application_fingerprint: None,
                     structure_fingerprint: None,
-                    set_term_fingerprint: None,
+                    set_term_fingerprint: typed.source_set_term().map(|set| set.debug_text()),
                     witnesses: SourceStatementWitnessTable {
                         rows: input
                             .witnesses
@@ -592,11 +592,12 @@ impl SourceStatementHandoff {
                     return Err(invalid());
                 }
                 witnesses
-                    .validate_installation(
+                    .validate_installation_with_set_term(
                         source.source_id(),
                         source.module(),
                         &handoff,
                         primary,
+                        typed.source_set_term(),
                         typed.nodes(),
                     )
                     .map_err(|_| invalid())?;
@@ -1318,6 +1319,15 @@ impl SourceStatementHandoff {
                 && arena
                     .iter()
                     .any(|(_, node)| node.kind.as_str() == "Witness" && node.children.len() == 3);
+            let enumerations = arena
+                .iter()
+                .filter(|(_, node)| node.kind.as_str() == "source.term.set.enumeration")
+                .collect::<Vec<_>>();
+            let empty_enumeration = match enumerations.as_slice() {
+                [] => None,
+                [(id, _)] if witness && witness_count == 1 && !named_witness => Some(*id),
+                _ => return Err(invalid()),
+            };
             let groups = primary_terms
                 .terms()
                 .iter()
@@ -1325,7 +1335,14 @@ impl SourceStatementHandoff {
                 .collect::<Vec<_>>();
             let group = match groups.as_slice() {
                 [] => None,
-                [first, ..] if witness && witness_count == 1 && !named_witness => Some(*first),
+                [first, ..]
+                    if witness
+                        && witness_count == 1
+                        && !named_witness
+                        && empty_enumeration.is_none() =>
+                {
+                    Some(*first)
+                }
                 _ => return Err(invalid()),
             };
             let descendant = arena.iter().any(|(_, node)| {
@@ -1437,8 +1454,11 @@ impl SourceStatementHandoff {
                 || module_context.recovery != BindingContextRecovery::Normal
                 || module_context.bindings != [binding.id]
                 || module_context.visible_bindings != [binding.id]
-                || primary_terms.terms().len() != count * 2 + witness_count + groups.len()
-                || primary_terms.references().len() != count * 2 + witness_count
+                || primary_terms.terms().len()
+                    != count * 2 + witness_count - usize::from(empty_enumeration.is_some())
+                        + groups.len()
+                || primary_terms.references().len()
+                    != count * 2 + witness_count - usize::from(empty_enumeration.is_some())
                 || !primary_terms.numeric_type_requests().is_empty()
                 || atomic_formulas.formulas().len() != count
                 || atomic_formulas.edges().len() != count * 2
@@ -1590,10 +1610,10 @@ impl SourceStatementHandoff {
                         return Err(invalid());
                     };
                     if expression.kind.as_str() != "TermExpression"
-                        || !matches!(
+                        || !(matches!(
                             term.kind.as_str(),
                             "source.term.variable-reference" | "source.term.parenthesized"
-                        )
+                        ) || empty_enumeration == Some(*term_id))
                         || expression.anchor != term.anchor
                         || item_range.source_id != source_id
                         || expression_range.source_id != source_id
@@ -1784,8 +1804,13 @@ impl SourceStatementHandoff {
                                 "theorem {} : {} proof take {} ; thus {} ; end ;",
                                 owner.spelling,
                                 formula.spelling(),
-                                group
-                                    .map_or(binding.spelling.as_str(), |(_, term)| term.spelling()),
+                                if empty_enumeration.is_some() {
+                                    "{ }"
+                                } else {
+                                    group.map_or(binding.spelling.as_str(), |(_, term)| {
+                                        term.spelling()
+                                    })
+                                },
                                 formula.spelling()
                             ),
                             0 => format!(
@@ -2269,10 +2294,8 @@ impl SourceStatementWitnessHandoff {
                 || statements.primary_term_fingerprint() != self.primary_term_fingerprint
                 || self.application_fingerprint.is_some()
                 || self.structure_fingerprint.is_some()
-                || self.set_term_fingerprint.is_some()
                 || application.is_some()
                 || structure.is_some()
-                || set_terms.is_some()
                 || statements.owners().len() != 1
                 || statements.statements().len() != 2
             {
@@ -2281,6 +2304,49 @@ impl SourceStatementWitnessHandoff {
             primary_terms
                 .validate_installation(source_id, module_id, arena)
                 .map_err(|_| invalid())?;
+            let empty_set = match (set_terms, self.set_term_fingerprint.as_deref()) {
+                (None, None) => None,
+                (Some(set), Some(fingerprint)) => {
+                    set.validate_installation(
+                        source_id,
+                        module_id,
+                        primary_terms,
+                        None,
+                        None,
+                        arena,
+                    )
+                    .map_err(|_| invalid())?;
+                    let (id, term) = set.terms().iter().next().ok_or_else(invalid)?;
+                    let request = set.requests().iter().next().ok_or_else(invalid)?.1;
+                    if fingerprint != set.debug_text()
+                        || set.terms().len() != 1
+                        || term.kind() != SourceSetTermKind::Enumeration
+                        || term.recovery() != SourceSetTermRecovery::Normal
+                        || term.source_ordinal() != 0
+                        || term.spelling() != "{ }"
+                        || term.context() != BindingContextId::new(1)
+                        || !set.wrappers().is_empty()
+                        || !set.generators().is_empty()
+                        || !set.type_sites().is_empty()
+                        || !set.conditions().is_empty()
+                        || !set.edges().is_empty()
+                        || set.requests().len() != 1
+                        || request.term() != id
+                        || request.ordinal() != 0
+                        || request.kind() != SourceSetRequestKind::ResultType
+                        || request.generator().is_some()
+                        || request.type_site().is_some()
+                        || self.witnesses.len() != 1
+                        || !self.names.is_empty()
+                        || primary_terms.terms().len() != 4
+                        || primary_terms.references().len() != 4
+                    {
+                        return Err(invalid());
+                    }
+                    Some((id, term))
+                }
+                _ => return Err(invalid()),
+            };
             let takes = arena
                 .iter()
                 .filter(|(_, node)| node.kind.as_str() == "TakeStatement")
@@ -2337,58 +2403,132 @@ impl SourceStatementWitnessHandoff {
                 let [term_site] = expression.children.as_slice() else {
                     return Err(invalid());
                 };
-                let (term_id, term) = primary_terms
-                    .terms()
-                    .iter()
-                    .find(|(_, term)| term.site().node() == *term_site)
-                    .ok_or_else(invalid)?;
-                let (mut reference_term_id, mut reference_term) = (term_id, term);
-                while reference_term.kind() == SourcePrimaryTermKind::Parenthesized {
-                    let node = arena
-                        .node(reference_term.site().node())
-                        .ok_or_else(invalid)?;
-                    let [_, child_expression, _] = node.children.as_slice() else {
-                        return Err(invalid());
-                    };
-                    let child_expression = arena.node(*child_expression).ok_or_else(invalid)?;
-                    let mut children = primary_terms
-                        .terms()
-                        .iter()
-                        .filter(|(_, child)| child.parent() == Some(reference_term_id));
-                    let child = children.next().ok_or_else(invalid)?;
-                    if name_site.is_some()
-                        || items.len() != 1
-                        || children.next().is_some()
-                        || node.kind.as_str() != "source.term.parenthesized"
-                        || child_expression.kind.as_str() != "TermExpression"
-                        || child_expression.children != [child.1.site().node()]
-                        || !matches!(
-                            child.1.kind(),
-                            SourcePrimaryTermKind::VariableReference
-                                | SourcePrimaryTermKind::Parenthesized
+                let (target, binding_context, term_range, term_spelling, reference) =
+                    if let Some((id, term)) = empty_set {
+                        let node = arena.node(*term_site).ok_or_else(invalid)?;
+                        let [open, close] = node.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let open = arena.node(*open).ok_or_else(invalid)?;
+                        let close = arena.node(*close).ok_or_else(invalid)?;
+                        let SourceAnchor::Range(open_range) = open.anchor else {
+                            return Err(invalid());
+                        };
+                        let SourceAnchor::Range(close_range) = close.anchor else {
+                            return Err(invalid());
+                        };
+                        if name_site.is_some()
+                            || term.site().node() != *term_site
+                            || node.kind.as_str() != "source.term.set.enumeration"
+                            || node.anchor != SourceAnchor::Range(term.source_range())
+                            || node.recovery != NodeRecoveryState::Normal
+                            || open.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "{" })"#
+                            || close.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedSymbol, text: "}" })"#
+                            || open.recovery != NodeRecoveryState::Normal
+                            || close.recovery != NodeRecoveryState::Normal
+                            || !open.children.is_empty()
+                            || !close.children.is_empty()
+                            || open_range.source_id != source_id
+                            || close_range.source_id != source_id
+                            || open_range.start != term.source_range().start
+                            || open_range.end.checked_sub(open_range.start) != Some(1)
+                            || open_range.end > close_range.start
+                            || close_range.end.checked_sub(close_range.start) != Some(1)
+                            || close_range.end != term.source_range().end
+                        {
+                            return Err(invalid());
+                        }
+                        (
+                            SourceStatementWitnessTermTarget::SetTerm(id),
+                            term.context(),
+                            term.source_range(),
+                            term.spelling(),
+                            None,
                         )
-                        || child.1.context() != term.context()
-                        || child.1.role() != SourcePrimaryTermRole::Value
-                        || child.1.recovery() != SourcePrimaryTermRecovery::Normal
-                        || reference_term.spelling() != format!("( {} )", child.1.spelling())
-                        || primary_terms
+                    } else {
+                        let (term_id, term) = primary_terms
+                            .terms()
+                            .iter()
+                            .find(|(_, term)| term.site().node() == *term_site)
+                            .ok_or_else(invalid)?;
+                        let (mut reference_term_id, mut reference_term) = (term_id, term);
+                        while reference_term.kind() == SourcePrimaryTermKind::Parenthesized {
+                            let node = arena
+                                .node(reference_term.site().node())
+                                .ok_or_else(invalid)?;
+                            let [_, child_expression, _] = node.children.as_slice() else {
+                                return Err(invalid());
+                            };
+                            let child_expression =
+                                arena.node(*child_expression).ok_or_else(invalid)?;
+                            let mut children = primary_terms
+                                .terms()
+                                .iter()
+                                .filter(|(_, child)| child.parent() == Some(reference_term_id));
+                            let child = children.next().ok_or_else(invalid)?;
+                            if name_site.is_some()
+                                || items.len() != 1
+                                || children.next().is_some()
+                                || node.kind.as_str() != "source.term.parenthesized"
+                                || child_expression.kind.as_str() != "TermExpression"
+                                || child_expression.children != [child.1.site().node()]
+                                || !matches!(
+                                    child.1.kind(),
+                                    SourcePrimaryTermKind::VariableReference
+                                        | SourcePrimaryTermKind::Parenthesized
+                                )
+                                || child.1.context() != term.context()
+                                || child.1.role() != SourcePrimaryTermRole::Value
+                                || child.1.recovery() != SourcePrimaryTermRecovery::Normal
+                                || reference_term.spelling()
+                                    != format!("( {} )", child.1.spelling())
+                                || primary_terms
+                                    .references()
+                                    .iter()
+                                    .any(|(_, reference)| reference.term() == reference_term_id)
+                            {
+                                return Err(invalid());
+                            }
+                            (reference_term_id, reference_term) = child;
+                        }
+                        let (reference_id, reference) = primary_terms
                             .references()
                             .iter()
-                            .any(|(_, reference)| reference.term() == reference_term_id)
-                    {
-                        return Err(invalid());
-                    }
-                    (reference_term_id, reference_term) = child;
-                }
-                let (reference_id, reference) = primary_terms
-                    .references()
-                    .iter()
-                    .find(|(_, reference)| reference.term() == reference_term_id)
-                    .ok_or_else(invalid)?;
+                            .find(|(_, reference)| reference.term() == reference_term_id)
+                            .ok_or_else(invalid)?;
+                        let context = statements
+                            .binding_env()
+                            .contexts()
+                            .get(term.context())
+                            .ok_or_else(invalid)?;
+                        if !matches!(
+                            term.kind(),
+                            SourcePrimaryTermKind::VariableReference
+                                | SourcePrimaryTermKind::Parenthesized
+                        ) || term.role() != SourcePrimaryTermRole::Value
+                            || term.parent().is_some()
+                            || term.recovery() != SourcePrimaryTermRecovery::Normal
+                            || reference.lexical_scope() != context.lexical_scope.as_ref()
+                            || reference.use_ordinal() != reference_id.index()
+                            || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                            || !context.visible_bindings.contains(&reference.binding())
+                        {
+                            return Err(invalid());
+                        }
+                        (
+                            SourceStatementWitnessTermTarget::Primary(term_id),
+                            term.context(),
+                            term.source_range(),
+                            term.spelling(),
+                            Some((reference_id, reference_term.spelling())),
+                        )
+                    };
                 let context = statements
                     .binding_env()
                     .contexts()
-                    .get(term.context())
+                    .get(binding_context)
                     .ok_or_else(invalid)?;
                 let SourceAnchor::Range(take_range) = take.anchor else {
                     return Err(invalid());
@@ -2473,9 +2613,9 @@ impl SourceStatementWitnessHandoff {
                     Some(id) => format!(
                         "{} = {}",
                         self.names.get(id).ok_or_else(invalid)?.spelling,
-                        term.spelling()
+                        term_spelling
                     ),
-                    None => term.spelling().to_owned(),
+                    None => term_spelling.to_owned(),
                 };
                 let theorem_node = arena.node(theorem.site().node()).ok_or_else(invalid)?;
                 let formula_expression = theorem_node
@@ -2512,20 +2652,8 @@ impl SourceStatementWitnessHandoff {
                 let equality = format!("{} = {}", operands[0], operands[1]);
                 if expression.kind.as_str() != "TermExpression"
                     || expression_range.source_id != source_id
-                    || term.source_range() != expression_range
-                    || !matches!(
-                        term.kind(),
-                        SourcePrimaryTermKind::VariableReference
-                            | SourcePrimaryTermKind::Parenthesized
-                    )
-                    || term.role() != SourcePrimaryTermRole::Value
-                    || term.parent().is_some()
-                    || term.recovery() != SourcePrimaryTermRecovery::Normal
-                    || reference.lexical_scope() != context.lexical_scope.as_ref()
+                    || term_range != expression_range
                     || context.lexical_scope.is_none()
-                    || reference.use_ordinal() != reference_id.index()
-                    || reference.role() != SourcePrimaryTermReferenceRole::Variable
-                    || !context.visible_bindings.contains(&reference.binding())
                     || proof.children.len() != 4
                     || proof.children[1..3] != [*take_id, conclusion.site().node()]
                     || !is_descendant(arena, owner.site().node(), *proof_id)
@@ -2540,7 +2668,11 @@ impl SourceStatementWitnessHandoff {
                     || conclusion.source_ordinal() != 2
                     || formula_expression.kind.as_str() != "FormulaExpression"
                     || formula.kind.as_str() != "source.formula.atomic.equality"
-                    || operands != [reference_term.spelling(), reference_term.spelling()]
+                    || operands
+                        != [
+                            reference.map_or(operands[0], |(_, spelling)| spelling),
+                            reference.map_or(operands[0], |(_, spelling)| spelling),
+                        ]
                     || conclusion.spelling() != format!("thus {} ;", equality)
                     || theorem.spelling()
                         != format!(
@@ -2555,18 +2687,20 @@ impl SourceStatementWitnessHandoff {
                                 .join(" , "),
                             equality
                         )
-                    || statements
-                        .input_facts()
-                        .iter()
-                        .any(|(_, fact)| fact.uses().contains(&reference_id))
+                    || reference.is_some_and(|(reference_id, _)| {
+                        statements
+                            .input_facts()
+                            .iter()
+                            .any(|(_, fact)| fact.uses().contains(&reference_id))
+                    })
                     || take.recovery != NodeRecoveryState::Normal
                     || item.recovery != NodeRecoveryState::Normal
                     || expression.recovery != NodeRecoveryState::Normal
                     || self.witnesses.rows[ordinal]
                         != (SourceStatementWitness {
                             owner: SourceTheoremOwnerId::new(0),
-                            binding_context: term.context(),
-                            term: SourceStatementWitnessTermTarget::Primary(term_id),
+                            binding_context,
+                            term: target,
                             take_site: TypedSiteRef::Node(*take_id),
                             take_range,
                             site: TypedSiteRef::Node(*item_id),

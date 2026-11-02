@@ -3144,6 +3144,10 @@ impl TypedAst {
             || self.source_statement_references.is_some()
             || self.source_statement_witnesses.is_some()
             || self.resolved_root.is_some()
+            || self
+                .nodes
+                .iter()
+                .any(|(_, node)| node.kind.as_str() == "TheoremItem")
             || self.source_context.is_some()
             || self.source_type.is_some()
             || self.source_attribute.is_some()
