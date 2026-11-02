@@ -1355,6 +1355,65 @@ impl SourceStatementHandoff {
                 }
                 _ => return Err(invalid()),
             };
+            let choices = arena
+                .iter()
+                .filter(|(_, node)| node.kind.as_str() == "source.term.set.choice")
+                .collect::<Vec<_>>();
+            let choice = match choices.as_slice() {
+                [] => None,
+                [(id, node)]
+                    if witness && witness_count == 1 && !named_witness && enumeration.is_none() =>
+                {
+                    let [keyword, target] = node.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let keyword = arena.node(*keyword).ok_or_else(invalid)?;
+                    let target = arena.node(*target).ok_or_else(invalid)?;
+                    let [head] = target.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let head = arena.node(*head).ok_or_else(invalid)?;
+                    let [token] = head.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let token = arena.node(*token).ok_or_else(invalid)?;
+                    let SourceAnchor::Range(range) = node.anchor else {
+                        return Err(invalid());
+                    };
+                    let SourceAnchor::Range(keyword_range) = keyword.anchor else {
+                        return Err(invalid());
+                    };
+                    let SourceAnchor::Range(target_range) = target.anchor else {
+                        return Err(invalid());
+                    };
+                    if [*node, keyword, target, head, token]
+                        .iter()
+                        .any(|node| node.recovery != NodeRecoveryState::Normal)
+                        || target.kind.as_str() != "source.term.set.target-type"
+                        || head.kind.as_str() != "source.term.set.target-type-head"
+                        || keyword.kind.as_str()
+                            != r#"Token(SurfaceToken { kind: ReservedWord, text: "the" })"#
+                        || token.kind.as_str()
+                            != r#"Token(SurfaceToken { kind: ReservedWord, text: "set" })"#
+                        || !keyword.children.is_empty()
+                        || !token.children.is_empty()
+                        || range.source_id != source_id
+                        || keyword_range.source_id != source_id
+                        || target_range.source_id != source_id
+                        || keyword_range.start != range.start
+                        || keyword_range.end.checked_sub(keyword_range.start) != Some(3)
+                        || keyword_range.end > target_range.start
+                        || target_range.end.checked_sub(target_range.start) != Some(3)
+                        || target_range.end != range.end
+                        || head.anchor != target.anchor
+                        || token.anchor != target.anchor
+                    {
+                        return Err(invalid());
+                    }
+                    Some(*id)
+                }
+                _ => return Err(invalid()),
+            };
             let groups = primary_terms
                 .terms()
                 .iter()
@@ -1363,7 +1422,11 @@ impl SourceStatementHandoff {
             let group = match groups.as_slice() {
                 [] => None,
                 [first, ..]
-                    if witness && witness_count == 1 && !named_witness && enumeration.is_none() =>
+                    if witness
+                        && witness_count == 1
+                        && !named_witness
+                        && enumeration.is_none()
+                        && choice.is_none() =>
                 {
                     Some(*first)
                 }
@@ -1480,11 +1543,17 @@ impl SourceStatementHandoff {
                 || module_context.visible_bindings != [binding.id]
                 || primary_terms.terms().len()
                     != count * 2 + witness_count
-                        - usize::from(enumeration.is_some_and(|(_, element)| element.is_none()))
+                        - usize::from(
+                            enumeration.is_some_and(|(_, element)| element.is_none())
+                                || choice.is_some(),
+                        )
                         + groups.len()
                 || primary_terms.references().len()
                     != count * 2 + witness_count
-                        - usize::from(enumeration.is_some_and(|(_, element)| element.is_none()))
+                        - usize::from(
+                            enumeration.is_some_and(|(_, element)| element.is_none())
+                                || choice.is_some(),
+                        )
                 || !primary_terms.numeric_type_requests().is_empty()
                 || atomic_formulas.formulas().len() != count
                 || atomic_formulas.edges().len() != count * 2
@@ -1619,6 +1688,92 @@ impl SourceStatementHandoff {
                 {
                     return Err(invalid());
                 }
+                if choice.is_some() {
+                    for (parent, kind, parts) in [
+                        (
+                            owner_node,
+                            "TheoremItem",
+                            &[
+                                ("ReservedWord", "theorem"),
+                                ("Identifier", owner.spelling()),
+                                ("ReservedSymbol", ":"),
+                                ("", "FormulaExpression"),
+                                ("", "ProofBlock"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                        (
+                            proof,
+                            "ProofBlock",
+                            &[
+                                ("ReservedWord", "proof"),
+                                ("", "TakeStatement"),
+                                ("", "ConclusionStatement"),
+                                ("ReservedWord", "end"),
+                            ][..],
+                        ),
+                        (
+                            *take,
+                            "TakeStatement",
+                            &[
+                                ("ReservedWord", "take"),
+                                ("", "Witness"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                        (
+                            sites[1].1,
+                            "ConclusionStatement",
+                            &[
+                                ("ReservedWord", "thus"),
+                                ("", "Proposition"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                    ] {
+                        let SourceAnchor::Range(parent_range) = parent.anchor else {
+                            return Err(invalid());
+                        };
+                        if parent.kind.as_str() != kind
+                            || parent.recovery != NodeRecoveryState::Normal
+                            || parent_range.source_id != source_id
+                            || parent.children.len() != parts.len()
+                        {
+                            return Err(invalid());
+                        }
+                        let mut previous_end = parent_range.start;
+                        for (index, (child, (token_kind, text))) in
+                            parent.children.iter().zip(parts).enumerate()
+                        {
+                            let child = arena.node(*child).ok_or_else(invalid)?;
+                            let SourceAnchor::Range(range) = child.anchor else {
+                                return Err(invalid());
+                            };
+                            let expected = if token_kind.is_empty() {
+                                (*text).to_owned()
+                            } else {
+                                format!(
+                                    "Token(SurfaceToken {{ kind: {token_kind}, text: {text:?} }})"
+                                )
+                            };
+                            if child.kind.as_str() != expected
+                                || child.recovery != NodeRecoveryState::Normal
+                                || range.source_id != source_id
+                                || range.start < previous_end
+                                || range.start >= range.end
+                                || range.end > parent_range.end
+                                || (index == 0 && range.start != parent_range.start)
+                                || (index + 1 == parts.len() && range.end != parent_range.end)
+                                || (!token_kind.is_empty()
+                                    && (!child.children.is_empty()
+                                        || range.end.checked_sub(range.start) != Some(text.len())))
+                            {
+                                return Err(invalid());
+                            }
+                            previous_end = range.end;
+                        }
+                    }
+                }
                 for (_, item) in items {
                     let expression = match item.children.as_slice() {
                         [expression] | [_, _, expression] => *expression,
@@ -1639,7 +1794,8 @@ impl SourceStatementHandoff {
                         || !(matches!(
                             term.kind.as_str(),
                             "source.term.variable-reference" | "source.term.parenthesized"
-                        ) || enumeration.is_some_and(|(id, _)| id == *term_id))
+                        ) || enumeration.is_some_and(|(id, _)| id == *term_id)
+                            || choice == Some(*term_id))
                         || expression.anchor != term.anchor
                         || item_range.source_id != source_id
                         || expression_range.source_id != source_id
@@ -1835,6 +1991,8 @@ impl SourceStatementHandoff {
                                         || "{ }".to_owned(),
                                         |term| format!("{{ {} }}", term.spelling()),
                                     )
+                                } else if choice.is_some() {
+                                    "the set".to_owned()
                                 } else {
                                     group
                                         .map_or(binding.spelling.as_str(), |(_, term)| {
@@ -2335,7 +2493,7 @@ impl SourceStatementWitnessHandoff {
             primary_terms
                 .validate_installation(source_id, module_id, arena)
                 .map_err(|_| invalid())?;
-            let enumeration = match (set_terms, self.set_term_fingerprint.as_deref()) {
+            let set_term = match (set_terms, self.set_term_fingerprint.as_deref()) {
                 (None, None) => None,
                 (Some(set), Some(fingerprint)) => {
                     set.validate_installation(
@@ -2348,6 +2506,7 @@ impl SourceStatementWitnessHandoff {
                     )
                     .map_err(|_| invalid())?;
                     let (id, term) = set.terms().iter().next().ok_or_else(invalid)?;
+                    let choice = term.kind() == SourceSetTermKind::Choice;
                     let request = set.requests().iter().next().ok_or_else(invalid)?.1;
                     let element = if let Some((_, edge)) = set.edges().iter().next() {
                         let SourceSetTarget::Primary(primary_id) = edge.target() else {
@@ -2369,30 +2528,68 @@ impl SourceStatementWitnessHandoff {
                     };
                     if fingerprint != set.debug_text()
                         || set.terms().len() != 1
-                        || term.kind() != SourceSetTermKind::Enumeration
+                        || !matches!(
+                            term.kind(),
+                            SourceSetTermKind::Enumeration | SourceSetTermKind::Choice
+                        )
                         || term.recovery() != SourceSetTermRecovery::Normal
                         || term.source_ordinal() != 0
                         || term.spelling()
-                            != element.map_or_else(
-                                || "{ }".to_owned(),
-                                |(_, child)| format!("{{ {} }}", child.spelling()),
-                            )
+                            != if choice {
+                                "the set".to_owned()
+                            } else {
+                                element.map_or_else(
+                                    || "{ }".to_owned(),
+                                    |(_, child)| format!("{{ {} }}", child.spelling()),
+                                )
+                            }
                         || term.context() != BindingContextId::new(1)
                         || !set.wrappers().is_empty()
                         || !set.generators().is_empty()
-                        || !set.type_sites().is_empty()
                         || !set.conditions().is_empty()
-                        || set.requests().len() != 1
+                        || set.requests().len() != if choice { 2 } else { 1 }
                         || request.term() != id
                         || request.ordinal() != 0
-                        || request.kind() != SourceSetRequestKind::ResultType
+                        || request.kind()
+                            != if choice {
+                                SourceSetRequestKind::ChoiceNonempty
+                            } else {
+                                SourceSetRequestKind::ResultType
+                            }
                         || request.generator().is_some()
-                        || request.type_site().is_some()
+                        || request.type_site() != choice.then_some(SourceSetTypeSiteId::new(0))
                         || self.witnesses.len() != 1
                         || !self.names.is_empty()
                         || primary_terms.terms().len() != 4 + usize::from(element.is_some())
                         || primary_terms.references().len() != 4 + usize::from(element.is_some())
                     {
+                        return Err(invalid());
+                    }
+                    if choice {
+                        let (_, target) = set.type_sites().iter().next().ok_or_else(invalid)?;
+                        let (_, result) = set.requests().iter().nth(1).ok_or_else(invalid)?;
+                        if id != SourceSetTermId::new(0)
+                            || !set.edges().is_empty()
+                            || set.type_sites().len() != 1
+                            || target.owner()
+                                != (SourceSetTypeOwner::Term {
+                                    term: id,
+                                    role: SourceSetTypeRole::ChoiceTarget,
+                                })
+                            || target.head() != SourceSetTypeHead::BuiltinSet
+                            || target.context() != term.context()
+                            || target.recovery() != SourceSetTermRecovery::Normal
+                            || target.spelling() != "set"
+                            || target.head_spelling() != "set"
+                            || result.term() != id
+                            || result.ordinal() != 1
+                            || result.kind() != SourceSetRequestKind::ResultType
+                            || result.generator().is_some()
+                            || result.type_site().is_some()
+                        {
+                            return Err(invalid());
+                        }
+                    } else if !set.type_sites().is_empty() {
                         return Err(invalid());
                     }
                     Some((id, term, element))
@@ -2456,7 +2653,74 @@ impl SourceStatementWitnessHandoff {
                     return Err(invalid());
                 };
                 let (target, binding_context, term_range, term_spelling, reference) =
-                    if let Some((id, term, element)) = enumeration {
+                    if let Some((id, term, _)) =
+                        set_term.filter(|(_, term, _)| term.kind() == SourceSetTermKind::Choice)
+                    {
+                        let node = arena.node(*term_site).ok_or_else(invalid)?;
+                        let [keyword, target_id] = node.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let keyword = arena.node(*keyword).ok_or_else(invalid)?;
+                        let target = arena.node(*target_id).ok_or_else(invalid)?;
+                        let [head_id] = target.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let head = arena.node(*head_id).ok_or_else(invalid)?;
+                        let [token] = head.children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let token = arena.node(*token).ok_or_else(invalid)?;
+                        let (_, type_site) = set_terms
+                            .ok_or_else(invalid)?
+                            .type_sites()
+                            .iter()
+                            .next()
+                            .ok_or_else(invalid)?;
+                        let SourceAnchor::Range(keyword_range) = keyword.anchor else {
+                            return Err(invalid());
+                        };
+                        let range = term.source_range();
+                        let target_range = type_site.source_range();
+                        if name_site.is_some()
+                            || term.site() != &TypedSiteRef::Node(*term_site)
+                            || node.kind.as_str() != "source.term.set.choice"
+                            || node.anchor != SourceAnchor::Range(range)
+                            || [node, keyword, target, head, token]
+                                .iter()
+                                .any(|node| node.recovery != NodeRecoveryState::Normal)
+                            || target.kind.as_str() != "source.term.set.target-type"
+                            || head.kind.as_str() != "source.term.set.target-type-head"
+                            || type_site.site() != &TypedSiteRef::Node(*target_id)
+                            || type_site.head_site() != &TypedSiteRef::Node(*head_id)
+                            || target.anchor != SourceAnchor::Range(target_range)
+                            || head.anchor != SourceAnchor::Range(type_site.head_range())
+                            || head.anchor != target.anchor
+                            || token.anchor != target.anchor
+                            || keyword.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedWord, text: "the" })"#
+                            || token.kind.as_str()
+                                != r#"Token(SurfaceToken { kind: ReservedWord, text: "set" })"#
+                            || !keyword.children.is_empty()
+                            || !token.children.is_empty()
+                            || range.source_id != source_id
+                            || keyword_range.source_id != source_id
+                            || target_range.source_id != source_id
+                            || keyword_range.start != range.start
+                            || keyword_range.end.checked_sub(keyword_range.start) != Some(3)
+                            || keyword_range.end > target_range.start
+                            || target_range.end.checked_sub(target_range.start) != Some(3)
+                            || target_range.end != range.end
+                        {
+                            return Err(invalid());
+                        }
+                        (
+                            SourceStatementWitnessTermTarget::SetTerm(id),
+                            term.context(),
+                            range,
+                            term.spelling(),
+                            None,
+                        )
+                    } else if let Some((id, term, element)) = set_term {
                         let node = arena.node(*term_site).ok_or_else(invalid)?;
                         let (open, close, element_expression) =
                             match (node.children.as_slice(), element) {
@@ -2761,6 +3025,94 @@ impl SourceStatementWitnessHandoff {
                     operands.push(operand.spelling());
                 }
                 let equality = format!("{} = {}", operands[0], operands[1]);
+                if set_term.is_some_and(|(_, term, _)| term.kind() == SourceSetTermKind::Choice) {
+                    let conclusion_node =
+                        arena.node(conclusion.site().node()).ok_or_else(invalid)?;
+                    for (parent, kind, parts) in [
+                        (
+                            theorem_node,
+                            "TheoremItem",
+                            &[
+                                ("ReservedWord", "theorem"),
+                                ("Identifier", owner.spelling()),
+                                ("ReservedSymbol", ":"),
+                                ("", "FormulaExpression"),
+                                ("", "ProofBlock"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                        (
+                            *proof,
+                            "ProofBlock",
+                            &[
+                                ("ReservedWord", "proof"),
+                                ("", "TakeStatement"),
+                                ("", "ConclusionStatement"),
+                                ("ReservedWord", "end"),
+                            ][..],
+                        ),
+                        (
+                            *take,
+                            "TakeStatement",
+                            &[
+                                ("ReservedWord", "take"),
+                                ("", "Witness"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                        (
+                            conclusion_node,
+                            "ConclusionStatement",
+                            &[
+                                ("ReservedWord", "thus"),
+                                ("", "Proposition"),
+                                ("ReservedSymbol", ";"),
+                            ][..],
+                        ),
+                    ] {
+                        let SourceAnchor::Range(parent_range) = parent.anchor else {
+                            return Err(invalid());
+                        };
+                        if parent.kind.as_str() != kind
+                            || parent.recovery != NodeRecoveryState::Normal
+                            || parent_range.source_id != source_id
+                            || parent.children.len() != parts.len()
+                        {
+                            return Err(invalid());
+                        }
+                        let mut previous_end = parent_range.start;
+                        for (index, (child, (token_kind, text))) in
+                            parent.children.iter().zip(parts).enumerate()
+                        {
+                            let child = arena.node(*child).ok_or_else(invalid)?;
+                            let SourceAnchor::Range(range) = child.anchor else {
+                                return Err(invalid());
+                            };
+                            let expected = if token_kind.is_empty() {
+                                (*text).to_owned()
+                            } else {
+                                format!(
+                                    "Token(SurfaceToken {{ kind: {token_kind}, text: {text:?} }})"
+                                )
+                            };
+                            if child.kind.as_str() != expected
+                                || child.recovery != NodeRecoveryState::Normal
+                                || range.source_id != source_id
+                                || range.start < previous_end
+                                || range.start >= range.end
+                                || range.end > parent_range.end
+                                || (index == 0 && range.start != parent_range.start)
+                                || (index + 1 == parts.len() && range.end != parent_range.end)
+                                || (!token_kind.is_empty()
+                                    && (!child.children.is_empty()
+                                        || range.end.checked_sub(range.start) != Some(text.len())))
+                            {
+                                return Err(invalid());
+                            }
+                            previous_end = range.end;
+                        }
+                    }
+                }
                 if expression.kind.as_str() != "TermExpression"
                     || expression_range.source_id != source_id
                     || term_range != expression_range

@@ -33,6 +33,9 @@ native original pairはlower baseが保持する認証済みbare empty Enumerati
 ## Original-source singleton-enumeration witness
 native original pairは認証済みlowerのbare単元集合witnessも受け入れる。実element expressionとreserved-reference primaryを唯一のEnumerationElement edge、set site/range/contextとcanonical spellingへjoinし、独立clockを持つ実reference五つと全lower fingerprintを保つ。statement/equality input-fact referenceは`[0,1]`と`[3,4]`とし、witnessだけのreference `2`はfact/bindingを導入しない。既存SetTerm target、statement ordinal `0/2`、witness ordinal `1/0`、全base atomic installerとsyntax-only original final replayを保ち、全raw profile・root非依存native-node guard・上位proof境界を変えない。
 
+## Original-source bare-set choice witness
+native pairはlowerの唯一のbare unnamed `take the set;`も既存SetTerm target 0で認め、全binding/primary/atomic/set/statement fingerprintを保持する。Normal Choice一つ、term 0所有のBuiltinSet ChoiceTarget一つ、ChoiceNonempty(type-site 0)→ResultType(type siteなし)の順のrequestを要求し、edge/wrapper/generator/condition/余分な行を認めない。実Take/Witness/TermExpression/Choice/target-expression/head/`set`の祖先関係・直接child・reserved-word `the`/`set`・句読点・range・source/module/context・Normal recoveryを実type-site rowと独立に認証する。実reference四つのclock `0..3`、equality/input-fact use `[0,1]`と`[2,3]`、statement ordinal `0/2`とwitness ordinal `1/0`を保持し、Choiceはprimary/reference/name/binding/input factを追加しない。guard/candidateは未検証のまま、lowerのtarget typing/builtin gateと未解決SourceSet intentは各ownerに残し、Core choice・obligation discharge・proof creditを与えない。他choice profileとraw routeは認めない。
+
 ## Private legacy empty-enumeration preservation
 旧source/schema/debug goldenと実frontendの証拠を区別する。内部handoff-field行列では実mutation・型付きproducerまたは下流validatorの拒否・入力不変性・正規入力の再生を確認し、producer成功時だけの条件分岐をcoverageと数えない。source-byte/surface認証とdormant runnerの責務は別途レビューしたretirementまで既存ownerに残し、共有family helperとsyntax-only final境界を保つ。
 
