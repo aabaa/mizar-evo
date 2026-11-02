@@ -1454,13 +1454,7 @@ fn source_proof_local_given_descendant_type_output_impl(
             source_text,
         )
         .ok_or_else(|| "Task269SDT lower selector mismatch".to_owned())??;
-        if lower.given_type_range()
-            != (SourceRange {
-                source_id: ast.source_id,
-                start: 95,
-                end: 98,
-            })
-            || lower.given_type_head_range() != lower.given_type_range()
+        if lower.given_type_head_range() != lower.given_type_range()
             || lower.given_type_spelling() != "set"
         {
             return Err("source proof-local given-descendant source type is invalid".to_owned());
@@ -1479,7 +1473,17 @@ fn source_proof_local_given_descendant_type_output_impl(
                 _ => None,
             })
             .ok_or_else(|| "Task269SDT reserve type source is missing".to_owned())?;
-        let arena = task269sdt_arena(ast.source_id, mutation)?;
+        let root_range = ast
+            .root()
+            .and_then(|root| ast.node(root))
+            .ok_or_else(|| "Task269SDT source root is missing".to_owned())?
+            .range;
+        let arena = task269sdt_arena(
+            reserve_range,
+            lower.given_type_range(),
+            root_range,
+            mutation,
+        )?;
         let mut input = task269sdt_type_input(
             ast.source_id,
             module.clone(),
@@ -1563,7 +1567,9 @@ fn task269sdt_type_input(
 }
 
 fn task269sdt_arena(
-    source_id: mizar_session::SourceId,
+    reserve_range: SourceRange,
+    given_range: SourceRange,
+    root_range: SourceRange,
     mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
 ) -> Result<TypedArena, String> {
     let wrong_kind = mutation == SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaKind;
@@ -1571,11 +1577,7 @@ fn task269sdt_arena(
     let reserve = builder
         .push(TypedNode::new(
             "source.proof-local.given-descendant.reserve-type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 14,
-                end: 17,
-            }),
+            SourceAnchor::Range(reserve_range),
         ))
         .map_err(|error| error.to_string())?;
     let local = builder
@@ -1585,22 +1587,14 @@ fn task269sdt_arena(
             } else {
                 "source.proof-local.given-descendant.type"
             },
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 95,
-                end: 98,
-            }),
+            SourceAnchor::Range(given_range),
         ))
         .map_err(|error| error.to_string())?;
     let root = builder
         .push(
             TypedNode::new(
                 "source.proof-local.given-descendant.type-root",
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 179,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![reserve, local]),
         )
