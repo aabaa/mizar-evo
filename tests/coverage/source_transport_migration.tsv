@@ -89,3 +89,4 @@ property-field-origin-fallback	element-rules	native-consumer	done	Field origin r
 property-target-origin-fallback	element-rules	native-consumer	done	Property target origin reads the supplied validated prefix; unreachable private canonical fallback retired
 element-rules	element-rules	native-consumer	open	class b element rules: Tasks 257, 269, 270, 271, 272, 279 per tests/coverage/source_transport_classification.tsv
 ordinary-attribute-generic-transport	type-term-formula	ordinary-mode-profile-retirement	done	ordinary Attribute validates complete roles and terminal coverage over authenticated generic rows across all lower handoffs; lexical selectors and final ABI retained
+ordinary-predicate-generic-transport	type-term-formula	ordinary-attribute-generic-transport	done	ordinary Predicate validates complete roles and terminal coverage over authenticated generic rows across all lower handoffs; lexical selectors and compact ABI retained

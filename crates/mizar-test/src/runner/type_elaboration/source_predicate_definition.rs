@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use mizar_checker::{
     binding_env::{BindingContextId, BindingId},
     resolved_typed_ast::{
@@ -28,7 +30,7 @@ use mizar_checker::{
     },
     type_checker::{TypeExpressionInput, TypeNormalizer},
     typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
+        CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, SourceNode,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
         TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
     },
@@ -44,10 +46,10 @@ use mizar_resolve::{
     symbols::SignatureProjectionExtractor,
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceToken, SurfaceTokenKind};
 
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver},
     source_ast::{
         authenticated_local_declaration, direct_token_texts, leaf_token_texts,
         structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
@@ -116,38 +118,13 @@ struct ExactPredicateDefinition {
     definition_block: SurfaceNodeId,
 }
 
-enum ExactSurfaceKind {
-    Token(SurfaceTokenKind, &'static str),
-    Structural(SurfaceNodeKind),
-}
-
-struct ExactSurfaceRow {
-    kind: ExactSurfaceKind,
-    children: &'static [usize],
-    recovered: bool,
-}
-
 macro_rules! token_row {
     ($kind:ident, $text:literal) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            children: &[],
-            recovered: false,
-        }
+        (SurfaceTokenKind::$kind, $text)
     };
 }
 
-macro_rules! structural_row {
-    ($kind:ident, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind),
-            children: &[$($child),*],
-            recovered: false,
-        }
-    };
-}
-
-const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
+const EXACT_PREDICATE_TERMINALS: &[(SurfaceTokenKind, &str)] = &[
     token_row!(ReservedWord, "definition"),
     token_row!(ReservedWord, "let"),
     token_row!(Identifier, "x"),
@@ -186,46 +163,14 @@ const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
     token_row!(ReservedSymbol, ";"),
     token_row!(ReservedWord, "end"),
     token_row!(ReservedSymbol, ";"),
-    structural_row!(TypeHead, [4]),
-    structural_row!(TypeExpression, [38]),
-    structural_row!(QualifiedVariableSegment, [2, 3, 39]),
-    structural_row!(DefinitionParameter, [1, 40, 5]),
-    structural_row!(TypeHead, [9]),
-    structural_row!(TypeExpression, [42]),
-    structural_row!(QualifiedVariableSegment, [7, 8, 43]),
-    structural_row!(DefinitionParameter, [6, 44, 10]),
-    structural_row!(TermReference, [12]),
-    structural_row!(TermExpression, [46]),
-    structural_row!(TermReference, [14]),
-    structural_row!(TermExpression, [48]),
-    structural_row!(BuiltinPredicateApplication, [47, 13, 49]),
-    structural_row!(FormulaExpression, [50]),
-    structural_row!(Proposition, [51]),
-    structural_row!(AssumptionStatement, [11, 52, 15]),
-    structural_row!(PredicatePattern, [19, 20, 21]),
-    structural_row!(TermReference, [23]),
-    structural_row!(TermExpression, [55]),
-    structural_row!(TermReference, [25]),
-    structural_row!(TermExpression, [57]),
-    structural_row!(BuiltinPredicateApplication, [56, 24, 58]),
-    structural_row!(FormulaExpression, [59]),
-    structural_row!(FormulaDefiniens, [60]),
-    structural_row!(PredicateDefinition, [16, 17, 18, 54, 22, 61, 26]),
-    structural_row!(ComputationOption, [31, 32, 33]),
-    structural_row!(ComputationJustification, [29, 30, 63, 34]),
-    structural_row!(JustificationClause, [28, 64]),
-    structural_row!(PropertyClause, [27, 65, 35]),
-    structural_row!(DefinitionBlockItem, [0, 41, 45, 53, 62, 66, 36, 37]),
-    structural_row!(ItemList, [67]),
-    structural_row!(CompilationUnit, [68]),
-    structural_row!(
-        Root,
-        [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 69,
-        ]
-    ),
 ];
+
+fn source_row(syntax: &TypedAst, index: usize) -> Result<&SourceNode, String> {
+    syntax
+        .source_node_entries()
+        .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+        .ok_or_else(|| mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement.to_string())
+}
 
 pub(in crate::runner) fn source_predicate_definition_transport_detail_keys(
     ast: &SurfaceAst,
@@ -506,7 +451,7 @@ fn source_predicate_definition_output_impl(
     source_text: &str,
     mutation: SourcePredicateDefinitionRouteMutation,
 ) -> Option<Result<SourcePredicateDefinitionRouteOutput, String>> {
-    let exact = exact_predicate_definition(ast)?;
+    let exact = exact_predicate_definition(ast, &module)?;
     Some(build_output(
         ast,
         module,
@@ -518,62 +463,236 @@ fn source_predicate_definition_output_impl(
     ))
 }
 
-fn exact_predicate_definition(ast: &SurfaceAst) -> Option<ExactPredicateDefinition> {
-    if ast.root().map(SurfaceNodeId::index) != Some(70)
-        || ast.expression_root().is_some()
-        || !surface_profile_is_exact(ast)
+fn exact_predicate_definition(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Option<(ExactPredicateDefinition, TypedAst)> {
+    use SurfaceNodeKind as K;
+    if ast.root().map(SurfaceNodeId::index) != Some(70) || ast.expression_root().is_some() {
+        return None;
+    }
+    ast.canonical_bytes()?;
+    let syntax = source_syntax_receiver(ast, module).ok()?;
+    let row_count = syntax.source_node_entries()?.len();
+    let mut seen = BTreeSet::new();
+    let observe = |id: TypedNodeId, expected: SurfaceNodeKind, seen: &mut BTreeSet<usize>| {
+        let row = source_row(&syntax, id.index()).ok()?;
+        let node = syntax.nodes().node(id)?;
+        if row.kind() != &expected
+            || row.range().source_id != syntax.source_id()
+            || row.range().start >= row.range().end
+            || row.recovery() != NodeRecoveryState::Normal
+            || !seen.insert(id.index())
+        {
+            return None;
+        }
+        let children = &node.children;
+        if children.is_empty() != matches!(&expected, K::Token(_)) {
+            return None;
+        }
+        if !children.is_empty() {
+            let first = source_row(&syntax, children.first()?.index()).ok()?;
+            let last = source_row(&syntax, children.last()?.index()).ok()?;
+            if row.range().start != first.range().start || row.range().end != last.range().end {
+                return None;
+            }
+        }
+        let mut previous_end = row.range().start;
+        for (ordinal, child_id) in children.iter().enumerate() {
+            let child = source_row(&syntax, child_id.index()).ok()?;
+            let root_alias = expected == K::Root && matches!(child.kind(), K::Token(_));
+            if child.range().source_id != row.range().source_id
+                || child.range().start < row.range().start
+                || child.range().end > row.range().end
+                || (!root_alias
+                    && (child.parent() != Some(row.site()) || child.child_ordinal() != ordinal))
+                || (expected != K::Root && previous_end > child.range().start)
+            {
+                return None;
+            }
+            previous_end = child.range().end;
+        }
+        Some(children)
+    };
+    let one = |id, kind, seen: &mut BTreeSet<usize>| {
+        let [child] = observe(id, kind, seen)?.as_slice() else {
+            return None;
+        };
+        Some(*child)
+    };
+    // The fixed lower schema uses the Frontend's token-first, structural postorder IDs.
+    let mut structural = EXACT_PREDICATE_TERMINALS.len();
+    let finish = |ids: &[TypedNodeId], next: &mut usize| {
+        for id in ids {
+            if id.index() != *next {
+                return None;
+            }
+            *next += 1;
+        }
+        Some(())
+    };
+    let mut next = 0;
+    let terms = |ids: &[TypedNodeId], next: &mut usize, seen: &mut BTreeSet<usize>| {
+        for id in ids {
+            if id.index() != *next {
+                return None;
+            }
+            let (kind, text) = EXACT_PREDICATE_TERMINALS.get(*next)?;
+            observe(*id, K::Token(SurfaceToken::new(*kind, *text)), seen)?;
+            *next += 1;
+        }
+        Some(())
+    };
+    let root_children = observe(syntax.nodes().root()?, K::Root, &mut seen)?;
+    let (unit, aliases) = root_children.split_last()?;
+    if !aliases
+        .iter()
+        .map(|id| id.index())
+        .eq(ast.token_nodes().iter().map(|id| id.index()))
     {
         return None;
     }
-    Some(ExactPredicateDefinition {
-        definition_block: ast.node_views().nth(67)?.id(),
-    })
-}
-
-fn surface_profile_is_exact(ast: &SurfaceAst) -> bool {
-    ast.canonical_bytes().is_some()
-        && ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
-        && ast
-            .nodes()
-            .iter()
-            .zip(EXACT_SURFACE_PROFILE)
-            .all(|(actual, expected)| {
-                actual.range.start < actual.range.end
-                    && actual.recovered == expected.recovered
-                    && (matches!(actual.kind, SurfaceNodeKind::Token(_))
-                        || actual
-                            .children
-                            .first()
-                            .zip(actual.children.last())
-                            .is_some_and(|(first, last)| {
-                                ast.node(*first).zip(ast.node(*last)).is_some_and(
-                                    |(first, last)| {
-                                        actual.range.start == first.range.start
-                                            && actual.range.end == last.range.end
-                                    },
-                                )
-                            }))
-                    && (matches!(actual.kind, SurfaceNodeKind::Root)
-                        || actual.children.windows(2).all(|pair| {
-                            ast.node(pair[0])
-                                .zip(ast.node(pair[1]))
-                                .is_some_and(|(left, right)| left.range.end <= right.range.start)
-                        }))
-                    && actual.children.len() == expected.children.len()
-                    && actual.children.iter().zip(expected.children).all(
-                        |(actual_child, expected_child)| actual_child.index() == *expected_child,
-                    )
-                    && match (&actual.kind, &expected.kind) {
-                        (
-                            SurfaceNodeKind::Token(actual),
-                            ExactSurfaceKind::Token(expected_kind, expected_text),
-                        ) => {
-                            actual.kind == *expected_kind && actual.text.as_ref() == *expected_text
-                        }
-                        (actual, ExactSurfaceKind::Structural(expected)) => actual == expected,
-                        _ => false,
-                    }
-            })
+    let list = one(*unit, K::CompilationUnit, &mut seen)?;
+    let block = one(list, K::ItemList, &mut seen)?;
+    let [open, p0, p1, guard, predicate, property, end, block_semi] =
+        observe(block, K::DefinitionBlockItem, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(&[*open], &mut next, &mut seen)?;
+    for parameter in [*p0, *p1] {
+        let [let_kw, segment, semi] =
+            observe(parameter, K::DefinitionParameter, &mut seen)?.as_slice()
+        else {
+            return None;
+        };
+        terms(&[*let_kw], &mut next, &mut seen)?;
+        let [name, be, expression] =
+            observe(*segment, K::QualifiedVariableSegment, &mut seen)?.as_slice()
+        else {
+            return None;
+        };
+        terms(&[*name, *be], &mut next, &mut seen)?;
+        let head = one(*expression, K::TypeExpression, &mut seen)?;
+        let set = one(head, K::TypeHead, &mut seen)?;
+        terms(&[set, *semi], &mut next, &mut seen)?;
+        finish(&[head, *expression, *segment, parameter], &mut structural)?;
+    }
+    let [assume, proposition, guard_semi] =
+        observe(*guard, K::AssumptionStatement, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(&[*assume], &mut next, &mut seen)?;
+    let formula = one(*proposition, K::Proposition, &mut seen)?;
+    let equality = one(formula, K::FormulaExpression, &mut seen)?;
+    let [left, equals, right] =
+        observe(equality, K::BuiltinPredicateApplication, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    for (ordinal, expression) in [*left, *right].into_iter().enumerate() {
+        if ordinal == 1 {
+            terms(&[*equals], &mut next, &mut seen)?;
+        }
+        let reference = one(expression, K::TermExpression, &mut seen)?;
+        let token = one(reference, K::TermReference, &mut seen)?;
+        terms(&[token], &mut next, &mut seen)?;
+        finish(&[reference, expression], &mut structural)?;
+    }
+    terms(&[*guard_semi], &mut next, &mut seen)?;
+    finish(&[equality, formula, *proposition, *guard], &mut structural)?;
+    let [kw, label, colon, pattern, means, definiens, semi] =
+        observe(*predicate, K::PredicateDefinition, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(&[*kw, *label, *colon], &mut next, &mut seen)?;
+    let [x, relation, y] = observe(*pattern, K::PredicatePattern, &mut seen)?.as_slice() else {
+        return None;
+    };
+    terms(&[*x, *relation, *y, *means], &mut next, &mut seen)?;
+    finish(&[*pattern], &mut structural)?;
+    let formula = one(*definiens, K::FormulaDefiniens, &mut seen)?;
+    let equality = one(formula, K::FormulaExpression, &mut seen)?;
+    let [left, equals, right] =
+        observe(equality, K::BuiltinPredicateApplication, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    for (ordinal, expression) in [*left, *right].into_iter().enumerate() {
+        if ordinal == 1 {
+            terms(&[*equals], &mut next, &mut seen)?;
+        }
+        let reference = one(expression, K::TermExpression, &mut seen)?;
+        let token = one(reference, K::TermReference, &mut seen)?;
+        terms(&[token], &mut next, &mut seen)?;
+        finish(&[reference, expression], &mut structural)?;
+    }
+    terms(&[*semi], &mut next, &mut seen)?;
+    finish(
+        &[equality, formula, *definiens, *predicate],
+        &mut structural,
+    )?;
+    let [symmetry, justification, semi] =
+        observe(*property, K::PropertyClause, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    let [by, computation] = observe(*justification, K::JustificationClause, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    let [keyword, left_paren, option, right_paren] =
+        observe(*computation, K::ComputationJustification, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    let [steps, colon, numeral] = observe(*option, K::ComputationOption, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(
+        &[
+            *symmetry,
+            *by,
+            *keyword,
+            *left_paren,
+            *steps,
+            *colon,
+            *numeral,
+            *right_paren,
+            *semi,
+            *end,
+            *block_semi,
+        ],
+        &mut next,
+        &mut seen,
+    )?;
+    finish(
+        &[
+            *option,
+            *computation,
+            *justification,
+            *property,
+            block,
+            list,
+            *unit,
+            syntax.nodes().root()?,
+        ],
+        &mut structural,
+    )?;
+    if next != EXACT_PREDICATE_TERMINALS.len()
+        || seen.len() != row_count
+        || seen.len() != syntax.nodes().len()
+    {
+        return None;
+    }
+    let definition_block = ast
+        .node_views()
+        .find(|view| view.id().index() == block.index())?
+        .id();
+    Some((ExactPredicateDefinition { definition_block }, syntax))
 }
 
 fn build_output(
@@ -582,9 +701,10 @@ fn build_output(
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
     source_text: &str,
-    exact: ExactPredicateDefinition,
+    exact: (ExactPredicateDefinition, TypedAst),
     mutation: SourcePredicateDefinitionRouteMutation,
 ) -> Result<SourcePredicateDefinitionRouteOutput, String> {
+    let (exact, syntax) = exact;
     let corrupted_symbols = match mutation {
         SourcePredicateDefinitionRouteMutation::WrongResolverEntry => {
             Some(resolver_env_with_corrupted_entry(symbols, false))
@@ -654,7 +774,7 @@ fn build_output(
     if source_matches().is_none() {
         return Err("Task259 source association is invalid".to_owned());
     }
-    let arena = task259_arena(ast)?;
+    let arena = task259_arena(&syntax)?;
     let mut context_sites = SourceTwoParameterDefinitionContextSites {
         module: TypedSiteRef::Node(MODULE_OWNER),
         definition: TypedSiteRef::Node(DEFINITION_OWNER),
@@ -684,7 +804,7 @@ fn build_output(
     .map_err(|error| format!("Task248 source context: {error}"))?;
     let source_context = context_projection.into_handoff();
 
-    let mut type_input = task249_input(ast, module.clone());
+    let mut type_input = task249_input(&syntax, module.clone())?;
     if mutation == SourcePredicateDefinitionRouteMutation::RemoveTypeExpression {
         type_input.expressions.pop();
     }
@@ -710,7 +830,7 @@ fn build_output(
     })
     .map_err(|error| format!("Task249 typed installation: {error}"))?;
 
-    let mut term_input = task252_input(ast, module.clone());
+    let mut term_input = task252_input(&syntax, module.clone())?;
     if mutation == SourcePredicateDefinitionRouteMutation::WrongTermBinding {
         term_input.references[3].binding = BindingId::new(0);
     }
@@ -727,7 +847,7 @@ fn build_output(
         .with_source_term(source_term)
         .map_err(|error| format!("Task252 typed installation: {error}"))?;
 
-    let mut atomic_input = task256_input(ast, module.clone());
+    let mut atomic_input = task256_input(&syntax, module.clone())?;
     if mutation == SourcePredicateDefinitionRouteMutation::RemoveAtomicFormula {
         atomic_input.formulas.pop();
     }
@@ -751,7 +871,8 @@ fn build_output(
         .with_source_atomic_formula(source_atomic_formula)
         .map_err(|error| format!("Task256 typed installation: {error}"))?;
 
-    let mut predicate_input = task259_input(ast, module.clone(), symbol, definition, contribution);
+    let mut predicate_input =
+        task259_input(&syntax, module.clone(), symbol, definition, contribution)?;
     if mutation == SourcePredicateDefinitionRouteMutation::RemovePredicateGuard {
         predicate_input.guards.clear();
     }
@@ -1023,55 +1144,55 @@ fn validate_origin(
     Ok(())
 }
 
-fn task259_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
+fn task259_arena(syntax: &TypedAst) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
     push_node(
         &mut builder,
         "source.type.head",
-        ast.nodes()[38].range,
+        source_row(syntax, 38)?.range(),
         LocalTypeContextId::new(1),
         Vec::new(),
     )?;
     push_node(
         &mut builder,
         "source.type.expression",
-        ast.nodes()[39].range,
+        source_row(syntax, 39)?.range(),
         LocalTypeContextId::new(1),
         vec![TYPE_HEAD_X],
     )?;
     push_node(
         &mut builder,
         "source.definition.predicate.parameter",
-        ast.nodes()[2].range,
+        source_row(syntax, 2)?.range(),
         LocalTypeContextId::new(1),
         vec![TYPE_EXPRESSION_X],
     )?;
     push_node(
         &mut builder,
         "source.type.head",
-        ast.nodes()[42].range,
+        source_row(syntax, 42)?.range(),
         LocalTypeContextId::new(1),
         Vec::new(),
     )?;
     push_node(
         &mut builder,
         "source.type.expression",
-        ast.nodes()[43].range,
+        source_row(syntax, 43)?.range(),
         LocalTypeContextId::new(1),
         vec![TYPE_HEAD_Y],
     )?;
     push_node(
         &mut builder,
         "source.definition.predicate.parameter",
-        ast.nodes()[7].range,
+        source_row(syntax, 7)?.range(),
         LocalTypeContextId::new(1),
         vec![TYPE_EXPRESSION_Y],
     )?;
     for (id, range) in [
-        (GUARD_LEFT, ast.nodes()[46].range),
-        (GUARD_RIGHT, ast.nodes()[48].range),
-        (DEFINIENS_LEFT, ast.nodes()[55].range),
-        (DEFINIENS_RIGHT, ast.nodes()[57].range),
+        (GUARD_LEFT, source_row(syntax, 46)?.range()),
+        (GUARD_RIGHT, source_row(syntax, 48)?.range()),
+        (DEFINIENS_LEFT, source_row(syntax, 55)?.range()),
+        (DEFINIENS_RIGHT, source_row(syntax, 57)?.range()),
     ] {
         let actual = push_node(
             &mut builder,
@@ -1087,7 +1208,7 @@ fn task259_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
             push_node(
                 &mut builder,
                 "source.formula.atomic.equality",
-                ast.nodes()[50].range,
+                source_row(syntax, 50)?.range(),
                 LocalTypeContextId::new(1),
                 vec![GUARD_LEFT, GUARD_RIGHT],
             )?;
@@ -1096,7 +1217,7 @@ fn task259_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
             push_node(
                 &mut builder,
                 "source.formula.atomic.equality",
-                ast.nodes()[59].range,
+                source_row(syntax, 59)?.range(),
                 LocalTypeContextId::new(1),
                 vec![DEFINIENS_LEFT, DEFINIENS_RIGHT],
             )?;
@@ -1105,28 +1226,28 @@ fn task259_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     push_node(
         &mut builder,
         "source.definition.predicate.guard",
-        ast.nodes()[53].range,
+        source_row(syntax, 53)?.range(),
         LocalTypeContextId::new(1),
         vec![GUARD_FORMULA],
     )?;
     push_node(
         &mut builder,
         "source.definition.predicate",
-        ast.nodes()[62].range,
+        source_row(syntax, 62)?.range(),
         LocalTypeContextId::new(1),
         vec![DEFINIENS_FORMULA],
     )?;
     push_node(
         &mut builder,
         "source.definition.predicate.property",
-        ast.nodes()[66].range,
+        source_row(syntax, 66)?.range(),
         LocalTypeContextId::new(1),
         Vec::new(),
     )?;
     push_node(
         &mut builder,
         "source.definition",
-        ast.nodes()[67].range,
+        source_row(syntax, 67)?.range(),
         LocalTypeContextId::new(1),
         vec![
             PARAMETER_X,
@@ -1139,7 +1260,7 @@ fn task259_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     push_node(
         &mut builder,
         "source.module",
-        ast.nodes()[70].range,
+        source_row(syntax, 70)?.range(),
         LocalTypeContextId::new(0),
         vec![DEFINITION_OWNER],
     )?;
@@ -1169,9 +1290,9 @@ fn push_node(
         .map_err(|error| error.to_string())
 }
 
-fn task249_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeHandoffInput {
-    let source_id = ast.source_id;
-    SourceTypeHandoffInput {
+fn task249_input(syntax: &TypedAst, module_id: ModuleId) -> Result<SourceTypeHandoffInput, String> {
+    let source_id = syntax.source_id();
+    Ok(SourceTypeHandoffInput {
         source_id,
         module_id: module_id.clone(),
         applications: vec![
@@ -1192,18 +1313,18 @@ fn task249_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeHandoffInpu
                 module_id.clone(),
                 TYPE_EXPRESSION_X,
                 TYPE_HEAD_X,
-                ast.nodes()[39].range,
+                source_row(syntax, 39)?.range(),
             ),
             bare_set_type(
                 source_id,
                 module_id,
                 TYPE_EXPRESSION_Y,
                 TYPE_HEAD_Y,
-                ast.nodes()[43].range,
+                source_row(syntax, 43)?.range(),
             ),
         ],
         arguments: Vec::new(),
-    }
+    })
 }
 
 fn bare_set_type(
@@ -1228,25 +1349,38 @@ fn bare_set_type(
     }
 }
 
-fn task252_input(ast: &SurfaceAst, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
-    let source_id = ast.source_id;
+fn task252_input(
+    syntax: &TypedAst,
+    module_id: ModuleId,
+) -> Result<SourcePrimaryTermHandoffInput, String> {
+    let source_id = syntax.source_id();
     let specs = [
-        (GUARD_LEFT, ast.nodes()[46].range, "x", BindingId::new(0)),
-        (GUARD_RIGHT, ast.nodes()[48].range, "x", BindingId::new(0)),
+        (
+            GUARD_LEFT,
+            source_row(syntax, 46)?.range(),
+            "x",
+            BindingId::new(0),
+        ),
+        (
+            GUARD_RIGHT,
+            source_row(syntax, 48)?.range(),
+            "x",
+            BindingId::new(0),
+        ),
         (
             DEFINIENS_LEFT,
-            ast.nodes()[55].range,
+            source_row(syntax, 55)?.range(),
             "x",
             BindingId::new(0),
         ),
         (
             DEFINIENS_RIGHT,
-            ast.nodes()[57].range,
+            source_row(syntax, 57)?.range(),
             "y",
             BindingId::new(1),
         ),
     ];
-    SourcePrimaryTermHandoffInput {
+    Ok(SourcePrimaryTermHandoffInput {
         source_id,
         module_id,
         terms: specs
@@ -1278,15 +1412,18 @@ fn task252_input(ast: &SurfaceAst, module_id: ModuleId) -> SourcePrimaryTermHand
             )
             .collect(),
         numeric_type_requests: Vec::new(),
-    }
+    })
 }
 
-fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHandoffInput {
-    let source_id = ast.source_id;
+fn task256_input(
+    syntax: &TypedAst,
+    module_id: ModuleId,
+) -> Result<SourceAtomicFormulaHandoffInput, String> {
+    let source_id = syntax.source_id();
     let formulas = vec![
         SourceAtomicFormulaInput {
             site: TypedSiteRef::Node(GUARD_FORMULA),
-            source_range: ast.nodes()[50].range,
+            source_range: source_row(syntax, 50)?.range(),
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
@@ -1295,7 +1432,7 @@ fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHa
         },
         SourceAtomicFormulaInput {
             site: TypedSiteRef::Node(DEFINIENS_FORMULA),
-            source_range: ast.nodes()[59].range,
+            source_range: source_row(syntax, 59)?.range(),
             source_ordinal: 1,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
@@ -1329,7 +1466,7 @@ fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHa
             attribute: None,
         })
         .collect();
-    SourceAtomicFormulaHandoffInput {
+    Ok(SourceAtomicFormulaHandoffInput {
         source_id,
         module_id,
         formulas,
@@ -1341,18 +1478,18 @@ fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHa
         attributes: Vec::new(),
         edges,
         requests,
-    }
+    })
 }
 
 fn task259_input(
-    ast: &SurfaceAst,
+    syntax: &TypedAst,
     module_id: ModuleId,
     symbol: SymbolId,
     definition: DefinitionId,
     contribution: SourceContributionId,
-) -> SourcePredicateDefinitionHandoffInput {
-    let source_id = ast.source_id;
-    SourcePredicateDefinitionHandoffInput {
+) -> Result<SourcePredicateDefinitionHandoffInput, String> {
+    let source_id = syntax.source_id();
+    Ok(SourcePredicateDefinitionHandoffInput {
         source_id,
         module_id,
         definitions: vec![SourcePredicateDefinitionInput {
@@ -1360,7 +1497,7 @@ fn task259_input(
             definition,
             contribution,
             site: TypedSiteRef::Node(PREDICATE_OWNER),
-            source_range: ast.nodes()[62].range,
+            source_range: source_row(syntax, 62)?.range(),
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourcePredicateDefinitionRecovery::Normal,
@@ -1374,8 +1511,8 @@ fn task259_input(
                 binding: BindingId::new(0),
                 written_type: SourceTypeApplicationId::new(0),
                 site: TypedSiteRef::Node(PARAMETER_X),
-                source_range: ast.nodes()[41].range,
-                declaration_range: ast.nodes()[2].range,
+                source_range: source_row(syntax, 41)?.range(),
+                declaration_range: source_row(syntax, 2)?.range(),
                 context: BindingContextId::new(1),
                 recovery: SourcePredicateDefinitionRecovery::Normal,
                 spelling: "let x be set;".to_owned(),
@@ -1386,8 +1523,8 @@ fn task259_input(
                 binding: BindingId::new(1),
                 written_type: SourceTypeApplicationId::new(1),
                 site: TypedSiteRef::Node(PARAMETER_Y),
-                source_range: ast.nodes()[45].range,
-                declaration_range: ast.nodes()[7].range,
+                source_range: source_row(syntax, 45)?.range(),
+                declaration_range: source_row(syntax, 7)?.range(),
                 context: BindingContextId::new(1),
                 recovery: SourcePredicateDefinitionRecovery::Normal,
                 spelling: "let y be set;".to_owned(),
@@ -1398,7 +1535,7 @@ fn task259_input(
             ordinal: 0,
             formula: SourceAtomicFormulaId::new(0),
             site: TypedSiteRef::Node(GUARD_OWNER),
-            source_range: ast.nodes()[53].range,
+            source_range: source_row(syntax, 53)?.range(),
             context: BindingContextId::new(1),
             recovery: SourcePredicateDefinitionRecovery::Normal,
             spelling: "assume x = x;".to_owned(),
@@ -1408,8 +1545,8 @@ fn task259_input(
             ordinal: 0,
             kind: SourcePredicatePropertyKind::Symmetry,
             site: TypedSiteRef::Node(PROPERTY_OWNER),
-            source_range: ast.nodes()[66].range,
-            justification: SourceAnchor::Range(ast.nodes()[65].range),
+            source_range: source_row(syntax, 66)?.range(),
+            justification: SourceAnchor::Range(source_row(syntax, 65)?.range()),
             recovery: SourcePredicateDefinitionRecovery::Normal,
             spelling: "symmetry by computation(steps: 1);".to_owned(),
         }],
@@ -1417,9 +1554,9 @@ fn task259_input(
             owner: SourcePredicateDefinitionId::new(0),
             property: SourcePredicatePropertyId::new(0),
             ordinal: 0,
-            source_anchor: SourceAnchor::Range(ast.nodes()[66].range),
+            source_anchor: SourceAnchor::Range(source_row(syntax, 66)?.range()),
         }],
-    }
+    })
 }
 
 fn route_output_is_exact(output: &SourcePredicateDefinitionRouteOutput) -> bool {

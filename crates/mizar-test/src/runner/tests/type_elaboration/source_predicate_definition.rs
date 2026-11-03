@@ -298,18 +298,35 @@ enum Task259SurfaceMutation {
     StructuralChildren,
     TokenRecovery,
     ExpressionRoot,
+    NestedRole,
+    QualifiedHull,
+    LocalArity,
+    StorageOrder,
+    TokenStorageOrder,
 }
 
 fn task259_mutated_surface_ast(ast: &SurfaceAst, mutation: Task259SurfaceMutation) -> SurfaceAst {
     let mut builder = SurfaceAstBuilder::new(ast.source_id);
     let mut rebuilt = Vec::<SurfaceBuilderNodeId>::with_capacity(ast.nodes().len());
-    for (index, node) in ast.nodes().iter().enumerate() {
-        let kind = if index == 39 && matches!(mutation, Task259SurfaceMutation::StructuralKind) {
+    let remap = |index| if matches!(mutation, Task259SurfaceMutation::StorageOrder) {
+        match index { 46 => 48, 47 => 49, 48 => 46, 49 => 47, _ => index }
+    } else if matches!(mutation, Task259SurfaceMutation::TokenStorageOrder) {
+        match index { 2 => 12, 12 => 2, _ => index }
+    } else { index };
+    for index in 0..ast.nodes().len() {
+        let node = &ast.nodes()[remap(index)];
+        let kind = if index == 46 && matches!(mutation, Task259SurfaceMutation::NestedRole) {
+            SurfaceNodeKind::TypeHead
+        } else if index == 39 && matches!(mutation, Task259SurfaceMutation::StructuralKind) {
             SurfaceNodeKind::AttributeChain
         } else {
             node.kind.clone()
         };
-        let range = if index == 39 && matches!(mutation, Task259SurfaceMutation::StructuralRange) {
+        let range = if index == 40 && matches!(mutation, Task259SurfaceMutation::QualifiedHull) {
+            SourceRange { start: ast.nodes()[1].range.end, ..node.range }
+        } else if index == 63 && matches!(mutation, Task259SurfaceMutation::LocalArity) {
+            SourceRange { end: ast.nodes()[32].range.end, ..node.range }
+        } else if index == 39 && matches!(mutation, Task259SurfaceMutation::StructuralRange) {
             SourceRange {
                 source_id: ast.source_id,
                 start: 22,
@@ -318,15 +335,19 @@ fn task259_mutated_surface_ast(ast: &SurfaceAst, mutation: Task259SurfaceMutatio
         } else {
             node.range
         };
-        let children =
+        let mut children =
             if index == 39 && matches!(mutation, Task259SurfaceMutation::StructuralChildren) {
                 Vec::new()
             } else {
                 node.children
                     .iter()
-                    .map(|child| rebuilt[child.index()])
-                    .collect()
+                    .map(|child| rebuilt[if index == 70 { child.index() } else { remap(child.index()) }])
+                    .collect::<Vec<_>>()
             };
+        if matches!(mutation, Task259SurfaceMutation::LocalArity) {
+            if index == 63 { children.pop(); }
+            if index == 64 { children.insert(3, rebuilt[33]); }
+        }
         let rebuilt_id = match kind {
             SurfaceNodeKind::Token(token) => {
                 if index == 4 && matches!(mutation, Task259SurfaceMutation::TokenRecovery) {
@@ -382,14 +403,70 @@ fn task259_source_ast_resolver_and_lower_mutations_fail_at_the_owner() {
         );
     }
 
+    let (_, _, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_PREDICATE_DEFINITION_TEXT, 259_011);
     for mutation in [
         Task259SurfaceMutation::StructuralKind,
         Task259SurfaceMutation::StructuralRange,
         Task259SurfaceMutation::StructuralChildren,
         Task259SurfaceMutation::TokenRecovery,
         Task259SurfaceMutation::ExpressionRoot,
+        Task259SurfaceMutation::NestedRole,
+        Task259SurfaceMutation::QualifiedHull,
+        Task259SurfaceMutation::LocalArity,
+        Task259SurfaceMutation::StorageOrder,
+        Task259SurfaceMutation::TokenStorageOrder,
     ] {
         let malformed_ast = task259_mutated_surface_ast(&ast, mutation);
+        if matches!(mutation, Task259SurfaceMutation::NestedRole | Task259SurfaceMutation::QualifiedHull | Task259SurfaceMutation::LocalArity | Task259SurfaceMutation::StorageOrder | Task259SurfaceMutation::TokenStorageOrder) {
+            assert!(malformed_ast.canonical_bytes().is_some());
+            assert!(malformed_ast.node_views().all(|node| !node.is_recovered()));
+            assert_eq!((malformed_ast.nodes().len(), malformed_ast.token_nodes().len()), (71, 38));
+            assert!(malformed_ast.token_views().zip(ast.token_views()).all(|(left, right)| left.as_token() == right.as_token()));
+            let lowered = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&malformed_ast, &module).expect("normal generic ownership");
+            assert_eq!(lowered.arena().iter().count(), malformed_ast.nodes().len());
+            assert_eq!(malformed_ast.nodes()[70].children, ast.nodes()[70].children);
+            if matches!(mutation, Task259SurfaceMutation::TokenStorageOrder) {
+                assert_eq!(malformed_ast.nodes()[2].range, ast.nodes()[12].range);
+                assert_eq!(malformed_ast.nodes()[12].range, ast.nodes()[2].range);
+            }
+            if matches!(mutation, Task259SurfaceMutation::StorageOrder) {
+                assert_eq!(malformed_ast.nodes()[46].range, ast.nodes()[48].range);
+                assert_eq!(malformed_ast.nodes()[48].range, ast.nodes()[46].range);
+                assert_eq!(malformed_ast.nodes()[50].children.iter().map(|id| id.index()).collect::<Vec<_>>(), [49, 13, 47]);
+            }
+            if matches!(mutation, Task259SurfaceMutation::LocalArity) {
+                assert_eq!(malformed_ast.nodes()[63].children.iter().map(|id| id.index()).collect::<Vec<_>>(), [31, 32]);
+                assert_eq!(malformed_ast.nodes()[64].children.iter().map(|id| id.index()).collect::<Vec<_>>(), [29, 30, 63, 33, 34]);
+            }
+            let mut owners = vec![0; malformed_ast.nodes().len()];
+            for (index, node) in malformed_ast.nodes().iter().enumerate().take(70).skip(38) {
+                assert_eq!(node.kind == ast.nodes()[index].kind, !matches!((index, mutation), (46, Task259SurfaceMutation::NestedRole)));
+                let first = malformed_ast.node(*node.children.first().unwrap()).unwrap().range;
+                if matches!((index, mutation), (40, Task259SurfaceMutation::QualifiedHull)) {
+                    assert_eq!(node.range.start, ast.nodes()[1].range.end);
+                    assert!(node.range.start < first.start);
+                } else {
+                    assert_eq!(node.range.start, first.start);
+                }
+                assert_eq!(node.range.end, malformed_ast.node(*node.children.last().unwrap()).unwrap().range.end);
+                let mut end = node.range.start;
+                for child in &node.children {
+                    let range = malformed_ast.node(*child).unwrap().range;
+                    assert_eq!(range.source_id, node.range.source_id);
+                    assert!(end <= range.start && range.start < range.end && range.end <= node.range.end);
+                    end = range.end;
+                    owners[child.index()] += 1;
+                }
+            }
+            assert!(owners[..69].iter().all(|count| *count == 1));
+        }
+        for (supplied_shells, supplied_symbols) in [(&shells, &symbols), (&foreign_shells, &foreign_symbols)] {
+            assert!(source_predicate_definition_output_with_mutation(
+                &malformed_ast, module.clone(), supplied_shells, supplied_symbols,
+                SOURCE_PREDICATE_DEFINITION_TEXT, SourcePredicateDefinitionRouteMutation::RemoveResolverShell,
+            ).is_none(), "malformed Surface before Resolver {mutation:?}");
+        }
         assert!(
             source_predicate_definition_output(
                 &malformed_ast,
@@ -1159,9 +1236,37 @@ fn metamorphic_predicate_layout_transports_actual_source_handoffs() {
                     Some(token.as_token().unwrap().text.as_ref())
                 );
             }
+            assert_eq!(output.typed_ast.nodes().root(), Some(TypedNodeId::new(16)));
+            assert!(output.typed_ast.resolved_root().is_none());
+            assert!(output.typed_ast.source_node_entries().is_none());
             for ((id, node), member) in output.typed_ast.nodes().iter().zip([
                 38, 39, 2, 42, 43, 7, 46, 48, 50, 55, 57, 59, 53, 62, 66, 67, 70,
             ]) {
+                let (kind, children): (&str, &[usize]) = match id.index() {
+                    0 | 3 => ("source.type.head", &[]),
+                    1 => ("source.type.expression", &[0]),
+                    2 => ("source.definition.predicate.parameter", &[1]),
+                    4 => ("source.type.expression", &[3]),
+                    5 => ("source.definition.predicate.parameter", &[4]),
+                    6 | 7 | 9 | 10 => ("source.term.variable-reference", &[]),
+                    8 => ("source.formula.atomic.equality", &[6, 7]),
+                    11 => ("source.formula.atomic.equality", &[9, 10]),
+                    12 => ("source.definition.predicate.guard", &[8]),
+                    13 => ("source.definition.predicate", &[11]),
+                    14 => ("source.definition.predicate.property", &[]),
+                    15 => ("source.definition", &[2, 5, 12, 13, 14]),
+                    16 => ("source.module", &[15]),
+                    _ => unreachable!(),
+                };
+                assert_eq!(node.kind.as_str(), kind);
+                assert_eq!(node.children.iter().map(|child| child.index()).collect::<Vec<_>>(), children);
+                assert_eq!(node.typing, mizar_checker::typed_ast::TypingState::Unknown);
+                assert_eq!(node.recovery, mizar_checker::typed_ast::NodeRecoveryState::Normal);
+                assert_eq!(node.links, mizar_checker::typed_ast::TypedNodeLinks {
+                    context: Some(mizar_checker::typed_ast::LocalTypeContextId::new(usize::from(id.index() != 16))),
+                    ..Default::default()
+                });
+                assert!(node.resolved_node.is_none());
                 assert_eq!(
                     node.anchor,
                     mizar_session::SourceAnchor::Range(expected(member)),
@@ -1622,7 +1727,8 @@ fn metamorphic_predicate_layout_distinguishes_source_authentication_and_unsuppor
         "Task259 source association is invalid"
     );
 
-    for corruption in 0..2 {
+    let (_, _, foreign_shells, foreign_symbols) = task253_ast_from_source_text(&source, 259_012);
+    for corruption in 0..3 {
         let mut changed = source.clone();
         if corruption == 1 {
             changed.remove(16);
@@ -1653,12 +1759,30 @@ fn metamorphic_predicate_layout_distinguishes_source_authentication_and_unsuppor
                 kind => builder.add_node(kind.clone(), range, children),
             });
         }
+        if corruption == 2 {
+            builder.add_node(SurfaceNodeKind::FormulaExpression, ast.nodes()[50].range, vec![rebuilt[50]]);
+        }
         let malformed = builder.finish(Some(rebuilt[70]), None);
-        assert_eq!(malformed.nodes().len(), 71);
+        assert_eq!(malformed.nodes().len(), 71 + usize::from(corruption == 2));
         assert!(malformed.canonical_bytes().is_some());
         assert!(malformed.node_views().all(|node| !node.is_recovered()));
+        if corruption == 2 {
+            let lowered = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&malformed, &module).expect("disconnected storage lowers");
+            assert_eq!(lowered.arena().iter().count(), malformed.nodes().len());
+            assert_eq!(malformed.token_nodes(), ast.token_nodes());
+            assert_eq!(malformed.nodes()[70].children, ast.nodes()[70].children);
+            assert!(malformed.nodes().iter().all(|node| node.children.iter().all(|child| child.index() != 71)));
+        }
         let fresh = resolver_symbol_collection(root, case, &malformed);
         assert!(fresh.detail_keys.is_empty());
+        if corruption == 2 {
+            for (shells, symbols) in [(&fresh.shells, &fresh.env), (&foreign_shells, &foreign_symbols)] {
+                assert!(source_predicate_definition_output_with_mutation(
+                    &malformed, module.clone(), shells, symbols, &changed,
+                    SourcePredicateDefinitionRouteMutation::RemoveResolverShell,
+                ).is_none());
+            }
+        }
         let output = source_predicate_definition_output_with_mutation(
             &malformed,
             module.clone(),
@@ -1667,8 +1791,8 @@ fn metamorphic_predicate_layout_distinguishes_source_authentication_and_unsuppor
             &changed,
             SourcePredicateDefinitionRouteMutation::RemoveTypeExpression,
         );
-        if corruption == 0 {
-            assert!(output.is_none(), "unsupported Numeral kind {corruption}");
+        if corruption != 1 {
+            assert!(output.is_none(), "unsupported Surface storage/kind {corruption}");
         } else {
             assert_eq!(changed.get(13..17), Some("letx"));
             for token in malformed.token_views() {
