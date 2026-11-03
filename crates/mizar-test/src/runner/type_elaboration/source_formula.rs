@@ -1682,20 +1682,12 @@ pub(in crate::runner) struct SourceFormulaConnectiveGrouping {
 pub(in crate::runner) struct SourceFormulaNestedQuantifierPayload {
     pub(in crate::runner) reserve: SourceReserveExtraction,
     pub(in crate::runner) formula_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) formula_ranges: Vec<SourceRange>,
     pub(in crate::runner) binder_segment_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) binder_segment_ranges: Vec<SourceRange>,
     pub(in crate::runner) binder_identifier_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) binder_identifier_ranges: Vec<SourceRange>,
     pub(in crate::runner) binder_type_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) binder_type_ranges: Vec<SourceRange>,
     pub(in crate::runner) binder_type_head_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) binder_type_head_ranges: Vec<SourceRange>,
     pub(in crate::runner) equality_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) equality_ranges: Vec<SourceRange>,
     pub(in crate::runner) term_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) term_ranges: Vec<SourceRange>,
-    pub(in crate::runner) term_spellings: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -2945,8 +2937,6 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
     let equality_ids = [*outer_restriction_id, *inner_restriction_id, *body_id];
     let expected_terms = [("x", "x"), ("r", middle_name), ("x", "r")];
     let mut term_sites = Vec::with_capacity(6);
-    let mut term_ranges = Vec::with_capacity(6);
-    let mut term_spellings = Vec::with_capacity(6);
     for (equality_id, (left_expected, right_expected)) in
         equality_ids.into_iter().zip(expected_terms)
     {
@@ -2973,8 +2963,6 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
             return None;
         }
         term_sites.extend([surface_site(left_id), surface_site(right_id)]);
-        term_ranges.extend([left_range, right_range]);
-        term_spellings.extend([left_spelling, right_spelling]);
     }
 
     Some(SourceFormulaNestedQuantifierPayload {
@@ -2984,55 +2972,28 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
             surface_site(*existential_id),
             surface_site(*inner_id),
         ],
-        formula_ranges: vec![outer.range, existential.range, inner.range],
         binder_segment_sites: vec![
             surface_site(*x_segment_id),
             surface_site(*y_segment_id),
             surface_site(*r_segment_id),
-        ],
-        binder_segment_ranges: vec![
-            ast.node(*x_segment_id)?.range,
-            ast.node(*y_segment_id)?.range,
-            r_segment.range,
         ],
         binder_identifier_sites: vec![
             surface_site(x_identifier_id),
             surface_site(y_identifier_id),
             surface_site(r_identifier_id),
         ],
-        binder_identifier_ranges: vec![
-            ast.node(x_identifier_id)?.range,
-            ast.node(y_identifier_id)?.range,
-            ast.node(r_identifier_id)?.range,
-        ],
         binder_type_sites: vec![
             surface_site(x_type_id),
             surface_site(y_type_id),
             surface_site(*reserve_type_id),
-        ],
-        binder_type_ranges: vec![
-            ast.node(x_type_id)?.range,
-            ast.node(y_type_id)?.range,
-            reserve_type.range,
         ],
         binder_type_head_sites: vec![
             surface_site(x_type_head_id),
             surface_site(y_type_head_id),
             surface_site(*reserve_type_head_id),
         ],
-        binder_type_head_ranges: vec![
-            ast.node(x_type_head_id)?.range,
-            ast.node(y_type_head_id)?.range,
-            reserve_type_head.range,
-        ],
         equality_sites: equality_ids.into_iter().map(surface_site).collect(),
-        equality_ranges: equality_ids
-            .into_iter()
-            .map(|id| ast.node(id).map(|node| node.range))
-            .collect::<Option<Vec<_>>>()?,
         term_sites,
-        term_ranges,
-        term_spellings,
     })
 }
 

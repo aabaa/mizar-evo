@@ -2400,70 +2400,9 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
     let (ast, module, symbols) = task252_real_ast(TASK257B3_CASE);
     let payload = extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols)
         .expect("Task 257B3 selector payload");
-    assert_eq!(
-        payload
-            .formula_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(67, 136), (92, 136), (110, 136)]
-    );
-    assert_eq!(
-        payload
-            .binder_segment_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(71, 82), (95, 106), (114, 115)]
-    );
-    assert_eq!(
-        payload
-            .binder_identifier_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(71, 72), (95, 96), (114, 115)]
-    );
-    assert_eq!(
-        payload
-            .binder_type_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(79, 82), (103, 106), (14, 17)]
-    );
-    assert_eq!(
-        payload
-            .binder_type_head_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(79, 82), (103, 106), (14, 17)]
-    );
-    assert_eq!(
-        payload
-            .equality_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [(86, 91), (119, 124), (131, 136)]
-    );
-    assert_eq!(
-        payload
-            .term_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [
-            (86, 87),
-            (90, 91),
-            (119, 120),
-            (123, 124),
-            (131, 132),
-            (135, 136),
-        ]
-    );
-    assert_eq!(payload.term_spellings, ["x", "x", "r", "y", "x", "r"]);
+    let node = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        ast.nodes().get(site.node().index()).unwrap()
+    };
     assert_eq!(payload.reserve.bindings().len(), 1);
     assert_eq!(payload.reserve.bindings()[0].spelling, "r");
     assert_eq!(payload.reserve.module_context().index(), 0);
@@ -2534,6 +2473,38 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
         ),
         (4, 4, 0, 3, 6)
     );
+    let ranges = composite.formulas().iter().map(|(_, row)| (row.site(), row.source_range()))
+        .chain(composite.binders().iter().map(|(_, row)| (row.segment_site(), row.segment_range())))
+        .chain(composite.binders().iter().map(|(_, row)| (row.identifier_site(), row.identifier_range())))
+        .chain(composite.type_sites().iter().map(|(_, row)| (row.site(), row.source_range())))
+        .chain(composite.type_sites().iter().map(|(_, row)| (row.head_site(), row.head_range())))
+        .chain(atomic.formulas().iter().map(|(_, row)| (row.site(), row.source_range())))
+        .chain(primary.terms().iter().map(|(_, row)| (row.site(), row.source_range())));
+    let sites = payload.formula_sites.iter().chain(&payload.binder_segment_sites)
+        .chain(&payload.binder_identifier_sites).chain(&payload.binder_type_sites)
+        .chain(&payload.binder_type_head_sites).chain(&payload.equality_sites)
+        .chain(&payload.term_sites);
+    assert_eq!(
+        ranges.collect::<Vec<_>>(),
+        sites.map(|site| (site, node(site).range)).collect::<Vec<_>>()
+    );
+    for ((_, term), site) in primary.terms().iter().zip(&payload.term_sites) {
+        assert_eq!(term.site(), site);
+        let frontend_node = node(site);
+        assert_eq!(term.spelling(), ast.node(frontend_node.children[0]).unwrap().token_text().unwrap());
+    }
+    for ((_, binder), site) in composite.binders().iter().zip(&payload.binder_identifier_sites) {
+        let frontend_node = node(site);
+        assert_eq!(binder.identifier_spelling(), frontend_node.token_text().unwrap());
+        assert_eq!(binder.local().declaration_range(), frontend_node.range);
+    }
+    assert_eq!(first.typed_ast.nodes().len(), ast.nodes().len());
+    for (id, node) in first.typed_ast.nodes().iter() {
+        assert_eq!(
+            node.anchor,
+            mizar_session::SourceAnchor::Range(ast.nodes().get(id.index()).unwrap().range)
+        );
+    }
     assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
     assert_eq!(
         composition.atomic_formula_fingerprint(),
@@ -2544,6 +2515,7 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
         composite.debug_text()
     );
     assert!(first.typed_ast.source_context().is_none());
+    assert!(first.typed_ast.source_node_entries().is_none());
     assert_eq!(
         first.typed_ast.source_formula_composition(),
         first.resolved.source_formula_composition()
@@ -2594,7 +2566,8 @@ fn metamorphic_nested_middle_name_generator_targets_two_actual_y_occurrences() {
     assert!(edits[0].end <= edits[1].start);
     for (edit, range) in edits
         .iter()
-        .zip([payload.binder_identifier_ranges[1], payload.term_ranges[3]])
+        .zip([&payload.binder_identifier_sites[1], &payload.term_sites[3]]
+            .map(|site| ast.nodes().get(site.node().index()).unwrap().range))
     {
         assert_eq!(
             (edit.start, edit.end),
@@ -2667,6 +2640,9 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
         &baseline_resolver.env,
     )
     .unwrap();
+    let old_node = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        baseline_ast.nodes().get(site.node().index()).unwrap()
+    };
     let baseline = source_formula_composition_output_with_source(
         baseline_ast,
         baseline_resolver.module.clone(),
@@ -2710,8 +2686,8 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
         ("inner_shadow", "r"),
     ] {
         let edits = [
-            previous.binder_identifier_ranges[1],
-            previous.term_ranges[3],
+            old_node(&previous.binder_identifier_sites[1]).range,
+            old_node(&previous.term_sites[3]).range,
         ]
         .map(|range| metamorphic_edits::Edit {
             start: range.start,
@@ -2766,6 +2742,9 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                 &resolver.env,
             )
             .expect("actual selected B3 payload");
+            let node = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+                ast.nodes().get(site.node().index()).unwrap()
+            };
             let old_tokens = baseline_ast.token_views().collect::<Vec<_>>();
             let tokens = ast.token_views().collect::<Vec<_>>();
             assert_eq!(tokens.len(), old_tokens.len());
@@ -2773,8 +2752,8 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                 let old_token = old.as_token().unwrap();
                 let actual_token = actual.as_token().unwrap();
                 let spelling = if [
-                    previous.binder_identifier_ranges[1],
-                    previous.term_ranges[3],
+                    old_node(&previous.binder_identifier_sites[1]).range,
+                    old_node(&previous.term_sites[3]).range,
                 ]
                 .contains(&old.range())
                 {
@@ -2809,39 +2788,17 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     .range()
                     .end,
             };
-            let ranges = payload
-                .formula_ranges
-                .iter()
-                .chain(&payload.binder_segment_ranges)
-                .chain(&payload.binder_identifier_ranges)
-                .chain(&payload.binder_type_ranges)
-                .chain(&payload.binder_type_head_ranges)
-                .chain(&payload.equality_ranges)
-                .chain(&payload.term_ranges)
-                .collect::<Vec<_>>();
-            let old_ranges = previous
-                .formula_ranges
-                .iter()
-                .chain(&previous.binder_segment_ranges)
-                .chain(&previous.binder_identifier_ranges)
-                .chain(&previous.binder_type_ranges)
-                .chain(&previous.binder_type_head_ranges)
-                .chain(&previous.equality_ranges)
-                .chain(&previous.term_ranges);
-            for (actual, old) in ranges.iter().zip(old_ranges) {
-                assert_eq!(**actual, shifted(*old), "{layout}");
-            }
-            let sites = payload
-                .formula_sites
-                .iter()
-                .chain(&payload.binder_segment_sites)
-                .chain(&payload.binder_identifier_sites)
-                .chain(&payload.binder_type_sites)
-                .chain(&payload.binder_type_head_sites)
-                .chain(&payload.equality_sites)
+            let sites = payload.formula_sites.iter().chain(&payload.binder_segment_sites)
+                .chain(&payload.binder_identifier_sites).chain(&payload.binder_type_sites)
+                .chain(&payload.binder_type_head_sites).chain(&payload.equality_sites)
                 .chain(&payload.term_sites);
-            for (site, range) in sites.zip(ranges) {
-                assert_eq!(ast.nodes()[site.node().index()].range, *range);
+            let old_sites = previous.formula_sites.iter().chain(&previous.binder_segment_sites)
+                .chain(&previous.binder_identifier_sites).chain(&previous.binder_type_sites)
+                .chain(&previous.binder_type_head_sites).chain(&previous.equality_sites)
+                .chain(&previous.term_sites);
+            for (site, old) in sites.zip(old_sites) {
+                assert_eq!(node(site).range,
+                    shifted(old_node(old).range), "{layout}");
             }
             let reserve = &payload.reserve.bindings()[0];
             assert_eq!(
@@ -2860,7 +2817,8 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                 source.get(reserve.type_range.start..reserve.type_range.end),
                 Some("set")
             );
-            assert_eq!(payload.binder_type_ranges[2], reserve.type_range);
+            assert_eq!(node(&payload.binder_type_sites[2]).range, reserve.type_range);
+            assert_eq!(node(&payload.binder_type_head_sites[2]).range, reserve.type_range);
             let primary = output.typed_ast.source_term().unwrap();
             let atomic = output.typed_ast.source_atomic_formula().unwrap();
             let composite = output.typed_ast.source_composite_formula().unwrap();
@@ -2889,7 +2847,7 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                 let declaration = if index == 0 {
                     reserve.binding_range
                 } else {
-                    payload.binder_identifier_ranges[index - 1]
+                    node(&payload.binder_identifier_sites[index - 1]).range
                 };
                 assert_eq!(binding.declaration_range, declaration);
                 assert_eq!(binding.spelling, ["r", "x", middle.as_str(), "r"][index]);
@@ -2900,7 +2858,7 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     BindingTypeSite::Source(if index == 0 {
                         reserve.type_range
                     } else {
-                        payload.binder_type_ranges[index - 1]
+                        node(&payload.binder_type_sites[index - 1]).range
                     })
                 );
                 assert!(binding.captured.identities().is_empty());
@@ -2928,7 +2886,7 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     assert_eq!(
                         context.owner,
                         BindingContextOwner::SourceFormula {
-                            source_range: payload.formula_ranges[index - 1]
+                            source_range: node(&payload.formula_sites[index - 1]).range
                         }
                     );
                     assert_eq!(
@@ -2944,7 +2902,13 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     term.spelling(),
                     ["x", "x", "r", middle.as_str(), "x", "r"][index]
                 );
-                assert_eq!(term.source_range(), payload.term_ranges[index]);
+                let frontend_node = node(&payload.term_sites[index]);
+                assert_eq!(term.site(), &payload.term_sites[index]);
+                assert_eq!(
+                    term.spelling(),
+                    ast.node(frontend_node.children[0]).unwrap().token_text().unwrap()
+                );
+                assert_eq!(term.source_range(), node(&payload.term_sites[index]).range);
                 assert_eq!(
                     source.get(term.source_range().start..term.source_range().end),
                     Some(term.spelling())
@@ -2968,22 +2932,29 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     BindingLookupResult::Local(BindingId::new([1, 1, 3, 2, 1, 3][index]))
                 );
             }
+            let ranges = composite.formulas().iter().map(|(_, row)| (row.site(), row.source_range()))
+                .chain(composite.binders().iter().map(|(_, row)| (row.segment_site(), row.segment_range())))
+                .chain(composite.binders().iter().map(|(_, row)| (row.identifier_site(), row.identifier_range())))
+                .chain(composite.type_sites().iter().map(|(_, row)| (row.site(), row.source_range())))
+                .chain(composite.type_sites().iter().map(|(_, row)| (row.head_site(), row.head_range())))
+                .chain(atomic.formulas().iter().map(|(_, row)| (row.site(), row.source_range())))
+                .chain(primary.terms().iter().map(|(_, row)| (row.site(), row.source_range())));
+            let sites = payload.formula_sites.iter().chain(&payload.binder_segment_sites)
+                .chain(&payload.binder_identifier_sites).chain(&payload.binder_type_sites)
+                .chain(&payload.binder_type_head_sites).chain(&payload.equality_sites)
+                .chain(&payload.term_sites);
             assert_eq!(
-                atomic
-                    .formulas()
-                    .iter()
-                    .map(|(_, formula)| formula.source_range())
-                    .collect::<Vec<_>>(),
-                payload.equality_ranges
+                ranges.collect::<Vec<_>>(),
+                sites.map(|site| (site, node(site).range)).collect::<Vec<_>>()
             );
-            assert_eq!(
-                composite
-                    .formulas()
-                    .iter()
-                    .map(|(_, formula)| formula.source_range())
-                    .collect::<Vec<_>>(),
-                payload.formula_ranges
-            );
+            assert!(output.typed_ast.source_node_entries().is_none());
+            assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
+            for (id, node) in output.typed_ast.nodes().iter() {
+                assert_eq!(
+                    node.anchor,
+                    mizar_session::SourceAnchor::Range(ast.nodes().get(id.index()).unwrap().range)
+                );
+            }
             assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
             assert_eq!(
                 composition.atomic_formula_fingerprint(),
@@ -3000,7 +2971,7 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
             for (id, binder) in composite.binders().iter() {
                 assert_eq!(
                     binder.identifier_range(),
-                    payload.binder_identifier_ranges[id.index()]
+                    node(&payload.binder_identifier_sites[id.index()]).range
                 );
                 assert_eq!(
                     binder.identifier_spelling(),
@@ -3019,6 +2990,9 @@ fn metamorphic_nested_layout_transports_actual_ranges_and_six_lookup_identities(
                     }
                 );
                 assert_eq!(binder.local().spelling(), binder.identifier_spelling());
+                let frontend_node = node(&payload.binder_identifier_sites[id.index()]);
+                assert_eq!(binder.identifier_spelling(), frontend_node.token_text().unwrap());
+                assert_eq!(binder.local().declaration_range(), frontend_node.range);
             }
             if middle != "y" || matches!(layout, "leading_line" | "intertoken_layout" | "comment") {
                 assert_ne!(
@@ -3150,7 +3124,7 @@ fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed
         payload.binder_type_sites[0].node().index(),
         payload.binder_type_sites[1].node().index(),
     ];
-    for corruption in 0..10 {
+    for corruption in 0..11 {
         let mut changed = source.clone();
         let gap = source.find("reserve ").unwrap() + "reserve".len();
         if corruption == 0 {
@@ -3190,7 +3164,11 @@ fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed
                 ));
                 range.end = changed.len();
             }
-            let kind = if corruption >= 6 && index == wrappers[corruption - 6] {
+            if corruption == 10 && Some(index) == ast.root().map(|id| id.index()) {
+                let token = ast.token_views().next().unwrap().id();
+                children.push(rebuilt[token.index()]);
+            }
+            let kind = if (6..10).contains(&corruption) && index == wrappers[corruption - 6] {
                 K::TermExpression
             } else if corruption == 5 && index == outer {
                 K::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Existential)
@@ -3230,7 +3208,7 @@ fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed
         );
         let fresh = resolver_symbol_collection(root, case, &forged);
         assert!(fresh.detail_keys.is_empty());
-        if corruption >= 5 {
+        if (5..10).contains(&corruption) {
             assert_eq!(changed, source);
             if corruption == 6 {
                 assert_ne!(
@@ -3316,6 +3294,25 @@ fn metamorphic_nested_layout_source_authentication_and_wrapper_roles_fail_closed
                 forged
                     .node_views()
                     .all(|node| !node.children().contains(&unreachable))
+            );
+        }
+        if corruption == 10 {
+            assert_eq!(changed, source);
+            assert_eq!(forged.source_id, ast.source_id);
+            assert_eq!(forged.nodes().len(), ast.nodes().len());
+            assert_eq!(fresh.env, resolver.env);
+            assert_eq!(fresh.module, resolver.module);
+            assert_eq!(
+                forged.nodes().iter().map(|node| node.range).collect::<Vec<_>>(),
+                ast.nodes().iter().map(|node| node.range).collect::<Vec<_>>()
+            );
+            assert_eq!(
+                forged.token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>(),
+                ast.token_views()
+                    .map(|node| (node.as_token().unwrap().clone(), node.range()))
+                    .collect::<Vec<_>>()
             );
         }
         let symbols = if corruption == 3 {

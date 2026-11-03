@@ -951,13 +951,14 @@ fn build_task_257b3_output(
     payload: SourceFormulaNestedQuantifierPayload,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
-    let arena = task_257b3_typed_arena(ast, &payload)?;
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let arena = task_257b3_typed_arena(ast, &syntax, &payload)?;
     let base = payload
         .reserve
         .bridge
         .prepare_binding_env(symbols)
         .map_err(|error| format!("Task257B3 reserve base: {error}"))?;
-    let inputs = task_257b3_route_inputs(ast, module.clone(), &payload)?;
+    let inputs = task_257b3_route_inputs(ast, &syntax, module.clone(), &payload)?;
     build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
 
@@ -1567,42 +1568,46 @@ fn task_257b2_route_inputs(
 
 fn task_257b3_route_inputs(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     module: ModuleId,
     payload: &SourceFormulaNestedQuantifierPayload,
 ) -> Result<SourceFormulaCompositionRouteInputs, String> {
     if payload.formula_sites.len() != 3
-        || payload.formula_ranges.len() != 3
         || payload.binder_segment_sites.len() != 3
-        || payload.binder_segment_ranges.len() != 3
         || payload.binder_identifier_sites.len() != 3
-        || payload.binder_identifier_ranges.len() != 3
         || payload.binder_type_sites.len() != 3
-        || payload.binder_type_ranges.len() != 3
         || payload.binder_type_head_sites.len() != 3
-        || payload.binder_type_head_ranges.len() != 3
         || payload.equality_sites.len() != 3
-        || payload.equality_ranges.len() != 3
         || payload.term_sites.len() != 6
-        || payload.term_ranges.len() != 6
     {
         return Err("Task257B3 extracted aggregate changed".to_owned());
     }
-    let identifier = ast
-        .nodes()
-        .get(payload.binder_identifier_sites[1].node().index())
-        .ok_or("Task257B3 middle identifier site is missing")?;
-    let SurfaceNodeKind::Token(token) = &identifier.kind else {
+    let row = |site: &TypedSiteRef| {
+        syntax
+            .source_node_entries()
+            .ok_or(INVALID_PAYLOAD_KEY)?
+            .find(|row| row.site().index() == site.node().index())
+            .ok_or(INVALID_PAYLOAD_KEY)
+    };
+    let identifier = row(&payload.binder_identifier_sites[1])?;
+    let SurfaceNodeKind::Token(token) = identifier.kind() else {
         return Err("Task257B3 middle identifier token is missing".to_owned());
     };
-    if identifier.recovered
-        || identifier.range != payload.binder_identifier_ranges[1]
+    if identifier.recovery() != NodeRecoveryState::Normal
         || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+        || !mizar_lexer::is_identifier(identifier.spelling())
     {
         return Err("Task257B3 middle identifier token is invalid".to_owned());
     }
-    let middle_name = token.text.as_ref();
-    if payload.term_spellings.as_slice() != ["x", "x", "r", middle_name, "x", "r"] {
-        return Err("Task257B3 middle bound use changed".to_owned());
+    let middle_name = identifier.spelling();
+    for (site, spelling) in payload
+        .term_sites
+        .iter()
+        .zip(["x", "x", "r", middle_name, "x", "r"])
+    {
+        if row(site)?.spelling() != spelling {
+            return Err("Task257B3 middle bound use changed".to_owned());
+        }
     }
     let contexts = [
         BindingContextId::new(0),
@@ -1617,16 +1622,18 @@ fn task_257b3_route_inputs(
     ]
     .into_iter()
     .enumerate()
-    .map(|(index, (kind, spelling))| SourceCompositeFormulaInput {
-        site: payload.formula_sites[index].clone(),
-        source_range: payload.formula_ranges[index],
-        source_ordinal: index,
-        context: contexts[index],
-        recovery: SourceCompositeFormulaRecovery::Normal,
-        spelling: spelling.to_owned(),
-        kind,
+    .map(|(index, (kind, spelling))| {
+        Ok(SourceCompositeFormulaInput {
+            site: payload.formula_sites[index].clone(),
+            source_range: row(&payload.formula_sites[index])?.range(),
+            source_ordinal: index,
+            context: contexts[index],
+            recovery: SourceCompositeFormulaRecovery::Normal,
+            spelling: spelling.to_owned(),
+            kind,
+        })
     })
-    .collect();
+    .collect::<Result<Vec<_>, &str>>()?;
     let middle_segment = format!("{middle_name} being");
     let binder_spellings = [
         ("x being", "x"),
@@ -1640,43 +1647,45 @@ fn task_257b3_route_inputs(
         .enumerate()
         .map(
             |(index, ((segment_spelling, identifier_spelling), scope))| {
-                SourceQuantifierBinderInput {
+                Ok(SourceQuantifierBinderInput {
                     formula: SourceCompositeFormulaId::new(index),
                     ordinal: 0,
                     segment_site: payload.binder_segment_sites[index].clone(),
-                    segment_range: payload.binder_segment_ranges[index],
+                    segment_range: row(&payload.binder_segment_sites[index])?.range(),
                     segment_spelling: segment_spelling.to_owned(),
                     identifier_site: payload.binder_identifier_sites[index].clone(),
-                    identifier_range: payload.binder_identifier_ranges[index],
+                    identifier_range: row(&payload.binder_identifier_sites[index])?.range(),
                     identifier_spelling: identifier_spelling.to_owned(),
                     local: LocalTermBinding::new(
                         identifier_spelling,
                         LocalTermScope::new(scope),
-                        payload.binder_identifier_ranges[index],
+                        row(&payload.binder_identifier_sites[index])?.range(),
                         index + 1,
                     ),
                     binding: BindingId::new(index + 1),
                     body_context: contexts[index + 1],
                     type_site: SourceBinderTypeSiteId::new(index),
                     recovery: SourceCompositeFormulaRecovery::Normal,
-                }
+                })
             },
         )
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let type_sites = (0..3)
-        .map(|index| SourceBinderTypeSiteInput {
-            binder: SourceQuantifierBinderId::new(index),
-            site: payload.binder_type_sites[index].clone(),
-            source_range: payload.binder_type_ranges[index],
-            spelling: "set".to_owned(),
-            head_site: payload.binder_type_head_sites[index].clone(),
-            head_range: payload.binder_type_head_ranges[index],
-            head_spelling: "set".to_owned(),
-            context: if index == 1 { contexts[1] } else { contexts[0] },
-            recovery: SourceCompositeFormulaRecovery::Normal,
-            head: SourceBinderTypeHead::BuiltinSet,
+        .map(|index| {
+            Ok(SourceBinderTypeSiteInput {
+                binder: SourceQuantifierBinderId::new(index),
+                site: payload.binder_type_sites[index].clone(),
+                source_range: row(&payload.binder_type_sites[index])?.range(),
+                spelling: "set".to_owned(),
+                head_site: payload.binder_type_head_sites[index].clone(),
+                head_range: row(&payload.binder_type_head_sites[index])?.range(),
+                head_spelling: "set".to_owned(),
+                context: if index == 1 { contexts[1] } else { contexts[0] },
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                head: SourceBinderTypeHead::BuiltinSet,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let requests = (0..3)
         .flat_map(|formula| {
             [
@@ -1735,18 +1744,20 @@ fn task_257b3_route_inputs(
         contexts[3],
     ];
     let terms = (0..6)
-        .map(|index| SourcePrimaryTermInput {
-            site: payload.term_sites[index].clone(),
-            source_range: payload.term_ranges[index],
-            source_ordinal: index,
-            context: term_contexts[index],
-            recovery: SourcePrimaryTermRecovery::Normal,
-            spelling: payload.term_spellings[index].clone(),
-            kind: SourcePrimaryTermKind::VariableReference,
-            role: SourcePrimaryTermRole::Value,
-            parent: None,
+        .map(|index| {
+            Ok(SourcePrimaryTermInput {
+                site: payload.term_sites[index].clone(),
+                source_range: row(&payload.term_sites[index])?.range(),
+                source_ordinal: index,
+                context: term_contexts[index],
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: row(&payload.term_sites[index])?.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let reference_bindings = [1, 1, 3, 2, 1, 3];
     let references = reference_bindings
         .into_iter()
@@ -1771,16 +1782,18 @@ fn task_257b3_route_inputs(
     let atomic_formulas = equality_spellings
         .into_iter()
         .enumerate()
-        .map(|(index, spelling)| SourceAtomicFormulaInput {
-            site: payload.equality_sites[index].clone(),
-            source_range: payload.equality_ranges[index],
-            source_ordinal: index,
-            context: equality_contexts[index],
-            recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: spelling.to_owned(),
-            kind: SourceAtomicFormulaKind::Equality,
+        .map(|(index, spelling)| {
+            Ok(SourceAtomicFormulaInput {
+                site: payload.equality_sites[index].clone(),
+                source_range: row(&payload.equality_sites[index])?.range(),
+                source_ordinal: index,
+                context: equality_contexts[index],
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: spelling.to_owned(),
+                kind: SourceAtomicFormulaKind::Equality,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let atomic_edges = (0..3)
         .flat_map(|formula| {
             [
@@ -2030,6 +2043,7 @@ fn task_257b2_typed_arena(
 
 fn task_257b3_typed_arena(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     payload: &SourceFormulaNestedQuantifierPayload,
 ) -> Result<TypedArena, String> {
     let mut kinds = BTreeMap::new();
@@ -2064,12 +2078,21 @@ fn task_257b3_typed_arena(
     }
     let mut builder = TypedArenaBuilder::new();
     for (index, node) in ast.nodes().iter().enumerate() {
-        let key = kinds
-            .remove(&index)
-            .unwrap_or("source.formula.composition.unowned");
+        let owned_kind = kinds.remove(&index);
+        let range = if owned_kind.is_some() {
+            syntax
+                .source_node_entries()
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .find(|row| row.site().index() == index)
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .range()
+        } else {
+            node.range
+        };
+        let key = owned_kind.unwrap_or("source.formula.composition.unowned");
         let pushed = builder
             .push(
-                TypedNode::new(key, SourceAnchor::Range(node.range))
+                TypedNode::new(key, SourceAnchor::Range(range))
                     .with_recovery(NodeRecoveryState::Normal),
             )
             .map_err(|error| error.to_string())?;
