@@ -84,6 +84,16 @@ removes one coherent family per commit. Steady-state targets: each crate
 todo below 1,500 lines; no document restates another owner's status
 facts.
 
+### Rule 6 — No fixture constants in design prose
+
+A sentence that cites one fixture's byte range, `-byte` size, or Surface
+row count goes stale on the next layout change and forces a rewrite in
+every slice that touches the route. Owner documents state the boundary
+(what is accepted, what is refused, who owns it) and leave the
+measurements to tests and ledgers. The `fixture_constants` kind in
+`tests/coverage/doc_volume_baseline.tsv` counts such lines per document
+and may only be lowered; a slice that finds a stale sentence deletes it.
+
 ## Migration Inventory
 
 The migration inventory is the versioned ledger

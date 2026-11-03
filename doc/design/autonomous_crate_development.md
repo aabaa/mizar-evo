@@ -353,8 +353,16 @@ the contract, and one crate-plan and crate-TODO link added when the family
 opens. The contract lists the families and their exit criteria, not the
 slices. Each slice is committed separately and named in its commit body;
 adding or updating its ledger row is the only per-slice documentation
-update unless an owner document's boundary changes. Module, harness, and
-plan documents are updated when the family opens and closes, not per slice.
+update unless an owner document's boundary changes. A boundary change is a
+change to a public API, type, or field, a diagnostic class, an owner
+module, an accepted-input rule, or an exit criterion; which route reads
+which table, a fixture's suffix length, row count, or byte range, and a
+list of checks that still hold are not boundaries and are not recorded.
+When a slice makes an existing sentence stale, delete it rather than
+rewrite it (the `fixture_constants` ratchet in the doc volume ledger
+refuses new byte ranges, `-byte` sizes, and Surface row counts). Module,
+harness, and plan documents are otherwise updated when the family opens and
+closes, not per slice.
 
 A contract never carries completion evidence, measured counts, digests, gate
 tallies, scores, review outcomes, model names, reasoning settings, or the

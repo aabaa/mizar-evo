@@ -228,6 +228,26 @@ fn documentation_volume_stays_within_baseline() {
         );
     }
 
+    // 1b. Fixture constants: a byte range, a `-byte` size, or a Surface row
+    //     count pins a sentence to one fixture's layout, so every slice has to
+    //     rewrite it. A stale sentence is deleted, not rewritten.
+    for (relative, document) in &documents {
+        if relative == DOC_VOLUME_PROTOCOL_PATH {
+            continue;
+        }
+        let actual = fixture_constant_line_count(document);
+        check_doc_volume_ratchet(
+            &baseline,
+            "fixture_constants",
+            relative,
+            actual,
+            0,
+            "lines with fixture constants (byte ranges, -byte sizes, Surface row counts); \
+             delete the stale sentence instead of rewriting it",
+            &mut violations,
+        );
+    }
+
     // 2. Task contracts: new contracts stay at or below 60 lines per language.
     for (relative, document) in &documents {
         if !relative.starts_with("doc/design/task_contracts/") {
@@ -3413,7 +3433,12 @@ fn workspace_root() -> PathBuf {
 const DOC_VOLUME_BASELINE_PATH: &str = "tests/coverage/doc_volume_baseline.tsv";
 const DOC_VOLUME_PROTOCOL_PATH: &str = "doc/design/autonomous_crate_development.md";
 const DOC_VOLUME_CONTRACT_LINE_LIMIT: usize = 60;
-const DOC_VOLUME_KINDS: [&str; 3] = ["ceremony_tokens", "contract_lines", "contract_fanout"];
+const DOC_VOLUME_KINDS: [&str; 4] = [
+    "ceremony_tokens",
+    "contract_lines",
+    "contract_fanout",
+    "fixture_constants",
+];
 
 fn parse_doc_volume_baseline(
     ledger: &str,
@@ -3602,7 +3627,49 @@ fn hex_digest_count(document: &str) -> usize {
     count
 }
 
+/// Counts lines that pin prose to one fixture's measurements: a byte range
+/// `<digits>..<digits>`, a `<digits>-byte` size, or `<digits> Surface rows`.
+fn fixture_constant_line_count(document: &str) -> usize {
+    document
+        .lines()
+        .filter(|line| is_fixture_constant_line(line))
+        .count()
+}
+
+fn is_fixture_constant_line(line: &str) -> bool {
+    let bytes = line.as_bytes();
+    let digit_before = |start: usize| start > 0 && bytes[start - 1].is_ascii_digit();
+    let digit_at = |index: usize| bytes.get(index).is_some_and(u8::is_ascii_digit);
+    line.match_indices("..")
+        .any(|(start, _)| digit_before(start) && digit_at(start + 2))
+        || line
+            .match_indices("-byte")
+            .any(|(start, _)| digit_before(start))
+        || line
+            .match_indices(" Surface rows")
+            .any(|(start, _)| digit_before(start))
+        || line
+            .match_indices(" surface rows")
+            .any(|(start, _)| digit_before(start))
+}
+
 fn assert_doc_volume_matcher_vectors() {
+    assert_eq!(
+        fixture_constant_line_count("plain design prose about sets"),
+        0
+    );
+    assert_eq!(
+        fixture_constant_line_count("ranges 14..17 and 84..87 stay"),
+        1
+    );
+    assert_eq!(
+        fixture_constant_line_count("its unchanged 100-byte suffix\nall 51 Surface rows"),
+        2
+    );
+    assert_eq!(
+        fixture_constant_line_count("see section 3.2..\n`a..b` ranges\nmulti-byte text"),
+        0
+    );
     assert_eq!(ceremony_token_count("plain design prose about sets"), 0);
     assert_eq!(ceremony_token_count("Hard gates:\n"), 0);
     assert_eq!(ceremony_token_count("hard gates 9/9 pass"), 1);

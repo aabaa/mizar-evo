@@ -31,6 +31,11 @@ Where the two differ, the protocol wins.
   about thirty production lines each, no profile or baseline retirement)
   into one task and one commit (protocol: "Gate Tiering", "Canonical Task
   Contracts").
+- Module and harness documents change only on a boundary change (public API,
+  type, or field; diagnostic class; owner module; accepted-input rule; exit
+  criterion). A slice that makes a sentence stale deletes it; the
+  `fixture_constants` doc-volume ratchet refuses new byte ranges, `-byte`
+  sizes, and Surface row counts under `doc/design`.
 - End every commit body with `volume: prod +N test +N doc +N` (added lines from
   `git diff --numstat`: non-test `crates/**/src`, tests and `.miz`/`.toml`
   fixtures, `doc/`).
