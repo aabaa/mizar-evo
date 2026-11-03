@@ -958,10 +958,19 @@ fn task258b3m2b2b1b1p_candidate_is_exact(
     let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
         return false;
     };
+    let mut import_paths = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ModulePath));
+    let Some(import_path) = import_paths.next() else {
+        return false;
+    };
+    if import_paths.next().is_some() {
+        return false;
+    }
     let import_range = SourceRange {
         source_id: ast.source_id,
-        start: 7,
-        end: 27,
+        ..import_path.range
     };
     candidate.module().package().as_str() == "mizar-test-task253-corruption"
         && candidate.module().package() == module.package()

@@ -47,6 +47,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] descendant Given-use term arena: derive existing term and overlay anchors from authenticated syntax and binding sites; preserve canonical donor
 - [x] Given-use term references: read existing generic rows through the shared private receiver; preserve canonical type/term donors
 - [x] Given-condition term references: read existing generic rows through the shared private receiver; preserve canonical type/term donors
+- [x] wrapped imported application anchor: derive expected import byte bounds from authenticated ModulePath; preserve source owner and donor checks
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger
