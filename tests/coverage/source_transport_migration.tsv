@@ -38,6 +38,11 @@ given-use-term-sites	proof-local	native-consumer	done	Given-use term references:
 given-condition-term-sites	proof-local	native-consumer	done	Given-condition term references: existing generic rows read through the shared private receiver; canonical type/term donors preserved
 condition-formula-sparse-stages	proof-local	native-consumer	done	condition-formula sparse lower graphs: existing primary/condition refusal stages frozen before coordinate migration
 gu-inherited-type-overlay	proof-local	native-consumer	done	GU inherited type overlay: relies on mandatory GUPT validation; term-owned arena and root guards retained
+let-binding-validator-sites	proof-local	native-consumer	done	Let binding validators read proof/name expectations from the previously authenticated lower receipt
+given-binding-validator-sites	proof-local	native-consumer	done	Given binding validators read proof/name expectations from the previously authenticated lower receipt
+given-use-binding-validator-sites	proof-local	native-consumer	done	Given-use binding validators read proof/name expectations from the previously authenticated lower receipt
+given-condition-binding-validator-sites	proof-local	native-consumer	done	Given-condition binding validators read proof/name expectations from the previously authenticated lower receipt
+descendant-binding-validator-sites	proof-local	native-consumer	done	Descendant Given binding validators read proof/name expectations from the previously authenticated lower receipt
 proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved

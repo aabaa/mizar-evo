@@ -1494,14 +1494,14 @@ impl SourceProofLocalLetBindingHandoff {
             .get(id)
             .ok_or(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id })?;
         if !exact_task269c_output_binding(binding)
-            || !exact_task269c_declaration_binding(&self.binding_env, self.source_id)
+            || !exact_task269c_declaration_binding(&self.binding_env, self.name_range)
         {
             return Err(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id });
         }
         let expected = extend_task269c_binding_env(&self.base_binding_env)?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
-            || !exact_task269c_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269c_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269c_lookup_behavior(&self.binding_env)
         {
             return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
@@ -1801,7 +1801,11 @@ fn exact_task269c_output_binding(binding: &SourceProofLocalLetBinding) -> bool {
         && binding.recovery == SourceProofLocalLetBindingRecovery::Normal
 }
 
-fn exact_task269c_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269c_local_binding(
+    binding_env: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
@@ -1811,7 +1815,7 @@ fn exact_task269c_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
     context.id == BindingContextId::new(1)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 59, 98),
+                source_range: proof_range,
             }
         && context.parent == Some(BindingContextId::new(0))
         && context.layer == BindingContextLayer::Proof
@@ -1832,10 +1836,10 @@ fn exact_task269c_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
                 ordinal: 1,
                 declaration_range,
             } if scope.path() == [0]
-                && *declaration_range == range(source_id, 71, 72)
+                && *declaration_range == name_range
         )
         && binding.owner_context == BindingContextId::new(1)
-        && binding.declaration_range == range(source_id, 71, 72)
+        && binding.declaration_range == name_range
         && binding.visible_after_ordinal == 1
         && binding.type_site == BindingTypeSite::Missing
         && binding.status == BindingStatus::Active
@@ -1844,7 +1848,7 @@ fn exact_task269c_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
         && binding.recovery == BindingRecoveryState::Normal
 }
 
-fn exact_task269c_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269c_declaration_binding(binding_env: &BindingEnv, name_range: SourceRange) -> bool {
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -1858,10 +1862,10 @@ fn exact_task269c_declaration_binding(binding_env: &BindingEnv, source_id: Sourc
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 71, 72)
+                        && *declaration_range == name_range
                 )
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 71, 72)
+                && binding.declaration_range == name_range
                 && binding.visible_after_ordinal == 1
                 && binding.recovery == BindingRecoveryState::Normal
         })
@@ -2211,14 +2215,14 @@ impl SourceProofLocalGivenBindingHandoff {
             .get(id)
             .ok_or(SourceProofLocalGivenBindingError::InvalidDeclaration { binding: id })?;
         if !exact_task269g_output_binding(binding)
-            || !exact_task269g_declaration_binding(&self.binding_env, self.source_id)
+            || !exact_task269g_declaration_binding(&self.binding_env, self.name_range)
         {
             return Err(SourceProofLocalGivenBindingError::InvalidDeclaration { binding: id });
         }
         let expected = extend_task269g_binding_env(&self.base_binding_env)?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
-            || !exact_task269g_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269g_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269g_lookup_behavior(&self.binding_env)
         {
             return Err(SourceProofLocalGivenBindingError::InvalidBindingEnvironment);
@@ -2470,7 +2474,11 @@ fn exact_task269g_output_binding(binding: &SourceProofLocalGivenBinding) -> bool
         && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-fn exact_task269g_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269g_local_binding(
+    binding_env: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
@@ -2480,7 +2488,7 @@ fn exact_task269g_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
     context.id == BindingContextId::new(1)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 62, 127),
+                source_range: proof_range,
             }
         && context.parent == Some(BindingContextId::new(0))
         && context.layer == BindingContextLayer::Proof
@@ -2501,10 +2509,10 @@ fn exact_task269g_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
                 ordinal: 1,
                 declaration_range,
             } if scope.path() == [0]
-                && *declaration_range == range(source_id, 76, 77)
+                && *declaration_range == name_range
         )
         && binding.owner_context == BindingContextId::new(1)
-        && binding.declaration_range == range(source_id, 76, 77)
+        && binding.declaration_range == name_range
         && binding.visible_after_ordinal == 1
         && binding.type_site == BindingTypeSite::Missing
         && binding.status == BindingStatus::Active
@@ -2513,7 +2521,7 @@ fn exact_task269g_local_binding(binding_env: &BindingEnv, source_id: SourceId) -
         && binding.recovery == BindingRecoveryState::Normal
 }
 
-fn exact_task269g_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269g_declaration_binding(binding_env: &BindingEnv, name_range: SourceRange) -> bool {
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -2527,10 +2535,10 @@ fn exact_task269g_declaration_binding(binding_env: &BindingEnv, source_id: Sourc
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 76, 77)
+                        && *declaration_range == name_range
                 )
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 76, 77)
+                && binding.declaration_range == name_range
                 && binding.visible_after_ordinal == 1
                 && binding.recovery == BindingRecoveryState::Normal
         })
@@ -2791,13 +2799,13 @@ impl SourceProofLocalGivenUseBindingHandoff {
             .get(id)
             .ok_or(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id })?;
         if !exact_task269gup_output_binding(binding)
-            || !exact_task269gup_declaration_binding(&self.binding_env, self.source_id)
+            || !exact_task269gup_declaration_binding(&self.binding_env, self.name_range)
         {
             return Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id });
         }
         let expected = extend_task269gup_binding_env(&self.base_binding_env)?;
         if self.binding_env != expected
-            || !exact_task269gup_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269gup_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269gup_lookup_behavior(&self.binding_env)
             || self.final_binding_fingerprint != self.binding_env.debug_text()
         {
@@ -3038,7 +3046,11 @@ fn exact_task269gup_output_binding(binding: &SourceProofLocalGivenBinding) -> bo
 
 // Rationale: Task 269GUP keeps final-environment replay private until Task 269GUPT.
 #[cfg_attr(not(test), allow(dead_code))]
-fn exact_task269gup_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269gup_local_binding(
+    binding_env: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
@@ -3048,7 +3060,7 @@ fn exact_task269gup_local_binding(binding_env: &BindingEnv, source_id: SourceId)
     context.id == BindingContextId::new(1)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 62, 126),
+                source_range: proof_range,
             }
         && context.parent == Some(BindingContextId::new(0))
         && context.layer == BindingContextLayer::Proof
@@ -3069,10 +3081,10 @@ fn exact_task269gup_local_binding(binding_env: &BindingEnv, source_id: SourceId)
                 ordinal: 1,
                 declaration_range,
             } if scope.path() == [0]
-                && *declaration_range == range(source_id, 76, 77)
+                && *declaration_range == name_range
         )
         && binding.owner_context == BindingContextId::new(1)
-        && binding.declaration_range == range(source_id, 76, 77)
+        && binding.declaration_range == name_range
         && binding.visible_after_ordinal == 1
         && binding.type_site == BindingTypeSite::Missing
         && binding.status == BindingStatus::Active
@@ -3083,7 +3095,7 @@ fn exact_task269gup_local_binding(binding_env: &BindingEnv, source_id: SourceId)
 
 // Rationale: Task 269GUP keeps declaration replay private until Task 269GUPT.
 #[cfg_attr(not(test), allow(dead_code))]
-fn exact_task269gup_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269gup_declaration_binding(binding_env: &BindingEnv, name_range: SourceRange) -> bool {
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -3097,10 +3109,10 @@ fn exact_task269gup_declaration_binding(binding_env: &BindingEnv, source_id: Sou
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 76, 77)
+                        && *declaration_range == name_range
                 )
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 76, 77)
+                && binding.declaration_range == name_range
                 && binding.visible_after_ordinal == 1
                 && binding.recovery == BindingRecoveryState::Normal
         })
@@ -3358,7 +3370,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
             SourceProofLocalGivenConditionBindingError::InvalidDeclaration { binding: id },
         )?;
         if !exact_task269gc_output_binding(binding)
-            || !exact_task269gc_declaration_binding(&self.binding_env, self.source_id)
+            || !exact_task269gc_declaration_binding(&self.binding_env, self.name_range)
         {
             return Err(
                 SourceProofLocalGivenConditionBindingError::InvalidDeclaration { binding: id },
@@ -3366,7 +3378,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
         }
         let expected = extend_task269gc_binding_env(&self.base_binding_env)?;
         if self.binding_env != expected
-            || !exact_task269gc_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269gc_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269gc_lookup_behavior(&self.binding_env)
             || self.final_binding_fingerprint != self.binding_env.debug_text()
         {
@@ -3626,7 +3638,11 @@ fn exact_task269gc_output_binding(binding: &SourceProofLocalGivenBinding) -> boo
         && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-fn exact_task269gc_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269gc_local_binding(
+    binding_env: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
@@ -3636,7 +3652,7 @@ fn exact_task269gc_local_binding(binding_env: &BindingEnv, source_id: SourceId) 
     context.id == BindingContextId::new(1)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 68, 132),
+                source_range: proof_range,
             }
         && context.parent == Some(BindingContextId::new(0))
         && context.layer == BindingContextLayer::Proof
@@ -3657,10 +3673,10 @@ fn exact_task269gc_local_binding(binding_env: &BindingEnv, source_id: SourceId) 
                 ordinal: 1,
                 declaration_range,
             } if scope.path() == [0]
-                && *declaration_range == range(source_id, 82, 83)
+                && *declaration_range == name_range
         )
         && binding.owner_context == BindingContextId::new(1)
-        && binding.declaration_range == range(source_id, 82, 83)
+        && binding.declaration_range == name_range
         && binding.visible_after_ordinal == 1
         && binding.type_site == BindingTypeSite::Missing
         && binding.status == BindingStatus::Active
@@ -3669,7 +3685,7 @@ fn exact_task269gc_local_binding(binding_env: &BindingEnv, source_id: SourceId) 
         && binding.recovery == BindingRecoveryState::Normal
 }
 
-fn exact_task269gc_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269gc_declaration_binding(binding_env: &BindingEnv, name_range: SourceRange) -> bool {
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -3683,10 +3699,10 @@ fn exact_task269gc_declaration_binding(binding_env: &BindingEnv, source_id: Sour
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 82, 83)
+                        && *declaration_range == name_range
                 )
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 82, 83)
+                && binding.declaration_range == name_range
                 && binding.visible_after_ordinal == 1
                 && binding.recovery == BindingRecoveryState::Normal
         })
@@ -3973,7 +3989,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
         )?;
         if !exact_task269sdc_output_binding(binding)
-            || !exact_task269sdc_declaration_binding(&self.binding_env, self.source_id)
+            || !exact_task269sdc_declaration_binding(&self.binding_env, self.name_range)
         {
             return Err(
                 SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
@@ -3988,7 +4004,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
         let expected = extend_task269sdc_binding_env(&self.base_binding_env)?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
-            || !exact_task269sdc_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269sdc_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269sdc_lookup_behavior(&self.binding_env)
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
@@ -4231,7 +4247,11 @@ fn exact_task269sdc_output_binding(binding: &SourceProofLocalGivenBinding) -> bo
         && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-fn exact_task269sdc_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269sdc_local_binding(
+    binding_env: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
@@ -4241,7 +4261,7 @@ fn exact_task269sdc_local_binding(binding_env: &BindingEnv, source_id: SourceId)
     context.id == BindingContextId::new(1)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 73, 178),
+                source_range: proof_range,
             }
         && context.parent == Some(BindingContextId::new(0))
         && context.layer == BindingContextLayer::Proof
@@ -4262,10 +4282,10 @@ fn exact_task269sdc_local_binding(binding_env: &BindingEnv, source_id: SourceId)
                 ordinal: 1,
                 declaration_range,
             } if scope.path() == [0]
-                && *declaration_range == range(source_id, 87, 88)
+                && *declaration_range == name_range
         )
         && binding.owner_context == BindingContextId::new(1)
-        && binding.declaration_range == range(source_id, 87, 88)
+        && binding.declaration_range == name_range
         && binding.visible_after_ordinal == 1
         && binding.type_site == BindingTypeSite::Missing
         && binding.status == BindingStatus::Active
@@ -4274,7 +4294,7 @@ fn exact_task269sdc_local_binding(binding_env: &BindingEnv, source_id: SourceId)
         && binding.recovery == BindingRecoveryState::Normal
 }
 
-fn exact_task269sdc_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269sdc_declaration_binding(binding_env: &BindingEnv, name_range: SourceRange) -> bool {
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -4288,10 +4308,10 @@ fn exact_task269sdc_declaration_binding(binding_env: &BindingEnv, source_id: Sou
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 87, 88)
+                        && *declaration_range == name_range
                 )
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 87, 88)
+                && binding.declaration_range == name_range
                 && binding.visible_after_ordinal == 1
                 && binding.recovery == BindingRecoveryState::Normal
         })
@@ -4628,6 +4648,29 @@ mod task269c_tests {
 
         let handoff = SourceProofLocalLetBindingProducer::build(fixture.input, &fixture.base)
             .expect("Task269C handoff before replay corruption");
+        for change_name in [true, false] {
+            let mut coherent = handoff.clone();
+            if change_name {
+                coherent.name_range.end += 1;
+            } else {
+                coherent.proof_range.end += 1;
+            }
+            coherent.binding_env = binding_env_with_local_ranges(
+                &coherent.binding_env,
+                coherent.proof_range,
+                coherent.name_range,
+            );
+            coherent.final_binding_fingerprint = coherent.binding_env.debug_text();
+            assert_eq!(
+                coherent.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalLetBindingError::DependencyMismatch)
+            );
+        }
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
+
         let mut dependency = handoff.clone();
         dependency.set_lower_fingerprint_for_test("corrupt");
         assert_eq!(
@@ -4922,7 +4965,8 @@ mod task269c_tests {
         );
         assert!(exact_task269g_local_binding(
             handoff.binding_env(),
-            fixture.source
+            handoff.proof_range(),
+            handoff.name_range()
         ));
         assert!(exact_task269g_lookup_behavior(handoff.binding_env()));
         assert_eq!(
@@ -5048,6 +5092,29 @@ mod task269c_tests {
 
         let handoff = SourceProofLocalGivenBindingProducer::build(fixture.input, &fixture.base)
             .expect("Task269G handoff before replay corruption");
+        for change_name in [true, false] {
+            let mut coherent = handoff.clone();
+            if change_name {
+                coherent.name_range.end += 1;
+            } else {
+                coherent.proof_range.end += 1;
+            }
+            coherent.binding_env = binding_env_with_local_ranges(
+                &coherent.binding_env,
+                coherent.proof_range,
+                coherent.name_range,
+            );
+            coherent.final_binding_fingerprint = coherent.binding_env.debug_text();
+            assert_eq!(
+                coherent.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenBindingError::DependencyMismatch)
+            );
+        }
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
+
         let mut transaction = handoff.clone();
         transaction.source_id = other_source_id();
         transaction.set_lower_fingerprint_for_test("corrupt");
@@ -5480,7 +5547,8 @@ mod task269c_tests {
         );
         assert!(exact_task269gup_local_binding(
             handoff.binding_env(),
-            fixture.source
+            handoff.proof_range(),
+            handoff.name_range()
         ));
         assert!(exact_task269gup_lookup_behavior(handoff.binding_env()));
         let expected_debug = format!(
@@ -5652,6 +5720,29 @@ mod task269c_tests {
         let handoff =
             SourceProofLocalGivenUseBindingProducer::build(fixture.input.clone(), &fixture.base)
                 .expect("Task269GUP checker handoff");
+        for change_name in [true, false] {
+            let mut coherent = handoff.clone();
+            if change_name {
+                coherent.name_range.end += 1;
+            } else {
+                coherent.proof_range.end += 1;
+            }
+            coherent.binding_env = binding_env_with_local_ranges(
+                &coherent.binding_env,
+                coherent.proof_range,
+                coherent.name_range,
+            );
+            coherent.final_binding_fingerprint = coherent.binding_env.debug_text();
+            assert_eq!(
+                coherent.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenUseBindingError::DependencyMismatch)
+            );
+        }
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
+
         let mut transaction = handoff.clone();
         transaction.source_id = other_source_id();
         transaction.set_lower_fingerprint_for_task269gup_test("corrupt");
@@ -5943,7 +6034,8 @@ mod task269c_tests {
         );
         assert!(exact_task269gc_local_binding(
             handoff.binding_env(),
-            fixture.source
+            handoff.proof_range(),
+            handoff.name_range()
         ));
         assert!(exact_task269gc_lookup_behavior(handoff.binding_env()));
         let expected_debug = format!(
@@ -6134,6 +6226,29 @@ mod task269c_tests {
             &fixture.base,
         )
         .expect("Task269GC exact handoff");
+        for change_name in [true, false] {
+            let mut coherent = handoff.clone();
+            if change_name {
+                coherent.name_range.end += 1;
+            } else {
+                coherent.proof_range.end += 1;
+            }
+            coherent.binding_env = binding_env_with_local_ranges(
+                &coherent.binding_env,
+                coherent.proof_range,
+                coherent.name_range,
+            );
+            coherent.final_binding_fingerprint = coherent.binding_env.debug_text();
+            assert_eq!(
+                coherent.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenConditionBindingError::DependencyMismatch)
+            );
+        }
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
+
         let mut transaction = handoff.clone();
         transaction.source_id = other_source_id();
         transaction.set_lower_fingerprint_for_task269gc_test("corrupt");
@@ -6788,7 +6903,8 @@ mod task269c_tests {
         );
         assert!(exact_task269sdc_local_binding(
             handoff.binding_env(),
-            fixture.source
+            handoff.proof_range(),
+            handoff.name_range()
         ));
         assert!(exact_task269sdc_descendant_context(
             handoff.binding_env(),
@@ -6987,6 +7103,29 @@ mod task269c_tests {
             &fixture.base,
         )
         .expect("Task269SDC valid handoff before replay mutations");
+        for change_name in [true, false] {
+            let mut coherent = handoff.clone();
+            if change_name {
+                coherent.name_range.end += 1;
+            } else {
+                coherent.proof_range.end += 1;
+            }
+            coherent.binding_env = binding_env_with_local_ranges(
+                &coherent.binding_env,
+                coherent.proof_range,
+                coherent.name_range,
+            );
+            coherent.final_binding_fingerprint = coherent.binding_env.debug_text();
+            assert_eq!(
+                coherent.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+            );
+        }
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
+
         let mut transaction = handoff.clone();
         transaction.source_id = other_source_id();
         transaction.lower_fingerprint.push('!');
@@ -8391,6 +8530,49 @@ mod task269c_tests {
             );
         }
         bases
+    }
+
+    fn binding_env_with_local_ranges(
+        original: &BindingEnv,
+        proof_range: SourceRange,
+        name_range: SourceRange,
+    ) -> BindingEnv {
+        let mut bindings = original.bindings().clone();
+        let binding = bindings.get_mut_for_test(BindingId::new(1)).unwrap();
+        binding.declaration_range = name_range;
+        let BinderIdentity::ResolverLocal {
+            declaration_range, ..
+        } = &mut binding.identity
+        else {
+            panic!("expected the proof-local resolver binding");
+        };
+        *declaration_range = name_range;
+        let mut contexts = BindingContextTable::new();
+        for (id, context) in original.contexts().iter() {
+            contexts.insert(BindingContextDraft {
+                owner: if id == BindingContextId::new(1) {
+                    BindingContextOwner::SourceStatement {
+                        source_range: proof_range,
+                    }
+                } else {
+                    context.owner.clone()
+                },
+                parent: context.parent,
+                layer: context.layer,
+                lexical_scope: context.lexical_scope.clone(),
+                bindings: context.bindings.clone(),
+                visible_bindings: context.visible_bindings.clone(),
+                recovery: context.recovery,
+            });
+        }
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            contexts,
+            bindings,
+            diagnostics: original.diagnostics().clone(),
+        })
+        .expect("coherent proof/name range corruption remains structurally valid")
     }
 
     fn inexact_final_declaration_handoffs(
