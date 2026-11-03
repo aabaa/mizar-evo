@@ -22,7 +22,7 @@ universal-statement-retirement	statement-witness	native-consumer	done	dormant ex
 nested-statement-retirement	statement-witness	native-consumer	done	dormant nested-quantifier upper statement: raw B4C retired; active lower-only nested transport preserved
 grouping-statement-retirement	statement-witness	native-consumer	done	dormant connective-grouping upper statement: final raw B4 profile retired; independent lower transport preserved
 imported-citation-retirement	statement-witness	native-consumer	done	dormant imported-theorem citation: raw B5B retired; native local references and import provenance tests preserved
-statement-witness-exit	statement-witness	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of the statement/witness family retired
+statement-witness-exit	statement-witness	native-consumer	done	original-source native intake uses generic rows; raw fixture profiles remain private preservation tests
 let-source-sites	proof-local	native-consumer	done	isolated unused proof-local Let syntax: generic table sites and lexical layouts/names; C/CT canonical dependency boundary unchanged
 given-source-sites	proof-local	native-consumer	done	isolated unused proof-local Given syntax: generic table sites and lexical layouts/names; G/GT canonical dependency boundary unchanged
 given-use-source-sites	proof-local	native-consumer	done	isolated Given-use syntax: generic sites with matching declaration/use names; receiver shared at three real consumers, canonical donors preserved
