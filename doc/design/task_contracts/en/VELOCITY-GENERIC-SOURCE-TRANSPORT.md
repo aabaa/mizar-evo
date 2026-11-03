@@ -46,6 +46,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] Given-condition term references: read existing generic rows through the shared private receiver; preserve canonical type/term donors
 - [x] wrapped imported application anchor: derive expected import byte bounds from authenticated ModulePath; preserve source owner and donor checks
 - [x] shared structure import anchor: derive expected byte bounds from authenticated ModulePath for constructor/selector/update; preserve source owner and donors
+- [x] structure-selector lower sites: derive proof, reserve declaration and written-type expectations from guarded AST; preserve lower donor checks
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger

@@ -2113,6 +2113,42 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
     let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
+    let Some(proof_node) = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ProofBlock))
+    else {
+        return false;
+    };
+    let Some(reserve_segment) = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ReserveSegment))
+    else {
+        return false;
+    };
+    let Some(declaration) = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| node.token_text() == Some("x"))
+    else {
+        return false;
+    };
+    let Some(written_type) = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+    else {
+        return false;
+    };
+    let expected_proof_range =
+        task258b3m2b2b2bp_range(ast, proof_node.range.start, proof_node.range.end);
+    let expected_declaration_range =
+        task258b3m2b2b2bp_range(ast, declaration.range.start, declaration.range.end);
+    let expected_type_range =
+        task258b3m2b2b2bp_range(ast, written_type.range.start, written_type.range.end);
     if !matches!(module_context.owner, BindingContextOwner::Module)
         || module_context.parent.is_some()
         || module_context.layer != BindingContextLayer::Module
@@ -2133,7 +2169,7 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
         || !matches!(
             proof_context.owner,
             BindingContextOwner::SourceStatement { source_range }
-                if source_range == task258b3m2b2b2bp_range(ast, 109, 169)
+                if source_range == expected_proof_range
         )
         || proof_context.parent != Some(BindingContextId::new(0))
         || proof_context.layer != BindingContextLayer::Proof
@@ -2166,15 +2202,15 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
                 spelling,
                 declaration_range,
             } if spelling == "x"
-                && *declaration_range == task258b3m2b2b2bp_range(ast, 37, 38)
+                && *declaration_range == expected_declaration_range
         )
         || binding.owner_context != BindingContextId::new(0)
-        || binding.declaration_range != task258b3m2b2b2bp_range(ast, 37, 38)
+        || binding.declaration_range != expected_declaration_range
         || binding.visible_after_ordinal != 0
         || !matches!(
             binding.type_site,
             BindingTypeSite::Source(source_range)
-                if source_range == task258b3m2b2b2bp_range(ast, 43, 46)
+                if source_range == expected_type_range
         )
         || binding.status != BindingStatus::Reserved
         || !binding.captured.identities().is_empty()
@@ -3780,6 +3816,7 @@ pub(in crate::runner) enum ImportedStructureSelectorTestMutation {
     ModuleContextVisibleBindings,
     ModuleContextRecovery,
     ProofContextOwner,
+    ProofContextRange,
     ProofContextParent,
     ProofContextLayer,
     ProofContextScope,
@@ -3791,10 +3828,12 @@ pub(in crate::runner) enum ImportedStructureSelectorTestMutation {
     BindingIdentityKind,
     BindingIdentitySpelling,
     BindingIdentityRange,
+    BindingIdentityAndDeclarationRange,
     BindingOwner,
     BindingDeclarationRange,
     BindingVisibleOrdinal,
     BindingTypeSite,
+    BindingTypeRange,
     BindingStatus,
     BindingCaptured,
     BindingDiagnostics,
@@ -4377,6 +4416,7 @@ fn task258b3m2b2b2bp_is_binding_mutation(mutation: ImportedStructureSelectorTest
             | ImportedStructureSelectorTestMutation::ModuleContextVisibleBindings
             | ImportedStructureSelectorTestMutation::ModuleContextRecovery
             | ImportedStructureSelectorTestMutation::ProofContextOwner
+            | ImportedStructureSelectorTestMutation::ProofContextRange
             | ImportedStructureSelectorTestMutation::ProofContextParent
             | ImportedStructureSelectorTestMutation::ProofContextLayer
             | ImportedStructureSelectorTestMutation::ProofContextScope
@@ -4388,10 +4428,12 @@ fn task258b3m2b2b2bp_is_binding_mutation(mutation: ImportedStructureSelectorTest
             | ImportedStructureSelectorTestMutation::BindingIdentityKind
             | ImportedStructureSelectorTestMutation::BindingIdentitySpelling
             | ImportedStructureSelectorTestMutation::BindingIdentityRange
+            | ImportedStructureSelectorTestMutation::BindingIdentityAndDeclarationRange
             | ImportedStructureSelectorTestMutation::BindingOwner
             | ImportedStructureSelectorTestMutation::BindingDeclarationRange
             | ImportedStructureSelectorTestMutation::BindingVisibleOrdinal
             | ImportedStructureSelectorTestMutation::BindingTypeSite
+            | ImportedStructureSelectorTestMutation::BindingTypeRange
             | ImportedStructureSelectorTestMutation::BindingStatus
             | ImportedStructureSelectorTestMutation::BindingCaptured
             | ImportedStructureSelectorTestMutation::BindingDiagnostics
@@ -4503,6 +4545,16 @@ fn task258b3m2b2b2bp_binding_env_with_mutation(
             };
             declaration_range.start += 1;
         }
+        ImportedStructureSelectorTestMutation::BindingIdentityAndDeclarationRange => {
+            let BinderIdentity::ReservedVariable {
+                declaration_range, ..
+            } = &mut binding.identity
+            else {
+                return Err("Task48 baseline binding identity is not reserved".to_owned());
+            };
+            declaration_range.end += 1;
+            binding.declaration_range.end += 1;
+        }
         ImportedStructureSelectorTestMutation::BindingOwner => {
             binding.owner_context = BindingContextId::new(1);
         }
@@ -4514,6 +4566,12 @@ fn task258b3m2b2b2bp_binding_env_with_mutation(
         }
         ImportedStructureSelectorTestMutation::BindingTypeSite => {
             binding.type_site = BindingTypeSite::Missing;
+        }
+        ImportedStructureSelectorTestMutation::BindingTypeRange => {
+            let BindingTypeSite::Source(range) = &mut binding.type_site else {
+                return Err("Task48 baseline binding type is not source".to_owned());
+            };
+            range.start += 1;
         }
         ImportedStructureSelectorTestMutation::BindingStatus => {
             binding.status = BindingStatus::Active;
@@ -4601,6 +4659,14 @@ fn task258b3m2b2b2bp_binding_env_with_mutation(
                 return Err("Task48 proof owner is not source-statement".to_owned());
             };
             context_drafts[1].owner = BindingContextOwner::SourceFormula { source_range };
+        }
+        ImportedStructureSelectorTestMutation::ProofContextRange => {
+            let BindingContextOwner::SourceStatement { source_range } =
+                &mut context_drafts[1].owner
+            else {
+                return Err("Task48 proof owner is not source-statement".to_owned());
+            };
+            source_range.start += 1;
         }
         ImportedStructureSelectorTestMutation::ProofContextParent => {
             context_drafts[1].parent = None;

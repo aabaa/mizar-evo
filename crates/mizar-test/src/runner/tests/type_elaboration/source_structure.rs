@@ -1499,6 +1499,33 @@ fn task258b3m2b2b2bp_structure_selector_corruption_replay_and_constructor_compat
         assert_clean_replay();
     }
 
+    for mutation in [
+        ImportedStructureSelectorTestMutation::ProofContextRange,
+        ImportedStructureSelectorTestMutation::BindingIdentityAndDeclarationRange,
+        ImportedStructureSelectorTestMutation::BindingTypeRange,
+    ] {
+        let error = b2bp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2BP_SOURCE,
+            &roots,
+            62,
+            proof,
+            ImportedStructureSelectorSurfaceMutation::None,
+            mutation,
+        )
+        .expect("valid lower range mutation selector")
+        .expect_err("shifted lower occurrence must fail the selector profile");
+        assert_eq!(
+            error,
+            "Task254: exact Task-48/252 selector proof-context profile mismatch",
+            "{mutation:?}"
+        );
+        assert_clean_replay();
+    }
+
     let mut primary_mutations = vec![
         ImportedStructureSelectorTestMutation::PrimarySourceId,
         ImportedStructureSelectorTestMutation::PrimaryModuleId,
