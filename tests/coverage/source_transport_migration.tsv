@@ -61,6 +61,11 @@ given-type-binding-rechecks	proof-local	native-consumer	done	Given type overlay 
 given-condition-type-binding-rechecks	proof-local	native-consumer	done	Given-condition type overlay retains authenticated reserve and constructed local type sites without duplicate range comparisons
 descendant-type-binding-rechecks	proof-local	native-consumer	done	Descendant Given type overlay retains authenticated reserve and constructed local type sites without duplicate range comparisons
 given-use-type-binding-rechecks	proof-local	native-consumer	done	Given-use type overlay retains authenticated reserve and constructed local type sites without duplicate range comparisons
+let-type-binding-producer	proof-local	native-consumer	done	Let type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
+given-type-binding-producer	proof-local	native-consumer	done	Given type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
+given-use-type-binding-producer	proof-local	native-consumer	done	Given-use type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
+given-condition-type-binding-producer	proof-local	native-consumer	done	Given-condition type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
+descendant-type-binding-producer	proof-local	native-consumer	done	Descendant Given type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
 proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved

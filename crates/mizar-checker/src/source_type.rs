@@ -3355,11 +3355,14 @@ enum SourceTypeBindingProfile {
     ProofLocalGiven,
 }
 
-fn task269ct_binding_env(
-    dependency: &SourceProofLocalLetBindingHandoff,
-) -> Result<BindingEnv, SourceProofLocalLetTypeError> {
+fn task269_type_binding_env(
+    dependency: &BindingEnv,
+    local_type: SourceRange,
+    kind: BindingKind,
+    context_count: usize,
+) -> Option<BindingEnv> {
     let mut bindings = BindingTable::new();
-    for (id, binding) in dependency.binding_env().bindings().iter() {
+    for (id, binding) in dependency.bindings().iter() {
         let inserted = bindings.insert(BindingDraft {
             spelling: binding.spelling.clone(),
             kind: binding.kind,
@@ -3368,7 +3371,7 @@ fn task269ct_binding_env(
             declaration_range: binding.declaration_range,
             visible_after_ordinal: binding.visible_after_ordinal,
             type_site: if id == BindingId::new(1) {
-                BindingTypeSite::Source(task269ct_range(dependency.source_id(), 76, 79))
+                BindingTypeSite::Source(local_type)
             } else {
                 binding.type_site.clone()
             },
@@ -3378,26 +3381,38 @@ fn task269ct_binding_env(
             recovery: binding.recovery,
         });
         if inserted != id {
-            return Err(SourceProofLocalLetTypeError::InvalidBindingEnvironment);
+            return None;
         }
     }
     let binding_env = BindingEnv::try_new(BindingEnvParts {
         source_id: dependency.source_id(),
         module_id: dependency.module_id().clone(),
-        contexts: dependency.binding_env().contexts().clone(),
+        contexts: dependency.contexts().clone(),
         bindings,
-        diagnostics: dependency.binding_env().diagnostics().clone(),
+        diagnostics: dependency.diagnostics().clone(),
     })
-    .map_err(|_| SourceProofLocalLetTypeError::InvalidBindingEnvironment)?;
+    .ok()?;
     let local = binding_env.bindings().get(BindingId::new(1));
-    if binding_env.contexts().len() != 2
+    if binding_env.contexts().len() != context_count
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || local.is_none_or(|binding| binding.kind != BindingKind::LetBinding)
+        || local.is_none_or(|binding| binding.kind != kind)
     {
-        return Err(SourceProofLocalLetTypeError::InvalidBindingEnvironment);
+        return None;
     }
-    Ok(binding_env)
+    Some(binding_env)
+}
+
+fn task269ct_binding_env(
+    dependency: &SourceProofLocalLetBindingHandoff,
+) -> Result<BindingEnv, SourceProofLocalLetTypeError> {
+    task269_type_binding_env(
+        dependency.binding_env(),
+        task269ct_range(dependency.source_id(), 76, 79),
+        BindingKind::LetBinding,
+        2,
+    )
+    .ok_or(SourceProofLocalLetTypeError::InvalidBindingEnvironment)
 }
 
 fn exact_task269ct_input(input: &SourceTypeHandoffInput) -> bool {
@@ -3546,46 +3561,13 @@ fn task269ct_range(source_id: SourceId, start: usize, end: usize) -> SourceRange
 fn task269gt_binding_env(
     dependency: &SourceProofLocalGivenBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenTypeError> {
-    let mut bindings = BindingTable::new();
-    for (id, binding) in dependency.binding_env().bindings().iter() {
-        let inserted = bindings.insert(BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: binding.kind,
-            identity: binding.identity.clone(),
-            owner_context: binding.owner_context,
-            declaration_range: binding.declaration_range,
-            visible_after_ordinal: binding.visible_after_ordinal,
-            type_site: if id == BindingId::new(1) {
-                BindingTypeSite::Source(task269gt_range(dependency.source_id(), 84, 87))
-            } else {
-                binding.type_site.clone()
-            },
-            status: binding.status,
-            captured: binding.captured.clone(),
-            diagnostics: binding.diagnostics.clone(),
-            recovery: binding.recovery,
-        });
-        if inserted != id {
-            return Err(SourceProofLocalGivenTypeError::InvalidBindingEnvironment);
-        }
-    }
-    let binding_env = BindingEnv::try_new(BindingEnvParts {
-        source_id: dependency.source_id(),
-        module_id: dependency.module_id().clone(),
-        contexts: dependency.binding_env().contexts().clone(),
-        bindings,
-        diagnostics: dependency.binding_env().diagnostics().clone(),
-    })
-    .map_err(|_| SourceProofLocalGivenTypeError::InvalidBindingEnvironment)?;
-    let local = binding_env.bindings().get(BindingId::new(1));
-    if binding_env.contexts().len() != 2
-        || binding_env.bindings().len() != 2
-        || !binding_env.diagnostics().is_empty()
-        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
-    {
-        return Err(SourceProofLocalGivenTypeError::InvalidBindingEnvironment);
-    }
-    Ok(binding_env)
+    task269_type_binding_env(
+        dependency.binding_env(),
+        task269gt_range(dependency.source_id(), 84, 87),
+        BindingKind::GivenWitness,
+        2,
+    )
+    .ok_or(SourceProofLocalGivenTypeError::InvalidBindingEnvironment)
 }
 
 fn exact_task269gt_input(input: &SourceTypeHandoffInput) -> bool {
@@ -3726,46 +3708,13 @@ fn task269gt_range(source_id: SourceId, start: usize, end: usize) -> SourceRange
 fn task269gct_binding_env(
     dependency: &SourceProofLocalGivenConditionBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenConditionTypeError> {
-    let mut bindings = BindingTable::new();
-    for (id, binding) in dependency.binding_env().bindings().iter() {
-        let inserted = bindings.insert(BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: binding.kind,
-            identity: binding.identity.clone(),
-            owner_context: binding.owner_context,
-            declaration_range: binding.declaration_range,
-            visible_after_ordinal: binding.visible_after_ordinal,
-            type_site: if id == BindingId::new(1) {
-                BindingTypeSite::Source(task269gct_range(dependency.source_id(), 90, 93))
-            } else {
-                binding.type_site.clone()
-            },
-            status: binding.status,
-            captured: binding.captured.clone(),
-            diagnostics: binding.diagnostics.clone(),
-            recovery: binding.recovery,
-        });
-        if inserted != id {
-            return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
-        }
-    }
-    let binding_env = BindingEnv::try_new(BindingEnvParts {
-        source_id: dependency.source_id(),
-        module_id: dependency.module_id().clone(),
-        contexts: dependency.binding_env().contexts().clone(),
-        bindings,
-        diagnostics: dependency.binding_env().diagnostics().clone(),
-    })
-    .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)?;
-    let local = binding_env.bindings().get(BindingId::new(1));
-    if binding_env.contexts().len() != 2
-        || binding_env.bindings().len() != 2
-        || !binding_env.diagnostics().is_empty()
-        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
-    {
-        return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
-    }
-    Ok(binding_env)
+    task269_type_binding_env(
+        dependency.binding_env(),
+        task269gct_range(dependency.source_id(), 90, 93),
+        BindingKind::GivenWitness,
+        2,
+    )
+    .ok_or(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)
 }
 
 fn exact_task269gct_input(input: &SourceTypeHandoffInput) -> bool {
@@ -3916,46 +3865,13 @@ fn task269gct_range(source_id: SourceId, start: usize, end: usize) -> SourceRang
 fn task269sdt_binding_env(
     dependency: &SourceProofLocalGivenDescendantBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenDescendantTypeError> {
-    let mut bindings = BindingTable::new();
-    for (id, binding) in dependency.binding_env().bindings().iter() {
-        let inserted = bindings.insert(BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: binding.kind,
-            identity: binding.identity.clone(),
-            owner_context: binding.owner_context,
-            declaration_range: binding.declaration_range,
-            visible_after_ordinal: binding.visible_after_ordinal,
-            type_site: if id == BindingId::new(1) {
-                BindingTypeSite::Source(task269sdt_range(dependency.source_id(), 95, 98))
-            } else {
-                binding.type_site.clone()
-            },
-            status: binding.status,
-            captured: binding.captured.clone(),
-            diagnostics: binding.diagnostics.clone(),
-            recovery: binding.recovery,
-        });
-        if inserted != id {
-            return Err(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment);
-        }
-    }
-    let binding_env = BindingEnv::try_new(BindingEnvParts {
-        source_id: dependency.source_id(),
-        module_id: dependency.module_id().clone(),
-        contexts: dependency.binding_env().contexts().clone(),
-        bindings,
-        diagnostics: dependency.binding_env().diagnostics().clone(),
-    })
-    .map_err(|_| SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment)?;
-    let local = binding_env.bindings().get(BindingId::new(1));
-    if binding_env.contexts().len() != 3
-        || binding_env.bindings().len() != 2
-        || !binding_env.diagnostics().is_empty()
-        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
-    {
-        return Err(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment);
-    }
-    Ok(binding_env)
+    task269_type_binding_env(
+        dependency.binding_env(),
+        task269sdt_range(dependency.source_id(), 95, 98),
+        BindingKind::GivenWitness,
+        3,
+    )
+    .ok_or(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment)
 }
 
 fn exact_task269sdt_input(input: &SourceTypeHandoffInput) -> bool {
@@ -4106,46 +4022,13 @@ fn task269sdt_range(source_id: SourceId, start: usize, end: usize) -> SourceRang
 fn task269gupt_binding_env(
     dependency: &SourceProofLocalGivenUseBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenUseTypeError> {
-    let mut bindings = BindingTable::new();
-    for (id, binding) in dependency.binding_env().bindings().iter() {
-        let inserted = bindings.insert(BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: binding.kind,
-            identity: binding.identity.clone(),
-            owner_context: binding.owner_context,
-            declaration_range: binding.declaration_range,
-            visible_after_ordinal: binding.visible_after_ordinal,
-            type_site: if id == BindingId::new(1) {
-                BindingTypeSite::Source(task269gupt_range(dependency.source_id(), 84, 87))
-            } else {
-                binding.type_site.clone()
-            },
-            status: binding.status,
-            captured: binding.captured.clone(),
-            diagnostics: binding.diagnostics.clone(),
-            recovery: binding.recovery,
-        });
-        if inserted != id {
-            return Err(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment);
-        }
-    }
-    let binding_env = BindingEnv::try_new(BindingEnvParts {
-        source_id: dependency.source_id(),
-        module_id: dependency.module_id().clone(),
-        contexts: dependency.binding_env().contexts().clone(),
-        bindings,
-        diagnostics: dependency.binding_env().diagnostics().clone(),
-    })
-    .map_err(|_| SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment)?;
-    let local = binding_env.bindings().get(BindingId::new(1));
-    if binding_env.contexts().len() != 2
-        || binding_env.bindings().len() != 2
-        || !binding_env.diagnostics().is_empty()
-        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
-    {
-        return Err(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment);
-    }
-    Ok(binding_env)
+    task269_type_binding_env(
+        dependency.binding_env(),
+        task269gupt_range(dependency.source_id(), 84, 87),
+        BindingKind::GivenWitness,
+        2,
+    )
+    .ok_or(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment)
 }
 
 fn exact_task269gupt_input(input: &SourceTypeHandoffInput) -> bool {
