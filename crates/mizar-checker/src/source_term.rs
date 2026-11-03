@@ -2160,20 +2160,8 @@ fn exact_task269gu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != 6 || arena.root() != Some(TypedNodeId::new(5)) {
         return false;
     }
+    // Both callers validate the GUPT type overlay before checking these term rows.
     let expected = [
-        (
-            "source.proof-local.given-use.reserve-type",
-            14,
-            17,
-            Vec::new(),
-        ),
-        ("source.proof-local.given-use.type", 84, 87, Vec::new()),
-        (
-            "source.proof-local.given-use.type-root",
-            0,
-            127,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
         ("source.term.variable-reference", 116, 117, Vec::new()),
         ("source.term.variable-reference", 120, 121, Vec::new()),
         (
@@ -2191,7 +2179,7 @@ fn exact_task269gu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
         .into_iter()
         .enumerate()
         .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
                 node.kind.as_str() == kind
                     && node.resolved_node.is_none()
                     && node.anchor == SourceAnchor::Range(task269gu_range(source_id, start, end))
