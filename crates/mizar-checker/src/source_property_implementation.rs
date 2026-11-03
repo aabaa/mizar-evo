@@ -2017,7 +2017,7 @@ fn validate_input(
                 input,
                 target_origin,
                 source_type,
-                Some(prefix),
+                prefix,
             )
             .is_ok()
     });
@@ -3128,7 +3128,7 @@ fn validate_handoff(
         &input,
         &handoff.targets.rows[0].origin,
         source_type,
-        Some(&prefix),
+        &prefix,
     )?;
     validate_obligations(handoff, obligations)
 }
@@ -3138,7 +3138,7 @@ fn validate_carrier_identity(
     input: &SourcePropertyImplementationHandoffInput,
     target_origin: &SemanticOrigin,
     source_type: &SourceTypeApplicationHandoff,
-    prefix: Option<&[SourceRange; 28]>,
+    prefix: &[SourceRange; 28],
 ) -> Result<(), SourcePropertyImplementationError> {
     let target = &input.targets[0];
     let contribution = identity.structure.contribution;
@@ -3169,21 +3169,21 @@ fn validate_carrier_identity(
             &identity.structure.origin,
             input.source_id,
             &input.module_id,
-            prefix.map_or(range(input.source_id, 13, 101), |prefix| prefix[26]),
+            prefix[26],
             &[4, 0, 11, 0],
         )
         || !normal_origin(
             &identity.field.origin,
             input.source_id,
             &input.module_id,
-            prefix.map_or(range(input.source_id, 45, 66), |prefix| prefix[22]),
+            prefix[22],
             &[4, 0, 11, 0, 18, 0],
         )
         || !normal_origin(
             &identity.property.origin,
             input.source_id,
             &input.module_id,
-            prefix.map_or(range(input.source_id, 71, 94), |prefix| prefix[25]),
+            prefix[25],
             &[4, 0, 11, 0, 19, 1],
         )
         || target.symbol != identity.property.symbol

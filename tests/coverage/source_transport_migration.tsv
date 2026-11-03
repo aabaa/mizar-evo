@@ -75,4 +75,7 @@ mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are int
 predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 attribute-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 type-term-formula-exit	type-term-formula	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of source_type.rs, source_term.rs, source_formula_composition.rs and their runners retired
+property-structure-origin-fallback	element-rules	native-consumer	done	Structure origin reads the supplied validated prefix; unreachable private canonical fallback retired
+property-field-origin-fallback	element-rules	native-consumer	done	Field origin reads the supplied validated prefix; unreachable private canonical fallback retired
+property-target-origin-fallback	element-rules	native-consumer	done	Property target origin reads the supplied validated prefix; unreachable private canonical fallback retired
 element-rules	element-rules	native-consumer	open	class b element rules: Tasks 257, 269, 270, 271, 272, 279 per tests/coverage/source_transport_classification.tsv
