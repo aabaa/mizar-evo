@@ -937,8 +937,9 @@ fn build_task_257b2_output(
     payload: SourceFormulaConnectiveGrouping,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
-    let arena = task_257b2_typed_arena(ast, &payload)?;
-    let inputs = task_257b2_route_inputs(ast, module.clone(), &payload)?;
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let arena = task_257b2_typed_arena(ast, &syntax, &payload)?;
+    let inputs = task_257b2_route_inputs(ast, &syntax, module.clone(), &payload)?;
     let base = module_shell(ast, module.clone())?;
     build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
@@ -1267,36 +1268,35 @@ fn route_inputs(
 
 fn task_257b2_route_inputs(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     module: ModuleId,
     payload: &SourceFormulaConnectiveGrouping,
 ) -> Result<SourceFormulaCompositionRouteInputs, String> {
     if payload.formula_sites.len() != 8
-        || payload.formula_ranges.len() != 8
         || payload.wrapper_sites.len() != 6
-        || payload.wrapper_ranges.len() != 6
         || payload.equality_sites.len() != 8
-        || payload.equality_ranges.len() != 8
         || payload.numeral_sites.len() != 16
-        || payload.numeral_ranges.len() != 16
-        || payload.numeral_spellings.len() != 16
     {
         return Err("Task257B2 extracted aggregate changed".to_owned());
     }
-    let identifier = ast
-        .nodes()
-        .get(payload.binder_identifier_site.node().index())
-        .ok_or("Task257B2 identifier site is missing")?;
-    let mizar_syntax::SurfaceNodeKind::Token(token) = &identifier.kind else {
+    let row = |site: &TypedSiteRef| {
+        syntax
+            .source_node_entries()
+            .ok_or(INVALID_PAYLOAD_KEY)?
+            .find(|row| row.site().index() == site.node().index())
+            .ok_or(INVALID_PAYLOAD_KEY)
+    };
+    let identifier = row(&payload.binder_identifier_site)?;
+    let SurfaceNodeKind::Token(token) = identifier.kind() else {
         return Err("Task257B2 identifier token is missing".to_owned());
     };
-    if identifier.recovered
-        || identifier.range != payload.binder_identifier_range
+    if identifier.recovery() != NodeRecoveryState::Normal
         || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
-        || !mizar_lexer::is_identifier(&token.text)
+        || !mizar_lexer::is_identifier(identifier.spelling())
     {
         return Err("Task257B2 identifier token is invalid".to_owned());
     }
-    let spelling = token.text.as_ref();
+    let spelling = identifier.spelling();
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let formula_specs = [
@@ -1312,16 +1312,18 @@ fn task_257b2_route_inputs(
     let formulas = formula_specs
         .into_iter()
         .enumerate()
-        .map(|(index, (kind, spelling))| SourceCompositeFormulaInput {
-            site: payload.formula_sites[index].clone(),
-            source_range: payload.formula_ranges[index],
-            source_ordinal: index,
-            context: if index == 0 { context0 } else { context1 },
-            recovery: SourceCompositeFormulaRecovery::Normal,
-            spelling: spelling.to_owned(),
-            kind,
+        .map(|(index, (kind, spelling))| {
+            Ok(SourceCompositeFormulaInput {
+                site: payload.formula_sites[index].clone(),
+                source_range: row(&payload.formula_sites[index])?.range(),
+                source_ordinal: index,
+                context: if index == 0 { context0 } else { context1 },
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: spelling.to_owned(),
+                kind,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let wrapper_owners = [2, 3, 4, 5, 6, 7];
     let wrapper_spellings = [
         "( or )",
@@ -1335,16 +1337,18 @@ fn task_257b2_route_inputs(
         .into_iter()
         .zip(wrapper_spellings)
         .enumerate()
-        .map(|(index, (formula, spelling))| SourceFormulaWrapperInput {
-            formula: SourceCompositeFormulaId::new(formula),
-            ordinal: 0,
-            site: payload.wrapper_sites[index].clone(),
-            source_range: payload.wrapper_ranges[index],
-            context: context1,
-            recovery: SourceCompositeFormulaRecovery::Normal,
-            spelling: spelling.to_owned(),
+        .map(|(index, (formula, spelling))| {
+            Ok(SourceFormulaWrapperInput {
+                formula: SourceCompositeFormulaId::new(formula),
+                ordinal: 0,
+                site: payload.wrapper_sites[index].clone(),
+                source_range: row(&payload.wrapper_sites[index])?.range(),
+                context: context1,
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: spelling.to_owned(),
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let mut requests = vec![
         SourceFormulaRequestInput {
             formula: SourceCompositeFormulaId::new(0),
@@ -1382,15 +1386,15 @@ fn task_257b2_route_inputs(
             formula: SourceCompositeFormulaId::new(0),
             ordinal: 0,
             segment_site: payload.binder_segment_site.clone(),
-            segment_range: payload.binder_segment_range,
+            segment_range: row(&payload.binder_segment_site)?.range(),
             segment_spelling: format!("{spelling} being"),
             identifier_site: payload.binder_identifier_site.clone(),
-            identifier_range: payload.binder_identifier_range,
+            identifier_range: row(&payload.binder_identifier_site)?.range(),
             identifier_spelling: spelling.to_owned(),
             local: LocalTermBinding::new(
                 spelling,
                 LocalTermScope::new(vec![0]),
-                payload.binder_identifier_range,
+                row(&payload.binder_identifier_site)?.range(),
                 0,
             ),
             binding: BindingId::new(0),
@@ -1401,10 +1405,10 @@ fn task_257b2_route_inputs(
         type_sites: vec![SourceBinderTypeSiteInput {
             binder: SourceQuantifierBinderId::new(0),
             site: payload.binder_type_site.clone(),
-            source_range: payload.binder_type_range,
+            source_range: row(&payload.binder_type_site)?.range(),
             spelling: "set".to_owned(),
             head_site: payload.binder_type_head_site.clone(),
-            head_range: payload.binder_type_head_range,
+            head_range: row(&payload.binder_type_head_site)?.range(),
             head_spelling: "set".to_owned(),
             context: context0,
             recovery: SourceCompositeFormulaRecovery::Normal,
@@ -1431,18 +1435,20 @@ fn task_257b2_route_inputs(
     };
 
     let terms = (0..16)
-        .map(|index| SourcePrimaryTermInput {
-            site: payload.numeral_sites[index].clone(),
-            source_range: payload.numeral_ranges[index],
-            source_ordinal: index,
-            context: context1,
-            recovery: SourcePrimaryTermRecovery::Normal,
-            spelling: payload.numeral_spellings[index].clone(),
-            kind: SourcePrimaryTermKind::Numeral,
-            role: SourcePrimaryTermRole::Value,
-            parent: None,
+        .map(|index| {
+            Ok(SourcePrimaryTermInput {
+                site: payload.numeral_sites[index].clone(),
+                source_range: row(&payload.numeral_sites[index])?.range(),
+                source_ordinal: index,
+                context: context1,
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: row(&payload.numeral_sites[index])?.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::Numeral,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, &str>>()?;
     let numeric_type_requests = terms
         .iter()
         .enumerate()
@@ -1468,16 +1474,18 @@ fn task_257b2_route_inputs(
     let atomic_formulas = equality_spellings
         .into_iter()
         .enumerate()
-        .map(|(index, spelling)| SourceAtomicFormulaInput {
-            site: payload.equality_sites[index].clone(),
-            source_range: payload.equality_ranges[index],
-            source_ordinal: index,
-            context: context1,
-            recovery: SourceAtomicFormulaRecovery::Normal,
-            spelling: spelling.to_owned(),
-            kind: SourceAtomicFormulaKind::Equality,
+        .map(|(index, spelling)| {
+            Ok(SourceAtomicFormulaInput {
+                site: payload.equality_sites[index].clone(),
+                source_range: row(&payload.equality_sites[index])?.range(),
+                source_ordinal: index,
+                context: context1,
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: spelling.to_owned(),
+                kind: SourceAtomicFormulaKind::Equality,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, &str>>()?;
     let atomic_edges = (0..8)
         .flat_map(|formula| {
             [
@@ -1944,6 +1952,7 @@ fn typed_arena(
 
 fn task_257b2_typed_arena(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     payload: &SourceFormulaConnectiveGrouping,
 ) -> Result<TypedArena, String> {
     let formula_kinds = [
@@ -1991,12 +2000,21 @@ fn task_257b2_typed_arena(
     }
     let mut builder = TypedArenaBuilder::new();
     for (index, node) in ast.nodes().iter().enumerate() {
-        let key = kinds
-            .remove(&index)
-            .unwrap_or("source.formula.composition.unowned");
+        let owned_kind = kinds.remove(&index);
+        let range = if owned_kind.is_some() {
+            syntax
+                .source_node_entries()
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .find(|row| row.site().index() == index)
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .range()
+        } else {
+            node.range
+        };
+        let key = owned_kind.unwrap_or("source.formula.composition.unowned");
         let pushed = builder
             .push(
-                TypedNode::new(key, SourceAnchor::Range(node.range))
+                TypedNode::new(key, SourceAnchor::Range(range))
                     .with_recovery(NodeRecoveryState::Normal),
             )
             .map_err(|error| error.to_string())?;

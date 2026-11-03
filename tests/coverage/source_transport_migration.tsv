@@ -95,3 +95,4 @@ ordinary-predicate-generic-transport	type-term-formula	ordinary-attribute-generi
 given-use-output-lookup-validation	proof-local	given-use-binding-helper-consolidation	done	Given-use output-row and common lookup validation reuse the retained Given replay predicates
 given-condition-output-lookup-validation	proof-local	given-condition-binding-helper-consolidation	done	Given-condition output-row and common lookup validation reuse the retained Given replay predicates
 descendant-output-lookup-validation	proof-local	descendant-binding-helper-consolidation	done	Descendant output-row and common lookup validation reuse the retained Given predicates while retaining descendant lookup validation
+connective-grouping-generic-transport	type-term-formula	direct-b1-formula-sites	done	B2 whole lower tuple and arena anchors read authenticated generic rows; connective semantics remain deferred.

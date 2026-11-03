@@ -1669,22 +1669,13 @@ pub(in crate::runner) struct SourceFormulaQuantifierBoundUse {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaConnectiveGrouping {
     pub(in crate::runner) formula_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) formula_ranges: Vec<SourceRange>,
     pub(in crate::runner) wrapper_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) wrapper_ranges: Vec<SourceRange>,
     pub(in crate::runner) binder_segment_site: TypedSiteRef,
-    pub(in crate::runner) binder_segment_range: SourceRange,
     pub(in crate::runner) binder_identifier_site: TypedSiteRef,
-    pub(in crate::runner) binder_identifier_range: SourceRange,
     pub(in crate::runner) binder_type_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_range: SourceRange,
     pub(in crate::runner) binder_type_head_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_head_range: SourceRange,
     pub(in crate::runner) equality_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) equality_ranges: Vec<SourceRange>,
     pub(in crate::runner) numeral_sites: Vec<TypedSiteRef>,
-    pub(in crate::runner) numeral_ranges: Vec<SourceRange>,
-    pub(in crate::runner) numeral_spellings: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -3189,7 +3180,6 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
     let [type_head_id] = type_expression_children.as_slice() else {
         return None;
     };
-    let type_head = ast.node(*type_head_id)?;
     let binder_type =
         extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
     if binder_type.spelling != "set"
@@ -3263,10 +3253,7 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
         (fixed_or_children[1], "0"),
     ];
     let mut equality_sites = Vec::with_capacity(8);
-    let mut equality_ranges = Vec::with_capacity(8);
     let mut numeral_sites = Vec::with_capacity(16);
-    let mut numeral_ranges = Vec::with_capacity(16);
-    let mut numeral_spellings = Vec::with_capacity(16);
     for (equality_id, right_spelling) in equality_specs {
         let equality = ast.node(equality_id)?;
         if !matches!(equality.kind, SurfaceNodeKind::BuiltinPredicateApplication)
@@ -3282,11 +3269,8 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
         let left = exact_numeral_term_operand(ast, *left_expression_id, "0")?;
         let right = exact_numeral_term_operand(ast, *right_expression_id, right_spelling)?;
         equality_sites.push(surface_site(equality_id));
-        equality_ranges.push(equality.range);
-        for (id, range, spelling) in [(left.0, left.1, "0"), (right.0, right.1, right_spelling)] {
+        for id in [left.0, right.0] {
             numeral_sites.push(surface_site(id));
-            numeral_ranges.push(range);
-            numeral_spellings.push(spelling.to_owned());
         }
     }
 
@@ -3310,28 +3294,13 @@ pub(in crate::runner) fn extract_source_formula_connective_grouping(
     ];
     Some(SourceFormulaConnectiveGrouping {
         formula_sites: formula_ids.into_iter().map(surface_site).collect(),
-        formula_ranges: formula_ids
-            .into_iter()
-            .map(|id| ast.node(id).map(|node| node.range))
-            .collect::<Option<Vec<_>>>()?,
         wrapper_sites: wrapper_ids.into_iter().map(surface_site).collect(),
-        wrapper_ranges: wrapper_ids
-            .into_iter()
-            .map(|id| ast.node(id).map(|node| node.range))
-            .collect::<Option<Vec<_>>>()?,
         binder_segment_site: surface_site(*segment_id),
-        binder_segment_range: segment.range,
         binder_identifier_site: surface_site(*binder_identifier_id),
-        binder_identifier_range: binder_identifier.range,
         binder_type_site: surface_site(*type_expression_id),
-        binder_type_range: type_expression.range,
         binder_type_head_site: surface_site(*type_head_id),
-        binder_type_head_range: type_head.range,
         equality_sites,
-        equality_ranges,
         numeral_sites,
-        numeral_ranges,
-        numeral_spellings,
     })
 }
 

@@ -1526,101 +1526,6 @@ fn task257b2_real_route_publishes_exact_profiles_ranges_and_final_ownership() {
     let (ast, module, symbols) = task252_real_ast(TASK257B2_CASE);
     let payload = extract_source_formula_connective_grouping(&ast, &module, &symbols)
         .expect("Task 257B2 selector payload");
-    assert_eq!(
-        payload
-            .formula_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [
-            (50, 164),
-            (72, 164),
-            (73, 121),
-            (74, 93),
-            (99, 120),
-            (128, 163),
-            (129, 142),
-            (148, 162),
-        ]
-    );
-    assert_eq!(
-        payload
-            .wrapper_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [
-            (72, 122),
-            (73, 94),
-            (98, 121),
-            (127, 164),
-            (128, 143),
-            (147, 163),
-        ]
-    );
-    assert_eq!(
-        payload
-            .equality_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [
-            (74, 79),
-            (88, 93),
-            (99, 104),
-            (115, 120),
-            (129, 134),
-            (137, 142),
-            (148, 153),
-            (157, 162),
-        ]
-    );
-    assert_eq!(
-        payload
-            .numeral_ranges
-            .iter()
-            .map(|range| (range.start, range.end))
-            .collect::<Vec<_>>(),
-        [
-            (74, 75),
-            (78, 79),
-            (88, 89),
-            (92, 93),
-            (99, 100),
-            (103, 104),
-            (115, 116),
-            (119, 120),
-            (129, 130),
-            (133, 134),
-            (137, 138),
-            (141, 142),
-            (148, 149),
-            (152, 153),
-            (157, 158),
-            (161, 162),
-        ]
-    );
-    assert_eq!(
-        payload.numeral_spellings,
-        [
-            "0", "0", "0", "3", "0", "0", "0", "3", "0", "0", "0", "0", "0", "0", "0",
-            "0",
-        ]
-    );
-    assert_eq!(
-        (
-            payload.binder_segment_range.start,
-            payload.binder_segment_range.end,
-            payload.binder_identifier_range.start,
-            payload.binder_identifier_range.end,
-            payload.binder_type_range.start,
-            payload.binder_type_range.end,
-            payload.binder_type_head_range.start,
-            payload.binder_type_head_range.end,
-        ),
-        (54, 65, 54, 55, 62, 65, 62, 65)
-    );
-
     let first = source_formula_composition_output(&ast, module.clone(), &symbols)
         .expect("Task 257B2 selects")
         .expect("Task 257B2 transaction");
@@ -1637,6 +1542,43 @@ fn task257b2_real_route_publishes_exact_profiles_ranges_and_final_ownership() {
         .source_composite_formula()
         .expect("Task 257 handoff");
     let composition = task257b1_handoff(&first);
+    let binder = composite.binders().iter().next().unwrap().1;
+    let type_site = composite.type_sites().iter().next().unwrap().1;
+    let ranges = composite.formulas().iter().map(|(_, row)| row.source_range())
+        .chain(composite.wrappers().iter().map(|(_, row)| row.source_range()))
+        .chain(atomic.formulas().iter().map(|(_, row)| row.source_range()))
+        .chain(primary.terms().iter().map(|(_, row)| row.source_range()))
+        .chain([
+            binder.segment_range(), binder.identifier_range(),
+            type_site.source_range(), type_site.head_range(),
+        ]);
+    let sites = payload.formula_sites.iter().chain(&payload.wrapper_sites)
+        .chain(&payload.equality_sites).chain(&payload.numeral_sites)
+        .chain([
+            &payload.binder_segment_site, &payload.binder_identifier_site,
+            &payload.binder_type_site, &payload.binder_type_head_site,
+        ]);
+    for (range, site) in ranges.zip(sites) {
+        assert_eq!(range, ast.nodes().get(site.node().index()).unwrap().range);
+    }
+    assert_eq!(binder.local().declaration_range(), binder.identifier_range());
+    assert_eq!(
+        binder.identifier_spelling(),
+        ast.nodes().get(payload.binder_identifier_site.node().index()).unwrap().token_text().unwrap()
+    );
+    for ((_, term), (_, request)) in primary.terms().iter().zip(primary.numeric_type_requests().iter()) {
+        let node = ast.nodes().get(term.site().node().index()).unwrap();
+        let token = ast.node(node.children[0]).unwrap().token_text().unwrap();
+        assert_eq!(term.spelling(), token);
+        assert_eq!((request.source_range(), request.spelling()), (node.range, token));
+    }
+    assert_eq!(first.typed_ast.nodes().len(), ast.nodes().len());
+    for (id, node) in first.typed_ast.nodes().iter() {
+        assert_eq!(
+            node.anchor,
+            mizar_session::SourceAnchor::Range(ast.nodes().get(id.index()).unwrap().range)
+        );
+    }
     assert_eq!(
         (
             primary.terms().len(),
@@ -1729,8 +1671,6 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
     let frontend = run_frontend(root, case, ordinal).unwrap();
     let ast = frontend.ast.as_ref().unwrap();
     let resolver = resolver_symbol_collection(root, case, ast);
-    let baseline =
-        extract_source_formula_connective_grouping(ast, &resolver.module, &resolver.env).unwrap();
     let two_binders = original.replacen("for x being set", "for x, y being set", 1);
     assert_ne!(two_binders, original);
     metamorphic_guard::with_source(case, &two_binders, || {
@@ -1756,8 +1696,17 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
     )
     .unwrap()
     .unwrap();
-    for spelling in ["y", "unused_grouped_binder"] {
-        let source = original.replacen("for x being set", &format!("for {spelling} being set"), 1);
+    for (spelling, layout) in [
+        ("y", false), ("unused_grouped_binder", false),
+        ("y", true), ("unused_grouped_binder", true),
+    ] {
+        let mut source = original.replacen("for x being set", &format!("for {spelling} being set"), 1);
+        if layout {
+            source = format!(
+                "\n:: grouped layout\n{}",
+                source.replace(" holds ", "\n holds\n ").replace(" iff ", "\n iff\n ")
+            );
+        }
         assert_ne!(source, original);
         metamorphic_guard::with_source(case, &source, || {
             let frontend = run_frontend(root, case, ordinal).unwrap();
@@ -1855,29 +1804,30 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
                 .chain(primary.terms().iter().map(|(_, row)| row.source_range()))
                 .chain(atomic.formulas().iter().map(|(_, row)| row.source_range()))
                 .collect::<Vec<_>>();
-            let source_ranges = payload
-                .formula_ranges
-                .iter()
-                .chain(&payload.wrapper_ranges)
-                .chain(&payload.numeral_ranges)
-                .chain(&payload.equality_ranges)
-                .copied()
+            let source_ranges = payload.formula_sites.iter().chain(&payload.wrapper_sites)
+                .chain(&payload.numeral_sites).chain(&payload.equality_sites)
+                .map(|site| ast.nodes().get(site.node().index()).unwrap().range)
                 .collect::<Vec<_>>();
             assert_eq!(actual_ranges, source_ranges);
-            for (actual, old) in source_ranges.iter().zip(
-                baseline
-                    .formula_ranges
-                    .iter()
-                    .chain(&baseline.wrapper_ranges)
-                    .chain(&baseline.numeral_ranges)
-                    .chain(&baseline.equality_ranges),
-            ) {
-                let mut shifted = *old;
-                shifted.start += usize::from(old.start > baseline.binder_identifier_range.start)
-                    * (spelling.len() - 1);
-                shifted.end += usize::from(old.end > baseline.binder_identifier_range.start)
-                    * (spelling.len() - 1);
-                assert_eq!(*actual, shifted);
+            for (range, site) in [
+                (binder.segment_range(), &payload.binder_segment_site),
+                (binder.identifier_range(), &payload.binder_identifier_site),
+                (binder.local().declaration_range(), &payload.binder_identifier_site),
+            ] {
+                assert_eq!(range, ast.nodes().get(site.node().index()).unwrap().range);
+            }
+            for ((_, term), (_, request)) in primary.terms().iter().zip(primary.numeric_type_requests().iter()) {
+                let node = ast.nodes().get(term.site().node().index()).unwrap();
+                let token = ast.node(node.children[0]).unwrap().token_text().unwrap();
+                assert_eq!(term.spelling(), token);
+                assert_eq!((request.source_range(), request.spelling()), (node.range, token));
+            }
+            assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
+            for (id, node) in output.typed_ast.nodes().iter() {
+                assert_eq!(
+                    node.anchor,
+                    mizar_session::SourceAnchor::Range(ast.nodes().get(id.index()).unwrap().range)
+                );
             }
             assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
             assert_eq!(
@@ -1892,11 +1842,13 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
                 .type_sites()
                 .get(mizar_checker::source_composite_formula::SourceBinderTypeSiteId::new(0))
                 .unwrap();
-            assert_eq!(type_site.source_range(), payload.binder_type_range);
-            assert_eq!(type_site.head_range(), payload.binder_type_head_range);
             assert_eq!(
-                type_site.source_range().start,
-                baseline.binder_type_range.start + spelling.len() - 1
+                type_site.source_range(),
+                ast.nodes().get(payload.binder_type_site.node().index()).unwrap().range
+            );
+            assert_eq!(
+                type_site.head_range(),
+                ast.nodes().get(payload.binder_type_head_site.node().index()).unwrap().range
             );
             assert_ne!(
                 composition.composite_formula_fingerprint(),
@@ -1935,7 +1887,7 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
                 while new_source == ast.source_id {
                     new_source = ids.next_source_id(super::shared::snapshot_id(259)).unwrap();
                 }
-                for corruption in 0..6 {
+                for corruption in 0..7 {
                     let gap = source.find("for ").unwrap() + 3;
                     let mut changed = source.clone();
                     if corruption == 0 {
@@ -1972,15 +1924,18 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
                             ));
                             range.end = changed.len();
                         }
+                        if corruption == 6 && Some(index) == ast.root().map(|id| id.index()) {
+                            children.push(rebuilt[payload.binder_identifier_site.node().index()]);
+                        }
                         let id = match &node.kind {
                             mizar_syntax::SurfaceNodeKind::Token(token)
-                                if node.range == payload.binder_identifier_range
+                                if index == payload.binder_identifier_site.node().index()
                                     && corruption == 3 =>
                             {
                                 builder.add_recovered_token(token.kind, token.text.clone(), range)
                             }
                             mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(
-                                if node.range == payload.binder_identifier_range && corruption == 4
+                                if index == payload.binder_identifier_site.node().index() && corruption == 4
                                 {
                                     mizar_syntax::SurfaceTokenKind::ReservedWord
                                 } else {
@@ -2022,6 +1977,12 @@ fn task257b2_unused_binder_fresh_names_transport_shifted_dependencies_and_empty_
                                 .node_views()
                                 .all(|view| !view.children().contains(&unreachable))
                         );
+                        assert_eq!(fresh.env, resolver.env);
+                    }
+                    if corruption == 6 {
+                        assert_eq!(changed, source);
+                        assert_eq!(forged.token_texts(), ast.token_texts());
+                        assert_eq!(forged.nodes().len(), ast.nodes().len());
                         assert_eq!(fresh.env, resolver.env);
                     }
                     if matches!(corruption, 3 | 4) {
@@ -2192,19 +2153,17 @@ fn task257b2_formula_wrapper_and_atomic_edges_are_exact() {
                 (
                     row.formula().index(),
                     row.ordinal(),
-                    row.source_range().start,
-                    row.source_range().end,
                     row.spelling(),
                 )
             })
             .collect::<Vec<_>>(),
         [
-            (2, 0, 72, 122, "( or )"),
-            (3, 0, 73, 94, "( & ... & )"),
-            (4, 0, 98, 121, "( or ... or )"),
-            (5, 0, 127, 164, "( or )"),
-            (6, 0, 128, 143, "( & )"),
-            (7, 0, 147, 163, "( or )"),
+            (2, 0, "( or )"),
+            (3, 0, "( & ... & )"),
+            (4, 0, "( or ... or )"),
+            (5, 0, "( or )"),
+            (6, 0, "( & )"),
+            (7, 0, "( or )"),
         ]
     );
     assert_eq!(
