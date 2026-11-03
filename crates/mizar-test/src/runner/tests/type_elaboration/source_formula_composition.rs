@@ -430,6 +430,92 @@ fn task257c2_dependency_edge_and_arena_mutations_fail_atomically() {
     .expect("Task257C2 replay after arena mutation");
     assert_eq!(replay.typed_ast.debug_text(), baseline.typed_ast.debug_text());
     assert_eq!(replay.resolved.debug_text(), baseline.resolved.debug_text());
+    let right_numeral = baseline
+        .typed_ast
+        .source_term()
+        .unwrap()
+        .terms()
+        .get(mizar_checker::source_term::SourcePrimaryTermId::new(3))
+        .unwrap()
+        .site()
+        .node()
+        .index();
+    for (target, extra_kind, primary_count, condition_count, expected_error) in [
+        (
+            right_numeral,
+            SurfaceNodeKind::TermExpression,
+            3,
+            1,
+            "source atomic formula 0 is invalid",
+        ),
+        (
+            formula_site.index(),
+            SurfaceNodeKind::TemplateArgument,
+            4,
+            0,
+            "source condition/formula composition aggregate is invalid",
+        ),
+    ] {
+        let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut children = node.children.iter()
+                .map(|child| rebuilt[child.index()]).collect::<Vec<_>>();
+            if index == target {
+                children.push(builder.add_node(extra_kind.clone(), node.range, Vec::new()));
+            }
+            let id = match &node.kind {
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), node.range)
+                }
+                _ => builder.add_node(node.kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        let forged = builder
+            .finish(
+                ast.root().map(|root| rebuilt[root.index()]),
+                ast.expression_root().map(|root| rebuilt[root.index()]),
+            )
+            .with_trivia(ast.trivia().clone());
+        assert_eq!(forged.nodes().len(), ast.nodes().len() + 1);
+        assert_eq!(forged.token_nodes(), ast.token_nodes());
+        assert_eq!(forged.trivia(), ast.trivia());
+        let lower = super::source_set_term_output_with_source(
+            &forged,
+            module.clone(),
+            &_shells,
+            &symbols,
+            &source,
+        )
+        .expect("sparse graph retains Task255C1 selector")
+        .expect("sparse graph retains successful lower transaction");
+        assert_eq!(lower.typed_ast.source_term().unwrap().terms().len(), primary_count);
+        assert_eq!(
+            lower.typed_ast.source_set_term().unwrap().conditions().len(),
+            condition_count
+        );
+        let error = source_condition_formula_composition_output_with_source(
+            &forged,
+            module.clone(),
+            &symbols,
+            &source,
+        )
+        .expect("sparse graph reaches Task257C2")
+        .expect_err("incomplete lower graph must retain its refusal stage");
+        assert_eq!(error, expected_error);
+        let replay = source_condition_formula_composition_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            &source,
+        )
+        .expect("Task257C2 selector after sparse graph")
+        .expect("Task257C2 replay after sparse graph");
+        assert_eq!(replay.typed_ast.debug_text(), baseline.typed_ast.debug_text());
+        assert_eq!(replay.resolved.debug_text(), baseline.resolved.debug_text());
+    }
+
     assert!(
         source_condition_formula_composition_output_with_source(
             &ast,

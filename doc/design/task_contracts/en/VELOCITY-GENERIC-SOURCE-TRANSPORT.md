@@ -49,6 +49,7 @@ Pattern predecessor: the completed initial shared native statement consumer; sub
 - [x] structure-selector lower sites: derive proof, reserve declaration and written-type expectations from guarded AST; preserve lower donor checks
 - [x] structure-update lower sites: derive proof, reserve declaration and written-type expectations from guarded AST; reuse selector range controls
 - [x] structure-constructor lower sites: share guarded proof/reserve coordinate lookup at three real consumers; preserve canonical donors
+- [x] condition-formula sparse lower graphs: freeze existing primary/condition refusal stages before coordinate migration
 - [ ] proof-local declaration family (Task 269)
 - [ ] type, term and formula families
 - [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger
