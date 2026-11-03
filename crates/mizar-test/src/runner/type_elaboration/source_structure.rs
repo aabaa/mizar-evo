@@ -2047,10 +2047,19 @@ fn task258b3m2b2b2p_root_is_exact(
     let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
         return false;
     };
+    let mut import_paths = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ModulePath));
+    let Some(import_path) = import_paths.next() else {
+        return false;
+    };
+    if import_paths.next().is_some() {
+        return false;
+    }
     let import_range = SourceRange {
         source_id: ast.source_id,
-        start: 7,
-        end: 27,
+        ..import_path.range
     };
     symbol.module().package().as_str() == "mizar-test-task253-corruption"
         && symbol.module().package() == module.package()
