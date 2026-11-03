@@ -4066,6 +4066,9 @@ fn task258b3m2b2b2p_structure_constructor_corruption_replay_and_legacy_output_fa
         ImportedStructureConstructorTestMutation::RequestMember,
         ImportedStructureConstructorTestMutation::RequestKind,
         ImportedStructureConstructorTestMutation::TermRangeAndStalePrimaryReplay,
+        ImportedStructureConstructorTestMutation::ProofContextRange,
+        ImportedStructureConstructorTestMutation::BindingIdentityAndDeclarationRange,
+        ImportedStructureConstructorTestMutation::BindingTypeRange,
     ] {
         let error = b2p_structure_handoff!(
             &ast,
@@ -4082,6 +4085,18 @@ fn task258b3m2b2b2p_structure_constructor_corruption_replay_and_legacy_output_fa
         .expect("Task254 mutation selector")
         .expect_err("Task254 mutation must fail");
         assert!(error.starts_with("Task254:"), "{mutation:?}: {error}");
+        if matches!(
+            mutation,
+            ImportedStructureConstructorTestMutation::ProofContextRange
+                | ImportedStructureConstructorTestMutation::BindingIdentityAndDeclarationRange
+                | ImportedStructureConstructorTestMutation::BindingTypeRange
+        ) {
+            assert_eq!(
+                error,
+                "Task254: exact Task-48/252 proof-context profile mismatch",
+                "{mutation:?}"
+            );
+        }
         let replay = b2p_structure_handoff!(
             &ast,
             &module,

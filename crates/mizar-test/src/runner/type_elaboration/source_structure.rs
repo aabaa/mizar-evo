@@ -1715,6 +1715,32 @@ pub(super) fn imported_structure_update_handoff_in_context(
     ))
 }
 
+fn structure_lower_source_ranges(ast: &SurfaceAst) -> Option<[SourceRange; 3]> {
+    let proof_node = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ProofBlock))?;
+    let reserve_segment = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ReserveSegment))?;
+    let declaration = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| node.token_text() == Some("x"))?;
+    let written_type = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))?;
+    let mut ranges = [proof_node.range, declaration.range, written_type.range];
+    for range in &mut ranges {
+        range.source_id = ast.source_id;
+    }
+    Some(ranges)
+}
+
 fn task258b3m2b2b2p_lower_profile_is_exact(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1740,6 +1766,16 @@ fn task258b3m2b2b2p_lower_profile_is_exact(
     let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
+    let Some(
+        [
+            expected_proof_range,
+            expected_declaration_range,
+            expected_type_range,
+        ],
+    ) = structure_lower_source_ranges(ast)
+    else {
+        return false;
+    };
     if !matches!(module_context.owner, BindingContextOwner::Module)
         || module_context.parent.is_some()
         || module_context.layer != BindingContextLayer::Module
@@ -1760,7 +1796,7 @@ fn task258b3m2b2b2p_lower_profile_is_exact(
         || !matches!(
             proof_context.owner,
             BindingContextOwner::SourceStatement { source_range }
-                if source_range == task258b3m2b2b2p_range(ast, 112, 170)
+                if source_range == expected_proof_range
         )
         || proof_context.parent != Some(BindingContextId::new(0))
         || proof_context.layer != BindingContextLayer::Proof
@@ -1793,15 +1829,15 @@ fn task258b3m2b2b2p_lower_profile_is_exact(
                 spelling,
                 declaration_range,
             } if spelling == "x"
-                && *declaration_range == task258b3m2b2b2p_range(ast, 37, 38)
+                && *declaration_range == expected_declaration_range
         )
         || binding.owner_context != BindingContextId::new(0)
-        || binding.declaration_range != task258b3m2b2b2p_range(ast, 37, 38)
+        || binding.declaration_range != expected_declaration_range
         || binding.visible_after_ordinal != 0
         || !matches!(
             binding.type_site,
             BindingTypeSite::Source(source_range)
-                if source_range == task258b3m2b2b2p_range(ast, 43, 46)
+                if source_range == expected_type_range
         )
         || binding.status != BindingStatus::Reserved
         || !binding.captured.identities().is_empty()
@@ -2113,42 +2149,16 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
     let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
-    let Some(proof_node) = ast
-        .nodes()
-        .iter()
-        .find(|node| matches!(node.kind, SurfaceNodeKind::ProofBlock))
+    let Some(
+        [
+            expected_proof_range,
+            expected_declaration_range,
+            expected_type_range,
+        ],
+    ) = structure_lower_source_ranges(ast)
     else {
         return false;
     };
-    let Some(reserve_segment) = ast
-        .nodes()
-        .iter()
-        .find(|node| matches!(node.kind, SurfaceNodeKind::ReserveSegment))
-    else {
-        return false;
-    };
-    let Some(declaration) = reserve_segment
-        .children
-        .iter()
-        .filter_map(|child| ast.node(*child))
-        .find(|node| node.token_text() == Some("x"))
-    else {
-        return false;
-    };
-    let Some(written_type) = reserve_segment
-        .children
-        .iter()
-        .filter_map(|child| ast.node(*child))
-        .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
-    else {
-        return false;
-    };
-    let expected_proof_range =
-        task258b3m2b2b2bp_range(ast, proof_node.range.start, proof_node.range.end);
-    let expected_declaration_range =
-        task258b3m2b2b2bp_range(ast, declaration.range.start, declaration.range.end);
-    let expected_type_range =
-        task258b3m2b2b2bp_range(ast, written_type.range.start, written_type.range.end);
     if !matches!(module_context.owner, BindingContextOwner::Module)
         || module_context.parent.is_some()
         || module_context.layer != BindingContextLayer::Module
@@ -2394,42 +2404,16 @@ fn task258b3m2b2b2cp_lower_profile_is_exact(
     let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
-    let Some(proof_node) = ast
-        .nodes()
-        .iter()
-        .find(|node| matches!(node.kind, SurfaceNodeKind::ProofBlock))
+    let Some(
+        [
+            expected_proof_range,
+            expected_declaration_range,
+            expected_type_range,
+        ],
+    ) = structure_lower_source_ranges(ast)
     else {
         return false;
     };
-    let Some(reserve_segment) = ast
-        .nodes()
-        .iter()
-        .find(|node| matches!(node.kind, SurfaceNodeKind::ReserveSegment))
-    else {
-        return false;
-    };
-    let Some(declaration) = reserve_segment
-        .children
-        .iter()
-        .filter_map(|child| ast.node(*child))
-        .find(|node| node.token_text() == Some("x"))
-    else {
-        return false;
-    };
-    let Some(written_type) = reserve_segment
-        .children
-        .iter()
-        .filter_map(|child| ast.node(*child))
-        .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
-    else {
-        return false;
-    };
-    let expected_proof_range =
-        task258b3m2b2b2cp_range(ast, proof_node.range.start, proof_node.range.end);
-    let expected_declaration_range =
-        task258b3m2b2b2cp_range(ast, declaration.range.start, declaration.range.end);
-    let expected_type_range =
-        task258b3m2b2b2cp_range(ast, written_type.range.start, written_type.range.end);
     if !matches!(module_context.owner, BindingContextOwner::Module)
         || module_context.parent.is_some()
         || module_context.layer != BindingContextLayer::Module
@@ -3803,6 +3787,9 @@ pub(in crate::runner) enum ImportedStructureConstructorTestMutation {
     RequestKind,
     StalePrimaryReplay,
     TermRangeAndStalePrimaryReplay,
+    ProofContextRange,
+    BindingIdentityAndDeclarationRange,
+    BindingTypeRange,
 }
 
 #[cfg(test)]
@@ -4241,6 +4228,27 @@ pub(in crate::runner) fn imported_structure_constructor_handoff_for_test(
         .map(|entry| entry.id())
         .find(|candidate| *candidate != selected_contribution)
         .unwrap_or(selected_contribution);
+    let binding_mutation = match handoff_mutation {
+        ImportedStructureConstructorTestMutation::ProofContextRange => {
+            Some(ImportedStructureSelectorTestMutation::ProofContextRange)
+        }
+        ImportedStructureConstructorTestMutation::BindingIdentityAndDeclarationRange => {
+            Some(ImportedStructureSelectorTestMutation::BindingIdentityAndDeclarationRange)
+        }
+        ImportedStructureConstructorTestMutation::BindingTypeRange => {
+            Some(ImportedStructureSelectorTestMutation::BindingTypeRange)
+        }
+        _ => None,
+    };
+    let mutated_binding_env = if let Some(mutation) = binding_mutation {
+        match task258b3m2b2b2bp_binding_env_with_mutation(binding_env, mutation) {
+            Ok(binding_env) => Some(binding_env),
+            Err(error) => return Some(Err(format!("Task48: {error}"))),
+        }
+    } else {
+        None
+    };
+    let effective_binding_env = mutated_binding_env.as_ref().unwrap_or(binding_env);
     let stale_replay = matches!(
         handoff_mutation,
         ImportedStructureConstructorTestMutation::StalePrimaryReplay
@@ -4250,12 +4258,13 @@ pub(in crate::runner) fn imported_structure_constructor_handoff_for_test(
         handoff_mutation,
         ImportedStructureConstructorTestMutation::None
             | ImportedStructureConstructorTestMutation::StalePrimaryReplay
-    ) {
+    ) || binding_mutation.is_some()
+    {
         match imported_structure_constructor_handoff_in_context(
             ast,
             module,
             symbols,
-            binding_env,
+            effective_binding_env,
             &source_term,
             loaded_source,
             site,
@@ -4276,6 +4285,11 @@ pub(in crate::runner) fn imported_structure_constructor_handoff_for_test(
             |input| match handoff_mutation {
                 ImportedStructureConstructorTestMutation::None
                 | ImportedStructureConstructorTestMutation::StalePrimaryReplay => {}
+                ImportedStructureConstructorTestMutation::ProofContextRange
+                | ImportedStructureConstructorTestMutation::BindingIdentityAndDeclarationRange
+                | ImportedStructureConstructorTestMutation::BindingTypeRange => {
+                    unreachable!("binding mutation uses the production seam")
+                }
                 ImportedStructureConstructorTestMutation::TermSite => {
                     input.terms[0].site = TypedSiteRef::Node(TypedNodeId::new(60));
                 }
