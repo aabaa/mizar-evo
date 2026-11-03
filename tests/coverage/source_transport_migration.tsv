@@ -49,7 +49,7 @@ given-use-binding-construction-sites	proof-local	native-consumer	done	Given-use 
 given-condition-binding-construction-sites	proof-local	native-consumer	done	Given-condition binding construction uses the previously authenticated proof/name receipt on build and replay
 descendant-binding-construction-sites	proof-local	native-consumer	done	Descendant Given binding construction uses the previously authenticated proof/name receipt on build and replay
 descendant-context-sites	proof-local	native-consumer	done	Descendant context expectation and construction use the previously admitted range; retain first descendant admission
-proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
+proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired; collapse the five identical exact_task269*_local_binding / _declaration_binding helpers into one helper parametrised by BindingKind
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved
 structure-selector-lower-sites	structure	native-consumer	done	structure-selector lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; lower donor checks preserved
@@ -59,8 +59,8 @@ structure-exit	structure	native-consumer	open	family exit: remaining literal_sou
 native-type-generic-install	type-term-formula	native-consumer	open	native TYPE reads the installed generic table; the three synthetic punctuation variants become negative tests (accepted-input boundary, source_statement.md)
 direct-b1-formula-sites	type-term-formula	native-consumer	open	direct Task257B1 formula bound-use term sites from generic rows; the duplicate Root alias becomes a negative test
 mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode profile keeps kind/text/child grammar and independent mapped spans/envelopes; retire redundant coordinate fields and checks
-mode-definition-sites	type-term-formula	native-consumer	open	source_mode_definition.rs and its runner: literal offsets replaced by generic rows
-predicate-definition-sites	type-term-formula	native-consumer	open	source_predicate_definition.rs and its runner: literal offsets replaced by generic rows
-attribute-definition-sites	type-term-formula	native-consumer	open	source_attribute_definition.rs and its runner: literal offsets replaced by generic rows
+mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are intentional corruption constants, kept
+predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
+attribute-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 type-term-formula-exit	type-term-formula	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of source_type.rs, source_term.rs, source_formula_composition.rs and their runners retired
 element-rules	element-rules	native-consumer	open	class b element rules: Tasks 257, 269, 270, 271, 272, 279 per tests/coverage/source_transport_classification.tsv
