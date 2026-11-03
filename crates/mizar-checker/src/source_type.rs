@@ -3389,20 +3389,11 @@ fn task269ct_binding_env(
         diagnostics: dependency.binding_env().diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalLetTypeError::InvalidBindingEnvironment)?;
-    let reserve = binding_env.bindings().get(BindingId::new(0));
     let local = binding_env.bindings().get(BindingId::new(1));
     if binding_env.contexts().len() != 2
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || reserve.is_none_or(|binding| {
-            binding.type_site
-                != BindingTypeSite::Source(task269ct_range(dependency.source_id(), 14, 17))
-        })
-        || local.is_none_or(|binding| {
-            binding.kind != BindingKind::LetBinding
-                || binding.type_site
-                    != BindingTypeSite::Source(task269ct_range(dependency.source_id(), 76, 79))
-        })
+        || local.is_none_or(|binding| binding.kind != BindingKind::LetBinding)
     {
         return Err(SourceProofLocalLetTypeError::InvalidBindingEnvironment);
     }
@@ -3586,20 +3577,11 @@ fn task269gt_binding_env(
         diagnostics: dependency.binding_env().diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenTypeError::InvalidBindingEnvironment)?;
-    let reserve = binding_env.bindings().get(BindingId::new(0));
     let local = binding_env.bindings().get(BindingId::new(1));
     if binding_env.contexts().len() != 2
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || reserve.is_none_or(|binding| {
-            binding.type_site
-                != BindingTypeSite::Source(task269gt_range(dependency.source_id(), 14, 17))
-        })
-        || local.is_none_or(|binding| {
-            binding.kind != BindingKind::GivenWitness
-                || binding.type_site
-                    != BindingTypeSite::Source(task269gt_range(dependency.source_id(), 84, 87))
-        })
+        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
     {
         return Err(SourceProofLocalGivenTypeError::InvalidBindingEnvironment);
     }
@@ -3775,20 +3757,11 @@ fn task269gct_binding_env(
         diagnostics: dependency.binding_env().diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)?;
-    let reserve = binding_env.bindings().get(BindingId::new(0));
     let local = binding_env.bindings().get(BindingId::new(1));
     if binding_env.contexts().len() != 2
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || reserve.is_none_or(|binding| {
-            binding.type_site
-                != BindingTypeSite::Source(task269gct_range(dependency.source_id(), 14, 17))
-        })
-        || local.is_none_or(|binding| {
-            binding.kind != BindingKind::GivenWitness
-                || binding.type_site
-                    != BindingTypeSite::Source(task269gct_range(dependency.source_id(), 90, 93))
-        })
+        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
     {
         return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
     }
@@ -3974,20 +3947,11 @@ fn task269sdt_binding_env(
         diagnostics: dependency.binding_env().diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment)?;
-    let reserve = binding_env.bindings().get(BindingId::new(0));
     let local = binding_env.bindings().get(BindingId::new(1));
     if binding_env.contexts().len() != 3
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || reserve.is_none_or(|binding| {
-            binding.type_site
-                != BindingTypeSite::Source(task269sdt_range(dependency.source_id(), 14, 17))
-        })
-        || local.is_none_or(|binding| {
-            binding.kind != BindingKind::GivenWitness
-                || binding.type_site
-                    != BindingTypeSite::Source(task269sdt_range(dependency.source_id(), 95, 98))
-        })
+        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
     {
         return Err(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment);
     }
@@ -4173,20 +4137,11 @@ fn task269gupt_binding_env(
         diagnostics: dependency.binding_env().diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment)?;
-    let reserve = binding_env.bindings().get(BindingId::new(0));
     let local = binding_env.bindings().get(BindingId::new(1));
     if binding_env.contexts().len() != 2
         || binding_env.bindings().len() != 2
         || !binding_env.diagnostics().is_empty()
-        || reserve.is_none_or(|binding| {
-            binding.type_site
-                != BindingTypeSite::Source(task269gupt_range(dependency.source_id(), 14, 17))
-        })
-        || local.is_none_or(|binding| {
-            binding.kind != BindingKind::GivenWitness
-                || binding.type_site
-                    != BindingTypeSite::Source(task269gupt_range(dependency.source_id(), 84, 87))
-        })
+        || local.is_none_or(|binding| binding.kind != BindingKind::GivenWitness)
     {
         return Err(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment);
     }
