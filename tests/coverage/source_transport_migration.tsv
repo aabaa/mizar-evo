@@ -38,6 +38,8 @@ given-use-term-sites	proof-local	native-consumer	done	Given-use term references:
 given-condition-term-sites	proof-local	native-consumer	done	Given-condition term references: existing generic rows read through the shared private receiver; canonical type/term donors preserved
 condition-formula-sparse-stages	proof-local	native-consumer	done	condition-formula sparse lower graphs: existing primary/condition refusal stages frozen before coordinate migration
 gu-inherited-type-overlay	proof-local	native-consumer	done	GU inherited type overlay: relies on mandatory GUPT validation; term-owned arena and root guards retained
+gcu-inherited-type-overlay	proof-local	native-consumer	done	GCU inherited type overlay relies on mandatory GCT validation; term-owned arena and root guards retained
+sdu-inherited-type-overlay	proof-local	native-consumer	done	SDU inherited type overlay relies on mandatory SDT validation; term-owned arena and root guards retained
 let-binding-validator-sites	proof-local	native-consumer	done	Let binding validators read proof/name expectations from the previously authenticated lower receipt
 given-binding-validator-sites	proof-local	native-consumer	done	Given binding validators read proof/name expectations from the previously authenticated lower receipt
 given-use-binding-validator-sites	proof-local	native-consumer	done	Given-use binding validators read proof/name expectations from the previously authenticated lower receipt

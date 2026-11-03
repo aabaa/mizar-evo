@@ -2246,20 +2246,8 @@ fn exact_task269sdu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != 5 || arena.root() != Some(TypedNodeId::new(4)) {
         return false;
     }
+    // Both callers validate the SDT type overlay before checking these term rows.
     let expected = [
-        (
-            "source.proof-local.given-descendant.reserve-type",
-            14,
-            17,
-            vec![],
-        ),
-        ("source.proof-local.given-descendant.type", 95, 98, vec![]),
-        (
-            "source.proof-local.given-descendant.type-root",
-            0,
-            179,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
         ("source.term.variable-reference", 118, 119, vec![]),
         (
             "source.proof-local.given-descendant-use.term-root",
@@ -2272,7 +2260,7 @@ fn exact_task269sdu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
         .into_iter()
         .enumerate()
         .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
                 node.kind.as_str() == kind
                     && node.resolved_node.is_none()
                     && node.anchor == SourceAnchor::Range(task269sdu_range(source_id, start, end))
@@ -2347,25 +2335,8 @@ fn exact_task269gcu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     if arena.len() != 6 || arena.root() != Some(TypedNodeId::new(5)) {
         return false;
     }
+    // Both callers validate the GCT type overlay before checking these term rows.
     let expected = [
-        (
-            "source.proof-local.given-condition.reserve-type",
-            14,
-            17,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-condition.type",
-            90,
-            93,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-condition.type-root",
-            0,
-            133,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
         ("source.term.variable-reference", 107, 108, Vec::new()),
         ("source.term.variable-reference", 111, 112, Vec::new()),
         (
@@ -2383,7 +2354,7 @@ fn exact_task269gcu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
         .into_iter()
         .enumerate()
         .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
                 node.kind.as_str() == kind
                     && node.resolved_node.is_none()
                     && node.anchor == SourceAnchor::Range(task269gcu_range(source_id, start, end))
