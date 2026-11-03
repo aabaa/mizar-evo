@@ -49,13 +49,13 @@ use mizar_checker::{
 use mizar_resolve::{
     env::SymbolEnv,
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::{ModuleId, RecoveryState, SurfaceResolvedArena},
+    resolved_ast::ModuleId,
 };
 use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind};
 
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver},
     source_atomic_formula::source_atomic_formula_output_with_source,
     source_formula::{
         SourceFormulaConnectiveGrouping, SourceFormulaNestedQuantifierPayload,
@@ -1075,49 +1075,7 @@ fn route_inputs(
         return Err("Task257B1 identifier token is invalid".to_owned());
     }
     let spelling = token.text.as_ref();
-    let source = SurfaceResolvedArena::lower(ast, &module).map_err(|error| format!("{error:?}"))?;
-    let nodes = TypedArena::try_new(
-        Some(TypedNodeId::new(source.arena().root().index())),
-        source
-            .arena()
-            .iter()
-            .map(|(id, node)| {
-                TypedNode::new("syntax", node.origin().anchor().clone())
-                    .with_resolved_node(id)
-                    .with_children(
-                        node.children()
-                            .iter()
-                            .map(|child| TypedNodeId::new(child.index()))
-                            .collect(),
-                    )
-                    .with_recovery(if node.recovery() == RecoveryState::Recovered {
-                        NodeRecoveryState::Recovered
-                    } else {
-                        NodeRecoveryState::Normal
-                    })
-            })
-            .collect(),
-    )
-    .map_err(|error| format!("{error:?}"))?;
-    let mut syntax = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        resolved_root: Some(source.arena().root()),
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes,
-        contexts: Default::default(),
-        types: Default::default(),
-        facts: Default::default(),
-        coercions: Default::default(),
-        initial_obligations: Default::default(),
-        diagnostics: Default::default(),
-    })
-    .map_err(|error| error.to_string())?;
-    syntax
-        .install_source_nodes(&source)
-        .map_err(|error| error.to_string())?;
+    let syntax = source_syntax_receiver(ast, &module)?;
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let composite = SourceCompositeFormulaHandoffInput {

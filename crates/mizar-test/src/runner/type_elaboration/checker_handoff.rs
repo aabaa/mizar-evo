@@ -29,7 +29,7 @@ use mizar_checker::type_checker::{
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, LocalTypeContextTable,
     NodeRecoveryState, TypeDiagnosticTable, TypeEntryId, TypeFactTable, TypeStatus, TypeTable,
-    TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
+    TypedArena, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
     TypedSiteRef, TypingState,
 };
 use mizar_core::{
@@ -43,7 +43,9 @@ use mizar_core::{
 use mizar_resolve::env::{ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Visibility};
 #[cfg(test)]
 use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
-use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
+use mizar_resolve::resolved_ast::{
+    ModuleId as ResolverModuleId, RecoveryState, SurfaceResolvedArena, SymbolId as ResolverSymbolId,
+};
 #[cfg(test)]
 use mizar_session::{
     BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
@@ -54,6 +56,56 @@ use mizar_syntax::SurfaceAst;
 use super::source_formula::{SourceFormulaStatement, extract_source_contradiction_formula};
 #[cfg(test)]
 use super::source_reserve::SourceReserveExtraction;
+
+pub(super) fn source_syntax_receiver(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+) -> Result<TypedAst, String> {
+    let source = SurfaceResolvedArena::lower(ast, module).map_err(|error| format!("{error:?}"))?;
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                    .with_recovery(if node.recovery() == RecoveryState::Recovered {
+                        NodeRecoveryState::Recovered
+                    } else {
+                        NodeRecoveryState::Normal
+                    })
+            })
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let mut syntax = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|error| error.to_string())?;
+    syntax
+        .install_source_nodes(&source)
+        .map_err(|error| error.to_string())?;
+    Ok(syntax)
+}
 
 pub(in crate::runner) fn source_module_binding_env(
     ast: &SurfaceAst,

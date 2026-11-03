@@ -1137,6 +1137,8 @@ fn metamorphic_structure_layout_lexical_stream_matches_genuine_frontend() {
 
 #[test]
 fn metamorphic_structure_layout_transports_actual_source_handoffs() {
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedNodeId, TypedSiteRef, TypingState};
+
     let (original_ast, original_module, original_shells, original_symbols) =
         task253_ast_from_source_text(SOURCE_STRUCTURE_DEFINITION_TEXT, 263_210);
     let mut sources = vec![("original", SOURCE_STRUCTURE_DEFINITION_TEXT.to_owned())];
@@ -1191,6 +1193,33 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
             }
         }
         let typed = &output.typed_ast;
+        assert_eq!(typed.nodes().root().map(TypedNodeId::index), ast.root().map(|id| id.index()));
+        assert!(typed.resolved_root().is_none());
+        assert!(typed.source_node_entries().is_none());
+        assert_eq!(typed.nodes().len(), ast.nodes().len());
+        for ((id, node), surface) in typed.nodes().iter().zip(ast.nodes()) {
+            assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(surface.range), "{layout}");
+            assert_eq!(
+                node.children.iter().map(|child| child.index()).collect::<Vec<_>>(),
+                surface.children.iter().map(|child| child.index()).collect::<Vec<_>>(),
+                "{layout}"
+            );
+            let kind = match id.index() {
+                51 | 54 | 59 | 62 => "source.type.head",
+                52 | 55 | 60 | 63 => "source.type.expression",
+                53 | 56 | 61 | 64 => "source.definition.structure.member",
+                57 | 65 => "source.definition.structure",
+                68 | 69 => "source.definition.structure.mapping",
+                70 => "source.definition.structure.inheritance",
+                74 => "source.module",
+                _ if matches!(surface.kind, mizar_syntax::SurfaceNodeKind::Token(_)) => "source.surface.token",
+                _ => "source.surface.structural",
+            };
+            assert_eq!(node.kind.as_str(), kind, "{layout}");
+            assert_eq!(node.typing, TypingState::Unknown, "{layout}");
+            assert_eq!(node.recovery, NodeRecoveryState::Normal, "{layout}");
+            assert!(node.resolved_node.is_none(), "{layout}");
+        }
         let handoff = typed.source_structure_definition().unwrap();
         let lower = typed.source_type().unwrap();
         assert_eq!(
@@ -1216,6 +1245,7 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
         );
         assert_eq!(handoff.source_type_fingerprint(), lower.debug_text());
         for ((_, row), site) in handoff.definitions().iter().zip([57, 65]) {
+            assert_eq!(row.site(), &TypedSiteRef::Node(TypedNodeId::new(site)), "{layout}");
             assert_eq!(row.source_range(), ast.nodes()[site].range, "{layout}");
             assert_eq!(
                 row.origin(),
@@ -1240,9 +1270,13 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
             .zip([(53, 52), (56, 55), (61, 60), (64, 63)])
         {
             assert_eq!(row.source_range(), ast.nodes()[owner].range, "{layout}");
+            assert_eq!(row.site(), &TypedSiteRef::Node(TypedNodeId::new(owner)), "{layout}");
+            assert_eq!(member.member_site(), row.site());
             assert_eq!(member.member_range(), row.source_range());
             assert_eq!(row.written_type(), member.id());
             let expression = lower.expressions().get(member.root()).unwrap();
+            assert_eq!(expression.site(), &TypedSiteRef::Node(TypedNodeId::new(rhs)), "{layout}");
+            assert_eq!(expression.head_site(), &TypedSiteRef::Node(TypedNodeId::new(rhs - 1)), "{layout}");
             assert_eq!(expression.source_range(), ast.nodes()[rhs].range);
             assert_eq!(expression.head_range(), expression.source_range());
             assert_eq!(
@@ -1258,6 +1292,7 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
                     .origin()
             );
         }
+        assert_eq!(handoff.inheritances().iter().next().unwrap().1.site(), &TypedSiteRef::Node(TypedNodeId::new(70)), "{layout}");
         assert_eq!(
             handoff
                 .inheritances()
@@ -1269,6 +1304,7 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
             ast.nodes()[70].range
         );
         for ((_, row), site) in handoff.mappings().iter().zip([68, 69]) {
+            assert_eq!(row.site(), &TypedSiteRef::Node(TypedNodeId::new(site)), "{layout}");
             assert_eq!(row.source_range(), ast.nodes()[site].range, "{layout}");
             assert_eq!(
                 row.origin(),

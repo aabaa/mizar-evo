@@ -67,14 +67,12 @@ use mizar_checker::{
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermReferenceId},
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-        TypeFactTable, TypeTable, TypedSiteRef,
+        TypeFactTable, TypeTable, TypedArena, TypedAstParts, TypedNodeId, TypedSiteRef,
     },
 };
 use mizar_checker::{
     type_checker::CheckedStatementOwner,
-    typed_ast::{
-        NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
-    },
+    typed_ast::{NodeRecoveryState, SourceNode, TypedAst},
 };
 use mizar_resolve::{
     declarations::{
@@ -86,7 +84,7 @@ use mizar_resolve::{
         SignatureShell, SourceContributionId, SymbolEnv, SymbolKind, Visibility,
     },
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::{ModuleId, SurfaceResolvedArena, SymbolId},
+    resolved_ast::{ModuleId, SymbolId},
 };
 #[cfg(test)]
 use mizar_resolve::{
@@ -7286,47 +7284,7 @@ pub(super) fn source_proof_local_syntax_receiver(
 ) -> Option<TypedAst> {
     use SurfaceNodeKind as K;
 
-    let source = SurfaceResolvedArena::lower(ast, module).ok()?;
-    let nodes = TypedArena::try_new(
-        Some(TypedNodeId::new(ast.root()?.index())),
-        source
-            .arena()
-            .iter()
-            .map(|(id, node)| {
-                TypedNode::new("syntax", node.origin().anchor().clone())
-                    .with_resolved_node(id)
-                    .with_children(
-                        node.children()
-                            .iter()
-                            .map(|child| TypedNodeId::new(child.index()))
-                            .collect(),
-                    )
-                    .with_recovery(if ast.nodes()[id.index()].recovered {
-                        NodeRecoveryState::Recovered
-                    } else {
-                        NodeRecoveryState::Normal
-                    })
-            })
-            .collect(),
-    )
-    .ok()?;
-    let mut typed = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        resolved_root: Some(source.arena().root()),
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes,
-        contexts: Default::default(),
-        types: Default::default(),
-        facts: Default::default(),
-        coercions: Default::default(),
-        initial_obligations: Default::default(),
-        diagnostics: Default::default(),
-    })
-    .ok()?;
-    typed.install_source_nodes(&source).ok()?;
+    let typed = super::checker_handoff::source_syntax_receiver(ast, module).ok()?;
     if typed.source_node_entries()?.len() != ast.nodes().len() {
         return None;
     }

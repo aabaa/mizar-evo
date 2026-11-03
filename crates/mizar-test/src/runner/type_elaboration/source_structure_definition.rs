@@ -17,7 +17,7 @@ use mizar_checker::{
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
-        TypedAstParts, TypedNode, TypedNodeId, TypedSiteRef, TypingState,
+        TypedAstError, TypedAstParts, TypedNode, TypedNodeId, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -31,7 +31,7 @@ use mizar_resolve::{
 use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
-use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver};
 
 #[cfg(test)]
 pub(in crate::runner) const SOURCE_STRUCTURE_DEFINITION_TEXT: &str = concat!(
@@ -341,8 +341,9 @@ fn build_output(
     {
         return Err("Task263 source association is invalid".to_owned());
     }
-    let arena = task263_arena(ast, mutation)?;
-    let mut lower_input = source_type_input(ast, module.clone());
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let arena = task263_arena(&syntax, mutation)?;
+    let mut lower_input = source_type_input(&syntax, module.clone())?;
     if mutation == SourceStructureDefinitionRouteMutation::WrongLowerMember {
         lower_input.members[0].member_site = node_site(56);
     }
@@ -364,7 +365,7 @@ fn build_output(
         diagnostics: TypeDiagnosticTable::new(),
     })
     .map_err(|error| format!("Task249S typed base: {error}"))?;
-    let mut input = checker_input(ast, module, &identities);
+    let mut input = checker_input(&syntax, module, &identities)?;
     match mutation {
         SourceStructureDefinitionRouteMutation::WrongResolverDefinition => {
             input.members[3].definition = input.members[2].definition
@@ -612,10 +613,19 @@ fn resolver_identities(symbols: &SymbolEnv) -> Result<Vec<ResolverIdentity>, Str
         .collect()
 }
 
-fn source_type_input(ast: &SurfaceAst, module: ModuleId) -> SourceTypeStructureMemberHandoffInput {
-    let source = ast.source_id;
+fn source_type_input(
+    syntax: &TypedAst,
+    module: ModuleId,
+) -> Result<SourceTypeStructureMemberHandoffInput, String> {
+    let source = syntax.source_id();
+    let row = |index| {
+        syntax
+            .source_node_entries()
+            .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+            .ok_or_else(|| TypedAstError::InvalidSourceStatement.to_string())
+    };
     let specs = [(53, 52, 51), (56, 55, 54), (61, 60, 59), (64, 63, 62)];
-    SourceTypeStructureMemberHandoffInput {
+    Ok(SourceTypeStructureMemberHandoffInput {
         source_id: source,
         module_id: module.clone(),
         members: specs
@@ -623,39 +633,51 @@ fn source_type_input(ast: &SurfaceAst, module: ModuleId) -> SourceTypeStructureM
             .enumerate()
             .map(
                 |(source_ordinal, (member_node, expression_node, head_node))| {
-                    SourceTypeStructureMemberInput {
-                        member_site: node_site(member_node),
-                        member_range: ast.nodes()[member_node].range,
+                    let member = row(member_node)?;
+                    let expression = row(expression_node)?;
+                    let head = row(head_node)?;
+                    Ok(SourceTypeStructureMemberInput {
+                        member_site: node_site(member.site().index()),
+                        member_range: member.range(),
                         source_ordinal,
                         expression: SourceTypeExpressionInput {
                             source_id: source,
                             module_id: module.clone(),
-                            site: node_site(expression_node),
-                            source_range: ast.nodes()[expression_node].range,
+                            site: node_site(expression.site().index()),
+                            source_range: expression.range(),
                             spelling: "set".to_owned(),
-                            head_site: node_site(head_node),
-                            head_range: ast.nodes()[head_node].range,
+                            head_site: node_site(head.site().index()),
+                            head_range: head.range(),
                             head_spelling: "set".to_owned(),
                             form: SourceTypeApplicationForm::Bare,
                             head: SourceTypeHead::BuiltinSet,
                             recovery: NodeRecoveryState::Normal,
                         },
-                    }
+                    })
                 },
             )
-            .collect(),
-    }
+            .collect::<Result<_, String>>()?,
+    })
 }
 
 fn checker_input(
-    ast: &SurfaceAst,
+    syntax: &TypedAst,
     module: ModuleId,
     identities: &[ResolverIdentity],
-) -> SourceStructureDefinitionHandoffInput {
-    let source = ast.source_id;
+) -> Result<SourceStructureDefinitionHandoffInput, String> {
+    let source = syntax.source_id();
+    let row = |index| {
+        syntax
+            .source_node_entries()
+            .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+            .ok_or_else(|| TypedAstError::InvalidSourceStatement.to_string())
+    };
+    let base = row(57)?;
+    let derived = row(65)?;
+    let inheritance = row(70)?;
     let definitions = vec![
-        SourceStructureDefinitionInput { symbol: identities[0].0.clone(), definition: identities[0].1, contribution: identities[0].2, site: node_site(57), source_range: ast.nodes()[57].range, source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(0),SourceStructureMemberId::new(1)], constructor_fields: vec![SourceStructureMemberId::new(0)] },
-        SourceStructureDefinitionInput { symbol: identities[3].0.clone(), definition: identities[3].1, contribution: identities[3].2, site: node_site(65), source_range: ast.nodes()[65].range, source_ordinal: 1, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(2),SourceStructureMemberId::new(3)], constructor_fields: vec![SourceStructureMemberId::new(2)] },
+        SourceStructureDefinitionInput { symbol: identities[0].0.clone(), definition: identities[0].1, contribution: identities[0].2, site: node_site(base.site().index()), source_range: base.range(), source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(0),SourceStructureMemberId::new(1)], constructor_fields: vec![SourceStructureMemberId::new(0)] },
+        SourceStructureDefinitionInput { symbol: identities[3].0.clone(), definition: identities[3].1, contribution: identities[3].2, site: node_site(derived.site().index()), source_range: derived.range(), source_ordinal: 1, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;".to_owned(), members: vec![SourceStructureMemberId::new(2),SourceStructureMemberId::new(3)], constructor_fields: vec![SourceStructureMemberId::new(2)] },
     ];
     let member_specs = [
         (
@@ -700,24 +722,25 @@ fn checker_input(
         .enumerate()
         .map(
             |(index, (identity, owner, ordinal, kind, node, spelling, constructor_ordinal))| {
-                SourceStructureMemberInput {
+                let member = row(node)?;
+                Ok(SourceStructureMemberInput {
                     symbol: identities[identity].0.clone(),
                     definition: identities[identity].1,
                     contribution: identities[identity].2,
                     owner: SourceStructureDefinitionId::new(owner),
                     ordinal,
                     kind,
-                    site: node_site(node),
-                    source_range: ast.nodes()[node].range,
+                    site: node_site(member.site().index()),
+                    source_range: member.range(),
                     recovery: SourceStructureDefinitionRecovery::Normal,
                     spelling: spelling.to_owned(),
                     written_type: SourceTypeStructureMemberId::new(index),
                     constructor_ordinal,
-                }
+                })
             },
         )
-        .collect();
-    let inheritances = vec![SourceStructureInheritanceInput { child: SourceStructureDefinitionId::new(1), parent: SourceStructureDefinitionId::new(0), site: node_site(70), source_range: ast.nodes()[70].range, source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;".to_owned(), mappings: vec![SourceStructureMappingId::new(0),SourceStructureMappingId::new(1)] }];
+        .collect::<Result<_, String>>()?;
+    let inheritances = vec![SourceStructureInheritanceInput { child: SourceStructureDefinitionId::new(1), parent: SourceStructureDefinitionId::new(0), site: node_site(inheritance.site().index()), source_range: inheritance.range(), source_ordinal: 0, recovery: SourceStructureDefinitionRecovery::Normal, spelling: "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;".to_owned(), mappings: vec![SourceStructureMappingId::new(0),SourceStructureMappingId::new(1)] }];
     let mapping_specs = [
         (
             6,
@@ -740,7 +763,8 @@ fn checker_input(
         .into_iter()
         .enumerate()
         .map(|(index, (identity, kind, view, parent, node, spelling))| {
-            SourceStructureMappingInput {
+            let mapping = row(node)?;
+            Ok(SourceStructureMappingInput {
                 symbol: identities[identity].0.clone(),
                 definition: identities[identity].1,
                 contribution: identities[identity].2,
@@ -751,30 +775,35 @@ fn checker_input(
                 parent_member: SourceStructureMemberId::new(parent),
                 root_member: SourceStructureMemberId::new(parent),
                 path: vec![SourceStructureInheritanceId::new(0)],
-                site: node_site(node),
-                source_range: ast.nodes()[node].range,
+                site: node_site(mapping.site().index()),
+                source_range: mapping.range(),
                 recovery: SourceStructureDefinitionRecovery::Normal,
                 spelling: spelling.to_owned(),
-            }
+            })
         })
-        .collect();
-    SourceStructureDefinitionHandoffInput {
+        .collect::<Result<_, String>>()?;
+    Ok(SourceStructureDefinitionHandoffInput {
         source_id: source,
         module_id: module,
         definitions,
         members,
         inheritances,
         mappings,
-    }
+    })
 }
 
 fn task263_arena(
-    ast: &SurfaceAst,
+    syntax: &TypedAst,
     mutation: SourceStructureDefinitionRouteMutation,
 ) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
-    for (index, node) in ast.nodes().iter().enumerate() {
-        let generic = match node.kind {
+    for (id, node) in syntax.nodes().iter() {
+        let index = id.index();
+        let row = syntax
+            .source_node_entries()
+            .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+            .ok_or_else(|| TypedAstError::InvalidSourceStatement.to_string())?;
+        let generic = match row.kind() {
             SurfaceNodeKind::Token(_) => "source.surface.token",
             _ => "source.surface.structural",
         };
@@ -801,7 +830,7 @@ fn task263_arena(
             .collect();
         let actual = builder
             .push(
-                TypedNode::new(kind, SourceAnchor::Range(node.range))
+                TypedNode::new(kind, SourceAnchor::Range(row.range()))
                     .with_children(children)
                     .with_typing(TypingState::Unknown)
                     .with_recovery(NodeRecoveryState::Normal),
