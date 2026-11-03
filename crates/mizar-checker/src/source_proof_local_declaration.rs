@@ -1498,7 +1498,8 @@ impl SourceProofLocalLetBindingHandoff {
         {
             return Err(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id });
         }
-        let expected = extend_task269c_binding_env(&self.base_binding_env)?;
+        let expected =
+            extend_task269c_binding_env(&self.base_binding_env, self.proof_range, self.name_range)?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_task269c_local_binding(&self.binding_env, self.proof_range, self.name_range)
@@ -1590,7 +1591,8 @@ impl SourceProofLocalLetBindingProducer {
                 binding: SourceProofLocalLetBindingId::new(0),
             });
         }
-        let binding_env = extend_task269c_binding_env(base_binding_env)?;
+        let binding_env =
+            extend_task269c_binding_env(base_binding_env, input.proof_range, input.name_range)?;
         if !exact_task269c_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
         }
@@ -1873,16 +1875,13 @@ fn exact_task269c_declaration_binding(binding_env: &BindingEnv, name_range: Sour
 
 fn extend_task269c_binding_env(
     base: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalLetBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
     }
-    let local = LocalTermBinding::new(
-        "y",
-        LocalTermScope::new(vec![0]),
-        range(base.source_id(), 71, 72),
-        1,
-    );
+    let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
     let mut bindings = base.bindings().clone();
     let binding = bindings.insert(BindingDraft::from_local_term(
         BindingContextId::new(1),
@@ -1895,7 +1894,7 @@ fn extend_task269c_binding_env(
     let mut contexts = base.contexts().clone();
     let context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 59, 98),
+            source_range: proof_range,
         },
         parent: Some(BindingContextId::new(0)),
         layer: BindingContextLayer::Proof,
@@ -2219,7 +2218,8 @@ impl SourceProofLocalGivenBindingHandoff {
         {
             return Err(SourceProofLocalGivenBindingError::InvalidDeclaration { binding: id });
         }
-        let expected = extend_task269g_binding_env(&self.base_binding_env)?;
+        let expected =
+            extend_task269g_binding_env(&self.base_binding_env, self.proof_range, self.name_range)?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_task269g_local_binding(&self.binding_env, self.proof_range, self.name_range)
@@ -2311,7 +2311,8 @@ impl SourceProofLocalGivenBindingProducer {
                 binding: SourceProofLocalGivenBindingId::new(0),
             });
         }
-        let binding_env = extend_task269g_binding_env(base_binding_env)?;
+        let binding_env =
+            extend_task269g_binding_env(base_binding_env, input.proof_range, input.name_range)?;
         if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenBindingError::InvalidBindingEnvironment);
         }
@@ -2546,16 +2547,13 @@ fn exact_task269g_declaration_binding(binding_env: &BindingEnv, name_range: Sour
 
 fn extend_task269g_binding_env(
     base: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalGivenBindingError::InvalidBaseBindingEnvironment);
     }
-    let local = LocalTermBinding::new(
-        "y",
-        LocalTermScope::new(vec![0]),
-        range(base.source_id(), 76, 77),
-        1,
-    );
+    let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
     let mut bindings = base.bindings().clone();
     let binding = bindings.insert(BindingDraft::from_local_term(
         BindingContextId::new(1),
@@ -2568,7 +2566,7 @@ fn extend_task269g_binding_env(
     let mut contexts = base.contexts().clone();
     let context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 62, 127),
+            source_range: proof_range,
         },
         parent: Some(BindingContextId::new(0)),
         layer: BindingContextLayer::Proof,
@@ -2803,7 +2801,11 @@ impl SourceProofLocalGivenUseBindingHandoff {
         {
             return Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id });
         }
-        let expected = extend_task269gup_binding_env(&self.base_binding_env)?;
+        let expected = extend_task269gup_binding_env(
+            &self.base_binding_env,
+            self.proof_range,
+            self.name_range,
+        )?;
         if self.binding_env != expected
             || !exact_task269gup_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269gup_lookup_behavior(&self.binding_env)
@@ -2882,7 +2884,8 @@ impl SourceProofLocalGivenUseBindingProducer {
                 binding: SourceProofLocalGivenBindingId::new(0),
             });
         }
-        let binding_env = extend_task269gup_binding_env(base_binding_env)?;
+        let binding_env =
+            extend_task269gup_binding_env(base_binding_env, input.proof_range, input.name_range)?;
         if !exact_task269gup_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
         }
@@ -3120,16 +3123,13 @@ fn exact_task269gup_declaration_binding(binding_env: &BindingEnv, name_range: So
 
 fn extend_task269gup_binding_env(
     base: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenUseBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
     }
-    let local = LocalTermBinding::new(
-        "y",
-        LocalTermScope::new(vec![0]),
-        range(base.source_id(), 76, 77),
-        1,
-    );
+    let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
     let mut bindings = base.bindings().clone();
     let binding = bindings.insert(BindingDraft::from_local_term(
         BindingContextId::new(1),
@@ -3142,7 +3142,7 @@ fn extend_task269gup_binding_env(
     let mut contexts = base.contexts().clone();
     let context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 62, 126),
+            source_range: proof_range,
         },
         parent: Some(BindingContextId::new(0)),
         layer: BindingContextLayer::Proof,
@@ -3376,7 +3376,11 @@ impl SourceProofLocalGivenConditionBindingHandoff {
                 SourceProofLocalGivenConditionBindingError::InvalidDeclaration { binding: id },
             );
         }
-        let expected = extend_task269gc_binding_env(&self.base_binding_env)?;
+        let expected = extend_task269gc_binding_env(
+            &self.base_binding_env,
+            self.proof_range,
+            self.name_range,
+        )?;
         if self.binding_env != expected
             || !exact_task269gc_local_binding(&self.binding_env, self.proof_range, self.name_range)
             || !exact_task269gc_lookup_behavior(&self.binding_env)
@@ -3473,7 +3477,8 @@ impl SourceProofLocalGivenConditionBindingProducer {
                 },
             );
         }
-        let binding_env = extend_task269gc_binding_env(base_binding_env)?;
+        let binding_env =
+            extend_task269gc_binding_env(base_binding_env, input.proof_range, input.name_range)?;
         if !exact_task269gc_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBindingEnvironment);
         }
@@ -3710,16 +3715,13 @@ fn exact_task269gc_declaration_binding(binding_env: &BindingEnv, name_range: Sou
 
 fn extend_task269gc_binding_env(
     base: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenConditionBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalGivenConditionBindingError::InvalidBaseBindingEnvironment);
     }
-    let local = LocalTermBinding::new(
-        "y",
-        LocalTermScope::new(vec![0]),
-        range(base.source_id(), 82, 83),
-        1,
-    );
+    let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
     let mut bindings = base.bindings().clone();
     let binding = bindings.insert(BindingDraft::from_local_term(
         BindingContextId::new(1),
@@ -3732,7 +3734,7 @@ fn extend_task269gc_binding_env(
     let mut contexts = base.contexts().clone();
     let context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 68, 132),
+            source_range: proof_range,
         },
         parent: Some(BindingContextId::new(0)),
         layer: BindingContextLayer::Proof,
@@ -4001,7 +4003,11 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
         }
-        let expected = extend_task269sdc_binding_env(&self.base_binding_env)?;
+        let expected = extend_task269sdc_binding_env(
+            &self.base_binding_env,
+            self.proof_range,
+            self.name_range,
+        )?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_task269sdc_local_binding(&self.binding_env, self.proof_range, self.name_range)
@@ -4070,7 +4076,8 @@ impl SourceProofLocalGivenDescendantBindingProducer {
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
         }
-        let binding_env = extend_task269sdc_binding_env(base_binding_env)?;
+        let binding_env =
+            extend_task269sdc_binding_env(base_binding_env, input.proof_range, input.name_range)?;
         if !exact_task269sdc_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
         }
@@ -4339,16 +4346,13 @@ fn exact_task269sdc_descendant_context(binding_env: &BindingEnv, source_id: Sour
 
 fn extend_task269sdc_binding_env(
     base: &BindingEnv,
+    proof_range: SourceRange,
+    name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenDescendantBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
     }
-    let local = LocalTermBinding::new(
-        "y",
-        LocalTermScope::new(vec![0]),
-        range(base.source_id(), 87, 88),
-        1,
-    );
+    let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
     let mut bindings = base.bindings().clone();
     let binding = bindings.insert(BindingDraft::from_local_term(
         BindingContextId::new(1),
@@ -4361,7 +4365,7 @@ fn extend_task269sdc_binding_env(
     let mut contexts = base.contexts().clone();
     let proof_context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 73, 178),
+            source_range: proof_range,
         },
         parent: Some(BindingContextId::new(0)),
         layer: BindingContextLayer::Proof,
