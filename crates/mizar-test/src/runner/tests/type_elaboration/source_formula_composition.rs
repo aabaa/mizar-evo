@@ -814,6 +814,58 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
     )
     .unwrap()
     .unwrap();
+    let alias = ast
+        .token_views()
+        .find(|node| {
+            node.as_token()
+                .is_some_and(|token| token.text.as_ref() == "=")
+        })
+        .unwrap()
+        .id();
+    let root_index = ast.root().unwrap().index();
+    let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+    for (index, node) in ast.nodes().iter().enumerate() {
+        let mut children = node
+            .children
+            .iter()
+            .map(|child| rebuilt[child.index()])
+            .collect::<Vec<_>>();
+        if index == root_index {
+            children.extend([rebuilt[alias.index()], rebuilt[alias.index()]]);
+        }
+        rebuilt.push(match &node.kind {
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), node.range)
+            }
+            kind => builder.add_node(kind.clone(), node.range, children),
+        });
+    }
+    let forged = builder
+        .finish(
+            ast.root().map(|root| rebuilt[root.index()]),
+            ast.expression_root().map(|root| rebuilt[root.index()]),
+        )
+        .with_trivia(ast.trivia().clone());
+    assert_eq!(forged.nodes().len(), ast.nodes().len());
+    assert_eq!(forged.token_nodes(), ast.token_nodes());
+    assert_eq!(forged.trivia(), ast.trivia());
+    assert!(
+        extract_source_formula_quantifier_bound_use(&forged, &resolver.module, &resolver.env)
+            .is_some()
+    );
+    assert_eq!(
+        source_formula_composition_output_with_source(
+            &forged,
+            resolver.module.clone(),
+            &resolver.env,
+            &original,
+        )
+        .map(|result| result.map(|_| ())),
+        Some(Err(
+            mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement.to_string()
+        ))
+    );
     for partial in [
         original.replacen("for x", "for y", 1),
         original.replacen("holds x", "holds y", 1),
@@ -835,12 +887,17 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
             ));
         });
     }
-    for spelling in ["y", "bound_variable"] {
+    for (spelling, prefix) in [
+        ("y", ""),
+        ("bound_variable", ""),
+        ("bound_variable", ":: bound use layout\n\n"),
+    ] {
         let source = original.replacen(
             "for x being set holds x = x",
             &format!("for {spelling} being set holds {spelling} = {spelling}"),
             1,
         );
+        let source = format!("{prefix}{source}");
         assert_ne!(source, original);
         metamorphic_guard::with_source(case, &source, || {
             let frontend = run_frontend(root, case, ordinal).unwrap();
@@ -998,6 +1055,8 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                     expected.start += usize::from(previous.start > boundary) * (spelling.len() - 1);
                     expected.end += usize::from(previous.end > boundary) * (spelling.len() - 1);
                 }
+                expected.start += prefix.len();
+                expected.end += prefix.len();
                 assert_eq!(actual, expected);
             }
             assert_eq!(

@@ -57,7 +57,7 @@ structure-update-lower-sites	structure	native-consumer	done	structure-update low
 structure-constructor-lower-sites	structure	native-consumer	done	structure-constructor lower sites: guarded proof/reserve coordinate lookup shared at three real consumers; canonical donors preserved
 structure-exit	structure	native-consumer	open	family exit: remaining literal_source_offset_baseline.tsv rows of source_structure_definition.rs and its runner retired
 native-type-generic-install	type-term-formula	native-consumer	done	native TYPE reads authenticated generic sites and parent/head rows; malformed frontend geometry including zero-width tokens is refused
-direct-b1-formula-sites	type-term-formula	native-consumer	open	direct Task257B1 formula bound-use term sites from generic rows; the duplicate Root alias becomes a negative test
+direct-b1-formula-sites	type-term-formula	native-consumer	done	direct B1 reads bound-use sites, ranges and spelling from generic rows; duplicate Root census aliases are refused
 mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode profile keeps kind/text/child grammar and independent mapped spans/envelopes; retire redundant coordinate fields and checks
 mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are intentional corruption constants, kept
 predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change

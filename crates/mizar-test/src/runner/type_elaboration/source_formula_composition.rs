@@ -49,7 +49,7 @@ use mizar_checker::{
 use mizar_resolve::{
     env::SymbolEnv,
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::ModuleId,
+    resolved_ast::{ModuleId, RecoveryState, SurfaceResolvedArena},
 };
 use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind};
@@ -1075,6 +1075,49 @@ fn route_inputs(
         return Err("Task257B1 identifier token is invalid".to_owned());
     }
     let spelling = token.text.as_ref();
+    let source = SurfaceResolvedArena::lower(ast, &module).map_err(|error| format!("{error:?}"))?;
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                    .with_recovery(if node.recovery() == RecoveryState::Recovered {
+                        NodeRecoveryState::Recovered
+                    } else {
+                        NodeRecoveryState::Normal
+                    })
+            })
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let mut syntax = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|error| error.to_string())?;
+    syntax
+        .install_source_nodes(&source)
+        .map_err(|error| error.to_string())?;
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let composite = SourceCompositeFormulaHandoffInput {
@@ -1148,22 +1191,21 @@ fn route_inputs(
     let primary = SourcePrimaryTermHandoffInput {
         source_id: ast.source_id,
         module_id: module.clone(),
-        terms: vec![
-            variable_term(
-                payload.left_site.clone(),
-                payload.left_range,
-                0,
-                context1,
-                spelling,
-            ),
-            variable_term(
-                payload.right_site.clone(),
-                payload.right_range,
-                1,
-                context1,
-                spelling,
-            ),
-        ],
+        terms: syntax
+            .source_node_entries()
+            .ok_or(INVALID_PAYLOAD_KEY)?
+            .filter(|row| matches!(row.kind(), SurfaceNodeKind::TermReference))
+            .enumerate()
+            .map(|(ordinal, row)| {
+                variable_term(
+                    TypedSiteRef::Node(TypedNodeId::new(row.site().index())),
+                    row.range(),
+                    ordinal,
+                    context1,
+                    row.spelling(),
+                )
+            })
+            .collect(),
         references: vec![
             SourcePrimaryTermReferenceInput {
                 term: SourcePrimaryTermId::new(0),

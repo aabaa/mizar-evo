@@ -1659,8 +1659,10 @@ pub(in crate::runner) struct SourceFormulaQuantifierBoundUse {
     pub(in crate::runner) equality_site: TypedSiteRef,
     pub(in crate::runner) equality_range: SourceRange,
     pub(in crate::runner) left_site: TypedSiteRef,
+    #[cfg(test)]
     pub(in crate::runner) left_range: SourceRange,
     pub(in crate::runner) right_site: TypedSiteRef,
+    #[cfg(test)]
     pub(in crate::runner) right_range: SourceRange,
 }
 
@@ -2736,9 +2738,9 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
     let [left_expression_id, right_expression_id] = equality_children.as_slice() else {
         return None;
     };
-    let (left_id, left_range, left_spelling) =
+    let (left_id, _left_range, left_spelling) =
         exact_identifier_term_operand(ast, *left_expression_id)?;
-    let (right_id, right_range, right_spelling) =
+    let (right_id, _right_range, right_spelling) =
         exact_identifier_term_operand(ast, *right_expression_id)?;
     if left_id == right_id || left_spelling != spelling || right_spelling != spelling {
         return None;
@@ -2769,9 +2771,11 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
         equality_site: surface_site(*equality_id),
         equality_range: equality.range,
         left_site: surface_site(left_id),
-        left_range,
+        #[cfg(test)]
+        left_range: _left_range,
         right_site: surface_site(right_id),
-        right_range,
+        #[cfg(test)]
+        right_range: _right_range,
     })
 }
 
