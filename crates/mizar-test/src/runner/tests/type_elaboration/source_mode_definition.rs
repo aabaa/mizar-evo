@@ -625,6 +625,8 @@ enum Task262SurfaceMutation {
     WidenedSegmentHull,
     ExtraStructuralStorage,
     CoherentRoleArityShift,
+    ParameterStorageOrder,
+    TokenStorageIdentity,
     RootIdentity,
     RootChildOrder,
     DefinitionSiblingOrder,
@@ -643,7 +645,14 @@ enum Task262SurfaceMutation {
 fn task262_mutated_surface_ast(ast: &SurfaceAst, mutation: Task262SurfaceMutation) -> SurfaceAst {
     let mut builder = SurfaceAstBuilder::new(ast.source_id);
     let mut rebuilt = Vec::<SurfaceBuilderNodeId>::with_capacity(ast.nodes().len());
-    for (index, node) in ast.nodes().iter().enumerate() {
+    for index in 0..ast.nodes().len() {
+        let node = &ast.nodes()[match (index, mutation) {
+            (34..=37, Task262SurfaceMutation::ParameterStorageOrder) => index + 4,
+            (38..=41, Task262SurfaceMutation::ParameterStorageOrder) => index - 4,
+            (2, Task262SurfaceMutation::TokenStorageIdentity) => 16,
+            (16, Task262SurfaceMutation::TokenStorageIdentity) => 2,
+            _ => index,
+        }];
         let kind = match (index, mutation) {
             (49, Task262SurfaceMutation::StructuralKind) => SurfaceNodeKind::FunctorDefinition,
             (42, Task262SurfaceMutation::PatternKind) => SurfaceNodeKind::FunctorPattern,
@@ -669,7 +678,14 @@ fn task262_mutated_surface_ast(ast: &SurfaceAst, mutation: Task262SurfaceMutatio
         let mut children = node
             .children
             .iter()
-            .map(|child| rebuilt[child.index()])
+            .map(|child| rebuilt[match (index, child.index(), mutation) {
+                (53, child, _) => child,
+                (_, child @ 34..=37, Task262SurfaceMutation::ParameterStorageOrder) => child + 4,
+                (_, child @ 38..=41, Task262SurfaceMutation::ParameterStorageOrder) => child - 4,
+                (_, 2, Task262SurfaceMutation::TokenStorageIdentity) => 16,
+                (_, 16, Task262SurfaceMutation::TokenStorageIdentity) => 2,
+                (_, child, _) => child,
+            }])
             .collect::<Vec<_>>();
         match (index, mutation) {
             (49, Task262SurfaceMutation::StructuralChildren) => children.swap(3, 5),
@@ -733,6 +749,8 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
 
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_010);
+    let (_, _, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_012);
     for mutation in [
         Task262SurfaceMutation::StructuralKind,
         Task262SurfaceMutation::StructuralRange,
@@ -742,6 +760,8 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
         Task262SurfaceMutation::WidenedSegmentHull,
         Task262SurfaceMutation::ExtraStructuralStorage,
         Task262SurfaceMutation::CoherentRoleArityShift,
+        Task262SurfaceMutation::ParameterStorageOrder,
+        Task262SurfaceMutation::TokenStorageIdentity,
         Task262SurfaceMutation::RootIdentity,
         Task262SurfaceMutation::RootChildOrder,
         Task262SurfaceMutation::DefinitionSiblingOrder,
@@ -764,6 +784,8 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
                 | Task262SurfaceMutation::WidenedSegmentHull
                 | Task262SurfaceMutation::ExtraStructuralStorage
                 | Task262SurfaceMutation::CoherentRoleArityShift
+                | Task262SurfaceMutation::ParameterStorageOrder
+                | Task262SurfaceMutation::TokenStorageIdentity
         ) {
             assert_eq!(mutated.source_id, ast.source_id);
             assert_eq!(mutated.token_nodes(), ast.token_nodes());
@@ -771,6 +793,42 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
             assert!(mutated.canonical_bytes().is_some());
             assert!(mutated.nodes().iter().all(|node| !node.recovered));
             assert!(SurfaceResolvedArena::lower(&mutated, &module).is_ok());
+            if matches!(
+                mutation,
+                Task262SurfaceMutation::CoherentRoleArityShift
+                    | Task262SurfaceMutation::ParameterStorageOrder
+                    | Task262SurfaceMutation::TokenStorageIdentity
+            ) {
+                assert_eq!((mutated.nodes().len(), mutated.token_nodes().len()), (54, 34));
+                assert!((0..34).all(|index| mutated.nodes()[53].children[index].index() == index));
+                assert!((0..34).all(|index| mutated.nodes()[index].kind == ast.nodes()[index].kind));
+                assert!(mutated.nodes().iter().enumerate().all(|(index, node)| node.children.iter().all(|child| child.index() < index)));
+                let mut owners = [0; 54];
+                for (parent, node) in mutated.nodes().iter().enumerate() {
+                    for child in &node.children {
+                        if parent != 53 || child.index() >= 34 {
+                            owners[child.index()] += 1;
+                        }
+                    }
+                }
+                assert!(owners[..53].iter().all(|owner| *owner == 1));
+                for view in mutated
+                    .node_views()
+                    .filter(|view| !matches!(view.kind(), SurfaceNodeKind::Token(_)))
+                {
+                    let children = view.children();
+                    let first = mutated.nodes()[children.first().unwrap().index()].range;
+                    let last = mutated.nodes()[children.last().unwrap().index()].range;
+                    assert_eq!((view.range().start, view.range().end), (first.start, last.end));
+                    assert_eq!(mutated.range_contains_child_ranges(view.id()), Some(true));
+                    if *view.kind() != SurfaceNodeKind::Root {
+                        assert!(children.windows(2).all(|pair| {
+                            mutated.nodes()[pair[0].index()].range.end
+                                <= mutated.nodes()[pair[1].index()].range.start
+                        }));
+                    }
+                }
+            }
             match mutation {
                 Task262SurfaceMutation::WidenedSegmentHull => {
                     let segment = &mutated.nodes()[36];
@@ -794,21 +852,37 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
                             && extra.children.is_empty()
                     );
                 }
-                Task262SurfaceMutation::CoherentRoleArityShift => {
-                    assert_eq!(mutated.nodes().len(), ast.nodes().len());
-                    for view in mutated.node_views().filter(|view| !matches!(view.kind(), SurfaceNodeKind::Token(_))) {
-                        let children = view.children();
-                        let first = mutated.nodes()[children.first().unwrap().index()].range;
-                        let last = mutated.nodes()[children.last().unwrap().index()].range;
-                        assert_eq!((view.range().start, view.range().end), (first.start, last.end));
-                        assert_eq!(mutated.range_contains_child_ranges(view.id()), Some(true));
-                        if *view.kind() != SurfaceNodeKind::Root {
-                            assert!(children.windows(2).all(|pair| {
-                                mutated.nodes()[pair[0].index()].range.end
-                                    <= mutated.nodes()[pair[1].index()].range.start
-                            }));
-                        }
-                    }
+                Task262SurfaceMutation::ParameterStorageOrder => {
+                    assert_eq!(mutated.nodes()[34].range, ast.nodes()[38].range);
+                    assert_eq!(mutated.nodes()[38].range, ast.nodes()[34].range);
+                    assert_eq!(
+                        mutated.nodes()[50]
+                            .children
+                            .iter()
+                            .map(|id| id.index())
+                            .collect::<Vec<_>>(),
+                        [0, 41, 37, 49, 32, 33]
+                    );
+                }
+                Task262SurfaceMutation::TokenStorageIdentity => {
+                    assert_eq!(mutated.nodes()[2].range, ast.nodes()[16].range);
+                    assert_eq!(mutated.nodes()[16].range, ast.nodes()[2].range);
+                    assert_eq!(
+                        mutated.nodes()[36]
+                            .children
+                            .iter()
+                            .map(|id| id.index())
+                            .collect::<Vec<_>>(),
+                        [16, 3, 35]
+                    );
+                    assert_eq!(
+                        mutated.nodes()[42]
+                            .children
+                            .iter()
+                            .map(|id| id.index())
+                            .collect::<Vec<_>>(),
+                        [14, 15, 2, 17, 18, 19]
+                    );
                 }
                 _ => {}
             }
@@ -824,9 +898,34 @@ fn task262_mode_definition_surface_resolver_lower_and_payload_corruption_fail_cl
             .is_none(),
             "surface mutation {mutation:?} entered Task262"
         );
+        if matches!(
+            mutation,
+            Task262SurfaceMutation::ParameterStorageOrder
+                | Task262SurfaceMutation::TokenStorageIdentity
+        ) {
+            assert!(source_mode_definition_output(
+                &mutated,
+                module.clone(),
+                &foreign_shells,
+                &foreign_symbols,
+                SOURCE_MODE_DEFINITION_TEXT,
+            )
+            .is_none());
+            for (supplied_shells, supplied_symbols) in
+                [(&shells, &symbols), (&foreign_shells, &foreign_symbols)]
+            {
+                assert!(source_mode_definition_output_with_mutation(
+                    &mutated,
+                    module.clone(),
+                    supplied_shells,
+                    supplied_symbols,
+                    SOURCE_MODE_DEFINITION_TEXT,
+                    SourceModeDefinitionRouteMutation::RemoveResolverShell,
+                )
+                .is_none());
+            }
+        }
     }
-    let (_, _, foreign_shells, _) =
-        task253_ast_from_source_text(SOURCE_MODE_DEFINITION_TEXT, 262_012);
     let bad_surface = task262_mutated_surface_ast(&ast, Task262SurfaceMutation::CoherentRoleArityShift);
     assert!(
         source_mode_definition_output(

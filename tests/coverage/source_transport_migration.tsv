@@ -80,6 +80,7 @@ direct-b1-formula-sites	type-term-formula	native-consumer	done	direct B1 reads b
 mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode profile keeps kind/text/child grammar and independent mapped spans/envelopes; retire redundant coordinate fields and checks
 ordinary-mode-generic-rows	type-term-formula	native-consumer	done	ordinary Mode reads authenticated generic row sites and ranges across context, type, RHS, and mode handoffs; exact profile and final arena metadata retained
 ordinary-mode-profile-retirement	type-term-formula	ordinary-mode-generic-rows	done	ordinary Mode validates complete roles and terminal coverage over authenticated generic rows; lexical selectors and final ABI guards retained
+ordinary-mode-storage-identity	type-term-formula	ordinary-mode-profile-retirement	done	ordinary Mode preserves private refusal for parameter and token storage permutations before fixed-index consumers
 mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are intentional corruption constants, kept
 predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 attribute-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change

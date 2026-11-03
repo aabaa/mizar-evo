@@ -759,8 +759,19 @@ fn exact_mode_definition(
         Some(children)
     };
     let mut next = 0;
+    let mut structural = EXACT_MODE_TERMINALS.len();
+    let finish = |id: TypedNodeId, structural: &mut usize| {
+        if id.index() != *structural {
+            return None;
+        }
+        *structural += 1;
+        Some(())
+    };
     let terms = |ids: &[TypedNodeId], next: &mut usize, seen: &mut BTreeSet<usize>| {
         for id in ids {
+            if id.index() != *next {
+                return None;
+            }
             let (kind, text) = EXACT_MODE_TERMINALS.get(*next)?;
             let children = observe(*id, K::Token(SurfaceToken::new(*kind, *text)), seen)?;
             let row = source_row(&syntax, id.index()).ok()?;
@@ -775,7 +786,10 @@ fn exact_mode_definition(
         }
         Some(())
     };
-    let bare_set = |expression: TypedNodeId, next: &mut usize, seen: &mut BTreeSet<usize>| {
+    let bare_set = |expression: TypedNodeId,
+                    next: &mut usize,
+                    seen: &mut BTreeSet<usize>,
+                    structural: &mut usize| {
         let expression_children = observe(expression, K::TypeExpression, seen)?;
         let [head] = expression_children.as_slice() else {
             return None;
@@ -784,7 +798,9 @@ fn exact_mode_definition(
         if head_children.len() != 1 {
             return None;
         }
-        terms(head_children, next, seen)
+        terms(head_children, next, seen)?;
+        finish(*head, structural)?;
+        finish(expression, structural)
     };
     let root = syntax.nodes().root()?;
     let root_children = observe(root, K::Root, &mut seen)?;
@@ -820,8 +836,10 @@ fn exact_mode_definition(
             return None;
         };
         terms(&[*name, *be], &mut next, &mut seen)?;
-        bare_set(*expression, &mut next, &mut seen)?;
+        bare_set(*expression, &mut next, &mut seen, &mut structural)?;
         terms(&[*semi], &mut next, &mut seen)?;
+        finish(*segment, &mut structural)?;
+        finish(parameter, &mut structural)?;
     }
     let mode_children = observe(*mode, K::ModeDefinition, &mut seen)?;
     let [kw, label, colon, pat, is_kw, rhs, semi, prop] = mode_children.as_slice() else {
@@ -833,8 +851,9 @@ fn exact_mode_definition(
         return None;
     }
     terms(pattern_children, &mut next, &mut seen)?;
+    finish(*pat, &mut structural)?;
     terms(&[*is_kw], &mut next, &mut seen)?;
-    bare_set(*rhs, &mut next, &mut seen)?;
+    bare_set(*rhs, &mut next, &mut seen, &mut structural)?;
     terms(&[*semi], &mut next, &mut seen)?;
     let property_children = observe(*prop, K::ModeProperty, &mut seen)?;
     let [sethood, clause, property_semi] = property_children.as_slice() else {
@@ -856,11 +875,18 @@ fn exact_mode_definition(
         return None;
     }
     terms(option_children, &mut next, &mut seen)?;
-    terms(
-        &[*close, *property_semi, *end, *block_semi],
-        &mut next,
-        &mut seen,
-    )?;
+    finish(*option, &mut structural)?;
+    terms(&[*close], &mut next, &mut seen)?;
+    finish(*computation, &mut structural)?;
+    finish(*clause, &mut structural)?;
+    terms(&[*property_semi], &mut next, &mut seen)?;
+    finish(*prop, &mut structural)?;
+    finish(*mode, &mut structural)?;
+    terms(&[*end, *block_semi], &mut next, &mut seen)?;
+    finish(*block, &mut structural)?;
+    finish(*list, &mut structural)?;
+    finish(*unit, &mut structural)?;
+    finish(root, &mut structural)?;
     if next != EXACT_MODE_TERMINALS.len()
         || seen.len() != row_count
         || seen.len() != syntax.nodes().len()
