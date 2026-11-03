@@ -25,8 +25,12 @@ Where the two differ, the protocol wins.
   Module documents never point back at contracts.
 - Declare the gate tier (full, pattern, or light) in the contract or commit
   body. A slice that repeats a reviewed family's pattern for one more input
-  shape is pattern tier, and one family contract covers its slices
-  (protocol: "Gate Tiering", "Canonical Task Contracts").
+  shape is pattern tier, and one family contract covers its slices through
+  its ledger under `tests/coverage/`; a slice adds or updates its ledger row,
+  never a contract line. Bundle three to five identical-shape slices (under
+  about thirty production lines each, no profile or baseline retirement)
+  into one task and one commit (protocol: "Gate Tiering", "Canonical Task
+  Contracts").
 - End every commit body with `volume: prod +N test +N doc +N` (added lines from
   `git diff --numstat`: non-test `crates/**/src`, tests and `.miz`/`.toml`
   fixtures, `doc/`).

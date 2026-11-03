@@ -7,50 +7,13 @@ Status: in progress; steps 1-3 complete. Readiness: statement/witness migration 
 3. Generic oracle: tests compare producer output with the frontend's own spans and structure for every active corpus case (Root-reachable shape, documented recovery anchors, ordering, and metamorphic layout variants; unrecoverable frontend absence retains its diagnostics), replacing literal-offset profiles. Retire the `exact_*_profile` functions and lower `tests/coverage/literal_source_offset_baseline.tsv` to zero for the affected modules.
 4. Unit of work: a remaining (b) element is one pattern-tier slice under one family contract; the lower/pair/preservation triple is no longer the unit.
 ## Family slices
-Pattern predecessor: the completed initial shared native statement consumer; subsequent slices repeat its authenticated table and oracle pattern.
-- [x] step 1 design and classification ledger
-- [x] step 2 generic walk and `TypedAst` slot, with the widened type-only kind import in the syntax-import lint
-- [x] step 3 generic runner oracle and metamorphic route
-- [x] initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
-- [x] bare unnamed finite enumeration witness: ordered references to the sole reserved set variable
-- [x] unused named finite enumeration witness: fresh name, same reserved-reference elements, no binding activation
-- [x] unused named bare-set Choice witness: preserve pending requests, no abbreviation activation
-- [x] dormant unnamed numeral witness: retire its raw profile into private tests; numeric semantics remain deferred
-- [x] dormant unnamed Qua witness: retire its raw profile into private tests; widening semantics remain deferred
-- [x] dormant unnamed comprehension witness: retire its raw profile into private tests; generator and proof semantics remain deferred
-- [x] dormant numeric enumeration witness: retire its raw profile into private tests; numeric payload and witness semantics remain deferred
-- [x] dormant wrapped application witness: retire its raw profile into private tests; bare application and lower APIs remain unchanged
-- [x] dormant bare application witness: retire its raw profile into private tests; preserve authenticated lower donors and native paths
-- [x] dormant structure-update witness: retire its raw profile into private tests; preserve independent lower structure handoffs
-- [x] dormant structure-selector witness: retire its raw profile into private tests; preserve independent lower structure handoffs
-- [x] dormant structure-constructor witness: retire the final raw witness profile and now-unused shared raw internals into private tests
-- [x] dormant explicit-universal upper statement: retire raw B4A; preserve active lower-only universal transport
-- [x] dormant nested-quantifier upper statement: retire raw B4C; preserve active lower-only nested transport
-- [x] dormant connective-grouping upper statement: retire final raw B4 profile; preserve independent lower transport
-- [x] dormant imported-theorem citation: retire raw B5B; preserve native local references and import provenance tests
-- [ ] statement/witness family migration; retire its exact profiles and baseline rows
-- [x] isolated unused proof-local Let syntax: generic table sites and lexical layouts/names; C/CT canonical dependency boundary unchanged
-- [x] isolated unused proof-local Given syntax: generic table sites and lexical layouts/names; G/GT canonical dependency boundary unchanged
-- [x] isolated Given-use syntax: generic sites with matching declaration/use names; share receiver at three real consumers, preserve canonical donors
-- [x] isolated Given-condition syntax: actual condition-reference sites and raw hashes; preserve GC/GCT/GCU canonical dependencies
-- [x] descendant Given/Now/Set-chain syntax: generic sites and ordering; preserve canonical donors and deferred Set/capture semantics
-- [x] proof-local Let type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
-- [x] proof-local Given type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
-- [x] proof-local Given-use type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
-- [x] proof-local Given-condition type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
-- [x] descendant Given type arena: derive existing overlay anchors from authenticated lower and binding sites; preserve canonical type donor
-- [x] descendant Given-use term arena: derive existing term and overlay anchors from authenticated syntax and binding sites; preserve canonical donor
-- [x] Given-use term references: read existing generic rows through the shared private receiver; preserve canonical type/term donors
-- [x] Given-condition term references: read existing generic rows through the shared private receiver; preserve canonical type/term donors
-- [x] wrapped imported application anchor: derive expected import byte bounds from authenticated ModulePath; preserve source owner and donor checks
-- [x] shared structure import anchor: derive expected byte bounds from authenticated ModulePath for constructor/selector/update; preserve source owner and donors
-- [x] structure-selector lower sites: derive proof, reserve declaration and written-type expectations from guarded AST; preserve lower donor checks
-- [x] structure-update lower sites: derive proof, reserve declaration and written-type expectations from guarded AST; reuse selector range controls
-- [x] structure-constructor lower sites: share guarded proof/reserve coordinate lookup at three real consumers; preserve canonical donors
-- [x] condition-formula sparse lower graphs: freeze existing primary/condition refusal stages before coordinate migration
-- [ ] proof-local declaration family (Task 269)
-- [ ] type, term and formula families
-- [ ] class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per the ledger
+Ledger: `tests/coverage/source_transport_migration.tsv` holds one row per slice (slice, family, predecessor, status, note). A slice is complete when its row is `done`; no slice adds a contract line. Default predecessor: the completed initial shared native statement consumer, whose authenticated table and oracle pattern every slice repeats unless its row names another.
+Families and exit criteria:
+- statement/witness: exact profiles and `literal_source_offset_baseline.tsv` rows of `source_statement.rs` retired (exit criterion 3)
+- proof-local declarations (Task 269): the same for `source_proof_local_declaration.rs`
+- structure: the same for `source_structure_definition.rs` and its runner
+- type, term and formula: native TYPE and direct B1 read the generic table under the accepted-input boundary in the [source statement design](../../mizar-checker/en/source_statement.md#generic-original-source-transport-task-284-design); the mode, predicate and attribute definition runners lose their literal offsets
+- class `b` element rules: Tasks 257, 269, 270, 271, 272, 279 per `tests/coverage/source_transport_classification.tsv`
 ## Forbidden
 Fabricating sites or ranges absent from the frontend tree; widening admitted semantics; changing `doc/spec`, `.miz`, expectations, trace status, or coverage credit; keeping a fixture-specific branch in production code; adding a parallel AST or span representation where an existing one can be referenced.
 ## Verification and exit

@@ -1,0 +1,54 @@
+# generator: manual family ledger for VELOCITY-GENERIC-SOURCE-TRANSPORT (opened 2026-11-03); one row per slice
+# status: done = committed and named in its commit body; open = not started. predecessor: the completed slice whose producer/test pattern the slice repeats (native-consumer = the initial shared native statement consumer); setup rows have none
+# family: setup | statement-witness | proof-local | structure | type-term-formula | element-rules
+slice	family	predecessor	status	note
+design-ledger	setup	-	done	step 1 design and classification ledger
+generic-walk	setup	-	done	step 2 generic walk and TypedAst slot, widened type-only kind import in the syntax-import lint
+generic-oracle	setup	-	done	step 3 generic runner oracle and metamorphic route
+native-consumer	setup	-	done	initial shared native statement consumer (full): read installed table; preserve canonical receiver comparison
+finite-enumeration-witness	statement-witness	native-consumer	done	bare unnamed finite enumeration witness: ordered references to the sole reserved set variable
+named-enumeration-witness	statement-witness	native-consumer	done	unused named finite enumeration witness: fresh name, same reserved-reference elements, no binding activation
+named-choice-witness	statement-witness	native-consumer	done	unused named bare-set Choice witness: preserve pending requests, no abbreviation activation
+numeral-witness-retirement	statement-witness	native-consumer	done	dormant unnamed numeral witness: raw profile retired into private tests; numeric semantics remain deferred
+qua-witness-retirement	statement-witness	native-consumer	done	dormant unnamed Qua witness: raw profile retired into private tests; widening semantics remain deferred
+comprehension-witness-retirement	statement-witness	native-consumer	done	dormant unnamed comprehension witness: raw profile retired into private tests; generator and proof semantics remain deferred
+numeric-enumeration-retirement	statement-witness	native-consumer	done	dormant numeric enumeration witness: raw profile retired into private tests; numeric payload and witness semantics remain deferred
+wrapped-application-retirement	statement-witness	native-consumer	done	dormant wrapped application witness: raw profile retired into private tests; bare application and lower APIs unchanged
+bare-application-retirement	statement-witness	native-consumer	done	dormant bare application witness: raw profile retired into private tests; authenticated lower donors and native paths preserved
+structure-update-retirement	statement-witness	native-consumer	done	dormant structure-update witness: raw profile retired into private tests; independent lower structure handoffs preserved
+structure-selector-retirement	statement-witness	native-consumer	done	dormant structure-selector witness: raw profile retired into private tests; independent lower structure handoffs preserved
+structure-constructor-retirement	statement-witness	native-consumer	done	dormant structure-constructor witness: final raw witness profile and now-unused shared raw internals retired into private tests
+universal-statement-retirement	statement-witness	native-consumer	done	dormant explicit-universal upper statement: raw B4A retired; active lower-only universal transport preserved
+nested-statement-retirement	statement-witness	native-consumer	done	dormant nested-quantifier upper statement: raw B4C retired; active lower-only nested transport preserved
+grouping-statement-retirement	statement-witness	native-consumer	done	dormant connective-grouping upper statement: final raw B4 profile retired; independent lower transport preserved
+imported-citation-retirement	statement-witness	native-consumer	done	dormant imported-theorem citation: raw B5B retired; native local references and import provenance tests preserved
+statement-witness-exit	statement-witness	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of the statement/witness family retired
+let-source-sites	proof-local	native-consumer	done	isolated unused proof-local Let syntax: generic table sites and lexical layouts/names; C/CT canonical dependency boundary unchanged
+given-source-sites	proof-local	native-consumer	done	isolated unused proof-local Given syntax: generic table sites and lexical layouts/names; G/GT canonical dependency boundary unchanged
+given-use-source-sites	proof-local	native-consumer	done	isolated Given-use syntax: generic sites with matching declaration/use names; receiver shared at three real consumers, canonical donors preserved
+given-condition-source-sites	proof-local	native-consumer	done	isolated Given-condition syntax: actual condition-reference sites and raw hashes; GC/GCT/GCU canonical dependencies preserved
+descendant-source-sites	proof-local	native-consumer	done	descendant Given/Now/Set-chain syntax: generic sites and ordering; canonical donors and deferred Set/capture semantics preserved
+let-type-arena	proof-local	native-consumer	done	proof-local Let type arena: existing overlay anchors derived from authenticated lower and binding sites; canonical type donor preserved
+given-type-arena	proof-local	native-consumer	done	proof-local Given type arena: existing overlay anchors derived from authenticated lower and binding sites; canonical type donor preserved
+given-use-type-arena	proof-local	native-consumer	done	proof-local Given-use type arena: existing overlay anchors derived from authenticated lower and binding sites; canonical type donor preserved
+given-condition-type-arena	proof-local	native-consumer	done	proof-local Given-condition type arena: existing overlay anchors derived from authenticated lower and binding sites; canonical type donor preserved
+descendant-type-arena	proof-local	native-consumer	done	descendant Given type arena: existing overlay anchors derived from authenticated lower and binding sites; canonical type donor preserved
+descendant-use-term-arena	proof-local	native-consumer	done	descendant Given-use term arena: existing term and overlay anchors derived from authenticated syntax and binding sites; canonical donor preserved
+given-use-term-sites	proof-local	native-consumer	done	Given-use term references: existing generic rows read through the shared private receiver; canonical type/term donors preserved
+given-condition-term-sites	proof-local	native-consumer	done	Given-condition term references: existing generic rows read through the shared private receiver; canonical type/term donors preserved
+condition-formula-sparse-stages	proof-local	native-consumer	done	condition-formula sparse lower graphs: existing primary/condition refusal stages frozen before coordinate migration
+gu-inherited-type-overlay	proof-local	native-consumer	open	GU inherited type overlay: relies on mandatory GUPT validation; term-owned arena and root guards retained
+proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
+application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
+structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved
+structure-selector-lower-sites	structure	native-consumer	done	structure-selector lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; lower donor checks preserved
+structure-update-lower-sites	structure	native-consumer	done	structure-update lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; selector range controls reused
+structure-constructor-lower-sites	structure	native-consumer	done	structure-constructor lower sites: guarded proof/reserve coordinate lookup shared at three real consumers; canonical donors preserved
+structure-exit	structure	native-consumer	open	family exit: remaining literal_source_offset_baseline.tsv rows of source_structure_definition.rs and its runner retired
+native-type-generic-install	type-term-formula	native-consumer	open	native TYPE reads the installed generic table; the three synthetic punctuation variants become negative tests (accepted-input boundary, source_statement.md)
+direct-b1-formula-sites	type-term-formula	native-consumer	open	direct Task257B1 formula bound-use term sites from generic rows; the duplicate Root alias becomes a negative test
+mode-definition-sites	type-term-formula	native-consumer	open	source_mode_definition.rs and its runner: literal offsets replaced by generic rows
+predicate-definition-sites	type-term-formula	native-consumer	open	source_predicate_definition.rs and its runner: literal offsets replaced by generic rows
+attribute-definition-sites	type-term-formula	native-consumer	open	source_attribute_definition.rs and its runner: literal offsets replaced by generic rows
+type-term-formula-exit	type-term-formula	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of source_type.rs, source_term.rs, source_formula_composition.rs and their runners retired
+element-rules	element-rules	native-consumer	open	class b element rules: Tasks 257, 269, 270, 271, 272, 279 per tests/coverage/source_transport_classification.tsv

@@ -347,12 +347,14 @@ The contract must identify:
 
 A family contract owns an ordered list of pattern-tier slices (see Gate
 Tiering) that share one producer/test pattern: one `<task-id>`, one EN/JA
-pair within the 60-line limit, one checklist line per slice, and one
-crate-plan and crate-TODO link added when the family opens. Each slice is
-committed separately and named in its commit body; ticking its checklist
-line is the only per-slice documentation update unless an owner document's
-boundary changes. Module, harness, and plan documents are updated when the
-family opens and closes, not per slice.
+pair within the 60-line limit, one family ledger under `tests/coverage/`
+(one row per slice: slice, family, predecessor, status, note) linked from
+the contract, and one crate-plan and crate-TODO link added when the family
+opens. The contract lists the families and their exit criteria, not the
+slices. Each slice is committed separately and named in its commit body;
+adding or updating its ledger row is the only per-slice documentation
+update unless an owner document's boundary changes. Module, harness, and
+plan documents are updated when the family opens and closes, not per slice.
 
 A contract never carries completion evidence, measured counts, digests, gate
 tallies, scores, review outcomes, model names, reasoning settings, or the
@@ -637,18 +639,23 @@ ambiguous, the task is full-gate.
 
 A task qualifies for the pattern tier when it repeats, for one further input
 shape, a producer/test pattern that a completed full-tier task in the same
-family already established: the contract names that predecessor; the change
+family already established: the contract or its family ledger names that predecessor; the change
 stays in the predecessor's owner module, its runner consumer, and their
 tests; it adds no public type, field, API, diagnostic, or semantic class
 beyond the predecessor's; and it touches no `doc/spec`, `.miz` expectation,
 trace status, or coverage credit (a new fixture of the same family may be
 activated). Transport of the next syntax element, witness form, or layout
-variant of an established family is the expected case.
+variant of an established family is the expected case. Slices of identical
+shape (same owner module and consumer, no exact-profile or baseline-row
+retirement, each under about thirty production lines) are not separate
+tasks: bundle three to five of them into one pattern-tier task with one
+review pair and one commit, and give each its own ledger row.
 
 Pattern-tier requirements (all mandatory):
 
-1. a contract that names the predecessor and the one input shape added; a
-   family contract (see Canonical Task Contracts) may list several slices;
+1. a contract that names the predecessor and the one input shape added; under
+   a family contract (see Canonical Task Contracts) the slice's ledger row
+   carries both;
 2. one combined specification/test-intent and trust review before
    implementation, and one combined implementation and test-sufficiency
    review after it (re-review only on findings);
