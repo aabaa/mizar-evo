@@ -46,9 +46,10 @@ use mizar_resolve::{
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{
-    SurfaceAst, SurfaceFormulaConstant, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
+    SurfaceAst, SurfaceFormulaConstant, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceToken,
     SurfaceTokenKind,
 };
+use std::collections::BTreeSet;
 
 use super::checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver};
 use super::source_ast::{
@@ -121,35 +122,13 @@ pub(in crate::runner) enum SourceModeDefinitionRouteMutation {
     StaleUpperResolverOrigin,
 }
 
-enum ExactSurfaceKind {
-    Token(SurfaceTokenKind, &'static str),
-    Structural(SurfaceNodeKind),
-}
-
-struct ExactSurfaceRow {
-    kind: ExactSurfaceKind,
-    children: &'static [usize],
-}
-
 macro_rules! token_row {
     ($kind:ident, $text:literal) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            children: &[],
-        }
+        (SurfaceTokenKind::$kind, $text)
     };
 }
 
-macro_rules! structural_row {
-    ($kind:ident, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind),
-            children: &[$($child),*],
-        }
-    };
-}
-
-const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
+const EXACT_MODE_TERMINALS: &[(SurfaceTokenKind, &str)] = &[
     token_row!(ReservedWord, "definition"),
     token_row!(ReservedWord, "let"),
     token_row!(Identifier, "x"),
@@ -184,32 +163,6 @@ const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
     token_row!(ReservedSymbol, ";"),
     token_row!(ReservedWord, "end"),
     token_row!(ReservedSymbol, ";"),
-    structural_row!(TypeHead, [4]),
-    structural_row!(TypeExpression, [34]),
-    structural_row!(QualifiedVariableSegment, [2, 3, 35]),
-    structural_row!(DefinitionParameter, [1, 36, 5]),
-    structural_row!(TypeHead, [9]),
-    structural_row!(TypeExpression, [38]),
-    structural_row!(QualifiedVariableSegment, [7, 8, 39]),
-    structural_row!(DefinitionParameter, [6, 40, 10]),
-    structural_row!(ModePattern, [14, 15, 16, 17, 18, 19]),
-    structural_row!(TypeHead, [21]),
-    structural_row!(TypeExpression, [43]),
-    structural_row!(ComputationOption, [27, 28, 29]),
-    structural_row!(ComputationJustification, [25, 26, 45, 30]),
-    structural_row!(JustificationClause, [24, 46]),
-    structural_row!(ModeProperty, [23, 47, 31]),
-    structural_row!(ModeDefinition, [11, 12, 13, 42, 20, 44, 22, 48]),
-    structural_row!(DefinitionBlockItem, [0, 37, 41, 49, 32, 33]),
-    structural_row!(ItemList, [50]),
-    structural_row!(CompilationUnit, [51]),
-    structural_row!(
-        Root,
-        [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 52
-        ]
-    ),
 ];
 
 #[derive(Debug, Clone, Copy)]
@@ -645,7 +598,9 @@ fn exact_mode_definition(
     ast: &SurfaceAst,
     module: &ModuleId,
     source_text: &str,
-) -> Option<ExactModeDefinition> {
+) -> Option<(ExactModeDefinition, TypedAst)> {
+    use SurfaceNodeKind as K;
+
     if ast.root().map(SurfaceNodeId::index) != Some(53) || ast.expression_root().is_some() {
         return None;
     }
@@ -674,7 +629,7 @@ fn exact_mode_definition(
         return None;
     }
     let mut mapped = Vec::with_capacity(native.tokens().len());
-    for (token, expected) in native.tokens().iter().zip(EXACT_SURFACE_PROFILE) {
+    for (token, expected) in native.tokens().iter().zip(EXACT_MODE_TERMINALS) {
         let kind = match token.kind() {
             mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
             mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
@@ -682,8 +637,7 @@ fn exact_mode_definition(
             mizar_lexer::TokenKind::Numeral => SurfaceTokenKind::Numeral,
             _ => return None,
         };
-        if !matches!(&expected.kind, ExactSurfaceKind::Token(expected_kind, text) if kind == *expected_kind && token.lexeme() == *text)
-        {
+        if kind != expected.0 || token.lexeme() != expected.1 {
             return None;
         }
         let fragments = preprocessed
@@ -708,7 +662,6 @@ fn exact_mode_definition(
         || source_text.get(offset + 45..) != SOURCE_MODE_DEFINITION_TEXT.get(45..)
         || mapped[1].start != offset + 13
         || mapped[6].start != offset + 29
-        || !surface_profile_is_exact(ast, &mapped)
     {
         return None;
     }
@@ -762,105 +715,167 @@ fn exact_mode_definition(
     {
         return None;
     }
-    let root = exact_node(ast, 53, SurfaceNodeKind::Root)?;
-    let definition_block = exact_node(ast, 50, SurfaceNodeKind::DefinitionBlockItem)?;
-    let mode = exact_node(ast, 49, SurfaceNodeKind::ModeDefinition)?;
-    let pattern = exact_node(ast, 42, SurfaceNodeKind::ModePattern)?;
-    let rhs = exact_node(ast, 44, SurfaceNodeKind::TypeExpression)?;
-    let property = exact_node(ast, 48, SurfaceNodeKind::ModeProperty)?;
-    let justification = exact_node(ast, 46, SurfaceNodeKind::ComputationJustification)?;
-    let direct_structural = ast
-        .node(definition_block)?
-        .children
+    ast.canonical_bytes()?;
+    let syntax = source_syntax_receiver(ast, module).ok()?;
+    let row_count = syntax.source_node_entries()?.len();
+    let mut seen = BTreeSet::new();
+    let observe = |id: TypedNodeId, expected: SurfaceNodeKind, seen: &mut BTreeSet<usize>| {
+        let row = source_row(&syntax, id.index()).ok()?;
+        let node = syntax.nodes().node(id)?;
+        if row.kind() != &expected
+            || row.range().source_id != syntax.source_id()
+            || row.range().start >= row.range().end
+            || row.recovery() != NodeRecoveryState::Normal
+            || !seen.insert(id.index())
+        {
+            return None;
+        }
+        let children = &node.children;
+        if children.is_empty() != matches!(&expected, K::Token(_)) {
+            return None;
+        }
+        if !children.is_empty() {
+            let first = source_row(&syntax, children.first()?.index()).ok()?;
+            let last = source_row(&syntax, children.last()?.index()).ok()?;
+            if row.range().start != first.range().start || row.range().end != last.range().end {
+                return None;
+            }
+        }
+        let mut previous_end = row.range().start;
+        for (ordinal, child_id) in children.iter().enumerate() {
+            let child = source_row(&syntax, child_id.index()).ok()?;
+            let root_alias = expected == K::Root && matches!(child.kind(), K::Token(_));
+            if child.range().source_id != row.range().source_id
+                || child.range().start < row.range().start
+                || child.range().end > row.range().end
+                || (!root_alias
+                    && (child.parent() != Some(row.site()) || child.child_ordinal() != ordinal))
+                || (expected != K::Root && previous_end > child.range().start)
+            {
+                return None;
+            }
+            previous_end = child.range().end;
+        }
+        Some(children)
+    };
+    let mut next = 0;
+    let terms = |ids: &[TypedNodeId], next: &mut usize, seen: &mut BTreeSet<usize>| {
+        for id in ids {
+            let (kind, text) = EXACT_MODE_TERMINALS.get(*next)?;
+            let children = observe(*id, K::Token(SurfaceToken::new(*kind, *text)), seen)?;
+            let row = source_row(&syntax, id.index()).ok()?;
+            let span = mapped.get(*next)?;
+            if !children.is_empty()
+                || row.range().start != span.start
+                || row.range().end != span.end
+            {
+                return None;
+            }
+            *next += 1;
+        }
+        Some(())
+    };
+    let bare_set = |expression: TypedNodeId, next: &mut usize, seen: &mut BTreeSet<usize>| {
+        let expression_children = observe(expression, K::TypeExpression, seen)?;
+        let [head] = expression_children.as_slice() else {
+            return None;
+        };
+        let head_children = observe(*head, K::TypeHead, seen)?;
+        if head_children.len() != 1 {
+            return None;
+        }
+        terms(head_children, next, seen)
+    };
+    let root = syntax.nodes().root()?;
+    let root_children = observe(root, K::Root, &mut seen)?;
+    let (unit, aliases) = root_children.split_last()?;
+    if !aliases
         .iter()
-        .copied()
-        .filter(|child| {
-            ast.node(*child)
-                .is_some_and(|node| !matches!(node.kind, SurfaceNodeKind::Token(_)))
-        })
-        .map(SurfaceNodeId::index)
-        .collect::<Vec<_>>();
-    if direct_structural != [37, 41, 49]
-        || !is_descendant(ast, root, definition_block)
-        || !is_descendant(ast, mode, pattern)
-        || !is_descendant(ast, mode, rhs)
-        || !is_descendant(ast, mode, property)
-        || !is_descendant(ast, property, justification)
-        || is_descendant(ast, pattern, rhs)
-        || is_descendant(ast, rhs, property)
+        .map(|id| id.index())
+        .eq(ast.token_nodes().iter().map(|id| id.index()))
     {
         return None;
     }
-    Some(ExactModeDefinition { definition_block })
-}
-
-fn surface_profile_is_exact(ast: &SurfaceAst, mapped: &[mizar_lexer::SourceSpan]) -> bool {
-    ast.canonical_bytes().is_some()
-        && ast.token_nodes().len() == mapped.len()
-        && ast
-            .token_nodes()
-            .iter()
-            .enumerate()
-            .all(|(index, node)| node.index() == index)
-        && ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
-        && ast
-            .nodes()
-            .iter()
-            .enumerate()
-            .zip(EXACT_SURFACE_PROFILE)
-            .all(|((index, actual), expected)| {
-                actual.range.source_id == ast.source_id
-                    && !actual.recovered
-                    && actual
-                        .children
-                        .iter()
-                        .map(|child| child.index())
-                        .eq(expected.children.iter().copied())
-                    && match (&actual.kind, &expected.kind) {
-                        (
-                            SurfaceNodeKind::Token(actual_token),
-                            ExactSurfaceKind::Token(expected_kind, expected_text),
-                        ) => {
-                            actual_token.kind == *expected_kind
-                                && actual_token.text.as_ref() == *expected_text
-                                && mapped.get(index).is_some_and(|span| {
-                                    (actual.range.start, actual.range.end) == (span.start, span.end)
-                                })
-                        }
-                        (actual_kind, ExactSurfaceKind::Structural(expected_kind)) => {
-                            actual_kind == expected_kind
-                                && expected
-                                    .children
-                                    .first()
-                                    .zip(expected.children.last())
-                                    .is_some_and(|(first, last)| {
-                                        (actual.range.start, actual.range.end)
-                                            == (
-                                                ast.nodes()[*first].range.start,
-                                                ast.nodes()[*last].range.end,
-                                            )
-                                    })
-                        }
-                        _ => false,
-                    }
-            })
-}
-
-fn exact_node(ast: &SurfaceAst, index: usize, kind: SurfaceNodeKind) -> Option<SurfaceNodeId> {
-    let view = ast.node_views().find(|view| view.id().index() == index)?;
-    (*view.kind() == kind && view.range().source_id == ast.source_id && !view.is_recovered())
-        .then_some(view.id())
-}
-
-fn is_descendant(ast: &SurfaceAst, ancestor: SurfaceNodeId, descendant: SurfaceNodeId) -> bool {
-    if ancestor == descendant {
-        return true;
+    let unit_children = observe(*unit, K::CompilationUnit, &mut seen)?;
+    let [list] = unit_children.as_slice() else {
+        return None;
+    };
+    let list_children = observe(*list, K::ItemList, &mut seen)?;
+    let [block] = list_children.as_slice() else {
+        return None;
+    };
+    let block_children = observe(*block, K::DefinitionBlockItem, &mut seen)?;
+    let [open, p1, p2, mode, end, block_semi] = block_children.as_slice() else {
+        return None;
+    };
+    terms(&[*open], &mut next, &mut seen)?;
+    for parameter in [*p1, *p2] {
+        let parameter_children = observe(parameter, K::DefinitionParameter, &mut seen)?;
+        let [let_token, segment, semi] = parameter_children.as_slice() else {
+            return None;
+        };
+        terms(&[*let_token], &mut next, &mut seen)?;
+        let segment_children = observe(*segment, K::QualifiedVariableSegment, &mut seen)?;
+        let [name, be, expression] = segment_children.as_slice() else {
+            return None;
+        };
+        terms(&[*name, *be], &mut next, &mut seen)?;
+        bare_set(*expression, &mut next, &mut seen)?;
+        terms(&[*semi], &mut next, &mut seen)?;
     }
-    ast.node(ancestor).is_some_and(|node| {
-        node.children
-            .iter()
-            .any(|child| is_descendant(ast, *child, descendant))
-    })
+    let mode_children = observe(*mode, K::ModeDefinition, &mut seen)?;
+    let [kw, label, colon, pat, is_kw, rhs, semi, prop] = mode_children.as_slice() else {
+        return None;
+    };
+    terms(&[*kw, *label, *colon], &mut next, &mut seen)?;
+    let pattern_children = observe(*pat, K::ModePattern, &mut seen)?;
+    if pattern_children.len() != 6 {
+        return None;
+    }
+    terms(pattern_children, &mut next, &mut seen)?;
+    terms(&[*is_kw], &mut next, &mut seen)?;
+    bare_set(*rhs, &mut next, &mut seen)?;
+    terms(&[*semi], &mut next, &mut seen)?;
+    let property_children = observe(*prop, K::ModeProperty, &mut seen)?;
+    let [sethood, clause, property_semi] = property_children.as_slice() else {
+        return None;
+    };
+    terms(&[*sethood], &mut next, &mut seen)?;
+    let clause_children = observe(*clause, K::JustificationClause, &mut seen)?;
+    let [by, computation] = clause_children.as_slice() else {
+        return None;
+    };
+    terms(&[*by], &mut next, &mut seen)?;
+    let computation_children = observe(*computation, K::ComputationJustification, &mut seen)?;
+    let [compute, open, option, close] = computation_children.as_slice() else {
+        return None;
+    };
+    terms(&[*compute, *open], &mut next, &mut seen)?;
+    let option_children = observe(*option, K::ComputationOption, &mut seen)?;
+    if option_children.len() != 3 {
+        return None;
+    }
+    terms(option_children, &mut next, &mut seen)?;
+    terms(
+        &[*close, *property_semi, *end, *block_semi],
+        &mut next,
+        &mut seen,
+    )?;
+    if next != EXACT_MODE_TERMINALS.len()
+        || seen.len() != row_count
+        || seen.len() != syntax.nodes().len()
+    {
+        return None;
+    }
+    let definition_block = ast
+        .node_views()
+        .find(|view| {
+            view.id().index() == block.index()
+                && *view.kind() == K::DefinitionBlockItem
+                && !view.is_recovered()
+        })?
+        .id();
+    Some((ExactModeDefinition { definition_block }, syntax))
 }
 
 fn exact_resolver_profile(
@@ -1532,10 +1547,11 @@ fn build_output(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
-    exact: ExactModeDefinition,
+    exact: (ExactModeDefinition, TypedAst),
     mutation: SourceModeDefinitionRouteMutation,
     source_text: &str,
 ) -> Result<SourceModeDefinitionRouteOutput, String> {
+    let (exact, syntax) = exact;
     let corrupted_symbols = matches!(
         mutation,
         SourceModeDefinitionRouteMutation::WrongResolverEntry
@@ -1545,7 +1561,6 @@ fn build_output(
     .then(|| resolver_env_with_mutation(symbols, mutation));
     let symbols = corrupted_symbols.as_ref().unwrap_or(symbols);
     let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
-    let syntax = source_syntax_receiver(ast, &module)?;
     let arena = task262_arena(&syntax, mutation)?;
     let context_mutation = match mutation {
         SourceModeDefinitionRouteMutation::UpperContextRange
