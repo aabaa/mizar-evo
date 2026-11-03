@@ -25,9 +25,9 @@ use mizar_checker::{
         SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
     },
     typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-        TypeFactTable, TypeRole, TypeTable, TypedArena, TypedArenaBuilder, TypedAst, TypedAstParts,
-        TypedNode, TypedNodeId, TypedSiteRef,
+        CoercionTable, InitialObligationTable, LocalTypeContextTable, SourceNode,
+        TypeDiagnosticTable, TypeFactTable, TypeRole, TypeTable, TypedArena, TypedArenaBuilder,
+        TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedSiteRef,
     },
 };
 use mizar_resolve::{
@@ -45,7 +45,7 @@ use super::{
         source_proof_local_given_condition_lower_output,
         source_proof_local_given_descendant_set_lower_output,
         source_proof_local_given_lower_output, source_proof_local_given_use_lower_output,
-        source_proof_local_let_lower_output,
+        source_proof_local_let_lower_output, source_proof_local_syntax_receiver,
     },
 };
 
@@ -2881,8 +2881,36 @@ fn source_proof_local_given_use_term_output_impl(
             .source_proof_local_given_use_type()
             .cloned()
             .ok_or_else(|| "Task269GU GUPT dependency is missing".to_owned())?;
-        let arena = task269gu_arena(ast.source_id, mutation)?;
-        let mut input = task269gu_term_input(ast.source_id, module.clone());
+        let invalid = || "Task269GU source association mismatch".to_owned();
+        let syntax =
+            source_proof_local_syntax_receiver(ast, &module, source_text).ok_or_else(invalid)?;
+        let mut references = syntax
+            .source_node_entries()
+            .ok_or_else(invalid)?
+            .filter(|row| matches!(row.kind(), mizar_syntax::SurfaceNodeKind::TermReference));
+        let terms = [
+            references.next().ok_or_else(invalid)?,
+            references.next().ok_or_else(invalid)?,
+        ];
+        if references.next().is_some() {
+            return Err(invalid());
+        }
+        let expressions = dependency.source_type().expressions();
+        let reserve_range = expressions
+            .get(SourceTypeExpressionId::new(0))
+            .ok_or_else(invalid)?
+            .source_range();
+        let given_range = expressions
+            .get(SourceTypeExpressionId::new(1))
+            .ok_or_else(invalid)?
+            .source_range();
+        let root_range = ast
+            .root()
+            .and_then(|root| ast.node(root))
+            .ok_or_else(invalid)?
+            .range;
+        let arena = task269gu_arena(reserve_range, given_range, root_range, terms, mutation)?;
+        let mut input = task269gu_term_input(ast.source_id, module.clone(), terms);
         match mutation {
             SourceProofLocalGivenUseTermRouteMutation::WrongDependencyModule => {
                 input.module_id =
@@ -2914,30 +2942,26 @@ fn source_proof_local_given_use_term_output_impl(
 fn task269gu_term_input(
     source_id: mizar_session::SourceId,
     module_id: ModuleId,
+    terms: [&SourceNode; 2],
 ) -> SourcePrimaryTermHandoffInput {
     SourcePrimaryTermHandoffInput {
         source_id,
         module_id,
-        terms: [(3, 116, 117), (4, 120, 121)]
+        terms: [3, 4]
             .into_iter()
+            .zip(terms)
             .enumerate()
-            .map(
-                |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(node)),
-                    source_range: SourceRange {
-                        source_id,
-                        start,
-                        end,
-                    },
-                    source_ordinal,
-                    context: BindingContextId::new(1),
-                    recovery: SourcePrimaryTermRecovery::Normal,
-                    spelling: "y".to_owned(),
-                    kind: SourcePrimaryTermKind::VariableReference,
-                    role: SourcePrimaryTermRole::Value,
-                    parent: None,
-                },
-            )
+            .map(|(source_ordinal, (node, term))| SourcePrimaryTermInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(node)),
+                source_range: term.range(),
+                source_ordinal,
+                context: BindingContextId::new(1),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: term.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
             .collect(),
         references: (0..2)
             .map(|index| SourcePrimaryTermReferenceInput {
@@ -2951,39 +2975,30 @@ fn task269gu_term_input(
 }
 
 fn task269gu_arena(
-    source_id: mizar_session::SourceId,
+    reserve_range: SourceRange,
+    given_range: SourceRange,
+    root_range: SourceRange,
+    terms: [&SourceNode; 2],
     mutation: SourceProofLocalGivenUseTermRouteMutation,
 ) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
     let reserve = builder
         .push(TypedNode::new(
             "source.proof-local.given-use.reserve-type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 14,
-                end: 17,
-            }),
+            SourceAnchor::Range(reserve_range),
         ))
         .map_err(|error| error.to_string())?;
     let local = builder
         .push(TypedNode::new(
             "source.proof-local.given-use.type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 84,
-                end: 87,
-            }),
+            SourceAnchor::Range(given_range),
         ))
         .map_err(|error| error.to_string())?;
     let type_root = builder
         .push(
             TypedNode::new(
                 "source.proof-local.given-use.type-root",
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 127,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![reserve, local]),
         )
@@ -2991,21 +3006,13 @@ fn task269gu_arena(
     let first = builder
         .push(TypedNode::new(
             "source.term.variable-reference",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 116,
-                end: 117,
-            }),
+            SourceAnchor::Range(terms[0].range()),
         ))
         .map_err(|error| error.to_string())?;
     let second = builder
         .push(TypedNode::new(
             "source.term.variable-reference",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 120,
-                end: 121,
-            }),
+            SourceAnchor::Range(terms[1].range()),
         ))
         .map_err(|error| error.to_string())?;
     let root = builder
@@ -3016,11 +3023,7 @@ fn task269gu_arena(
                 } else {
                     "source.proof-local.given-use.term-root"
                 },
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 127,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![type_root, first, second]),
         )

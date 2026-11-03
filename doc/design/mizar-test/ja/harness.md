@@ -5280,6 +5280,11 @@ exact routeを実装したがprivateで`run_case`からunreachableのまま。te
 Task-269C/active-route isolation、semantic emptiness全件をvalidateする。runner libraryは548、
 case/requirement/result/detail key/warning/error変更なし。
 
+## Shared proof-local syntax receiver
+
+`type_elaboration` 内では、proof-local lower route とその private term transport が syntax receiver を共有する。receiver は tree/token の対応を認証し、各 lower が要素の grammar と normality check を所有する。
+Term transport は canonical type dependency の成功後に読み取り専用 row を使う。synthetic ID と metadata を保持し、binding・capture・proof state は追加しない。
+
 ## Proof-local Given-use leading-layout transport
 
 Private Task269GUP lower routeは、reserve 1件と、単一名bare-set Given・ラベル付きthesis condition 1件・両方のreference名が宣言名に一致するdirect equality conclusionを含むnamed thesis theorem 1件について、installed generic source tableのroleを読む。Fixture suffixを使わずrange・name・signatureを導き、raw tokenと整合するSP/TAB/LF・comment・`be`/`being`を移送する。宣言だけの改名による不一致、裸のCRと他のsyntax shapeは対象外とする。

@@ -7279,7 +7279,7 @@ pub(in crate::runner) fn source_proof_local_let_lower_output_with_resolver_mutat
     )
 }
 
-fn source_proof_local_syntax_receiver(
+pub(super) fn source_proof_local_syntax_receiver(
     ast: &SurfaceAst,
     module: &ModuleId,
     source_text: &str,

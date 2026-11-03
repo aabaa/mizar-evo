@@ -5644,6 +5644,11 @@ three-node arena, dependency/input/arena failure, owner replay, Task-269C and
 active-route isolation, and exhaustive semantic emptiness. Runner library is
 548; no case, requirement, result, detail key, warning, or error changes.
 
+## Shared proof-local syntax receiver
+
+Within `type_elaboration`, proof-local lower routes and their private term transport share the syntax receiver. It authenticates tree/token correspondence; each lower owns its grammar and normality checks.
+Term transport reads immutable rows after its canonical type dependency succeeds, preserving synthetic IDs and metadata without adding binding, capture or proof state.
+
 ## Proof-local Given-use leading-layout transport
 
 The private Task269GUP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with a single-name bare-set Given, one labeled thesis condition and a direct equality conclusion whose two reference names match the declaration. It derives ranges, names and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; declaration-only name mismatches, bare CR and other syntax shapes remain excluded.
