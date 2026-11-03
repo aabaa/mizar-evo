@@ -77,6 +77,7 @@ structure-exit	structure	native-consumer	open	family exit: remaining literal_sou
 native-type-generic-install	type-term-formula	native-consumer	done	native TYPE reads authenticated generic sites and parent/head rows; malformed frontend geometry including zero-width tokens is refused
 direct-b1-formula-sites	type-term-formula	native-consumer	done	direct B1 reads bound-use sites, ranges and spelling from generic rows; duplicate Root census aliases are refused
 mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode profile keeps kind/text/child grammar and independent mapped spans/envelopes; retire redundant coordinate fields and checks
+ordinary-mode-generic-rows	type-term-formula	native-consumer	done	ordinary Mode reads authenticated generic row sites and ranges across context, type, RHS, and mode handoffs; exact profile and final arena metadata retained
 mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are intentional corruption constants, kept
 predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 attribute-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change

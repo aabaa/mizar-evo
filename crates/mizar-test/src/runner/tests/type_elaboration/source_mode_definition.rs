@@ -2151,6 +2151,16 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
             assert_eq!(parameter.source_range(), header_range, "{case}");
             assert_eq!(parameter.spelling(), &source[header_range.start..header_range.end]);
             assert_eq!(parameter.declaration_range(), declaration_range);
+            assert_eq!(
+                parameter.site(),
+                &mizar_checker::typed_ast::TypedSiteRef::Node(TypedNodeId::new(parameter_site)),
+                "{case} parameter site"
+            );
+            assert_eq!(
+                parameter.pattern_range(),
+                ast.nodes()[[16, 18][index]].range,
+                "{case} parameter pattern range"
+            );
             assert_eq!(parameter.binding(), declaration.binding);
             assert_eq!(parameter.context(), declaration.binding_context);
             assert_eq!(declaration.declaration_range, declaration_range);
@@ -2165,13 +2175,71 @@ fn task262_native_compensated_parameter_headers_are_authenticated_and_joined() {
             assert_eq!(expression.head_site(), &TypedSiteRef::Node(TypedNodeId::new(head_site)));
             assert_eq!(expression.spelling(), "set");
         }
+        assert_eq!(
+            output.typed_ast.nodes().len(),
+            ast.nodes().len(),
+            "{case} final arena census"
+        );
+        assert_eq!(
+            output
+                .typed_ast
+                .nodes()
+                .root()
+                .map(TypedNodeId::index),
+            ast.root().map(|root| root.index()),
+            "{case} final arena root"
+        );
+        assert!(output.typed_ast.resolved_root().is_none(), "{case} scratch root leaked");
+        assert!(
+            output.typed_ast.source_node_entries().is_none(),
+            "{case} scratch source rows leaked"
+        );
         for (index, surface) in ast.nodes().iter().enumerate() {
             let expected = match index {
                 37 => ast.nodes()[2].range,
                 41 => ast.nodes()[7].range,
                 _ => surface.range,
             };
-            assert_eq!(output.typed_ast.nodes().node(TypedNodeId::new(index)).unwrap().anchor, SourceAnchor::Range(expected), "{case} Arena row {index}");
+            let node = output
+                .typed_ast
+                .nodes()
+                .node(TypedNodeId::new(index))
+                .unwrap();
+            assert_eq!(node.anchor, SourceAnchor::Range(expected), "{case} Arena row {index}");
+            assert_eq!(
+                node.children.iter().map(|child| child.index()).collect::<Vec<_>>(),
+                surface.children.iter().map(|child| child.index()).collect::<Vec<_>>(),
+                "{case} Arena row {index} children"
+            );
+            let expected_kind = match index {
+                34 | 38 | 43 => "source.type.head",
+                35 | 39 | 44 => "source.type.expression",
+                37 | 41 => "source.definition.mode.parameter",
+                42 => "source.definition.mode.application",
+                46 => "source.definition.mode.property.justification",
+                48 => "source.definition.mode.property",
+                49 => "source.definition.mode",
+                50 => "source.definition",
+                53 => "source.module",
+                _ => match &TASK262_EXPECTED_SURFACE_ROWS[index].kind {
+                    Task262ExpectedSurfaceKind::Token(_, _) => "source.surface.token",
+                    Task262ExpectedSurfaceKind::Structural(_) => "source.surface.structural",
+                },
+            };
+            assert_eq!(node.kind.as_str(), expected_kind, "{case} Arena row {index} kind");
+            assert_eq!(node.resolved_node, None, "{case} Arena row {index} resolved link");
+            assert_eq!(node.typing, mizar_checker::typed_ast::TypingState::Unknown);
+            assert_eq!(node.recovery, mizar_checker::typed_ast::NodeRecoveryState::Normal);
+            assert_eq!(
+                node.links,
+                mizar_checker::typed_ast::TypedNodeLinks {
+                    context: Some(mizar_checker::typed_ast::LocalTypeContextId::new(
+                        if index == 53 { 0 } else { 1 },
+                    )),
+                    ..Default::default()
+                },
+                "{case} Arena row {index} links"
+            );
         }
         let obligations = output.typed_ast.initial_obligations().iter().collect::<Vec<_>>();
         assert_eq!(obligations.len(), 1);
