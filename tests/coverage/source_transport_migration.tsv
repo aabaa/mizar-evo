@@ -48,6 +48,7 @@ given-binding-construction-sites	proof-local	native-consumer	done	Given binding 
 given-use-binding-construction-sites	proof-local	native-consumer	done	Given-use binding construction uses the previously authenticated proof/name receipt on build and replay
 given-condition-binding-construction-sites	proof-local	native-consumer	done	Given-condition binding construction uses the previously authenticated proof/name receipt on build and replay
 descendant-binding-construction-sites	proof-local	native-consumer	done	Descendant Given binding construction uses the previously authenticated proof/name receipt on build and replay
+descendant-context-sites	proof-local	native-consumer	done	Descendant context expectation and construction use the previously admitted range; retain first descendant admission
 proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved

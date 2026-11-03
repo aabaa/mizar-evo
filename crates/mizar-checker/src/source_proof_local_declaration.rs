@@ -3999,7 +3999,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
         }
         if self.descendant_range != range(self.source_id, 102, 159)
             || self.descendant_context != BindingContextId::new(2)
-            || !exact_task269sdc_descendant_context(&self.binding_env, self.source_id)
+            || !exact_task269sdc_descendant_context(&self.binding_env, self.descendant_range)
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
         }
@@ -4007,6 +4007,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             &self.base_binding_env,
             self.proof_range,
             self.name_range,
+            self.descendant_range,
         )?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
@@ -4076,8 +4077,12 @@ impl SourceProofLocalGivenDescendantBindingProducer {
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
         }
-        let binding_env =
-            extend_task269sdc_binding_env(base_binding_env, input.proof_range, input.name_range)?;
+        let binding_env = extend_task269sdc_binding_env(
+            base_binding_env,
+            input.proof_range,
+            input.name_range,
+            input.descendant_range,
+        )?;
         if !exact_task269sdc_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
         }
@@ -4324,14 +4329,17 @@ fn exact_task269sdc_declaration_binding(binding_env: &BindingEnv, name_range: So
         })
 }
 
-fn exact_task269sdc_descendant_context(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_task269sdc_descendant_context(
+    binding_env: &BindingEnv,
+    descendant_range: SourceRange,
+) -> bool {
     let Some(context) = binding_env.contexts().get(BindingContextId::new(2)) else {
         return false;
     };
     context.id == BindingContextId::new(2)
         && context.owner
             == BindingContextOwner::SourceStatement {
-                source_range: range(source_id, 102, 159),
+                source_range: descendant_range,
             }
         && context.parent == Some(BindingContextId::new(1))
         && context.layer == BindingContextLayer::Block
@@ -4348,6 +4356,7 @@ fn extend_task269sdc_binding_env(
     base: &BindingEnv,
     proof_range: SourceRange,
     name_range: SourceRange,
+    descendant_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenDescendantBindingError> {
     if !exact_task269c_base_binding_env(base) {
         return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
@@ -4379,7 +4388,7 @@ fn extend_task269sdc_binding_env(
     }
     let descendant_context = contexts.insert(BindingContextDraft {
         owner: BindingContextOwner::SourceStatement {
-            source_range: range(base.source_id(), 102, 159),
+            source_range: descendant_range,
         },
         parent: Some(proof_context),
         layer: BindingContextLayer::Block,
@@ -6912,7 +6921,7 @@ mod task269c_tests {
         ));
         assert!(exact_task269sdc_descendant_context(
             handoff.binding_env(),
-            fixture.source
+            handoff.descendant_range()
         ));
         assert!(exact_task269sdc_lookup_behavior(handoff.binding_env()));
         let row = handoff
@@ -7250,13 +7259,36 @@ mod task269c_tests {
             descendant.validate_installation(fixture.source, &fixture.module),
             Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
         );
+        let mut coherent_range_controls = 0;
         for mut descendant in task269sdc_inexact_descendant_context_handoffs(&handoff) {
+            if let BindingContextOwner::SourceStatement { source_range } = &descendant
+                .binding_env
+                .contexts()
+                .get(BindingContextId::new(2))
+                .unwrap()
+                .owner
+                && *source_range != handoff.descendant_range
+            {
+                coherent_range_controls += 1;
+                descendant.descendant_range = *source_range;
+                descendant.final_binding_fingerprint = descendant.binding_env.debug_text();
+                assert_eq!(
+                    descendant.validate_installation(fixture.source, &fixture.module),
+                    Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+                );
+                descendant.descendant_range = handoff.descendant_range;
+            }
             descendant.final_binding_fingerprint = "wrong".to_owned();
             assert_eq!(
                 descendant.validate_installation(fixture.source, &fixture.module),
                 Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
             );
         }
+        assert_eq!(coherent_range_controls, 1);
+        assert_eq!(
+            handoff.validate_installation(fixture.source, &fixture.module),
+            Ok(())
+        );
         let mut descendant = handoff.clone();
         descendant.binding_env = task269sdc_environment_with_generated_descendant(&handoff);
         descendant.final_binding_fingerprint = descendant.binding_env.debug_text();
@@ -7842,7 +7874,7 @@ mod task269c_tests {
         handoff: &SourceProofLocalGivenDescendantBindingHandoff,
     ) -> Vec<SourceProofLocalGivenDescendantBindingHandoff> {
         let mut handoffs = Vec::new();
-        for mutate in 0..7 {
+        for mutate in 0..8 {
             let mut contexts = BindingContextTable::new();
             contexts.insert(BindingContextDraft {
                 owner: BindingContextOwner::Module,
@@ -7909,6 +7941,14 @@ mod task269c_tests {
                 }
                 5 => descendant.visible_bindings = vec![BindingId::new(0)],
                 6 => descendant.recovery = BindingContextRecovery::Recovered,
+                7 => {
+                    let BindingContextOwner::SourceStatement { source_range } =
+                        &mut descendant.owner
+                    else {
+                        unreachable!();
+                    };
+                    source_range.end += 1;
+                }
                 _ => unreachable!(),
             }
             contexts.insert(descendant);
