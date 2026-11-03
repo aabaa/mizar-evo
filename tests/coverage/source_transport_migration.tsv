@@ -58,6 +58,7 @@ structure-constructor-lower-sites	structure	native-consumer	done	structure-const
 structure-exit	structure	native-consumer	open	family exit: remaining literal_source_offset_baseline.tsv rows of source_structure_definition.rs and its runner retired
 native-type-generic-install	type-term-formula	native-consumer	open	native TYPE reads the installed generic table; the three synthetic punctuation variants become negative tests (accepted-input boundary, source_statement.md)
 direct-b1-formula-sites	type-term-formula	native-consumer	open	direct Task257B1 formula bound-use term sites from generic rows; the duplicate Root alias becomes a negative test
+mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode profile keeps kind/text/child grammar and independent mapped spans/envelopes; retire redundant coordinate fields and checks
 mode-definition-sites	type-term-formula	native-consumer	open	source_mode_definition.rs and its runner: literal offsets replaced by generic rows
 predicate-definition-sites	type-term-formula	native-consumer	open	source_predicate_definition.rs and its runner: literal offsets replaced by generic rows
 attribute-definition-sites	type-term-formula	native-consumer	open	source_attribute_definition.rs and its runner: literal offsets replaced by generic rows

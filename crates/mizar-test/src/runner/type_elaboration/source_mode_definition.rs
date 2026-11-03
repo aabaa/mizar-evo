@@ -128,91 +128,83 @@ enum ExactSurfaceKind {
 
 struct ExactSurfaceRow {
     kind: ExactSurfaceKind,
-    start: usize,
-    end: usize,
     children: &'static [usize],
 }
 
 macro_rules! token_row {
-    ($kind:ident, $text:literal, $start:literal, $end:literal) => {
+    ($kind:ident, $text:literal) => {
         ExactSurfaceRow {
             kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            start: $start,
-            end: $end,
             children: &[],
         }
     };
 }
 
 macro_rules! structural_row {
-    ($kind:ident, $start:literal, $end:literal, [$($child:literal),* $(,)?]) => {
+    ($kind:ident, [$($child:literal),* $(,)?]) => {
         ExactSurfaceRow {
             kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind),
-            start: $start,
-            end: $end,
             children: &[$($child),*],
         }
     };
 }
 
 const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
-    token_row!(ReservedWord, "definition", 0, 10),
-    token_row!(ReservedWord, "let", 13, 16),
-    token_row!(Identifier, "x", 17, 18),
-    token_row!(ReservedWord, "be", 19, 21),
-    token_row!(ReservedWord, "set", 22, 25),
-    token_row!(ReservedSymbol, ";", 25, 26),
-    token_row!(ReservedWord, "let", 29, 32),
-    token_row!(Identifier, "y", 33, 34),
-    token_row!(ReservedWord, "be", 35, 37),
-    token_row!(ReservedWord, "set", 38, 41),
-    token_row!(ReservedSymbol, ";", 41, 42),
-    token_row!(ReservedWord, "mode", 45, 49),
-    token_row!(Identifier, "Task262ModeDefinition", 50, 71),
-    token_row!(ReservedSymbol, ":", 71, 72),
-    token_row!(Identifier, "Task262Mode", 73, 84),
-    token_row!(ReservedSymbol, "[", 85, 86),
-    token_row!(Identifier, "x", 86, 87),
-    token_row!(ReservedSymbol, ",", 87, 88),
-    token_row!(Identifier, "y", 89, 90),
-    token_row!(ReservedSymbol, "]", 90, 91),
-    token_row!(ReservedWord, "is", 92, 94),
-    token_row!(ReservedWord, "set", 95, 98),
-    token_row!(ReservedSymbol, ";", 98, 99),
-    token_row!(ReservedWord, "sethood", 102, 109),
-    token_row!(ReservedWord, "by", 110, 112),
-    token_row!(ReservedWord, "computation", 113, 124),
-    token_row!(ReservedSymbol, "(", 124, 125),
-    token_row!(Identifier, "steps", 125, 130),
-    token_row!(ReservedSymbol, ":", 130, 131),
-    token_row!(Numeral, "1", 132, 133),
-    token_row!(ReservedSymbol, ")", 133, 134),
-    token_row!(ReservedSymbol, ";", 134, 135),
-    token_row!(ReservedWord, "end", 136, 139),
-    token_row!(ReservedSymbol, ";", 139, 140),
-    structural_row!(TypeHead, 22, 25, [4]),
-    structural_row!(TypeExpression, 22, 25, [34]),
-    structural_row!(QualifiedVariableSegment, 17, 25, [2, 3, 35]),
-    structural_row!(DefinitionParameter, 13, 26, [1, 36, 5]),
-    structural_row!(TypeHead, 38, 41, [9]),
-    structural_row!(TypeExpression, 38, 41, [38]),
-    structural_row!(QualifiedVariableSegment, 33, 41, [7, 8, 39]),
-    structural_row!(DefinitionParameter, 29, 42, [6, 40, 10]),
-    structural_row!(ModePattern, 73, 91, [14, 15, 16, 17, 18, 19]),
-    structural_row!(TypeHead, 95, 98, [21]),
-    structural_row!(TypeExpression, 95, 98, [43]),
-    structural_row!(ComputationOption, 125, 133, [27, 28, 29]),
-    structural_row!(ComputationJustification, 113, 134, [25, 26, 45, 30]),
-    structural_row!(JustificationClause, 110, 134, [24, 46]),
-    structural_row!(ModeProperty, 102, 135, [23, 47, 31]),
-    structural_row!(ModeDefinition, 45, 135, [11, 12, 13, 42, 20, 44, 22, 48]),
-    structural_row!(DefinitionBlockItem, 0, 140, [0, 37, 41, 49, 32, 33]),
-    structural_row!(ItemList, 0, 140, [50]),
-    structural_row!(CompilationUnit, 0, 140, [51]),
+    token_row!(ReservedWord, "definition"),
+    token_row!(ReservedWord, "let"),
+    token_row!(Identifier, "x"),
+    token_row!(ReservedWord, "be"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "let"),
+    token_row!(Identifier, "y"),
+    token_row!(ReservedWord, "be"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "mode"),
+    token_row!(Identifier, "Task262ModeDefinition"),
+    token_row!(ReservedSymbol, ":"),
+    token_row!(Identifier, "Task262Mode"),
+    token_row!(ReservedSymbol, "["),
+    token_row!(Identifier, "x"),
+    token_row!(ReservedSymbol, ","),
+    token_row!(Identifier, "y"),
+    token_row!(ReservedSymbol, "]"),
+    token_row!(ReservedWord, "is"),
+    token_row!(ReservedWord, "set"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "sethood"),
+    token_row!(ReservedWord, "by"),
+    token_row!(ReservedWord, "computation"),
+    token_row!(ReservedSymbol, "("),
+    token_row!(Identifier, "steps"),
+    token_row!(ReservedSymbol, ":"),
+    token_row!(Numeral, "1"),
+    token_row!(ReservedSymbol, ")"),
+    token_row!(ReservedSymbol, ";"),
+    token_row!(ReservedWord, "end"),
+    token_row!(ReservedSymbol, ";"),
+    structural_row!(TypeHead, [4]),
+    structural_row!(TypeExpression, [34]),
+    structural_row!(QualifiedVariableSegment, [2, 3, 35]),
+    structural_row!(DefinitionParameter, [1, 36, 5]),
+    structural_row!(TypeHead, [9]),
+    structural_row!(TypeExpression, [38]),
+    structural_row!(QualifiedVariableSegment, [7, 8, 39]),
+    structural_row!(DefinitionParameter, [6, 40, 10]),
+    structural_row!(ModePattern, [14, 15, 16, 17, 18, 19]),
+    structural_row!(TypeHead, [21]),
+    structural_row!(TypeExpression, [43]),
+    structural_row!(ComputationOption, [27, 28, 29]),
+    structural_row!(ComputationJustification, [25, 26, 45, 30]),
+    structural_row!(JustificationClause, [24, 46]),
+    structural_row!(ModeProperty, [23, 47, 31]),
+    structural_row!(ModeDefinition, [11, 12, 13, 42, 20, 44, 22, 48]),
+    structural_row!(DefinitionBlockItem, [0, 37, 41, 49, 32, 33]),
+    structural_row!(ItemList, [50]),
+    structural_row!(CompilationUnit, [51]),
     structural_row!(
         Root,
-        0,
-        140,
         [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
             24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 52
@@ -709,7 +701,7 @@ fn exact_mode_definition(
         || source_text.get(offset + 45..) != SOURCE_MODE_DEFINITION_TEXT.get(45..)
         || mapped[1].start != offset + 13
         || mapped[6].start != offset + 29
-        || !surface_profile_is_exact(ast, &mapped, module_start, offset)
+        || !surface_profile_is_exact(ast, &mapped)
     {
         return None;
     }
@@ -763,49 +755,13 @@ fn exact_mode_definition(
     {
         return None;
     }
-    let root = exact_node(ast, 53, SurfaceNodeKind::Root, module_start, offset + 140)?;
-    let definition_block = exact_node(
-        ast,
-        50,
-        SurfaceNodeKind::DefinitionBlockItem,
-        module_start,
-        offset + 140,
-    )?;
-    let mode = exact_node(
-        ast,
-        49,
-        SurfaceNodeKind::ModeDefinition,
-        offset + 45,
-        offset + 135,
-    )?;
-    let pattern = exact_node(
-        ast,
-        42,
-        SurfaceNodeKind::ModePattern,
-        offset + 73,
-        offset + 91,
-    )?;
-    let rhs = exact_node(
-        ast,
-        44,
-        SurfaceNodeKind::TypeExpression,
-        offset + 95,
-        offset + 98,
-    )?;
-    let property = exact_node(
-        ast,
-        48,
-        SurfaceNodeKind::ModeProperty,
-        offset + 102,
-        offset + 135,
-    )?;
-    let justification = exact_node(
-        ast,
-        46,
-        SurfaceNodeKind::ComputationJustification,
-        offset + 113,
-        offset + 134,
-    )?;
+    let root = exact_node(ast, 53, SurfaceNodeKind::Root)?;
+    let definition_block = exact_node(ast, 50, SurfaceNodeKind::DefinitionBlockItem)?;
+    let mode = exact_node(ast, 49, SurfaceNodeKind::ModeDefinition)?;
+    let pattern = exact_node(ast, 42, SurfaceNodeKind::ModePattern)?;
+    let rhs = exact_node(ast, 44, SurfaceNodeKind::TypeExpression)?;
+    let property = exact_node(ast, 48, SurfaceNodeKind::ModeProperty)?;
+    let justification = exact_node(ast, 46, SurfaceNodeKind::ComputationJustification)?;
     let direct_structural = ast
         .node(definition_block)?
         .children
@@ -831,12 +787,7 @@ fn exact_mode_definition(
     Some(ExactModeDefinition { definition_block })
 }
 
-fn surface_profile_is_exact(
-    ast: &SurfaceAst,
-    mapped: &[mizar_lexer::SourceSpan],
-    module_start: usize,
-    offset: usize,
-) -> bool {
+fn surface_profile_is_exact(ast: &SurfaceAst, mapped: &[mizar_lexer::SourceSpan]) -> bool {
     ast.canonical_bytes().is_some()
         && ast.token_nodes().len() == mapped.len()
         && ast
@@ -853,17 +804,6 @@ fn surface_profile_is_exact(
             .all(|((index, actual), expected)| {
                 actual.range.source_id == ast.source_id
                     && !actual.recovered
-                    && (matches!(index, 1..=10 | 34..=41)
-                        || actual.range
-                            == match index {
-                                0 => source_range(ast.source_id, module_start, module_start + 10),
-                                50..=53 => source_range(ast.source_id, module_start, offset + 140),
-                                _ => source_range(
-                                    ast.source_id,
-                                    offset + expected.start,
-                                    offset + expected.end,
-                                ),
-                            })
                     && actual
                         .children
                         .iter()
@@ -899,18 +839,10 @@ fn surface_profile_is_exact(
             })
 }
 
-fn exact_node(
-    ast: &SurfaceAst,
-    index: usize,
-    kind: SurfaceNodeKind,
-    start: usize,
-    end: usize,
-) -> Option<SurfaceNodeId> {
+fn exact_node(ast: &SurfaceAst, index: usize, kind: SurfaceNodeKind) -> Option<SurfaceNodeId> {
     let view = ast.node_views().find(|view| view.id().index() == index)?;
-    (*view.kind() == kind
-        && view.range() == source_range(ast.source_id, start, end)
-        && !view.is_recovered())
-    .then_some(view.id())
+    (*view.kind() == kind && view.range().source_id == ast.source_id && !view.is_recovered())
+        .then_some(view.id())
 }
 
 fn is_descendant(ast: &SurfaceAst, ancestor: SurfaceNodeId, descendant: SurfaceNodeId) -> bool {
