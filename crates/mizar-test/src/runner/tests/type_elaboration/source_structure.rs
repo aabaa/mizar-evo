@@ -2713,6 +2713,33 @@ fn task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compat
     ] {
         expect_dependency_failure(mutation);
     }
+    for mutation in [
+        ImportedStructureUpdateTestMutation::ProofContextRange,
+        ImportedStructureUpdateTestMutation::BindingIdentityAndDeclarationRange,
+        ImportedStructureUpdateTestMutation::BindingTypeRange,
+    ] {
+        let error = b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::None,
+            mutation,
+        )
+        .expect("valid lower range mutation update")
+        .expect_err("shifted lower occurrence must fail the update profile");
+        assert_eq!(
+            error,
+            "Task254: exact Task-48/252 update proof-context profile mismatch",
+            "{mutation:?}"
+        );
+        assert_clean_replay();
+    }
+
     for index in 0..7 {
         for mutation in [
             ImportedStructureUpdateTestMutation::PrimaryTermSite(index),

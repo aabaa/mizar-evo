@@ -2394,6 +2394,42 @@ fn task258b3m2b2b2cp_lower_profile_is_exact(
     let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
         return false;
     };
+    let Some(proof_node) = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ProofBlock))
+    else {
+        return false;
+    };
+    let Some(reserve_segment) = ast
+        .nodes()
+        .iter()
+        .find(|node| matches!(node.kind, SurfaceNodeKind::ReserveSegment))
+    else {
+        return false;
+    };
+    let Some(declaration) = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| node.token_text() == Some("x"))
+    else {
+        return false;
+    };
+    let Some(written_type) = reserve_segment
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+    else {
+        return false;
+    };
+    let expected_proof_range =
+        task258b3m2b2b2cp_range(ast, proof_node.range.start, proof_node.range.end);
+    let expected_declaration_range =
+        task258b3m2b2b2cp_range(ast, declaration.range.start, declaration.range.end);
+    let expected_type_range =
+        task258b3m2b2b2cp_range(ast, written_type.range.start, written_type.range.end);
     if !matches!(module_context.owner, BindingContextOwner::Module)
         || module_context.parent.is_some()
         || module_context.layer != BindingContextLayer::Module
@@ -2414,7 +2450,7 @@ fn task258b3m2b2b2cp_lower_profile_is_exact(
         || !matches!(
             proof_context.owner,
             BindingContextOwner::SourceStatement { source_range }
-                if source_range == task258b3m2b2b2cp_range(ast, 107, 179)
+                if source_range == expected_proof_range
         )
         || proof_context.parent != Some(BindingContextId::new(0))
         || proof_context.layer != BindingContextLayer::Proof
@@ -2447,15 +2483,15 @@ fn task258b3m2b2b2cp_lower_profile_is_exact(
                 spelling,
                 declaration_range,
             } if spelling == "x"
-                && *declaration_range == task258b3m2b2b2cp_range(ast, 37, 38)
+                && *declaration_range == expected_declaration_range
         )
         || binding.owner_context != BindingContextId::new(0)
-        || binding.declaration_range != task258b3m2b2b2cp_range(ast, 37, 38)
+        || binding.declaration_range != expected_declaration_range
         || binding.visible_after_ordinal != 0
         || !matches!(
             binding.type_site,
             BindingTypeSite::Source(source_range)
-                if source_range == task258b3m2b2b2cp_range(ast, 43, 46)
+                if source_range == expected_type_range
         )
         || binding.status != BindingStatus::Reserved
         || !binding.captured.identities().is_empty()
@@ -3937,6 +3973,7 @@ pub(in crate::runner) enum ImportedStructureUpdateTestMutation {
     ModuleContextVisibleBindings,
     ModuleContextRecovery,
     ProofContextOwner,
+    ProofContextRange,
     ProofContextParent,
     ProofContextLayer,
     ProofContextScope,
@@ -3948,10 +3985,12 @@ pub(in crate::runner) enum ImportedStructureUpdateTestMutation {
     BindingIdentityKind,
     BindingIdentitySpelling,
     BindingIdentityRange,
+    BindingIdentityAndDeclarationRange,
     BindingOwner,
     BindingDeclarationRange,
     BindingVisibleOrdinal,
     BindingTypeSite,
+    BindingTypeRange,
     BindingStatus,
     BindingCaptured,
     BindingDiagnostics,
@@ -5246,6 +5285,9 @@ fn task258b3m2b2b2cp_binding_mutation(
         ImportedStructureUpdateTestMutation::ProofContextOwner => {
             ImportedStructureSelectorTestMutation::ProofContextOwner
         }
+        ImportedStructureUpdateTestMutation::ProofContextRange => {
+            ImportedStructureSelectorTestMutation::ProofContextRange
+        }
         ImportedStructureUpdateTestMutation::ProofContextParent => {
             ImportedStructureSelectorTestMutation::ProofContextParent
         }
@@ -5279,6 +5321,9 @@ fn task258b3m2b2b2cp_binding_mutation(
         ImportedStructureUpdateTestMutation::BindingIdentityRange => {
             ImportedStructureSelectorTestMutation::BindingIdentityRange
         }
+        ImportedStructureUpdateTestMutation::BindingIdentityAndDeclarationRange => {
+            ImportedStructureSelectorTestMutation::BindingIdentityAndDeclarationRange
+        }
         ImportedStructureUpdateTestMutation::BindingOwner => {
             ImportedStructureSelectorTestMutation::BindingOwner
         }
@@ -5290,6 +5335,9 @@ fn task258b3m2b2b2cp_binding_mutation(
         }
         ImportedStructureUpdateTestMutation::BindingTypeSite => {
             ImportedStructureSelectorTestMutation::BindingTypeSite
+        }
+        ImportedStructureUpdateTestMutation::BindingTypeRange => {
+            ImportedStructureSelectorTestMutation::BindingTypeRange
         }
         ImportedStructureUpdateTestMutation::BindingStatus => {
             ImportedStructureSelectorTestMutation::BindingStatus
