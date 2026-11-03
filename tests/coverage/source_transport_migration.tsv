@@ -49,7 +49,12 @@ given-use-binding-construction-sites	proof-local	native-consumer	done	Given-use 
 given-condition-binding-construction-sites	proof-local	native-consumer	done	Given-condition binding construction uses the previously authenticated proof/name receipt on build and replay
 descendant-binding-construction-sites	proof-local	native-consumer	done	Descendant Given binding construction uses the previously authenticated proof/name receipt on build and replay
 descendant-context-sites	proof-local	native-consumer	done	Descendant context expectation and construction use the previously admitted range; retain first descendant admission
-proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired; collapse the five identical exact_task269*_local_binding / _declaration_binding helpers into one helper parametrised by BindingKind
+let-binding-helper-consolidation	proof-local	native-consumer	done	Let binding validation shares the BindingKind helper while retaining declaration and environment error phases
+given-binding-helper-consolidation	proof-local	native-consumer	done	Given binding validation shares the BindingKind helper while retaining declaration and environment error phases
+given-use-binding-helper-consolidation	proof-local	native-consumer	done	Given-use binding validation shares the BindingKind helper while retaining declaration and environment error phases
+given-condition-binding-helper-consolidation	proof-local	native-consumer	done	Given-condition binding validation shares the BindingKind helper while retaining declaration and environment error phases
+descendant-binding-helper-consolidation	proof-local	native-consumer	done	Descendant Given binding validation shares the BindingKind helper while retaining declaration and environment error phases
+proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved
 structure-selector-lower-sites	structure	native-consumer	done	structure-selector lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; lower donor checks preserved
