@@ -2718,7 +2718,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
             .bindings
             .get(id)
             .ok_or(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id })?;
-        if !exact_task269gup_output_binding(binding)
+        if !exact_task269g_output_binding(binding)
             || !exact_task269_binding(&self.binding_env, self.name_range, None)
         {
             return Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id });
@@ -2734,7 +2734,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
                 self.name_range,
                 Some((BindingKind::GivenWitness, self.proof_range)),
             )
-            || !exact_task269gup_lookup_behavior(&self.binding_env)
+            || !exact_task269g_lookup_behavior(&self.binding_env)
             || self.final_binding_fingerprint != self.binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
@@ -2812,7 +2812,7 @@ impl SourceProofLocalGivenUseBindingProducer {
         }
         let binding_env =
             extend_task269gup_binding_env(base_binding_env, input.proof_range, input.name_range)?;
-        if !exact_task269gup_lookup_behavior(&binding_env) {
+        if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
         }
         let base_binding_fingerprint = base_binding_env.debug_text();
@@ -2963,16 +2963,6 @@ fn exact_task269gup_input_declaration(input: &SourceProofLocalGivenUseBindingHan
         && input.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-// Rationale: Task 269GUP keeps final-row replay private until Task 269GUPT consumes it.
-#[cfg_attr(not(test), allow(dead_code))]
-fn exact_task269gup_output_binding(binding: &SourceProofLocalGivenBinding) -> bool {
-    binding.binding == BindingId::new(1)
-        && binding.binding_context == BindingContextId::new(1)
-        && binding.source_ordinal == 1
-        && binding.visible_after_ordinal == 1
-        && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
-}
-
 fn extend_task269gup_binding_env(
     base: &BindingEnv,
     proof_range: SourceRange,
@@ -3014,26 +3004,6 @@ fn extend_task269gup_binding_env(
         diagnostics: base.diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment)
-}
-
-fn exact_task269gup_lookup_behavior(binding_env: &BindingEnv) -> bool {
-    let definition = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        1,
-    );
-    let later = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        2,
-    );
-    matches!(
-        binding_env.lookup(&definition),
-        Ok(BindingLookupResult::ForwardReference { candidates, .. })
-            if candidates == [BindingId::new(1)]
-    ) && binding_env.lookup(&later) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3221,7 +3191,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
         let binding = self.bindings.get(id).ok_or(
             SourceProofLocalGivenConditionBindingError::InvalidDeclaration { binding: id },
         )?;
-        if !exact_task269gc_output_binding(binding)
+        if !exact_task269g_output_binding(binding)
             || !exact_task269_binding(&self.binding_env, self.name_range, None)
         {
             return Err(
@@ -3239,7 +3209,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
                 self.name_range,
                 Some((BindingKind::GivenWitness, self.proof_range)),
             )
-            || !exact_task269gc_lookup_behavior(&self.binding_env)
+            || !exact_task269g_lookup_behavior(&self.binding_env)
             || self.final_binding_fingerprint != self.binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBindingEnvironment);
@@ -3335,7 +3305,7 @@ impl SourceProofLocalGivenConditionBindingProducer {
         }
         let binding_env =
             extend_task269gc_binding_env(base_binding_env, input.proof_range, input.name_range)?;
-        if !exact_task269gc_lookup_behavior(&binding_env) {
+        if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBindingEnvironment);
         }
         let base_binding_fingerprint = base_binding_env.debug_text();
@@ -3491,14 +3461,6 @@ fn exact_task269gc_input_declaration(
         && input.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-fn exact_task269gc_output_binding(binding: &SourceProofLocalGivenBinding) -> bool {
-    binding.binding == BindingId::new(1)
-        && binding.binding_context == BindingContextId::new(1)
-        && binding.source_ordinal == 1
-        && binding.visible_after_ordinal == 1
-        && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
-}
-
 fn extend_task269gc_binding_env(
     base: &BindingEnv,
     proof_range: SourceRange,
@@ -3540,26 +3502,6 @@ fn extend_task269gc_binding_env(
         diagnostics: base.diagnostics().clone(),
     })
     .map_err(|_| SourceProofLocalGivenConditionBindingError::InvalidBindingEnvironment)
-}
-
-fn exact_task269gc_lookup_behavior(binding_env: &BindingEnv) -> bool {
-    let prior = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        1,
-    );
-    let visible = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        2,
-    );
-    matches!(
-        binding_env.lookup(&prior),
-        Ok(BindingLookupResult::ForwardReference { candidates, .. })
-            if candidates == [BindingId::new(1)]
-    ) && binding_env.lookup(&visible) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
 /// Complete syntax-free input for the frozen proof-local `given` descendant
@@ -3776,7 +3718,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
         let binding = self.bindings.get(id).ok_or(
             SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
         )?;
-        if !exact_task269sdc_output_binding(binding)
+        if !exact_task269g_output_binding(binding)
             || !exact_task269_binding(&self.binding_env, self.name_range, None)
         {
             return Err(
@@ -4041,14 +3983,6 @@ fn exact_task269sdc_input_declaration(
         && input.recovery == SourceProofLocalGivenBindingRecovery::Normal
 }
 
-fn exact_task269sdc_output_binding(binding: &SourceProofLocalGivenBinding) -> bool {
-    binding.binding == BindingId::new(1)
-        && binding.binding_context == BindingContextId::new(1)
-        && binding.source_ordinal == 1
-        && binding.visible_after_ordinal == 1
-        && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
-}
-
 fn exact_task269sdc_descendant_context(
     binding_env: &BindingEnv,
     descendant_range: SourceRange,
@@ -4131,29 +4065,13 @@ fn extend_task269sdc_binding_env(
 }
 
 fn exact_task269sdc_lookup_behavior(binding_env: &BindingEnv) -> bool {
-    let forward = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        1,
-    );
-    let proof = BindingLookupSite::new(
-        "y",
-        BindingContextId::new(1),
-        Some(LocalTermScope::new(vec![0])),
-        2,
-    );
     let descendant = BindingLookupSite::new(
         "y",
         BindingContextId::new(2),
         Some(LocalTermScope::new(vec![0, 0])),
         2,
     );
-    matches!(
-        binding_env.lookup(&forward),
-        Ok(BindingLookupResult::ForwardReference { candidates, .. })
-            if candidates == [BindingId::new(1)]
-    ) && binding_env.lookup(&proof) == Ok(BindingLookupResult::Local(BindingId::new(1)))
+    exact_task269g_lookup_behavior(binding_env)
         && binding_env.lookup(&descendant) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
@@ -5273,7 +5191,7 @@ mod task269c_tests {
             .bindings()
             .get(SourceProofLocalGivenBindingId::new(0))
             .expect("Task269GUP dense binding row");
-        assert!(exact_task269gup_output_binding(row));
+        assert!(exact_task269g_output_binding(row));
         assert_eq!(
             handoff.bindings().iter().collect::<Vec<_>>(),
             [(SourceProofLocalGivenBindingId::new(0), row)]
@@ -5283,7 +5201,7 @@ mod task269c_tests {
             handoff.name_range(),
             Some((BindingKind::GivenWitness, handoff.proof_range()))
         ));
-        assert!(exact_task269gup_lookup_behavior(handoff.binding_env()));
+        assert!(exact_task269g_lookup_behavior(handoff.binding_env()));
         let expected_debug = format!(
             concat!(
                 "source-proof-local-given-use-binding-debug-v1\n",
@@ -5760,7 +5678,7 @@ mod task269c_tests {
             .bindings()
             .get(SourceProofLocalGivenBindingId::new(0))
             .expect("Task269GC dense binding row");
-        assert!(exact_task269gc_output_binding(row));
+        assert!(exact_task269g_output_binding(row));
         assert_eq!(
             handoff.bindings().iter().collect::<Vec<_>>(),
             [(SourceProofLocalGivenBindingId::new(0), row)]
@@ -5770,7 +5688,7 @@ mod task269c_tests {
             handoff.name_range(),
             Some((BindingKind::GivenWitness, handoff.proof_range()))
         ));
-        assert!(exact_task269gc_lookup_behavior(handoff.binding_env()));
+        assert!(exact_task269g_lookup_behavior(handoff.binding_env()));
         let expected_debug = format!(
             concat!(
                 "source-proof-local-given-condition-binding-debug-v1\n",
@@ -6648,7 +6566,7 @@ mod task269c_tests {
             .bindings()
             .get(SourceProofLocalGivenBindingId::new(0))
             .expect("Task269SDC dense binding row");
-        assert!(exact_task269sdc_output_binding(row));
+        assert!(exact_task269g_output_binding(row));
         let expected_debug = format!(
             concat!(
                 "source-proof-local-given-descendant-binding-debug-v1\n",
