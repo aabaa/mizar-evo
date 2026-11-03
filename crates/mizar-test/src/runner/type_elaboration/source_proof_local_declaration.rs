@@ -1709,8 +1709,32 @@ fn source_proof_local_given_descendant_use_term_output_impl(
                 .typed_ast()
                 .source_proof_local_given_descendant_type(),
         )?;
-        let arena = task269sdu_arena(ast.source_id, mutation)?;
-        let mut input = task269sdu_term_input(ast.source_id, module.clone());
+        let lower = source_proof_local_given_descendant_set_lower_output(
+            ast,
+            module.clone(),
+            shells,
+            symbols,
+            source_text,
+        )
+        .ok_or_else(|| "Task269SDU lower selector mismatch".to_owned())??;
+        let reserve_range = dependency
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(0))
+            .and_then(|binding| match binding.type_site {
+                mizar_checker::binding_env::BindingTypeSite::Source(range) => Some(range),
+                _ => None,
+            })
+            .ok_or_else(|| "Task269SDU reserve type source is missing".to_owned())?;
+        let given_range = lower.given_type_range();
+        let term_range = lower.set_rows()[0].rhs_range();
+        let root_range = ast
+            .root()
+            .and_then(|root| ast.node(root))
+            .ok_or_else(|| "Task269SDU source root is missing".to_owned())?
+            .range;
+        let arena = task269sdu_arena(reserve_range, given_range, root_range, term_range, mutation)?;
+        let mut input = task269sdu_term_input(ast.source_id, module.clone(), term_range);
         match mutation {
             SourceProofLocalGivenDescendantUseTermRouteMutation::WrongDependencyModule => {
                 input.module_id = ModuleId::new(
@@ -1745,17 +1769,14 @@ fn source_proof_local_given_descendant_use_term_output_impl(
 fn task269sdu_term_input(
     source_id: mizar_session::SourceId,
     module_id: ModuleId,
+    term_range: SourceRange,
 ) -> SourcePrimaryTermHandoffInput {
     SourcePrimaryTermHandoffInput {
         source_id,
         module_id,
         terms: vec![SourcePrimaryTermInput {
             site: TypedSiteRef::Node(TypedNodeId::new(3)),
-            source_range: SourceRange {
-                source_id,
-                start: 118,
-                end: 119,
-            },
+            source_range: term_range,
             source_ordinal: 0,
             context: BindingContextId::new(2),
             recovery: SourcePrimaryTermRecovery::Normal,
@@ -1774,39 +1795,30 @@ fn task269sdu_term_input(
 }
 
 fn task269sdu_arena(
-    source_id: mizar_session::SourceId,
+    reserve_range: SourceRange,
+    given_range: SourceRange,
+    root_range: SourceRange,
+    term_range: SourceRange,
     mutation: SourceProofLocalGivenDescendantUseTermRouteMutation,
 ) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
     let reserve = builder
         .push(TypedNode::new(
             "source.proof-local.given-descendant.reserve-type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 14,
-                end: 17,
-            }),
+            SourceAnchor::Range(reserve_range),
         ))
         .map_err(|error| error.to_string())?;
     let given = builder
         .push(TypedNode::new(
             "source.proof-local.given-descendant.type",
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 95,
-                end: 98,
-            }),
+            SourceAnchor::Range(given_range),
         ))
         .map_err(|error| error.to_string())?;
     let prefix = builder
         .push(
             TypedNode::new(
                 "source.proof-local.given-descendant.type-root",
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 179,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![reserve, given]),
         )
@@ -1818,22 +1830,14 @@ fn task269sdu_arena(
             } else {
                 "source.term.variable-reference"
             },
-            SourceAnchor::Range(SourceRange {
-                source_id,
-                start: 118,
-                end: 119,
-            }),
+            SourceAnchor::Range(term_range),
         ))
         .map_err(|error| error.to_string())?;
     let root = builder
         .push(
             TypedNode::new(
                 "source.proof-local.given-descendant-use.term-root",
-                SourceAnchor::Range(SourceRange {
-                    source_id,
-                    start: 0,
-                    end: 179,
-                }),
+                SourceAnchor::Range(root_range),
             )
             .with_children(vec![prefix, term]),
         )
