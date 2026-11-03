@@ -1647,23 +1647,13 @@ pub(in crate::runner) struct SourceFormulaConnectiveQuantifier {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaQuantifierBoundUse {
     pub(in crate::runner) quantified_site: TypedSiteRef,
-    pub(in crate::runner) quantified_range: SourceRange,
     pub(in crate::runner) binder_segment_site: TypedSiteRef,
-    pub(in crate::runner) binder_segment_range: SourceRange,
     pub(in crate::runner) binder_identifier_site: TypedSiteRef,
-    pub(in crate::runner) binder_identifier_range: SourceRange,
     pub(in crate::runner) binder_type_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_range: SourceRange,
     pub(in crate::runner) binder_type_head_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_head_range: SourceRange,
     pub(in crate::runner) equality_site: TypedSiteRef,
-    pub(in crate::runner) equality_range: SourceRange,
     pub(in crate::runner) left_site: TypedSiteRef,
-    #[cfg(test)]
-    pub(in crate::runner) left_range: SourceRange,
     pub(in crate::runner) right_site: TypedSiteRef,
-    #[cfg(test)]
-    pub(in crate::runner) right_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -2700,7 +2690,6 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
     let [type_head_id] = type_expression_children.as_slice() else {
         return None;
     };
-    let type_head = ast.node(*type_head_id)?;
     let binder_type =
         extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
     if binder_type.spelling != "set"
@@ -2721,10 +2710,8 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
     let [left_expression_id, right_expression_id] = equality_children.as_slice() else {
         return None;
     };
-    let (left_id, _left_range, left_spelling) =
-        exact_identifier_term_operand(ast, *left_expression_id)?;
-    let (right_id, _right_range, right_spelling) =
-        exact_identifier_term_operand(ast, *right_expression_id)?;
+    let (left_id, _, left_spelling) = exact_identifier_term_operand(ast, *left_expression_id)?;
+    let (right_id, _, right_spelling) = exact_identifier_term_operand(ast, *right_expression_id)?;
     if left_id == right_id || left_spelling != spelling || right_spelling != spelling {
         return None;
     }
@@ -2742,23 +2729,13 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
 
     Some(SourceFormulaQuantifierBoundUse {
         quantified_site: surface_site(*quantified_id),
-        quantified_range: quantified.range,
         binder_segment_site: surface_site(*segment_id),
-        binder_segment_range: segment.range,
         binder_identifier_site: surface_site(binder_identifier_id),
-        binder_identifier_range: binder_identifier.range,
         binder_type_site: surface_site(*type_expression_id),
-        binder_type_range: type_expression.range,
         binder_type_head_site: surface_site(*type_head_id),
-        binder_type_head_range: type_head.range,
         equality_site: surface_site(*equality_id),
-        equality_range: equality.range,
         left_site: surface_site(left_id),
-        #[cfg(test)]
-        left_range: _left_range,
         right_site: surface_site(right_id),
-        #[cfg(test)]
-        right_range: _right_range,
     })
 }
 

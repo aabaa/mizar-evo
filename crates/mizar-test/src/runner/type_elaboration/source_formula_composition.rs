@@ -42,8 +42,8 @@ use mizar_checker::{
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
-        TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
-        TypedAstParts, TypedNode, TypedNodeId, TypedSiteRef,
+        SourceNode, TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder,
+        TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedSiteRef,
     },
 };
 use mizar_resolve::{
@@ -924,8 +924,9 @@ fn build_task_257b1_output(
     payload: SourceFormulaQuantifierBoundUse,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
-    let arena = typed_arena(ast, &payload)?;
-    let inputs = route_inputs(ast, module.clone(), &payload)?;
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let arena = typed_arena(ast, &syntax, &payload)?;
+    let inputs = route_inputs(ast, &syntax, module.clone(), &payload)?;
     let base = module_shell(ast, module.clone())?;
     build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
@@ -1059,25 +1060,22 @@ fn build_output(
 
 fn route_inputs(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     module: ModuleId,
     payload: &SourceFormulaQuantifierBoundUse,
 ) -> Result<SourceFormulaCompositionRouteInputs, String> {
-    let identifier = ast
-        .nodes()
-        .get(payload.binder_identifier_site.node().index())
-        .ok_or("Task257B1 identifier site is missing")?;
-    let mizar_syntax::SurfaceNodeKind::Token(token) = &identifier.kind else {
+    let row = |site: &TypedSiteRef| source_node(syntax, site.node().index());
+    let identifier = row(&payload.binder_identifier_site)?;
+    let SurfaceNodeKind::Token(token) = identifier.kind() else {
         return Err("Task257B1 identifier token is missing".to_owned());
     };
-    if identifier.recovered
-        || identifier.range != payload.binder_identifier_range
+    if identifier.recovery() != NodeRecoveryState::Normal
         || token.kind != mizar_syntax::SurfaceTokenKind::Identifier
-        || !mizar_lexer::is_identifier(&token.text)
+        || !mizar_lexer::is_identifier(identifier.spelling())
     {
         return Err("Task257B1 identifier token is invalid".to_owned());
     }
-    let spelling = token.text.as_ref();
-    let syntax = source_syntax_receiver(ast, &module)?;
+    let spelling = identifier.spelling();
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let composite = SourceCompositeFormulaHandoffInput {
@@ -1085,7 +1083,7 @@ fn route_inputs(
         module_id: module.clone(),
         formulas: vec![SourceCompositeFormulaInput {
             site: payload.quantified_site.clone(),
-            source_range: payload.quantified_range,
+            source_range: row(&payload.quantified_site)?.range(),
             source_ordinal: 0,
             context: context0,
             recovery: SourceCompositeFormulaRecovery::Normal,
@@ -1102,15 +1100,15 @@ fn route_inputs(
             formula: SourceCompositeFormulaId::new(0),
             ordinal: 0,
             segment_site: payload.binder_segment_site.clone(),
-            segment_range: payload.binder_segment_range,
+            segment_range: row(&payload.binder_segment_site)?.range(),
             segment_spelling: format!("{spelling} being"),
             identifier_site: payload.binder_identifier_site.clone(),
-            identifier_range: payload.binder_identifier_range,
+            identifier_range: row(&payload.binder_identifier_site)?.range(),
             identifier_spelling: spelling.to_owned(),
             local: LocalTermBinding::new(
                 spelling,
                 LocalTermScope::new(vec![0]),
-                payload.binder_identifier_range,
+                row(&payload.binder_identifier_site)?.range(),
                 0,
             ),
             binding: BindingId::new(0),
@@ -1121,10 +1119,10 @@ fn route_inputs(
         type_sites: vec![SourceBinderTypeSiteInput {
             binder: SourceQuantifierBinderId::new(0),
             site: payload.binder_type_site.clone(),
-            source_range: payload.binder_type_range,
+            source_range: row(&payload.binder_type_site)?.range(),
             spelling: "set".to_owned(),
             head_site: payload.binder_type_head_site.clone(),
-            head_range: payload.binder_type_head_range,
+            head_range: row(&payload.binder_type_head_site)?.range(),
             head_spelling: "set".to_owned(),
             context: context0,
             recovery: SourceCompositeFormulaRecovery::Normal,
@@ -1185,7 +1183,7 @@ fn route_inputs(
         module_id: module.clone(),
         formulas: vec![SourceAtomicFormulaInput {
             site: payload.equality_site.clone(),
-            source_range: payload.equality_range,
+            source_range: row(&payload.equality_site)?.range(),
             source_ordinal: 0,
             context: context1,
             recovery: SourceAtomicFormulaRecovery::Normal,
@@ -1280,13 +1278,7 @@ fn task_257b2_route_inputs(
     {
         return Err("Task257B2 extracted aggregate changed".to_owned());
     }
-    let row = |site: &TypedSiteRef| {
-        syntax
-            .source_node_entries()
-            .ok_or(INVALID_PAYLOAD_KEY)?
-            .find(|row| row.site().index() == site.node().index())
-            .ok_or(INVALID_PAYLOAD_KEY)
-    };
+    let row = |site: &TypedSiteRef| source_node(syntax, site.node().index());
     let identifier = row(&payload.binder_identifier_site)?;
     let SurfaceNodeKind::Token(token) = identifier.kind() else {
         return Err("Task257B2 identifier token is missing".to_owned());
@@ -1582,13 +1574,7 @@ fn task_257b3_route_inputs(
     {
         return Err("Task257B3 extracted aggregate changed".to_owned());
     }
-    let row = |site: &TypedSiteRef| {
-        syntax
-            .source_node_entries()
-            .ok_or(INVALID_PAYLOAD_KEY)?
-            .find(|row| row.site().index() == site.node().index())
-            .ok_or(INVALID_PAYLOAD_KEY)
-    };
+    let row = |site: &TypedSiteRef| source_node(syntax, site.node().index());
     let identifier = row(&payload.binder_identifier_sites[1])?;
     let SurfaceNodeKind::Token(token) = identifier.kind() else {
         return Err("Task257B3 middle identifier token is missing".to_owned());
@@ -1901,8 +1887,17 @@ fn variable_term(
     }
 }
 
+fn source_node(syntax: &TypedAst, index: usize) -> Result<&SourceNode, &'static str> {
+    syntax
+        .source_node_entries()
+        .ok_or(INVALID_PAYLOAD_KEY)?
+        .find(|row| row.site().index() == index)
+        .ok_or(INVALID_PAYLOAD_KEY)
+}
+
 fn typed_arena(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     payload: &SourceFormulaQuantifierBoundUse,
 ) -> Result<TypedArena, String> {
     let mut kinds = BTreeMap::from([
@@ -1944,12 +1939,16 @@ fn typed_arena(
     }
     let mut builder = TypedArenaBuilder::new();
     for (index, node) in ast.nodes().iter().enumerate() {
-        let key = kinds
-            .remove(&index)
-            .unwrap_or("source.formula.composition.unowned");
+        let owned_kind = kinds.remove(&index);
+        let range = if owned_kind.is_some() {
+            source_node(syntax, index)?.range()
+        } else {
+            node.range
+        };
+        let key = owned_kind.unwrap_or("source.formula.composition.unowned");
         let pushed = builder
             .push(
-                TypedNode::new(key, SourceAnchor::Range(node.range))
+                TypedNode::new(key, SourceAnchor::Range(range))
                     .with_recovery(NodeRecoveryState::Normal),
             )
             .map_err(|error| error.to_string())?;
@@ -2015,12 +2014,7 @@ fn task_257b2_typed_arena(
     for (index, node) in ast.nodes().iter().enumerate() {
         let owned_kind = kinds.remove(&index);
         let range = if owned_kind.is_some() {
-            syntax
-                .source_node_entries()
-                .ok_or(INVALID_PAYLOAD_KEY)?
-                .find(|row| row.site().index() == index)
-                .ok_or(INVALID_PAYLOAD_KEY)?
-                .range()
+            source_node(syntax, index)?.range()
         } else {
             node.range
         };
@@ -2080,12 +2074,7 @@ fn task_257b3_typed_arena(
     for (index, node) in ast.nodes().iter().enumerate() {
         let owned_kind = kinds.remove(&index);
         let range = if owned_kind.is_some() {
-            syntax
-                .source_node_entries()
-                .ok_or(INVALID_PAYLOAD_KEY)?
-                .find(|row| row.site().index() == index)
-                .ok_or(INVALID_PAYLOAD_KEY)?
-                .range()
+            source_node(syntax, index)?.range()
         } else {
             node.range
         };

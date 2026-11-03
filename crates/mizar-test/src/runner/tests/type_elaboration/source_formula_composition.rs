@@ -666,29 +666,6 @@ fn task257b1_real_route_publishes_the_exact_cross_family_transaction() {
     let (ast, module, symbols) = task252_real_ast(TASK257B1_CASE);
     let payload = extract_source_formula_quantifier_bound_use(&ast, &module, &symbols)
         .expect("Task 257B1 selector payload");
-    assert_eq!(
-        [
-            payload.quantified_range.start,
-            payload.quantified_range.end,
-            payload.binder_segment_range.start,
-            payload.binder_segment_range.end,
-            payload.binder_identifier_range.start,
-            payload.binder_identifier_range.end,
-            payload.binder_type_range.start,
-            payload.binder_type_range.end,
-            payload.binder_type_head_range.start,
-            payload.binder_type_head_range.end,
-            payload.equality_range.start,
-            payload.equality_range.end,
-            payload.left_range.start,
-            payload.left_range.end,
-            payload.right_range.start,
-            payload.right_range.end,
-        ],
-        [
-            50, 77, 54, 65, 54, 55, 62, 65, 62, 65, 72, 77, 72, 73, 76, 77
-        ]
-    );
 
     let first = source_formula_composition_output(&ast, module.clone(), &symbols)
         .expect("Task 257B1 selects")
@@ -706,6 +683,60 @@ fn task257b1_real_route_publishes_the_exact_cross_family_transaction() {
         .source_composite_formula()
         .expect("Task 257 handoff");
     let composition = task257b1_handoff(&first);
+    let binder = composite.binders().iter().next().unwrap().1;
+    let type_site = composite.type_sites().iter().next().unwrap().1;
+    let published = composite.formulas().iter()
+        .map(|(_, row)| (row.site(), row.source_range()))
+        .chain([
+            (binder.segment_site(), binder.segment_range()),
+            (binder.identifier_site(), binder.identifier_range()),
+            (type_site.site(), type_site.source_range()),
+            (type_site.head_site(), type_site.head_range()),
+        ])
+        .chain(atomic.formulas().iter().map(|(_, row)| (row.site(), row.source_range())))
+        .chain(primary.terms().iter().map(|(_, row)| (row.site(), row.source_range())));
+    for ((site, range), role_site) in published.zip([
+        &payload.quantified_site, &payload.binder_segment_site, &payload.binder_identifier_site,
+        &payload.binder_type_site, &payload.binder_type_head_site, &payload.equality_site,
+        &payload.left_site, &payload.right_site,
+    ]) {
+        let expected = ast.nodes().get(role_site.node().index()).unwrap().range;
+        assert_eq!((site, range), (role_site, expected));
+    }
+    assert_eq!(binder.local().declaration_range(), binder.identifier_range());
+    assert_eq!(
+        binder.identifier_spelling(),
+        ast.nodes().get(payload.binder_identifier_site.node().index()).unwrap()
+            .token_text().unwrap()
+    );
+    for (_, term) in primary.terms().iter() {
+        let node = ast.nodes().get(term.site().node().index()).unwrap();
+        assert_eq!(
+            term.spelling(), ast.node(node.children[0]).unwrap().token_text().unwrap()
+        );
+    }
+    let binding = composite.binding_env().bindings().iter().next().unwrap().1;
+    assert_eq!(
+        binding.identity, mizar_checker::binding_env::BinderIdentity::ResolverLocal {
+            scope: binder.local().scope().clone(), ordinal: 0,
+            declaration_range: binder.identifier_range()
+        }
+    );
+    assert_eq!(
+        binding.type_site,
+        mizar_checker::binding_env::BindingTypeSite::Source(type_site.source_range())
+    );
+    assert_eq!(first.typed_ast.nodes().len(), ast.nodes().len());
+    for (id, node) in first.typed_ast.nodes().iter() {
+        let expected = ast.nodes().get(id.index()).unwrap().range;
+        assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(expected));
+    }
+    assert_eq!(first.resolved.nodes().len(), ast.nodes().len());
+    for (id, node) in first.resolved.nodes().iter() {
+        assert_eq!(node.typed_node.index(), id.index());
+        assert_eq!(node.source_range, ast.nodes().get(id.index()).unwrap().range);
+    }
+    assert!(first.typed_ast.source_node_entries().is_none());
 
     assert_eq!(
         (
@@ -806,6 +837,9 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
     let resolver = resolver_symbol_collection(root, case, ast);
     let old =
         extract_source_formula_quantifier_bound_use(ast, &resolver.module, &resolver.env).unwrap();
+    let old_range = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        ast.nodes().get(site.node().index()).unwrap().range
+    };
     let baseline = source_formula_composition_output_with_source(
         ast,
         resolver.module.clone(),
@@ -925,6 +959,46 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                 .binders()
                 .get(mizar_checker::source_composite_formula::SourceQuantifierBinderId::new(0))
                 .unwrap();
+            let span = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+                ast.nodes().get(site.node().index()).unwrap().range
+            };
+            let type_site = composite.type_sites().iter().next().unwrap().1;
+            let published = composite.formulas().iter()
+                .map(|(_, row)| (row.site(), row.source_range()))
+                .chain([
+                    (binder.segment_site(), binder.segment_range()),
+                    (binder.identifier_site(), binder.identifier_range()),
+                    (type_site.site(), type_site.source_range()),
+                    (type_site.head_site(), type_site.head_range()),
+                ])
+                .chain(atomic.formulas().iter().map(|(_, row)| (row.site(), row.source_range())))
+                .chain(primary.terms().iter().map(|(_, row)| (row.site(), row.source_range())));
+            for ((site, actual), role_site) in published.zip([
+                &payload.quantified_site, &payload.binder_segment_site, &payload.binder_identifier_site,
+                &payload.binder_type_site, &payload.binder_type_head_site, &payload.equality_site,
+                &payload.left_site, &payload.right_site,
+            ]) {
+                assert_eq!((site, actual), (role_site, span(role_site)));
+            }
+            assert_eq!(
+                binder.local().declaration_range(), span(&payload.binder_identifier_site)
+            );
+            assert_eq!(
+                binder.identifier_spelling(),
+                ast.nodes().get(payload.binder_identifier_site.node().index()).unwrap()
+                    .token_text().unwrap()
+            );
+            assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
+            for (id, node) in output.typed_ast.nodes().iter() {
+                let expected = ast.nodes().get(id.index()).unwrap().range;
+                assert_eq!(node.anchor, mizar_session::SourceAnchor::Range(expected));
+            }
+            assert_eq!(output.resolved.nodes().len(), ast.nodes().len());
+            for (id, node) in output.resolved.nodes().iter() {
+                assert_eq!(node.typed_node.index(), id.index());
+                assert_eq!(node.source_range, ast.nodes().get(id.index()).unwrap().range);
+            }
+            assert!(output.typed_ast.source_node_entries().is_none());
             assert_eq!(binder.identifier_spelling(), spelling);
             assert_eq!(binder.segment_spelling(), format!("{spelling} being"));
             assert_eq!(binder.local().spelling(), spelling);
@@ -941,9 +1015,9 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
             assert_eq!(
                 names,
                 [
-                    payload.binder_identifier_range,
-                    payload.left_range,
-                    payload.right_range
+                    span(&payload.binder_identifier_site),
+                    span(&payload.left_site),
+                    span(&payload.right_site)
                 ]
             );
             for range in names {
@@ -999,14 +1073,14 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                 mizar_checker::binding_env::BinderIdentity::ResolverLocal {
                     scope: mizar_resolve::names::LocalTermScope::new(vec![0]),
                     ordinal: 0,
-                    declaration_range: payload.binder_identifier_range
+                    declaration_range: span(&payload.binder_identifier_site)
                 }
             );
             assert_eq!(binding.owner_context.index(), 1);
             assert_eq!(binding.visible_after_ordinal, 0);
             assert_eq!(
                 binding.type_site,
-                mizar_checker::binding_env::BindingTypeSite::Source(payload.binder_type_range)
+                mizar_checker::binding_env::BindingTypeSite::Source(span(&payload.binder_type_site))
             );
             assert!(binding.captured.identities().is_empty());
             for (index, (_, reference)) in primary.references().iter().enumerate() {
@@ -1014,7 +1088,7 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                 assert_eq!(term.spelling(), spelling);
                 assert_eq!(
                     term.source_range(),
-                    [payload.left_range, payload.right_range][index]
+                    [span(&payload.left_site), span(&payload.right_site)][index]
                 );
                 assert_eq!(term.context().index(), 1);
                 assert_eq!(
@@ -1039,18 +1113,20 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                 );
             }
             for (actual, previous) in [
-                (payload.quantified_range, old.quantified_range),
-                (payload.binder_identifier_range, old.binder_identifier_range),
-                (payload.binder_type_range, old.binder_type_range),
-                (payload.equality_range, old.equality_range),
-                (payload.left_range, old.left_range),
-                (payload.right_range, old.right_range),
+                (span(&payload.quantified_site), old_range(&old.quantified_site)),
+                (span(&payload.binder_segment_site), old_range(&old.binder_segment_site)),
+                (span(&payload.binder_type_head_site), old_range(&old.binder_type_head_site)),
+                (span(&payload.binder_identifier_site), old_range(&old.binder_identifier_site)),
+                (span(&payload.binder_type_site), old_range(&old.binder_type_site)),
+                (span(&payload.equality_site), old_range(&old.equality_site)),
+                (span(&payload.left_site), old_range(&old.left_site)),
+                (span(&payload.right_site), old_range(&old.right_site)),
             ] {
                 let mut expected = previous;
                 for boundary in [
-                    old.binder_identifier_range.start,
-                    old.left_range.start,
-                    old.right_range.start,
+                    old_range(&old.binder_identifier_site).start,
+                    old_range(&old.left_site).start,
+                    old_range(&old.right_site).start,
                 ] {
                     expected.start += usize::from(previous.start > boundary) * (spelling.len() - 1);
                     expected.end += usize::from(previous.end > boundary) * (spelling.len() - 1);
@@ -1172,13 +1248,13 @@ fn metamorphic_bound_use_fresh_names_publish_actual_lookup_and_combined_ownershi
                         }
                         let id = match &node.kind {
                             mizar_syntax::SurfaceNodeKind::Token(token)
-                                if node.range == payload.binder_identifier_range
+                                if node.range == span(&payload.binder_identifier_site)
                                     && corruption == 3 =>
                             {
                                 builder.add_recovered_token(token.kind, token.text.clone(), range)
                             }
                             mizar_syntax::SurfaceNodeKind::Token(token) => builder.add_token(
-                                if node.range == payload.binder_identifier_range && corruption == 4
+                                if node.range == span(&payload.binder_identifier_site) && corruption == 4
                                 {
                                     mizar_syntax::SurfaceTokenKind::ReservedWord
                                 } else {
