@@ -100,7 +100,7 @@ pub(crate) fn source_nodes(
             return Err(invalid());
         }
         if let K::Token(token) = current.kind() {
-            if !current.children().is_empty() {
+            if !current.children().is_empty() || span.start == span.end {
                 return Err(invalid());
             }
             tokens.push((id, span, token.text.as_ref()));

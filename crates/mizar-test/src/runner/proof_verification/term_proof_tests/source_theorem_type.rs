@@ -39,6 +39,8 @@ fn source_theorem_type_handoff_retains_real_written_types() -> Result<(), String
     let cases = [
         fixture.to_owned(),
         fixture.replace("Lem1", "Seed"),
+        format!("\n:: type layout\n{}", fixture.replace("being set", "being\tset").replace("be set", "be\nset")),
+        "theorem Pair: for A, Spare, B being\nset holds A = B proof let L, Unused, R be\tset; thus L = R; end;".into(),
         "theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(),
         "theorem Shadow: for A being set holds for A being set holds A = A proof let A be set; thus A = A; end;".into(),
         "theorem Empty: for A being set holds A = A proof end;".into(),
@@ -243,6 +245,7 @@ fn source_theorem_type_handoff_retains_real_written_types() -> Result<(), String
             assert_eq!(result.0, baseline.0);
             assert_eq!(result.1, baseline.1);
             assert_eq!(result.3, baseline.3);
+            assert!(result.2.source_node_entries().is_none());
             let handoff = result.2.source_type().unwrap();
             assert_eq!(handoff.source_id(), expected.source_id);
             assert_eq!(handoff.module_id(), &expected.module_id);
@@ -413,7 +416,7 @@ fn source_theorem_type_handoff_retains_real_written_types() -> Result<(), String
 fn source_theorem_type_handoff_preserves_upstream_errors() {
     use mizar_checker::{
         source_context::SourceBindingContextProducer as ContextProducer,
-        source_type::SourceTypeProducer as Producer,
+        source_type::SourceTypeProducer as Producer, typed_ast::TypedAstError,
     };
     use mizar_frontend::{
         orchestration::Frontend,
@@ -481,6 +484,95 @@ fn source_theorem_type_handoff_preserves_upstream_errors() {
     )
     .unwrap();
     assert!(ContextProducer::build_source_theorem_equalities(&source, symbols, &scope).is_ok());
+    assert!(Producer::build_source_theorem_equalities(&source, symbols, &scope).is_ok());
+    let variants = [
+        "overlap-let-semicolon",
+        "overlap-final-semicolon",
+        "reverse-let-semicolon",
+        "zero-width-let-semicolon",
+    ];
+    let mut observed = Vec::new();
+    for variant in variants {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut altered = 0;
+        for view in ast.node_views() {
+            let mut range = view.range();
+            let selected = matches!(view.kind(), K::Token(token) if token.text.as_ref() == ";")
+                && if variant == "overlap-final-semicolon" {
+                    range.end == text.len()
+                } else {
+                    range.start == text.find("; thus").unwrap()
+                };
+            if selected {
+                match variant {
+                    "reverse-let-semicolon" => {
+                        range.start -= 5;
+                        range.end = range.start + 1;
+                    }
+                    "zero-width-let-semicolon" => range.end = range.start,
+                    _ => range.start -= 1,
+                }
+                altered += 1;
+            }
+            let children = view
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect();
+            rebuilt.push(match view.kind() {
+                K::Token(token) => builder.add_token(token.kind, token.text.clone(), range),
+                kind => builder.add_node(kind.clone(), range, children),
+            });
+        }
+        assert_eq!(altered, 1);
+        let changed = builder
+            .finish(
+                ast.root().map(|id| rebuilt[id.index()]),
+                ast.expression_root().map(|id| rebuilt[id.index()]),
+            )
+            .with_trivia(ast.trivia().clone());
+        assert_eq!(changed.nodes().len(), ast.nodes().len());
+        assert_eq!(changed.trivia(), ast.trivia());
+        let changed_source = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        let changed_shells = DeclarationShellCollector::new(&changed, &module).collect();
+        let changed_collected = SignatureProjectionExtractor::new(
+            &changed,
+            &changed_shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(changed_collected.diagnostics().is_empty());
+        let changed_symbols = changed_collected.env();
+        let changed_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&changed, &module, changed_symbols),
+        )
+        .unwrap();
+        let mut lower = ContextProducer::build_source_theorem_equalities(
+            &changed_source,
+            changed_symbols,
+            &changed_scope,
+        )
+        .unwrap();
+        let table_result = lower.2.install_source_nodes(&changed_source);
+        let native_result = Producer::build_source_theorem_equalities(
+            &changed_source,
+            changed_symbols,
+            &changed_scope,
+        )
+        .map(|_| ());
+        observed.push((variant, table_result, native_result));
+    }
+    assert_eq!(
+        observed,
+        variants
+            .map(|variant| (
+                variant,
+                Err(TypedAstError::InvalidSourceStatement),
+                Err("InvalidSourceStatement".to_owned()),
+            ))
+            .to_vec()
+    );
     assert!(Producer::build_source_theorem_equalities(&source, symbols, &scope).is_ok());
     let empty = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
     let foreign_module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("other"));

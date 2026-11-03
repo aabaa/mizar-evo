@@ -762,22 +762,14 @@ impl SourceTypeProducer {
         String,
     > {
         use crate::typed_ast::{TypedAst, TypedAstParts};
-        let (bindings, inference, typed, metadata) =
+        let (bindings, inference, mut typed, metadata) =
             SourceBindingContextProducer::build_source_theorem_equalities(source, symbols, scope)?;
         let invalid = || "theorems.equality.invalid_source_type_association".to_owned();
+        typed
+            .install_source_nodes(source)
+            .map_err(|error| format!("{error:?}"))?;
+        let rows = typed.source_nodes().ok_or_else(invalid)?;
         let context = typed.source_context().ok_or_else(invalid)?;
-        let typed_for = typed
-            .nodes()
-            .iter()
-            .map(|(id, node)| {
-                node.resolved_node
-                    .map(|resolved| (resolved, id))
-                    .ok_or_else(invalid)
-            })
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
-        if typed_for.len() != typed.nodes().len() {
-            return Err(invalid());
-        }
         let mut input = SourceTypeHandoffInput {
             source_id: source.source_id(),
             module_id: source.module().clone(),
@@ -787,44 +779,43 @@ impl SourceTypeProducer {
         };
         let mut expression_for = BTreeMap::new();
         for (_, declaration) in context.declarations().iter() {
-            let mut matching = source.arena().iter().filter(|(resolved, original)| {
-                original.origin().anchor() == &SourceAnchor::Range(declaration.written_type_range)
-                    && typed_for
-                        .get(resolved)
-                        .and_then(|id| typed.nodes().node(*id))
+            let mut matching = rows.iter().filter(|row| {
+                row.range == declaration.written_type_range
+                    && typed
+                        .nodes()
+                        .node(TypedNodeId::new(row.site.index()))
                         .is_some_and(|node| node.kind.as_str() == "TypeExpression")
             });
-            let (resolved, original) = matching.next().ok_or_else(invalid)?;
-            if matching.next().is_some() || original.children().len() != 1 {
+            let original = matching.next().ok_or_else(invalid)?;
+            if matching.next().is_some() {
                 return Err(invalid());
             }
-            let root = if let Some(id) = expression_for.get(&resolved) {
+            let mut heads = rows.iter().filter(|row| row.parent == Some(original.site));
+            let head = heads.next().ok_or_else(invalid)?;
+            if heads.next().is_some() || head.child_ordinal != 0 {
+                return Err(invalid());
+            }
+            let root = if let Some(id) = expression_for.get(&original.site) {
                 *id
             } else {
-                let head_resolved = original.children()[0];
-                let head_original = source.arena().node(head_resolved).ok_or_else(invalid)?;
-                let SourceAnchor::Range(head_range) = head_original.origin().anchor() else {
-                    return Err(invalid());
-                };
-                let site = *typed_for.get(&resolved).ok_or_else(invalid)?;
-                let head_site = *typed_for.get(&head_resolved).ok_or_else(invalid)?;
-                let node = typed.nodes().node(site).ok_or_else(invalid)?;
+                let site = TypedNodeId::new(original.site.index());
+                let head_site = TypedNodeId::new(head.site.index());
                 let id = SourceTypeExpressionId::new(input.expressions.len());
                 // The genuine lower producer admitted the complete original AST as bare set.
                 input.expressions.push(SourceTypeExpressionInput {
                     source_id: source.source_id(),
                     module_id: source.module().clone(),
                     site: TypedSiteRef::Node(site),
-                    source_range: declaration.written_type_range,
+                    source_range: original.range,
                     spelling: "set".to_owned(),
                     head_site: TypedSiteRef::Node(head_site),
-                    head_range: *head_range,
+                    head_range: head.range,
                     head_spelling: "set".to_owned(),
                     form: SourceTypeApplicationForm::Bare,
                     head: SourceTypeHead::BuiltinSet,
-                    recovery: node.recovery,
+                    recovery: original.recovery,
                 });
-                expression_for.insert(resolved, id);
+                expression_for.insert(original.site, id);
                 id
             };
             input.applications.push(SourceTypeApplicationInput {
