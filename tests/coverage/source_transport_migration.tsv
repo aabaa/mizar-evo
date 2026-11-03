@@ -73,6 +73,7 @@ structure-selector-lower-sites	structure	native-consumer	done	structure-selector
 structure-update-lower-sites	structure	native-consumer	done	structure-update lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; selector range controls reused
 structure-constructor-lower-sites	structure	native-consumer	done	structure-constructor lower sites: guarded proof/reserve coordinate lookup shared at three real consumers; canonical donors preserved
 ordinary-structure-generic-rows	structure	native-consumer	done	ordinary Structure reads installed generic row sites and ranges; exact profile, role selectors and final arena metadata retained
+ordinary-structure-profile-retirement	structure	ordinary-structure-generic-rows	done	ordinary Structure validates repeated roles and complete terminal coverage over authenticated generic rows; lexical selectors and final ABI retained
 structure-exit	structure	native-consumer	open	family exit: remaining literal_source_offset_baseline.tsv rows of source_structure_definition.rs and its runner retired
 native-type-generic-install	type-term-formula	native-consumer	done	native TYPE reads authenticated generic sites and parent/head rows; malformed frontend geometry including zero-width tokens is refused
 direct-b1-formula-sites	type-term-formula	native-consumer	done	direct B1 reads bound-use sites, ranges and spelling from generic rows; duplicate Root census aliases are refused

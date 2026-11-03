@@ -29,7 +29,7 @@ use mizar_resolve::{
     symbols::{SignatureProjectionExtractor, SymbolOverloadPolicy},
 };
 use mizar_session::SourceAnchor;
-use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind};
 
 use super::checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver};
 
@@ -80,31 +80,13 @@ pub(in crate::runner) enum SourceStructureDefinitionRouteMutation {
     WrongArena,
 }
 
-enum ExactSurfaceKind {
-    Token(SurfaceTokenKind, &'static str),
-    Structural(SurfaceNodeKind),
-}
-
-struct ExactSurfaceRow {
-    kind: ExactSurfaceKind,
-    children: &'static [usize],
-}
-
 macro_rules! token_row {
     ($kind:ident, $text:literal) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            children: &[],
-        }
-    };
-}
-macro_rules! structural_row {
-    ($kind:ident, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow { kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind), children: &[$($child),*] }
+        (SurfaceTokenKind::$kind, $text)
     };
 }
 
-const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
+const STRUCTURE_TERMINALS: &[(SurfaceTokenKind, &str)] = &[
     token_row!(ReservedWord, "definition"),
     token_row!(ReservedWord, "struct"),
     token_row!(Identifier, "Task263Base"),
@@ -155,38 +137,6 @@ const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
     token_row!(ReservedSymbol, ";"),
     token_row!(ReservedWord, "end"),
     token_row!(ReservedSymbol, ";"),
-    structural_row!(StructurePattern, [2]),
-    structural_row!(TypeHead, [7]),
-    structural_row!(TypeExpression, [51]),
-    structural_row!(StructureField, [4, 5, 6, 52, 8]),
-    structural_row!(TypeHead, [12]),
-    structural_row!(TypeExpression, [54]),
-    structural_row!(StructureProperty, [9, 10, 11, 55, 13]),
-    structural_row!(StructureDefinition, [1, 50, 3, 53, 56, 14, 15]),
-    structural_row!(StructurePattern, [17]),
-    structural_row!(TypeHead, [22]),
-    structural_row!(TypeExpression, [59]),
-    structural_row!(StructureField, [19, 20, 21, 60, 23]),
-    structural_row!(TypeHead, [27]),
-    structural_row!(TypeExpression, [62]),
-    structural_row!(StructureProperty, [24, 25, 26, 63, 28]),
-    structural_row!(StructureDefinition, [16, 58, 18, 61, 64, 29, 30]),
-    structural_row!(InheritanceTarget, [32]),
-    structural_row!(InheritanceTarget, [34]),
-    structural_row!(FieldRedefinition, [36, 37, 38, 39, 40]),
-    structural_row!(PropertyRedefinition, [41, 42, 43, 44, 45]),
-    structural_row!(InheritanceDefinition, [31, 66, 33, 67, 35, 68, 69, 46, 47]),
-    structural_row!(DefinitionBlockItem, [0, 57, 65, 70, 48, 49]),
-    structural_row!(ItemList, [71]),
-    structural_row!(CompilationUnit, [72]),
-    structural_row!(
-        Root,
-        [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
-            46, 47, 48, 49, 73
-        ]
-    ),
 ];
 
 pub(in crate::runner) fn source_structure_definition_transport_detail_keys(
@@ -272,11 +222,8 @@ fn source_structure_definition_output_impl(
         || !tokens
             .tokens()
             .iter()
-            .zip(&EXACT_SURFACE_PROFILE[..50])
-            .all(|(actual, expected)| {
-                let ExactSurfaceKind::Token(kind, text) = &expected.kind else {
-                    return false;
-                };
+            .zip(STRUCTURE_TERMINALS)
+            .all(|(actual, (kind, text))| {
                 let kind = match kind {
                     SurfaceTokenKind::ReservedWord => mizar_lexer::TokenKind::ReservedWord,
                     SurfaceTokenKind::ReservedSymbol => mizar_lexer::TokenKind::ReservedSymbol,
@@ -314,7 +261,22 @@ fn source_structure_definition_output_impl(
     if source_matches().is_none() {
         return Some(Err("Task263 source association is invalid".to_owned()));
     }
-    Some(build_output(ast, module, shells, symbols, mutation))
+    let terminal_range = |ordinal: usize, range: mizar_session::SourceRange| {
+        preprocessed
+            .preprocess_map
+            .source_ranges_for_lexical(tokens.tokens()[ordinal].span())
+            .is_some_and(|mapped| {
+                mapped.len() == 1 && mapped[0].start == range.start && mapped[0].end == range.end
+            })
+    };
+    Some(build_output(
+        ast,
+        module,
+        shells,
+        symbols,
+        mutation,
+        &terminal_range,
+    ))
 }
 
 fn build_output(
@@ -323,14 +285,16 @@ fn build_output(
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
     mutation: SourceStructureDefinitionRouteMutation,
+    terminal_range: &dyn Fn(usize, mizar_session::SourceRange) -> bool,
 ) -> Result<SourceStructureDefinitionRouteOutput, String> {
-    if !surface_profile_is_exact(ast, mutation) {
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let replay_shells =
+        mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+    if structure_roles_are_exact(ast, &syntax, &replay_shells, mutation, terminal_range).is_none() {
         return Err("Task263 Surface profile is not exact".to_owned());
     }
     validate_shells_and_projections(ast, &module, shells, mutation)?;
     let identities = resolver_identities(symbols)?;
-    let replay_shells =
-        mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
     let replay = SignatureProjectionExtractor::new(
         ast,
         &replay_shells,
@@ -341,7 +305,6 @@ fn build_output(
     {
         return Err("Task263 source association is invalid".to_owned());
     }
-    let syntax = source_syntax_receiver(ast, &module)?;
     let arena = task263_arena(&syntax, mutation)?;
     let mut lower_input = source_type_input(&syntax, module.clone())?;
     if mutation == SourceStructureDefinitionRouteMutation::WrongLowerMember {
@@ -407,87 +370,226 @@ fn build_output(
     })
 }
 
-fn surface_profile_is_exact(
+fn structure_roles_are_exact(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
+    shells: &DeclarationShellSet,
     mutation: SourceStructureDefinitionRouteMutation,
-) -> bool {
+    terminal_range: &dyn Fn(usize, mizar_session::SourceRange) -> bool,
+) -> Option<()> {
+    use SurfaceNodeKind as K;
     let root = if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRoot {
         None
     } else {
-        ast.root().map(SurfaceNodeId::index)
-    };
-    root == Some(74)
-        && ast.expression_root().is_none()
-        && ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
-        && ast
-            .nodes()
-            .iter()
-            .enumerate()
-            .zip(EXACT_SURFACE_PROFILE)
-            .all(|((index, node), expected)| {
-                let changed_kind = (mutation
-                    == SourceStructureDefinitionRouteMutation::WrongSurfaceRow(index))
-                .then(|| match &node.kind {
-                    SurfaceNodeKind::Token(actual) => {
-                        let mut token = actual.clone();
-                        token.kind = if token.kind == SurfaceTokenKind::Identifier {
-                            SurfaceTokenKind::ReservedWord
-                        } else {
-                            SurfaceTokenKind::Identifier
-                        };
-                        SurfaceNodeKind::Token(token)
-                    }
-                    SurfaceNodeKind::Root => SurfaceNodeKind::CompilationUnit,
-                    _ => SurfaceNodeKind::Root,
-                });
-                let observed_kind = changed_kind.as_ref().unwrap_or(&node.kind);
-                let kind_matches = match (observed_kind, &expected.kind) {
-                    (SurfaceNodeKind::Token(actual), ExactSurfaceKind::Token(kind, text)) => {
-                        actual.kind == *kind && actual.text.as_ref() == *text
-                    }
-                    (actual, ExactSurfaceKind::Structural(kind)) => actual == kind,
-                    _ => false,
+        syntax.nodes().root()
+    }?;
+    if ast.expression_root().is_some() {
+        return None;
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let obs = |id: TypedNodeId, expected: K, seen: &mut std::collections::BTreeSet<usize>| {
+        let row = syntax
+            .source_node_entries()?
+            .find(|row| row.site().index() == id.index())?;
+        let node = syntax.nodes().node(id)?;
+        let changed_kind = (mutation
+            == SourceStructureDefinitionRouteMutation::WrongSurfaceRow(id.index()))
+        .then(|| match row.kind() {
+            SurfaceNodeKind::Token(actual) => {
+                let mut token = actual.clone();
+                token.kind = if token.kind == SurfaceTokenKind::Identifier {
+                    SurfaceTokenKind::ReservedWord
+                } else {
+                    SurfaceTokenKind::Identifier
                 };
-                let mut range = node.range;
-                let mut recovered = node.recovered;
-                let mut children = node
-                    .children
-                    .iter()
-                    .map(|id| id.index())
-                    .collect::<Vec<_>>();
-                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRange(index) {
-                    range.end = range.end.saturating_add(1);
+                SurfaceNodeKind::Token(token)
+            }
+            SurfaceNodeKind::Root => SurfaceNodeKind::CompilationUnit,
+            _ => SurfaceNodeKind::Root,
+        });
+        let kind = changed_kind.as_ref().unwrap_or(row.kind());
+        let mut range = row.range();
+        let mut recovery = row.recovery();
+        let mut children = std::borrow::Cow::Borrowed(node.children.as_slice());
+        if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRange(id.index()) {
+            range.end = range.end.saturating_add(1);
+        }
+        if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRecovery(id.index()) {
+            recovery = NodeRecoveryState::Recovered;
+        }
+        if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceChildren(id.index()) {
+            if children.len() > 1 {
+                children.to_mut().rotate_left(1);
+            } else {
+                children.to_mut().push(id);
+            }
+        }
+        if kind != &expected
+            || range.source_id != syntax.source_id()
+            || range.start >= range.end
+            || (matches!(kind, K::Token(_))
+                && !terminal_range(
+                    ast.token_nodes()
+                        .iter()
+                        .position(|token| token.index() == id.index())?,
+                    range,
+                ))
+            || recovery != NodeRecoveryState::Normal
+            || !seen.insert(id.index())
+        {
+            return None;
+        }
+        if let (Some(first), Some(last)) = (children.first(), children.last()) {
+            let child_row = |id: &TypedNodeId| {
+                syntax
+                    .source_node_entries()?
+                    .find(|row| row.site().index() == id.index())
+            };
+            if range.start != child_row(first)?.range().start
+                || range.end != child_row(last)?.range().end
+            {
+                return None;
+            }
+            let mut previous_end = range.start;
+            for (ordinal, child) in children.iter().enumerate() {
+                let child = child_row(child)?;
+                let alias = *kind == SurfaceNodeKind::Root
+                    && matches!(child.kind(), SurfaceNodeKind::Token(_));
+                if child.range().source_id != range.source_id
+                    || child.range().start < range.start
+                    || child.range().end > range.end
+                    || (!alias
+                        && (child.parent() != Some(row.site()) || child.child_ordinal() != ordinal))
+                    || (*kind != SurfaceNodeKind::Root && previous_end > child.range().start)
+                {
+                    return None;
                 }
-                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceRecovery(index) {
-                    recovered = !recovered;
+                previous_end = child.range().end;
+            }
+        }
+        Some(children)
+    };
+    let mut next = 0;
+    let terms =
+        |ids: &[TypedNodeId], next: &mut usize, seen: &mut std::collections::BTreeSet<usize>| {
+            for id in ids {
+                let (kind, text) = STRUCTURE_TERMINALS.get(*next)?;
+                let children = obs(
+                    *id,
+                    K::Token(mizar_syntax::ast::SurfaceToken::new(*kind, *text)),
+                    seen,
+                )?;
+                if !children.is_empty() {
+                    return None;
                 }
-                if mutation == SourceStructureDefinitionRouteMutation::WrongSurfaceChildren(index) {
-                    if children.len() > 1 {
-                        children.rotate_left(1);
-                    } else {
-                        children.push(index);
-                    }
-                }
-                kind_matches
-                    && range.start < range.end
-                    && !recovered
-                    && children == expected.children
-                    && (children.is_empty() || {
-                        let first = ast.nodes()[children[0]].range;
-                        let last = ast.nodes()[*children.last().unwrap()].range;
-                        range.start == first.start
-                            && range.end == last.end
-                            && children.iter().all(|child| {
-                                let child = ast.nodes()[*child].range;
-                                range.start <= child.start && child.end <= range.end
-                            })
-                            && (index == 74
-                                || children.windows(2).all(|pair| {
-                                    ast.nodes()[pair[0]].range.end
-                                        <= ast.nodes()[pair[1]].range.start
-                                }))
-                    })
-            })
+                *next += 1;
+            }
+            Some(())
+        };
+    let root_children = obs(root, K::Root, &mut seen)?;
+    let (unit, aliases) = root_children.split_last()?;
+    if !aliases
+        .iter()
+        .map(|id| id.index())
+        .eq(ast.token_nodes().iter().map(|id| id.index()))
+    {
+        return None;
+    }
+    let unit = obs(*unit, K::CompilationUnit, &mut seen)?;
+    let [list] = unit.as_ref() else {
+        return None;
+    };
+    let list = obs(*list, K::ItemList, &mut seen)?;
+    let [block] = list.as_ref() else {
+        return None;
+    };
+    let is_shell = |id: TypedNodeId, kind| {
+        shells
+            .declarations()
+            .iter()
+            .any(|shell| shell.node_id().index() == id.index() && shell.kind() == kind)
+    };
+    if !is_shell(*block, DeclarationShellKind::DefinitionBlock) {
+        return None;
+    }
+    let block = obs(*block, K::DefinitionBlockItem, &mut seen)?;
+    let [open, base, derived, inheritance, end, semi] = block.as_ref() else {
+        return None;
+    };
+    terms(&[*open], &mut next, &mut seen)?;
+    for definition in [base, derived] {
+        if !is_shell(*definition, DeclarationShellKind::StructureDefinition) {
+            return None;
+        }
+        let children = obs(*definition, K::StructureDefinition, &mut seen)?;
+        let [keyword, pattern, where_token, field, property, end, semi] = children.as_ref() else {
+            return None;
+        };
+        terms(&[*keyword], &mut next, &mut seen)?;
+        let name = obs(*pattern, K::StructurePattern, &mut seen)?;
+        if name.len() != 1 {
+            return None;
+        }
+        terms(&name, &mut next, &mut seen)?;
+        terms(&[*where_token], &mut next, &mut seen)?;
+        for (member, kind) in [(field, K::StructureField), (property, K::StructureProperty)] {
+            let member = obs(*member, kind, &mut seen)?;
+            let [keyword, name, arrow, expression, semi] = member.as_ref() else {
+                return None;
+            };
+            terms(&[*keyword, *name, *arrow], &mut next, &mut seen)?;
+            let expression = obs(*expression, K::TypeExpression, &mut seen)?;
+            let [head] = expression.as_ref() else {
+                return None;
+            };
+            let head = obs(*head, K::TypeHead, &mut seen)?;
+            if head.len() != 1 {
+                return None;
+            }
+            terms(&head, &mut next, &mut seen)?;
+            terms(&[*semi], &mut next, &mut seen)?;
+        }
+        terms(&[*end, *semi], &mut next, &mut seen)?;
+    }
+    if !is_shell(*inheritance, DeclarationShellKind::InheritanceDefinition) {
+        return None;
+    }
+    let inheritance = obs(*inheritance, K::InheritanceDefinition, &mut seen)?;
+    let [
+        keyword,
+        child,
+        extends,
+        parent,
+        where_token,
+        field,
+        property,
+        close,
+        terminator,
+    ] = inheritance.as_ref()
+    else {
+        return None;
+    };
+    for (prefix, target) in [(keyword, child), (extends, parent)] {
+        terms(&[*prefix], &mut next, &mut seen)?;
+        let target = obs(*target, K::InheritanceTarget, &mut seen)?;
+        if target.len() != 1 {
+            return None;
+        }
+        terms(&target, &mut next, &mut seen)?;
+    }
+    terms(&[*where_token], &mut next, &mut seen)?;
+    for (mapping, kind) in [
+        (field, K::FieldRedefinition),
+        (property, K::PropertyRedefinition),
+    ] {
+        let mapping = obs(*mapping, kind, &mut seen)?;
+        if mapping.len() != 5 {
+            return None;
+        }
+        terms(&mapping, &mut next, &mut seen)?;
+    }
+    terms(&[*close, *terminator, *end, *semi], &mut next, &mut seen)?;
+    (next == STRUCTURE_TERMINALS.len() && seen.len() == syntax.nodes().len()).then_some(())
 }
 
 fn validate_shells_and_projections(

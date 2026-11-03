@@ -121,8 +121,7 @@ associationは次の通りである。
 | 70 | `InheritanceDefinition` | `194..314` | `[31,66,33,67,35,68,69,46,47]` |
 | 71/72/73/74 | block/list/unit/root | `0..319` | canonical EN rows |
 
-private runnerは全320 bytes、final LF、75 rowのkind/range/recovery/ordered children、
-root、sibling orderを認証する。checker productionにはsource text、parser type、raw
+checker productionにはsource text、parser type、raw
 token、Surface kind/node numberを渡さない。
 
 ## Frozen resolver provenance

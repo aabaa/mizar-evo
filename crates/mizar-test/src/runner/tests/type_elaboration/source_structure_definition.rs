@@ -97,6 +97,52 @@ fn task263_structure_definition_lower_payload_and_subtree_corruption_fail_closed
             "mutation {mutation:?} must fail closed"
         );
     }
+    // EN05 roles and exact hulls must refuse even with genuine selected terminals.
+    for corruption in 0..3 {
+        use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let mut kind = node.kind.clone();
+            let mut range = node.range;
+            let mut children = node.children.iter().map(|id| rebuilt[id.index()]).collect();
+            if corruption == 0 && index == 51 {
+                assert_eq!(kind, K::TypeHead);
+                kind = K::StructurePattern;
+            }
+            if corruption == 1 && index == 53 {
+                assert_eq!(ast.nodes()[node.children[3].index()].kind, K::TypeExpression);
+                children = vec![rebuilt[4], rebuilt[5], rebuilt[6], rebuilt[51], rebuilt[8]];
+            }
+            if corruption == 2 && index == 57 {
+                range.end += 1;
+                assert!(node.children.iter().all(|id| {
+                    let child = ast.nodes()[id.index()].range;
+                    range.start <= child.start && child.end <= range.end
+                }));
+                assert!(range.end <= ast.nodes()[65].range.start);
+                assert!(range.end <= ast.nodes()[71].range.end);
+                assert_ne!(range.end, ast.nodes()[node.children.last().unwrap().index()].range.end);
+            }
+            rebuilt.push(match kind {
+                K::Token(token) => builder.add_token(token.kind, token.text, range),
+                kind => builder.add_node(kind, range, children),
+            });
+        }
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        assert_eq!(changed.token_nodes().len(), ast.token_nodes().len());
+        assert!(changed.canonical_bytes().is_some());
+        // Generic containment/order alone accepts these; the role grammar must refuse.
+        assert!(changed.node_views().all(|node| !node.is_recovered()));
+        SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        assert_eq!(
+            source_structure_definition_output(
+                &changed, module.clone(), &shells, &symbols, SOURCE_STRUCTURE_DEFINITION_TEXT,
+            ).unwrap().unwrap_err(),
+            "Task263 Surface profile is not exact",
+            "actual AST corruption {corruption}",
+        );
+    }
     assert_eq!(SOURCE_STRUCTURE_DEFINITION_TEXT.matches("Task263Base").count(), 2);
     let unsupported_family = SOURCE_STRUCTURE_DEFINITION_TEXT.replace("Task263Base", "Task263Else");
     assert_eq!(unsupported_family.len(), SOURCE_STRUCTURE_DEFINITION_TEXT.len());
@@ -1181,6 +1227,18 @@ fn metamorphic_structure_layout_transports_actual_source_handoffs() {
             source_structure_definition_output(&ast, module.clone(), &shells, &symbols, &source)
                 .expect("supported Structure layout must be selected")
                 .expect("actual Structure layout must build");
+        if layout == "leading_line" {
+            for index in 0..ast.nodes().len() {
+                assert_eq!(
+                    source_structure_definition_output_with_mutation(
+                        &ast, module.clone(), &shells, &symbols, &source,
+                        SourceStructureDefinitionRouteMutation::WrongSurfaceRow(index),
+                    ).unwrap().unwrap_err(),
+                    "Task263 Surface profile is not exact",
+                    "shifted observed kind {index}",
+                );
+            }
+        }
         if layout == "compact" {
             assert_eq!(source.len(), 264);
             for (site, start, end) in [

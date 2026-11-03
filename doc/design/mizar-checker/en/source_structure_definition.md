@@ -177,9 +177,7 @@ Rows 50--74 are exactly:
 | 73 | `CompilationUnit` | `0..319` | `[72]` |
 | 74 | `Root` | `0..319` | tokens 0--49 followed by `[73]` |
 
-The private runner authenticates every byte, final LF, row kind, range,
-recovery state, ordered child list, root, and direct sibling order before it
-constructs syntax-free input. Checker production receives no parser type,
+Checker production receives no parser type,
 source text, raw token, Surface kind, or Surface node number.
 
 ## Frozen Resolver Provenance
