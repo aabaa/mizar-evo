@@ -32,7 +32,7 @@ use mizar_checker::{
         SourceTypeProducer,
     },
     typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
+        CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, SourceNode,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
         TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
     },
@@ -48,10 +48,11 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SymbolId},
     symbols::{SignatureProjectionExtractor, SymbolOverloadPolicy},
 };
-use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_session::{SourceAnchor, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceToken, SurfaceTokenKind};
+use std::collections::BTreeSet;
 
-use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver};
 
 #[cfg(test)]
 pub(in crate::runner) const SOURCE_ATTRIBUTE_DEFINITION_TEXT: &str = concat!(
@@ -103,35 +104,13 @@ pub(in crate::runner) enum SourceAttributeDefinitionRouteMutation {
     WrongAttributeDefiniensFormula,
 }
 
-enum ExactSurfaceKind {
-    Token(SurfaceTokenKind, &'static str),
-    Structural(SurfaceNodeKind),
-}
-
-struct ExactSurfaceRow {
-    kind: ExactSurfaceKind,
-    children: &'static [usize],
-}
-
 macro_rules! token_row {
     ($kind:ident, $text:literal) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Token(SurfaceTokenKind::$kind, $text),
-            children: &[],
-        }
+        (SurfaceTokenKind::$kind, $text)
     };
 }
 
-macro_rules! structural_row {
-    ($kind:ident, [$($child:literal),* $(,)?]) => {
-        ExactSurfaceRow {
-            kind: ExactSurfaceKind::Structural(SurfaceNodeKind::$kind),
-            children: &[$($child),*],
-        }
-    };
-}
-
-const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
+const EXACT_ATTRIBUTE_TERMINALS: &[(SurfaceTokenKind, &str)] = &[
     token_row!(ReservedWord, "definition"),
     token_row!(ReservedWord, "let"),
     token_row!(Identifier, "x"),
@@ -156,38 +135,18 @@ const EXACT_SURFACE_PROFILE: &[ExactSurfaceRow] = &[
     token_row!(ReservedSymbol, ";"),
     token_row!(ReservedWord, "end"),
     token_row!(ReservedSymbol, ";"),
-    structural_row!(TypeHead, [4]),
-    structural_row!(TypeExpression, [24]),
-    structural_row!(QualifiedVariableSegment, [2, 3, 25]),
-    structural_row!(DefinitionParameter, [1, 26, 5]),
-    structural_row!(TypeHead, [9]),
-    structural_row!(TypeExpression, [28]),
-    structural_row!(QualifiedVariableSegment, [7, 8, 29]),
-    structural_row!(DefinitionParameter, [6, 30, 10]),
-    structural_row!(AttributePattern, [16]),
-    structural_row!(TermReference, [18]),
-    structural_row!(TermExpression, [33]),
-    structural_row!(TermReference, [20]),
-    structural_row!(TermExpression, [35]),
-    structural_row!(BuiltinPredicateApplication, [34, 19, 36]),
-    structural_row!(FormulaExpression, [37]),
-    structural_row!(FormulaDefiniens, [38]),
-    structural_row!(AttributeDefinition, [11, 12, 13, 14, 15, 32, 17, 39, 21]),
-    structural_row!(DefinitionBlockItem, [0, 27, 31, 40, 22, 23]),
-    structural_row!(ItemList, [41]),
-    structural_row!(CompilationUnit, [42]),
-    structural_row!(
-        Root,
-        [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            43
-        ]
-    ),
 ];
 
 #[derive(Debug, Clone, Copy)]
 struct ExactAttributeDefinition {
     definition_block: SurfaceNodeId,
+}
+
+fn source_row(syntax: &TypedAst, index: usize) -> Result<&SourceNode, String> {
+    syntax
+        .source_node_entries()
+        .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+        .ok_or_else(|| mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement.to_string())
 }
 
 pub(in crate::runner) fn source_attribute_definition_transport_detail_keys(
@@ -249,7 +208,7 @@ fn source_attribute_definition_output_impl(
     source_text: &str,
     mutation: SourceAttributeDefinitionRouteMutation,
 ) -> Option<Result<SourceAttributeDefinitionRouteOutput, String>> {
-    let exact = exact_attribute_definition(ast)?;
+    let exact = exact_attribute_definition(ast, &module)?;
     Some(build_output(
         ast,
         module,
@@ -261,63 +220,184 @@ fn source_attribute_definition_output_impl(
     ))
 }
 
-fn exact_attribute_definition(ast: &SurfaceAst) -> Option<ExactAttributeDefinition> {
-    if ast.root().map(SurfaceNodeId::index) != Some(44)
-        || ast.expression_root().is_some()
-        || !surface_profile_is_exact(ast)
+fn exact_attribute_definition(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Option<(ExactAttributeDefinition, TypedAst)> {
+    use SurfaceNodeKind as K;
+    if ast.root().map(SurfaceNodeId::index) != Some(44) || ast.expression_root().is_some() {
+        return None;
+    }
+    ast.canonical_bytes()?;
+    let syntax = source_syntax_receiver(ast, module).ok()?;
+    let row_count = syntax.source_node_entries()?.len();
+    let mut seen = BTreeSet::new();
+    let observe = |id: TypedNodeId, expected: SurfaceNodeKind, seen: &mut BTreeSet<usize>| {
+        let row = source_row(&syntax, id.index()).ok()?;
+        let node = syntax.nodes().node(id)?;
+        if row.kind() != &expected
+            || row.range().source_id != syntax.source_id()
+            || row.range().start >= row.range().end
+            || row.recovery() != NodeRecoveryState::Normal
+            || !seen.insert(id.index())
+        {
+            return None;
+        }
+        let children = &node.children;
+        if children.is_empty() != matches!(&expected, K::Token(_)) {
+            return None;
+        }
+        if !children.is_empty() {
+            let first = source_row(&syntax, children.first()?.index()).ok()?;
+            let last = source_row(&syntax, children.last()?.index()).ok()?;
+            if row.range().start != first.range().start || row.range().end != last.range().end {
+                return None;
+            }
+        }
+        let mut previous_end = row.range().start;
+        for (ordinal, child_id) in children.iter().enumerate() {
+            let child = source_row(&syntax, child_id.index()).ok()?;
+            let root_alias = expected == K::Root && matches!(child.kind(), K::Token(_));
+            if child.range().source_id != row.range().source_id
+                || child.range().start < row.range().start
+                || child.range().end > row.range().end
+                || (!root_alias
+                    && (child.parent() != Some(row.site()) || child.child_ordinal() != ordinal))
+                || (expected != K::Root && previous_end > child.range().start)
+            {
+                return None;
+            }
+            previous_end = child.range().end;
+        }
+        Some(children)
+    };
+    let one = |id, kind, seen: &mut BTreeSet<usize>| {
+        let [child] = observe(id, kind, seen)?.as_slice() else {
+            return None;
+        };
+        Some(*child)
+    };
+    // The fixed lower schema uses the Frontend's token-first, structural postorder IDs.
+    let mut structural = EXACT_ATTRIBUTE_TERMINALS.len();
+    let finish = |ids: &[TypedNodeId], next: &mut usize| {
+        for id in ids {
+            if id.index() != *next {
+                return None;
+            }
+            *next += 1;
+        }
+        Some(())
+    };
+    let mut next = 0;
+    let terms = |ids: &[TypedNodeId], next: &mut usize, seen: &mut BTreeSet<usize>| {
+        for id in ids {
+            if id.index() != *next {
+                return None;
+            }
+            let (kind, text) = EXACT_ATTRIBUTE_TERMINALS.get(*next)?;
+            observe(*id, K::Token(SurfaceToken::new(*kind, *text)), seen)?;
+            *next += 1;
+        }
+        Some(())
+    };
+    let root_children = observe(syntax.nodes().root()?, K::Root, &mut seen)?;
+    let (unit, aliases) = root_children.split_last()?;
+    if !aliases
+        .iter()
+        .map(|id| id.index())
+        .eq(ast.token_nodes().iter().map(|id| id.index()))
     {
         return None;
     }
-    Some(ExactAttributeDefinition {
-        definition_block: ast.node_views().nth(41)?.id(),
-    })
-}
-
-fn surface_profile_is_exact(ast: &SurfaceAst) -> bool {
-    ast.canonical_bytes().is_some()
-        && ast.nodes().len() == EXACT_SURFACE_PROFILE.len()
-        && ast
-            .nodes()
-            .iter()
-            .zip(EXACT_SURFACE_PROFILE)
-            .all(|(actual, expected)| {
-                actual.range.start < actual.range.end
-                    && !actual.recovered
-                    && (matches!(actual.kind, SurfaceNodeKind::Token(_))
-                        || actual
-                            .children
-                            .first()
-                            .zip(actual.children.last())
-                            .is_some_and(|(first, last)| {
-                                ast.node(*first).is_some_and(|first| {
-                                    ast.node(*last).is_some_and(|last| {
-                                        actual.range.start == first.range.start
-                                            && actual.range.end == last.range.end
-                                    })
-                                })
-                            }))
-                    && (matches!(actual.kind, SurfaceNodeKind::Root)
-                        || actual.children.windows(2).all(|pair| {
-                            ast.node(pair[0])
-                                .zip(ast.node(pair[1]))
-                                .is_some_and(|(left, right)| left.range.end <= right.range.start)
-                        }))
-                    && actual
-                        .children
-                        .iter()
-                        .map(|child| child.index())
-                        .eq(expected.children.iter().copied())
-                    && match (&actual.kind, &expected.kind) {
-                        (
-                            SurfaceNodeKind::Token(actual),
-                            ExactSurfaceKind::Token(expected_kind, expected_text),
-                        ) => {
-                            actual.kind == *expected_kind && actual.text.as_ref() == *expected_text
-                        }
-                        (actual, ExactSurfaceKind::Structural(expected)) => actual == expected,
-                        _ => false,
-                    }
-            })
+    let list = one(*unit, K::CompilationUnit, &mut seen)?;
+    let block = one(list, K::ItemList, &mut seen)?;
+    let [open, p0, p1, attribute, end, block_semi] =
+        observe(block, K::DefinitionBlockItem, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(&[*open], &mut next, &mut seen)?;
+    for parameter in [*p0, *p1] {
+        let [let_kw, segment, semi] =
+            observe(parameter, K::DefinitionParameter, &mut seen)?.as_slice()
+        else {
+            return None;
+        };
+        terms(&[*let_kw], &mut next, &mut seen)?;
+        let [name, be, expression] =
+            observe(*segment, K::QualifiedVariableSegment, &mut seen)?.as_slice()
+        else {
+            return None;
+        };
+        terms(&[*name, *be], &mut next, &mut seen)?;
+        let head = one(*expression, K::TypeExpression, &mut seen)?;
+        let set = one(head, K::TypeHead, &mut seen)?;
+        terms(&[set, *semi], &mut next, &mut seen)?;
+        finish(&[head, *expression, *segment, parameter], &mut structural)?;
+    }
+    let [
+        kw,
+        label,
+        colon,
+        subject,
+        is_kw,
+        pattern,
+        means,
+        definiens,
+        semi,
+    ] = observe(*attribute, K::AttributeDefinition, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    terms(
+        &[*kw, *label, *colon, *subject, *is_kw],
+        &mut next,
+        &mut seen,
+    )?;
+    let name = one(*pattern, K::AttributePattern, &mut seen)?;
+    terms(&[name, *means], &mut next, &mut seen)?;
+    finish(&[*pattern], &mut structural)?;
+    let formula = one(*definiens, K::FormulaDefiniens, &mut seen)?;
+    let equality = one(formula, K::FormulaExpression, &mut seen)?;
+    let [left, equals, right] =
+        observe(equality, K::BuiltinPredicateApplication, &mut seen)?.as_slice()
+    else {
+        return None;
+    };
+    for (ordinal, expression) in [*left, *right].into_iter().enumerate() {
+        if ordinal == 1 {
+            terms(&[*equals], &mut next, &mut seen)?;
+        }
+        let reference = one(expression, K::TermExpression, &mut seen)?;
+        let token = one(reference, K::TermReference, &mut seen)?;
+        terms(&[token], &mut next, &mut seen)?;
+        finish(&[reference, expression], &mut structural)?;
+    }
+    finish(
+        &[
+            equality,
+            formula,
+            *definiens,
+            *attribute,
+            block,
+            list,
+            *unit,
+            syntax.nodes().root()?,
+        ],
+        &mut structural,
+    )?;
+    terms(&[*semi, *end, *block_semi], &mut next, &mut seen)?;
+    if next != EXACT_ATTRIBUTE_TERMINALS.len()
+        || seen.len() != row_count
+        || seen.len() != syntax.nodes().len()
+    {
+        return None;
+    }
+    let definition_block = ast
+        .node_views()
+        .find(|view| view.id().index() == block.index())?
+        .id();
+    Some((ExactAttributeDefinition { definition_block }, syntax))
 }
 
 fn exact_resolver_profile(
@@ -554,37 +634,31 @@ fn validate_origin(
     Ok(())
 }
 
-fn task261_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
+fn task261_arena(syntax: &TypedAst) -> Result<TypedArena, String> {
     let mut builder = TypedArenaBuilder::new();
-    for (index, row) in ast.nodes().iter().enumerate() {
-        let generic_kind = match row.kind {
+    for (typed_id, node) in syntax.nodes().iter() {
+        let index = typed_id.index();
+        let row = source_row(syntax, index)?;
+        let generic_kind = match row.kind() {
             SurfaceNodeKind::Token(_) => "source.surface.token",
             _ => "source.surface.structural",
         };
-        let (kind, source_range) = match index {
-            24 => ("source.type.head", ast.nodes()[24].range),
-            25 => ("source.type.expression", ast.nodes()[25].range),
-            27 => (
-                "source.definition.attribute.parameter",
-                ast.nodes()[2].range,
-            ),
-            28 => ("source.type.head", ast.nodes()[28].range),
-            29 => ("source.type.expression", ast.nodes()[29].range),
-            31 => (
-                "source.definition.attribute.parameter",
-                ast.nodes()[7].range,
-            ),
-            33 => ("source.term.variable-reference", ast.nodes()[33].range),
-            35 => ("source.term.variable-reference", ast.nodes()[35].range),
-            37 => ("source.formula.atomic.equality", ast.nodes()[37].range),
-            39 => (
-                "source.definition.attribute.definiens",
-                ast.nodes()[39].range,
-            ),
-            40 => ("source.definition.attribute", ast.nodes()[40].range),
-            41 => ("source.definition", ast.nodes()[41].range),
-            44 => ("source.module", ast.nodes()[44].range),
-            _ => (generic_kind, row.range),
+        let kind = match index {
+            24 | 28 => "source.type.head",
+            25 | 29 => "source.type.expression",
+            27 | 31 => "source.definition.attribute.parameter",
+            33 | 35 => "source.term.variable-reference",
+            37 => "source.formula.atomic.equality",
+            39 => "source.definition.attribute.definiens",
+            40 => "source.definition.attribute",
+            41 => "source.definition",
+            44 => "source.module",
+            _ => generic_kind,
+        };
+        let source_range = match index {
+            27 => source_row(syntax, 2)?.range(),
+            31 => source_row(syntax, 7)?.range(),
+            _ => row.range(),
         };
         let context = if index == 44 {
             LocalTypeContextId::new(0)
@@ -594,12 +668,7 @@ fn task261_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
         let id = builder
             .push(
                 TypedNode::new(kind, SourceAnchor::Range(source_range))
-                    .with_children(
-                        row.children
-                            .iter()
-                            .map(|child| TypedNodeId::new(child.index()))
-                            .collect(),
-                    )
+                    .with_children(node.children.clone())
                     .with_typing(TypingState::Unknown)
                     .with_recovery(NodeRecoveryState::Normal)
                     .with_links(TypedNodeLinks {
@@ -613,12 +682,12 @@ fn task261_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
         }
     }
     builder
-        .finish(Some(TypedNodeId::new(44)))
+        .finish(syntax.nodes().root())
         .map_err(|error| error.to_string())
 }
 
 fn task248_context(
-    ast: &SurfaceAst,
+    syntax: &TypedAst,
     module: ModuleId,
     shells: &DeclarationShellSet,
     exact: ExactAttributeDefinition,
@@ -634,13 +703,18 @@ fn task248_context(
     {
         return Err("Task248 source context: definition shell is not exact".to_owned());
     }
+    let module_row = source_row(syntax, 44)?;
+    let item_row = source_row(syntax, 41)?;
+    let parameters = [source_row(syntax, 27)?, source_row(syntax, 31)?];
+    let declarations = [source_row(syntax, 2)?, source_row(syntax, 7)?];
+    let types = [source_row(syntax, 25)?, source_row(syntax, 29)?];
     let shell = block.id();
     let scope = LocalTermScope::new(vec![0]);
     let module_site = if mutation == SourceAttributeDefinitionRouteMutation::WrongContextModuleSite
     {
         TypedSiteRef::Node(TypedNodeId::new(41))
     } else {
-        TypedSiteRef::Node(TypedNodeId::new(44))
+        TypedSiteRef::Node(TypedNodeId::new(module_row.site().index()))
     };
     let item_site = match mutation {
         SourceAttributeDefinitionRouteMutation::WrongContextItemSite => {
@@ -649,13 +723,13 @@ fn task248_context(
         SourceAttributeDefinitionRouteMutation::StaleContextItemSite => {
             TypedSiteRef::Node(TypedNodeId::new(42))
         }
-        _ => TypedSiteRef::Node(TypedNodeId::new(41)),
+        _ => TypedSiteRef::Node(TypedNodeId::new(item_row.site().index())),
     };
     let binding_site = |index: usize| {
         if mutation == SourceAttributeDefinitionRouteMutation::WrongContextBindingSite(index) {
             TypedSiteRef::Node(TypedNodeId::new(if index == 0 { 31 } else { 27 }))
         } else {
-            TypedSiteRef::Node(TypedNodeId::new(if index == 0 { 27 } else { 31 }))
+            TypedSiteRef::Node(TypedNodeId::new(parameters[index].site().index()))
         }
     };
     let context_owner = |index: usize| {
@@ -666,7 +740,7 @@ fn task248_context(
         }
     };
     let input = SourceBindingContextInput {
-        source_id: ast.source_id,
+        source_id: syntax.source_id(),
         module_id: module.clone(),
         module_site,
         items: vec![SourceItemInput {
@@ -674,7 +748,7 @@ fn task248_context(
             shell_ordinal: 0,
             role: SourceItemRole::DefinitionBlock,
             module_id: module,
-            source_range: ast.nodes()[41].range,
+            source_range: item_row.range(),
             parent: None,
             visibility: SourceItemVisibility::Unspecified,
             site: item_site,
@@ -687,11 +761,11 @@ fn task248_context(
                 context_owner: context_owner(0),
                 source_ordinal: 0,
                 spelling: "x".to_owned(),
-                declaration_range: ast.nodes()[2].range,
-                written_type_range: ast.nodes()[25].range,
+                declaration_range: declarations[0].range(),
+                written_type_range: types[0].range(),
                 site: binding_site(0),
                 role: SourceBindingSiteRole::DefinitionParameter {
-                    local: LocalTermBinding::new("x", scope.clone(), ast.nodes()[2].range, 0),
+                    local: LocalTermBinding::new("x", scope.clone(), declarations[0].range(), 0),
                 },
                 recovery: BindingRecoveryState::Normal,
             },
@@ -700,11 +774,11 @@ fn task248_context(
                 context_owner: context_owner(1),
                 source_ordinal: 1,
                 spelling: "y".to_owned(),
-                declaration_range: ast.nodes()[7].range,
-                written_type_range: ast.nodes()[29].range,
+                declaration_range: declarations[1].range(),
+                written_type_range: types[1].range(),
                 site: binding_site(1),
                 role: SourceBindingSiteRole::DefinitionParameter {
-                    local: LocalTermBinding::new("y", scope, ast.nodes()[7].range, 1),
+                    local: LocalTermBinding::new("y", scope, declarations[1].range(), 1),
                 },
                 recovery: BindingRecoveryState::Normal,
             },
@@ -722,20 +796,18 @@ fn task248_context(
 }
 
 fn bare_set_type(
-    source_id: SourceId,
+    expression: &SourceNode,
+    head: &SourceNode,
     module_id: ModuleId,
-    site: usize,
-    head_site: usize,
-    written_range: SourceRange,
 ) -> SourceTypeExpressionInput {
     SourceTypeExpressionInput {
-        source_id,
+        source_id: expression.range().source_id,
         module_id,
-        site: TypedSiteRef::Node(TypedNodeId::new(site)),
-        source_range: written_range,
+        site: TypedSiteRef::Node(TypedNodeId::new(expression.site().index())),
+        source_range: expression.range(),
         spelling: "set".to_owned(),
-        head_site: TypedSiteRef::Node(TypedNodeId::new(head_site)),
-        head_range: written_range,
+        head_site: TypedSiteRef::Node(TypedNodeId::new(head.site().index())),
+        head_range: head.range(),
         head_spelling: "set".to_owned(),
         form: SourceTypeApplicationForm::Bare,
         head: SourceTypeHead::BuiltinSet,
@@ -743,9 +815,9 @@ fn bare_set_type(
     }
 }
 
-fn task249_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeHandoffInput {
-    let source_id = ast.source_id;
-    SourceTypeHandoffInput {
+fn task249_input(syntax: &TypedAst, module_id: ModuleId) -> Result<SourceTypeHandoffInput, String> {
+    let source_id = syntax.source_id();
+    Ok(SourceTypeHandoffInput {
         source_id,
         module_id: module_id.clone(),
         applications: vec![
@@ -761,29 +833,36 @@ fn task249_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceTypeHandoffInpu
             },
         ],
         expressions: vec![
-            bare_set_type(source_id, module_id.clone(), 25, 24, ast.nodes()[25].range),
-            bare_set_type(source_id, module_id, 29, 28, ast.nodes()[29].range),
+            bare_set_type(
+                source_row(syntax, 25)?,
+                source_row(syntax, 24)?,
+                module_id.clone(),
+            ),
+            bare_set_type(source_row(syntax, 29)?, source_row(syntax, 28)?, module_id),
         ],
         arguments: Vec::new(),
-    }
+    })
 }
 
-fn task252_input(ast: &SurfaceAst, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
-    let source_id = ast.source_id;
+fn task252_input(
+    syntax: &TypedAst,
+    module_id: ModuleId,
+) -> Result<SourcePrimaryTermHandoffInput, String> {
+    let source_id = syntax.source_id();
     let specs = [
-        (33, ast.nodes()[33].range, "x", BindingId::new(0)),
-        (35, ast.nodes()[35].range, "y", BindingId::new(1)),
+        (source_row(syntax, 33)?, "x", BindingId::new(0)),
+        (source_row(syntax, 35)?, "y", BindingId::new(1)),
     ];
-    SourcePrimaryTermHandoffInput {
+    Ok(SourcePrimaryTermHandoffInput {
         source_id,
         module_id,
         terms: specs
             .iter()
             .enumerate()
             .map(
-                |(source_ordinal, (site, range, spelling, _))| SourcePrimaryTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(*site)),
-                    source_range: *range,
+                |(source_ordinal, (row, spelling, _))| SourcePrimaryTermInput {
+                    site: TypedSiteRef::Node(TypedNodeId::new(row.site().index())),
+                    source_range: row.range(),
                     source_ordinal,
                     context: BindingContextId::new(1),
                     recovery: SourcePrimaryTermRecovery::Normal,
@@ -797,26 +876,28 @@ fn task252_input(ast: &SurfaceAst, module_id: ModuleId) -> SourcePrimaryTermHand
         references: specs
             .iter()
             .enumerate()
-            .map(
-                |(index, (_, _, _, binding))| SourcePrimaryTermReferenceInput {
-                    term: SourcePrimaryTermId::new(index),
-                    binding: *binding,
-                    role: SourcePrimaryTermReferenceRole::Variable,
-                },
-            )
+            .map(|(index, (_, _, binding))| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: *binding,
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
             .collect(),
         numeric_type_requests: Vec::new(),
-    }
+    })
 }
 
-fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHandoffInput {
-    let source_id = ast.source_id;
-    SourceAtomicFormulaHandoffInput {
+fn task256_input(
+    syntax: &TypedAst,
+    module_id: ModuleId,
+) -> Result<SourceAtomicFormulaHandoffInput, String> {
+    let source_id = syntax.source_id();
+    let formula = source_row(syntax, 37)?;
+    Ok(SourceAtomicFormulaHandoffInput {
         source_id,
         module_id,
         formulas: vec![SourceAtomicFormulaInput {
-            site: TypedSiteRef::Node(TypedNodeId::new(37)),
-            source_range: ast.nodes()[39].range,
+            site: TypedSiteRef::Node(TypedNodeId::new(formula.site().index())),
+            source_range: formula.range(),
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceAtomicFormulaRecovery::Normal,
@@ -863,24 +944,29 @@ fn task256_input(ast: &SurfaceAst, module_id: ModuleId) -> SourceAtomicFormulaHa
                 attribute: None,
             },
         ],
-    }
+    })
 }
 
 fn task261_input(
-    ast: &SurfaceAst,
+    syntax: &TypedAst,
     module_id: ModuleId,
     resolver: (SymbolId, DefinitionId, SourceContributionId),
-) -> SourceAttributeDefinitionHandoffInput {
-    let source_id = ast.source_id;
-    SourceAttributeDefinitionHandoffInput {
+) -> Result<SourceAttributeDefinitionHandoffInput, String> {
+    let source_id = syntax.source_id();
+    let definition = source_row(syntax, 40)?;
+    let parameters = [source_row(syntax, 27)?, source_row(syntax, 31)?];
+    let declarations = [source_row(syntax, 2)?, source_row(syntax, 7)?];
+    let subject = source_row(syntax, 14)?;
+    let definiens = source_row(syntax, 39)?;
+    Ok(SourceAttributeDefinitionHandoffInput {
         source_id,
         module_id,
         definitions: vec![SourceAttributeDefinitionInput {
             symbol: resolver.0,
             definition: resolver.1,
             contribution: resolver.2,
-            site: TypedSiteRef::Node(TypedNodeId::new(40)),
-            source_range: ast.nodes()[40].range,
+            site: TypedSiteRef::Node(TypedNodeId::new(definition.site().index())),
+            source_range: definition.range(),
             source_ordinal: 0,
             context: BindingContextId::new(1),
             recovery: SourceAttributeDefinitionRecovery::Normal,
@@ -895,9 +981,9 @@ fn task261_input(
                 ordinal: 0,
                 binding: BindingId::new(0),
                 written_type: SourceTypeApplicationId::new(0),
-                site: TypedSiteRef::Node(TypedNodeId::new(27)),
-                source_range: ast.nodes()[27].range,
-                declaration_range: ast.nodes()[2].range,
+                site: TypedSiteRef::Node(TypedNodeId::new(parameters[0].site().index())),
+                source_range: parameters[0].range(),
+                declaration_range: declarations[0].range(),
                 context: BindingContextId::new(1),
                 recovery: SourceAttributeDefinitionRecovery::Normal,
                 spelling: "let x be set;".to_owned(),
@@ -907,9 +993,9 @@ fn task261_input(
                 ordinal: 1,
                 binding: BindingId::new(1),
                 written_type: SourceTypeApplicationId::new(1),
-                site: TypedSiteRef::Node(TypedNodeId::new(31)),
-                source_range: ast.nodes()[31].range,
-                declaration_range: ast.nodes()[7].range,
+                site: TypedSiteRef::Node(TypedNodeId::new(parameters[1].site().index())),
+                source_range: parameters[1].range(),
+                declaration_range: declarations[1].range(),
                 context: BindingContextId::new(1),
                 recovery: SourceAttributeDefinitionRecovery::Normal,
                 spelling: "let y be set;".to_owned(),
@@ -918,8 +1004,8 @@ fn task261_input(
         subjects: vec![SourceAttributeSubjectInput {
             owner: SourceAttributeDefinitionId::new(0),
             binding: BindingId::new(0),
-            site: TypedSiteRef::Node(TypedNodeId::new(40)),
-            source_range: ast.nodes()[14].range,
+            site: TypedSiteRef::Node(TypedNodeId::new(definition.site().index())),
+            source_range: subject.range(),
             context: BindingContextId::new(1),
             recovery: SourceAttributeDefinitionRecovery::Normal,
             spelling: "x".to_owned(),
@@ -928,13 +1014,13 @@ fn task261_input(
             owner: SourceAttributeDefinitionId::new(0),
             ordinal: 0,
             formula: SourceAtomicFormulaId::new(0),
-            site: TypedSiteRef::Node(TypedNodeId::new(39)),
-            source_range: ast.nodes()[39].range,
+            site: TypedSiteRef::Node(TypedNodeId::new(definiens.site().index())),
+            source_range: definiens.range(),
             context: BindingContextId::new(1),
             recovery: SourceAttributeDefinitionRecovery::Normal,
             spelling: "x = y".to_owned(),
         }],
-    }
+    })
 }
 
 fn build_output(
@@ -943,9 +1029,10 @@ fn build_output(
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
     source_text: &str,
-    exact: ExactAttributeDefinition,
+    exact: (ExactAttributeDefinition, TypedAst),
     mutation: SourceAttributeDefinitionRouteMutation,
 ) -> Result<SourceAttributeDefinitionRouteOutput, String> {
+    let (exact, syntax) = exact;
     let corrupted_symbols = matches!(
         mutation,
         SourceAttributeDefinitionRouteMutation::WrongResolverSymbolEntry
@@ -1011,10 +1098,10 @@ fn build_output(
     if source_matches().is_none() {
         return Err("Task261 source association is invalid".to_owned());
     }
-    let arena = task261_arena(ast)?;
-    let source_context = task248_context(ast, module.clone(), shells, exact, mutation)?;
+    let arena = task261_arena(&syntax)?;
+    let source_context = task248_context(&syntax, module.clone(), shells, exact, mutation)?;
 
-    let mut type_input = task249_input(ast, module.clone());
+    let mut type_input = task249_input(&syntax, module.clone())?;
     if mutation == SourceAttributeDefinitionRouteMutation::RemoveTypeExpression {
         type_input.expressions.pop();
     }
@@ -1050,7 +1137,7 @@ fn build_output(
     })
     .map_err(|error| format!("Task249 typed installation: {error}"))?;
 
-    let mut term_input = task252_input(ast, module.clone());
+    let mut term_input = task252_input(&syntax, module.clone())?;
     if let SourceAttributeDefinitionRouteMutation::WrongTermBinding(index) = mutation {
         term_input.references[index].binding = BindingId::new(1 - index);
     }
@@ -1071,7 +1158,7 @@ fn build_output(
         .with_source_term(source_term)
         .map_err(|error| format!("Task252 typed installation: {error}"))?;
 
-    let mut atomic_input = task256_input(ast, module.clone());
+    let mut atomic_input = task256_input(&syntax, module.clone())?;
     if mutation == SourceAttributeDefinitionRouteMutation::RemoveAtomicFormula {
         atomic_input.formulas.clear();
     }
@@ -1109,7 +1196,7 @@ fn build_output(
         .map_err(|error| format!("Task256 typed installation: {error}"))?;
 
     let obligations_before = typed_ast.initial_obligations().clone();
-    let mut attribute_input = task261_input(ast, module, resolver);
+    let mut attribute_input = task261_input(&syntax, module, resolver)?;
     if mutation == SourceAttributeDefinitionRouteMutation::RemoveAttributeParameter {
         attribute_input.parameters.pop();
     }
