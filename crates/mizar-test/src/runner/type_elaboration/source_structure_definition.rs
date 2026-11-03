@@ -486,6 +486,14 @@ fn structure_roles_are_exact(
             }
             Some(())
         };
+    let mut next_role = STRUCTURE_TERMINALS.len();
+    let mut finish = |id: TypedNodeId| {
+        if id.index() != next_role {
+            return None;
+        }
+        next_role += 1;
+        Some(())
+    };
     let root_children = obs(root, K::Root, &mut seen)?;
     let (unit, aliases) = root_children.split_last()?;
     if !aliases
@@ -495,12 +503,12 @@ fn structure_roles_are_exact(
     {
         return None;
     }
-    let unit = obs(*unit, K::CompilationUnit, &mut seen)?;
-    let [list] = unit.as_ref() else {
+    let unit_children = obs(*unit, K::CompilationUnit, &mut seen)?;
+    let [list] = unit_children.as_ref() else {
         return None;
     };
-    let list = obs(*list, K::ItemList, &mut seen)?;
-    let [block] = list.as_ref() else {
+    let list_children = obs(*list, K::ItemList, &mut seen)?;
+    let [block] = list_children.as_ref() else {
         return None;
     };
     let is_shell = |id: TypedNodeId, kind| {
@@ -512,8 +520,8 @@ fn structure_roles_are_exact(
     if !is_shell(*block, DeclarationShellKind::DefinitionBlock) {
         return None;
     }
-    let block = obs(*block, K::DefinitionBlockItem, &mut seen)?;
-    let [open, base, derived, inheritance, end, semi] = block.as_ref() else {
+    let block_children = obs(*block, K::DefinitionBlockItem, &mut seen)?;
+    let [open, base, derived, inheritance, end, semi] = block_children.as_ref() else {
         return None;
     };
     terms(&[*open], &mut next, &mut seen)?;
@@ -531,30 +539,35 @@ fn structure_roles_are_exact(
             return None;
         }
         terms(&name, &mut next, &mut seen)?;
+        finish(*pattern)?;
         terms(&[*where_token], &mut next, &mut seen)?;
         for (member, kind) in [(field, K::StructureField), (property, K::StructureProperty)] {
-            let member = obs(*member, kind, &mut seen)?;
-            let [keyword, name, arrow, expression, semi] = member.as_ref() else {
+            let member_children = obs(*member, kind, &mut seen)?;
+            let [keyword, name, arrow, expression, semi] = member_children.as_ref() else {
                 return None;
             };
             terms(&[*keyword, *name, *arrow], &mut next, &mut seen)?;
-            let expression = obs(*expression, K::TypeExpression, &mut seen)?;
-            let [head] = expression.as_ref() else {
+            let expression_children = obs(*expression, K::TypeExpression, &mut seen)?;
+            let [head] = expression_children.as_ref() else {
                 return None;
             };
-            let head = obs(*head, K::TypeHead, &mut seen)?;
-            if head.len() != 1 {
+            let head_children = obs(*head, K::TypeHead, &mut seen)?;
+            if head_children.len() != 1 {
                 return None;
             }
-            terms(&head, &mut next, &mut seen)?;
+            terms(&head_children, &mut next, &mut seen)?;
+            finish(*head)?;
+            finish(*expression)?;
             terms(&[*semi], &mut next, &mut seen)?;
+            finish(*member)?;
         }
         terms(&[*end, *semi], &mut next, &mut seen)?;
+        finish(*definition)?;
     }
     if !is_shell(*inheritance, DeclarationShellKind::InheritanceDefinition) {
         return None;
     }
-    let inheritance = obs(*inheritance, K::InheritanceDefinition, &mut seen)?;
+    let inheritance_children = obs(*inheritance, K::InheritanceDefinition, &mut seen)?;
     let [
         keyword,
         child,
@@ -565,30 +578,38 @@ fn structure_roles_are_exact(
         property,
         close,
         terminator,
-    ] = inheritance.as_ref()
+    ] = inheritance_children.as_ref()
     else {
         return None;
     };
     for (prefix, target) in [(keyword, child), (extends, parent)] {
         terms(&[*prefix], &mut next, &mut seen)?;
-        let target = obs(*target, K::InheritanceTarget, &mut seen)?;
-        if target.len() != 1 {
+        let target_children = obs(*target, K::InheritanceTarget, &mut seen)?;
+        if target_children.len() != 1 {
             return None;
         }
-        terms(&target, &mut next, &mut seen)?;
+        terms(&target_children, &mut next, &mut seen)?;
+        finish(*target)?;
     }
     terms(&[*where_token], &mut next, &mut seen)?;
     for (mapping, kind) in [
         (field, K::FieldRedefinition),
         (property, K::PropertyRedefinition),
     ] {
-        let mapping = obs(*mapping, kind, &mut seen)?;
-        if mapping.len() != 5 {
+        let mapping_children = obs(*mapping, kind, &mut seen)?;
+        if mapping_children.len() != 5 {
             return None;
         }
-        terms(&mapping, &mut next, &mut seen)?;
+        terms(&mapping_children, &mut next, &mut seen)?;
+        finish(*mapping)?;
     }
-    terms(&[*close, *terminator, *end, *semi], &mut next, &mut seen)?;
+    terms(&[*close, *terminator], &mut next, &mut seen)?;
+    finish(*inheritance)?;
+    terms(&[*end, *semi], &mut next, &mut seen)?;
+    finish(*block)?;
+    finish(*list)?;
+    finish(*unit)?;
+    finish(root)?;
     (next == STRUCTURE_TERMINALS.len() && seen.len() == syntax.nodes().len()).then_some(())
 }
 

@@ -74,6 +74,7 @@ structure-update-lower-sites	structure	native-consumer	done	structure-update low
 structure-constructor-lower-sites	structure	native-consumer	done	structure-constructor lower sites: guarded proof/reserve coordinate lookup shared at three real consumers; canonical donors preserved
 ordinary-structure-generic-rows	structure	native-consumer	done	ordinary Structure reads installed generic row sites and ranges; exact profile, role selectors and final arena metadata retained
 ordinary-structure-profile-retirement	structure	ordinary-structure-generic-rows	done	ordinary Structure validates repeated roles and complete terminal coverage over authenticated generic rows; lexical selectors and final ABI retained
+ordinary-structure-storage-identity	structure	ordinary-structure-profile-retirement	done	ordinary Structure preserves canonical storage order and selected Surface refusals through actual role completion; lexical authentication and public guards retained
 structure-exit	structure	native-consumer	done	ordinary Structure uses generic transport and repeated role rules; lexical selectors and public schema guards remain class b
 native-type-generic-install	type-term-formula	native-consumer	done	native TYPE reads authenticated generic sites and parent/head rows; malformed frontend geometry including zero-width tokens is refused
 direct-b1-formula-sites	type-term-formula	native-consumer	done	direct B1 reads bound-use sites, ranges and spelling from generic rows; duplicate Root census aliases are refused

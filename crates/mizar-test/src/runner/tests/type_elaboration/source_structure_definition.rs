@@ -98,14 +98,23 @@ fn task263_structure_definition_lower_payload_and_subtree_corruption_fail_closed
         );
     }
     // EN05 roles and exact hulls must refuse even with genuine selected terminals.
-    for corruption in 0..3 {
+    for corruption in 0..5 {
         use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
         let mut builder = SurfaceAstBuilder::new(ast.source_id);
         let mut rebuilt = Vec::new();
-        for (index, node) in ast.nodes().iter().enumerate() {
+        for index in 0..ast.nodes().len() {
+            let node = &ast.nodes()[match (corruption, index) {
+                (3, 50) => 51, (3, 51) => 50,
+                (4, 49) => 50, (4, 50) => 49,
+                _ => index,
+            }];
             let mut kind = node.kind.clone();
             let mut range = node.range;
-            let mut children = node.children.iter().map(|id| rebuilt[id.index()]).collect();
+            let mut children = node.children.iter().map(|id| rebuilt[match (corruption, id.index()) {
+                (3, 50) => 51, (3, 51) => 50,
+                (4, 49) => 50, (4, 50) => 49,
+                _ => id.index(),
+            }]).collect();
             if corruption == 0 && index == 51 {
                 assert_eq!(kind, K::TypeHead);
                 kind = K::StructurePattern;
@@ -135,6 +144,71 @@ fn task263_structure_definition_lower_payload_and_subtree_corruption_fail_closed
         // Generic containment/order alone accepts these; the role grammar must refuse.
         assert!(changed.node_views().all(|node| !node.is_recovered()));
         SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        if corruption >= 3 {
+            assert_eq!(changed.source_id, ast.source_id);
+            assert_eq!(changed.nodes().len(), 75);
+            assert_eq!(changed.token_nodes().len(), 50);
+            assert_eq!(changed.root(), ast.root());
+            assert!(changed.expression_root().is_none());
+            for (actual, genuine) in changed.token_nodes().iter().zip(ast.token_nodes()) {
+                let actual = &changed.nodes()[actual.index()];
+                let genuine = &ast.nodes()[genuine.index()];
+                assert_eq!(actual.kind, genuine.kind);
+                assert_eq!(actual.range, genuine.range);
+                assert!(actual.children.is_empty());
+            }
+            let root = changed.root().unwrap();
+            let root_children = &changed.nodes()[root.index()].children;
+            assert_eq!(&root_children[..50], changed.token_nodes());
+            assert_eq!(root_children[50].index(), 73);
+            let mut owned = std::collections::BTreeSet::new();
+            for (index, node) in changed.nodes().iter().enumerate() {
+                assert_eq!(node.range.source_id, ast.source_id);
+                assert!(node.range.start < node.range.end);
+                assert!(node.children.iter().all(|child| child.index() < index));
+                if let (Some(first), Some(last)) = (node.children.first(), node.children.last()) {
+                    assert_eq!(node.range.start, changed.nodes()[first.index()].range.start);
+                    assert_eq!(node.range.end, changed.nodes()[last.index()].range.end);
+                }
+                let mut previous_end = node.range.start;
+                for child in &node.children {
+                    let child_node = &changed.nodes()[child.index()];
+                    assert!(node.range.start <= child_node.range.start);
+                    assert!(child_node.range.end <= node.range.end);
+                    if index != root.index() || !matches!(child_node.kind, K::Token(_)) {
+                        assert!(owned.insert(child.index()));
+                        assert!(index == root.index() || previous_end <= child_node.range.start);
+                    }
+                    previous_end = child_node.range.end;
+                }
+            }
+            assert_eq!(owned.len(), 74);
+            let pattern = if corruption == 3 { 51 } else { 49 };
+            assert_eq!(changed.nodes()[pattern].kind, K::StructurePattern);
+            assert_eq!(changed.nodes()[pattern].range, ast.nodes()[50].range);
+            assert!(changed.nodes()[pattern].children.iter().map(|id| id.index()).eq([2]));
+            assert_eq!(changed.nodes()[57].children[1].index(), pattern);
+            if corruption == 3 {
+                assert_eq!(changed.nodes()[50].kind, K::TypeHead);
+                assert_eq!(changed.nodes()[50].range, ast.nodes()[51].range);
+                assert!(changed.nodes()[50].children.iter().map(|id| id.index()).eq([7]));
+                assert!(changed.nodes()[52].children.iter().map(|id| id.index()).eq([50]));
+            } else {
+                assert_eq!(changed.nodes()[50].kind, ast.nodes()[49].kind);
+                assert_eq!(changed.nodes()[50].range, ast.nodes()[49].range);
+                assert_eq!(changed.nodes()[71].children.last().unwrap().index(), 50);
+            }
+            let replay_shells = mizar_resolve::declarations::DeclarationShellCollector::new(
+                &changed, &module,
+            ).collect();
+            assert_eq!(replay_shells, shells);
+            let replay = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                &changed, &replay_shells,
+                mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            ).collect(&module);
+            assert!(replay.diagnostics().is_empty());
+            assert_eq!(replay.into_env(), symbols);
+        }
         assert_eq!(
             source_structure_definition_output(
                 &changed, module.clone(), &shells, &symbols, SOURCE_STRUCTURE_DEFINITION_TEXT,
