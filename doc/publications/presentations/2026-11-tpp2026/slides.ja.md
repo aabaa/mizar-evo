@@ -732,32 +732,32 @@ Speaker note:
 
 ### Frame 7.1 - 実装状況と規模
 
-**Rust 製品コード: 実装済み271.1 kLoC、完成時見積360–540 kLoC（暫定）。**
+**Rust 製品コード: 実装済み292.5 kLoC（2026年11月4日）。**
 
 ### 表13　実装状況とコード規模（kLoC）
 
-| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |
-|---|---:|---:|---|
-| lexer / parser / frontend | 34.4 | 36–43 | syntax を含む。実ソース読込・字句／構文解析を接続 |
-| resolver / checker | 122.9 | 148–193 | source 由来の限定意味論。一般化・サービス接続は残る |
-| Core / VC | 49.7 | 65–95 | IR・proof を含む。限定 source から検証義務へ |
-| ATP | 9.6 | 16–28 | 問題符号化・候補生成。実 backend との統合は残る |
-| kernel | 12.8 | 15–20 | 式・置換・来歴検査。SAT 符号化・接続1.9を含む |
-| build / driver / artifact | 41.3 | 56–85 | cache・共通基盤を含む。全工程の発行は未接続 |
-| LSP | 0.5 | 6–19 | lifecycle・文書同期の基盤。意味情報との接続は残る |
-| MVM / extraction / doc | 0 | 17–57 | runtime・抽出・文書生成は未実装 |
+| 領域 | 実装済み | 限定実装と残る範囲 |
+|---|---:|---|
+| lexer / parser / frontend | 34.8 | syntax を含む。実ソース読込・字句／構文解析を接続 |
+| resolver / checker | 121.4 | 汎用 source 転送と限定意味論。一般の型・import は残る |
+| Core / VC | 57.7 | 限定的な定理・Algorithm の lowering と VC。対象拡大は残る |
+| ATP | 11.0 | 問題符号化・候補生成。実 ATP 探索・抽出との統合は残る |
+| kernel | 13.1 | 式・置換・来歴検査。SAT 符号化・接続2.0を含む |
+| build / driver / artifact | 53.2 | 限定定理の成果物書込みまで接続。一般サービス・再利用は残る |
+| LSP | 0.9 | stdio・実ソース診断を接続。IDE・意味情報の統合は残る |
+| MVM / extraction / doc | 0.2 | 文書入力読取・索引を実装。runtime・抽出・描画は残る |
 
-**ATP を除く検査部: kernel と SAT 依存を合わせて17.6 kLoC。**
+**ATP を除く検査部: kernel と SAT 依存を合わせて17.2 kLoC。**
 
-Core・session 等の共通基盤は別計上。表は依存・テスト・空行・コメントを除外。見積は現実装を含み、各値は丸め。
+Core・session 等の共通基盤は別計上。表は依存・テスト・空行・コメントを除外。各値は丸め。コード量は機能完成率ではない。
 
-Source: 固定版 `08861708`。集計・見積根拠: `draft.ja.md` §7。
+Source: 11月4日固定版 `a8b283b2a`。集計根拠: `draft.ja.md` §7。
 
 Speaker note:
 
-- 1 kLoC = 1,000行。完成時見積は実績較正前の概算で、MML 移植は対象外。
-- kernel 12.751、うち SAT 符号化・接続1.947。SAT 依存 batsat 0.6.0 と bit-vec 0.5.1 は計4.879、合計17.630 kLoC。Core・session 等を含む最小 TCB 全体の計測ではない。
-- 固定版の限定実装。全体は10月15日、kernel 再集計・SAT 依存は10月16日計測。
+- 1 kLoC = 1,000行。完成時規模は再見積前。MML 移植は別計画。
+- kernel 13.088、うち SAT 符号化・接続1.978。SAT 依存 batsat 0.6.0 と bit-vec 0.5.1 は計4.149、合計17.237 kLoC。Core・session 等を含む最小 TCB 全体の計測ではない。
+- 確定コミットを再集計し、作業中の変更は除外。Rust 属性を含め、doc コメントは除外。旧集計値との単純比較はしない。
 
 ### Frame 7.2 - 今後の開発とまとめ
 

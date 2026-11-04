@@ -221,9 +221,9 @@ The green band shows the contradiction: p and the implications force r, but we a
 
 ### 7.1 Implementation status and size (32:30)
 
-The unit is kLoC: one thousand lines. At fixed snapshot 08861708, Rust product code is 271.1 kLoC, excluding tests, blank lines, and comments. The completion estimate of 360 to 540 kLoC includes the current code. These are rough code-size estimates. They do not predict how much work is complete or how long it will take. MML porting is separate. [Measurement / Provisional estimate]
-The table separates ATP search from the kernel that accepts proofs. The kernel is 12.8 kLoC, including 1.9 for SAT encoding and connection. Adding the SAT solver and its dependency gives 17.6 kLoC for checking. Core, session, and shared support are counted separately, so this is not the size of the full minimum trusted computing base, or TCB. [Counting boundary]
-Components exist, but connecting general source input through acceptance and artifact storage remains unfinished. LSP semantic connections, MVM execution, extraction, and documentation generation also remain future work. [Limited implementation / Plan]
+The unit is kLoC: one thousand lines. At the November 4 snapshot a8b283b2a, Rust product code is 292.5 kLoC, excluding tests, blank lines, and comments. Code size does not predict how much work is complete or how long it will take. Completion size has not been re-estimated. MML porting is separate. [Measurement / Scope]
+The table separates ATP search from the kernel that accepts proofs. The kernel is 13.1 kLoC, including 2.0 for SAT encoding and connection. Adding the SAT solver and its dependency gives 17.2 kLoC for checking. Core, session, and shared support are counted separately, so this is not the size of the full minimum trusted computing base, or TCB. [Counting boundary]
+A bounded theorem path now reaches artifact commit. Native source diagnostics and documentation readers also exist. General source-to-artifact integration, full IDE support, MVM execution, extraction, and document rendering remain unfinished. [Limited implementation / Plan]
 
 ### 7.2 Next steps and summary (34:00)
 

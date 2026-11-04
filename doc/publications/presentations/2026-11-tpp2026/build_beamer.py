@@ -138,8 +138,8 @@ def build(gen, deck: dict) -> None:
         # Keep the eight implementation groups in one table.
         def implementation_table(rows):
             if len(rows) != 10 or rows[0] not in (
-                "| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |",
-                "| Area | Now | Est. total | Scope / remaining work |",
+                "| 領域 | 実装済み | 限定実装と残る範囲 |",
+                "| Area | Now | Scope / remaining work |",
             ):
                 return table_to_tex(rows)
             table = table_to_tex(rows[:-1])
@@ -162,7 +162,7 @@ def build(gen, deck: dict) -> None:
                 "| Point | Proof obligation | Mathematical reason |",
                 "| equalities / expansions | Equality / definition-expansion information |",
                 "| Area | Challenge in current Mizar | Design principle |",
-                "| Area | Now | Est. total | Scope / remaining work |",
+                "| Area | Now | Scope / remaining work |",
                 "| 時期 | 実装史の主な節目 |",
                 "| 時期 | 開発内容 |",
                 "### 言語設計の深化",
@@ -172,7 +172,7 @@ def build(gen, deck: dict) -> None:
                 "| 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |",
                 "![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)",
                 "![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)",
-                "| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |",
+                "| 領域 | 実装済み | 限定実装と残る範囲 |",
             )) else split_frame_lines(lines)
         )
     try:
@@ -193,8 +193,8 @@ def build(gen, deck: dict) -> None:
                     label = r"\par\noindent{\footnotesize\bfseries " + caption + r"\par}"
                     generated = [tex.replace(heading, label) for tex in generated]
         for annotation in (
-            "Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Estimates include current code; rounded.",
-            "Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §7.",
+            "Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Rounded values; code size is not feature completeness.",
+            "Source: November 4 snapshot `a8b283b2a`. Counting basis: `draft.ja.md` §7.",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.",
             "JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1。",
@@ -214,7 +214,7 @@ def build(gen, deck: dict) -> None:
             (("Point", "Proof obligation", "Mathematical reason"), "llX"),
             (("Directives", "What they import"), "lX"),
             (("Stage", "What authors can inspect"), "lX"),
-            (("Area", "Now", "Est. total", "Scope / remaining work"), "lrrX"),
+            (("Area", "Now", "Scope / remaining work"), "lrX"),
         ) if deck["input"].name == "slides.md" else (
             (("時期", "実装史の主な節目"), "lX"),
             (("処理系", "概要"), "lX"),
@@ -227,7 +227,7 @@ def build(gen, deck: dict) -> None:
             (("箇所", "証明義務", "数学的な根拠"), "llX"),
             (("一覧", "取り込むもの"), "lX"),
             (("段階", "著者が確認できるもの"), "lX"),
-            (("領域", "実装済み", "完成時見積", "限定実装と残る範囲"), "lrrX"),
+            (("領域", "実装済み", "限定実装と残る範囲"), "lrX"),
         )
         for headers, columns in (*table_layouts,
             (("", "MizAR 60 (ITP 2023)", "Sledgehammer / AFP (ITP 2022)"), "lXX"),

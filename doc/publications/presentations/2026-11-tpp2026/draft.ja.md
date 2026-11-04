@@ -874,69 +874,58 @@ Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `10.atp_backend_i
 
 # 7. 実装状況・ロードマップ・結び
 
-実装状況の固定点: **2026-10-14 11:32 JST、`0886170858542b03ef2ce16ae61819e186f6781c`**（専用 worktree の基準）。実行デモの測定値ではなく、この版の設計・ソース・既存テストから読む範囲。発表直前に日付と SHA を更新する。
+実装状況の固定点: **2026-11-04、`a8b283b2a6d4009424a6f9144eb2e5f35dcc2b6e`**（確定コミット。作業中の変更は除外）。実行デモの測定値ではなく、この版の設計・ソース・既存テストから読む範囲。発表直前に日付と SHA を更新する。
 
 ## 7.1 — 仕様・限定実装・計画を分ける
 
 | 領域 | 仕様で定義済み（Specified） | 限定範囲の実装（Implemented）／残る計画（Planned） |
 |---|---|---|
 | lexer / parser / frontend | 語彙環境・構文木・回復 | 実ソースの読込・字句解析・構文解析を Driver で接続済み |
-| resolver / checker | 名前・型・登録・overload・Template | alpha コーパスと source 由来の限定意味論。一般の意味解析サービス接続は残る |
-| Core / VC | 論理への変換、契約・不変条件・停止性の義務 | 限定 source から Core / VC・決定的 discharge。全言語・全 Algorithm の検証完了ではない |
+| resolver / checker | 名前・型・登録・overload・Template | 汎用 source 転送と限定意味論。転送の汎用化は意味論の全面対応ではなく、一般の型・import の対応は残る |
+| Core / VC | 論理への変換、契約・不変条件・停止性の義務 | 限定的な定理・Algorithm から Core / VC・決定的 discharge。全言語・全 Algorithm の検証完了ではない |
 | ATP / kernel | 候補生成と evidence の受理を分離 | 問題符号化・候補の内部機構と SAT-backed kernel。実 ATP 候補抽出・受理・witness の統合は残る |
-| build / driver / artifact | 差分ビルド・検証済み成果物 | scheduler・指紋・保存機構と frontend までの接続。全工程の artifact 発行は未接続 |
-| LSP | 診断・意味情報・編集支援 | 範囲変換と lifecycle / stdio 基盤。build・意味情報の接続は残る |
-| MVM / extraction / MML | 計算による証明・実行・抽出を仕様化 | runtime・抽出は未実装。MML 移植は別途進める計画 |
+| build / driver / artifact | 差分ビルド・検証済み成果物 | 限定定理の scheduled pipeline から artifact 書込み・境界通知まで接続。一般サービス・cache 再利用は残る |
+| LSP | 診断・意味情報・編集支援 | lifecycle / stdio に加え明示的な実ソース診断送出・OpenBuffer 接続。IDE 全体・意味情報の統合は残る |
+| MVM / extraction / doc / MML | 計算による証明・実行・抽出・文書生成を仕様化 | 文書入力読取・索引・native source 入力を実装。runtime・抽出・文書描画は未実装。MML 移植は別途進める計画 |
 
-Source: [全体 TODO](../../../design/todo.md) Crate Status・Step 6–8、各行の crate TODO。特に [Driver registry](../../../../crates/mizar-driver/src/registry/catalog.rs)、[VC TODO](../../../design/mizar-vc/en/todo.md)、[ATP TODO](../../../design/mizar-atp/en/todo.md)、[kernel TODO](../../../design/mizar-kernel/en/todo.md)、[LSP TODO](../../../design/mizar-lsp/en/todo.md)。
+Source: [全体 TODO](../../../design/todo.md) Crate Status・Step 6–8、各行の crate TODO。特に [Driver 実サービス](../../../design/mizar-driver/en/frontend_adapter.md)、[文書入力](../../../design/mizar-doc/en/artifact_reader.md)、[Driver registry](../../../../crates/mizar-driver/src/registry/catalog.rs)、[VC TODO](../../../design/mizar-vc/en/todo.md)、[ATP TODO](../../../design/mizar-atp/en/todo.md)、[kernel TODO](../../../design/mizar-kernel/en/todo.md)、[LSP TODO](../../../design/mizar-lsp/en/todo.md)。
 
-### 実装規模（同じ固定コミットを2026年10月15日に計測）
+### 実装規模（2026年11月4日の固定コミット）
 
-**実装済み LoC は現在存在する製品コードの量であり、機能完成率ではない。** Git 管理下の `crates/*/src/**/*.rs` を対象に、空行・コメントのみの行・テストを除いた物理コード行を数える。全OS・feature分岐を対象とし、括弧だけの行と文字列内の非空行もコード行に含む。マクロ展開後の行数ではない。`mizar-test` 全体、`tests/`・`tests.rs`、テスト専用の `determinism_suite.rs`、構文木上の `#[cfg(test)]` 等のテスト専用項目を除外した。19 crates・178ファイルで **271.118 kLoC（1 kLoC = 1,000行）**。依存ライブラリ、外部 prover、生成物、非 Rust コード、MML 本体は含めない。
+**実装済み LoC は現在存在する製品コードの量であり、機能完成率ではない。** Git 管理下の `crates/*/src/**/*.rs` を対象に、空行・コメントのみの行・テストを除いた物理コード行を数える。全OS・feature分岐を対象とし、Rust 属性・括弧だけの行・文字列内の非空行もコード行に含み、doc コメントは除外する。マクロ展開後の行数ではない。`mizar-test` 全体、`tests/`・`tests.rs`、テスト専用の `determinism_suite.rs`、構文木上の `#[cfg(test)]` 等のテスト専用項目を除外した。20 crates・181ファイルで **292.481 kLoC（1 kLoC = 1,000行）**。依存ライブラリ、外部 prover、生成物、非 Rust コード、MML 本体は含めない。
 
-p.30 の内訳（kLoC。各表示値は丸め、合計は丸め前の値から算出）:
+構文木とトークンのソース範囲から再集計した。旧版 `08861708` も同じ方法では270.030 kLoCとなり、旧公表値271.118とは一致しないため、旧公表値との差を開発による増分とはしない。
 
-| p.30 の領域 | 実装済み | 完成時見積 | 集計した crate と実装済み（`mizar-` 接頭辞省略） |
-|---|---:|---:|---|
-| lexer / parser / frontend | 34.4 | 約36–43 | lexer 6.845、parser 17.480、frontend 5.714、syntax 4.329 |
-| resolver / checker | 122.9 | 約148–193 | resolve 21.456、checker 101.461 |
-| Core / VC | 49.7 | 約65–95 | core 27.750、vc 11.984、ir 4.889、proof 5.101 |
-| ATP | 9.6 | 約16–28 | atp 9.553。問題の符号化・候補生成・backend 接続 |
-| kernel | 12.8 | 約15–20 | kernel 12.751。SAT 符号化・接続1.947を含む |
-| build / driver / artifact・共通基盤 | 41.3 | 約56–85 | build 7.472、driver 6.470、artifact 11.694、cache 6.003、session 3.987、diagnostics 5.700 |
-| LSP | 0.5 | 約6–19 | lsp 0.479 |
-| MVM / extraction / doc | 0 | 約17–57 | runtime・コード抽出・文書生成の専用実装は未着手。既存の契約・VC・artifact は上の担当行に含む |
+7.1 の内訳（kLoC。各表示値は丸め、合計は丸め前の値から算出）:
 
-ATP と kernel を分け、最小核の議論に関係する検査部の集計範囲を示す。`mizar-kernel` 単体は **12.751 kLoC**。このうち `sat_encoding.rs` は1.665、`sat_checker.rs` は0.282で、SAT 符号化・solver 接続の計 **1.947 kLoC** は kernel 本体の内数である。この1.947に証拠の解析・来歴・置換検査や SAT solver 本体は含まれない。
+| 7.1 の領域 | 実装済み | 集計した crate と実装済み（`mizar-` 接頭辞省略） |
+|---|---:|---|
+| lexer / parser / frontend | 34.8 | lexer 6.908、parser 18.236、frontend 5.318、syntax 4.378 |
+| resolver / checker | 121.4 | resolve 23.574、checker 97.839 |
+| Core / VC | 57.7 | core 29.335、vc 14.056、ir 4.467、proof 9.832 |
+| ATP | 11.0 | atp 11.047。問題の符号化・候補生成・backend 接続 |
+| kernel | 13.1 | kernel 13.088。SAT 符号化・接続1.978を含む |
+| build / driver / artifact・共通基盤 | 53.2 | build 8.222、driver 19.044、artifact 11.453、cache 5.464、session 3.875、diagnostics 5.163 |
+| LSP | 0.9 | lsp 0.934 |
+| MVM / extraction / doc | 0.2 | doc 0.248。入力読取・索引を計上。runtime・コード抽出・文書描画は未実装。既存の契約・VC・artifact は上の担当行に含む |
 
-実際の SAT 判定は `batsat 0.6.0` に依存し、さらに `bit-vec 0.5.1` を使う。同じ空行・コメント・テスト除外の方法で公開ライブラリの `src/**/*.rs` を数えると、それぞれ **3.886 / 0.993 kLoC**、計 **4.879 kLoC**。kernel と合わせた検査部のソース規模は **17.630 kLoC（表示17.6）**。SAT 依存は上の製品コード表と完成時見積には含めず、検査部の内訳として別枠で示す。製品コードの計測は10月15日、kernel の再集計・SAT 依存の計測は10月16日で、コードの固定点は変えていない。
+ATP と kernel を分け、最小核の議論に関係する検査部の集計範囲を示す。`mizar-kernel` 単体は **13.088 kLoC**。このうち `sat_encoding.rs` は1.687、`sat_checker.rs` は0.291で、SAT 符号化・solver 接続の計 **1.978 kLoC** は kernel 本体の内数である。この1.978に証拠の解析・来歴・置換検査や SAT solver 本体は含まれない。
 
-これは **最小 TCB 全体の行数ではない**。kernel の全モジュールには legacy 監査用の処理も含め、SAT 依存も未使用の公開機能を削らず製品ソース全体を数えた。一方、依存先の Core・session、ハッシュ等の推移依存、標準ライブラリ・コンパイラはこの17.630には含めない。Core・session は表の別行に計上済みであり、TCB のみを呼び出し到達性で切り出した計測は未実施。
+実際の SAT 判定は `batsat 0.6.0` に依存し、さらに `bit-vec 0.5.1` を使う。同じ空行・コメント・テスト除外の方法で公開ライブラリの `src/**/*.rs` を数えると、それぞれ **3.600 / 0.549 kLoC**、計 **4.149 kLoC**。kernel と合わせた検査部のソース規模は **17.237 kLoC（表示17.2）**。SAT 依存は上の製品コード表には含めず、検査部の内訳として別枠で示す。kernel と SAT 依存のソース・版は10月から変更がないが、製品コードと同じ方法で再集計した。
+
+これは **最小 TCB 全体の行数ではない**。kernel の全モジュールには legacy 監査用の処理も含め、SAT 依存も未使用の公開機能を削らず製品ソース全体を数えた。一方、依存先の Core・session、ハッシュ等の推移依存、標準ライブラリ・コンパイラはこの17.237には含めない。Core・session は表の別行に計上済みであり、TCB のみを呼び出し到達性で切り出した計測は未実施。
 
 Source: [kernel manifest](../../../../crates/mizar-kernel/Cargo.toml)、[SAT 符号化](../../../../crates/mizar-kernel/src/sat_encoding.rs)、[SAT 接続](../../../../crates/mizar-kernel/src/sat_checker.rs)、[SAT 依存の選定](../../../design/mizar-kernel/en/sat_dependency_audit.md)。依存版は固定版の Cargo.lock、行数はローカル Cargo registry にある当該版の公開ソースに基づく。
 
-**完成時見積は実装済みを含む総量の暫定レンジ**（1 kLoC = 1,000行）。既存の正式な LoC 見積はなく、今回、残機能の実装規模を仮置きした。対象は現行仕様の実用処理系・統合の Rust 部分。architecture 20 の LOC 目標はテスト群の規模であり、ここには転用しない。MML 移植量、外部 prover、VS Code 拡張等の非 Rust 部分は別計画・対象外とする。
-
-追加量の仮定と主な残機能は次の通り。件数に一定係数を掛けた予測ではなく、既存部品を再利用する場合の概算であり、実績による較正は未実施。
-
-- 構文・frontend **+2–8 kLoC**: 反映構文・Algorithm の構文拡張、意味情報との接続（全体 TODO の Algorithm / Reflected-syntax）。
-- resolver / checker **+25–70 kLoC**: 限定 source profile の一般化、一般の式・証明・宣言、Template・登録・imported semantic payload（[Checker TODO](../../../design/mizar-checker/en/todo.md)）。
-- Core / VC / IR / proof **+15–45 kLoC**: 一般 source lowering、ループ・再帰・停止性・snapshot / claim、witness 接続（[Core TODO](../../../design/mizar-core/en/todo.md)、VC・Proof TODO）。
-- ATP **+6–18 kLoC**: instance finder、実 backend 出力の抽出・選択、候補生成と受理経路の接続（ATP TODO、全体 TODO Step 7）。
-- kernel **+2–7 kLoC**: 一般の evidence 生産・受理経路との接続に必要な検査・境界処理の拡充。単独 SAT solver の新規実装量ではなく、依存 SAT は別枠。named equality instances と既存 SAT 検査は実装済みで二重加算しない（kernel TODO、全体 TODO Step 7）。
-- build・共通基盤 **+15–43 kLoC**: 実サービス・artifact / cache 統合、runtime artifact、診断公開、CLI・MCP / agent interface の Rust 部分（全体 TODO Step 6–8・Complete processor）。
-- LSP **+6–18 kLoC**: build bridge、診断公開、hover / navigation / completion、code actions・計算結果表示（LSP TODO 6–25・EDITOR-COMPUTED-RESULTS）。
-- MVM / extraction / doc **+17–57 kLoC**: runtime・実行制限・ghost erasure・抽出 backend **15–50**、文書生成 **2–7**（仕様20.9–20.10、[文書生成 TODO](../../../design/mizar-doc/en/todo.md)）。未着手で実装方式・backend の選択に依存するため、特に不確実性が大きい。
-
-合計の追加想定は **88–266 kLoC**、実装済みを含む完成規模は **約360–540 kLoC**。丸め前の総量は359.118–537.118 kLoCで、全体の表示は10 kLoC単位、行別の完成見積は1 kLoC単位の概数。一般化による削除・置換を追加実装でおおむね相殺する仮定であり、下限・上限の保証ではない。LoC の比から完成率や残工数を求めない。実装方針が変わった時点と講演直前に再計測・再見積する。
+完成時規模は再見積前のため表示しない。MML 移植量・外部 prover・非 Rust 部分は別計画とし、LoC の比から完成率や残工数を求めない。
 
 ### 実装範囲の補足（質疑用）
 
 本編は7.1の実装状況から7.2の優先課題へ直接進む。内部の接続範囲を問われた場合は、以下を説明する。
 
-- Driver の実サービス経路: **実ソース → SourceLoad → Frontend**。ModuleResolver 以後の意味解析・証明・artifact サービスは依存する出力の実装待ち。
+- Driver の限定実サービス経路: **実ソース → Frontend → 意味解析 → Core / VC → backend-free 候補検査 → artifact 書込み**。明示的な構成で対応済み定理を扱う経路であり、一般サービス・実 ATP 探索・cache 再利用の完成ではない。
 - テストハーネスの限定経路: **source → resolver / checker → Core → VC**。内部候補・kernel の検査機構があることと、一般の source proof を端から端まで受理できることは別。
-- 次の接続: 本物の式・文脈・置換・来歴 → evidence → kernel 受理 → witness → artifact → build / cache。
+- 次の拡張: 一般の式・文脈・置換・来歴から evidence・kernel・witness・artifact へ通す範囲と、実 ATP 探索・build / cache 再利用の統合。
 - **Algorithm verification と実行を区別**する。VC 生成や SAT-backed kernel の節目は、MVM runtime・code extraction・`by computation` の実行完成を意味しない。
 
 Source: [Step 6–7](../../../design/todo.md)、[semantic harness](../../../../crates/mizar-test/src/runner/proof_verification.rs)、[Algorithm仕様 §20.9–20.10](../../../spec/en/20.algorithm_and_verification.md)。外部 prover を用いた一般的な source-to-artifact の実証結果は主張しない。
