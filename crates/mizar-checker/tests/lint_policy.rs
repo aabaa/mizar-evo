@@ -112,6 +112,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             source.replace(permitted, "")
         } else if path == root.join("src/typed_ast.rs")
             || path == root.join("src/source_mode_definition.rs")
+            || path == root.join("src/source_functor_definition.rs")
         {
             let permitted = if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"

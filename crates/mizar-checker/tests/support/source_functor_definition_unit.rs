@@ -123,6 +123,26 @@ impl Fixture {
         &self,
         base: &InitialObligationTable,
     ) -> Result<SourceFunctorDefinitionProjection, SourceFunctorDefinitionError> {
+        SourceFunctorDefinitionProducer::build_canonical(
+            self.input.clone(),
+            &self.env,
+            &self.source_context,
+            &self.source_type,
+            &self.source_term,
+            None,
+            None,
+            None,
+            Some(&self.atomic_formulas),
+            base,
+            &self.arena,
+        )
+    }
+
+    fn build_native(
+        &self,
+        base: &InitialObligationTable,
+        source: &TypedAst,
+    ) -> Result<SourceFunctorDefinitionProjection, SourceFunctorDefinitionError> {
         SourceFunctorDefinitionProducer::build(
             self.input.clone(),
             &self.env,
@@ -135,6 +155,7 @@ impl Fixture {
             Some(&self.atomic_formulas),
             base,
             &self.arena,
+            source,
         )
     }
 
@@ -617,7 +638,7 @@ fn task_260_independent_row_and_field_corruption_fails_closed() {
             let mut arities = [Some(1); 2];
             arities[index] = arity;
             let (env, _, _, _) = resolver_env(fixture.source, fixture.module.clone(), arities);
-            let error = SourceFunctorDefinitionProducer::build(
+            let error = SourceFunctorDefinitionProducer::build_canonical(
                 fixture.input.clone(),
                 &env,
                 &fixture.source_context,
@@ -1257,7 +1278,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
     let fixture = fixture();
     let baseline = InitialObligationTable::new();
     assert!(matches!(
-        SourceFunctorDefinitionProducer::build(
+        SourceFunctorDefinitionProducer::build_canonical(
             fixture.input.clone(),
             &fixture.env,
             &fixture.source_context,
@@ -1318,7 +1339,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
         let mut deferred_input = fixture.input.clone();
         deferred_input.definientia[0].target = target;
         assert_eq!(
-            SourceFunctorDefinitionProducer::build(
+            SourceFunctorDefinitionProducer::build_canonical(
                 deferred_input.clone(),
                 &fixture.env,
                 &fixture.source_context,
@@ -1349,7 +1370,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
         let mut invalid_id_input = deferred_input.clone();
         invalid_id_input.definientia[0].target = invalid_id;
         assert_eq!(
-            SourceFunctorDefinitionProducer::build(
+            SourceFunctorDefinitionProducer::build_canonical(
                 invalid_id_input,
                 &fixture.env,
                 &fixture.source_context,
@@ -1372,7 +1393,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
             LocalTypeContextId::new(1),
         );
         assert_eq!(
-            SourceFunctorDefinitionProducer::build(
+            SourceFunctorDefinitionProducer::build_canonical(
                 deferred_input,
                 &fixture.env,
                 &fixture.source_context,
@@ -1489,7 +1510,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
     )
     .expect("coherent Task 256 over relocated Task 252 site");
     assert_eq!(
-        SourceFunctorDefinitionProducer::build(
+        SourceFunctorDefinitionProducer::build_canonical(
             fixture.input.clone(),
             &fixture.env,
             &fixture.source_context,
@@ -1526,7 +1547,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
     )
     .expect("coherent relocated Task 256 site");
     assert_eq!(
-        SourceFunctorDefinitionProducer::build(
+        SourceFunctorDefinitionProducer::build_canonical(
             fixture.input.clone(),
             &fixture.env,
             &fixture.source_context,
@@ -1635,7 +1656,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
         let corrupt_arena =
             arena_with_node_context(&fixture.arena, owner, LocalTypeContextId::new(0));
         assert_eq!(
-            SourceFunctorDefinitionProducer::build(
+            SourceFunctorDefinitionProducer::build_canonical(
                 fixture.input.clone(),
                 &fixture.env,
                 &fixture.source_context,
@@ -2067,7 +2088,7 @@ fn assert_input_error(
     mutate(&mut input);
     let baseline_copy = baseline.clone();
     assert_eq!(
-        SourceFunctorDefinitionProducer::build(
+        SourceFunctorDefinitionProducer::build_canonical(
             input,
             &fixture.env,
             &fixture.source_context,
@@ -4104,6 +4125,7 @@ fn task_260_public_relocated_joint_lower_bundle_installs_and_replays() {
 #[test]
 fn task_260_public_prefix_geometry_joint_lower_and_upper_replay() {
     let original = fixture();
+    let original_source = native_functor_source(&original, NativeFunctorSourceMutation::None);
     let base = unrelated_baseline(original.source);
     let original_lower = original.typed_ast(base.clone());
     let canonical = original
@@ -4407,6 +4429,29 @@ fn task_260_public_prefix_geometry_joint_lower_and_upper_replay() {
         );
         let mut current = Vec::new();
         for (m, d, f, lower, generic, mut context_input, result) in outcomes {
+            assert_eq!(
+                f.build_native(&base, &original_source),
+                Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+            );
+            let mut native = result.as_ref().unwrap().clone();
+            native.handoff.original_source_nodes = original_source.source_nodes().cloned();
+            assert_handoff_error(
+                &f,
+                &native.handoff,
+                &native.initial_obligations,
+                SourceFunctorDefinitionError::InvalidDefinition { index: 0 },
+            );
+            assert_eq!(
+                lower.clone().with_source_functor_definition(native.clone()),
+                Err(TypedAstError::InvalidSourceFunctorDefinition)
+            );
+            let mut injected = lower.clone();
+            injected.replace_initial_obligations_for_test(native.initial_obligations);
+            injected.inject_source_functor_definition_for_test(native.handoff);
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition)
+            );
             let projection = result.unwrap();
             let handoff = projection.handoff();
             assert_eq!(
@@ -4697,4 +4742,363 @@ fn task_260_public_prefix_geometry_joint_lower_and_upper_replay() {
         );
     }
     assert_eq!(original.typed_ast(base), original_lower);
+}
+
+enum NativeFunctorSourceMutation {
+    None,
+    HeaderToken,
+    PatternKind,
+    PatternToken,
+    PatternChildKind,
+    ReturnKind,
+    BlockKind,
+    BodyContent,
+    RecoveredToken,
+    ExtraSpeculativeStorage,
+}
+
+fn native_functor_source(f: &Fixture, mutation: NativeFunctorSourceMutation) -> TypedAst {
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceTokenKind;
+    let text = include_str!(
+        "../../../../tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.miz"
+    );
+    let text = if matches!(&mutation, NativeFunctorSourceMutation::BodyContent) {
+        text.replace("set equals x;", "set equals y;")
+    } else {
+        text.to_owned()
+    };
+    let mut builder = SurfaceAstBuilder::new(f.source);
+    if matches!(
+        &mutation,
+        NativeFunctorSourceMutation::ExtraSpeculativeStorage
+    ) {
+        builder.add_node(
+            SurfaceNodeKind::TermList,
+            range(f.source, 0, 10),
+            Vec::new(),
+        );
+    }
+    let mut sites = Vec::new();
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    for token in "definition let x be set ; let y be set ; assume x = x ; func Task260EqualsDef : task260_equals ( x ) -> set equals x ; func Task260MeansDef : task260_means ( y ) -> set means x = y ; existence by computation ( steps : 1 ) ; uniqueness by computation ( steps : 1 ) ; end ;".split_ascii_whitespace() {
+        let index = sites.len();
+        let token = if index == 26 && matches!(&mutation, NativeFunctorSourceMutation::BodyContent) { "y" } else { token };
+        let start = cursor + text[cursor..].find(token).unwrap();
+        cursor = start + token.len();
+        let mut kind = match token {
+            "x" | "y" | "Task260EqualsDef" | "Task260MeansDef" | "task260_equals" | "task260_means" | "steps" => SurfaceTokenKind::Identifier,
+            "1" => SurfaceTokenKind::Numeral,
+            ";" | ":" | "(" | ")" | "=" | "->" => SurfaceTokenKind::ReservedSymbol,
+            _ => SurfaceTokenKind::ReservedWord,
+        };
+        if index == 16 && matches!(&mutation, NativeFunctorSourceMutation::HeaderToken) { kind = SurfaceTokenKind::Identifier; }
+        if index == 19 && matches!(&mutation, NativeFunctorSourceMutation::PatternToken) { kind = SurfaceTokenKind::ReservedWord; }
+        sites.push(if index == 16 && matches!(&mutation, NativeFunctorSourceMutation::RecoveredToken) {
+            builder.add_recovered_token(kind, token, range(f.source, start, cursor))
+        } else { builder.add_token(kind, token, range(f.source, start, cursor)) });
+        spans.push((start, cursor));
+    }
+    for (mut kind, children) in [
+        (SurfaceNodeKind::TypeHead, vec![4]),
+        (SurfaceNodeKind::TypeExpression, vec![62]),
+        (SurfaceNodeKind::QualifiedVariableSegment, vec![2, 3, 63]),
+        (SurfaceNodeKind::DefinitionParameter, vec![1, 64, 5]),
+        (SurfaceNodeKind::TypeHead, vec![9]),
+        (SurfaceNodeKind::TypeExpression, vec![66]),
+        (SurfaceNodeKind::QualifiedVariableSegment, vec![7, 8, 67]),
+        (SurfaceNodeKind::DefinitionParameter, vec![6, 68, 10]),
+        (SurfaceNodeKind::TermReference, vec![12]),
+        (SurfaceNodeKind::TermExpression, vec![70]),
+        (SurfaceNodeKind::TermReference, vec![14]),
+        (SurfaceNodeKind::TermExpression, vec![72]),
+        (
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            vec![71, 13, 73],
+        ),
+        (SurfaceNodeKind::FormulaExpression, vec![74]),
+        (SurfaceNodeKind::Proposition, vec![75]),
+        (SurfaceNodeKind::AssumptionStatement, vec![11, 76, 15]),
+        (SurfaceNodeKind::FunctorPattern, vec![19, 20, 21, 22]),
+        (SurfaceNodeKind::TypeHead, vec![24]),
+        (SurfaceNodeKind::TypeExpression, vec![79]),
+        (SurfaceNodeKind::TermReference, vec![26]),
+        (SurfaceNodeKind::TermExpression, vec![81]),
+        (SurfaceNodeKind::TermDefiniens, vec![82]),
+        (
+            SurfaceNodeKind::FunctorDefinition,
+            vec![16, 17, 18, 78, 23, 80, 25, 83, 27],
+        ),
+        (SurfaceNodeKind::FunctorPattern, vec![31, 32, 33, 34]),
+        (SurfaceNodeKind::TypeHead, vec![36]),
+        (SurfaceNodeKind::TypeExpression, vec![86]),
+        (SurfaceNodeKind::TermReference, vec![38]),
+        (SurfaceNodeKind::TermExpression, vec![88]),
+        (SurfaceNodeKind::TermReference, vec![40]),
+        (SurfaceNodeKind::TermExpression, vec![90]),
+        (
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            vec![89, 39, 91],
+        ),
+        (SurfaceNodeKind::FormulaExpression, vec![92]),
+        (SurfaceNodeKind::FormulaDefiniens, vec![93]),
+        (
+            SurfaceNodeKind::FunctorDefinition,
+            vec![28, 29, 30, 85, 35, 87, 37, 94, 41],
+        ),
+        (SurfaceNodeKind::ComputationOption, vec![46, 47, 48]),
+        (
+            SurfaceNodeKind::ComputationJustification,
+            vec![44, 45, 96, 49],
+        ),
+        (SurfaceNodeKind::JustificationClause, vec![43, 97]),
+        (SurfaceNodeKind::CorrectnessCondition, vec![42, 98, 50]),
+        (SurfaceNodeKind::ComputationOption, vec![55, 56, 57]),
+        (
+            SurfaceNodeKind::ComputationJustification,
+            vec![53, 54, 100, 58],
+        ),
+        (SurfaceNodeKind::JustificationClause, vec![52, 101]),
+        (SurfaceNodeKind::CorrectnessCondition, vec![51, 102, 59]),
+        (
+            SurfaceNodeKind::DefinitionBlockItem,
+            vec![0, 65, 69, 77, 84, 95, 99, 103, 60, 61],
+        ),
+        (SurfaceNodeKind::ItemList, vec![104]),
+        (SurfaceNodeKind::CompilationUnit, vec![105]),
+        (
+            SurfaceNodeKind::Root,
+            vec![
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 106,
+            ],
+        ),
+    ] {
+        if matches!(
+            (&kind, &mutation),
+            (
+                SurfaceNodeKind::FunctorPattern,
+                NativeFunctorSourceMutation::PatternKind
+            ) | (
+                SurfaceNodeKind::TypeExpression,
+                NativeFunctorSourceMutation::ReturnKind
+            ) | (
+                SurfaceNodeKind::DefinitionBlockItem,
+                NativeFunctorSourceMutation::BlockKind
+            )
+        ) {
+            kind = SurfaceNodeKind::TermList;
+        }
+        let start = spans[children[0]].0;
+        let end = spans[*children.last().unwrap()].1;
+        let mut actual_children = children
+            .iter()
+            .map(|index| sites[*index])
+            .collect::<Vec<_>>();
+        if kind == SurfaceNodeKind::FunctorPattern
+            && matches!(&mutation, NativeFunctorSourceMutation::PatternChildKind)
+        {
+            let (start, end) = spans[children[1]];
+            actual_children[1] = builder.add_node(
+                SurfaceNodeKind::TemplateLoci,
+                range(f.source, start, end),
+                vec![actual_children[1]],
+            );
+        }
+        sites.push(builder.add_node(kind, range(f.source, start, end), actual_children));
+        spans.push((start, end));
+    }
+    let ast = builder.finish(sites.last().copied(), None);
+    let source = SurfaceResolvedArena::lower(&ast, &f.module).unwrap();
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    )
+                    .with_recovery(if node.origin().is_recovered() {
+                        NodeRecoveryState::Recovered
+                    } else {
+                        NodeRecoveryState::Normal
+                    })
+            })
+            .collect(),
+    )
+    .unwrap();
+    let mut syntax = TypedAst::try_new(TypedAstParts {
+        source_id: f.source,
+        module_id: f.module.clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: Default::default(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .unwrap();
+    syntax.install_source_nodes(&source).unwrap();
+    syntax
+}
+
+#[test]
+fn ordinary_functor_native_authority_and_diagnostic_order() {
+    let f = fixture();
+    let source = native_functor_source(&f, NativeFunctorSourceMutation::None);
+    let before = source.clone();
+    let base = InitialObligationTable::new();
+    let native = f.build_native(&base, &source).unwrap();
+    assert_eq!(
+        native.handoff().debug_text(),
+        f.exact_projection(&base).handoff().debug_text()
+    );
+    assert!(Arc::ptr_eq(
+        source.source_nodes().unwrap(),
+        native.handoff.original_source_nodes.as_ref().unwrap()
+    ));
+    assert_eq!(source, before);
+    assert_eq!(
+        f.build_native(&base, &f.typed_ast(base.clone())),
+        Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+    );
+    for foreign in [true, false] {
+        let mut other = f.clone();
+        if foreign {
+            other.source = other_source_id();
+        } else {
+            other.module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("foreign"));
+        }
+        let other = native_functor_source(&other, NativeFunctorSourceMutation::None);
+        assert_eq!(
+            f.build_native(&base, &other),
+            Err(SourceFunctorDefinitionError::SourceIdentityMismatch)
+        );
+        let mut later = f.clone();
+        later.env = resolver_env(f.source, f.module.clone(), [Some(1), None]).0;
+        assert_eq!(
+            later.build_native(&base, &other),
+            Err(SourceFunctorDefinitionError::SourceIdentityMismatch)
+        );
+    }
+    for mutation in [
+        NativeFunctorSourceMutation::HeaderToken,
+        NativeFunctorSourceMutation::PatternKind,
+        NativeFunctorSourceMutation::PatternToken,
+        NativeFunctorSourceMutation::PatternChildKind,
+        NativeFunctorSourceMutation::ReturnKind,
+        NativeFunctorSourceMutation::BlockKind,
+        NativeFunctorSourceMutation::RecoveredToken,
+    ] {
+        let malformed = native_functor_source(&f, mutation);
+        assert_eq!(
+            f.build_native(&base, &malformed),
+            Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 })
+        );
+    }
+    let permuted = native_functor_source(&f, NativeFunctorSourceMutation::ExtraSpeculativeStorage);
+    assert_eq!(
+        f.build_native(&base, &permuted),
+        Err(SourceFunctorDefinitionError::InvalidDefinition { index: 0 })
+    );
+    let changed_body = native_functor_source(&f, NativeFunctorSourceMutation::BodyContent);
+    assert_eq!(
+        f.build_native(&base, &changed_body),
+        Err(SourceFunctorDefinitionError::InvalidDefinition { index: 0 })
+    );
+    for field in 0..3 {
+        let mut bad = f.clone();
+        match field {
+            0 => bad.input.definitions[0].site = TypedSiteRef::Node(MEANS_DEFINITION),
+            1 => bad.input.definitions[0].source_ordinal = 1,
+            _ => bad.input.definitions[0].source_range.end -= 1,
+        }
+        assert_eq!(
+            bad.build_native(&base, &source),
+            Err(SourceFunctorDefinitionError::InvalidDefinition { index: 0 })
+        );
+    }
+}
+
+#[test]
+fn ordinary_functor_native_replay_rechecks_original_rows_and_sealed_origins() {
+    let f = fixture();
+    let source = native_functor_source(&f, NativeFunctorSourceMutation::None);
+    let base = InitialObligationTable::new();
+    let projection = f.build_native(&base, &source).unwrap();
+    let typed = f
+        .typed_ast(base.clone())
+        .with_source_functor_definition(projection.clone())
+        .unwrap();
+    assert!(typed.source_nodes().is_none());
+    assert!(assemble_empty(&typed).is_ok());
+    for sealed in [false, true] {
+        let mut forged = projection.clone();
+        let definition = &mut forged.handoff.definitions.rows[0];
+        definition.origin = SemanticOrigin::new(
+            f.source,
+            f.module.clone(),
+            SourceAnchor::Range(range(f.source, 62, 118)),
+            definition.origin.structural_path().to_vec(),
+        );
+        let expected = if sealed {
+            forged.handoff.resolver_identities[0].origin = definition.origin.clone();
+            SourceFunctorDefinitionError::InvalidDefinition { index: 0 }
+        } else {
+            SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 }
+        };
+        assert!(Arc::ptr_eq(
+            forged.handoff.original_source_nodes.as_ref().unwrap(),
+            source.source_nodes().unwrap()
+        ));
+        assert_handoff_error(&f, &forged.handoff, &forged.initial_obligations, expected);
+        assert_eq!(
+            f.typed_ast(base.clone())
+                .with_source_functor_definition(forged.clone()),
+            Err(TypedAstError::InvalidSourceFunctorDefinition)
+        );
+        let mut injected = typed.clone();
+        injected.inject_source_functor_definition_for_test(forged.handoff);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition)
+        );
+    }
+    let mut malformed = projection.clone();
+    let rows = Arc::make_mut(malformed.handoff.original_source_nodes.as_mut().unwrap());
+    rows.iter_mut()
+        .find(|row| row.site.index() == 78)
+        .unwrap()
+        .kind = SurfaceNodeKind::TermList;
+    assert_handoff_error(
+        &f,
+        &malformed.handoff,
+        &malformed.initial_obligations,
+        SourceFunctorDefinitionError::InvalidDefinition { index: 0 },
+    );
+    assert_eq!(
+        f.typed_ast(base)
+            .with_source_functor_definition(malformed.clone()),
+        Err(TypedAstError::InvalidSourceFunctorDefinition)
+    );
+    let mut injected = typed.clone();
+    injected.inject_source_functor_definition_for_test(malformed.handoff);
+    assert_eq!(
+        assemble_empty(&injected),
+        Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition)
+    );
+    assert!(assemble_empty(&typed).is_ok());
 }

@@ -56,7 +56,7 @@ use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver},
     source_ast::{
         authenticated_local_declaration, direct_token_texts, leaf_token_texts,
         structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
@@ -1862,6 +1862,7 @@ fn build_output(
     .then(|| resolver_env_with_mutation(symbols, mutation));
     let symbols = corrupted_symbols.as_ref().unwrap_or(symbols);
     let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
+    let syntax = source_syntax_receiver(ast, &module)?;
     let arena = task260_arena(ast)?;
     let source_context =
         task248_context(ast, module.clone(), shells, source_text, exact, mutation)?;
@@ -2004,6 +2005,7 @@ fn build_output(
         typed_ast.source_atomic_formula(),
         typed_ast.initial_obligations(),
         typed_ast.nodes(),
+        &syntax,
     )
     .map_err(|error| format!("Task260 functor definition: {error}"))?;
     typed_ast = typed_ast

@@ -1,6 +1,7 @@
-# generator: manual family ledger for VELOCITY-ELEMENT-RULE-TRANSPORT (opened 2026-11-04); one row per class b kind of source_transport_classification.tsv
+# generator: manual family ledger for VELOCITY-ELEMENT-RULE-TRANSPORT (opened 2026-11-04); one row per class b kind of source_transport_classification.tsv and per inherited constant target required by the contract
 # status: done = committed and named in its commit body; open = not started. predecessor: a family's first rule names native-consumer of source_transport_migration.tsv; later rules name the family's first done rule; `-` = not yet selected
 # family: definition (Tasks 279/270) | proof-skeleton (Tasks 272/269) | reconsider (Task 271) | expression (Task 257)
+# inherited targets have inherited: notes and do not complete or reclassify a class b kind
 slice	family	predecessor	status	note
 attribute-redefinition	definition	-	open	AttributeRedefinition
 equating	definition	-	open	Equating
@@ -12,6 +13,8 @@ inheritance-target	definition	-	open	InheritanceTarget
 inline-functor-definition	definition	-	open	InlineFunctorDefinition
 inline-predicate-definition	definition	-	open	InlinePredicateDefinition
 mode-property	definition	native-consumer	done	ModeProperty
+functor-declaration-eligibility	definition	mode-property	done	inherited: FunctorDefinition resolver declaration eligibility in source_functor_definition
+property-retained-constants	definition	mode-property	open	inherited: resolver-origin, admission and prefix-geometry authority in source_property_implementation
 property-redefinition	definition	-	open	PropertyRedefinition
 structure-constructor	definition	-	open	StructureConstructor
 structure-property	definition	-	open	StructureProperty

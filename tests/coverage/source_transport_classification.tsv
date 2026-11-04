@@ -65,7 +65,7 @@ FormulaCase	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 FormulaConstant	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 FormulaDefiniens	referenced	referenced	existing source_* producer
 FormulaExpression	referenced	referenced	existing source_* producer
-FunctorDefinition	referenced	referenced	existing source_* producer
+FunctorDefinition	referenced	referenced	source_functor_definition
 FunctorPattern	referenced	referenced	existing source_* producer
 FunctorRedefinition	definition	b	checker Task 279 / Task 270
 FunctorialRegistration	referenced	referenced	existing source_* producer

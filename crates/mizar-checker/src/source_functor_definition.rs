@@ -1,5 +1,3 @@
-//! Syntax-free functor-definition intake for checker phase 6.
-
 use crate::{
     binding_env::{
         BindingContextId, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
@@ -29,7 +27,8 @@ use crate::{
     typed_ast::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
-        LocalTypeContextId, NodeRecoveryState, TypedArena, TypedNodeId, TypedSiteRef,
+        LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
+        TypedSiteRef,
     },
 };
 use mizar_resolve::{
@@ -40,9 +39,11 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};
 use std::{
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -482,6 +483,7 @@ pub struct SourceFunctorDefinitionHandoff {
     source_id: SourceId,
     module_id: ModuleId,
     resolver_identities: Vec<SourceFunctorResolverIdentity>,
+    original_source_nodes: Option<Arc<[SourceNode]>>,
     source_context_fingerprint: String,
     source_type_fingerprint: String,
     source_term_fingerprint: String,
@@ -872,6 +874,71 @@ impl SourceFunctorDefinitionProducer {
         atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
+    ) -> Result<SourceFunctorDefinitionProjection, SourceFunctorDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_context,
+            source_type,
+            source_term,
+            applications,
+            structures,
+            set_terms,
+            atomic_formulas,
+            base_initial_obligations,
+            arena,
+            Some(source),
+        )
+    }
+
+    #[cfg(test)]
+    // Rationale: canonical policy vectors retain the same independently frozen lower inputs.
+    #[allow(clippy::too_many_arguments)]
+    fn build_canonical(
+        input: SourceFunctorDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_context: &SourceBindingContextHandoff,
+        source_type: &SourceTypeApplicationHandoff,
+        source_term: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+        structures: Option<&SourceStructureHandoff>,
+        set_terms: Option<&SourceSetTermHandoff>,
+        atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+    ) -> Result<SourceFunctorDefinitionProjection, SourceFunctorDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_context,
+            source_type,
+            source_term,
+            applications,
+            structures,
+            set_terms,
+            atomic_formulas,
+            base_initial_obligations,
+            arena,
+            None,
+        )
+    }
+
+    // Rationale: original-source authority is separate from the independently frozen lower inputs.
+    #[allow(clippy::too_many_arguments)]
+    fn build_with_source(
+        input: SourceFunctorDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_context: &SourceBindingContextHandoff,
+        source_type: &SourceTypeApplicationHandoff,
+        source_term: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+        structures: Option<&SourceStructureHandoff>,
+        set_terms: Option<&SourceSetTermHandoff>,
+        atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+        source: Option<&TypedAst>,
     ) -> Result<SourceFunctorDefinitionProjection, SourceFunctorDefinitionError> {
         validate_dependency_identity(
             input.source_id,
@@ -890,7 +957,7 @@ impl SourceFunctorDefinitionProducer {
         }
         let geometry = validate_input_shape(&input, source_context, source_type)?;
         validate_baseline(base_initial_obligations)?;
-        let origins = validate_resolver_definitions(&input, env, geometry)?;
+        let origins = validate_resolver_definitions(&input, env, geometry, source)?;
         validate_input_rows(
             &input,
             source_context,
@@ -902,6 +969,9 @@ impl SourceFunctorDefinitionProducer {
             atomic_formulas,
             arena,
             geometry,
+            source
+                .and_then(TypedAst::source_nodes)
+                .map(|rows| rows.as_ref()),
         )?;
 
         let mut initial_obligations = base_initial_obligations.clone();
@@ -1046,6 +1116,7 @@ impl SourceFunctorDefinitionProducer {
             source_id: input.source_id,
             module_id: input.module_id,
             resolver_identities,
+            original_source_nodes: source.and_then(TypedAst::source_nodes).cloned(),
             source_context_fingerprint: source_context.debug_text(),
             source_type_fingerprint: source_type.debug_text(),
             source_term_fingerprint: source_term.debug_text(),
@@ -1218,13 +1289,13 @@ fn validate_resolver_definitions(
     input: &SourceFunctorDefinitionHandoffInput,
     env: &SymbolEnv,
     geometry: (usize, usize),
+    source: Option<&TypedAst>,
 ) -> Result<Vec<SemanticOrigin>, SourceFunctorDefinitionError> {
     if env.symbols().len() != 2 || env.definitions().len() != 2 || env.contributions().len() != 1 {
         return Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 });
     }
     let expected_notations = ["task260_equals ( x )", "task260_means ( y )"];
     let expected_paths: [&[u32]; 2] = [&[4, 0, 9, 0], &[4, 0, 9, 1]];
-    let expected_ranges = [(61, 118), (121, 179)];
     let (m, d) = geometry;
     let expected_anchor = SourceAnchor::Range(range(input.source_id, m, d + 261));
     let mut origins = Vec::with_capacity(2);
@@ -1278,23 +1349,143 @@ fn validate_resolver_definitions(
                 .effects()
                 .definitions()
                 .contains(&row.definition)
-            || !normal_origin(
+        {
+            return Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index });
+        }
+        let expected_range = match source {
+            Some(source) => {
+                if source.source_id() != input.source_id || source.module_id() != &input.module_id {
+                    return Err(SourceFunctorDefinitionError::SourceIdentityMismatch);
+                }
+                source
+                    .source_nodes()
+                    .and_then(|rows| {
+                        ordinary_functor_declaration_rule(
+                            rows,
+                            index,
+                            env.definitions().len(),
+                            expected_notations[index],
+                        )
+                    })
+                    .map(SourceNode::range)
+            }
+            None => None,
+        };
+        #[cfg(test)]
+        let expected_range = expected_range.or_else(|| {
+            source.is_none().then(|| {
+                let canonical = [(61, 118), (121, 179)];
+                range(
+                    input.source_id,
+                    d + canonical[index].0,
+                    d + canonical[index].1,
+                )
+            })
+        });
+        if !expected_range.is_some_and(|expected| {
+            normal_origin(
                 definition.origin(),
                 input.source_id,
                 &input.module_id,
-                range(
-                    input.source_id,
-                    d + expected_ranges[index].0,
-                    d + expected_ranges[index].1,
-                ),
+                expected,
                 expected_paths[index],
             )
-        {
+        }) {
             return Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index });
         }
         origins.push(definition.origin().clone());
     }
     Ok(origins)
+}
+
+pub(crate) fn ordinary_functor_declaration_rule<'a>(
+    rows: &'a [SourceNode],
+    index: usize,
+    declaration_count: usize,
+    notation: &str,
+) -> Option<&'a SourceNode> {
+    let declarations = || {
+        rows.iter()
+            .filter(|row| row.kind() == &SurfaceNodeKind::FunctorDefinition)
+    };
+    if declarations().count() != declaration_count
+        || rows
+            .iter()
+            .any(|row| row.recovery() != NodeRecoveryState::Normal)
+    {
+        return None;
+    }
+    let first = declarations().next()?;
+    let block = rows.iter().find(|row| {
+        Some(row.site()) == first.parent() && row.kind() == &SurfaceNodeKind::DefinitionBlockItem
+    })?;
+    let mut previous = None;
+    for row in declarations() {
+        if row.parent() != Some(block.site())
+            || row.range().source_id != block.range().source_id
+            || row.range().start < block.range().start
+            || row.range().end > block.range().end
+            || row.preorder_ordinal() <= block.preorder_ordinal()
+            || previous.is_some_and(|prior: &SourceNode| {
+                prior.preorder_ordinal() >= row.preorder_ordinal()
+                    || prior.child_ordinal() >= row.child_ordinal()
+                    || prior.range().end > row.range().start
+            })
+        {
+            return None;
+        }
+        previous = Some(row);
+    }
+    let declaration = declarations().nth(index)?;
+    let children = rows
+        .iter()
+        .filter(|row| row.parent() == Some(declaration.site()))
+        .collect::<Vec<_>>();
+    if children.len() != 9
+        || children
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || children[3].kind() != &SurfaceNodeKind::FunctorPattern
+        || children[3].spelling() != notation
+        || children[5].kind() != &SurfaceNodeKind::TypeExpression
+    {
+        return None;
+    }
+    let pattern = rows
+        .iter()
+        .filter(|row| row.parent() == Some(children[3].site()))
+        .collect::<Vec<_>>();
+    if pattern.len() != 4
+        || pattern
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || !matches!(pattern[0].kind(), SurfaceNodeKind::Token(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
+        || !matches!(pattern[2].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+    {
+        return None;
+    }
+    for (row, kind, text) in [
+        (children[0], SurfaceTokenKind::ReservedWord, "func"),
+        (children[2], SurfaceTokenKind::ReservedSymbol, ":"),
+        (children[4], SurfaceTokenKind::ReservedSymbol, "->"),
+        (children[8], SurfaceTokenKind::ReservedSymbol, ";"),
+        (pattern[1], SurfaceTokenKind::ReservedSymbol, "("),
+        (pattern[3], SurfaceTokenKind::ReservedSymbol, ")"),
+    ] {
+        if !matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    if !matches!(children[1].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+        || !matches!((children[6].kind(), children[7].kind()), (SurfaceNodeKind::Token(token), SurfaceNodeKind::TermDefiniens) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "equals")
+            && !matches!((children[6].kind(), children[7].kind()), (SurfaceNodeKind::Token(token), SurfaceNodeKind::FormulaDefiniens) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "means")
+    {
+        return None;
+    }
+    Some(declaration)
 }
 
 // Rationale: row validation keeps each optional lower family explicit and independently testable.
@@ -1310,6 +1501,7 @@ fn validate_input_rows(
     atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
     arena: &TypedArena,
     geometry: (usize, usize),
+    original_source: Option<&[SourceNode]>,
 ) -> Result<(), SourceFunctorDefinitionError> {
     let Some(atomic_formulas) = atomic_formulas else {
         return Err(SourceFunctorDefinitionError::DependencyMismatch);
@@ -1348,6 +1540,26 @@ fn validate_input_rows(
             || row.site != TypedSiteRef::Node(TypedNodeId::new(definition_sites[index]))
         {
             return Err(SourceFunctorDefinitionError::InvalidDefinition { index });
+        }
+        if let Some(original) = original_source.and_then(|rows| {
+            let declarations = || {
+                rows.iter()
+                    .filter(|row| row.kind() == &SurfaceNodeKind::FunctorDefinition)
+            };
+            (declarations().count() == input.definitions.len())
+                .then(|| declarations().nth(index))
+                .flatten()
+        }) {
+            let normalized = [
+                "func Task260EqualsDef : task260_equals ( x ) -> set equals x ;",
+                "func Task260MeansDef : task260_means ( y ) -> set means x = y ;",
+            ];
+            if original.spelling() != normalized[index]
+                || row.site != TypedSiteRef::Node(TypedNodeId::new(original.site().index()))
+                || row.source_range != original.range()
+            {
+                return Err(SourceFunctorDefinitionError::InvalidDefinition { index });
+            }
         }
         if !valid_site(
             &row.site,
@@ -2009,16 +2221,39 @@ fn validate_handoff_rows(
         atomic_formulas,
         arena,
         geometry,
+        handoff.original_source_nodes.as_deref(),
     )?;
     for (index, definition) in handoff.definitions.rows.iter().enumerate() {
         let paths: [&[u32]; 2] = [&[4, 0, 9, 0], &[4, 0, 9, 1]];
-        if !normal_origin(
-            &definition.origin,
-            handoff.source_id,
-            &handoff.module_id,
-            definition.source_range,
-            paths[index],
-        ) {
+        let notation = ["task260_equals ( x )", "task260_means ( y )"];
+        let expected_range = handoff
+            .original_source_nodes
+            .as_ref()
+            .and_then(|rows| {
+                ordinary_functor_declaration_rule(
+                    rows,
+                    index,
+                    handoff.resolver_identities.len(),
+                    notation[index],
+                )
+            })
+            .map(SourceNode::range);
+        #[cfg(test)]
+        let expected_range = expected_range.or_else(|| {
+            handoff
+                .original_source_nodes
+                .is_none()
+                .then_some(definition.source_range)
+        });
+        if !expected_range.is_some_and(|expected| {
+            normal_origin(
+                &definition.origin,
+                handoff.source_id,
+                &handoff.module_id,
+                expected,
+                paths[index],
+            )
+        }) {
             return Err(SourceFunctorDefinitionError::InvalidDefinition { index });
         }
     }

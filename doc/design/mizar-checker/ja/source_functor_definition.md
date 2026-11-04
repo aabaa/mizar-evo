@@ -5,8 +5,7 @@
 
 ## Task 260 Scope / Authority
 
-Checker Task 260はordinary `func` definitionとinitial correctness obligationの
-syntax-free immutable source-to-checker intakeを所有します。authorityはChapter
+authorityはChapter
 10 §§10.1--10.6、Chapter 16 §§16.4/16.6.1/16.7.2、existing parser
 functor-definition pass/recovery fixture、active predicate/functor definition
 gap fixture、committed Tasks 248--256/259 public transportです。
@@ -14,6 +13,15 @@ gap fixture、committed Tasks 248--256/259 public transportです。
 本taskはmissing producerの`source_drift`とexact consumerのspec-derived
 `test_gap`だけをcloseします。definition acceptance、correctness proof、fact/
 axiom、FOL goal、discharge、VC、Core/ControlFlow IRは作りません。
+
+## 元の宣言の authority
+
+`SourceFunctorDefinitionProducer::build` は generic table が install 済みの元の
+`TypedAst` を必須とする。宣言規則は candidate の site / ordinal に依存せず、block の
+所有権と元のソース順序から row を選び、resolver eligibility 段階で origin / clock を
+照合する。handoff は不変の table を build replay、typed installation、resolved assembly
+で共有し、replay の origin 検査は body 検証後の位置を保つ。元ソースを伴わない canonical
+construction は private test に限定する。
 
 ## Frozen Exact Source
 
@@ -63,8 +71,7 @@ computation/justification/correctness `97/98/99`、uniqueness
 tableをauthorityとします。
 
 runnerはloaded byte/final LF、全108 rowのkind/range/recovery/ordered child、root、
-direct sibling order、subtree partitionをauthenticateし、checkerへraw node ID/
-syntax kindを渡しません。
+direct sibling order、subtree partitionをauthenticateします。
 
 resolverはshell 3、projection 2、diagnostic 0、Functor symbol/definition各2、
 local contribution 1です。shell 0はblock `104/0..261`、shell 1はequals
@@ -128,9 +135,7 @@ type/orderもEN code blockどおりです。styleは`Equals/Means`、targetは
 immutable row/table/handoffのfield/getterと
 `SourceFunctorDefinitionProjection::{base_initial_obligations,handoff,
 initial_obligations,into_parts}`はcanonical ENのexact signatureです。
-`SourceFunctorDefinitionProducer::build`はenv、required context/type/primary、
-optional application/structure/set/atomic、baseline obligation、arenaをこの順で
-受け取ります。error variantは`SourceIdentityMismatch`、`DependencyMismatch`、
+error variantは`SourceIdentityMismatch`、`DependencyMismatch`、
 index付き`InvalidResolverDefinition/Definition/Parameter/Guard/Definiens/
 Correctness`、`InvalidObligation`、`InvalidArenaOwnership`、
 `UnsupportedTaskShape`だけです。

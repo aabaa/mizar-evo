@@ -5,9 +5,7 @@
 
 ## Task 260 Scope And Authority
 
-Checker Task 260 owns one syntax-free, immutable source-to-checker intake for
-ordinary `func` definitions and their initial correctness obligations. Its
-canonical authority is Chapter 10 Sections 10.1--10.6, especially the
+Canonical authority is Chapter 10 Sections 10.1--10.6, especially the
 `equals`/`means`, `assume`, return-type, existence, and uniqueness rules;
 Chapter 16 Sections 16.4 and 16.6.1 plus the corresponding 16.7.2 obligation
 rows; the existing parser functor-definition pass/recovery fixtures; the
@@ -18,6 +16,16 @@ This task closes only `source_drift` for the missing checker producer and the
 spec-derived `test_gap` for one exact consumer. It does not accept a
 definition, verify a correctness proof, create a fact or axiom, build a FOL
 goal, discharge an obligation, publish a VC, or lower Core/ControlFlow IR.
+
+## Original declaration authority
+
+`SourceFunctorDefinitionProducer::build` requires the original `TypedAst` with
+its installed generic table. Declaration rules select original rows by block
+ownership and source order, independently of candidate sites or ordinals.
+Resolver origins and clocks join those rows at the resolver eligibility phase.
+The handoff shares the immutable table for build replay, typed installation and
+resolved assembly; replay retains its late origin check after body validation.
+Source-free canonical construction is private to tests.
 
 ## Frozen Exact Source
 
@@ -92,8 +100,7 @@ label ranges are `66..82` and `126..141`; patterns are `84..101` and
 `121..179`. Nodes 65, 69, 77, 84, 95, 99, and 103 are normal direct siblings
 of node 104 in source order.
 
-The checker never receives these raw node numbers or syntax kinds. The
-private `mizar-test` selector cross-checks every supplied byte, final LF, all
+The private `mizar-test` selector cross-checks every supplied byte, final LF, all
 108 row kinds/ranges/recovery/ordered children, root identity, direct sibling
 order, and subtree partition before constructing syntax-free inputs.
 
@@ -380,6 +387,7 @@ impl SourceFunctorDefinitionProducer {
         atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
     ) -> Result<
         SourceFunctorDefinitionProjection,
         SourceFunctorDefinitionError,
