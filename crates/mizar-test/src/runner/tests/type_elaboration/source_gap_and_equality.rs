@@ -285,7 +285,7 @@
             expected_type_assertion_formula_sites[0]
         );
         assert_eq!(
-            type_assertion_payload.formula_range,
+            type_assertion_theorem.nodes()[type_assertion_payload.formula_site.node().index()].range,
             expected_type_assertion_formula_range
         );
         assert_eq!(
@@ -293,7 +293,7 @@
             expected_type_assertion_subject_sites[0]
         );
         assert_eq!(
-            type_assertion_payload.subject_range,
+            type_assertion_theorem.nodes()[type_assertion_payload.subject_site.node().index()].range,
             expected_type_assertion_subject_range
         );
         assert_eq!(
@@ -1529,7 +1529,9 @@
             expected_imported_attribute_formula_sites[0]
         );
         assert_eq!(
-            imported_attribute_assertion_payload.formula_range,
+            imported_attribute_assertion_theorem.nodes()
+                [imported_attribute_assertion_payload.formula_site.node().index()]
+                .range,
             imported_attribute_assertion_formula_range
         );
         assert_eq!(
@@ -1537,7 +1539,9 @@
             expected_imported_attribute_subject_sites[0]
         );
         assert_eq!(
-            imported_attribute_assertion_payload.subject_range,
+            imported_attribute_assertion_theorem.nodes()
+                [imported_attribute_assertion_payload.subject_site.node().index()]
+                .range,
             imported_attribute_assertion_subject_range
         );
         assert_eq!(
@@ -1927,7 +1931,9 @@
             expected_imported_non_empty_attribute_formula_sites[0]
         );
         assert_eq!(
-            imported_non_empty_attribute_assertion_payload.formula_range,
+            imported_non_empty_attribute_assertion_theorem.nodes()
+                [imported_non_empty_attribute_assertion_payload.formula_site.node().index()]
+                .range,
             imported_non_empty_attribute_assertion_formula_range
         );
         assert_eq!(
@@ -1935,7 +1941,9 @@
             expected_imported_non_empty_attribute_subject_sites[0]
         );
         assert_eq!(
-            imported_non_empty_attribute_assertion_payload.subject_range,
+            imported_non_empty_attribute_assertion_theorem.nodes()
+                [imported_non_empty_attribute_assertion_payload.subject_site.node().index()]
+                .range,
             imported_non_empty_attribute_assertion_subject_range
         );
         assert_eq!(

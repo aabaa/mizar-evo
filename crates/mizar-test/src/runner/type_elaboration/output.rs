@@ -750,19 +750,20 @@ pub(in crate::runner) fn source_builtin_type_assertion_formula_output(
         payload.asserted_type.head,
     )
     .with_attributes(payload.asserted_type.attributes);
+    let formula_range = ast.nodes()[payload.formula_site.node().index()].range;
     let output = TermFormulaChecker::default().infer(
         symbols,
         &binding_env,
         [TermInput::new(
             payload.subject_site.clone(),
             context,
-            payload.subject_range,
+            ast.nodes()[payload.subject_site.node().index()].range,
             TermKind::Numeral,
         )],
         [FormulaInput::new(
             payload.formula_site,
             context,
-            payload.formula_range,
+            formula_range,
             FormulaKind::TypeAssertion,
         )
         .with_terms(vec![payload.subject_site])
@@ -780,19 +781,20 @@ pub(in crate::runner) fn source_imported_attribute_assertion_formula_output_from
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
     let _attribute_symbol = payload.attribute_symbol.clone();
+    let formula_range = ast.nodes()[payload.formula_site.node().index()].range;
     let output = TermFormulaChecker::default().infer(
         symbols,
         &binding_env,
         [TermInput::new(
             payload.subject_site.clone(),
             context,
-            payload.subject_range,
+            ast.nodes()[payload.subject_site.node().index()].range,
             TermKind::Numeral,
         )],
         [FormulaInput::new(
             payload.formula_site,
             context,
-            payload.formula_range,
+            formula_range,
             FormulaKind::AttributeAssertion,
         )
         .with_terms(vec![payload.subject_site])

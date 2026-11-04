@@ -460,7 +460,12 @@ fn build_output(
 ) -> Result<SourceAtomicFormulaRouteOutput, String> {
     let binding_env =
         source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
-    let syntax = if matches!(&route, ExactAtomicRoute::Binary(_)) {
+    let syntax = if matches!(
+        &route,
+        ExactAtomicRoute::Binary(_)
+            | ExactAtomicRoute::TypeAssertion(_)
+            | ExactAtomicRoute::Attribute { .. }
+    ) {
         Some(source_syntax_receiver(ast, &module)?)
     } else {
         None
@@ -475,7 +480,7 @@ fn build_output(
         }
     }
     let primary_roots = route.primary_roots();
-    let source_term = if let (ExactAtomicRoute::Binary(_), Some(syntax)) = (&route, &syntax) {
+    let source_term = if let Some(syntax) = &syntax {
         let mut rows = primary_roots
             .iter()
             .map(|root| {
@@ -894,17 +899,17 @@ impl ExactAtomicRoute {
                 .and_then(|mut rows| rows.find(|row| row.site().index() == site.node().index()))
                 .ok_or_else(|| "Task256 generic atomic row disappeared".to_owned())
         };
-        let formula_row = if let Self::Binary(payload) = self {
-            Some(generic_row(&payload.formula_site)?)
+        let formula_row = if syntax.is_some() {
+            Some(generic_row(&self.formula_site())?)
         } else {
             None
         };
         let formula_range = match self {
-            Self::Binary(_) => formula_row.unwrap().range(),
-            Self::TypeAssertion(payload) => payload.formula_range,
+            Self::Binary(_) | Self::TypeAssertion(_) | Self::Attribute { .. } => {
+                formula_row.unwrap().range()
+            }
             Self::Predicate(payload) => payload.formula_range,
             Self::PredicateChain(payload) => payload.formula_range,
-            Self::Attribute { payload, .. } => payload.formula_range,
             Self::SetEnumeration(payload) => payload.formula_range,
         };
         let mut predicate_segments = Vec::new();
@@ -956,7 +961,7 @@ impl ExactAtomicRoute {
                     typed_ast
                         .source_term()
                         .ok_or_else(|| "Task256 lost Task252".to_owned())?,
-                    payload.subject_range,
+                    generic_row(&payload.subject_site)?.range(),
                 )?;
                 edges.push(edge(
                     formula,
@@ -968,15 +973,16 @@ impl ExactAtomicRoute {
                 let head = unique_descendant(ast, type_node, |kind| {
                     matches!(kind, SurfaceNodeKind::TypeHead)
                 })?;
-                let head_node = &ast.nodes()[head.index()];
+                let type_row = generic_row(&payload.asserted_type_site)?;
+                let head_row = generic_row(&surface_site(head))?;
                 type_sites.push(SourceAssertionTypeSiteInput {
                     formula,
-                    site: payload.asserted_type_site.clone(),
-                    source_range: payload.asserted_type.range,
-                    spelling: payload.asserted_type.spelling.clone(),
-                    head_site: surface_site(head),
-                    head_range: head_node.range,
-                    head_spelling: subtree_tokens(ast, head_node).join(" "),
+                    site: TypedSiteRef::Node(TypedNodeId::new(type_row.site().index())),
+                    source_range: type_row.range(),
+                    spelling: type_row.spelling().to_owned(),
+                    head_site: TypedSiteRef::Node(TypedNodeId::new(head_row.site().index())),
+                    head_range: head_row.range(),
+                    head_spelling: head_row.spelling().to_owned(),
                     context: BindingContextId::new(0),
                     recovery: SourceAtomicFormulaRecovery::Normal,
                     head: match payload.asserted_type.head {
@@ -1170,7 +1176,7 @@ impl ExactAtomicRoute {
                     typed_ast
                         .source_term()
                         .ok_or_else(|| "Task256 lost Task252".to_owned())?,
-                    payload.subject_range,
+                    generic_row(&payload.subject_site)?.range(),
                 )?;
                 edges.push(edge(
                     formula,
@@ -1184,17 +1190,17 @@ impl ExactAtomicRoute {
                 let target = unique_descendant(ast, attribute.index(), |kind| {
                     matches!(kind, SurfaceNodeKind::QualifiedSymbol)
                 })?;
-                let attribute_node = &ast.nodes()[attribute.index()];
-                let target_node = &ast.nodes()[target.index()];
+                let attribute_row = generic_row(&surface_site(attribute))?;
+                let target_row = generic_row(&surface_site(target))?;
                 let entry =
                     exact_symbol(symbols, &payload.attribute_symbol, SymbolKind::Attribute)?;
                 let polarity = if *negative {
                     let non = unique_direct_token(ast, attribute.index(), "non")?;
-                    let non_node = &ast.nodes()[non.index()];
+                    let non_row = generic_row(&surface_site(non))?;
                     SourceAssertionAttributePolarityInput::Negative {
-                        non_site: surface_site(non),
-                        non_range: non_node.range,
-                        non_spelling: "non".to_owned(),
+                        non_site: TypedSiteRef::Node(TypedNodeId::new(non_row.site().index())),
+                        non_range: non_row.range(),
+                        non_spelling: non_row.spelling().to_owned(),
                         non_recovery: SourceAtomicFormulaRecovery::Normal,
                     }
                 } else {
@@ -1203,12 +1209,12 @@ impl ExactAtomicRoute {
                 attributes.push(SourceAssertionAttributeInput {
                     formula,
                     ordinal: 0,
-                    site: surface_site(attribute),
-                    source_range: attribute_node.range,
-                    spelling: subtree_tokens(ast, attribute_node).join(" "),
-                    target_site: surface_site(target),
-                    target_range: target_node.range,
-                    target_spelling: subtree_tokens(ast, target_node).join(" "),
+                    site: TypedSiteRef::Node(TypedNodeId::new(attribute_row.site().index())),
+                    source_range: attribute_row.range(),
+                    spelling: attribute_row.spelling().to_owned(),
+                    target_site: TypedSiteRef::Node(TypedNodeId::new(target_row.site().index())),
+                    target_range: target_row.range(),
+                    target_spelling: target_row.spelling().to_owned(),
                     context: BindingContextId::new(0),
                     recovery: SourceAtomicFormulaRecovery::Normal,
                     symbol: entry.symbol().clone(),

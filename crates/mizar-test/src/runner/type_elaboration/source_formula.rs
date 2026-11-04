@@ -1555,9 +1555,7 @@ pub(in crate::runner) struct SourceBuiltinBinaryTermFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceBuiltinTypeAssertionFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) subject_site: TypedSiteRef,
-    pub(in crate::runner) subject_range: SourceRange,
     pub(in crate::runner) asserted_type_site: TypedSiteRef,
     pub(in crate::runner) asserted_type: SourceTypeExpression,
 }
@@ -1598,9 +1596,7 @@ pub(in crate::runner) struct SourceImportedPredicateChainFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceImportedAttributeAssertionFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) subject_site: TypedSiteRef,
-    pub(in crate::runner) subject_range: SourceRange,
     pub(in crate::runner) attribute_symbol: ResolverSymbolId,
 }
 
@@ -1871,9 +1867,7 @@ pub(in crate::runner) fn extract_source_builtin_type_assertion_formula(
     }
     Some(SourceBuiltinTypeAssertionFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         subject_site: surface_site(subject.0),
-        subject_range: subject.1,
         asserted_type_site: surface_site(*type_expression_id),
         asserted_type,
     })
@@ -2290,9 +2284,7 @@ fn extract_source_imported_attribute_assertion_formula_with_shape(
 
     Some(SourceImportedAttributeAssertionFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         subject_site: surface_site(subject.0),
-        subject_range: subject.1,
         attribute_symbol,
     })
 }
