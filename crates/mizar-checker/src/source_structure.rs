@@ -2,7 +2,10 @@ use crate::{
     binding_env::{BindingContextId, BindingEnv},
     source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
-    typed_ast::{NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedSiteRef},
+    typed_ast::{
+        NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedSiteRef, source_children,
+        source_contiguous_child_count,
+    },
 };
 use mizar_resolve::{
     env::{
@@ -1177,20 +1180,17 @@ pub(crate) fn structure_constructor_rule<'a>(
     rows: &'a [SourceNode],
     owner: &'a SourceNode,
 ) -> Option<(&'a SourceNode, &'a SourceNode, Vec<&'a SourceNode>)> {
-    let children = rows
-        .iter()
-        .filter(|row| row.parent() == Some(owner.site()))
-        .collect::<Vec<_>>();
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
     let token = |row: &SourceNode, text: &str| {
         matches!(row.kind(), SurfaceNodeKind::Token(t)
         if t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == text)
     };
     if owner.kind() != &SurfaceNodeKind::StructureConstructor
         || children.len() < 3
+        || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
         || children
             .iter()
-            .enumerate()
-            .any(|(i, row)| row.child_ordinal() != i || !range_contains(owner.range(), row.range()))
+            .any(|row| !range_contains(owner.range(), row.range()))
         || children
             .windows(2)
             .any(|pair| pair[0].range().end > pair[1].range().start)
@@ -1266,17 +1266,15 @@ fn validate_original_constructor(
     let root_error = SourceStructureError::InvalidRoot {
         root: root.ok_or_else(|| invalid.clone())?,
     };
-    let segments = rows
-        .iter()
-        .filter(|row| row.parent() == Some(qualified.site()))
-        .collect::<Vec<_>>();
+    let segments = source_children(rows, qualified.site()).collect::<Vec<_>>();
     if qualified.kind() != &SurfaceNodeKind::QualifiedSymbol || segments.is_empty() || segments.len().is_multiple_of(2)
         || segments.first().is_none_or(|row| row.range().start != qualified.range().start)
         || segments.last().is_none_or(|row| row.range().end != qualified.range().end)
-        || segments.iter().enumerate().any(|(i, row)| row.child_ordinal() != i || if i % 2 == 1 {
+        || source_contiguous_child_count(segments.iter().copied()) != Some(segments.len())
+        || segments.iter().enumerate().any(|(i, row)| if i % 2 == 1 {
             !matches!(row.kind(), SurfaceNodeKind::Token(t) if t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == ".")
         } else {
-            let names = rows.iter().filter(|name| name.parent() == Some(row.site())).collect::<Vec<_>>();
+            let names = source_children(rows, row.site()).collect::<Vec<_>>();
             row.kind() != &SurfaceNodeKind::PathSegment || names.len() != 1
                 || names[0].child_ordinal() != 0 || names[0].range() != row.range()
                 || !matches!(names[0].kind(), SurfaceNodeKind::Token(t) if t.kind ==

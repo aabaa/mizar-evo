@@ -197,6 +197,56 @@ impl SourceNode {
     }
 }
 
+pub(crate) fn source_children(
+    rows: &[SourceNode],
+    parent: ResolvedNodeId,
+) -> impl Iterator<Item = &SourceNode> {
+    rows.iter().filter(move |row| row.parent() == Some(parent))
+}
+
+pub(crate) fn unique_source_node<'a>(
+    rows: impl IntoIterator<Item = &'a SourceNode>,
+    eligible: impl Fn(&SourceNode) -> bool,
+) -> Option<&'a SourceNode> {
+    let mut matches = rows.into_iter().filter(|row| eligible(row));
+    let row = matches.next()?;
+    matches.next().is_none().then_some(row)
+}
+
+pub(crate) fn source_unique_child<'a>(
+    rows: &'a [SourceNode],
+    parent: &SourceNode,
+    kind: SurfaceNodeKind,
+) -> Option<&'a SourceNode> {
+    let row = unique_source_node(source_children(rows, parent.site()), |row| {
+        row.kind() == &kind
+    })?;
+    if row.range().source_id != parent.range().source_id
+        || row.range().start < parent.range().start
+        || row.range().end > parent.range().end
+        || row.preorder_ordinal() <= parent.preorder_ordinal()
+    {
+        return None;
+    }
+    Some(row)
+}
+
+pub(crate) fn source_child_at(
+    rows: &[SourceNode],
+    parent: ResolvedNodeId,
+    ordinal: usize,
+) -> Option<&SourceNode> {
+    source_children(rows, parent).find(|row| row.child_ordinal() == ordinal)
+}
+
+pub(crate) fn source_contiguous_child_count<'a>(
+    rows: impl IntoIterator<Item = &'a SourceNode>,
+) -> Option<usize> {
+    rows.into_iter().try_fold(0, |count, row| {
+        (row.child_ordinal() == count).then_some(count + 1)
+    })
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedAst {
     source_id: SourceId,

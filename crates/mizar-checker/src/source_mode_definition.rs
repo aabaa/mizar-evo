@@ -15,7 +15,8 @@ use crate::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
         LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
-        TypedSiteRef,
+        TypedSiteRef, source_child_at, source_children, source_contiguous_child_count,
+        source_unique_child,
     },
 };
 use mizar_resolve::{
@@ -1592,33 +1593,17 @@ pub(crate) fn mode_property_rule<'a>(
     {
         return None;
     }
-    let child = |parent: &SourceNode, kind: SurfaceNodeKind| {
-        let mut children = rows
-            .iter()
-            .filter(|row| row.parent() == Some(parent.site()) && row.kind() == &kind);
-        let row = children.next()?;
-        if children.next().is_some()
-            || row.range().source_id != parent.range().source_id
-            || row.range().start < parent.range().start
-            || row.range().end > parent.range().end
-            || row.preorder_ordinal() <= parent.preorder_ordinal()
-        {
-            return None;
-        }
-        Some(row)
-    };
-    let property = child(owner, SurfaceNodeKind::ModeProperty)?;
-    let clause = child(property, SurfaceNodeKind::JustificationClause)?;
-    let computation = child(clause, SurfaceNodeKind::ComputationJustification)?;
-    let option = child(computation, SurfaceNodeKind::ComputationOption)?;
+    let property = source_unique_child(rows, owner, SurfaceNodeKind::ModeProperty)?;
+    let clause = source_unique_child(rows, property, SurfaceNodeKind::JustificationClause)?;
+    let computation = source_unique_child(rows, clause, SurfaceNodeKind::ComputationJustification)?;
+    let option = source_unique_child(rows, computation, SurfaceNodeKind::ComputationOption)?;
     // The property follows the mode header; each justification follows its keyword.
     if property.child_ordinal() == 0
         || clause.child_ordinal() != 1
         || computation.child_ordinal() != 1
         || option.child_ordinal() != 2
-        || rows.iter().any(|row| {
-            row.parent() == Some(owner.site()) && row.child_ordinal() > property.child_ordinal()
-        })
+        || source_children(rows, owner.site())
+            .any(|row| row.child_ordinal() > property.child_ordinal())
     {
         return None;
     }
@@ -1629,22 +1614,10 @@ pub(crate) fn mode_property_rule<'a>(
         return None;
     }
     for (parent, count) in [(property, 3), (clause, 2), (computation, 4), (option, 3)] {
-        let mut children = rows
-            .iter()
-            .filter(|row| row.parent() == Some(parent.site()));
-        for ordinal in 0..count {
-            if children.next()?.child_ordinal() != ordinal {
-                return None;
-            }
-        }
-        if children.next().is_some() {
+        if source_contiguous_child_count(source_children(rows, parent.site())) != Some(count) {
             return None;
         }
     }
-    let at = |parent: &SourceNode, ordinal| {
-        rows.iter()
-            .find(|row| row.parent() == Some(parent.site()) && row.child_ordinal() == ordinal)
-    };
     for (parent, ordinal, kind, text) in [
         (property, 0, SurfaceTokenKind::ReservedWord, "sethood"),
         (property, 2, SurfaceTokenKind::ReservedSymbol, ";"),
@@ -1659,14 +1632,15 @@ pub(crate) fn mode_property_rule<'a>(
         (computation, 3, SurfaceTokenKind::ReservedSymbol, ")"),
         (option, 1, SurfaceTokenKind::ReservedSymbol, ":"),
     ] {
-        if !matches!(at(parent, ordinal)?.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        if !matches!(source_child_at(rows, parent.site(), ordinal)?.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
         {
             return None;
         }
     }
-    let (SurfaceNodeKind::Token(name), SurfaceNodeKind::Token(value)) =
-        (at(option, 0)?.kind(), at(option, 2)?.kind())
-    else {
+    let (SurfaceNodeKind::Token(name), SurfaceNodeKind::Token(value)) = (
+        source_child_at(rows, option.site(), 0)?.kind(),
+        source_child_at(rows, option.site(), 2)?.kind(),
+    ) else {
         return None;
     };
     let valid_option = if name.text.as_ref() == "replay" {

@@ -28,7 +28,7 @@ use crate::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
         LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
-        TypedSiteRef,
+        TypedSiteRef, source_children, source_contiguous_child_count,
     },
 };
 use mizar_resolve::{
@@ -1437,30 +1437,18 @@ pub(crate) fn ordinary_functor_declaration_rule<'a>(
         previous = Some(row);
     }
     let declaration = declarations().nth(index)?;
-    let children = rows
-        .iter()
-        .filter(|row| row.parent() == Some(declaration.site()))
-        .collect::<Vec<_>>();
+    let children = source_children(rows, declaration.site()).collect::<Vec<_>>();
     if children.len() != 9
-        || children
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
         || children[3].kind() != &SurfaceNodeKind::FunctorPattern
         || children[3].spelling() != notation
         || children[5].kind() != &SurfaceNodeKind::TypeExpression
     {
         return None;
     }
-    let pattern = rows
-        .iter()
-        .filter(|row| row.parent() == Some(children[3].site()))
-        .collect::<Vec<_>>();
+    let pattern = source_children(rows, children[3].site()).collect::<Vec<_>>();
     if pattern.len() != 4
-        || pattern
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || source_contiguous_child_count(pattern.iter().copied()) != Some(pattern.len())
         || !matches!(pattern[0].kind(), SurfaceNodeKind::Token(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
         || !matches!(pattern[2].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
     {

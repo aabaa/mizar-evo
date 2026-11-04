@@ -37,7 +37,7 @@ use crate::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
         LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
-        TypedSiteRef, TypingState,
+        TypedSiteRef, TypingState, source_child_at, source_children, unique_source_node,
     },
 };
 use mizar_resolve::{
@@ -2054,15 +2054,7 @@ pub(crate) struct StructurePropertyRoles<'a> {
 }
 
 pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePropertyRoles<'_>> {
-    let unique = |kind| {
-        let mut found = rows.iter().filter(|row| row.kind() == &kind);
-        let row = found.next()?;
-        found.next().is_none().then_some(row)
-    };
-    let child = |parent: &SourceNode, ordinal| {
-        rows.iter()
-            .find(|row| row.parent() == Some(parent.site()) && row.child_ordinal() == ordinal)
-    };
+    let unique = |kind| unique_source_node(rows, |row| row.kind() == &kind);
     let structure = unique(K::StructureDefinition)?;
     let field = unique(K::StructureField)?;
     let property = unique(K::StructureProperty)?;
@@ -2070,17 +2062,17 @@ pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePr
     let block = rows.iter().find(|row| {
         Some(row.site()) == structure.parent() && row.kind() == &K::DefinitionBlockItem
     })?;
-    let pattern = child(structure, 1)?;
-    let field_type = child(field, 3)?;
-    let property_type = child(property, 3)?;
-    let field_head = child(field_type, 0)?;
-    let property_head = child(property_type, 0)?;
-    let parameter = child(owner, 1)?;
-    let parameter_head = child(parameter, 3)?;
-    let parameter_type = child(parameter_head, 0)?;
-    let path = child(parameter_type, 0)?;
-    let header = child(owner, 0)?;
-    let K::Token(style) = child(owner, 6)?.kind() else {
+    let pattern = source_child_at(rows, structure.site(), 1)?;
+    let field_type = source_child_at(rows, field.site(), 3)?;
+    let property_type = source_child_at(rows, property.site(), 3)?;
+    let field_head = source_child_at(rows, field_type.site(), 0)?;
+    let property_head = source_child_at(rows, property_type.site(), 0)?;
+    let parameter = source_child_at(rows, owner.site(), 1)?;
+    let parameter_head = source_child_at(rows, parameter.site(), 3)?;
+    let parameter_type = source_child_at(rows, parameter_head.site(), 0)?;
+    let path = source_child_at(rows, parameter_type.site(), 0)?;
+    let header = source_child_at(rows, owner.site(), 0)?;
+    let K::Token(style) = source_child_at(rows, owner.site(), 6)?.kind() else {
         return None;
     };
     if style.kind != T::ReservedWord {
@@ -2118,15 +2110,11 @@ pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePr
         (path, K::PathSegment, 1),
         (owner, K::PropertyImplementation, owner_count),
     ] {
-        let children = rows
-            .iter()
-            .filter(|child| child.parent() == Some(row.site()))
-            .collect::<Vec<_>>();
-        if row.kind() != &kind || children.len() != count {
+        if row.kind() != &kind || source_children(rows, row.site()).count() != count {
             return None;
         }
     }
-    if child(owner, 7)?.kind() != &body_kind {
+    if source_child_at(rows, owner.site(), 7)?.kind() != &body_kind {
         return None;
     }
     for (parent, ordinal, kind, text) in [
@@ -2151,18 +2139,23 @@ pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePr
         (parameter, 4, T::ReservedSymbol, ";"),
         (field_head, 0, T::ReservedWord, "set"),
         (property_head, 0, T::ReservedWord, "set"),
-        (path, 0, T::UserSymbol, child(pattern, 0)?.spelling()),
+        (
+            path,
+            0,
+            T::UserSymbol,
+            source_child_at(rows, pattern.site(), 0)?.spelling(),
+        ),
     ] {
-        if !matches!(child(parent, ordinal)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        if !matches!(source_child_at(rows, parent.site(), ordinal)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == text)
         {
             return None;
         }
     }
     for row in [
-        child(pattern, 0)?,
-        child(field, 1)?,
-        child(property, 1)?,
-        child(parameter, 1)?,
+        source_child_at(rows, pattern.site(), 0)?,
+        source_child_at(rows, field.site(), 1)?,
+        source_child_at(rows, property.site(), 1)?,
+        source_child_at(rows, parameter.site(), 1)?,
     ] {
         if !matches!(row.kind(), K::Token(token) if token.kind == T::Identifier) {
             return None;
@@ -2194,7 +2187,7 @@ pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePr
         prefix,
         implementation: owner,
         parameter_type: [parameter_type, parameter_head],
-        parameter_identifier: child(parameter, 1)?,
+        parameter_identifier: source_child_at(rows, parameter.site(), 1)?,
         profile,
     })
 }
@@ -3244,9 +3237,9 @@ fn validate_arena(
                     .filter(|row| matches!(row.kind(), K::Token(_)))
                     .map(SourceNode::site)
                     .collect::<Vec<_>>();
-                for child in original.iter().filter(|child| {
-                    child.parent() == Some(native.site()) && !matches!(child.kind(), K::Token(_))
-                }) {
+                for child in source_children(original, native.site())
+                    .filter(|child| !matches!(child.kind(), K::Token(_)))
+                {
                     if child.child_ordinal() > children.len() {
                         return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
                     }
@@ -3254,9 +3247,7 @@ fn validate_arena(
                 }
                 children
             } else {
-                original
-                    .iter()
-                    .filter(|child| child.parent() == Some(native.site()))
+                source_children(original, native.site())
                     .map(SourceNode::site)
                     .collect()
             };

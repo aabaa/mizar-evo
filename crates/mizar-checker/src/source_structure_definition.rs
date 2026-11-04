@@ -6,7 +6,8 @@ use crate::{
     },
     typed_ast::{
         InitialObligationKind, InitialObligationTable, NodeRecoveryState, SourceNode, TypedArena,
-        TypedAst, TypedNodeId, TypedSiteRef,
+        TypedAst, TypedNodeId, TypedSiteRef, source_children, source_contiguous_child_count,
+        unique_source_node,
     },
 };
 use mizar_resolve::{
@@ -1325,39 +1326,26 @@ fn validate_member_inputs(
 }
 
 pub(crate) fn inheritance_definition_rule(rows: &[SourceNode]) -> Option<&SourceNode> {
-    let mut owners = rows
+    let owner = unique_source_node(rows, |row| {
+        row.kind() == &SurfaceNodeKind::InheritanceDefinition
+    })?;
+    if rows
         .iter()
-        .filter(|row| row.kind() == &SurfaceNodeKind::InheritanceDefinition);
-    let owner = owners.next()?;
-    if owners.next().is_some()
-        || rows
-            .iter()
-            .any(|row| row.recovery() != NodeRecoveryState::Normal)
+        .any(|row| row.recovery() != NodeRecoveryState::Normal)
     {
         return None;
     }
     let block = rows.iter().find(|row| {
         Some(row.site()) == owner.parent() && row.kind() == &SurfaceNodeKind::DefinitionBlockItem
     })?;
-    let children = |parent: &SourceNode| {
-        rows.iter()
-            .filter(|row| row.parent() == Some(parent.site()))
-            .collect::<Vec<_>>()
-    };
-    let frame = children(owner);
-    let parent = children(block);
+    let frame = source_children(rows, owner.site()).collect::<Vec<_>>();
+    let parent = source_children(rows, block.site()).collect::<Vec<_>>();
     if frame.len() != 9
         || parent.len() < 4
         || owner.child_ordinal() == 0
         || owner.child_ordinal() >= parent.len() - 2
-        || frame
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
-        || parent
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || source_contiguous_child_count(frame.iter().copied()) != Some(frame.len())
+        || source_contiguous_child_count(parent.iter().copied()) != Some(parent.len())
         || frame[5].kind() != &SurfaceNodeKind::FieldRedefinition
         || frame[6].kind() != &SurfaceNodeKind::PropertyRedefinition
     {
@@ -1387,7 +1375,7 @@ pub(crate) fn inheritance_definition_rule(rows: &[SourceNode]) -> Option<&Source
         }
     }
     for target in [frame[1], frame[3]] {
-        let names = children(target);
+        let names = source_children(rows, target.site()).collect::<Vec<_>>();
         if target.kind() != &SurfaceNodeKind::InheritanceTarget
             || names.len() != 1
             || names[0].child_ordinal() != 0
@@ -1399,32 +1387,15 @@ pub(crate) fn inheritance_definition_rule(rows: &[SourceNode]) -> Option<&Source
     Some(owner)
 }
 
-fn unique_original(
-    rows: &[SourceNode],
-    eligible: impl Fn(&SourceNode) -> bool,
-) -> Option<&SourceNode> {
-    let mut matches = rows.iter().filter(|row| eligible(row));
-    let row = matches.next()?;
-    matches.next().is_none().then_some(row)
-}
-
-fn original_children<'a>(rows: &'a [SourceNode], parent: &SourceNode) -> Vec<&'a SourceNode> {
-    rows.iter()
-        .filter(|row| row.parent() == Some(parent.site()))
-        .collect()
-}
-
 pub(crate) fn inheritance_target_rule<'a>(
     rows: &'a [SourceNode],
     owner: &SourceNode,
     ordinal: usize,
 ) -> Option<&'a SourceNode> {
-    let target = unique_original(rows, |row| {
-        row.parent() == Some(owner.site())
-            && row.child_ordinal() == ordinal
-            && row.kind() == &SurfaceNodeKind::InheritanceTarget
+    let target = unique_source_node(source_children(rows, owner.site()), |row| {
+        row.child_ordinal() == ordinal && row.kind() == &SurfaceNodeKind::InheritanceTarget
     })?;
-    let names = original_children(rows, target);
+    let names = source_children(rows, target.site()).collect::<Vec<_>>();
     if names.len() != 1
         || names[0].child_ordinal() != 0
         || names[0].range() != target.range()
@@ -1439,15 +1410,11 @@ pub(crate) fn field_redefinition_rule<'a>(
     rows: &'a [SourceNode],
     owner: &SourceNode,
 ) -> Option<(&'a SourceNode, &'a SourceNode, &'a SourceNode)> {
-    let mapping = unique_original(rows, |row| {
-        row.parent() == Some(owner.site()) && row.kind() == &SurfaceNodeKind::FieldRedefinition
+    let mapping = unique_source_node(source_children(rows, owner.site()), |row| {
+        row.kind() == &SurfaceNodeKind::FieldRedefinition
     })?;
-    let frame = original_children(rows, mapping);
-    if frame.len() != 5
-        || frame
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+    let frame = source_children(rows, mapping.site()).collect::<Vec<_>>();
+    if frame.len() != 5 || source_contiguous_child_count(frame.iter().copied()) != Some(frame.len())
     {
         return None;
     }
@@ -1469,15 +1436,11 @@ pub(crate) fn property_redefinition_rule<'a>(
     rows: &'a [SourceNode],
     owner: &SourceNode,
 ) -> Option<(&'a SourceNode, &'a SourceNode, &'a SourceNode)> {
-    let mapping = unique_original(rows, |row| {
-        row.parent() == Some(owner.site()) && row.kind() == &SurfaceNodeKind::PropertyRedefinition
+    let mapping = unique_source_node(source_children(rows, owner.site()), |row| {
+        row.kind() == &SurfaceNodeKind::PropertyRedefinition
     })?;
-    let frame = original_children(rows, mapping);
-    if frame.len() != 5
-        || frame
-            .iter()
-            .enumerate()
-            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+    let frame = source_children(rows, mapping.site()).collect::<Vec<_>>();
+    if frame.len() != 5 || source_contiguous_child_count(frame.iter().copied()) != Some(frame.len())
     {
         return None;
     }
@@ -1583,20 +1546,18 @@ fn validate_inheritance_inputs(
         for (ordinal, definition) in [(1, row.child.index()), (3, row.parent.index())] {
             let target =
                 inheritance_target_rule(rows, owner, ordinal).ok_or_else(|| error.clone())?;
-            let declaration = unique_original(rows, |candidate| {
+            let declaration = unique_source_node(rows, |candidate| {
                 candidate.kind() == &SurfaceNodeKind::StructureDefinition
                     && candidate.parent() == owner.parent()
                     && candidate.preorder_ordinal() < owner.preorder_ordinal()
                     && Some(candidate.range()) == origin_range(&definition_origins[definition])
             })
             .ok_or_else(|| error.clone())?;
-            let pattern = unique_original(rows, |row| {
-                row.parent() == Some(declaration.site())
-                    && row.child_ordinal() == 1
-                    && row.kind() == &SurfaceNodeKind::StructurePattern
+            let pattern = unique_source_node(source_children(rows, declaration.site()), |row| {
+                row.child_ordinal() == 1 && row.kind() == &SurfaceNodeKind::StructurePattern
             })
             .ok_or_else(|| error.clone())?;
-            let names = original_children(rows, pattern);
+            let names = source_children(rows, pattern.site()).collect::<Vec<_>>();
             if node_site(declaration.site().index()) != input.definitions[definition].site
                 || names.len() != 1
                 || names[0].child_ordinal() != 0
@@ -1686,7 +1647,7 @@ fn validate_mapping_inputs(
                 return Err(error());
             }
             for (name, member) in [(local, view), (from, parent)] {
-                let declaration = unique_original(rows, |row| {
+                let declaration = unique_source_node(rows, |row| {
                     row.kind() == &SurfaceNodeKind::StructureDefinition
                         && row.parent() == owner.parent()
                         && row.preorder_ordinal() < owner.preorder_ordinal()
@@ -1699,17 +1660,18 @@ fn validate_mapping_inputs(
                 } else {
                     SurfaceNodeKind::StructureProperty
                 };
-                let declared = unique_original(rows, |row| {
-                    row.parent() == Some(declaration.site())
-                        && row.preorder_ordinal() < owner.preorder_ordinal()
-                        && row.kind() == &member_kind
-                        && Some(row.range()) == origin_range(&members[member])
-                })
-                .ok_or_else(error)?;
-                let declared_name = unique_original(rows, |row| {
-                    row.parent() == Some(declared.site()) && row.child_ordinal() == 1
-                })
-                .ok_or_else(error)?;
+                let declared =
+                    unique_source_node(source_children(rows, declaration.site()), |row| {
+                        row.preorder_ordinal() < owner.preorder_ordinal()
+                            && row.kind() == &member_kind
+                            && Some(row.range()) == origin_range(&members[member])
+                    })
+                    .ok_or_else(error)?;
+                let declared_name =
+                    unique_source_node(source_children(rows, declared.site()), |row| {
+                        row.child_ordinal() == 1
+                    })
+                    .ok_or_else(error)?;
                 if node_site(declared.site().index()) != input.members[member].site
                     || !matches!(declared_name.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
                     || declared_name.spelling() != name.spelling()
