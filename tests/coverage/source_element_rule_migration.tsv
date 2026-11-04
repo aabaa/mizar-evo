@@ -1,17 +1,17 @@
 # generator: manual family ledger for VELOCITY-ELEMENT-RULE-TRANSPORT (opened 2026-11-04); one row per class b kind of source_transport_classification.tsv and per inherited constant target required by the contract
-# status: done = committed and named in its commit body; open = not started. predecessor: a family's first rule names native-consumer of source_transport_migration.tsv; later rules name the family's first done rule; `-` = not yet selected
+# status: done = committed and named in its commit body; open = not started; blocked = the owning producer does not exist yet (2026-11-04), predecessor names the checker task that ships the rule with its producer. predecessor: a family's first rule names native-consumer of source_transport_migration.tsv; later rules name the family's first done rule; `-` = not yet selected
 # family: definition (Tasks 279/270) | proof-skeleton (Tasks 272/269) | reconsider (Task 271) | expression (Task 257)
 # inherited targets have inherited: notes and do not complete or reclassify a class b kind
 slice	family	predecessor	status	note
-attribute-redefinition	definition	-	open	AttributeRedefinition
-equating	definition	-	open	Equating
+attribute-redefinition	definition	checker-task-279	blocked	AttributeRedefinition
+equating	definition	checker-task-269	blocked	Equating
 field-argument	definition	mode-property	done	FieldArgument
 field-redefinition	definition	mode-property	done	FieldRedefinition
-functor-redefinition	definition	-	open	FunctorRedefinition
+functor-redefinition	definition	checker-task-279	blocked	FunctorRedefinition
 inheritance-definition	definition	mode-property	done	InheritanceDefinition
 inheritance-target	definition	mode-property	done	InheritanceTarget
-inline-functor-definition	definition	-	open	InlineFunctorDefinition
-inline-predicate-definition	definition	-	open	InlinePredicateDefinition
+inline-functor-definition	definition	checker-task-270	blocked	InlineFunctorDefinition
+inline-predicate-definition	definition	checker-task-270	blocked	InlinePredicateDefinition
 mode-property	definition	native-consumer	done	ModeProperty
 functor-declaration-eligibility	definition	mode-property	done	inherited: FunctorDefinition resolver declaration eligibility in source_functor_definition
 property-retained-constants	definition	mode-property	done	inherited: resolver origins, header, prefix initializer and Arena node/token associations use original roles in source_property_implementation
@@ -19,20 +19,20 @@ property-redefinition	definition	mode-property	done	PropertyRedefinition
 row-navigation-helpers	definition	mode-property	done	consolidation: the mode, functor, property and structure rules read the generic table through shared helpers beside SourceNode in typed_ast.rs (contract, 2026-11-04); light tier, before the next definition rule
 structure-constructor	definition	mode-property	done	StructureConstructor
 structure-property	definition	mode-property	done	StructureProperty
-case-item	proof-skeleton	-	open	CaseItem
-case-reasoning-statement	proof-skeleton	-	open	CaseReasoningStatement
-consider-statement	proof-skeleton	-	open	ConsiderStatement
-given-statement	proof-skeleton	-	open	GivenStatement
-hereby-statement	proof-skeleton	-	open	HerebyStatement
-iterative-equality-statement	proof-skeleton	-	open	IterativeEqualityStatement
-iterative-equality-step	proof-skeleton	-	open	IterativeEqualityStep
-now-statement	proof-skeleton	-	open	NowStatement
-set-statement	proof-skeleton	-	open	SetStatement; capture-avoiding expansion stays deferred (EN15 §15.11.2)
-statement-item	proof-skeleton	-	open	StatementItem
-suppose-item	proof-skeleton	-	open	SupposeItem
-then-statement	proof-skeleton	-	open	ThenStatement
-qua-expression	reconsider	-	open	QuaExpression
-reconsider-item	reconsider	-	open	ReconsiderItem
-reconsider-statement	reconsider	-	open	ReconsiderStatement
-binder-expression	expression	-	open	BinderExpression
-term-case	expression	-	open	TermCase
+case-item	proof-skeleton	checker-task-272	blocked	CaseItem
+case-reasoning-statement	proof-skeleton	checker-task-272	blocked	CaseReasoningStatement
+consider-statement	proof-skeleton	checker-task-272	blocked	ConsiderStatement
+given-statement	proof-skeleton	checker-task-272	blocked	GivenStatement
+hereby-statement	proof-skeleton	checker-task-272	blocked	HerebyStatement
+iterative-equality-statement	proof-skeleton	checker-task-272	blocked	IterativeEqualityStatement
+iterative-equality-step	proof-skeleton	checker-task-272	blocked	IterativeEqualityStep
+now-statement	proof-skeleton	checker-task-272	blocked	NowStatement
+set-statement	proof-skeleton	checker-task-272	blocked	SetStatement; capture-avoiding expansion stays deferred (EN15 §15.11.2)
+statement-item	proof-skeleton	checker-task-272	blocked	StatementItem
+suppose-item	proof-skeleton	checker-task-272	blocked	SupposeItem
+then-statement	proof-skeleton	checker-task-272	blocked	ThenStatement
+qua-expression	reconsider	checker-task-271	blocked	QuaExpression
+reconsider-item	reconsider	checker-task-271	blocked	ReconsiderItem
+reconsider-statement	reconsider	checker-task-271	blocked	ReconsiderStatement
+binder-expression	expression	checker-task-257B	blocked	BinderExpression
+term-case	expression	checker-task-257B	blocked	TermCase

@@ -600,7 +600,8 @@ unchecked row below is one future nonempty logical task and one commit.
     matrix are complete. The preflight-corrected real ranges are retained
     without changing the canonical `.miz` or its semantic detail vector.
   - [ ] **Task 257B:** broader connective/quantifier shapes, implicit binders,
-    bound use, and capture.
+    bound use, and capture. Ships the Task 285 element rules blocked on it
+    (BinderExpression, TermCase) with the producer.
     - [x] **Task 257B1:** explicit universal-to-atomic composition and two
       binder-selected bound uses. The exact 79-byte pass consumer, second
       exact Task-257 composite profile, Task-252/256 dependencies, `1/2`
@@ -698,11 +699,18 @@ unchecked row below is one future nonempty logical task and one commit.
 - [x] **Task 262:** mode-definition producer.
 - [x] **Task 263:** structure/inheritance/constructor-definition producer.
 - [x] **Task 264:** property-implementation producer; depends on parser Task 48.
-- [ ] **Task 269:** proof-local declaration/binding producer.
+- [ ] **Task 269:** proof-local declaration/binding producer. Ships the
+  Task 285 element rule blocked on it (Equating, the `set` name) with the
+  producer.
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
+  Ships the Task 285 element rules blocked on it (InlineFunctorDefinition,
+  InlinePredicateDefinition) with the producer.
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
-  depends on parser Task 47.
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
+  depends on parser Task 47. Ships the Task 285 element rules blocked on it
+  (QuaExpression, ReconsiderItem, ReconsiderStatement) with the producer.
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer. Ships
+  the Task 285 element rules blocked on it (the twelve proof-skeleton kinds of
+  `tests/coverage/source_element_rule_migration.tsv`) with the producer.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
@@ -714,7 +722,9 @@ unchecked row below is one future nonempty logical task and one commit.
   S1, and Task 49 remains gated on S1.
 - [ ] **Task 278:** ordinary/template overload input-to-selection producer.
 - [ ] **Task 279:** redefinition/notation target/coherence/refinement producer;
-  consumes Task 278 ordinary-root results without a dependency cycle.
+  consumes Task 278 ordinary-root results without a dependency cycle. Ships
+  the Task 285 element rules blocked on it (AttributeRedefinition,
+  FunctorRedefinition) with the producer.
 
 Every task projects its family transactionally through applicable `TypedAst`
 and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10
@@ -739,7 +749,10 @@ implementation commit does not satisfy a producer task.
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
 - [ ] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
-  269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Also owns
+  269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Exits
+  when every kind with an existing producer is done; kinds whose producer is
+  absent are `blocked` in the ledger and ship with Tasks 257B, 269, 270, 271,
+  272 and 279. Also owns
   the definition-policy constants Task 284 retained in
   `source_functor_definition.rs` and `source_property_implementation.rs`, and
   decides the nested-Fraenkel and condition-aggregate constants of

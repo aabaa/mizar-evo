@@ -584,7 +584,8 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     preflight-corrected real rangeをcanonical `.miz`/semantic detail vector
     不変のまま保持する。
   - [ ] **Task 257B:** broader connective/quantifier shape、implicit binder、
-    bound use/capture。
+    bound use/capture。この task で blocked の Task 285 要素規則
+    (BinderExpression, TermCase) を producer と同時に出荷する。
     - [x] **Task 257B1:** explicit universal-to-atomic compositionとbinderが
       selectするbound use 2件。exact 79-byte pass consumer、第2 exact Task-257
       composite profile、Task-252/256 dependency、`1/2` formula-composition
@@ -676,11 +677,17 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 - [x] **Task 262:** mode-definition producer。
 - [x] **Task 263:** structure/inheritance/constructor-definition producer。
 - [x] **Task 264:** property-implementation producer。parser Task 48に依存。
-- [ ] **Task 269:** proof-local declaration/binding producer。
+- [ ] **Task 269:** proof-local declaration/binding producer。この task で
+  blocked の Task 285 要素規則 (Equating の `set` 名) を producer と同時に出荷する。
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
+  この task で blocked の Task 285 要素規則 (InlineFunctorDefinition,
+  InlinePredicateDefinition) を producer と同時に出荷する。
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
-  parser Task 47に依存。
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。
+  parser Task 47に依存。この task で blocked の Task 285 要素規則 (QuaExpression,
+  ReconsiderItem, ReconsiderStatement) を producer と同時に出荷する。
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。この task で
+  blocked の Task 285 要素規則 (`tests/coverage/source_element_rule_migration.tsv`
+  の proof-skeleton 12 種) を producer と同時に出荷する。
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer。
 - [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import/
   activation adapter。canonical authorityがupstream owner/schema/authentication
@@ -692,7 +699,9 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   gateされる。
 - [ ] **Task 278:** ordinary/template overload input-to-selection producer。
 - [ ] **Task 279:** redefinition/notation target/coherence/refinement producer。
-  dependency cycleなしにTask 278 ordinary-root resultをconsumeする。
+  dependency cycleなしにTask 278 ordinary-root resultをconsumeする。この task で
+  blocked の Task 285 要素規則 (AttributeRedefinition, FunctorRedefinition) を
+  producer と同時に出荷する。
 
 各taskはfamilyを適用可能な`TypedAst`/`ResolvedTypedAst` tableまでtransactionally
 projectし、実`mizar-test` Task-10 caseがconsumeする。未消費DTO、placeholder
@@ -712,7 +721,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。
 - [ ] **Task 285:** 汎用 walk の上に載せる class `b` の要素規則 (Task 257, 269, 270,
-  271, 272, 279 の role)。2026-11-04 に Task 284 から分離。Task 284 が
+  271, 272, 279 の role)。2026-11-04 に Task 284 から分離。producer が存在する
+  kind がすべて done になれば exit する。producer 未着手の kind はレジャーで
+  `blocked` とし、Task 257B, 269, 270, 271, 272, 279 が出荷する。Task 284 が
   `source_functor_definition.rs` と `source_property_implementation.rs` に残した
   definition policy 定数も所有し、`source_term.rs` と `source_formula_composition.rs`
   の nested-Fraenkel / condition-aggregate 定数の扱いを決める。契約:
