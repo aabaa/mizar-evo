@@ -4466,13 +4466,22 @@ fn task257c3_real_route_publishes_exact_composition_and_resolver_provenance() {
             .expect("Task257C3 exact lower selector");
     assert_eq!(
         (
-            payload.formula_range.start,
-            payload.formula_range.end,
-            payload.segment_ranges.map(|range| (range.start, range.end)),
-            payload.head_ranges.map(|range| (range.start, range.end)),
-            payload.term_ranges.map(|range| (range.start, range.end)),
-            (payload.verb_range.start, payload.verb_range.end),
-            (payload.not_range.start, payload.not_range.end),
+            ast.nodes()[payload.formula_site.node().index()].range.start,
+            ast.nodes()[payload.formula_site.node().index()].range.end,
+            payload.segment_sites.each_ref().map(|site| {
+                let range = ast.nodes()[site.node().index()].range;
+                (range.start, range.end)
+            }),
+            payload.head_sites.each_ref().map(|site| {
+                let range = ast.nodes()[site.node().index()].range;
+                (range.start, range.end)
+            }),
+            payload.term_sites.each_ref().map(|site| {
+                let range = ast.nodes()[site.node().index()].range;
+                (range.start, range.end)
+            }),
+            (ast.nodes()[payload.verb_site.node().index()].range.start, ast.nodes()[payload.verb_site.node().index()].range.end),
+            (ast.nodes()[payload.not_site.node().index()].range.start, ast.nodes()[payload.not_site.node().index()].range.end),
         ),
         (
             75,

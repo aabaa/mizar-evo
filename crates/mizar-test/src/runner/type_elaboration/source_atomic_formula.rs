@@ -464,6 +464,7 @@ fn build_output(
         &route,
         ExactAtomicRoute::Binary(_)
             | ExactAtomicRoute::TypeAssertion(_)
+            | ExactAtomicRoute::PredicateChain(_)
             | ExactAtomicRoute::Attribute { .. }
     ) {
         Some(source_syntax_receiver(ast, &module)?)
@@ -905,11 +906,11 @@ impl ExactAtomicRoute {
             None
         };
         let formula_range = match self {
-            Self::Binary(_) | Self::TypeAssertion(_) | Self::Attribute { .. } => {
-                formula_row.unwrap().range()
-            }
+            Self::Binary(_)
+            | Self::TypeAssertion(_)
+            | Self::PredicateChain(_)
+            | Self::Attribute { .. } => formula_row.unwrap().range(),
             Self::Predicate(payload) => payload.formula_range,
-            Self::PredicateChain(payload) => payload.formula_range,
             Self::SetEnumeration(payload) => payload.formula_range,
         };
         let mut predicate_segments = Vec::new();
@@ -1075,22 +1076,22 @@ impl ExactAtomicRoute {
                     .source_term()
                     .ok_or_else(|| "Task257C1 lost Task252".to_owned())?;
                 let targets = payload
-                    .term_ranges
+                    .term_sites
                     .iter()
-                    .copied()
-                    .map(|range| primary_target(primary, range))
+                    .map(|site| primary_target(primary, generic_row(site)?.range()))
                     .collect::<Result<Vec<_>, _>>()?;
                 let entry =
                     exact_symbol(symbols, &payload.predicate_symbol, SymbolKind::Predicate)?;
 
                 for ordinal in 0..2 {
+                    let head_row = generic_row(&payload.head_sites[ordinal])?;
                     predicate_heads.push(SourcePredicateHeadInput {
                         formula,
-                        site: payload.head_sites[ordinal].clone(),
-                        source_range: payload.head_ranges[ordinal],
+                        site: TypedSiteRef::Node(TypedNodeId::new(head_row.site().index())),
+                        source_range: head_row.range(),
                         context: BindingContextId::new(0),
                         recovery: SourceAtomicFormulaRecovery::Normal,
-                        spelling: "divides".to_owned(),
+                        spelling: head_row.spelling().to_owned(),
                         left_arity: 1,
                         right_arity: 1,
                     });
@@ -1122,15 +1123,19 @@ impl ExactAtomicRoute {
                         targets[2],
                     ),
                 ]);
+                let first_segment = generic_row(&payload.segment_sites[0])?;
+                let second_segment = generic_row(&payload.segment_sites[1])?;
+                let verb_row = generic_row(&payload.verb_site)?;
+                let not_row = generic_row(&payload.not_site)?;
                 predicate_segments.extend([
                     SourcePredicateSegmentInput {
                         formula,
                         ordinal: 0,
-                        site: payload.segment_sites[0].clone(),
-                        source_range: payload.segment_ranges[0],
+                        site: TypedSiteRef::Node(TypedNodeId::new(first_segment.site().index())),
+                        source_range: first_segment.range(),
                         context: BindingContextId::new(0),
                         recovery: SourceAtomicFormulaRecovery::Normal,
-                        spelling: "1 divides 2".to_owned(),
+                        spelling: first_segment.spelling().to_owned(),
                         head: SourcePredicateHeadId::new(0),
                         polarity: SourcePredicateSegmentPolarityInput::Positive,
                         left_edge: SourceAtomicEdgeId::new(0),
@@ -1139,20 +1144,22 @@ impl ExactAtomicRoute {
                     SourcePredicateSegmentInput {
                         formula,
                         ordinal: 1,
-                        site: payload.segment_sites[1].clone(),
-                        source_range: payload.segment_ranges[1],
+                        site: TypedSiteRef::Node(TypedNodeId::new(second_segment.site().index())),
+                        source_range: second_segment.range(),
                         context: BindingContextId::new(0),
                         recovery: SourceAtomicFormulaRecovery::Normal,
-                        spelling: "does not divides 3".to_owned(),
+                        spelling: second_segment.spelling().to_owned(),
                         head: SourcePredicateHeadId::new(1),
                         polarity: SourcePredicateSegmentPolarityInput::Negative {
-                            verb_site: payload.verb_site.clone(),
-                            verb_range: payload.verb_range,
-                            verb_spelling: "does".to_owned(),
+                            verb_site: TypedSiteRef::Node(TypedNodeId::new(
+                                verb_row.site().index(),
+                            )),
+                            verb_range: verb_row.range(),
+                            verb_spelling: verb_row.spelling().to_owned(),
                             verb_recovery: SourceAtomicFormulaRecovery::Normal,
-                            not_site: payload.not_site.clone(),
-                            not_range: payload.not_range,
-                            not_spelling: "not".to_owned(),
+                            not_site: TypedSiteRef::Node(TypedNodeId::new(not_row.site().index())),
+                            not_range: not_row.range(),
+                            not_spelling: not_row.spelling().to_owned(),
                             not_recovery: SourceAtomicFormulaRecovery::Normal,
                         },
                         left_edge: SourceAtomicEdgeId::new(1),

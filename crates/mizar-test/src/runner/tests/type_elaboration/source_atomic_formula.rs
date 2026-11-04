@@ -983,6 +983,12 @@ fn task256_transport_keeps_all_eight_external_detail_vectors_owned_by_existing_r
 
 #[test]
 fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundary() {
+    use mizar_checker::{
+        binding_env::BindingContextId,
+        resolved_typed_ast::{ResolvedNodeRecovery, ResolvedNodeRecoveryReason, ResolvedTypedNodeKind},
+        source_term::{SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermRole},
+        typed_ast::{NodeRecoveryState, TypedNode, TypedNodeId, TypedSiteRef, TypingState},
+    };
     let config = step5c11_config();
     let root = &config.workspace_root;
     let plan = build_test_plan(&config).unwrap();
@@ -995,6 +1001,9 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
     let previous =
         extract_source_imported_predicate_chain_formula(&old_ast, &old_module, &old_symbols)
             .unwrap();
+    let old_range = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        old_ast.nodes()[site.node().index()].range
+    };
     for (layout, source) in [
         ("leading_line", format!("\n{original}")),
         ("intertoken_layout", original.replace(' ', "\t  ")),
@@ -1046,6 +1055,9 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
             let payload =
                 extract_source_imported_predicate_chain_formula(ast, &resolver.module, &symbols)
                     .unwrap();
+            let range = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+                ast.nodes()[site.node().index()].range
+            };
             let old_tokens = old_ast.token_views().collect::<Vec<_>>();
             let tokens = ast.token_views().collect::<Vec<_>>();
             assert_eq!(old_tokens.len(), tokens.len());
@@ -1076,19 +1088,17 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
                     .end,
             };
             for (actual, old) in [
-                (payload.formula_range, previous.formula_range),
-                (payload.verb_range, previous.verb_range),
-                (payload.not_range, previous.not_range),
+                (range(&payload.formula_site), old_range(&previous.formula_site)),
+                (range(&payload.verb_site), old_range(&previous.verb_site)),
+                (range(&payload.not_site), old_range(&previous.not_site)),
             ]
             .into_iter()
             .chain(
-                payload
-                    .segment_ranges
-                    .into_iter()
-                    .zip(previous.segment_ranges),
+                payload.segment_sites.each_ref().map(range).into_iter()
+                    .zip(previous.segment_sites.each_ref().map(old_range)),
             )
-            .chain(payload.head_ranges.into_iter().zip(previous.head_ranges))
-            .chain(payload.term_ranges.into_iter().zip(previous.term_ranges))
+            .chain(payload.head_sites.each_ref().map(range).into_iter().zip(previous.head_sites.each_ref().map(old_range)))
+            .chain(payload.term_sites.each_ref().map(range).into_iter().zip(previous.term_sites.each_ref().map(old_range)))
             {
                 assert_eq!(actual, shifted(old), "{layout}");
             }
@@ -1127,7 +1137,7 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
                     .iter()
                     .map(|(_, term)| term.source_range())
                     .collect::<Vec<_>>(),
-                payload.term_ranges
+                payload.term_sites.each_ref().map(range)
             );
             assert_eq!(
                 atomic
@@ -1135,7 +1145,7 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
                     .iter()
                     .map(|(_, segment)| segment.source_range())
                     .collect::<Vec<_>>(),
-                payload.segment_ranges
+                payload.segment_sites.each_ref().map(range)
             );
             assert_eq!(
                 atomic
@@ -1143,11 +1153,11 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
                     .iter()
                     .map(|(_, head)| head.source_range())
                     .collect::<Vec<_>>(),
-                payload.head_ranges
+                payload.head_sites.each_ref().map(range)
             );
             assert_eq!(
                 atomic.formulas().iter().next().unwrap().1.source_range(),
-                payload.formula_range
+                range(&payload.formula_site)
             );
             assert_eq!(
                 atomic.formulas().iter().next().unwrap().1.spelling(),
@@ -1158,6 +1168,47 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
                     source.get(term.source_range().start..term.source_range().end),
                     Some(["1", "2", "3"][index])
                 );
+            }
+            for ((term_id, term), site) in primary.terms().iter().zip(&payload.term_sites) {
+                let ordinal = term_id.index();
+                let expected_range = range(site);
+                let spelling = source.get(expected_range.start..expected_range.end).unwrap();
+                assert_eq!((term.site(), term.source_range(), term.spelling()), (site, expected_range, spelling));
+                assert_eq!((term.source_ordinal(), term.context(), term.recovery(), term.kind(), term.role(), term.parent()),
+                    (ordinal, BindingContextId::new(0), SourcePrimaryTermRecovery::Normal, SourcePrimaryTermKind::Numeral, SourcePrimaryTermRole::Value, None));
+                let (request_id, request) = primary.numeric_type_requests().iter().nth(ordinal).unwrap();
+                assert_eq!((request_id.index(), request.term(), request.owner(), request.source_range(), request.spelling(), request.request_ordinal()),
+                    (ordinal, term_id, site, expected_range, spelling, ordinal));
+            }
+            assert_eq!(lower.typed_ast.nodes(), output.typed_ast.nodes());
+            assert!(lower.typed_ast.source_node_entries().is_none());
+            assert!(output.typed_ast.source_node_entries().is_none());
+            for (typed_arena, resolved_arena) in [
+                (lower.typed_ast.nodes(), lower.resolved.nodes()),
+                (output.typed_ast.nodes(), output.resolved.nodes()),
+            ] {
+                assert_eq!((typed_arena.len(), resolved_arena.len()), (ast.nodes().len(), ast.nodes().len()));
+                assert_eq!((typed_arena.root().unwrap().index(), resolved_arena.root().unwrap().index()), (ast.root().unwrap().index(), ast.root().unwrap().index()));
+                for ((typed_id, typed), (resolved_id, resolved)) in typed_arena.iter().zip(resolved_arena.iter()) {
+                    let index = typed_id.index();
+                    let node = &ast.nodes()[index];
+                    let site = TypedSiteRef::Node(typed_id);
+                    let kind = if site == payload.formula_site { "source.formula.atomic.predicate" }
+                        else if payload.term_sites.contains(&site) { "source.term.numeral" }
+                        else if payload.segment_sites.contains(&site) { "source.formula.atomic.predicate-segment" }
+                        else if payload.head_sites.contains(&site) { "source.formula.atomic.predicate-head" }
+                        else if site == payload.verb_site { "source.formula.atomic.predicate-negation-verb" }
+                        else if site == payload.not_site { "source.formula.atomic.predicate-negation-not" }
+                        else { "source.surface.unowned" };
+                    let expected = TypedNode::new(kind, mizar_session::SourceAnchor::Range(node.range))
+                        .with_children(node.children.iter().map(|child| TypedNodeId::new(child.index())).collect())
+                        .with_recovery(if node.recovered { NodeRecoveryState::Recovered } else { NodeRecoveryState::Normal });
+                    assert_eq!(typed, &expected);
+                    assert_eq!((resolved_id.index(), resolved.id.index(), resolved.typed_node, resolved.source_range), (index, index, typed_id, node.range));
+                    assert_eq!(resolved.children.iter().map(|child| child.index()).collect::<Vec<_>>(), node.children.iter().map(|child| child.index()).collect::<Vec<_>>());
+                    assert_eq!(resolved.kind, ResolvedTypedNodeKind::Degraded { reason: ResolvedNodeRecoveryReason::TypingState(TypingState::Unknown) });
+                    assert_eq!((resolved.final_type, resolved.metadata, resolved.diagnostics.as_slice(), resolved.recovery), (None, None, &[][..], ResolvedNodeRecovery::Normal));
+                }
             }
             let candidates = atomic.candidates().iter().collect::<Vec<_>>();
             assert_eq!(candidates.len(), 2);
@@ -1204,7 +1255,7 @@ fn metamorphic_chain_layout_transports_actual_imported_ranges_and_shared_boundar
             let mizar_checker::source_atomic_formula::SourcePredicateSegmentPolarityInput::Negative { verb_range, not_range, .. } = negative.polarity() else { panic!("actual does-not segment"); };
             assert_eq!(
                 (*verb_range, *not_range),
-                (payload.verb_range, payload.not_range)
+                (range(&payload.verb_site), range(&payload.not_site))
             );
             assert_eq!(source.get(verb_range.start..verb_range.end), Some("does"));
             assert_eq!(source.get(not_range.start..not_range.end), Some("not"));
@@ -1687,7 +1738,7 @@ fn metamorphic_chain_layout_distinguishes_selected_errors_and_unsupported_member
             .collect::<Vec<_>>();
         let mut global = Vec::new();
         for (id, token, range) in tokens {
-            let target = range == payload.head_ranges[0];
+            let target = range == ast.nodes()[payload.head_sites[0].node().index()].range;
             let token_id = if corruption == 3 && target {
                 builder.add_recovered_token(token.kind, token.text, range)
             } else {
@@ -1796,7 +1847,7 @@ fn metamorphic_chain_layout_distinguishes_selected_errors_and_unsupported_member
                 changed.get(supplied.range().start..supplied.range().end),
                 Some(actual.text.as_ref())
             );
-            if corruption == 0 && supplied.range() == payload.head_ranges[0] {
+            if corruption == 0 && supplied.range() == ast.nodes()[payload.head_sites[0].node().index()].range {
                 assert_eq!(
                     (kind, supplied.as_token().unwrap().kind),
                     (T::UserSymbol, T::Identifier)
@@ -1901,23 +1952,24 @@ fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
     let payload =
         extract_source_imported_predicate_chain_formula(&ast, &module, &symbols)
             .expect("Task 257C1 exact selector payload");
-    assert_eq!((payload.formula_range.start, payload.formula_range.end), (75, 105));
+    let range = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        ast.nodes()[site.node().index()].range
+    };
+    assert_eq!((range(&payload.formula_site).start, range(&payload.formula_site).end), (75, 105));
     assert_eq!(
-        payload
-            .segment_ranges
-            .map(|range| (range.start, range.end)),
+        payload.segment_sites.each_ref().map(range).map(|range| (range.start, range.end)),
         [(75, 86), (87, 105)]
     );
     assert_eq!(
-        payload.head_ranges.map(|range| (range.start, range.end)),
+        payload.head_sites.each_ref().map(range).map(|range| (range.start, range.end)),
         [(77, 84), (96, 103)]
     );
     assert_eq!(
-        payload.term_ranges.map(|range| (range.start, range.end)),
+        payload.term_sites.each_ref().map(range).map(|range| (range.start, range.end)),
         [(75, 76), (85, 86), (104, 105)]
     );
-    assert_eq!((payload.verb_range.start, payload.verb_range.end), (87, 91));
-    assert_eq!((payload.not_range.start, payload.not_range.end), (92, 95));
+    assert_eq!((range(&payload.verb_site).start, range(&payload.verb_site).end), (87, 91));
+    assert_eq!((range(&payload.not_site).start, range(&payload.not_site).end), (92, 95));
 
     let first =
         source_atomic_formula_output_with_source(&ast, module.clone(), &symbols, TASK257C1_SOURCE)
@@ -1979,7 +2031,7 @@ fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
         [
             (
                 0,
-                payload.segment_ranges[0],
+                range(&payload.segment_sites[0]),
                 "1 divides 2",
                 mizar_checker::source_atomic_formula::SourcePredicateHeadId::new(0),
                 mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(0),
@@ -1987,7 +2039,7 @@ fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
             ),
             (
                 1,
-                payload.segment_ranges[1],
+                range(&payload.segment_sites[1]),
                 "does not divides 3",
                 mizar_checker::source_atomic_formula::SourcePredicateHeadId::new(1),
                 mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(1),
@@ -2015,9 +2067,9 @@ fn task257c1_exact_route_publishes_predicate_segments_and_shared_boundary() {
             not_range,
             not_spelling,
             ..
-        } if *verb_range == payload.verb_range
+        } if *verb_range == range(&payload.verb_site)
             && verb_spelling == "does"
-            && *not_range == payload.not_range
+            && *not_range == range(&payload.not_site)
             && not_spelling == "not"
     ));
 

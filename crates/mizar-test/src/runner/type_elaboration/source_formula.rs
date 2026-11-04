@@ -1579,17 +1579,11 @@ pub(in crate::runner) struct SourceImportedPredicateFunctorFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceImportedPredicateChainFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) segment_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) segment_ranges: [SourceRange; 2],
     pub(in crate::runner) head_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) head_ranges: [SourceRange; 2],
     pub(in crate::runner) verb_site: TypedSiteRef,
-    pub(in crate::runner) verb_range: SourceRange,
     pub(in crate::runner) not_site: TypedSiteRef,
-    pub(in crate::runner) not_range: SourceRange,
     pub(in crate::runner) term_sites: [TypedSiteRef; 3],
-    pub(in crate::runner) term_ranges: [SourceRange; 3],
     pub(in crate::runner) predicate_symbol: ResolverSymbolId,
 }
 
@@ -2107,27 +2101,18 @@ pub(in crate::runner) fn extract_source_imported_predicate_chain_formula(
 
     Some(SourceImportedPredicateChainFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         segment_sites: [
             surface_site(*first_segment_id),
             surface_site(*second_segment_id),
         ],
-        segment_ranges: [first_segment.range, second_segment.range],
         head_sites: [surface_site(*first_head_id), surface_site(*second_head_id)],
-        head_ranges: [
-            ast.node(*first_head_id)?.range,
-            ast.node(*second_head_id)?.range,
-        ],
         verb_site: surface_site(verb_id),
-        verb_range: ast.node(verb_id)?.range,
         not_site: surface_site(not_id),
-        not_range: ast.node(not_id)?.range,
         term_sites: [
             surface_site(first_term.0),
             surface_site(second_term.0),
             surface_site(third_term.0),
         ],
-        term_ranges: [first_term.1, second_term.1, third_term.1],
         predicate_symbol,
     })
 }
