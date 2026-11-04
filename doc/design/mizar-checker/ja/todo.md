@@ -711,6 +711,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/ja/VELOCITY-LARGE-FILE-SPLIT.md)。
 - [~] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。
+- [ ] **Task 285:** 汎用 walk の上に載せる class `b` の要素規則 (Task 257, 269, 270,
+  271, 272, 279 の role)。2026-11-04 に Task 284 から分離。契約:
+  [VELOCITY-ELEMENT-RULE-TRANSPORT](../../task_contracts/ja/VELOCITY-ELEMENT-RULE-TRANSPORT.md)。
+- [ ] **Task 286:** 公開 proof-local build 入力のための認証済み receipt。30 件の正準
+  literal guard を退役させる (full tier)。契約:
+  [CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE](../../task_contracts/ja/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)。
 
 ## Task 257B2 frozen-contract addendum
 

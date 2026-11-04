@@ -738,6 +738,12 @@ implementation commit does not satisfy a producer task.
 - [~] **Task 284:** generic original-source transport producer and oracle;
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
+- [ ] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
+  269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Contract:
+  [VELOCITY-ELEMENT-RULE-TRANSPORT](../../task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md).
+- [ ] **Task 286:** authenticated receipt for the public proof-local build
+  inputs, retiring their thirty canonical literal guards (full tier). Contract:
+  [CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE](../../task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md).
 
 ## Task 257B2 Frozen-Contract Addendum
 

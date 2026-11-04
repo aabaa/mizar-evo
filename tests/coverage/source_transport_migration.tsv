@@ -1,5 +1,5 @@
 # generator: manual family ledger for VELOCITY-GENERIC-SOURCE-TRANSPORT (opened 2026-11-03); one row per slice
-# status: done = committed and named in its commit body; open = not started. predecessor: the completed slice whose producer/test pattern the slice repeats (native-consumer = the initial shared native statement consumer); setup rows have none
+# status: done = committed and named in its commit body; open = not started; moved = owned by another contract's ledger. predecessor: the completed slice whose producer/test pattern the slice repeats (native-consumer = the initial shared native statement consumer); setup rows have none
 # family: setup | statement-witness | proof-local | structure | type-term-formula | element-rules
 slice	family	predecessor	status	note
 design-ledger	setup	-	done	step 1 design and classification ledger
@@ -66,7 +66,7 @@ given-type-binding-producer	proof-local	native-consumer	done	Given type overlay 
 given-use-type-binding-producer	proof-local	native-consumer	done	Given-use type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
 given-condition-type-binding-producer	proof-local	native-consumer	done	Given-condition type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
 descendant-type-binding-producer	proof-local	native-consumer	done	Descendant Given type overlay shares authenticated binding reconstruction; canonical type range and family errors retained
-proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles and literal_source_offset_baseline.tsv rows of source_proof_local_declaration.rs retired
+proof-local-exit	proof-local	native-consumer	open	family exit (Task 269): remaining exact profiles of source_proof_local_declaration.rs retired; the thirty public canonical guards and their baseline row pass to CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE (2026-11-04)
 application-import-anchor	structure	native-consumer	done	wrapped imported application anchor: expected import byte bounds derived from authenticated ModulePath; source owner and donor checks preserved
 structure-import-anchor	structure	native-consumer	done	shared structure import anchor: expected byte bounds derived from authenticated ModulePath for constructor/selector/update; source owner and donors preserved
 structure-selector-lower-sites	structure	native-consumer	done	structure-selector lower sites: proof, reserve declaration and written-type expectations derived from guarded AST; lower donor checks preserved
@@ -82,14 +82,14 @@ mode-profile-coordinate-retirement	type-term-formula	native-consumer	done	Mode p
 ordinary-mode-generic-rows	type-term-formula	native-consumer	done	ordinary Mode reads authenticated generic row sites and ranges across context, type, RHS, and mode handoffs; exact profile and final arena metadata retained
 ordinary-mode-profile-retirement	type-term-formula	ordinary-mode-generic-rows	done	ordinary Mode validates complete roles and terminal coverage over authenticated generic rows; lexical selectors and final ABI guards retained
 ordinary-mode-storage-identity	type-term-formula	ordinary-mode-profile-retirement	done	ordinary Mode preserves private refusal for parameter and token storage permutations before fixed-index consumers
-mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are intentional corruption constants, kept
+mode-definition-sites	type-term-formula	native-consumer	open	3 remaining are deliberate corruption controls: move them under cfg(test) or record them here as retained production self-checks; either closes the row (2026-11-04)
 predicate-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 attribute-definition-sites	type-term-formula	native-consumer	done	literal offsets already 0; no production change
 type-term-formula-exit	type-term-formula	native-consumer	open	family exit: remaining exact profiles and literal_source_offset_baseline.tsv rows of source_type.rs, source_term.rs, source_formula_composition.rs and their runners retired
 property-structure-origin-fallback	element-rules	native-consumer	done	Structure origin reads the supplied validated prefix; unreachable private canonical fallback retired
 property-field-origin-fallback	element-rules	native-consumer	done	Field origin reads the supplied validated prefix; unreachable private canonical fallback retired
 property-target-origin-fallback	element-rules	native-consumer	done	Property target origin reads the supplied validated prefix; unreachable private canonical fallback retired
-element-rules	element-rules	native-consumer	open	class b element rules: Tasks 257, 269, 270, 271, 272, 279 per tests/coverage/source_transport_classification.tsv
+element-rules	element-rules	native-consumer	moved	moved to VELOCITY-ELEMENT-RULE-TRANSPORT and tests/coverage/source_element_rule_migration.tsv (2026-11-04)
 ordinary-attribute-generic-transport	type-term-formula	ordinary-mode-profile-retirement	done	ordinary Attribute validates complete roles and terminal coverage over authenticated generic rows across all lower handoffs; lexical selectors and final ABI retained
 ordinary-predicate-generic-transport	type-term-formula	ordinary-attribute-generic-transport	done	ordinary Predicate validates complete roles and terminal coverage over authenticated generic rows across all lower handoffs; lexical selectors and compact ABI retained
 given-use-output-lookup-validation	proof-local	given-use-binding-helper-consolidation	done	Given-use output-row and common lookup validation reuse the retained Given replay predicates

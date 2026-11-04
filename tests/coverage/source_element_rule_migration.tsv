@@ -1,0 +1,34 @@
+# generator: manual family ledger for VELOCITY-ELEMENT-RULE-TRANSPORT (opened 2026-11-04); one row per class b kind of source_transport_classification.tsv
+# status: done = committed and named in its commit body; open = not started. predecessor: a family's first rule names native-consumer of source_transport_migration.tsv; later rules name the family's first done rule; `-` = not yet selected
+# family: definition (Tasks 279/270) | proof-skeleton (Tasks 272/269) | reconsider (Task 271) | expression (Task 257)
+slice	family	predecessor	status	note
+attribute-redefinition	definition	-	open	AttributeRedefinition
+equating	definition	-	open	Equating
+field-argument	definition	-	open	FieldArgument
+field-redefinition	definition	-	open	FieldRedefinition
+functor-redefinition	definition	-	open	FunctorRedefinition
+inheritance-definition	definition	-	open	InheritanceDefinition
+inheritance-target	definition	-	open	InheritanceTarget
+inline-functor-definition	definition	-	open	InlineFunctorDefinition
+inline-predicate-definition	definition	-	open	InlinePredicateDefinition
+mode-property	definition	-	open	ModeProperty
+property-redefinition	definition	-	open	PropertyRedefinition
+structure-constructor	definition	-	open	StructureConstructor
+structure-property	definition	-	open	StructureProperty
+case-item	proof-skeleton	-	open	CaseItem
+case-reasoning-statement	proof-skeleton	-	open	CaseReasoningStatement
+consider-statement	proof-skeleton	-	open	ConsiderStatement
+given-statement	proof-skeleton	-	open	GivenStatement
+hereby-statement	proof-skeleton	-	open	HerebyStatement
+iterative-equality-statement	proof-skeleton	-	open	IterativeEqualityStatement
+iterative-equality-step	proof-skeleton	-	open	IterativeEqualityStep
+now-statement	proof-skeleton	-	open	NowStatement
+set-statement	proof-skeleton	-	open	SetStatement; capture-avoiding expansion stays deferred (EN15 §15.11.2)
+statement-item	proof-skeleton	-	open	StatementItem
+suppose-item	proof-skeleton	-	open	SupposeItem
+then-statement	proof-skeleton	-	open	ThenStatement
+qua-expression	reconsider	-	open	QuaExpression
+reconsider-item	reconsider	-	open	ReconsiderItem
+reconsider-statement	reconsider	-	open	ReconsiderStatement
+binder-expression	expression	-	open	BinderExpression
+term-case	expression	-	open	TermCase

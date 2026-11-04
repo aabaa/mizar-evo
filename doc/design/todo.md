@@ -138,9 +138,10 @@ steps 4-8 are the implementation waves re-paced around them.
 
 ### Velocity gate — November 2026 [ ]
 
-Selected before any further per-element source-transport slice. Both tasks
+Selected before any further per-element source-transport slice. Tasks 1-2
 change how the remaining Task 257-279 families are produced and tested,
-not what they mean; the gate closes when both are done.
+not what they mean; the gate closes when both are done. Tasks 3-4 were split
+out of task 2 on 2026-11-04 and follow it under the same ledger discipline.
 
 1. [x] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
    — mechanical test-module split of the Rust files over 20k lines; light
@@ -148,6 +149,12 @@ not what they mean; the gate closes when both are done.
 2. [~] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
    — one AST-walking producer and one shape oracle replace per-element
    transport slices and literal-offset profiles; subsumes checker Task 281.
+3. [ ] [Element-rule transport](./task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md)
+   — the class `b` element rules of Tasks 257, 269-272 and 279 as one
+   family contract over the generic walk (checker Task 285).
+4. [ ] [Proof-local authenticated intake](./task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)
+   — one authenticated receipt replaces the thirty canonical literal guards
+   of the public proof-local build inputs; full tier (checker Task 286).
 
 ### Step 1 — Soundness contract closure [x]
 
