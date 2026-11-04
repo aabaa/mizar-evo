@@ -515,7 +515,7 @@ fn generic_source_nodes_install_with_original_statement_after_canonical_comparis
         .with_source_statement_from_original(&source, &symbols, &scope)
         .unwrap();
     assert_eq!(
-        installed.source_nodes().unwrap(),
+        installed.source_nodes().unwrap().as_ref(),
         source_nodes(&source, &base).unwrap()
     );
     assert!(installed.source_statement().is_some());

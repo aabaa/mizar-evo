@@ -1,5 +1,3 @@
-//! Syntax-free mode-definition intake for checker phase 6.
-
 use crate::{
     binding_env::{
         BindingContextId, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
@@ -16,7 +14,8 @@ use crate::{
     typed_ast::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
-        LocalTypeContextId, NodeRecoveryState, TypedArena, TypedNodeId, TypedSiteRef,
+        LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
+        TypedSiteRef,
     },
 };
 use mizar_resolve::{
@@ -27,9 +26,11 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};
 use std::{
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -541,6 +542,7 @@ pub struct SourceModeDefinitionHandoff {
     source_id: SourceId,
     module_id: ModuleId,
     resolver_identity: SourceModeResolverIdentity,
+    original_source_nodes: Option<Arc<[SourceNode]>>,
     source_context_fingerprint: String,
     source_type_fingerprint: String,
     base_initial_obligation_count: usize,
@@ -869,6 +871,47 @@ impl SourceModeDefinitionProducer {
         source_type: &SourceTypeApplicationHandoff,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
+    ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_context,
+            source_type,
+            base_initial_obligations,
+            arena,
+            Some(source),
+        )
+    }
+
+    #[cfg(test)]
+    fn build_canonical(
+        input: SourceModeDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_context: &SourceBindingContextHandoff,
+        source_type: &SourceTypeApplicationHandoff,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+    ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_context,
+            source_type,
+            base_initial_obligations,
+            arena,
+            None,
+        )
+    }
+
+    fn build_with_source(
+        input: SourceModeDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_context: &SourceBindingContextHandoff,
+        source_type: &SourceTypeApplicationHandoff,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+        source: Option<&TypedAst>,
     ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError> {
         validate_dependency_identity(
             input.source_id,
@@ -890,6 +933,19 @@ impl SourceModeDefinitionProducer {
             arena,
             module_start,
             offset,
+            match source {
+                Some(source)
+                    if source.source_id() != input.source_id
+                        || source.module_id() != &input.module_id =>
+                {
+                    Err(SourceModeDefinitionError::SourceIdentityMismatch)
+                }
+                Some(source) => source
+                    .source_nodes()
+                    .map(|rows| Some((rows.as_ref(), &origin)))
+                    .ok_or(SourceModeDefinitionError::InvalidProperty { index: 0 }),
+                None => Ok(None),
+            },
         )?;
 
         let mut initial_obligations = base_initial_obligations.clone();
@@ -1034,6 +1090,7 @@ impl SourceModeDefinitionProducer {
         let handoff = SourceModeDefinitionHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
+            original_source_nodes: source.and_then(TypedAst::source_nodes).cloned(),
             resolver_identity: SourceModeResolverIdentity {
                 symbol: definition.symbol.clone(),
                 definition: definition.definition,
@@ -1225,6 +1282,7 @@ fn validate_input_rows(
     arena: &TypedArena,
     module_start: usize,
     offset: usize,
+    original_source: Result<Option<(&[SourceNode], &SemanticOrigin)>, SourceModeDefinitionError>,
 ) -> Result<(), SourceModeDefinitionError> {
     let source = input.source_id;
     let context = BindingContextId::new(1);
@@ -1458,17 +1516,48 @@ fn validate_input_rows(
     }
 
     let property = &input.properties[0];
+    let original_source = original_source?;
+    let roles = original_source
+        .map(|(rows, origin)| {
+            mode_property_rule(rows, definition, origin)
+                .ok_or(SourceModeDefinitionError::InvalidProperty { index: 0 })
+        })
+        .transpose()?;
+    let metadata_matches = roles.is_some_and(|(property_row, computation)| {
+        property.site == TypedSiteRef::Node(TypedNodeId::new(property_row.site().index()))
+            && property.source_range == property_row.range()
+            && property.justification == SourceAnchor::Range(computation.range())
+            && property_row.spelling() == "sethood by computation ( steps : 1 ) ;"
+    });
+    #[cfg(test)]
+    let metadata_matches = metadata_matches
+        || (original_source.is_none()
+            && property.site == TypedSiteRef::Node(TypedNodeId::new(48))
+            && property.source_range == range(source, offset + 102, offset + 135)
+            && property.justification
+                == SourceAnchor::Range(range(source, offset + 113, offset + 134)));
     if property.owner != SourceModeDefinitionId::new(0)
         || property.ordinal != 0
         || property.kind != SourceModePropertyKind::Sethood
-        || property.site != TypedSiteRef::Node(TypedNodeId::new(48))
-        || property.source_range != range(source, offset + 102, offset + 135)
-        || property.justification != SourceAnchor::Range(range(source, offset + 113, offset + 134))
         || property.recovery != SourceModeDefinitionRecovery::Normal
         || property.spelling != "sethood by computation(steps: 1);"
+        || !metadata_matches
     {
         return Err(SourceModeDefinitionError::InvalidProperty { index: 0 });
     }
+    let computation = roles.map(|(_, computation)| {
+        (
+            TypedNodeId::new(computation.site().index()),
+            computation.range(),
+        )
+    });
+    #[cfg(test)]
+    let computation = computation.or(Some((
+        TypedNodeId::new(46),
+        range(source, offset + 113, offset + 134),
+    )));
+    let (computation_site, computation_range) =
+        computation.ok_or(SourceModeDefinitionError::InvalidProperty { index: 0 })?;
     if !valid_site(
         &property.site,
         property.source_range,
@@ -1476,8 +1565,8 @@ fn validate_input_rows(
         local_context,
         arena,
     ) || !valid_node(
-        TypedNodeId::new(46),
-        range(source, offset + 113, offset + 134),
+        computation_site,
+        computation_range,
         "source.definition.mode.property.justification",
         local_context,
         arena,
@@ -1485,6 +1574,120 @@ fn validate_input_rows(
         return Err(SourceModeDefinitionError::InvalidArenaOwnership);
     }
     Ok(())
+}
+
+pub(crate) fn mode_property_rule<'a>(
+    rows: &'a [SourceNode],
+    definition: &SourceModeDefinitionInput,
+    origin: &SemanticOrigin,
+) -> Option<(&'a SourceNode, &'a SourceNode)> {
+    let owner = rows
+        .iter()
+        .find(|row| definition.site == TypedSiteRef::Node(TypedNodeId::new(row.site().index())))?;
+    if owner.kind() != &SurfaceNodeKind::ModeDefinition
+        || owner.range() != definition.source_range
+        || origin.anchor() != &SourceAnchor::Range(owner.range())
+        || origin.source_id() != owner.range().source_id
+        || origin.is_recovered()
+    {
+        return None;
+    }
+    let child = |parent: &SourceNode, kind: SurfaceNodeKind| {
+        let mut children = rows
+            .iter()
+            .filter(|row| row.parent() == Some(parent.site()) && row.kind() == &kind);
+        let row = children.next()?;
+        if children.next().is_some()
+            || row.range().source_id != parent.range().source_id
+            || row.range().start < parent.range().start
+            || row.range().end > parent.range().end
+            || row.preorder_ordinal() <= parent.preorder_ordinal()
+        {
+            return None;
+        }
+        Some(row)
+    };
+    let property = child(owner, SurfaceNodeKind::ModeProperty)?;
+    let clause = child(property, SurfaceNodeKind::JustificationClause)?;
+    let computation = child(clause, SurfaceNodeKind::ComputationJustification)?;
+    let option = child(computation, SurfaceNodeKind::ComputationOption)?;
+    // The property follows the mode header; each justification follows its keyword.
+    if property.child_ordinal() == 0
+        || clause.child_ordinal() != 1
+        || computation.child_ordinal() != 1
+        || option.child_ordinal() != 2
+        || rows.iter().any(|row| {
+            row.parent() == Some(owner.site()) && row.child_ordinal() > property.child_ordinal()
+        })
+    {
+        return None;
+    }
+    if rows
+        .iter()
+        .any(|row| row.recovery() != NodeRecoveryState::Normal)
+    {
+        return None;
+    }
+    for (parent, count) in [(property, 3), (clause, 2), (computation, 4), (option, 3)] {
+        let mut children = rows
+            .iter()
+            .filter(|row| row.parent() == Some(parent.site()));
+        for ordinal in 0..count {
+            if children.next()?.child_ordinal() != ordinal {
+                return None;
+            }
+        }
+        if children.next().is_some() {
+            return None;
+        }
+    }
+    let at = |parent: &SourceNode, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent.site()) && row.child_ordinal() == ordinal)
+    };
+    for (parent, ordinal, kind, text) in [
+        (property, 0, SurfaceTokenKind::ReservedWord, "sethood"),
+        (property, 2, SurfaceTokenKind::ReservedSymbol, ";"),
+        (clause, 0, SurfaceTokenKind::ReservedWord, "by"),
+        (
+            computation,
+            0,
+            SurfaceTokenKind::ReservedWord,
+            "computation",
+        ),
+        (computation, 1, SurfaceTokenKind::ReservedSymbol, "("),
+        (computation, 3, SurfaceTokenKind::ReservedSymbol, ")"),
+        (option, 1, SurfaceTokenKind::ReservedSymbol, ":"),
+    ] {
+        if !matches!(at(parent, ordinal)?.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    let (SurfaceNodeKind::Token(name), SurfaceNodeKind::Token(value)) =
+        (at(option, 0)?.kind(), at(option, 2)?.kind())
+    else {
+        return None;
+    };
+    let valid_option = if name.text.as_ref() == "replay" {
+        matches!(
+            name.kind,
+            SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+        ) && matches!(
+            value.kind,
+            SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+        ) && matches!(value.text.as_ref(), "true" | "false")
+    } else {
+        matches!(
+            name.kind,
+            SurfaceTokenKind::Identifier | SurfaceTokenKind::ReservedWord
+        ) && matches!(name.text.as_ref(), "steps" | "timeout" | "nest")
+            && value.kind == SurfaceTokenKind::Numeral
+    };
+    if !valid_option {
+        return None;
+    }
+    Some((property, computation))
 }
 
 fn validate_context_profile(
@@ -1843,6 +2046,10 @@ fn validate_handoff_rows(
         arena,
         module_start,
         offset,
+        Ok(handoff
+            .original_source_nodes
+            .as_deref()
+            .map(|rows| (rows, &identity.origin))),
     )?;
     validate_obligations(handoff, initial_obligations)
 }

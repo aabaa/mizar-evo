@@ -65,7 +65,7 @@ impl Fixture {
         &self,
         baseline: &InitialObligationTable,
     ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError> {
-        SourceModeDefinitionProducer::build(
+        SourceModeDefinitionProducer::build_canonical(
             self.input.clone(),
             &self.env,
             &self.source_context,
@@ -288,7 +288,7 @@ fn task_262_mode_definition_row_field_corruption_fails_closed() {
         let mut input = fixture.input.clone();
         mutate(&mut input);
         assert!(
-            SourceModeDefinitionProducer::build(
+            SourceModeDefinitionProducer::build_canonical(
                 input,
                 &fixture.env,
                 &fixture.source_context,
@@ -356,7 +356,7 @@ fn task_262_mode_definition_row_field_corruption_fails_closed() {
     }
     let recovered_arena = arena_with_recovery(&fixture.arena, PROPERTY);
     assert_eq!(
-        SourceModeDefinitionProducer::build(
+        SourceModeDefinitionProducer::build_canonical(
             fixture.input.clone(),
             &fixture.env,
             &fixture.source_context,
@@ -443,7 +443,7 @@ fn task_262_mode_definition_dependency_and_obligation_corruption_fails_closed() 
             )
         );
         assert_eq!(
-            SourceModeDefinitionProducer::build(
+            SourceModeDefinitionProducer::build_canonical(
                 fixture.input.clone(),
                 &env,
                 &fixture.source_context,
@@ -1156,7 +1156,7 @@ fn fixture_build(
     input: SourceModeDefinitionHandoffInput,
     baseline: &InitialObligationTable,
 ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError> {
-    SourceModeDefinitionProducer::build(
+    SourceModeDefinitionProducer::build_canonical(
         input,
         &fixture.env,
         &fixture.source_context,
@@ -2129,4 +2129,319 @@ fn task_262_public_qualified_parameter_headers_preserve_fallback_and_replay() {
         original.projection(&model_domain_baseline(original.source)),
         original_projection
     );
+}
+
+enum NativeModeSourceMutation {
+    None,
+    WrongComputation,
+    WrongOption,
+    MisownedSemicolon,
+}
+
+fn native_mode_source(f: &Fixture, number: &str, mutation: NativeModeSourceMutation) -> TypedAst {
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceTokenKind;
+    let text = include_str!(
+        "../../../../tests/miz/pass/types/pass_type_elaboration_mode_definition_payload_001.miz"
+    )
+    .replace("steps: 1", &format!("steps: {number}"));
+    let mut builder = SurfaceAstBuilder::new(f.source);
+    let mut sites = Vec::new();
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    for token in "definition let x be set ; let y be set ; mode Task262ModeDefinition : Task262Mode [ x , y ] is set ; sethood by computation ( steps : 1 ) ; end ;".split_ascii_whitespace() {
+        let token = if token == "1" { number } else { token };
+        let start = cursor + text[cursor..].find(token).unwrap();
+        cursor = start + token.len();
+        let kind = match token {
+            "x" | "y" | "Task262ModeDefinition" | "Task262Mode" | "steps" => {
+                SurfaceTokenKind::Identifier
+            }
+            "1" | "2" => SurfaceTokenKind::Numeral,
+            ";" | ":" | "[" | "]" | "," | "(" | ")" => SurfaceTokenKind::ReservedSymbol,
+            _ => SurfaceTokenKind::ReservedWord,
+        };
+        sites.push(builder.add_token(kind, token, range(f.source, start, cursor)));
+        spans.push((start, cursor));
+    }
+    for (mut kind, mut children) in [
+        (SurfaceNodeKind::TypeHead, vec![4]),
+        (SurfaceNodeKind::TypeExpression, vec![34]),
+        (SurfaceNodeKind::QualifiedVariableSegment, vec![2, 3, 35]),
+        (SurfaceNodeKind::DefinitionParameter, vec![1, 36, 5]),
+        (SurfaceNodeKind::TypeHead, vec![9]),
+        (SurfaceNodeKind::TypeExpression, vec![38]),
+        (SurfaceNodeKind::QualifiedVariableSegment, vec![7, 8, 39]),
+        (SurfaceNodeKind::DefinitionParameter, vec![6, 40, 10]),
+        (SurfaceNodeKind::ModePattern, vec![14, 15, 16, 17, 18, 19]),
+        (SurfaceNodeKind::TypeHead, vec![21]),
+        (SurfaceNodeKind::TypeExpression, vec![43]),
+        (SurfaceNodeKind::ComputationOption, vec![27, 28, 29]),
+        (
+            SurfaceNodeKind::ComputationJustification,
+            vec![25, 26, 45, 30],
+        ),
+        (SurfaceNodeKind::JustificationClause, vec![24, 46]),
+        (SurfaceNodeKind::ModeProperty, vec![23, 47, 31]),
+        (
+            SurfaceNodeKind::ModeDefinition,
+            vec![11, 12, 13, 42, 20, 44, 22, 48],
+        ),
+        (
+            SurfaceNodeKind::DefinitionBlockItem,
+            vec![0, 37, 41, 49, 32, 33],
+        ),
+        (SurfaceNodeKind::ItemList, vec![50]),
+        (SurfaceNodeKind::CompilationUnit, vec![51]),
+        (SurfaceNodeKind::Root, (0..34).chain([52]).collect()),
+    ] {
+        match (&kind, &mutation) {
+            (
+                SurfaceNodeKind::ComputationJustification,
+                NativeModeSourceMutation::WrongComputation,
+            )
+            | (SurfaceNodeKind::ComputationOption, NativeModeSourceMutation::WrongOption) => {
+                kind = SurfaceNodeKind::TermList
+            }
+            (SurfaceNodeKind::JustificationClause, NativeModeSourceMutation::MisownedSemicolon) => {
+                children.push(31)
+            }
+            (SurfaceNodeKind::ModeProperty, NativeModeSourceMutation::MisownedSemicolon) => {
+                children.pop();
+            }
+            _ => {}
+        }
+        let start = spans[children[0]].0;
+        let end = spans[*children.last().unwrap()].1;
+        let children = children.into_iter().map(|index| sites[index]).collect();
+        sites.push(builder.add_node(kind, range(f.source, start, end), children));
+        spans.push((start, end));
+    }
+    let ast = builder.finish(sites.last().copied(), None);
+    let source = SurfaceResolvedArena::lower(&ast, &f.module).unwrap();
+    let nodes = TypedArena::try_new(
+        Some(MODULE_ROOT),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("source.surface", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    )
+            })
+            .collect(),
+    )
+    .unwrap();
+    let parts = TypedAstParts {
+        source_id: f.source,
+        module_id: f.module.clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: Default::default(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    };
+    let mut syntax = TypedAst::try_new(parts).unwrap();
+    syntax.install_source_nodes(&source).unwrap();
+    syntax
+}
+
+#[test]
+fn mode_property_native_build_requires_original_roles_and_preserves_error_order() {
+    let f = fixture();
+    let source = native_mode_source(&f, "1", NativeModeSourceMutation::None);
+    let before = source.clone();
+    let baseline = InitialObligationTable::new();
+    let build = |input, env: &SymbolEnv, arena: &TypedArena, source: &TypedAst| {
+        SourceModeDefinitionProducer::build(
+            input,
+            env,
+            &f.source_context,
+            &f.source_type,
+            &baseline,
+            arena,
+            source,
+        )
+    };
+    let native = build(f.input.clone(), &f.env, &f.arena, &source).unwrap();
+    assert_eq!(
+        native.handoff().debug_text(),
+        f.projection(&baseline).handoff().debug_text()
+    );
+    assert!(Arc::ptr_eq(
+        source.source_nodes().unwrap(),
+        native.handoff().original_source_nodes.as_ref().unwrap()
+    ));
+    assert_eq!(source, before);
+    let missing = f.typed(baseline.clone());
+    assert_eq!(
+        build(f.input.clone(), &f.env, &f.arena, &missing),
+        Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+    );
+    let mut foreign = f.clone();
+    foreign.module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("mode"));
+    let foreign = native_mode_source(&foreign, "1", NativeModeSourceMutation::None);
+    assert_eq!(
+        build(f.input.clone(), &f.env, &f.arena, &foreign),
+        Err(SourceModeDefinitionError::SourceIdentityMismatch)
+    );
+    let mut foreign_source = f.clone();
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "64".repeat(Hash::BYTE_LEN)
+    ))
+    .unwrap();
+    let source_ids = InMemorySessionIdAllocator::new();
+    source_ids.next_source_id(snapshot).unwrap();
+    foreign_source.source = source_ids.next_source_id(snapshot).unwrap();
+    let foreign_source = native_mode_source(&foreign_source, "1", NativeModeSourceMutation::None);
+    assert_eq!(
+        build(f.input.clone(), &f.env, &f.arena, &foreign_source),
+        Err(SourceModeDefinitionError::SourceIdentityMismatch)
+    );
+    let malformed = native_mode_source(&f, "1", NativeModeSourceMutation::WrongComputation);
+    assert_eq!(
+        build(f.input.clone(), &f.env, &f.arena, &malformed),
+        Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+    );
+    for mutation in [
+        NativeModeSourceMutation::WrongOption,
+        NativeModeSourceMutation::MisownedSemicolon,
+    ] {
+        let malformed = native_mode_source(&f, "1", mutation);
+        assert_eq!(
+            build(f.input.clone(), &f.env, &f.arena, &malformed),
+            Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+        );
+    }
+    let changed_content = native_mode_source(&f, "2", NativeModeSourceMutation::None);
+    assert_eq!(
+        build(f.input.clone(), &f.env, &f.arena, &changed_content),
+        Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+    );
+    let mut earlier = f.input.clone();
+    earlier.definitions[0].property = None;
+    assert_eq!(
+        build(earlier, &f.env, &f.arena, &foreign),
+        Err(SourceModeDefinitionError::InvalidDefinition { index: 0 })
+    );
+    let recovered_arena = arena_with_recovery(&f.arena, PROPERTY);
+    assert_eq!(
+        build(f.input.clone(), &f.env, &recovered_arena, &source),
+        Err(SourceModeDefinitionError::InvalidArenaOwnership)
+    );
+    let mut input = f.input.clone();
+    input.properties[0].source_range.end -= 1;
+    let mut nodes = f
+        .arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    nodes[PROPERTY.index()].anchor = SourceAnchor::Range(input.properties[0].source_range);
+    let arena = TypedArena::try_new(f.arena.root(), nodes).unwrap();
+    assert_eq!(
+        build(input, &f.env, &arena, &source),
+        Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+    );
+}
+
+#[test]
+fn mode_property_native_replay_uses_original_table_against_coherent_tampering() {
+    let mut f = fixture();
+    let source = native_mode_source(&f, "1", NativeModeSourceMutation::None);
+    let baseline = InitialObligationTable::new();
+    let projection = SourceModeDefinitionProducer::build(
+        f.input.clone(),
+        &f.env,
+        &f.source_context,
+        &f.source_type,
+        &baseline,
+        &f.arena,
+        &source,
+    )
+    .unwrap();
+    let typed = f
+        .typed(baseline.clone())
+        .with_source_mode_definition(projection.clone())
+        .unwrap();
+    assert!(typed.source_nodes().is_none());
+    assert!(assemble_empty(&typed).is_ok());
+    let mut forged = projection.clone();
+    forged.handoff.properties.rows[0].source_range.end -= 1;
+    let new_range = forged.handoff.properties.rows[0].source_range;
+    let mut drafts = obligation_drafts(&forged.initial_obligations);
+    drafts[0].source_range = new_range;
+    forged.initial_obligations = table_from_drafts(drafts);
+    let mut nodes = f
+        .arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    nodes[PROPERTY.index()].anchor = SourceAnchor::Range(new_range);
+    f.arena = TypedArena::try_new(f.arena.root(), nodes).unwrap();
+    assert!(Arc::ptr_eq(
+        forged.handoff.original_source_nodes.as_ref().unwrap(),
+        source.source_nodes().unwrap()
+    ));
+    assert_eq!(
+        forged.handoff.validate_installation(
+            f.source,
+            &f.module,
+            &f.source_context,
+            &f.source_type,
+            &forged.initial_obligations,
+            &f.arena
+        ),
+        Err(SourceModeDefinitionError::InvalidProperty { index: 0 })
+    );
+    assert_eq!(
+        f.typed(baseline.clone())
+            .with_source_mode_definition(forged.clone()),
+        Err(TypedAstError::InvalidSourceModeDefinition)
+    );
+    let mut injected = f.typed(baseline);
+    injected.replace_initial_obligations_for_test(forged.initial_obligations);
+    injected.inject_source_mode_definition_for_test(forged.handoff);
+    assert_eq!(
+        assemble_empty(&injected),
+        Err(ResolvedTypedAstError::InvalidSourceModeDefinition)
+    );
+    for fault in 0..6 {
+        let mut corrupted = projection.clone();
+        let rows = Arc::make_mut(corrupted.handoff.original_source_nodes.as_mut().unwrap());
+        let property = rows
+            .iter_mut()
+            .find(|row| row.site.index() == PROPERTY.index())
+            .unwrap();
+        match fault {
+            0 => property.parent = None,
+            1 => property.child_ordinal = 0,
+            2 => property.kind = SurfaceNodeKind::TermList,
+            3 => property.recovery = NodeRecoveryState::Recovered,
+            4 => property.range.end -= 1,
+            _ => {
+                let option = rows.iter_mut().find(|row| row.site.index() == 45).unwrap();
+                option.recovery = NodeRecoveryState::Recovered;
+                option.range = range(f.source, 136, 136);
+            }
+        }
+        assert_eq!(
+            fixture()
+                .typed(InitialObligationTable::new())
+                .with_source_mode_definition(corrupted),
+            Err(TypedAstError::InvalidSourceModeDefinition)
+        );
+    }
+    assert!(assemble_empty(&typed).is_ok());
 }

@@ -1201,12 +1201,17 @@ fn task262_arena(
             42 => "source.definition.mode.application",
             43 => "source.type.head",
             44 => "source.type.expression",
-            46 => "source.definition.mode.property.justification",
-            48 => "source.definition.mode.property",
             49 => "source.definition.mode",
             50 => "source.definition",
             53 => "source.module",
             _ => generic_kind,
+        };
+        let kind = match row.kind() {
+            SurfaceNodeKind::ModeProperty => "source.definition.mode.property",
+            SurfaceNodeKind::ComputationJustification => {
+                "source.definition.mode.property.justification"
+            }
+            _ => kind,
         };
         let children = syntax_node.children.clone();
         let context = if index == 53 {
@@ -1474,8 +1479,17 @@ fn task262_input(
     let patterns = [source_row(syntax, 16)?, source_row(syntax, 18)?];
     let application = source_row(syntax, 42)?;
     let rhs = source_row(syntax, 44)?;
-    let property = source_row(syntax, 48)?;
-    let justification = source_row(syntax, 46)?;
+    let child = |parent: &SourceNode, kind: SurfaceNodeKind| {
+        syntax
+            .source_node_entries()
+            .and_then(|mut rows| {
+                rows.find(|row| row.parent() == Some(parent.site()) && row.kind() == &kind)
+            })
+            .ok_or_else(|| "Task262 mode property role disappeared".to_owned())
+    };
+    let property = child(definition, SurfaceNodeKind::ModeProperty)?;
+    let clause = child(property, SurfaceNodeKind::JustificationClause)?;
+    let justification = child(clause, SurfaceNodeKind::ComputationJustification)?;
     Ok(SourceModeDefinitionHandoffInput {
         source_id: syntax.source_id(),
         module_id,
@@ -1741,6 +1755,7 @@ fn build_output(
             .ok_or_else(|| "Task249M source type disappeared".to_owned())?,
         typed_ast.initial_obligations(),
         typed_ast.nodes(),
+        &syntax,
     )
     .map_err(|error| format!("Task262 mode definition: {error}"))?;
     typed_ast = typed_ast

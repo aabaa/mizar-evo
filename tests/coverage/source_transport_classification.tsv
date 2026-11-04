@@ -99,7 +99,7 @@ MatchEnding	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 MatchStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ModeDefinition	referenced	referenced	existing source_* producer
 ModePattern	referenced	referenced	existing source_* producer
-ModeProperty	definition	b	checker Task 279 / Task 270
+ModeProperty	definition	b	source_mode_definition
 ModuleBranchImport	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ModulePath	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 NamespacePath	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT

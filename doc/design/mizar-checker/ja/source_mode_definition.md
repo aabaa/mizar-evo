@@ -23,9 +23,6 @@ Task262 transport は変更しない。属性付き・依存 RHS、import、depe
 
 ## Task 262 の scope と authority
 
-Checker Task 262 は、ordinary parameterized `mode` definition、その
-normalized RHS の inhabitation request、explicit `sethood` correctness
-clause を checker に渡す syntax-free / immutable intake 1 個を所有する。
 canonical authority は Chapter 7 §§7.1--7.10、特に §§7.2、7.7、7.8、
 definition correctness が obligation boundary であることだけに限った
 Chapter 16 §§16.6、16.7.2、既存 mode-definition parser pass/recovery
@@ -46,6 +43,16 @@ third bindingの捏造は`boundary_violation`である。Chapter 7のexplicit mo
 separate checker-only Task 249M standalone mode-RHS tableをfreezeするauthority
 として十分である。Task 249M documentation/implementationはTask 262
 implementation前の別commitとし、本contractにlower changeを混在させない。
+
+## 認証済み property intake
+
+`SourceModeDefinitionProducer::build` は generic source-node table が install 済みの
+元の `TypedAst` を必須とする。要素規則は table の祖先関係と Resolver の identity / clock
+に対して mode property と computation justification を認証する。元ソースを伴わない
+synthetic intake は private test に限定する。handoff は不変の元 table を共有し、build の
+replay、typed installation、resolved assembly がそれぞれ規則を再適用して semantic arena
+の所有権と obligation を検証する。semantic arena を元ソースの証拠の代わりにはしない。
+変更するのは source authority のみとする。
 
 ## 凍結する exact source
 
@@ -127,8 +134,7 @@ row 34--53 は exact に次のとおりである。
 
 private runner は syntax-free input 構築前に loaded byte、final LF、全 row
 kind/range/recovery/ordered child、root identity、direct sibling order を
-authenticate する。checker production は raw node kind/token/node number、
-parser type、source text を受け取らない。
+authenticate する。
 
 ## 凍結する resolver provenance
 
@@ -448,6 +454,7 @@ impl SourceModeDefinitionProducer {
         source_type: &SourceTypeApplicationHandoff,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
     ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError>;
 }
 ```

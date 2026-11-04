@@ -29,10 +29,7 @@ transport remain unchanged. Attributed/dependent RHSs, imports, dependent functo
 
 ## Task 262 Scope And Authority
 
-Checker Task 262 owns one syntax-free, immutable source-to-checker intake for
-an ordinary parameterized `mode` definition, its normalized-right-hand-side
-inhabitation request, and its explicit `sethood` correctness clause. Canonical
-authority is Chapter 7 Sections 7.1--7.10, especially Sections 7.2, 7.7, and
+Canonical authority is Chapter 7 Sections 7.1--7.10, especially Sections 7.2, 7.7, and
 7.8; Chapter 16 Sections 16.6 and 16.7.2 only where they identify definition
 correctness as an obligation boundary; the existing mode-definition parser
 pass/recovery fixtures; the active mixed mode/structure definition gap and its
@@ -52,6 +49,17 @@ explicit mode RHS supplies sufficient authority for a separate checker-only
 Task 249M standalone mode-RHS table. Task 249M documentation and implementation
 must be separate commits before Task 262 implementation; this contract does
 not authorize folding that lower change into Task 262.
+
+## Authenticated property intake
+
+`SourceModeDefinitionProducer::build` requires the original `TypedAst` with its
+installed generic source-node table. The element rule authenticates the mode
+property and computation justification against that table's ancestry and the
+Resolver identity and clocks. Source-free synthetic intake is private to tests.
+The handoff shares the immutable original table; build replay, typed installation
+and resolved assembly each reapply the rule and validate semantic-arena ownership
+and obligations. The semantic arena does not replace original-source evidence.
+This changes source authority only.
 
 ## Frozen Exact Source
 
@@ -133,8 +141,7 @@ Rows 34--53 are exactly:
 
 The private runner authenticates every loaded byte, final LF, all row kinds,
 ranges, recovery states, ordered children, root identity, and direct sibling
-order before constructing syntax-free input. Checker production receives no
-raw node kind, token, node number, parser type, or source text.
+order before constructing syntax-free input.
 
 ## Frozen Resolver Provenance
 
@@ -458,6 +465,7 @@ impl SourceModeDefinitionProducer {
         source_type: &SourceTypeApplicationHandoff,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
     ) -> Result<SourceModeDefinitionProjection, SourceModeDefinitionError>;
 }
 ```

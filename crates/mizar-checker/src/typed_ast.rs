@@ -56,6 +56,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -201,7 +202,7 @@ pub struct TypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
-    source_nodes: Option<Vec<SourceNode>>,
+    source_nodes: Option<Arc<[SourceNode]>>,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
     source_attribute: Option<SourceAttributeHandoff>,
@@ -331,8 +332,8 @@ impl TypedAst {
         self.resolved_root
     }
 
-    pub(crate) fn source_nodes(&self) -> Option<&[SourceNode]> {
-        self.source_nodes.as_deref()
+    pub(crate) fn source_nodes(&self) -> Option<&Arc<[SourceNode]>> {
+        self.source_nodes.as_ref()
     }
 
     pub fn source_node_entries(&self) -> Option<impl ExactSizeIterator<Item = &SourceNode>> {
@@ -348,7 +349,7 @@ impl TypedAst {
         }
         let rows = crate::type_checker::source_nodes(source, self)
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        self.source_nodes = Some(rows);
+        self.source_nodes = Some(rows.into());
         Ok(())
     }
 
