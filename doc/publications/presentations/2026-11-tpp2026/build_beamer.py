@@ -138,14 +138,24 @@ def build(gen, deck: dict) -> None:
         # Keep the eight implementation groups in one table.
         def implementation_table(rows):
             if len(rows) != 10 or rows[0] not in (
-                "| 領域 | 実装済み | 限定実装と残る範囲 |",
-                "| Area | Now | Scope / remaining work |",
+                "| 領域 | 実装済み | 完成時見積 | 規模比率 | 限定実装と残る範囲 |",
+                "| Area | Now | Est. total | Size ratio | Scope / remaining work |",
             ):
                 return table_to_tex(rows)
-            table = table_to_tex(rows[:-1])
-            last_row = " & ".join(gen.inline_tex(cell) for cell in gen.split_table_row(rows[-1]))
-            table.insert(table.index(r"\bottomrule"), last_row + r" \\")
-            return table
+            header = gen.split_table_row(rows[0])
+            return [
+                r"\begin{scriptsize}",
+                r"\setlength{\tabcolsep}{3pt}",
+                r"\renewcommand{\arraystretch}{1.15}",
+                r"\begin{tabularx}{\textwidth}{lrrr>{\raggedright\arraybackslash}X}",
+                r"\toprule",
+                " & ".join(r"\textbf{" + gen.inline_tex(cell) + "}" for cell in header) + r" \\",
+                r"\midrule",
+                *(" & ".join(gen.inline_tex(cell) for cell in gen.split_table_row(row)) + r" \\" for row in rows[2:]),
+                r"\bottomrule",
+                r"\end{tabularx}",
+                r"\end{scriptsize}",
+            ]
 
         gen.table_to_tex = implementation_table
         # Subheadings organize the slide; omit them from the spoken-note list.
@@ -162,7 +172,7 @@ def build(gen, deck: dict) -> None:
                 "| Point | Proof obligation | Mathematical reason |",
                 "| equalities / expansions | Equality / definition-expansion information |",
                 "| Area | Challenge in current Mizar | Design principle |",
-                "| Area | Now | Scope / remaining work |",
+                "| Area | Now | Est. total | Size ratio | Scope / remaining work |",
                 "| 時期 | 実装史の主な節目 |",
                 "| 時期 | 開発内容 |",
                 "### 言語設計の深化",
@@ -172,7 +182,7 @@ def build(gen, deck: dict) -> None:
                 "| 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |",
                 "![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)",
                 "![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)",
-                "| 領域 | 実装済み | 限定実装と残る範囲 |",
+                "| 領域 | 実装済み | 完成時見積 | 規模比率 | 限定実装と残る範囲 |",
             )) else split_frame_lines(lines)
         )
     try:
@@ -193,8 +203,10 @@ def build(gen, deck: dict) -> None:
                     label = r"\par\noindent{\footnotesize\bfseries " + caption + r"\par}"
                     generated = [tex.replace(heading, label) for tex in generated]
         for annotation in (
-            "Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Rounded values; code size is not feature completeness.",
-            "Source: November 4 snapshot `a8b283b2a`. Counting basis: `draft.ja.md` §7.",
+            "規模比率 = 実装済み / 完成時見積。機能完成率ではない。見積は暫定。テスト・コメント・依存・MML 移植は対象外。",
+            "Source: 11月4日固定版 `ae4326d1e`。再見積の前提: `draft.ja.md` §7。",
+            "Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.",
+            "Source: November 4 snapshot `ae4326d1e`; revised estimate assumptions: `draft.ja.md` §7.",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.",
             "JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1。",
@@ -214,7 +226,6 @@ def build(gen, deck: dict) -> None:
             (("Point", "Proof obligation", "Mathematical reason"), "llX"),
             (("Directives", "What they import"), "lX"),
             (("Stage", "What authors can inspect"), "lX"),
-            (("Area", "Now", "Scope / remaining work"), "lrX"),
         ) if deck["input"].name == "slides.md" else (
             (("時期", "実装史の主な節目"), "lX"),
             (("処理系", "概要"), "lX"),
@@ -227,7 +238,6 @@ def build(gen, deck: dict) -> None:
             (("箇所", "証明義務", "数学的な根拠"), "llX"),
             (("一覧", "取り込むもの"), "lX"),
             (("段階", "著者が確認できるもの"), "lX"),
-            (("領域", "実装済み", "限定実装と残る範囲"), "lrX"),
         )
         for headers, columns in (*table_layouts,
             (("", "MizAR 60 (ITP 2023)", "Sledgehammer / AFP (ITP 2022)"), "lXX"),

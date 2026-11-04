@@ -734,32 +734,32 @@ Speaker note:
 
 ### Frame 7.1 - Implementation status and size
 
-**Rust product code: 292.5 kLoC (November 4, 2026).**
+**Rust product code: 293.2 kLoC; estimated total: 377–551 kLoC.**
 
-### Table 13. Implementation status and code size (kLoC)
+### Table 13. Measured / estimated size (kLoC) and size ratio
 
-| Area | Now | Scope / remaining work |
-|---|---:|---|
-| lexer / parser / frontend | 34.8 | Syntax, source loading, lexing, parsing connected |
-| resolver / checker | 121.4 | Generic source transport; bounded semantics; general typing / imports remain |
-| Core / VC | 57.7 | Bounded theorem / algorithm lowering and VCs; broader source support remains |
-| ATP | 11.0 | Encoding / candidates; real ATP search / extraction remain |
-| kernel | 13.1 | Formula / substitution / provenance checks; includes 2.0 for SAT |
-| build / driver / artifact | 53.2 | Bounded theorem pipeline through artifact commit; general services / reuse remain |
-| LSP | 0.9 | Stdio / native source diagnostics; full IDE / semantic bridge remain |
-| MVM / extraction / doc | 0.2 | Doc readers / indexes started; runtime / extraction / rendering remain |
+| Area | Now | Est. total | Size ratio | Scope / remaining work |
+|---|---:|---:|---:|---|
+| lexer / parser / frontend | 34.8 | 36.8–42.8 | 81.3–94.6% | Parsing connected; reflected syntax remains |
+| resolver / checker | 122.2 | 147.2–192.2 | 63.6–83.0% | Bounded semantics; generalization remains |
+| Core / VC | 57.7 | 72.7–102.7 | 56.2–79.4% | Bounded VCs; broader proofs / algorithms remain |
+| ATP | 11.0 | 16.0–26.0 | 42.4–68.8% | Candidates; real ATP search / extraction remain |
+| kernel | 13.1 | 13.1–16.1 | 81.4–100.0% | SAT checking implemented; integration hardening |
+| build / driver / artifact | 53.2 | 67.2–95.2 | 55.9–79.2% | Bounded artifact commit; general services remain |
+| LSP | 0.9 | 6.9–18.9 | 4.9–13.5% | Source diagnostics; full IDE remains |
+| MVM / extraction / doc | 0.2 | 17.2–57.2 | 0.4–1.4% | Doc inputs; runtime / extraction / rendering remain |
 
-**Excluding ATP: kernel + SAT dependencies = 17.2 kLoC.**
+**Overall size ratio: 53–78%. Kernel + SAT dependencies: 17.2 kLoC.**
 
-Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Rounded values; code size is not feature completeness.
+Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.
 
-Source: November 4 snapshot `a8b283b2a`. Counting basis: `draft.ja.md` §7.
+Source: November 4 snapshot `ae4326d1e`; revised estimate assumptions: `draft.ja.md` §7.
 
 Speaker note:
 
-- 1 kLoC = 1,000 lines. Completion size has not been re-estimated; MML porting is separate.
-- Kernel 13.088 (SAT encoding / connection: 1.978). SAT dependencies: batsat 0.6.0 + bit-vec 0.5.1 = 4.149; total 17.237 kLoC. Excludes Core / session / shared support; not the full minimum trusted computing base (TCB).
-- Fixed committed snapshot; excludes work in progress. Recount includes Rust attributes and excludes doc comments; not a direct comparison with the old count.
+- 1 kLoC = 1,000 lines. Remaining-code allowances total 84–258 kLoC. Ranges are planning judgments, not calibrated forecasts or confidence intervals; no elapsed-time estimate is implied. Ratios use unrounded counts and inverse estimate endpoints.
+- Core / session are counted separately. Kernel 13.088 (SAT encoding / connection: 1.978) + SAT dependencies 4.149 = 17.237 kLoC; not the full minimum trusted computing base (TCB). The main product table excludes dependencies.
+- Current code counts include Rust attributes and exclude blank lines, doc comments and test-only AST items. The old published count used a different method; no direct growth comparison. Further generalization may replace existing code.
 
 ### Frame 7.2 - Next steps and summary
 
