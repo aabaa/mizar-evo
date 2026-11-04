@@ -558,6 +558,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   fixture/trace rowとreciprocal backlink、corruption/determinism/final
   ownership coverage、measured 413/377・243/231 oracleはcompleteである。
   structure/member/view semanticsはTask 263 ownershipに残す。
+  StructureConstructor と FieldArgument の role は元 row の規則から得る。
 - [x] **Task 255:** set/comprehension/choice/`qua` term producer。public
   6-table syntax-free `source_set_term` transaction、exact local-definition
   consumer、4/0/1/3/4/7 + Task-252 4/0/4 oracle、one-way
@@ -673,10 +674,16 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       269-272 semanticsを吸収しない。
 - [x] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [x] **Task 260:** functor-definition/initial-obligation intake producer。
+  通常 functor の宣言適格性は元 row の規則から得る。
 - [x] **Task 261:** attribute-definition producer。
 - [x] **Task 262:** mode-definition producer。
+  ModeProperty の role は元 row の規則から得る。
 - [x] **Task 263:** structure/inheritance/constructor-definition producer。
+  InheritanceDefinition、InheritanceTarget、FieldRedefinition、
+  PropertyRedefinition の role は元 row の規則から得る。
 - [x] **Task 264:** property-implementation producer。parser Task 48に依存。
+  StructureProperty の role と property origin/admission/prefix の対応は
+  元 row の規則から得る。
 - [ ] **Task 269:** proof-local declaration/binding producer。この task で
   blocked の Task 285 要素規則 (Equating の `set` 名) を producer と同時に出荷する。
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
@@ -720,7 +727,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/ja/VELOCITY-LARGE-FILE-SPLIT.md)。
 - [x] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。
-- [ ] **Task 285:** 汎用 walk の上に載せる class `b` の要素規則 (Task 257, 269, 270,
+- [x] **Task 285:** 汎用 walk の上に載せる class `b` の要素規則 (Task 257, 269, 270,
   271, 272, 279 の role)。2026-11-04 に Task 284 から分離。producer が存在する
   kind がすべて done になれば exit する。producer 未着手の kind はレジャーで
   `blocked` とし、Task 257B, 269, 270, 271, 272, 279 が出荷する。Task 284 が

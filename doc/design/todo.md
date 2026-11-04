@@ -149,7 +149,7 @@ out of task 2 on 2026-11-04 and follow it under the same ledger discipline.
 2. [x] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
    — one AST-walking producer and one shape oracle replace per-element
    transport slices and literal-offset profiles; subsumes checker Task 281.
-3. [ ] [Element-rule transport](./task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md)
+3. [x] [Element-rule transport](./task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md)
    — the class `b` element rules of Tasks 257, 269-272 and 279 as one
    family contract over the generic walk (checker Task 285).
 4. [x] [Proof-local authenticated intake](./task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)

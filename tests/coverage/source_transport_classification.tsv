@@ -1,5 +1,7 @@
 # generator: manual inventory for VELOCITY-GENERIC-SOURCE-TRANSPORT step 1 (2026-11-02)
 # class: referenced = already matched by production checker code; a = derivable by the generic walk; b = needs an element rule; c = semantic, deferred
+# retained-policy: source_term::nested_fraenkel_mapper_primary_{binding_env,arena,input}; class=c; owner=checker Task257C; frozen C4C4 binding/capture/type/mapper policy; broader authenticated intake deferred
+# retained-policy: source_formula_composition::validate_condition_dependency_profiles; class=c; owner=checker Task257C; frozen C2 complete-bound condition aggregate policy; broader composition deferred
 kind	family	class	owner
 AlgorithmBody	referenced	referenced	existing source_* producer
 AlgorithmDecreasingClause	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)

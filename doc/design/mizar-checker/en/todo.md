@@ -574,6 +574,7 @@ unchecked row below is one future nonempty logical task and one commit.
   fixture/trace row and reciprocal backlinks, corruption/determinism/final
   ownership coverage, and measured 413/377 and 243/231 oracles are complete.
   Structure/member/view semantics remain Task 263 ownership.
+  Its StructureConstructor and FieldArgument roles come from original-row rules.
 - [x] **Task 255:** set/comprehension/choice/`qua` term producer. The public
   six-table syntax-free `source_set_term` transaction, exact local-definition
   consumer, 4/0/1/3/4/7 plus Task-252 4/0/4 oracle, one-way
@@ -695,10 +696,16 @@ unchecked row below is one future nonempty logical task and one commit.
       269-272 semantics.
 - [x] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [x] **Task 260:** functor-definition and initial-obligation intake producer.
+  Ordinary functor declaration eligibility comes from its original-row rule.
 - [x] **Task 261:** attribute-definition producer.
 - [x] **Task 262:** mode-definition producer.
+  ModeProperty roles come from its original-row rule.
 - [x] **Task 263:** structure/inheritance/constructor-definition producer.
+  InheritanceDefinition, InheritanceTarget, FieldRedefinition and
+  PropertyRedefinition roles come from its original-row rules.
 - [x] **Task 264:** property-implementation producer; depends on parser Task 48.
+  StructureProperty roles and property origin/admission/prefix associations
+  come from its original-row rules.
 - [ ] **Task 269:** proof-local declaration/binding producer. Ships the
   Task 285 element rule blocked on it (Equating, the `set` name) with the
   producer.
@@ -748,7 +755,7 @@ implementation commit does not satisfy a producer task.
 - [x] **Task 284:** generic original-source transport producer and oracle;
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
-- [ ] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
+- [x] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
   269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Exits
   when every kind with an existing producer is done; kinds whose producer is
   absent are `blocked` in the ledger and ship with Tasks 257B, 269, 270, 271,
