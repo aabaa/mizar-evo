@@ -18832,6 +18832,7 @@ fn build_source_statement_witness_output_with_controls(
             &[set_term_node],
             parts,
             BindingContextId::new(1),
+            None,
         )?;
         let primary = output
             .typed_ast

@@ -33,7 +33,7 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
 
 use super::{
     checker_handoff::{
@@ -55,7 +55,7 @@ use super::{
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
     },
     source_set_term::{source_set_term_output_with_source_term, step5c7_set_output},
-    source_term::{SourceTermParts, source_term_parts_for_roots},
+    source_term::SourceTermParts,
 };
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.typed_ast_invalid";
@@ -460,18 +460,7 @@ fn build_output(
 ) -> Result<SourceAtomicFormulaRouteOutput, String> {
     let binding_env =
         source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
-    let syntax = if matches!(
-        &route,
-        ExactAtomicRoute::Binary(_)
-            | ExactAtomicRoute::Predicate(_)
-            | ExactAtomicRoute::TypeAssertion(_)
-            | ExactAtomicRoute::PredicateChain(_)
-            | ExactAtomicRoute::Attribute { .. }
-    ) {
-        Some(source_syntax_receiver(ast, &module)?)
-    } else {
-        None
-    };
+    let syntax = source_syntax_receiver(ast, &module)?;
     let formula_node = route.formula_node();
     let mut owned_kinds = route.atomic_owned_node_kinds(ast)?;
     if matches!(&route, ExactAtomicRoute::Predicate(_)) {
@@ -482,7 +471,7 @@ fn build_output(
         }
     }
     let primary_roots = route.primary_roots();
-    let source_term = if let Some(syntax) = &syntax {
+    let source_term = {
         let mut rows = primary_roots
             .iter()
             .map(|root| {
@@ -569,15 +558,6 @@ fn build_output(
         )
         .map_err(|error| error.to_string())?;
         SourceTermParts { arena, handoff }
-    } else {
-        source_term_parts_for_roots(
-            ast,
-            module.clone(),
-            &binding_env,
-            primary_roots,
-            BindingContextId::new(0),
-            &owned_kinds,
-        )?
     };
     let mut typed_ast = lower_family_typed_ast(
         ast,
@@ -586,9 +566,9 @@ fn build_output(
         &binding_env,
         &route,
         source_term,
-        syntax.as_ref(),
+        Some(&syntax),
     )?;
-    let mut input = route.handoff_input(ast, symbols, &typed_ast, syntax.as_ref())?;
+    let mut input = route.handoff_input(ast, symbols, &typed_ast, &syntax)?;
     mutate(&mut input);
     let handoff = SourceAtomicFormulaProducer::build(
         input,
@@ -686,6 +666,7 @@ fn lower_family_typed_ast(
                 binding_env.clone(),
                 &roots,
                 source_term,
+                syntax,
             )?;
             Ok(output.typed_ast)
         }
@@ -768,7 +749,7 @@ impl ExactAtomicRoute {
                 .left_items
                 .iter()
                 .chain(&payload.right_items)
-                .map(|(site, _)| site.node().index())
+                .map(|site| site.node().index())
                 .collect(),
         }
     }
@@ -891,32 +872,17 @@ impl ExactAtomicRoute {
         ast: &SurfaceAst,
         symbols: &SymbolEnv,
         typed_ast: &TypedAst,
-        syntax: Option<&TypedAst>,
+        syntax: &TypedAst,
     ) -> Result<SourceAtomicFormulaHandoffInput, String> {
         let formula = SourceAtomicFormulaId::new(0);
-        let formula_node = ast
-            .nodes()
-            .get(self.formula_node())
-            .ok_or_else(|| "Task256 formula node disappeared".to_owned())?;
         let generic_row = |site: &TypedSiteRef| {
             syntax
-                .and_then(|syntax| syntax.source_node_entries())
+                .source_node_entries()
                 .and_then(|mut rows| rows.find(|row| row.site().index() == site.node().index()))
                 .ok_or_else(|| "Task256 generic atomic row disappeared".to_owned())
         };
-        let formula_row = if syntax.is_some() {
-            Some(generic_row(&self.formula_site())?)
-        } else {
-            None
-        };
-        let formula_range = match self {
-            Self::Binary(_)
-            | Self::TypeAssertion(_)
-            | Self::PredicateChain(_)
-            | Self::Attribute { .. }
-            | Self::Predicate(_) => formula_row.unwrap().range(),
-            Self::SetEnumeration(payload) => payload.formula_range,
-        };
+        let formula_row = generic_row(&self.formula_site())?;
+        let formula_range = formula_row.range();
         let mut predicate_segments = Vec::new();
         let mut predicate_heads = Vec::new();
         let mut candidates = Vec::new();
@@ -1248,8 +1214,8 @@ impl ExactAtomicRoute {
                 let set_terms = typed_ast
                     .source_set_term()
                     .ok_or_else(|| "Task256 lost Task255 set roots".to_owned())?;
-                let left = set_target(set_terms, payload.left_range)?;
-                let right = set_target(set_terms, payload.right_range)?;
+                let left = set_target(set_terms, generic_row(&payload.left_site)?.range())?;
+                let right = set_target(set_terms, generic_row(&payload.right_site)?.range())?;
                 edges.extend([
                     edge(formula, 0, SourceAtomicEdgeRole::BuiltinLeftOperand, left),
                     edge(formula, 1, SourceAtomicEdgeRole::BuiltinRightOperand, right),
@@ -1272,18 +1238,12 @@ impl ExactAtomicRoute {
             source_id: ast.source_id,
             module_id: typed_ast.module_id().clone(),
             formulas: vec![SourceAtomicFormulaInput {
-                site: formula_row.map_or_else(
-                    || self.formula_site(),
-                    |row| TypedSiteRef::Node(TypedNodeId::new(row.site().index())),
-                ),
+                site: TypedSiteRef::Node(TypedNodeId::new(formula_row.site().index())),
                 source_range: formula_range,
                 source_ordinal: 0,
                 context: BindingContextId::new(0),
                 recovery: SourceAtomicFormulaRecovery::Normal,
-                spelling: formula_row.map_or_else(
-                    || subtree_tokens(ast, formula_node).join(" "),
-                    |row| row.spelling().to_owned(),
-                ),
+                spelling: formula_row.spelling().to_owned(),
                 kind: self.formula_kind(),
             }],
             wrappers: Vec::new(),
@@ -2036,21 +1996,4 @@ fn unique_direct_token(
             "Task256 expected one direct `{spelling}` source token"
         )),
     }
-}
-
-fn subtree_tokens<'a>(ast: &'a SurfaceAst, node: &'a SurfaceNode) -> Vec<&'a str> {
-    fn visit<'a>(ast: &'a SurfaceAst, node: &'a SurfaceNode, output: &mut Vec<&'a str>) {
-        if let Some(token) = node.token_text() {
-            output.push(token);
-            return;
-        }
-        for child in &node.children {
-            if let Some(child) = ast.node(*child) {
-                visit(ast, child, output);
-            }
-        }
-    }
-    let mut output = Vec::new();
-    visit(ast, node, &mut output);
-    output
 }

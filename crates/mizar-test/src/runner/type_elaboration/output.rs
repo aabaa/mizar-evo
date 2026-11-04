@@ -979,24 +979,24 @@ pub(in crate::runner) fn source_set_enumeration_formula_output(
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
     let mut term_inputs = Vec::new();
-    for (site, range) in payload.left_items.iter().chain(payload.right_items.iter()) {
+    for site in payload.left_items.iter().chain(payload.right_items.iter()) {
         term_inputs.push(TermInput::new(
             site.clone(),
             context,
-            *range,
+            ast.nodes()[site.node().index()].range,
             TermKind::Numeral,
         ));
     }
     term_inputs.push(TermInput::new(
         payload.left_site.clone(),
         context,
-        payload.left_range,
+        ast.nodes()[payload.left_site.node().index()].range,
         TermKind::SetEnumeration,
     ));
     term_inputs.push(TermInput::new(
         payload.right_site.clone(),
         context,
-        payload.right_range,
+        ast.nodes()[payload.right_site.node().index()].range,
         TermKind::SetEnumeration,
     ));
     let output = TermFormulaChecker::default().infer(
@@ -1004,9 +1004,9 @@ pub(in crate::runner) fn source_set_enumeration_formula_output(
         &binding_env,
         term_inputs,
         [FormulaInput::new(
-            payload.formula_site,
+            payload.formula_site.clone(),
             context,
-            payload.formula_range,
+            ast.nodes()[payload.formula_site.node().index()].range,
             FormulaKind::Equality,
         )
         .with_terms(vec![payload.left_site, payload.right_site])],

@@ -464,7 +464,7 @@
             set_enumeration_payload
                 .left_items
                 .iter()
-                .map(|(site, range)| (site.clone(), *range))
+                .map(|site| (site.clone(), set_enumeration_theorem.nodes()[site.node().index()].range))
                 .collect::<Vec<_>>(),
             expected_item_sites[..2]
                 .iter()
@@ -476,7 +476,7 @@
             set_enumeration_payload
                 .right_items
                 .iter()
-                .map(|(site, range)| (site.clone(), *range))
+                .map(|site| (site.clone(), set_enumeration_theorem.nodes()[site.node().index()].range))
                 .collect::<Vec<_>>(),
             expected_item_sites[2..]
                 .iter()
@@ -489,7 +489,7 @@
                 .left_items
                 .iter()
                 .chain(set_enumeration_payload.right_items.iter())
-                .map(|(site, _)| site.clone())
+                .cloned()
                 .collect::<Vec<_>>(),
             expected_item_sites
         );
@@ -498,7 +498,7 @@
                 .left_items
                 .iter()
                 .chain(set_enumeration_payload.right_items.iter())
-                .map(|(_, range)| *range)
+                .map(|site| set_enumeration_theorem.nodes()[site.node().index()].range)
                 .collect::<Vec<_>>(),
             expected_item_ranges
         );
@@ -511,8 +511,8 @@
         );
         assert_eq!(
             vec![
-                set_enumeration_payload.left_range,
-                set_enumeration_payload.right_range,
+                set_enumeration_theorem.nodes()[set_enumeration_payload.left_site.node().index()].range,
+                set_enumeration_theorem.nodes()[set_enumeration_payload.right_site.node().index()].range,
             ],
             expected_set_ranges
         );
@@ -521,7 +521,7 @@
             expected_formula_sites[0]
         );
         assert_eq!(
-            set_enumeration_payload.formula_range,
+            set_enumeration_theorem.nodes()[set_enumeration_payload.formula_site.node().index()].range,
             expected_formula_range
         );
         assert_eq!(set_enumeration_output.terms().len(), 6);
@@ -555,7 +555,7 @@
                 TermKind::Numeral,
             ]
         );
-        for (site, _) in set_enumeration_payload
+        for site in set_enumeration_payload
             .left_items
             .iter()
             .chain(set_enumeration_payload.right_items.iter())

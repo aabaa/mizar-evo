@@ -171,7 +171,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
     assert_eq!(set_aggregate, [2, 0, 0, 0, 4, 2]);
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    for (id, expected_kind) in TASK256_CASES.into_iter().filter(|(id, _)| !id.contains("set_enumeration")) {
+    for (id, expected_kind) in TASK256_CASES {
         let (ordinal, case) = active_type_elaboration_cases(&plan)
             .enumerate().find(|(_, case)| case.id.0 == id).unwrap();
         let original = std::fs::read_to_string(&case.source_path).unwrap();
@@ -204,7 +204,8 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 let attribute_assertion = expected_kind == SourceAtomicFormulaKind::AttributeAssertion;
                 let negative = id.contains("non_empty");
                 let predicate = expected_kind == SourceAtomicFormulaKind::PredicateApplication;
-                let term_count = if assertion { 1 } else if predicate { 3 } else { 2 };
+                let enumeration = id.contains("set_enumeration");
+                let term_count = if assertion { 1 } else if predicate { 3 } else if enumeration { 4 } else { 2 };
                 assert_eq!((primary.terms().len(), primary.references().len(), primary.numeric_type_requests().len()), (term_count, 0, term_count));
                 let mut numerals = ast.nodes().iter().enumerate()
                     .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::NumeralTerm)).collect::<Vec<_>>();
@@ -234,7 +235,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 let formula = atomic.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
                 assert_eq!((formula.site().node().index(), formula.source_range(), formula.spelling(), formula.kind(), formula.source_ordinal(), formula.context(), formula.recovery()),
                     (*formula_index, formula_node.range, spelling(formula_node.range).as_str(), expected_kind, 0, BindingContextId::new(0), SourceAtomicFormulaRecovery::Normal));
-                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.type_sites().len(), atomic.attributes().len(), atomic.edges().len()), (1, 0, 0, usize::from(predicate), usize::from(predicate), usize::from(type_assertion), usize::from(attribute_assertion), if predicate { 2 } else { term_count }));
+                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.type_sites().len(), atomic.attributes().len(), atomic.edges().len()), (1, 0, 0, usize::from(predicate), usize::from(predicate), usize::from(type_assertion), usize::from(attribute_assertion), if predicate || enumeration { 2 } else { term_count }));
                 let membership = expected_kind == SourceAtomicFormulaKind::Membership;
                 assert_eq!(atomic.requests().len(), if membership || assertion || predicate { 1 } else { 2 });
                 for (edge_id, edge) in atomic.edges().iter() {
@@ -244,7 +245,8 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                         else { [SourceAtomicEdgeRole::BuiltinLeftOperand, SourceAtomicEdgeRole::BuiltinRightOperand][ordinal] };
                     let target = if predicate && ordinal == 1 {
                         SourceAtomicTermTarget::Application(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
-                    } else { SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(ordinal)) };
+                    } else if enumeration { SourceAtomicTermTarget::SetTerm(mizar_checker::source_set_term::SourceSetTermId::new(ordinal)) }
+                    else { SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(ordinal)) };
                     assert_eq!((edge.formula(), edge.ordinal(), edge.role(), edge.target()),
                         (SourceAtomicFormulaId::new(0), ordinal, role, target));
                 }
@@ -261,6 +263,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                         SurfaceNodeKind::InfixExpression(ref operator) if predicate && operator.spelling.as_ref() == "++" => "source.term.functor-application.symbolic",
                         SurfaceNodeKind::ParenthesizedTerm if predicate => "source.term.functor-application.parenthesized",
                         SurfaceNodeKind::Token(ref token) if predicate && token.text.as_ref() == "++" => "source.term.functor-head.single",
+                        SurfaceNodeKind::SetEnumeration if enumeration => "source.term.set.enumeration",
                         SurfaceNodeKind::TypeExpression if type_assertion => "source.formula.atomic.asserted-type",
                         SurfaceNodeKind::TypeHead if type_assertion => "source.formula.atomic.asserted-type-head",
                         SurfaceNodeKind::AttributeRef if attribute_assertion => "source.formula.atomic.attribute",
@@ -365,9 +368,40 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                     assert_eq!(atomic.application_fingerprint(), None);
                 }
                 assert_eq!(atomic.primary_term_fingerprint(), primary.debug_text());
-                assert_eq!((atomic.structure_fingerprint(), atomic.set_term_fingerprint()), (None, None));
+                assert_eq!(atomic.structure_fingerprint(), None);
+                if enumeration {
+                    use mizar_checker::source_set_term::*;
+                    let set = output.typed_ast.source_set_term().unwrap();
+                    assert_eq!(output.resolved.source_set_term(), Some(set));
+                    assert_eq!((set.terms().len(), set.wrappers().len(), set.generators().len(), set.type_sites().len(), set.edges().len(), set.requests().len()), (2, 0, 0, 0, 4, 2));
+                    assert!(set.conditions().is_empty());
+                    assert_eq!(owned.len(), 2);
+                    let mut roots = owned.iter().collect::<Vec<_>>();
+                    roots.sort_by_key(|(_, node, _)| (node.range.start, node.range.end));
+                    for ((term_id, term), (index, node, _)) in set.terms().iter().zip(roots) {
+                        assert_eq!((term.site().node().index(), term.source_range(), term.spelling(), term.source_ordinal(), term.context(), term.recovery(), term.kind()),
+                            (*index, node.range, spelling(node.range).as_str(), term_id.index(), BindingContextId::new(0), SourceSetTermRecovery::Normal, SourceSetTermKind::Enumeration));
+                        for ordinal in 0..2 {
+                            let numeral = numerals[term_id.index() * 2 + ordinal].1;
+                            assert!(node.range.start <= numeral.range.start && numeral.range.end <= node.range.end);
+                        }
+                    }
+                    for (edge_id, edge) in set.edges().iter() {
+                        assert_eq!((edge.term(), edge.ordinal(), edge.role(), edge.target()),
+                            (SourceSetTermId::new(edge_id.index() / 2), edge_id.index() % 2, SourceSetEdgeRole::EnumerationElement, SourceSetTarget::Primary(SourcePrimaryTermId::new(edge_id.index()))));
+                    }
+                    for (request_id, request) in set.requests().iter() {
+                        assert_eq!((request.term(), request.ordinal(), request.kind(), request.generator(), request.type_site()),
+                            (SourceSetTermId::new(request_id.index()), 0, SourceSetRequestKind::ResultType, None, None));
+                    }
+                    assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+                    assert_eq!((set.application_fingerprint(), set.structure_fingerprint()), (None, None));
+                    assert_eq!(atomic.set_term_fingerprint(), Some(set.debug_text().as_str()));
+                } else {
+                    assert_eq!(atomic.set_term_fingerprint(), None);
+                    assert!(output.typed_ast.source_set_term().is_none() && output.resolved.source_set_term().is_none());
+                }
                 assert!(output.typed_ast.source_structure().is_none() && output.resolved.source_structure().is_none());
-                assert!(output.typed_ast.source_set_term().is_none() && output.resolved.source_set_term().is_none());
                 assert!(output.typed_ast.source_type().is_none() && output.resolved.source_type().is_none());
                 assert!(output.typed_ast.source_attribute().is_none() && output.resolved.source_attribute().is_none());
                 assert!(output.typed_ast.source_context().is_none() && output.resolved.source_context().is_none());
@@ -451,6 +485,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                     SourceAtomicFormulaKind::TypeAssertion => crate::runner::source_builtin_type_assertion_formula_detail_keys(ast, module.clone(), &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => crate::runner::source_imported_non_empty_attribute_assertion_formula_detail_keys(ast, module.clone(), &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion => crate::runner::source_imported_attribute_assertion_formula_detail_keys(ast, module.clone(), &symbols),
+                    _ if enumeration => crate::runner::source_set_enumeration_formula_detail_keys(ast, module.clone(), &symbols),
                     _ => crate::runner::source_builtin_binary_term_formula_detail_keys(ast, module.clone(), &symbols),
                 };
                 let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
@@ -483,6 +518,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                     SourceAtomicFormulaKind::TypeAssertion => extract_source_builtin_type_assertion_formula(&alias, &module, &symbols).is_some(),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => extract_source_imported_non_empty_attribute_assertion_formula(&alias, &module, &symbols).is_some(),
                     SourceAtomicFormulaKind::AttributeAssertion => extract_source_imported_attribute_assertion_formula(&alias, &module, &symbols).is_some(),
+                    _ if enumeration => extract_source_set_enumeration_formula(&alias).is_some(),
                     _ => extract_source_builtin_binary_term_formula(&alias).is_some(),
                 });
                 assert_eq!(source_atomic_formula_output_with_source(&alias, module.clone(), &symbols, &source)
@@ -492,6 +528,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                     SourceAtomicFormulaKind::TypeAssertion => crate::runner::source_builtin_type_assertion_formula_detail_keys(&alias, module, &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => crate::runner::source_imported_non_empty_attribute_assertion_formula_detail_keys(&alias, module, &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion => crate::runner::source_imported_attribute_assertion_formula_detail_keys(&alias, module, &symbols),
+                    _ if enumeration => crate::runner::source_set_enumeration_formula_detail_keys(&alias, module, &symbols),
                     _ => crate::runner::source_builtin_binary_term_formula_detail_keys(&alias, module, &symbols),
                 }, legacy);
             });
@@ -2676,7 +2713,7 @@ fn task256_expected_slot_ranges(
         ],
         "fail_type_elaboration_set_enumeration_formula_gap_001" => {
             let payload = extract_source_set_enumeration_formula(ast).expect("set payload");
-            vec![payload.left_range, payload.right_range]
+            vec![ast.nodes()[payload.left_site.node().index()].range, ast.nodes()[payload.right_site.node().index()].range]
         }
         _ => unreachable!(),
     }

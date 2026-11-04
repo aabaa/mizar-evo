@@ -630,6 +630,7 @@ fn source_set_term_output_with_mutation_impl(
         binding_env,
         extracted,
         None,
+        None,
         mutate,
     ))
 }
@@ -2046,7 +2047,7 @@ fn task258b3m2b2b3p_dependency_probe_arena(
     use mizar_session::SourceAnchor;
 
     let kinds = owned.iter().copied().collect::<BTreeMap<_, _>>();
-    let arena = arena_with_overrides(ast, source, &kinds, &BTreeMap::new())?;
+    let arena = arena_with_overrides(ast, source, &kinds, &BTreeMap::new(), None)?;
     let mut nodes = arena
         .iter()
         .map(|(_, node)| node.clone())
@@ -2264,6 +2265,7 @@ fn task258b3m2b2b3p_coherent_application_fingerprint_probe(
         &arena,
         &BTreeMap::from([(40, "source.term.set.enumeration")]),
         &BTreeMap::new(),
+        None,
     )?;
     let handoff = SourceSetTermProducer::build(
         task258b3m2b2b3p_dependency_probe_set_input(
@@ -2390,6 +2392,7 @@ fn task258b3m2b2b3p_coherent_structure_fingerprint_probe(
         &arena,
         &BTreeMap::from([(40, "source.term.set.enumeration")]),
         &BTreeMap::new(),
+        None,
     )?;
     let handoff = SourceSetTermProducer::build(
         task258b3m2b2b3p_dependency_probe_set_input(
@@ -2702,6 +2705,7 @@ pub(in crate::runner) fn set_enumeration_proof_context_handoff_for_test(
             &[40],
             source_term,
             BindingContextId::new(1),
+            None,
         )
         .map_err(|error| format!("Task255: {error}"))
         .and_then(|output| {
@@ -2746,6 +2750,7 @@ pub(in crate::runner) fn set_enumeration_proof_context_handoff_for_test(
             application: None,
             structure: None,
         }),
+        None,
         |input| task258b3m2b2b3p_mutate_handoff(input, ast, options.handoff),
     ) {
         Ok(output) => output,
@@ -3064,6 +3069,7 @@ fn build_conditioned_output(
             application: Some(application),
             structure: None,
         }),
+        None,
         mutate,
     )
 }
@@ -3094,6 +3100,7 @@ pub(super) fn source_set_term_output_with_source_term(
     binding_env: BindingEnv,
     roots: &[usize],
     source_term: SourceTermParts,
+    syntax: Option<&TypedAst>,
 ) -> Result<SourceSetTermRouteOutput, String> {
     source_set_term_output_with_source_term_in_context(
         ast,
@@ -3102,6 +3109,7 @@ pub(super) fn source_set_term_output_with_source_term(
         roots,
         source_term,
         BindingContextId::new(0),
+        syntax,
     )
 }
 
@@ -3170,6 +3178,7 @@ pub(super) fn step5c7_set_output(
             application: None,
             structure: None,
         }),
+        None,
         |_| {},
     )
 }
@@ -3181,6 +3190,7 @@ pub(super) fn source_set_term_output_with_source_term_in_context(
     roots: &[usize],
     source_term: SourceTermParts,
     context: BindingContextId,
+    syntax: Option<&TypedAst>,
 ) -> Result<SourceSetTermRouteOutput, String> {
     let extracted = extract_set_terms(
         ast,
@@ -3203,6 +3213,7 @@ pub(super) fn source_set_term_output_with_source_term_in_context(
             application: None,
             structure: None,
         }),
+        syntax,
         |_| {},
     )
 }
@@ -3235,7 +3246,15 @@ pub(in crate::runner) fn synthetic_source_set_term_output_with_mutation(
         degraded_terms,
         false,
     )?;
-    build_output(ast, module, binding_env, extracted, dependencies, mutate)
+    build_output(
+        ast,
+        module,
+        binding_env,
+        extracted,
+        dependencies,
+        None,
+        mutate,
+    )
 }
 
 fn exact_real_roots(ast: &SurfaceAst) -> Option<Vec<usize>> {
@@ -3933,10 +3952,27 @@ fn build_output(
     binding_env: BindingEnv,
     extracted: ExtractedSetTerms,
     dependencies: Option<SyntheticSourceSetTermDependencies>,
+    syntax: Option<&TypedAst>,
     mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
 ) -> Result<SourceSetTermRouteOutput, String> {
     if binding_env.source_id() != ast.source_id || binding_env.module_id() != &module {
         return Err("source-set binding environment identity mismatch".to_owned());
+    }
+    let generic_row = |index| {
+        syntax
+            .and_then(|syntax| syntax.source_node_entries())
+            .and_then(|mut rows| rows.find(|row| row.site().index() == index))
+            .ok_or_else(|| "source-set generic row disappeared".to_owned())
+    };
+    if syntax.is_some() {
+        let mut previous = None;
+        for term in &extracted.terms {
+            let ordinal = generic_row(term.node)?.preorder_ordinal();
+            if previous.is_some_and(|previous| previous >= ordinal) {
+                return Err("source-set generic term order disagrees with roles".to_owned());
+            }
+            previous = Some(ordinal);
+        }
     }
     let mut kinds = BTreeMap::new();
     let mut recoveries = BTreeMap::new();
@@ -3992,7 +4028,7 @@ fn build_output(
     }
 
     let (arena, primary, application, structure) = if let Some(dependencies) = dependencies {
-        let arena = arena_with_overrides(ast, &dependencies.arena, &kinds, &recoveries)?;
+        let arena = arena_with_overrides(ast, &dependencies.arena, &kinds, &recoveries, syntax)?;
         (
             arena,
             dependencies.primary,
@@ -4022,7 +4058,11 @@ fn build_output(
         (parts.arena, parts.handoff, None, None)
     };
     let primary_id = |root: usize| {
-        let range = ast.nodes().get(root)?.range;
+        let range = if syntax.is_some() {
+            generic_row(root).ok()?.range()
+        } else {
+            ast.nodes().get(root)?.range
+        };
         primary
             .terms()
             .iter()
@@ -4087,18 +4127,32 @@ fn build_output(
             .iter()
             .enumerate()
             .map(|(source_ordinal, term)| {
-                let node = &ast.nodes()[term.node];
-                SourceSetTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(term.node)),
-                    source_range: node.range,
+                let (site, source_range, spelling) = if syntax.is_some() {
+                    let row = generic_row(term.node)?;
+                    (
+                        TypedSiteRef::Node(TypedNodeId::new(row.site().index())),
+                        row.range(),
+                        row.spelling().to_owned(),
+                    )
+                } else {
+                    let node = &ast.nodes()[term.node];
+                    (
+                        TypedSiteRef::Node(TypedNodeId::new(term.node)),
+                        node.range,
+                        subtree_tokens(ast, node).join(" "),
+                    )
+                };
+                Ok(SourceSetTermInput {
+                    site,
+                    source_range,
                     source_ordinal,
                     context: extracted.context,
                     recovery: term.recovery,
-                    spelling: subtree_tokens(ast, node).join(" "),
+                    spelling,
                     kind: term.kind,
-                }
+                })
             })
-            .collect(),
+            .collect::<Result<Vec<_>, String>>()?,
         wrappers: extracted
             .wrappers
             .iter()
@@ -4296,6 +4350,7 @@ fn arena_with_overrides(
     source: &TypedArena,
     kinds: &BTreeMap<usize, &'static str>,
     recoveries: &BTreeMap<usize, NodeRecoveryState>,
+    syntax: Option<&TypedAst>,
 ) -> Result<TypedArena, String> {
     if source.len() != ast.nodes().len() {
         return Err("source-set dependency arena is not surface-indexed".to_owned());
@@ -4312,6 +4367,13 @@ fn arena_with_overrides(
             return Err("source-set arena override site is already owned".to_owned());
         }
         node.kind = (*kind).into();
+        if let Some(syntax) = syntax {
+            let row = syntax
+                .source_node_entries()
+                .and_then(|mut rows| rows.find(|row| row.site().index() == *index))
+                .ok_or_else(|| "source-set generic owned row disappeared".to_owned())?;
+            node.anchor = SourceAnchor::Range(row.range());
+        }
     }
     for (index, recovery) in recoveries {
         nodes

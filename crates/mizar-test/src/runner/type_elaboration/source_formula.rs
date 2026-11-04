@@ -1592,13 +1592,10 @@ pub(in crate::runner) struct SourceImportedAttributeAssertionFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceSetEnumerationFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) left_site: TypedSiteRef,
-    pub(in crate::runner) left_range: SourceRange,
-    pub(in crate::runner) left_items: Vec<(TypedSiteRef, SourceRange)>,
+    pub(in crate::runner) left_items: Vec<TypedSiteRef>,
     pub(in crate::runner) right_site: TypedSiteRef,
-    pub(in crate::runner) right_range: SourceRange,
-    pub(in crate::runner) right_items: Vec<(TypedSiteRef, SourceRange)>,
+    pub(in crate::runner) right_items: Vec<TypedSiteRef>,
 }
 
 #[derive(Debug, Clone)]
@@ -2314,12 +2311,9 @@ pub(in crate::runner) fn extract_source_set_enumeration_formula(
     let right = exact_set_enumeration_term_operand(ast, *right_expression_id)?;
     Some(SourceSetEnumerationFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         left_site: surface_site(left.term_id),
-        left_range: left.term_range,
         left_items: left.items,
         right_site: surface_site(right.term_id),
-        right_range: right.term_range,
         right_items: right.items,
     })
 }
@@ -2327,8 +2321,7 @@ pub(in crate::runner) fn extract_source_set_enumeration_formula(
 #[derive(Debug, Clone)]
 struct ExactSetEnumerationTerm {
     term_id: SurfaceNodeId,
-    term_range: SourceRange,
-    items: Vec<(TypedSiteRef, SourceRange)>,
+    items: Vec<TypedSiteRef>,
 }
 
 fn exact_set_enumeration_term_operand(
@@ -2360,11 +2353,7 @@ fn exact_set_enumeration_term_operand(
     let second = exact_numeral_term_operand(ast, *second_expression_id, "2")?;
     Some(ExactSetEnumerationTerm {
         term_id: *set_id,
-        term_range: set.range,
-        items: vec![
-            (surface_site(first.0), first.1),
-            (surface_site(second.0), second.1),
-        ],
+        items: vec![surface_site(first.0), surface_site(second.0)],
     })
 }
 
