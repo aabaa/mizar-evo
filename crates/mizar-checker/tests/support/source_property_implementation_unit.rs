@@ -93,6 +93,20 @@ impl Fixture {
         )
     }
 
+    fn attach_native_children(&mut self, source: &TypedAst) {
+        self.arena = TypedArena::try_new(
+            self.arena.root(),
+            self.arena
+                .iter()
+                .map(|(id, node)| {
+                    node.clone()
+                        .with_children(source.nodes().node(id).unwrap().children.clone())
+                })
+                .collect(),
+        )
+        .unwrap();
+    }
+
     fn build_native(
         &self,
         base: &InitialObligationTable,
@@ -1074,7 +1088,13 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
                 None,
             );
             assert_eq!(
-                validate_arena(validator_profile, profile_fixture.source, &wrong_range),
+                validate_arena(
+                    validator_profile,
+                    profile_fixture.source,
+                    &wrong_range,
+                    None,
+                    None
+                ),
                 Err(SourcePropertyImplementationError::InvalidArenaOwnership),
                 "profile {profile:?} node {index} range",
             );
@@ -1093,7 +1113,13 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
                 None,
             );
             assert_eq!(
-                validate_arena(validator_profile, profile_fixture.source, &wrong_kind_arena,),
+                validate_arena(
+                    validator_profile,
+                    profile_fixture.source,
+                    &wrong_kind_arena,
+                    None,
+                    None
+                ),
                 Err(SourcePropertyImplementationError::InvalidArenaOwnership),
                 "profile {profile:?} node {index} kind",
             );
@@ -1116,6 +1142,8 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
                     validator_profile,
                     profile_fixture.source,
                     &wrong_context_arena,
+                    None,
+                    None,
                 ),
                 Err(SourcePropertyImplementationError::InvalidArenaOwnership),
                 "profile {profile:?} node {index} context",
@@ -1130,7 +1158,13 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
             Some(None),
         );
         assert_eq!(
-            validate_arena(validator_profile, profile_fixture.source, &rootless),
+            validate_arena(
+                validator_profile,
+                profile_fixture.source,
+                &rootless,
+                None,
+                None
+            ),
             Err(SourcePropertyImplementationError::InvalidArenaOwnership),
             "profile {profile:?} root",
         );
@@ -4544,7 +4578,11 @@ fn task_264_public_coherent_prefix_layout_and_legacy_disagreements() {
             }
             let original_source =
                 native_property_source(&original, NativePropertySourceMutation::None);
-            let native = original.build_native(&base, &original_source).unwrap();
+            let mut native_original = original.clone();
+            native_original.attach_native_children(&original_source);
+            let native = native_original
+                .build_native(&base, &original_source)
+                .unwrap();
             assert_eq!(
                 f.build_native(&base, &original_source),
                 Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
@@ -4944,9 +4982,10 @@ fn native_property_source(f: &Fixture, mutation: NativePropertySourceMutation) -
 #[test]
 fn structure_property_native_source_authority_and_content_are_required() {
     for profile in [TestProfile::Means, TestProfile::Equals] {
-        let f = fixture(profile);
+        let mut f = fixture(profile);
         let base = InitialObligationTable::new();
         let source = native_property_source(&f, NativePropertySourceMutation::None);
+        f.attach_native_children(&source);
         let before = source.clone();
         let projection = f.build_native(&base, &source).unwrap();
         assert_eq!(
@@ -5012,8 +5051,9 @@ fn structure_property_native_source_authority_and_content_are_required() {
 #[test]
 fn structure_property_native_replay_keeps_late_identity_and_arena_priorities() {
     for profile in [TestProfile::Means, TestProfile::Equals] {
-        let f = fixture(profile);
+        let mut f = fixture(profile);
         let source = native_property_source(&f, NativePropertySourceMutation::None);
+        f.attach_native_children(&source);
         let base = InitialObligationTable::new();
         let projection = f.build_native(&base, &source).unwrap();
         let typed = f
@@ -5081,6 +5121,115 @@ fn structure_property_native_replay_keeps_late_identity_and_arena_priorities() {
             assemble_empty(&injected),
             Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
         );
+        assert!(assemble_empty(&typed).is_ok());
+    }
+}
+
+#[test]
+fn property_native_arena_original_rows_bound_forgery_and_replay() {
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let mut f = fixture(profile);
+        let source = native_property_source(&f, NativePropertySourceMutation::None);
+        f.attach_native_children(&source);
+        let base = InitialObligationTable::new();
+        let projection = f.build_native(&base, &source).unwrap();
+        let typed = f
+            .typed_base(base.clone())
+            .with_source_property_implementation(projection.clone())
+            .unwrap();
+        let original_parameter = source
+            .nodes()
+            .node(TypedNodeId::new(parameter_node(profile)))
+            .unwrap();
+        let identifier = source.nodes().node(TypedNodeId::new(20)).unwrap();
+        assert_ne!(original_parameter.anchor, identifier.anchor);
+        assert_eq!(
+            f.arena
+                .node(TypedNodeId::new(parameter_node(profile)))
+                .unwrap()
+                .anchor,
+            identifier.anchor
+        );
+        for node_id in [
+            root_node(profile),
+            if profile == TestProfile::Means {
+                67
+            } else {
+                50
+            },
+        ] {
+            let mut counterfeit = f.clone();
+            let nodes = f
+                .arena
+                .iter()
+                .map(|(id, node)| {
+                    let mut node = node.clone();
+                    if id.index() == node_id {
+                        node.children.clear();
+                    }
+                    node
+                })
+                .collect();
+            counterfeit.arena = TypedArena::try_new(f.arena.root(), nodes).unwrap();
+            assert_eq!(
+                counterfeit.build_native(&base, &source),
+                Err(SourcePropertyImplementationError::InvalidArenaOwnership)
+            );
+            assert_eq!(
+                counterfeit.validate_handoff(
+                    &projection.handoff,
+                    &projection.initial_obligations,
+                    &counterfeit.arena
+                ),
+                Err(SourcePropertyImplementationError::InvalidArenaOwnership)
+            );
+            assert_eq!(
+                counterfeit
+                    .typed_base(base.clone())
+                    .with_source_property_implementation(projection.clone()),
+                Err(TypedAstError::InvalidSourcePropertyImplementation)
+            );
+            let mut injected = counterfeit.typed_base(base.clone());
+            injected.replace_initial_obligations_for_test(projection.initial_obligations.clone());
+            injected.inject_source_property_implementation_for_test(projection.handoff.clone());
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
+            );
+        }
+        let mut forged = projection.clone();
+        let rows = Arc::make_mut(forged.handoff.original_source_nodes.as_mut().unwrap());
+        let wrapper = rows
+            .iter_mut()
+            .find(|row| {
+                row.site.index()
+                    == if profile == TestProfile::Means {
+                        67
+                    } else {
+                        50
+                    }
+            })
+            .unwrap();
+        wrapper.range.start += 1;
+        assert_eq!(
+            f.validate_handoff(&forged.handoff, &forged.initial_obligations, &f.arena),
+            Err(SourcePropertyImplementationError::InvalidArenaOwnership)
+        );
+        assert_eq!(
+            f.typed_base(base.clone())
+                .with_source_property_implementation(forged.clone()),
+            Err(TypedAstError::InvalidSourcePropertyImplementation)
+        );
+        let mut injected = typed.clone();
+        injected.inject_source_property_implementation_for_test(forged.handoff);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
+        );
+        assert!(Arc::ptr_eq(
+            projection.handoff.original_source_nodes.as_ref().unwrap(),
+            source.source_nodes().unwrap()
+        ));
         assert!(assemble_empty(&typed).is_ok());
     }
 }

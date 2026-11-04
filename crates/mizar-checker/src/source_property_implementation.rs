@@ -2472,7 +2472,7 @@ fn validate_input(
         atomic_formulas,
     )?;
     validate_correctness(profile, input, &body)?;
-    validate_arena(profile, input.source_id, arena)?;
+    validate_arena(profile, input.source_id, arena, original, roles.as_ref())?;
     let actual_prefix =
         actual_prefix.ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
     validate_source_type_profile(
@@ -3167,9 +3167,16 @@ fn validate_arena(
     profile: Profile,
     source: SourceId,
     arena: &TypedArena,
+    original: Option<&[SourceNode]>,
+    roles: Option<&StructurePropertyRoles<'_>>,
 ) -> Result<(), SourcePropertyImplementationError> {
-    prefix_geometry(profile, source, arena)
+    let prefix = prefix_geometry(profile, source, arena)
         .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
+    if roles.is_some_and(|roles| prefix != roles.prefix.map(SourceNode::range))
+        || original.is_some_and(|rows| rows.len() != arena.len())
+    {
+        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+    }
     let rows: &[(usize, &str)] = match profile {
         Profile::Means => &[
             (64, "source.type.head"),
@@ -3196,13 +3203,19 @@ fn validate_arena(
             (55, "source.module"),
         ],
     };
-    let (expected_len, canonical) = match profile {
-        Profile::Means => (85, MEANS_IMPLEMENTATION),
-        Profile::Equals => (56, EQUALS_IMPLEMENTATION),
+    let (expected_len, leaf_count) = match profile {
+        Profile::Means => (85, 53),
+        Profile::Equals => (56, 35),
+    };
+    #[cfg(test)]
+    let canonical = match profile {
+        Profile::Means => MEANS_IMPLEMENTATION,
+        Profile::Equals => EQUALS_IMPLEMENTATION,
     };
     if arena.len() != expected_len || arena.root() != Some(TypedNodeId::new(expected_len - 1)) {
         return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
     }
+    #[cfg(test)]
     let reference = local_spelling_matches(
         canonical,
         range(source, 108, 108 + canonical.len()),
@@ -3210,71 +3223,131 @@ fn validate_arena(
         None,
     )
     .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)?;
-    let leaf_count = 18 + reference.len();
+    #[cfg(test)]
+    let leaf_count = if original.is_none() {
+        18 + reference.len()
+    } else {
+        leaf_count
+    };
     for (id, row) in arena.iter() {
-        if id.index() < 19 || (leaf_count..leaf_count + 9).contains(&id.index()) {
-            continue;
-        }
-        let SourceAnchor::Range(actual) = &row.anchor else {
-            return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
-        };
-        let expected_range = if id.index() < leaf_count {
-            let atom = reference[id.index() - 18];
-            let previous_atom = reference[id.index() - 19];
-            let SourceAnchor::Range(previous) = &arena
-                .node(TypedNodeId::new(id.index() - 1))
-                .expect("dense arena")
-                .anchor
-            else {
-                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+        let native = original
+            .map(|rows| {
+                rows.iter()
+                    .find(|row| row.site().index() == id.index())
+                    .ok_or(SourcePropertyImplementationError::InvalidArenaOwnership)
+            })
+            .transpose()?;
+        if let (Some(native), Some(original)) = (native, original) {
+            let children = if native.kind() == &K::Root {
+                let mut children = original
+                    .iter()
+                    .filter(|row| matches!(row.kind(), K::Token(_)))
+                    .map(SourceNode::site)
+                    .collect::<Vec<_>>();
+                for child in original.iter().filter(|child| {
+                    child.parent() == Some(native.site()) && !matches!(child.kind(), K::Token(_))
+                }) {
+                    if child.child_ordinal() > children.len() {
+                        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+                    }
+                    children.insert(child.child_ordinal(), child.site());
+                }
+                children
+            } else {
+                original
+                    .iter()
+                    .filter(|child| child.parent() == Some(native.site()))
+                    .map(SourceNode::site)
+                    .collect()
             };
-            let first = canonical.as_bytes()[atom.start - 108];
-            let previous_first = canonical.as_bytes()[previous_atom.start - 108];
-            let words = (first.is_ascii_alphanumeric() || first == b'_')
-                && (previous_first.is_ascii_alphanumeric() || previous_first == b'_');
-            if actual.source_id != source
-                || actual.start >= actual.end
-                || actual.end.checked_sub(actual.start) != atom.end.checked_sub(atom.start)
-                || previous.end > actual.start
-                || (words && previous.end == actual.start)
+            if row
+                .children
+                .iter()
+                .map(|id| id.index())
+                .ne(children.iter().map(|id| id.index()))
             {
                 return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
             }
-            *actual
+        }
+        if id.index() < 19 || (leaf_count..leaf_count + 9).contains(&id.index()) {
+            continue;
+        }
+        #[cfg(test)]
+        let SourceAnchor::Range(actual) = &row.anchor else {
+            return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+        };
+        let expected_range = if let (Some(native), Some(roles)) = (native, roles) {
+            if roles.parameter_type[1].parent() == Some(native.site()) {
+                roles.parameter_identifier.range()
+            } else {
+                native.range()
+            }
         } else {
-            let (first, last) = match (profile, id.index()) {
-                (Profile::Means, 62..=64) | (Profile::Equals, 44..=46) => (22, 22),
-                (Profile::Means, 65) | (Profile::Equals, 47) => (20, 20),
-                (Profile::Means, 66..=67) | (Profile::Equals, 48) => (29, 29),
-                (Profile::Means, 68..=69) => (31, 31),
-                (Profile::Means, 70..=72) | (Profile::Equals, 49..=51) => (29, 31),
-                (Profile::Means, 73) => (37, 39),
-                (Profile::Means, 74) => (35, 40),
-                (Profile::Means, 75) => (34, 40),
-                (Profile::Means, 76) => (33, 41),
-                (Profile::Means, 77) => (46, 48),
-                (Profile::Means, 78) => (44, 49),
-                (Profile::Means, 79) => (43, 49),
-                (Profile::Means, 80) => (42, 50),
-                (Profile::Means, 81) | (Profile::Equals, 52) => (18, leaf_count - 1),
-                (Profile::Means, 82..=84) | (Profile::Equals, 53..=55) => (0, leaf_count - 1),
-                _ => return Err(SourcePropertyImplementationError::InvalidArenaOwnership),
-            };
-            let SourceAnchor::Range(first) = &arena
-                .node(TypedNodeId::new(first))
-                .expect("dense arena")
-                .anchor
-            else {
-                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
-            };
-            let SourceAnchor::Range(last) = &arena
-                .node(TypedNodeId::new(last))
-                .expect("dense arena")
-                .anchor
-            else {
-                return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
-            };
-            range(source, first.start, last.end)
+            #[cfg(not(test))]
+            return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+            #[cfg(test)]
+            {
+                if id.index() < leaf_count {
+                    let atom = reference[id.index() - 18];
+                    let previous_atom = reference[id.index() - 19];
+                    let SourceAnchor::Range(previous) = &arena
+                        .node(TypedNodeId::new(id.index() - 1))
+                        .expect("dense arena")
+                        .anchor
+                    else {
+                        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+                    };
+                    let first = canonical.as_bytes()[atom.start - 108];
+                    let previous_first = canonical.as_bytes()[previous_atom.start - 108];
+                    let words = (first.is_ascii_alphanumeric() || first == b'_')
+                        && (previous_first.is_ascii_alphanumeric() || previous_first == b'_');
+                    if actual.source_id != source
+                        || actual.start >= actual.end
+                        || actual.end.checked_sub(actual.start) != atom.end.checked_sub(atom.start)
+                        || previous.end > actual.start
+                        || (words && previous.end == actual.start)
+                    {
+                        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+                    }
+                    *actual
+                } else {
+                    let (first, last) = match (profile, id.index()) {
+                        (Profile::Means, 62..=64) | (Profile::Equals, 44..=46) => (22, 22),
+                        (Profile::Means, 65) | (Profile::Equals, 47) => (20, 20),
+                        (Profile::Means, 66..=67) | (Profile::Equals, 48) => (29, 29),
+                        (Profile::Means, 68..=69) => (31, 31),
+                        (Profile::Means, 70..=72) | (Profile::Equals, 49..=51) => (29, 31),
+                        (Profile::Means, 73) => (37, 39),
+                        (Profile::Means, 74) => (35, 40),
+                        (Profile::Means, 75) => (34, 40),
+                        (Profile::Means, 76) => (33, 41),
+                        (Profile::Means, 77) => (46, 48),
+                        (Profile::Means, 78) => (44, 49),
+                        (Profile::Means, 79) => (43, 49),
+                        (Profile::Means, 80) => (42, 50),
+                        (Profile::Means, 81) | (Profile::Equals, 52) => (18, leaf_count - 1),
+                        (Profile::Means, 82..=84) | (Profile::Equals, 53..=55) => {
+                            (0, leaf_count - 1)
+                        }
+                        _ => return Err(SourcePropertyImplementationError::InvalidArenaOwnership),
+                    };
+                    let SourceAnchor::Range(first) = &arena
+                        .node(TypedNodeId::new(first))
+                        .expect("dense arena")
+                        .anchor
+                    else {
+                        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+                    };
+                    let SourceAnchor::Range(last) = &arena
+                        .node(TypedNodeId::new(last))
+                        .expect("dense arena")
+                        .anchor
+                    else {
+                        return Err(SourcePropertyImplementationError::InvalidArenaOwnership);
+                    };
+                    range(source, first.start, last.end)
+                }
+            }
         };
         let expected_kind = rows
             .iter()
