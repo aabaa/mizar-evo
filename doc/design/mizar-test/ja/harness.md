@@ -3075,10 +3075,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 
 唯一のexact routeは
 `fail_type_elaboration_formula_connective_quantifier_gap_001`である。raw
-`SurfaceAst` traversalはprivateに留める。`source_formula.rs`はformula site
-5件、explicit binder segment/identifier、bare `set` type-expression/head、
-frozen rangeをselect/retainし、private `source_composite_formula` leafはそのdataを
-public syntax-free transactionへtranslateできる。
+`SurfaceAst` traversalはprivateに留める。
 
 runnerはauthenticated source/resolver/symbol-module identityとpublic
 `BindingEnvParts`/table APIからexact normal `1/0/4` module-shell environmentを

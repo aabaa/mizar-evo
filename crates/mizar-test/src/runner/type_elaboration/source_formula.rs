@@ -1622,26 +1622,14 @@ pub(in crate::runner) struct SourceSetEnumerationFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaConnectiveQuantifier {
     pub(in crate::runner) premise_constant_site: TypedSiteRef,
-    pub(in crate::runner) premise_constant_range: SourceRange,
     pub(in crate::runner) implication_site: TypedSiteRef,
-    pub(in crate::runner) implication_range: SourceRange,
     pub(in crate::runner) quantified_site: TypedSiteRef,
-    pub(in crate::runner) quantified_range: SourceRange,
     pub(in crate::runner) binder_segment_site: TypedSiteRef,
-    pub(in crate::runner) binder_segment_range: SourceRange,
     pub(in crate::runner) binder_identifier_site: TypedSiteRef,
-    pub(in crate::runner) binder_identifier_range: SourceRange,
-    pub(in crate::runner) binder_identifier_spelling: String,
     pub(in crate::runner) binder_type_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_range: SourceRange,
-    pub(in crate::runner) binder_type_spelling: String,
     pub(in crate::runner) binder_type_head_site: TypedSiteRef,
-    pub(in crate::runner) binder_type_head_range: SourceRange,
-    pub(in crate::runner) binder_type_head_spelling: String,
     pub(in crate::runner) negation_site: TypedSiteRef,
-    pub(in crate::runner) negation_range: SourceRange,
     pub(in crate::runner) body_constant_site: TypedSiteRef,
-    pub(in crate::runner) body_constant_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -2536,7 +2524,6 @@ pub(in crate::runner) fn extract_source_formula_connective_quantifier(
     let [type_head_id] = type_expression_children.as_slice() else {
         return None;
     };
-    let type_head = ast.node(*type_head_id)?;
     let binder_type =
         extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
     if binder_type.spelling != "set"
@@ -2570,26 +2557,14 @@ pub(in crate::runner) fn extract_source_formula_connective_quantifier(
 
     Some(SourceFormulaConnectiveQuantifier {
         premise_constant_site: surface_site(*left_id),
-        premise_constant_range: left.range,
         implication_site: surface_site(*implication_id),
-        implication_range: implication.range,
         quantified_site: surface_site(*quantified_id),
-        quantified_range: quantified.range,
         binder_segment_site: surface_site(*segment_id),
-        binder_segment_range: segment.range,
         binder_identifier_site: surface_site(*identifier_id),
-        binder_identifier_range: identifier.range,
-        binder_identifier_spelling: token.text.to_string(),
         binder_type_site: surface_site(*type_expression_id),
-        binder_type_range: type_expression.range,
-        binder_type_spelling: "set".to_owned(),
         binder_type_head_site: surface_site(*type_head_id),
-        binder_type_head_range: type_head.range,
-        binder_type_head_spelling: "set".to_owned(),
         negation_site: surface_site(*negation_id),
-        negation_range: negation.range,
         body_constant_site: surface_site(*negated_id),
-        body_constant_range: negated.range,
     })
 }
 

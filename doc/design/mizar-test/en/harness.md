@@ -3212,11 +3212,7 @@ document.
 
 The one exact route is
 `fail_type_elaboration_formula_connective_quantifier_gap_001`. Raw
-`SurfaceAst` traversal stays private. `source_formula.rs` selects and retains
-the five formula sites, explicit binder segment and identifier, bare `set`
-type-expression/head, and frozen ranges; a private
-`source_composite_formula` leaf may translate that data into the public
-syntax-free transaction.
+`SurfaceAst` traversal stays private.
 
 The runner first constructs the exact normal `1/0/4` module-shell
 environment through public `BindingEnvParts` and table APIs, from the

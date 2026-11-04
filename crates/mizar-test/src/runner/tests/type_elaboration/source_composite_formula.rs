@@ -17,6 +17,18 @@ fn task257a_real_route_publishes_the_exact_tree_binder_and_final_ownership() {
         .expect("Task 257A remains selected")
         .expect("Task 257A replay");
     let handoff = task257a_handoff(&first);
+    assert!(first.typed_ast.source_node_entries().is_none());
+    assert_eq!(first.typed_ast.nodes().len(), ast.nodes().len());
+    for (id, node) in first.typed_ast.nodes().iter() {
+        assert_eq!(
+            node.anchor, mizar_session::SourceAnchor::Range(ast.nodes()[id.index()].range)
+        );
+    }
+    assert_eq!(first.resolved.nodes().len(), ast.nodes().len());
+    for (id, node) in first.resolved.nodes().iter() {
+        assert_eq!(node.typed_node.index(), id.index());
+        assert_eq!(node.source_range, ast.nodes()[id.index()].range);
+    }
 
     assert_eq!(
         (
@@ -211,6 +223,23 @@ fn task257a_real_route_publishes_the_exact_tree_binder_and_final_ownership() {
             0,
         )
     );
+    let published = handoff.formulas().iter()
+        .map(|(_, row)| (row.site(), row.source_range()))
+        .chain([
+            (binder.segment_site(), binder.segment_range()),
+            (binder.identifier_site(), binder.identifier_range()),
+            (type_site.site(), type_site.source_range()),
+            (type_site.head_site(), type_site.head_range()),
+        ]).collect::<Vec<_>>();
+    let roles = [
+        &payload.implication_site, &payload.premise_constant_site, &payload.quantified_site,
+        &payload.negation_site, &payload.body_constant_site, &payload.binder_segment_site,
+        &payload.binder_identifier_site, &payload.binder_type_site, &payload.binder_type_head_site,
+    ];
+    assert_eq!(published.len(), roles.len());
+    for ((site, range), role) in published.into_iter().zip(roles) {
+        assert_eq!((site, range), (role, ast.nodes().get(role.node().index()).unwrap().range));
+    }
     assert_eq!(
         (
             type_site.binder().index(),
@@ -473,8 +502,15 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
         .find(|(_, case)| case.id.0 == TASK257A_CASE)
         .expect("active Task 257A");
     let original = std::fs::read_to_string(&case.source_path).expect("original source");
-    for spelling in ["y", "unused_binder_name", "Name_2'"] {
-        let source = original.replacen("for x being set", &format!("for {spelling} being set"), 1);
+    for (spelling, source) in ["y", "unused_binder_name", "Name_2'"].into_iter().flat_map(|spelling| {
+        let renamed = original.replacen("for x being set", &format!("for {spelling} being set"), 1);
+        [
+            renamed.clone(),
+            format!(" \n{renamed}"),
+            renamed.replace(" implies ", "\t implies \n"),
+            renamed.replace(" holds ", " :: binder layout\n holds "),
+        ].map(move |source| (spelling, source))
+    }) {
         assert_ne!(source, original);
         metamorphic_guard::with_source(case, &source, || {
             let frontend = run_frontend(root, case, ordinal).expect("fresh renamed frontend");
@@ -486,10 +522,14 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
             let payload =
                 extract_source_formula_connective_quantifier(ast, &resolver.module, &resolver.env)
                     .expect("coherent unused name selects");
-            assert_eq!(payload.binder_identifier_spelling, spelling);
+            let span = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+                ast.nodes().get(site.node().index()).unwrap().range
+            };
+            let identifier = ast.nodes().get(payload.binder_identifier_site.node().index()).unwrap();
+            assert_eq!(identifier.token_text(), Some(spelling));
             assert_eq!(
                 source.get(
-                    payload.binder_identifier_range.start..payload.binder_identifier_range.end
+                    span(&payload.binder_identifier_site).start..span(&payload.binder_identifier_site).end
                 ),
                 Some(spelling)
             );
@@ -502,13 +542,51 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
                 .binders()
                 .get(mizar_checker::source_composite_formula::SourceQuantifierBinderId::new(0))
                 .unwrap();
+            let type_site = handoff.type_sites().iter().next().unwrap().1;
+            let published = handoff.formulas().iter()
+                .map(|(_, row)| (row.site(), row.source_range()))
+                .chain([
+                    (binder.segment_site(), binder.segment_range()),
+                    (binder.identifier_site(), binder.identifier_range()),
+                    (type_site.site(), type_site.source_range()),
+                    (type_site.head_site(), type_site.head_range()),
+                ]).collect::<Vec<_>>();
+            let roles = [
+                &payload.implication_site, &payload.premise_constant_site, &payload.quantified_site,
+                &payload.negation_site, &payload.body_constant_site, &payload.binder_segment_site,
+                &payload.binder_identifier_site, &payload.binder_type_site, &payload.binder_type_head_site,
+            ];
+            assert_eq!(published.len(), roles.len());
+            for ((site, range), role) in published.into_iter().zip(roles) {
+                assert_eq!((site, range), (role, span(role)));
+            }
+            assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
+            for (id, node) in output.typed_ast.nodes().iter() {
+                assert_eq!(
+                    node.anchor, mizar_session::SourceAnchor::Range(ast.nodes()[id.index()].range)
+                );
+            }
+            assert_eq!(output.resolved.nodes().len(), ast.nodes().len());
+            for (id, node) in output.resolved.nodes().iter() {
+                assert_eq!(node.typed_node.index(), id.index());
+                assert_eq!(node.source_range, ast.nodes()[id.index()].range);
+            }
+            assert!(output.typed_ast.source_node_entries().is_none());
+            let binding = handoff.binding_env().bindings().iter().next().unwrap().1;
+            assert_eq!(binding.identity, mizar_checker::binding_env::BinderIdentity::ResolverLocal {
+                scope: binder.local().scope().clone(), ordinal: 0,
+                declaration_range: span(&payload.binder_identifier_site),
+            });
+            assert_eq!(binding.type_site, mizar_checker::binding_env::BindingTypeSite::Source(
+                span(&payload.binder_type_site)
+            ));
             assert_eq!(binder.identifier_spelling(), spelling);
             assert_eq!(binder.segment_spelling(), format!("{spelling} being"));
             assert_eq!(binder.local().spelling(), spelling);
-            assert_eq!(binder.identifier_range(), payload.binder_identifier_range);
+            assert_eq!(binder.identifier_range(), span(&payload.binder_identifier_site));
             assert_eq!(
                 binder.local().declaration_range(),
-                payload.binder_identifier_range
+                span(&payload.binder_identifier_site)
             );
             assert_eq!(
                 handoff
@@ -552,7 +630,7 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
                 while new_source == ast.source_id {
                     new_source = ids.next_source_id(super::shared::snapshot_id(258)).unwrap();
                 }
-                for corruption in 0..3 {
+                for corruption in 0..4 {
                     let gap = source.find("for ").unwrap() + "for".len();
                     let mut changed = source.clone();
                     if corruption == 0 {
@@ -588,6 +666,10 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
                                 },
                             ));
                             range.end = changed.len();
+                        }
+                        if corruption == 3 && Some(index) == ast.root().map(|id| id.index()) {
+                            let alias = rebuilt[ast.token_nodes()[0].index()];
+                            children.extend([alias, alias]);
                         }
                         let id = match &node.kind {
                             mizar_syntax::SurfaceNodeKind::Token(token) => {
@@ -657,6 +739,19 @@ fn task257a_unused_binder_fresh_names_reach_immutable_transport_and_original_fai
                                 .filter(|view| Some(view.id()) != forged.root())
                                 .all(|view| !view.children().contains(&extra)),
                             "the actual extra token has no structural owner"
+                        );
+                    }
+                    if corruption == 3 {
+                        assert_eq!(changed, source);
+                        assert_eq!(forged.nodes().len(), ast.nodes().len());
+                        assert_eq!(forged.token_nodes(), ast.token_nodes());
+                        assert!(forged.nodes().iter().zip(ast.nodes()).all(|(a, b)| a.range == b.range));
+                        assert_eq!(fresh.module, resolver.module);
+                        assert_eq!(fresh.env, resolver.env);
+                        assert_eq!(
+                            source_composite_formula_output(&forged, fresh.module.clone(), &fresh.env)
+                                .map(|result| result.map(|_| ())),
+                            Some(Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement.to_string()))
                         );
                     }
                     let symbols = if corruption == 2 {

@@ -35,7 +35,7 @@ use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::SurfaceAst;
 
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver},
     source_formula::{
         SourceFormulaConnectiveQuantifier, extract_source_formula_connective_quantifier,
     },
@@ -250,8 +250,9 @@ fn build_output(
     if symbols.module_id() != &module {
         return Err("Task257A symbol module mismatch".to_owned());
     }
-    let arena = typed_arena(ast, &payload)?;
-    let mut input = handoff_input(ast, module.clone(), &payload);
+    let syntax = source_syntax_receiver(ast, &module)?;
+    let arena = typed_arena(ast, &syntax, &payload)?;
+    let mut input = handoff_input(ast, module.clone(), &syntax, &payload)?;
     mutate(&mut input);
     let base = module_shell(ast, module.clone())?;
     let bindings = SourceCompositeFormulaProducer::extend_bindings(&input, &base, &arena)
@@ -348,6 +349,7 @@ fn module_shell(ast: &SurfaceAst, module: ModuleId) -> Result<BindingEnv, String
 
 fn typed_arena(
     ast: &SurfaceAst,
+    syntax: &TypedAst,
     payload: &SourceFormulaConnectiveQuantifier,
 ) -> Result<TypedArena, String> {
     let mut kinds = BTreeMap::from([
@@ -393,12 +395,21 @@ fn typed_arena(
     }
     let mut builder = TypedArenaBuilder::new();
     for (index, node) in ast.nodes().iter().enumerate() {
-        let key = kinds
-            .remove(&index)
-            .unwrap_or("source.formula.composite.unowned");
+        let owned_kind = kinds.remove(&index);
+        let range = if owned_kind.is_some() {
+            syntax
+                .source_node_entries()
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .find(|row| row.site().index() == index)
+                .ok_or(INVALID_PAYLOAD_KEY)?
+                .range()
+        } else {
+            node.range
+        };
+        let key = owned_kind.unwrap_or("source.formula.composite.unowned");
         let pushed = builder
             .push(
-                TypedNode::new(key, SourceAnchor::Range(node.range))
+                TypedNode::new(key, SourceAnchor::Range(range))
                     .with_recovery(NodeRecoveryState::Normal),
             )
             .map_err(|error| error.to_string())?;
@@ -415,8 +426,17 @@ fn typed_arena(
 fn handoff_input(
     ast: &SurfaceAst,
     module: ModuleId,
+    syntax: &TypedAst,
     payload: &SourceFormulaConnectiveQuantifier,
-) -> SourceCompositeFormulaHandoffInput {
+) -> Result<SourceCompositeFormulaHandoffInput, String> {
+    let row = |site: &TypedSiteRef| {
+        syntax
+            .source_node_entries()
+            .ok_or(INVALID_PAYLOAD_KEY)?
+            .find(|row| row.site().index() == site.node().index())
+            .ok_or(INVALID_PAYLOAD_KEY)
+    };
+    let identifier = row(&payload.binder_identifier_site)?;
     let context0 = BindingContextId::new(0);
     let context1 = BindingContextId::new(1);
     let formula = |site: TypedSiteRef,
@@ -435,13 +455,13 @@ fn handoff_input(
             kind,
         }
     };
-    SourceCompositeFormulaHandoffInput {
+    Ok(SourceCompositeFormulaHandoffInput {
         source_id: ast.source_id,
         module_id: module,
         formulas: vec![
             formula(
                 payload.implication_site.clone(),
-                payload.implication_range,
+                row(&payload.implication_site)?.range(),
                 0,
                 context0,
                 "implies",
@@ -449,7 +469,7 @@ fn handoff_input(
             ),
             formula(
                 payload.premise_constant_site.clone(),
-                payload.premise_constant_range,
+                row(&payload.premise_constant_site)?.range(),
                 1,
                 context0,
                 "contradiction",
@@ -457,7 +477,7 @@ fn handoff_input(
             ),
             formula(
                 payload.quantified_site.clone(),
-                payload.quantified_range,
+                row(&payload.quantified_site)?.range(),
                 2,
                 context0,
                 "for holds",
@@ -465,7 +485,7 @@ fn handoff_input(
             ),
             formula(
                 payload.negation_site.clone(),
-                payload.negation_range,
+                row(&payload.negation_site)?.range(),
                 3,
                 context1,
                 "not",
@@ -473,7 +493,7 @@ fn handoff_input(
             ),
             formula(
                 payload.body_constant_site.clone(),
-                payload.body_constant_range,
+                row(&payload.body_constant_site)?.range(),
                 4,
                 context1,
                 "contradiction",
@@ -490,15 +510,15 @@ fn handoff_input(
             formula: SourceCompositeFormulaId::new(2),
             ordinal: 0,
             segment_site: payload.binder_segment_site.clone(),
-            segment_range: payload.binder_segment_range,
-            segment_spelling: format!("{} being", payload.binder_identifier_spelling),
+            segment_range: row(&payload.binder_segment_site)?.range(),
+            segment_spelling: format!("{} being", identifier.spelling()),
             identifier_site: payload.binder_identifier_site.clone(),
-            identifier_range: payload.binder_identifier_range,
-            identifier_spelling: payload.binder_identifier_spelling.clone(),
+            identifier_range: row(&payload.binder_identifier_site)?.range(),
+            identifier_spelling: identifier.spelling().to_owned(),
             local: LocalTermBinding::new(
-                payload.binder_identifier_spelling.clone(),
+                identifier.spelling().to_owned(),
                 LocalTermScope::new(vec![0]),
-                payload.binder_identifier_range,
+                row(&payload.binder_identifier_site)?.range(),
                 0,
             ),
             binding: BindingId::new(0),
@@ -509,11 +529,11 @@ fn handoff_input(
         type_sites: vec![SourceBinderTypeSiteInput {
             binder: SourceQuantifierBinderId::new(0),
             site: payload.binder_type_site.clone(),
-            source_range: payload.binder_type_range,
-            spelling: payload.binder_type_spelling.clone(),
+            source_range: row(&payload.binder_type_site)?.range(),
+            spelling: "set".to_owned(),
             head_site: payload.binder_type_head_site.clone(),
-            head_range: payload.binder_type_head_range,
-            head_spelling: payload.binder_type_head_spelling.clone(),
+            head_range: row(&payload.binder_type_head_site)?.range(),
+            head_spelling: "set".to_owned(),
             context: context0,
             recovery: SourceCompositeFormulaRecovery::Normal,
             head: SourceBinderTypeHead::BuiltinSet,
@@ -558,7 +578,7 @@ fn handoff_input(
             request(3, 0, SourceFormulaRequestKind::NegationSemantics),
             request(4, 0, SourceFormulaRequestKind::ConstantSemantics),
         ],
-    }
+    })
 }
 
 fn request(

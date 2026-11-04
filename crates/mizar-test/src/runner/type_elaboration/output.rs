@@ -903,6 +903,12 @@ pub(in crate::runner) fn source_formula_connective_quantifier_output(
     symbols: &SymbolEnv,
 ) -> Option<TermFormulaInferenceOutput> {
     let payload = extract_source_formula_connective_quantifier(ast, &module, symbols)?;
+    let range = |site: &TypedSiteRef| ast.nodes().get(site.node().index()).map(|node| node.range);
+    let premise_constant_range = range(&payload.premise_constant_site)?;
+    let implication_range = range(&payload.implication_site)?;
+    let quantified_range = range(&payload.quantified_site)?;
+    let negation_range = range(&payload.negation_site)?;
+    let body_constant_range = range(&payload.body_constant_site)?;
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
     let output = TermFormulaChecker::default().infer(
@@ -913,35 +919,35 @@ pub(in crate::runner) fn source_formula_connective_quantifier_output(
             FormulaInput::new(
                 payload.premise_constant_site,
                 context,
-                payload.premise_constant_range,
+                premise_constant_range,
                 FormulaKind::Contradiction,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
             FormulaInput::new(
                 payload.implication_site,
                 context,
-                payload.implication_range,
+                implication_range,
                 FormulaKind::Implication,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
             FormulaInput::new(
                 payload.quantified_site,
                 context,
-                payload.quantified_range,
+                quantified_range,
                 FormulaKind::Quantified,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingQuantifierPayload]),
             FormulaInput::new(
                 payload.negation_site,
                 context,
-                payload.negation_range,
+                negation_range,
                 FormulaKind::Negation,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
             FormulaInput::new(
                 payload.body_constant_site,
                 context,
-                payload.body_constant_range,
+                body_constant_range,
                 FormulaKind::Contradiction,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),

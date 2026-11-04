@@ -716,7 +716,11 @@
             expected_contradiction_sites[0]
         );
         assert_eq!(
-            formula_shell_payload.premise_constant_range,
+            formula_connective_quantifier_theorem
+                .nodes()
+                .get(formula_shell_payload.premise_constant_site.node().index())
+                .unwrap()
+                .range,
             expected_premise_constant_range
         );
         assert_eq!(
@@ -724,7 +728,11 @@
             expected_implication_sites[0]
         );
         assert_eq!(
-            formula_shell_payload.implication_range,
+            formula_connective_quantifier_theorem
+                .nodes()
+                .get(formula_shell_payload.implication_site.node().index())
+                .unwrap()
+                .range,
             expected_implication_range
         );
         assert_eq!(
@@ -732,7 +740,11 @@
             expected_quantified_sites[0]
         );
         assert_eq!(
-            formula_shell_payload.quantified_range,
+            formula_connective_quantifier_theorem
+                .nodes()
+                .get(formula_shell_payload.quantified_site.node().index())
+                .unwrap()
+                .range,
             expected_quantified_range
         );
         assert_eq!(
@@ -740,7 +752,11 @@
             expected_negation_sites[0]
         );
         assert_eq!(
-            formula_shell_payload.negation_range,
+            formula_connective_quantifier_theorem
+                .nodes()
+                .get(formula_shell_payload.negation_site.node().index())
+                .unwrap()
+                .range,
             expected_negation_range
         );
         assert_eq!(
@@ -748,7 +764,11 @@
             expected_contradiction_sites[1]
         );
         assert_eq!(
-            formula_shell_payload.body_constant_range,
+            formula_connective_quantifier_theorem
+                .nodes()
+                .get(formula_shell_payload.body_constant_site.node().index())
+                .unwrap()
+                .range,
             expected_body_constant_range
         );
         assert_eq!(formula_shell_output.terms().len(), 0);
