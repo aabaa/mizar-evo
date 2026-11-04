@@ -848,6 +848,8 @@ pub(in crate::runner) fn source_imported_predicate_functor_formula_output(
 ) -> Option<TermFormulaInferenceOutput> {
     let payload = extract_source_imported_predicate_functor_formula(ast, &module, symbols)?;
     let binding_env = source_module_binding_env(ast, module).ok()?;
+    let range = |site: &TypedSiteRef| ast.nodes().get(site.node().index()).map(|node| node.range);
+    let formula_range = range(&payload.formula_site)?;
     let context = BindingContextId::new(0);
     let _predicate_symbol = payload.predicate_symbol.clone();
     let output = TermFormulaChecker::default().infer(
@@ -857,25 +859,25 @@ pub(in crate::runner) fn source_imported_predicate_functor_formula_output(
             TermInput::new(
                 payload.left_site.clone(),
                 context,
-                payload.left_range,
+                range(&payload.left_site)?,
                 TermKind::Numeral,
             ),
             TermInput::new(
                 payload.functor_left_site.clone(),
                 context,
-                payload.functor_left_range,
+                range(&payload.functor_left_site)?,
                 TermKind::Numeral,
             ),
             TermInput::new(
                 payload.functor_right_site.clone(),
                 context,
-                payload.functor_right_range,
+                range(&payload.functor_right_site)?,
                 TermKind::Numeral,
             ),
             TermInput::new(
                 payload.functor_site.clone(),
                 context,
-                payload.functor_range,
+                range(&payload.functor_site)?,
                 TermKind::FunctorApplication,
             )
             .with_reference(TermReference::Symbol(payload.functor_symbol)),
@@ -883,7 +885,7 @@ pub(in crate::runner) fn source_imported_predicate_functor_formula_output(
         [FormulaInput::new(
             payload.formula_site,
             context,
-            payload.formula_range,
+            formula_range,
             FormulaKind::PredicateApplication,
         )
         .with_terms(vec![payload.left_site, payload.functor_site])],

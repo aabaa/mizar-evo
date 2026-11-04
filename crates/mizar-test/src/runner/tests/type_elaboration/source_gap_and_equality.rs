@@ -1044,7 +1044,7 @@
             expected_imported_formula_sites[0]
         );
         assert_eq!(
-            imported_predicate_functor_payload.formula_range,
+            imported_predicate_functor_theorem.nodes()[imported_predicate_functor_payload.formula_site.node().index()].range,
             imported_predicate_formula_range
         );
         assert_eq!(
@@ -1052,7 +1052,7 @@
             expected_imported_numeral_sites[0]
         );
         assert_eq!(
-            imported_predicate_functor_payload.left_range,
+            imported_predicate_functor_theorem.nodes()[imported_predicate_functor_payload.left_site.node().index()].range,
             imported_predicate_left_range
         );
         assert_eq!(
@@ -1060,7 +1060,7 @@
             expected_imported_functor_sites[0]
         );
         assert_eq!(
-            imported_predicate_functor_payload.functor_range,
+            imported_predicate_functor_theorem.nodes()[imported_predicate_functor_payload.functor_site.node().index()].range,
             imported_functor_range
         );
         assert_eq!(
@@ -1068,7 +1068,7 @@
             expected_imported_numeral_sites[1]
         );
         assert_eq!(
-            imported_predicate_functor_payload.functor_left_range,
+            imported_predicate_functor_theorem.nodes()[imported_predicate_functor_payload.functor_left_site.node().index()].range,
             imported_functor_left_range
         );
         assert_eq!(
@@ -1076,7 +1076,7 @@
             expected_imported_numeral_sites[2]
         );
         assert_eq!(
-            imported_predicate_functor_payload.functor_right_range,
+            imported_predicate_functor_theorem.nodes()[imported_predicate_functor_payload.functor_right_site.node().index()].range,
             imported_functor_right_range
         );
         for (symbol, expected_kind, expected_spelling) in [

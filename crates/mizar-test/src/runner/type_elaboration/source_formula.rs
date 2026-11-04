@@ -1563,17 +1563,12 @@ pub(in crate::runner) struct SourceBuiltinTypeAssertionFormula {
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceImportedPredicateFunctorFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) predicate_symbol: ResolverSymbolId,
     pub(in crate::runner) left_site: TypedSiteRef,
-    pub(in crate::runner) left_range: SourceRange,
     pub(in crate::runner) functor_site: TypedSiteRef,
-    pub(in crate::runner) functor_range: SourceRange,
     pub(in crate::runner) functor_symbol: ResolverSymbolId,
     pub(in crate::runner) functor_left_site: TypedSiteRef,
-    pub(in crate::runner) functor_left_range: SourceRange,
     pub(in crate::runner) functor_right_site: TypedSiteRef,
-    pub(in crate::runner) functor_right_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -1981,17 +1976,12 @@ pub(in crate::runner) fn extract_source_imported_predicate_functor_formula(
 
     Some(SourceImportedPredicateFunctorFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         predicate_symbol,
         left_site: surface_site(left.0),
-        left_range: left.1,
         functor_site: surface_site(functor.term_id),
-        functor_range: functor.term_range,
         functor_symbol,
-        functor_left_site: surface_site(functor.left.0),
-        functor_left_range: functor.left.1,
-        functor_right_site: surface_site(functor.right.0),
-        functor_right_range: functor.right.1,
+        functor_left_site: surface_site(functor.left),
+        functor_right_site: surface_site(functor.right),
     })
 }
 
@@ -3342,9 +3332,8 @@ pub(in crate::runner) fn exact_numeral_term_operand(
 #[derive(Debug, Clone, Copy)]
 struct ExactImportedInfixFunctorTerm {
     term_id: SurfaceNodeId,
-    term_range: SourceRange,
-    left: (SurfaceNodeId, SourceRange),
-    right: (SurfaceNodeId, SourceRange),
+    left: SurfaceNodeId,
+    right: SurfaceNodeId,
 }
 
 fn exact_imported_infix_functor_term(
@@ -3395,9 +3384,8 @@ fn exact_imported_infix_functor_term(
     let right = exact_numeral_term_node_or_expression(ast, *right_expression_id, "2")?;
     Some(ExactImportedInfixFunctorTerm {
         term_id: *infix_id,
-        term_range: infix.range,
-        left,
-        right,
+        left: left.0,
+        right: right.0,
     })
 }
 

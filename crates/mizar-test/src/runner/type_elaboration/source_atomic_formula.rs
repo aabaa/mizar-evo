@@ -463,6 +463,7 @@ fn build_output(
     let syntax = if matches!(
         &route,
         ExactAtomicRoute::Binary(_)
+            | ExactAtomicRoute::Predicate(_)
             | ExactAtomicRoute::TypeAssertion(_)
             | ExactAtomicRoute::PredicateChain(_)
             | ExactAtomicRoute::Attribute { .. }
@@ -585,6 +586,7 @@ fn build_output(
         &binding_env,
         &route,
         source_term,
+        syntax.as_ref(),
     )?;
     let mut input = route.handoff_input(ast, symbols, &typed_ast, syntax.as_ref())?;
     mutate(&mut input);
@@ -658,6 +660,7 @@ fn lower_family_typed_ast(
     binding_env: &BindingEnv,
     route: &ExactAtomicRoute,
     source_term: SourceTermParts,
+    syntax: Option<&TypedAst>,
 ) -> Result<TypedAst, String> {
     match route {
         ExactAtomicRoute::Predicate(_) => {
@@ -667,6 +670,7 @@ fn lower_family_typed_ast(
                 symbols,
                 binding_env.clone(),
                 source_term,
+                syntax,
             )
             .ok_or_else(|| "Task256 imported application selector disappeared".to_owned())??;
             Ok(output.typed_ast)
@@ -909,8 +913,8 @@ impl ExactAtomicRoute {
             Self::Binary(_)
             | Self::TypeAssertion(_)
             | Self::PredicateChain(_)
-            | Self::Attribute { .. } => formula_row.unwrap().range(),
-            Self::Predicate(payload) => payload.formula_range,
+            | Self::Attribute { .. }
+            | Self::Predicate(_) => formula_row.unwrap().range(),
             Self::SetEnumeration(payload) => payload.formula_range,
         };
         let mut predicate_segments = Vec::new();
@@ -1017,14 +1021,14 @@ impl ExactAtomicRoute {
                 let head_node = unique_descendant(ast, self.formula_node(), |kind| {
                     matches!(kind, SurfaceNodeKind::PredicateHead)
                 })?;
-                let head = &ast.nodes()[head_node.index()];
+                let head = generic_row(&surface_site(head_node))?;
                 predicate_heads.push(SourcePredicateHeadInput {
                     formula,
-                    site: surface_site(head_node),
-                    source_range: head.range,
+                    site: TypedSiteRef::Node(TypedNodeId::new(head.site().index())),
+                    source_range: head.range(),
                     context: BindingContextId::new(0),
                     recovery: SourceAtomicFormulaRecovery::Normal,
-                    spelling: subtree_tokens(ast, head).join(" "),
+                    spelling: head.spelling().to_owned(),
                     left_arity: 1,
                     right_arity: 1,
                 });
@@ -1040,7 +1044,7 @@ impl ExactAtomicRoute {
                     typed_ast
                         .source_term()
                         .ok_or_else(|| "Task256 lost Task252".to_owned())?,
-                    payload.left_range,
+                    generic_row(&payload.left_site)?.range(),
                 )?;
                 let application = typed_ast
                     .source_application()

@@ -171,7 +171,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
     assert_eq!(set_aggregate, [2, 0, 0, 0, 4, 2]);
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    for (id, expected_kind) in TASK256_CASES.into_iter().filter(|(id, _)| !id.contains("predicate_functor") && !id.contains("set_enumeration")) {
+    for (id, expected_kind) in TASK256_CASES.into_iter().filter(|(id, _)| !id.contains("set_enumeration")) {
         let (ordinal, case) = active_type_elaboration_cases(&plan)
             .enumerate().find(|(_, case)| case.id.0 == id).unwrap();
         let original = std::fs::read_to_string(&case.source_path).unwrap();
@@ -203,14 +203,15 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 let type_assertion = expected_kind == SourceAtomicFormulaKind::TypeAssertion;
                 let attribute_assertion = expected_kind == SourceAtomicFormulaKind::AttributeAssertion;
                 let negative = id.contains("non_empty");
-                let term_count = if assertion { 1 } else { 2 };
+                let predicate = expected_kind == SourceAtomicFormulaKind::PredicateApplication;
+                let term_count = if assertion { 1 } else if predicate { 3 } else { 2 };
                 assert_eq!((primary.terms().len(), primary.references().len(), primary.numeric_type_requests().len()), (term_count, 0, term_count));
                 let mut numerals = ast.nodes().iter().enumerate()
                     .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::NumeralTerm)).collect::<Vec<_>>();
                 numerals.sort_by_key(|(_, node)| (node.range.start, node.range.end));
                 assert_eq!(numerals.len(), term_count);
                 let formulas = ast.nodes().iter().enumerate()
-                    .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication | SurfaceNodeKind::IsAssertion)).collect::<Vec<_>>();
+                    .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication | SurfaceNodeKind::IsAssertion | SurfaceNodeKind::PredicateApplication)).collect::<Vec<_>>();
                 let [(formula_index, formula_node)] = formulas.as_slice() else { panic!("one formula") };
                 let spelling = |range: SourceRange| {
                     let mut tokens = ast.nodes().iter().filter_map(|node| match &node.kind {
@@ -233,23 +234,33 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 let formula = atomic.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
                 assert_eq!((formula.site().node().index(), formula.source_range(), formula.spelling(), formula.kind(), formula.source_ordinal(), formula.context(), formula.recovery()),
                     (*formula_index, formula_node.range, spelling(formula_node.range).as_str(), expected_kind, 0, BindingContextId::new(0), SourceAtomicFormulaRecovery::Normal));
-                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.type_sites().len(), atomic.attributes().len(), atomic.edges().len()), (1, 0, 0, 0, 0, usize::from(type_assertion), usize::from(attribute_assertion), term_count));
+                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.type_sites().len(), atomic.attributes().len(), atomic.edges().len()), (1, 0, 0, usize::from(predicate), usize::from(predicate), usize::from(type_assertion), usize::from(attribute_assertion), if predicate { 2 } else { term_count }));
                 let membership = expected_kind == SourceAtomicFormulaKind::Membership;
-                assert_eq!(atomic.requests().len(), if membership || assertion { 1 } else { 2 });
+                assert_eq!(atomic.requests().len(), if membership || assertion || predicate { 1 } else { 2 });
                 for (edge_id, edge) in atomic.edges().iter() {
                     let ordinal = edge_id.index();
+                    let role = if assertion { SourceAtomicEdgeRole::AssertionSubject }
+                        else if predicate { [SourceAtomicEdgeRole::PredicateLeftArgument, SourceAtomicEdgeRole::PredicateRightArgument][ordinal] }
+                        else { [SourceAtomicEdgeRole::BuiltinLeftOperand, SourceAtomicEdgeRole::BuiltinRightOperand][ordinal] };
+                    let target = if predicate && ordinal == 1 {
+                        SourceAtomicTermTarget::Application(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
+                    } else { SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(ordinal)) };
                     assert_eq!((edge.formula(), edge.ordinal(), edge.role(), edge.target()),
-                        (SourceAtomicFormulaId::new(0), ordinal, if assertion { SourceAtomicEdgeRole::AssertionSubject } else { [SourceAtomicEdgeRole::BuiltinLeftOperand, SourceAtomicEdgeRole::BuiltinRightOperand][ordinal] }, SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(ordinal))));
+                        (SourceAtomicFormulaId::new(0), ordinal, role, target));
                 }
                 for (request_id, request) in atomic.requests().iter() {
                     assert_eq!((request.formula(), request.ordinal(), request.kind(), request.edge(), request.candidate(), request.type_site(), request.attribute()),
                         (SourceAtomicFormulaId::new(0), request_id.index(),
-                            if type_assertion { SourceAtomicRequestKind::TypeAssertionReachability } else if attribute_assertion { SourceAtomicRequestKind::AttributeAdmissibility } else { SourceAtomicRequestKind::OperandExpectedType },
-                            (!assertion).then(|| SourceAtomicEdgeId::new(if membership { 1 } else { request_id.index() })), None,
+                            if type_assertion { SourceAtomicRequestKind::TypeAssertionReachability } else if attribute_assertion { SourceAtomicRequestKind::AttributeAdmissibility } else if predicate { SourceAtomicRequestKind::PredicateCandidateSignature } else { SourceAtomicRequestKind::OperandExpectedType },
+                            (!assertion && !predicate).then(|| SourceAtomicEdgeId::new(if membership { 1 } else { request_id.index() })), predicate.then(|| SourcePredicateCandidateId::new(0)),
                             type_assertion.then(|| SourceAssertionTypeSiteId::new(0)), attribute_assertion.then(|| SourceAssertionAttributeId::new(0))));
                 }
                 let owned = ast.nodes().iter().enumerate().filter_map(|(index, node)| {
                     let kind = match node.kind {
+                        SurfaceNodeKind::PredicateHead if predicate => "source.formula.atomic.predicate-head",
+                        SurfaceNodeKind::InfixExpression(ref operator) if predicate && operator.spelling.as_ref() == "++" => "source.term.functor-application.symbolic",
+                        SurfaceNodeKind::ParenthesizedTerm if predicate => "source.term.functor-application.parenthesized",
+                        SurfaceNodeKind::Token(ref token) if predicate && token.text.as_ref() == "++" => "source.term.functor-head.single",
                         SurfaceNodeKind::TypeExpression if type_assertion => "source.formula.atomic.asserted-type",
                         SurfaceNodeKind::TypeHead if type_assertion => "source.formula.atomic.asserted-type-head",
                         SurfaceNodeKind::AttributeRef if attribute_assertion => "source.formula.atomic.attribute",
@@ -293,8 +304,104 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                         assert_eq!(row.polarity(), &SourceAssertionAttributePolarityInput::Positive);
                     }
                 }
+                if predicate {
+                    use mizar_checker::source_application::*;
+                    let (head_index, head_node, _) = owned.iter().find(|(_, node, _)| matches!(node.kind, SurfaceNodeKind::PredicateHead)).unwrap();
+                    let (head_id, head) = atomic.predicate_heads().iter().next().unwrap();
+                    assert_eq!((head_id.index(), head.formula(), head.site().node().index(), head.source_range(), head.spelling()),
+                        (0, SourceAtomicFormulaId::new(0), *head_index, head_node.range, spelling(head_node.range).as_str()));
+                    assert_eq!((head.context(), head.recovery(), head.left_arity(), head.right_arity()),
+                        (BindingContextId::new(0), SourceAtomicFormulaRecovery::Normal, 1, 1));
+                    let entries = symbols.symbols().iter().filter(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate && entry.primary_spelling() == spelling(head_node.range)).collect::<Vec<_>>();
+                    let [entry] = entries.as_slice() else { panic!("one imported predicate") };
+                    let (candidate_id, candidate) = atomic.candidates().iter().next().unwrap();
+                    assert_eq!((candidate_id.index(), candidate.head(), candidate.ordinal(), candidate.symbol(), candidate.contribution()),
+                        (0, head_id, 0, entry.symbol(), entry.contribution()));
+                    assert_eq!(entry.symbol().module().path().as_str(), "parser.type_fixtures");
+                    assert!(matches!(symbols.contributions().get(entry.contribution()).unwrap().kind(), mizar_resolve::env::ContributionKind::ImportedSource { .. }));
+                    let application = output.typed_ast.source_application().unwrap();
+                    assert_eq!(output.resolved.source_application(), Some(application));
+                    assert_eq!((application.applications().len(), application.wrappers().len(), application.candidates().len(), application.arguments().len(), application.type_requests().len()), (1, 1, 1, 2, 2));
+                    let (application_index, application_node, _) = owned.iter().find(|(_, node, _)| matches!(node.kind, SurfaceNodeKind::InfixExpression(_))).unwrap();
+                    let (application_head_index, application_head_node, _) = owned.iter().find(|(_, _, kind)| *kind == "source.term.functor-head.single").unwrap();
+                    assert!(application_node.children.iter().any(|child| child.index() == *application_head_index));
+                    let (application_id, row) = application.applications().iter().next().unwrap();
+                    assert_eq!((application_id.index(), row.site().node().index(), row.source_range(), row.spelling(), row.source_ordinal()),
+                        (0, *application_index, application_node.range, spelling(application_node.range).as_str(), 0));
+                    assert_eq!((row.context(), row.recovery(), row.kind(), row.form(), row.head_ordinal()),
+                        (BindingContextId::new(0), SourceFunctorApplicationRecovery::Normal, SourceFunctorApplicationKind::Symbolic, SourceFunctorApplicationForm::Infix, 1));
+                    assert_eq!(row.head(), &SourceFunctorHeadSite::Single {
+                        site: TypedSiteRef::Node(TypedNodeId::new(*application_head_index)), source_range: application_head_node.range, spelling: spelling(application_head_node.range),
+                    });
+                    let (wrapper_index, wrapper_node, _) = owned.iter().find(|(_, node, _)| matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)).unwrap();
+                    assert!(wrapper_node.range.start < application_node.range.start && application_node.range.end < wrapper_node.range.end);
+                    let (wrapper_id, wrapper) = application.wrappers().iter().next().unwrap();
+                    assert_eq!((wrapper_id.index(), wrapper.application(), wrapper.ordinal(), wrapper.site().node().index(), wrapper.source_range(), wrapper.spelling(), wrapper.context(), wrapper.recovery()),
+                        (0, application_id, 0, *wrapper_index, wrapper_node.range, spelling(wrapper_node.range).as_str(), BindingContextId::new(0), SourceFunctorApplicationRecovery::Normal));
+                    let entries = symbols.symbols().iter().filter(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Functor && entry.primary_spelling() == spelling(application_head_node.range)).collect::<Vec<_>>();
+                    let [entry] = entries.as_slice() else { panic!("one imported functor") };
+                    let (candidate_id, candidate) = application.candidates().iter().next().unwrap();
+                    assert_eq!((candidate_id.index(), candidate.application(), candidate.ordinal(), candidate.symbol(), candidate.contribution()),
+                        (0, application_id, 0, entry.symbol(), entry.contribution()));
+                    assert_eq!(entry.symbol().module().path().as_str(), "parser.type_fixtures");
+                    assert!(matches!(symbols.contributions().get(entry.contribution()).unwrap().kind(), mizar_resolve::env::ContributionKind::ImportedSource { .. }));
+                    assert_eq!((candidate.origin(), candidate.visibility(), candidate.export_status(), candidate.signature()),
+                        (entry.origin(), entry.visibility(), entry.export_status(), entry.signature()));
+                    for (argument_id, argument) in application.arguments().iter() {
+                        assert_eq!((argument.application(), argument.ordinal(), argument.target()),
+                            (application_id, argument_id.index(), SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(argument_id.index() + 1))));
+                        let node = numerals[argument_id.index() + 1].1;
+                        assert!(application_node.range.start <= node.range.start && node.range.end <= application_node.range.end);
+                    }
+                    for (request_id, request) in application.type_requests().iter() {
+                        assert_eq!((request.application(), request.candidate(), request.request_ordinal(), request.kind()),
+                            (application_id, (request_id.index() == 0).then_some(candidate_id), request_id.index(),
+                                [SourceFunctorTypeRequestKind::CandidateSignature, SourceFunctorTypeRequestKind::ApplicationResultType][request_id.index()]));
+                    }
+                    assert_eq!(application.primary_term_fingerprint(), primary.debug_text());
+                    assert_eq!(atomic.application_fingerprint(), Some(application.debug_text().as_str()));
+                } else {
+                    assert!(output.typed_ast.source_application().is_none() && output.resolved.source_application().is_none());
+                    assert_eq!(atomic.application_fingerprint(), None);
+                }
                 assert_eq!(atomic.primary_term_fingerprint(), primary.debug_text());
-                assert_eq!((atomic.application_fingerprint(), atomic.structure_fingerprint(), atomic.set_term_fingerprint()), (None, None, None));
+                assert_eq!((atomic.structure_fingerprint(), atomic.set_term_fingerprint()), (None, None));
+                assert!(output.typed_ast.source_structure().is_none() && output.resolved.source_structure().is_none());
+                assert!(output.typed_ast.source_set_term().is_none() && output.resolved.source_set_term().is_none());
+                assert!(output.typed_ast.source_type().is_none() && output.resolved.source_type().is_none());
+                assert!(output.typed_ast.source_attribute().is_none() && output.resolved.source_attribute().is_none());
+                assert!(output.typed_ast.source_context().is_none() && output.resolved.source_context().is_none());
+                assert!(output.typed_ast.source_evidence().is_none() && output.resolved.source_evidence().is_none());
+                assert!(output.typed_ast.source_template().is_none() && output.resolved.source_template().is_none());
+                assert!(output.typed_ast.source_attribute_definition().is_none() && output.resolved.source_attribute_definition().is_none());
+                assert!(output.typed_ast.source_predicate_definition().is_none() && output.resolved.source_predicate_definition().is_none());
+                assert!(output.typed_ast.source_functor_definition().is_none() && output.resolved.source_functor_definition().is_none());
+                assert!(output.typed_ast.source_property_implementation().is_none() && output.resolved.source_property_implementation().is_none());
+                assert!(output.typed_ast.source_mode_definition().is_none() && output.resolved.source_mode_definition().is_none());
+                assert!(output.typed_ast.source_structure_definition().is_none() && output.resolved.source_structure_definition().is_none());
+                assert!(output.typed_ast.source_composite_formula().is_none() && output.resolved.source_composite_formula().is_none());
+                assert!(output.typed_ast.source_formula_composition().is_none() && output.resolved.source_formula_composition().is_none());
+                assert!(output.typed_ast.source_nested_fraenkel_capture_identity().is_none() && output.resolved.source_nested_fraenkel_capture_identity().is_none());
+                assert!(output.typed_ast.source_condition_formula_composition().is_none() && output.resolved.source_condition_formula_composition().is_none());
+                assert!(output.typed_ast.source_predicate_chain_composition().is_none() && output.resolved.source_predicate_chain_composition().is_none());
+                assert!(output.typed_ast.source_statement().is_none() && output.resolved.source_statement().is_none());
+                assert!(output.typed_ast.source_statement_references().is_none() && output.resolved.source_statement_references().is_none());
+                assert!(output.typed_ast.source_statement_witnesses().is_none() && output.resolved.source_statement_witnesses().is_none());
+                assert!(output.typed_ast.source_proof_local_declaration().is_none() && output.resolved.source_proof_local_declaration().is_none());
+                assert!(output.typed_ast.source_proof_local_let_binding().is_none() && output.resolved.source_proof_local_let_binding().is_none());
+                assert!(output.typed_ast.source_proof_local_let_type().is_none() && output.resolved.source_proof_local_let_type().is_none());
+                assert!(output.typed_ast.source_proof_local_given_binding().is_none() && output.resolved.source_proof_local_given_binding().is_none());
+                assert!(output.typed_ast.source_proof_local_given_type().is_none() && output.resolved.source_proof_local_given_type().is_none());
+                assert!(output.typed_ast.source_proof_local_given_use_type().is_none() && output.resolved.source_proof_local_given_use_type().is_none());
+                assert!(output.typed_ast.source_proof_local_given_use_term().is_none() && output.resolved.source_proof_local_given_use_term().is_none());
+                assert!(output.typed_ast.source_proof_local_given_condition_binding().is_none() && output.resolved.source_proof_local_given_condition_binding().is_none());
+                assert!(output.typed_ast.source_proof_local_given_condition_type().is_none() && output.resolved.source_proof_local_given_condition_type().is_none());
+                assert!(output.typed_ast.source_proof_local_given_condition_use_term().is_none() && output.resolved.source_proof_local_given_condition_use_term().is_none());
+                assert!(output.typed_ast.source_proof_local_given_descendant_binding().is_none() && output.resolved.source_proof_local_given_descendant_binding().is_none());
+                assert!(output.typed_ast.source_proof_local_given_descendant_type().is_none() && output.resolved.source_proof_local_given_descendant_type().is_none());
+                assert!(output.typed_ast.source_proof_local_given_descendant_use_term().is_none() && output.resolved.source_proof_local_given_descendant_use_term().is_none());
+                assert_eq!((output.typed_ast.source_id(), output.resolved.source_id()), (ast.source_id, ast.source_id));
+                assert_eq!((output.typed_ast.module_id(), output.resolved.module_id()), (&module, &module));
                 assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
                 assert_eq!(output.resolved.nodes().len(), ast.nodes().len());
                 assert_eq!(output.typed_ast.nodes().root().unwrap().index(), ast.root().unwrap().index());
@@ -304,6 +411,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                     let node = &ast.nodes()[index];
                     let kind = if index == *formula_index {
                         match expected_kind {
+                            SourceAtomicFormulaKind::PredicateApplication => "source.formula.atomic.predicate",
                             SourceAtomicFormulaKind::Equality => "source.formula.atomic.equality",
                             SourceAtomicFormulaKind::Inequality => "source.formula.atomic.inequality",
                             SourceAtomicFormulaKind::Membership => "source.formula.atomic.membership",
@@ -325,7 +433,21 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 }
                 assert!(output.typed_ast.types().is_empty() && output.typed_ast.facts().is_empty() && output.typed_ast.coercions().is_empty() && output.typed_ast.initial_obligations().is_empty() && output.typed_ast.diagnostics().is_empty());
                 assert!(output.resolved.expr_metadata().is_empty() && output.resolved.cluster_facts().is_empty() && output.resolved.diagnostics().is_empty());
+                assert!(output.resolved.collection_candidates().is_empty());
+                assert!(output.resolved.expanded_candidates().is_empty());
+                assert!(output.resolved.template_expansions().is_empty());
+                assert!(output.resolved.viable_candidates().is_empty());
+                assert!(output.resolved.viability_decisions().is_empty());
+                assert!(output.resolved.specificity_graphs().is_empty());
+                assert!(output.resolved.resolved_overloads().is_empty());
+                assert!(output.resolved.inserted_coercions().is_empty());
+                assert!(output.resolved.checked_formulas().is_empty());
+                assert!(output.resolved.statement_semantics().is_empty());
+                assert!(output.resolved.checked_proofs().is_empty());
+                assert!(output.resolved.checked_proof_nodes().is_empty());
+                assert!(output.resolved.checked_terminal_goals().is_empty());
                 let legacy = match expected_kind {
+                    SourceAtomicFormulaKind::PredicateApplication => crate::runner::source_imported_predicate_functor_formula_detail_keys(ast, module.clone(), &symbols),
                     SourceAtomicFormulaKind::TypeAssertion => crate::runner::source_builtin_type_assertion_formula_detail_keys(ast, module.clone(), &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => crate::runner::source_imported_non_empty_attribute_assertion_formula_detail_keys(ast, module.clone(), &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion => crate::runner::source_imported_attribute_assertion_formula_detail_keys(ast, module.clone(), &symbols),
@@ -357,6 +479,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 assert_eq!(crate::runner::type_elaboration::source_module_binding_env(&alias, module.clone()).unwrap(),
                     crate::runner::type_elaboration::source_module_binding_env(ast, module.clone()).unwrap());
                 assert!(match expected_kind {
+                    SourceAtomicFormulaKind::PredicateApplication => extract_source_imported_predicate_functor_formula(&alias, &module, &symbols).is_some(),
                     SourceAtomicFormulaKind::TypeAssertion => extract_source_builtin_type_assertion_formula(&alias, &module, &symbols).is_some(),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => extract_source_imported_non_empty_attribute_assertion_formula(&alias, &module, &symbols).is_some(),
                     SourceAtomicFormulaKind::AttributeAssertion => extract_source_imported_attribute_assertion_formula(&alias, &module, &symbols).is_some(),
@@ -365,6 +488,7 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
                 assert_eq!(source_atomic_formula_output_with_source(&alias, module.clone(), &symbols, &source)
                     .expect("alias preserves atomic selection").unwrap_err(), "typed AST source statement handoff is inconsistent");
                 assert_eq!(match expected_kind {
+                    SourceAtomicFormulaKind::PredicateApplication => crate::runner::source_imported_predicate_functor_formula_detail_keys(&alias, module, &symbols),
                     SourceAtomicFormulaKind::TypeAssertion => crate::runner::source_builtin_type_assertion_formula_detail_keys(&alias, module, &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion if negative => crate::runner::source_imported_non_empty_attribute_assertion_formula_detail_keys(&alias, module, &symbols),
                     SourceAtomicFormulaKind::AttributeAssertion => crate::runner::source_imported_attribute_assertion_formula_detail_keys(&alias, module, &symbols),
@@ -2530,15 +2654,15 @@ fn task256_expected_slot_ranges(
                 .iter()
                 .filter(|node| matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm))
                 .filter(|node| {
-                    node.range.start < payload.functor_range.start
-                        && payload.functor_range.end < node.range.end
+                    node.range.start < ast.nodes()[payload.functor_site.node().index()].range.start
+                        && ast.nodes()[payload.functor_site.node().index()].range.end < node.range.end
                 })
                 .map(|node| node.range)
                 .collect::<Vec<_>>();
             let [wrapper_range] = wrappers.as_slice() else {
                 panic!("Task 256 imported application must have one outer effective wrapper");
             };
-            vec![payload.left_range, *wrapper_range]
+            vec![ast.nodes()[payload.left_site.node().index()].range, *wrapper_range]
         }
         "fail_type_elaboration_imported_attribute_assertion_formula_gap_001" => vec![
             ast.nodes()[extract_source_imported_attribute_assertion_formula(ast, module, symbols)

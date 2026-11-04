@@ -728,12 +728,10 @@ fn extract_imported(
     let payload = extract_source_imported_predicate_functor_formula(ast, module, symbols)?;
     let application_id = node_id(ast, payload.functor_site)?;
     let application = ast.node(application_id)?;
-    if application.range != payload.functor_range
-        || !matches!(
-            &application.kind,
-            SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
-        )
-        || direct_token_texts(ast, application).as_slice() != ["++"]
+    if !matches!(
+        &application.kind,
+        SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
+    ) || direct_token_texts(ast, application).as_slice() != ["++"]
     {
         return None;
     }
@@ -1333,6 +1331,7 @@ fn build_output(
         binding_env,
         extracted,
         source_term,
+        None,
         mutate,
     )
 }
@@ -1343,6 +1342,7 @@ pub(super) fn imported_source_application_output_with_source_term(
     symbols: &SymbolEnv,
     binding_env: BindingEnv,
     source_term: SourceTermParts,
+    syntax: Option<&TypedAst>,
 ) -> Option<Result<SourceApplicationRouteOutput, String>> {
     let extracted = extract_imported(ast, &module, symbols)?;
     Some(build_output_with_source_term(
@@ -1352,6 +1352,7 @@ pub(super) fn imported_source_application_output_with_source_term(
         binding_env,
         extracted,
         source_term,
+        syntax,
         |_| {},
     ))
 }
@@ -1459,6 +1460,7 @@ pub(super) fn unwrapped_imported_source_application_handoff_in_context(
         binding_env,
         &extracted,
         source_term,
+        None,
         |_| {},
     ))
 }
@@ -1484,6 +1486,7 @@ pub(super) fn wrapped_imported_source_application_handoff_in_context(
         binding_env,
         &extracted,
         source_term,
+        None,
         |_| {},
     ))
 }
@@ -2000,6 +2003,7 @@ pub(in crate::runner) fn unwrapped_imported_source_application_handoff_for_test(
             binding_env,
             &extracted,
             &source_term,
+            None,
             |input| match mutation {
                 UnwrappedImportedApplicationTestMutation::None
                 | UnwrappedImportedApplicationTestMutation::StalePrimaryReplay => {
@@ -2182,6 +2186,7 @@ pub(in crate::runner) fn wrapped_imported_source_application_handoff_for_test(
             binding_env,
             &extracted,
             &source_term,
+            None,
             |input| match handoff_mutation {
                 WrappedImportedApplicationTestMutation::None
                 | WrappedImportedApplicationTestMutation::StalePrimaryReplay => {}
@@ -2394,6 +2399,8 @@ fn task258b3m2b2b1p_typed_ast(
     .map_err(|error| error.to_string())
 }
 
+// Rationale: caller identity and the optional borrowed generic receiver remain independent inputs.
+#[allow(clippy::too_many_arguments)]
 fn build_output_with_source_term(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -2401,6 +2408,7 @@ fn build_output_with_source_term(
     binding_env: BindingEnv,
     extracted: ExtractedApplication,
     source_term: SourceTermParts,
+    syntax: Option<&TypedAst>,
     mutate: impl FnOnce(&mut SourceFunctorApplicationHandoffInput),
 ) -> Result<SourceApplicationRouteOutput, String> {
     let kind = extracted.kind;
@@ -2411,6 +2419,7 @@ fn build_output_with_source_term(
         &binding_env,
         &extracted,
         &source_term,
+        syntax,
         mutate,
     )?;
     let typed_ast = TypedAst::try_new(TypedAstParts {
@@ -2465,6 +2474,8 @@ fn build_output_with_source_term(
     })
 }
 
+// Rationale: caller identity and the optional borrowed generic receiver remain independent inputs.
+#[allow(clippy::too_many_arguments)]
 fn build_handoff_with_source_term(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -2472,6 +2483,7 @@ fn build_handoff_with_source_term(
     binding_env: &BindingEnv,
     extracted: &ExtractedApplication,
     source_term: &SourceTermParts,
+    syntax: Option<&TypedAst>,
     mutate: impl FnOnce(&mut SourceFunctorApplicationHandoffInput),
 ) -> Result<SourceFunctorApplicationHandoff, String> {
     let candidate = symbols
@@ -2481,39 +2493,81 @@ fn build_handoff_with_source_term(
     if candidate.kind() != SymbolKind::Functor {
         return Err("Task253 real selector resolved a non-functor".to_owned());
     }
+    let generic_row = |site: SurfaceNodeId| {
+        syntax
+            .and_then(|syntax| syntax.source_node_entries())
+            .and_then(|mut rows| rows.find(|row| row.site().index() == site.index()))
+            .ok_or_else(|| "Task253 generic application row disappeared".to_owned())
+    };
+    let application_row = syntax
+        .map(|_| generic_row(extracted.application_id))
+        .transpose()?;
+    let head_row = syntax.map(|_| generic_row(extracted.head_id)).transpose()?;
     let application = SourceFunctorApplicationId::new(0);
     let candidate_id = SourceFunctorCandidateId::new(0);
     let mut input = SourceFunctorApplicationHandoffInput {
         source_id: ast.source_id,
         module_id: module.clone(),
         applications: vec![SourceFunctorApplicationInput {
-            site: surface_site(extracted.application_id),
-            source_range: extracted.application_range,
+            site: application_row.map_or_else(
+                || surface_site(extracted.application_id),
+                |row| {
+                    TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(
+                        row.site().index(),
+                    ))
+                },
+            ),
+            source_range: application_row.map_or(extracted.application_range, |row| row.range()),
             source_ordinal: 0,
             context: extracted.context,
             recovery: SourceFunctorApplicationRecovery::Normal,
-            spelling: extracted.application_spelling.clone(),
+            spelling: application_row.map_or_else(
+                || extracted.application_spelling.clone(),
+                |row| row.spelling().to_owned(),
+            ),
             kind: SourceFunctorApplicationKind::Symbolic,
             form: extracted.form,
             head_ordinal: usize::from(extracted.form == SourceFunctorApplicationForm::Infix),
             head: SourceFunctorHeadSite::Single {
-                site: surface_site(extracted.head_id),
-                source_range: extracted.head_range,
-                spelling: extracted.head_spelling.clone(),
+                site: head_row.map_or_else(
+                    || surface_site(extracted.head_id),
+                    |row| {
+                        TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(
+                            row.site().index(),
+                        ))
+                    },
+                ),
+                source_range: head_row.map_or(extracted.head_range, |row| row.range()),
+                spelling: head_row.map_or_else(
+                    || extracted.head_spelling.clone(),
+                    |row| row.spelling().to_owned(),
+                ),
             },
         }],
         wrappers: extracted
             .wrapper
             .as_ref()
-            .map(|(wrapper, range)| SourceFunctorWrapperInput {
-                application,
-                ordinal: 0,
-                site: surface_site(*wrapper),
-                source_range: *range,
-                context: extracted.context,
-                spelling: "( 1 ++ 2 )".to_owned(),
-                recovery: SourceFunctorApplicationRecovery::Normal,
+            .map(|(wrapper, range)| {
+                let row = syntax.map(|_| generic_row(*wrapper)).transpose()?;
+                Ok::<_, String>(SourceFunctorWrapperInput {
+                    application,
+                    ordinal: 0,
+                    site: row.map_or_else(
+                        || surface_site(*wrapper),
+                        |row| {
+                            TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(
+                                row.site().index(),
+                            ))
+                        },
+                    ),
+                    source_range: row.map_or(*range, |row| row.range()),
+                    context: extracted.context,
+                    spelling: row
+                        .map_or_else(|| "( 1 ++ 2 )".to_owned(), |row| row.spelling().to_owned()),
+                    recovery: SourceFunctorApplicationRecovery::Normal,
+                })
             })
+            .transpose()?
             .into_iter()
             .collect(),
         candidates: vec![SourceFunctorCandidateInput {
@@ -2527,10 +2581,13 @@ fn build_handoff_with_source_term(
             .iter()
             .enumerate()
             .map(|(ordinal, root)| {
-                let range = ast
-                    .node(*root)
-                    .ok_or_else(|| "Task253 argument root disappeared".to_owned())?
-                    .range;
+                let range = if syntax.is_some() {
+                    generic_row(*root)?.range()
+                } else {
+                    ast.node(*root)
+                        .ok_or_else(|| "Task253 argument root disappeared".to_owned())?
+                        .range
+                };
                 let target = source_term
                     .handoff
                     .terms()
