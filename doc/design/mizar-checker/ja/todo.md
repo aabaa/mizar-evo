@@ -728,7 +728,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   definition policy 定数も所有し、`source_term.rs` と `source_formula_composition.rs`
   の nested-Fraenkel / condition-aggregate 定数の扱いを決める。契約:
   [VELOCITY-ELEMENT-RULE-TRANSPORT](../../task_contracts/ja/VELOCITY-ELEMENT-RULE-TRANSPORT.md)。
-- [ ] **Task 286:** 公開 proof-local build 入力のための認証済み receipt。30 件の正準
+- [x] **Task 286:** 公開 proof-local build 入力のための認証済み receipt。30 件の正準
   literal guard と、Task 284 が `source_type.rs` と `source_term.rs` に残した
   proof-local 定数を退役させる (full tier)。契約:
   [CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE](../../task_contracts/ja/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)。

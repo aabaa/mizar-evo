@@ -2,14 +2,17 @@ use mizar_checker::{
     binding_env::BindingContextId,
     resolved_typed_ast::ResolvedTypedAst,
     source_proof_local_declaration::{
-        SourceProofLocalGivenBindingHandoffInput, SourceProofLocalGivenBindingProducer,
-        SourceProofLocalGivenBindingRecovery, SourceProofLocalGivenConditionBindingHandoffInput,
-        SourceProofLocalGivenConditionBindingProducer,
+        SourceProofLocalGivenBindingError, SourceProofLocalGivenBindingHandoffInput,
+        SourceProofLocalGivenBindingProducer, SourceProofLocalGivenBindingRecovery,
+        SourceProofLocalGivenConditionBindingError,
+        SourceProofLocalGivenConditionBindingHandoffInput,
+        SourceProofLocalGivenConditionBindingProducer, SourceProofLocalGivenDescendantBindingError,
         SourceProofLocalGivenDescendantBindingHandoffInput,
-        SourceProofLocalGivenDescendantBindingProducer, SourceProofLocalGivenUseBindingHandoff,
-        SourceProofLocalGivenUseBindingHandoffInput, SourceProofLocalGivenUseBindingProducer,
-        SourceProofLocalLetBindingHandoffInput, SourceProofLocalLetBindingProducer,
-        SourceProofLocalLetBindingRecovery,
+        SourceProofLocalGivenDescendantBindingProducer, SourceProofLocalGivenUseBindingError,
+        SourceProofLocalGivenUseBindingHandoff, SourceProofLocalGivenUseBindingHandoffInput,
+        SourceProofLocalGivenUseBindingProducer, SourceProofLocalIntakeReceipt,
+        SourceProofLocalLetBindingError, SourceProofLocalLetBindingHandoffInput,
+        SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
     },
     source_term::{
         SourcePrimaryTermHandoffInput, SourcePrimaryTermId, SourcePrimaryTermInput,
@@ -59,6 +62,33 @@ pub(in crate::runner) fn source_proof_local_declaration_output(
     _source_text: &str,
 ) -> Option<()> {
     None
+}
+
+// WrongLowerFingerprint now supplies genuine foreign origin authority instead of corrupting text.
+fn source_proof_local_binding_receipt(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    source_text: &str,
+    receipt: Option<&SourceProofLocalIntakeReceipt>,
+    foreign: bool,
+) -> Option<SourceProofLocalIntakeReceipt> {
+    if !foreign {
+        return receipt.cloned();
+    }
+    let foreign_module =
+        ModuleId::new(module.package().clone(), ModulePath::new("task286.foreign"));
+    let source = source_proof_local_syntax_receiver(ast, &foreign_module, source_text)?;
+    let declaration = source
+        .source_node_entries()?
+        .find(|row| {
+            matches!(
+                row.kind(),
+                mizar_syntax::SurfaceNodeKind::LetStatement
+                    | mizar_syntax::SurfaceNodeKind::GivenStatement
+            )
+        })?
+        .site();
+    SourceProofLocalIntakeReceipt::from_source(&source, declaration)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -143,10 +173,14 @@ fn source_proof_local_let_binding_output_impl(
             exact_base
         };
 
-        let mut lower_fingerprint = lower.debug_text();
-        if mutation == SourceProofLocalLetBindingRouteMutation::WrongLowerFingerprint {
-            lower_fingerprint.push_str("corrupt");
-        }
+        let lower_fingerprint = source_proof_local_binding_receipt(
+            ast,
+            &module,
+            source_text,
+            lower.intake_receipt(),
+            mutation == SourceProofLocalLetBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .ok_or_else(|| SourceProofLocalLetBindingError::DependencyMismatch.to_string())?;
         let theorem_range =
             if mutation == SourceProofLocalLetBindingRouteMutation::WrongTheoremRange {
                 SourceRange {
@@ -359,10 +393,14 @@ fn source_proof_local_given_binding_output_impl(
             exact_base
         };
 
-        let mut lower_fingerprint = lower.debug_text();
-        if mutation == SourceProofLocalGivenBindingRouteMutation::WrongLowerFingerprint {
-            lower_fingerprint.push_str("corrupt");
-        }
+        let lower_fingerprint = source_proof_local_binding_receipt(
+            ast,
+            &module,
+            source_text,
+            lower.intake_receipt(),
+            mutation == SourceProofLocalGivenBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .ok_or_else(|| SourceProofLocalGivenBindingError::DependencyMismatch.to_string())?;
         let theorem_range = mutated_task269g_range(
             lower.theorem_range(),
             mutation == SourceProofLocalGivenBindingRouteMutation::WrongTheoremRange,
@@ -540,15 +578,19 @@ fn source_proof_local_given_use_binding_output_impl(
             .prepare_binding_env(symbols)
             .map_err(|error| format!("Task269GUP exact reserve base failed: {error}"))?;
         let base = if mutation == SourceProofLocalGivenUseBindingRouteMutation::EmptyBase {
-            source_module_binding_env(ast, module).map_err(|error| error.to_string())?
+            source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?
         } else {
             exact_base
         };
 
-        let mut lower_fingerprint = lower.debug_text();
-        if mutation == SourceProofLocalGivenUseBindingRouteMutation::WrongLowerFingerprint {
-            lower_fingerprint.push_str("corrupt");
-        }
+        let lower_fingerprint = source_proof_local_binding_receipt(
+            ast,
+            &module,
+            source_text,
+            lower.intake_receipt(),
+            mutation == SourceProofLocalGivenUseBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .ok_or_else(|| SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string())?;
         let theorem_range = mutated_task269g_range(
             lower.theorem_range(),
             mutation == SourceProofLocalGivenUseBindingRouteMutation::WrongTheoremRange,
@@ -749,10 +791,16 @@ fn source_proof_local_given_condition_binding_output_impl(
             exact_base
         };
 
-        let mut lower_fingerprint = lower.debug_text();
-        if mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongLowerFingerprint {
-            lower_fingerprint.push_str("corrupt");
-        }
+        let lower_fingerprint = source_proof_local_binding_receipt(
+            ast,
+            &module,
+            source_text,
+            lower.intake_receipt(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .ok_or_else(|| {
+            SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string()
+        })?;
         let theorem_range = mutated_task269g_range(
             lower.theorem_range(),
             mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongTheoremRange,
@@ -1245,10 +1293,16 @@ fn source_proof_local_given_descendant_binding_output_impl(
             exact_base
         };
 
-        let mut lower_fingerprint = lower.debug_text();
-        if mutation == SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint {
-            lower_fingerprint.push_str("corrupt");
-        }
+        let lower_fingerprint = source_proof_local_binding_receipt(
+            ast,
+            &module,
+            source_text,
+            lower.intake_receipt(),
+            mutation == SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .ok_or_else(|| {
+            SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string()
+        })?;
         let theorem_range = mutated_task269g_range(
             lower.theorem_range(),
             mutation == SourceProofLocalGivenDescendantBindingRouteMutation::WrongTheoremRange,

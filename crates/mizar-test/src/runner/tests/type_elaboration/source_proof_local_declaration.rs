@@ -1165,10 +1165,8 @@ fn task269cp_lower_transports_leading_space_tab_lf_layouts() {
         let (_, _, _, foreign_symbols) = task253_ast_from_source_text(shifted_source, 269_600 + *delta);
         assert!(source_proof_local_let_lower_output(ast, module.clone(), shells, &foreign_symbols, shifted_source)
             .expect("shifted foreign resolver route").is_err(), "{layout} foreign resolver");
-        assert_eq!(source_proof_local_let_binding_output(ast, module.clone(), shells, symbols, shifted_source)
-            .expect("Task269C shifted binding route").expect_err("Task269C must reject transported lower geometry"),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string(),
-            "{layout} public Task269C dependency boundary");
+        assert!(source_proof_local_let_binding_output(ast, module.clone(), shells, symbols, shifted_source)
+            .expect("Task269C shifted binding route").is_ok(), "{layout} authenticated layout transport");
     }
 }
 
@@ -1179,6 +1177,7 @@ fn task269cp_generic_roles_transport_frontend_normal_let_sources() {
     use mizar_syntax::SurfaceNodeKind as K;
 
     let source = SOURCE_PROOF_LOCAL_LET_TEXT;
+    let (canonical_ast, _, _, _) = task253_ast_from_source_text(source, 286_000);
     let cases = [
         ("prefix_comment", format!(":: prefix comment\n{source}")),
         ("internal_indent", source.replacen("  let y be set;", "   let y be set;", 1)),
@@ -1304,11 +1303,70 @@ fn task269cp_generic_roles_transport_frontend_normal_let_sources() {
             source_proof_local_let_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
             source_proof_local_let_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
         ] {
-            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string())),
+            let expected = if task286_same_token_profile(&ast, &canonical_ast) {
+                Some(Ok(()))
+            } else {
+                Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingError::DependencyMismatch.to_string()))
+            };
+            assert_eq!(outcome, expected,
                 "{label} C/CT dependency boundary");
         }
         assert_eq!((ast, shells, symbols), before, "{label} input purity");
     }
+}
+
+fn task286_receipt_fingerprint(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+) -> String {
+    use mizar_checker::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId};
+    let original = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, module).unwrap();
+    let nodes = TypedArena::try_new(ast.root().map(|id| TypedNodeId::new(id.index())),
+        original.arena().iter().map(|(id, node)| {
+            TypedNode::new("syntax", node.origin().anchor().clone()).with_resolved_node(id)
+                .with_children(node.children().iter().map(|id| TypedNodeId::new(id.index())).collect())
+        }).collect()).unwrap();
+    let mut source = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id, module_id: module.clone(), resolved_root: Some(original.arena().root()),
+        source_context: None, source_type: None, source_attribute: None, nodes,
+        contexts: Default::default(), types: Default::default(), facts: Default::default(),
+        coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+    }).unwrap();
+    source.install_source_nodes(&original).unwrap();
+    let declaration = source.source_node_entries().unwrap().find(|row| matches!(row.kind(),
+        mizar_syntax::SurfaceNodeKind::LetStatement | mizar_syntax::SurfaceNodeKind::GivenStatement)).unwrap().site();
+    mizar_checker::source_proof_local_declaration::SourceProofLocalIntakeReceipt::from_source(&source, declaration)
+        .unwrap().fingerprint().to_owned()
+}
+
+fn task286_assert_metadata_only(
+    ast: &mizar_syntax::SurfaceAst,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    resolved: &mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+) {
+    assert!(typed.contexts().is_empty() && typed.types().is_empty() && typed.facts().is_empty());
+    assert!(typed.coercions().is_empty() && typed.initial_obligations().is_empty());
+    assert!(resolved.source_set_term().is_none() && resolved.source_statement().is_none());
+    assert!(resolved.cluster_facts().is_empty() && resolved.checked_formulas().is_empty());
+    assert!(resolved.statement_semantics().is_empty() && resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_proof_nodes().is_empty() && resolved.checked_terminal_goals().is_empty());
+    let source_term = typed.source_proof_local_given_use_term().map(|handoff| handoff.source_term())
+        .or_else(|| typed.source_proof_local_given_condition_use_term().map(|handoff| handoff.source_term()))
+        .or_else(|| typed.source_proof_local_given_descendant_use_term().map(|handoff| handoff.source_term())).unwrap();
+    let expected = ast.nodes().iter().filter(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::TermReference)
+        && node.children.iter().any(|child| matches!(&ast.node(*child).unwrap().kind,
+            mizar_syntax::SurfaceNodeKind::Token(token) if token.text.as_ref() == "y")))
+        .map(|node| node.range).collect::<Vec<_>>();
+    assert_eq!(source_term.terms().iter().map(|(_, term)| term.source_range()).collect::<Vec<_>>(), expected);
+    assert_eq!(source_term.references().iter().map(|(_, reference)| (reference.term().index(), reference.binding().index())).collect::<Vec<_>>(),
+        (0..expected.len()).map(|index| (index, 1)).collect::<Vec<_>>());
+}
+
+fn task286_same_token_profile(ast: &mizar_syntax::SurfaceAst, canonical: &mizar_syntax::SurfaceAst) -> bool {
+    ast.token_views().filter_map(|view| view.as_token().cloned())
+        .map(|token| (token.kind, token.text))
+        .eq(canonical.token_views().filter_map(|view| view.as_token().cloned())
+            .map(|token| (token.kind, token.text)))
 }
 
 fn task269cp_range_tuple(
@@ -2646,9 +2704,8 @@ fn task269gp_lower_transports_leading_space_tab_lf_layouts() {
         let (_, foreign_module, _, foreign_symbols) = task253_ast_from_source_text(shifted_source, 269_640 + *delta);
         assert_ne!(foreign_module, *module, "{layout} foreign module receipt");
         assert!(source_proof_local_given_lower_output(ast, (*module).clone(), shells, &foreign_symbols, shifted_source).expect("shifted foreign resolver").is_err(), "{layout} foreign resolver");
-        assert_eq!(source_proof_local_given_binding_output(ast, (*module).clone(), shells, symbols, shifted_source)
-            .expect("Task269G shifted binding route").expect_err("Task269G must reject transported lower geometry"),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingError::DependencyMismatch.to_string(), "{layout} public Task269G dependency boundary");
+        assert!(source_proof_local_given_binding_output(ast, (*module).clone(), shells, symbols, shifted_source)
+            .expect("Task269G shifted binding route").is_ok(), "{layout} authenticated layout transport");
     }
 }
 
@@ -2659,6 +2716,7 @@ fn task269gp_generic_roles_transport_frontend_normal_given_sources() {
     use mizar_syntax::SurfaceNodeKind as K;
 
     let source = SOURCE_PROOF_LOCAL_GIVEN_TEXT;
+    let (canonical_ast, _, _, _) = task253_ast_from_source_text(source, 286_000);
     let cases = [
         ("prefix_comment", format!(":: prefix comment\n{source}")),
         ("internal_indent", source.replacen("  given y being set", "   given y being set", 1)),
@@ -2800,7 +2858,12 @@ fn task269gp_generic_roles_transport_frontend_normal_given_sources() {
             source_proof_local_given_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
             source_proof_local_given_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
         ] {
-            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingError::DependencyMismatch.to_string())),
+            let expected = if task286_same_token_profile(&ast, &canonical_ast) {
+                Some(Ok(()))
+            } else {
+                Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingError::DependencyMismatch.to_string()))
+            };
+            assert_eq!(outcome, expected,
                 "{label} G/GT dependency boundary");
         }
         assert_eq!((ast, shells, symbols), before, "{label} input purity");
@@ -3868,7 +3931,9 @@ fn task269g_exact_given_binding_transaction_debug_and_lookup_are_stable() {
         .expect("Task269G typed owner");
     assert_eq!(handoff.source_id(), ast.source_id);
     assert_eq!(handoff.module_id(), &module);
-    assert_eq!(handoff.lower_fingerprint(), lower.debug_text());
+    let expected_lower_fingerprint = task286_receipt_fingerprint(&ast, &module);
+    assert_eq!(handoff.lower_fingerprint(), expected_lower_fingerprint);
+    assert_eq!(lower.intake_receipt().unwrap().fingerprint(), expected_lower_fingerprint);
     assert_eq!(handoff.theorem_symbol().module(), &module);
     assert_eq!(
         (
@@ -3990,7 +4055,7 @@ fn task269g_exact_given_binding_transaction_debug_and_lookup_are_stable() {
         ),
         module.package().as_str(),
         module.path().as_str(),
-        lower.debug_text(),
+        expected_lower_fingerprint,
         handoff.theorem_symbol().fqn().as_str(),
         handoff.base_binding_fingerprint(),
         handoff.final_binding_fingerprint(),
@@ -5371,10 +5436,8 @@ fn task269gup_lower_transports_leading_space_tab_lf_layouts() {
         assert_ne!(foreign_module, *module, "{layout} foreign module receipt");
         assert!(source_proof_local_given_use_lower_output(ast, (*module).clone(), shells, &foreign_symbols, shifted_source)
             .expect("shifted GUP foreign resolver").is_err(), "{layout} foreign resolver receipt");
-        assert_eq!(source_proof_local_given_use_binding_output(ast, (*module).clone(), shells, symbols, shifted_source)
-            .expect("Task269GUP shifted binding route").expect_err("Task269GUP must reject transported lower geometry"),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string(),
-            "{layout} public Task269GUP dependency boundary");
+        assert!(source_proof_local_given_use_binding_output(ast, (*module).clone(), shells, symbols, shifted_source)
+            .expect("Task269GUP shifted binding route").is_ok(), "{layout} authenticated layout transport");
     }
 }
 
@@ -5385,6 +5448,7 @@ fn task269gup_generic_roles_transport_frontend_normal_given_use_sources() {
     use mizar_syntax::SurfaceNodeKind as K;
 
     let source = SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT;
+    let (canonical_ast, _, _, _) = task253_ast_from_source_text(source, 286_000);
     let cases = [
         ("prefix_comment", format!(":: prefix comment\n{source}"), 269_970),
         ("internal_indent", source.replacen("  given y being set", "   given y being set", 1), 269_972),
@@ -5538,9 +5602,14 @@ fn task269gup_generic_roles_transport_frontend_normal_given_use_sources() {
         for outcome in [
             source_proof_local_given_use_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
             source_proof_local_given_use_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
-            source_proof_local_given_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|output| task286_assert_metadata_only(&ast, &output.typed_ast, &output.resolved))),
         ] {
-            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string())),
+            let expected = if task286_same_token_profile(&ast, &canonical_ast) {
+                Some(Ok(()))
+            } else {
+                Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenUseBindingError::DependencyMismatch.to_string()))
+            };
+            assert_eq!(outcome, expected,
                 "{label} GUP/GUPT/GU dependency boundary");
         }
         assert_eq!((ast, shells, symbols), before, "{label} input purity");
@@ -5671,7 +5740,9 @@ fn source_proof_local_given_use_binding_profile_is_exact_and_private() {
     .expect("Task269GUP exact binding handoff");
     assert_eq!(handoff.source_id(), ast.source_id);
     assert_eq!(handoff.module_id(), &module);
-    assert_eq!(handoff.lower_fingerprint(), lower.debug_text());
+    let expected_lower_fingerprint = task286_receipt_fingerprint(&ast, &module);
+    assert_eq!(handoff.lower_fingerprint(), expected_lower_fingerprint);
+    assert_eq!(lower.intake_receipt().unwrap().fingerprint(), expected_lower_fingerprint);
     assert_eq!(
         (
             handoff.theorem_range().start,
@@ -5766,7 +5837,7 @@ fn source_proof_local_given_use_binding_profile_is_exact_and_private() {
         ),
         module.package().as_str(),
         module.path().as_str(),
-        lower.debug_text(),
+        expected_lower_fingerprint,
         handoff.theorem_symbol().fqn().as_str(),
         handoff.base_binding_fingerprint(),
         handoff.final_binding_fingerprint(),
@@ -6979,6 +7050,7 @@ fn task269gcp_generic_roles_transport_frontend_normal_condition_sources() {
     use mizar_syntax::SurfaceNodeKind as K;
 
     let source = SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT;
+    let (canonical_ast, _, _, _) = task253_ast_from_source_text(source, 286_000);
     let cases = [
         ("historical_theorem_name_2", source.replace("ProofLocalGivenConditionUseSmoke", "ProofLocalGivenConditionUseOther"), 2_691_042),
         ("historical_coherent_local_3", source.replace("given y being set such that G: y = y", "given z being set such that G: z = z"), 2_691_043),
@@ -7135,9 +7207,14 @@ fn task269gcp_generic_roles_transport_frontend_normal_condition_sources() {
         for outcome in [
             source_proof_local_given_condition_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
             source_proof_local_given_condition_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
-            source_proof_local_given_condition_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_condition_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|output| task286_assert_metadata_only(&ast, output.typed_ast(), output.resolved()))),
         ] {
-            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string())),
+            let expected = if task286_same_token_profile(&ast, &canonical_ast) {
+                Some(Ok(()))
+            } else {
+                Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string()))
+            };
+            assert_eq!(outcome, expected,
                 "{label} GC/GCT/GCU dependency boundary");
         }
         assert_eq!((ast, shells, symbols), before, "{label} input purity");
@@ -7450,7 +7527,9 @@ fn task269gc_exact_condition_binding_transaction_debug_and_lookup_are_stable() {
     );
     assert_eq!(handoff.source_id(), ast.source_id);
     assert_eq!(handoff.module_id(), &module);
-    assert_eq!(handoff.lower_fingerprint(), lower.debug_text());
+    let expected_lower_fingerprint = task286_receipt_fingerprint(&ast, &module);
+    assert_eq!(handoff.lower_fingerprint(), expected_lower_fingerprint);
+    assert_eq!(lower.intake_receipt().unwrap().fingerprint(), expected_lower_fingerprint);
     assert_eq!(handoff.theorem_symbol(), lower.theorem_symbol());
     assert_eq!(handoff.theorem_definition(), lower.theorem_definition());
     assert_eq!(handoff.contribution(), lower.contribution());
@@ -7536,7 +7615,7 @@ fn task269gc_exact_condition_binding_transaction_debug_and_lookup_are_stable() {
         ),
         module.package().as_str(),
         module.path().as_str(),
-        lower.debug_text(),
+        expected_lower_fingerprint,
         lower.theorem_symbol().fqn().as_str(),
         handoff.base_binding_fingerprint(),
         handoff.final_binding_fingerprint(),
@@ -7737,10 +7816,12 @@ fn task269gc_near_miss_neighbor_and_active_routes_remain_isolated() {
         (5, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.trim_end_matches('\n').to_owned(), 2_691_115),
     ] {
         let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, frontend_fixture_ordinal);
-        assert_eq!(source_proof_local_given_condition_binding_output(&ast, module, &shells, &symbols, &source)
-            .expect("Task269GC transported case reaches canonical dependency validation").unwrap_err(),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string(),
-            "Task269GC transported historical case {ordinal}");
+        let outcome = source_proof_local_given_condition_binding_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task269GC transported case reaches canonical dependency validation").map(|_| ());
+        let expected = if ordinal == 5 { Ok(()) } else {
+            Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string())
+        };
+        assert_eq!(outcome, expected, "Task269GC transported historical case {ordinal}");
     }
     let near_misses = [
         (0, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "G: thesis"), 2_691_110),
@@ -8225,10 +8306,12 @@ fn task269gct_near_miss_neighbor_and_active_routes_remain_isolated() {
             .to_owned(), 2_691_175),
     ] {
         let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, frontend_fixture_ordinal);
-        assert_eq!(source_proof_local_given_condition_type_output(&ast, module, &shells, &symbols, &source)
-            .expect("Task269GCT transported case reaches canonical dependency validation").unwrap_err(),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string(),
-            "Task269GCT transported historical case {ordinal}");
+        let outcome = source_proof_local_given_condition_type_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task269GCT transported case reaches canonical dependency validation").map(|_| ());
+        let expected = if ordinal == 5 { Ok(()) } else {
+            Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string())
+        };
+        assert_eq!(outcome, expected, "Task269GCT transported historical case {ordinal}");
     }
     let near_misses = [
         (0, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "G: thesis"), 2_691_170),
@@ -9341,10 +9424,12 @@ fn task269gcu_near_miss_gct_and_active_routes_remain_isolated() {
             .to_owned(), 2_691_235),
     ] {
         let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, frontend_fixture_ordinal);
-        assert_eq!(source_proof_local_given_condition_use_term_output(&ast, module, &shells, &symbols, &source)
-            .expect("Task269GCU transported case reaches canonical dependency validation").unwrap_err(),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string(),
-            "Task269GCU transported historical case {ordinal}");
+        let outcome = source_proof_local_given_condition_use_term_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task269GCU transported case reaches canonical dependency validation").map(|_| ());
+        let expected = if ordinal == 5 { Ok(()) } else {
+            Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenConditionBindingError::DependencyMismatch.to_string())
+        };
+        assert_eq!(outcome, expected, "Task269GCU transported historical case {ordinal}");
     }
     let near_misses = [
         (0, SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "G: x = x"), 2_691_230),
@@ -10507,6 +10592,7 @@ fn task269sdp_generic_roles_transport_frontend_normal_descendant_sources() {
     use mizar_syntax::SurfaceNodeKind as K;
 
     let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let (canonical_ast, _, _, _) = task253_ast_from_source_text(source, 286_000);
     let cases = [
         ("historical_missing_lf_0", source.trim_end_matches('\n').to_owned(), 2_691_190),
         ("historical_extra_lf_1", format!("{source}\n"), 2_691_191),
@@ -10679,9 +10765,14 @@ fn task269sdp_generic_roles_transport_frontend_normal_descendant_sources() {
         for outcome in [
             source_proof_local_given_descendant_binding_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
             source_proof_local_given_descendant_type_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
-            source_proof_local_given_descendant_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|_| ())),
+            source_proof_local_given_descendant_use_term_output(&ast, module.clone(), &shells, &symbols, &source).map(|result| result.map(|output| task286_assert_metadata_only(&ast, output.typed_ast(), output.resolved()))),
         ] {
-            assert_eq!(outcome, Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string())),
+            let expected = if task286_same_token_profile(&ast, &canonical_ast) {
+                Some(Ok(()))
+            } else {
+                Some(Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string()))
+            };
+            assert_eq!(outcome, expected,
                 "{label} SDC/SDT/SDU dependency boundary");
         }
         assert_eq!((ast, shells, symbols), before, "{label} input purity");
@@ -11203,10 +11294,8 @@ fn task269sdc_descendant_binding_profile_is_exact_and_private() {
             .count(),
         1
     );
-    assert!(handoff.lower_fingerprint().contains(
-        "source-proof-local-given-descendant-set-lower-debug-v1\n"
-    ));
-    assert!(handoff.lower_fingerprint().ends_with('\n'));
+    let (ast, module, _, _) = task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, 269_012);
+    assert_eq!(handoff.lower_fingerprint(), task286_receipt_fingerprint(&ast, &module));
 }
 
 #[test]
@@ -11802,10 +11891,12 @@ fn task269sdt_near_miss_neighbor_and_active_routes_remain_isolated() {
             .to_owned(), 2_691_434),
     ] {
         let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, frontend_fixture_ordinal);
-        assert_eq!(source_proof_local_given_descendant_type_output(&ast, module, &shells, &symbols, &source)
-            .expect("Task269SDT transported historical source").unwrap_err(),
-            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string(),
-            "Task269SDT historical case {ordinal}");
+        let outcome = source_proof_local_given_descendant_type_output(&ast, module, &shells, &symbols, &source)
+            .expect("Task269SDT transported historical source").map(|_| ());
+        let expected = if ordinal == 4 { Ok(()) } else {
+            Err(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string())
+        };
+        assert_eq!(outcome, expected, "Task269SDT historical case {ordinal}");
     }
     for (ordinal, source, frontend_fixture_ordinal) in [
         (1, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1), 2_691_431),

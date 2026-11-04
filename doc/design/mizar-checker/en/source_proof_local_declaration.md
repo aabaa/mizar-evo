@@ -6,20 +6,56 @@
 ## Native named-witness boundary
 The historical raw B3N profile and Task269A exact profile/runner remain confined to existing private tests; native B3N named-witness syntax remains supported. Native mixed B3M1 also records syntax only and supplies no declaration. Retire the coupled Task269B historical production graph while preserving the public declaration API, types, producer, errors, signatures and slots; unavailable native declaration authority returns the existing `DependencyMismatch` after transaction-identity validation. Preserve historical B3M1/Task269B positives and faults in existing private tests. Public GCU coverage transfers to the native mixed source-family pair in both orders with no upper declaration; the existing private SourceTerm GCU sentinel continues to own both-order declaration-slot exclusion.
 
+## Authenticated proof-local intake
+
+The Let, Given, Given-use, Given-condition and Given-descendant binding inputs
+use one opaque source receipt:
+
+```rust
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceProofLocalIntakeReceipt { /* private fields */ }
+impl SourceProofLocalIntakeReceipt {
+    pub fn from_source(source: &TypedAst, declaration: ResolvedNodeId) -> Option<Self>;
+    pub fn fingerprint(&self) -> &str;
+}
+```
+
+`Debug` renders an opaque receipt marker.
+
+Their existing `lower_fingerprint` input field has this receipt type; their
+build signatures otherwise stay the same. A receipt retains the original
+generic table and source/module identity captured from `TypedAst`. Construction
+selects an actual declaration from that table. Each build, typed installation
+and resolved replay checks the original roles independently of candidate ranges
+or the cached fingerprint. The handoffs keep the receipt; type and term donors
+use the same original roles. Existing error classes and phase order apply.
+
+For the same supported profile, pure layout changes with genuine matching
+receipts support binding/type/term transport and replay. Names, types, qualifiers,
+labels, arity, scopes, visibility and unsupported profiles retain their existing
+restrictions. This adds no condition facts, Set expansion, capture, dispatch or
+proof acceptance.
+
+The handoff's `lower_fingerprint()` returns a versioned structural receipt
+fingerprint. Nested binding/type/term fingerprints use that identity. Raw runner
+lower debug text and its source/surface hashes retain their format. A structural
+receipt does not attest raw bytes or additional resolver symbol provenance;
+source identity is checked separately from deterministic fingerprint content.
+
 ## Generic isolated Let source boundary
-The runner-private CP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-let-leading-layout-transport). C/CT retain their canonical dependency checks; noncanonical lower receipts add no binding, proof, dispatch or acceptance support.
+The runner-private CP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-let-leading-layout-transport).
 
 ## Generic isolated Given source boundary
-The runner-private GP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-leading-layout-transport). G/GT retain their canonical dependency checks; noncanonical lower receipts add no binding, condition fact, proof, dispatch or acceptance support.
+The runner-private GP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-leading-layout-transport).
 
 ## Generic isolated Given-use source boundary
-The runner-private GUP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-use-leading-layout-transport). GUP binding, GUPT type and GU term producers retain canonical dependency validation; noncanonical lower receipts add no native binding, term, proof, dispatch or acceptance support.
+The runner-private GUP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-use-leading-layout-transport).
 
 ## Generic isolated Given-condition source boundary
-The runner-private GCP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-condition-source-transport). GC binding, GCT type and GCU term producers retain canonical dependency validation; noncanonical lower receipts add no condition fact, native binding/term, proof, dispatch or acceptance support.
+The runner-private GCP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-given-condition-source-transport).
 
 ## Generic descendant source boundary
-The runner-private SDP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-descendant-set-source-transport). SDC/SDT/SDU retain canonical dependency validation and the existing Set/capture deferral; noncanonical lower receipts add no native binding, term, fact, proof, dispatch or acceptance support.
+The runner-private SDP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-descendant-set-source-transport).
 
 ## Status and authority
 
@@ -945,7 +981,6 @@ Private fields have no unchecked constructor or mutable accessor.
 pub struct SourceProofLocalLetBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -1013,7 +1048,6 @@ impl SourceProofLocalLetBindingTable {
 pub struct SourceProofLocalLetBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -1787,7 +1821,6 @@ fields have no unchecked public constructor or mutable accessor:
 pub struct SourceProofLocalGivenBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -1855,7 +1888,6 @@ impl SourceProofLocalGivenBindingTable {
 pub struct SourceProofLocalGivenBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2378,7 +2410,6 @@ The checker adds only this public family in
 pub struct SourceProofLocalGivenUseBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -2413,7 +2444,6 @@ The handoff's exact private layout and read-only API are:
 pub struct SourceProofLocalGivenUseBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2981,7 +3011,6 @@ mutable public accessor exists:
 pub struct SourceProofLocalGivenConditionBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -2999,7 +3028,6 @@ pub struct SourceProofLocalGivenConditionBindingHandoffInput {
 pub struct SourceProofLocalGivenConditionBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -3968,7 +3996,6 @@ private and appear in exactly this order:
 pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -3987,7 +4014,6 @@ pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
 pub struct SourceProofLocalGivenDescendantBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,

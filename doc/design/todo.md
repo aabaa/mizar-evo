@@ -152,7 +152,7 @@ out of task 2 on 2026-11-04 and follow it under the same ledger discipline.
 3. [ ] [Element-rule transport](./task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md)
    — the class `b` element rules of Tasks 257, 269-272 and 279 as one
    family contract over the generic walk (checker Task 285).
-4. [ ] [Proof-local authenticated intake](./task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)
+4. [x] [Proof-local authenticated intake](./task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md)
    — one authenticated receipt replaces the thirty canonical literal guards
    of the public proof-local build inputs; full tier (checker Task 286).
 

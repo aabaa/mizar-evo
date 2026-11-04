@@ -5604,7 +5604,7 @@ adding a fifth test or an active dispatch edge.
 
 The private Task269CP lower route reads the installed generic source table for one reserve and one named theorem with an unused single-name bare-set Let and a direct reserved-variable equality conclusion. It derives source roles and ranges without a fixture suffix; normal layouts, comments, identifiers and `be`/`being` are transported after complete lexer/token congruence checks. Bare CR and other syntax shapes remain excluded.
 Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the output schema remain unchanged. Historical exact-selector and corruption controls remain private tests alongside actual frontend/source corruption checks.
-Public C/CT retain canonical dependency validation and reject noncanonical lower receipts. This adds no binding/Type/Typed-final, corpus/dispatch, fact, assumption, thesis, proof, Core/VC or acceptance credit.
+This adds no binding/Type/Typed-final, corpus/dispatch, fact, assumption, thesis, proof, Core/VC or acceptance credit.
 
 ## Checker Task 269C frozen dormant harness
 
@@ -5643,31 +5643,30 @@ active-route isolation, and exhaustive semantic emptiness. Runner library is
 ## Shared proof-local syntax receiver
 
 Within `type_elaboration`, proof-local lower routes and their private term transport share the syntax receiver. It authenticates tree/token correspondence; each lower owns its grammar and normality checks.
-Term transport reads immutable rows after its canonical type dependency succeeds, preserving synthetic IDs and metadata without adding binding, capture or proof state.
 
 ## Proof-local Given-use leading-layout transport
 
 The private Task269GUP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with a single-name bare-set Given, one labeled thesis condition and a direct equality conclusion whose two reference names match the declaration. It derives ranges, names and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; declaration-only name mismatches, bare CR and other syntax shapes remain excluded.
 Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the lower schema remain unchanged. Historical expected-array mutations retain their private post-selection error stage alongside actual frontend/raw-source corruption checks.
-Existing GUP/GUPT/GU canonical donors reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
+This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
 
 ## Proof-local Given-condition source transport
 
 The private Task269GCP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with a single-name bare-set Given, one labeled equality condition whose references match the declaration, and a direct `thus thesis` conclusion. It derives ranges, names, signatures and raw/snapshot hashes from actual inputs; raw-token-congruent SP/TAB/LF, comments and `be`/`being` share this syntax-only route.
 Canonical digest/debug bytes and the lower schema remain unchanged. Historical exact-profile/expected-array controls retain their private post-selection error stage, while actual frontend/raw-source faults are checked independently. Unlabeled/different conditions, mismatched local references, bare CR and other syntax shapes remain excluded.
-GC/GCT/GCU keep their canonical dependencies and reject noncanonical lower receipts. This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
+This adds no occurrence/capture payload, condition/label fact, thesis interpretation, existential/Skolem meaning, corpus/dispatch, proof, Core/VC or acceptance credit.
 
 ## Proof-local descendant Set source transport
 
 The private Task269SDP lower route reads installed generic source-table roles for one reserve and named thesis theorem, a bare-set Given, and one nested Now containing two ordered Set rows followed by an inner thesis conclusion and an outer thesis conclusion. Set0's RHS spelling matches the Given name, Set1's RHS matches Set0's name, and all four variable names remain distinct; these are bounded syntax links, with ranges and row order derived from actual parents/children.
 Raw-token-congruent SP/TAB/LF, comments and `be`/`being` use actual source/snapshot hashes and dynamic names/signatures. The existing output/row schema, canonical digest/debug bytes and historical expected-array post-selection error stages remain unchanged; actual frontend/raw-source faults are checked independently.
-The existing [Set/capture semantic deferral](../../mizar-checker/en/source_proof_local_declaration.md#task-269sdp-frozen-descendantset-lower-boundary) remains authoritative. SDC/SDT/SDU reject noncanonical lower receipts; syntax transport adds no scope/capture fields, Set bindings/meaning, inferred type, fact, proof, corpus/dispatch, Core/VC or acceptance credit.
+The existing [Set/capture semantic deferral](../../mizar-checker/en/source_proof_local_declaration.md#task-269sdp-frozen-descendantset-lower-boundary) remains authoritative. Syntax transport adds no scope/capture fields, Set bindings/meaning, inferred type, fact, proof, corpus/dispatch, Core/VC or acceptance credit.
 
 ## Proof-local Given leading-layout transport
 
 The private Task269GP lower route reads installed generic source-table roles for one reserve and one named thesis theorem with an unused single-name bare-set Given, one labeled thesis condition and a direct `thus thesis` conclusion. It derives ranges, identifiers and signatures without a fixture suffix, accepting raw-token-congruent SP/TAB/LF, comments and `be`/`being`; bare CR and other syntax shapes remain excluded.
 Fingerprints retain lowercase SHA-256 over actual raw-source UTF-8 and `SurfaceAst::snapshot_text()` UTF-8; canonical digests/debug bytes and the output schema remain unchanged. Historical expected-array mutations retain their private post-selection error stage alongside actual frontend/raw-source corruption checks.
-Public G/GT retain canonical dependency validation and reject noncanonical lower receipts. This adds no binding/Type/Typed-final, condition/label fact, thesis interpretation, corpus/dispatch, existential/Skolem, proof, Core/VC or acceptance credit.
+This adds no binding/Type/Typed-final, condition/label fact, thesis interpretation, corpus/dispatch, existential/Skolem, proof, Core/VC or acceptance credit.
 
 ## Checker Task 269GP Dormant Proof-`given` Lower Consumer
 

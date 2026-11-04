@@ -1,13 +1,9 @@
-//! Syntax-free transport for proof-local declaration binding transactions.
-
 #[cfg(test)]
 use crate::{
     binding_env::BindingContextTable,
     source_statement::SourceStatementWitnessError,
     source_term::SourcePrimaryTermId,
-    typed_ast::{
-        NodeRecoveryState, TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks, TypingState,
-    },
+    typed_ast::{TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks, TypingState},
 };
 use crate::{
     binding_env::{
@@ -21,16 +17,21 @@ use crate::{
         SourceStatementWitnessNameId, SourceStatementWitnessTermTarget,
     },
     source_term::SourcePrimaryTermHandoff,
-    typed_ast::TypedArena,
+    typed_ast::{
+        NodeRecoveryState, SourceNode, TypedArena, TypedAst, source_child_at, source_children,
+        source_unique_child, unique_source_node,
+    },
 };
 use mizar_resolve::{
     env::{DefinitionId, SourceContributionId},
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::{ModuleId, SymbolId},
+    resolved_ast::{ModuleId, ResolvedNodeId, SymbolId},
 };
 #[cfg(test)]
 use mizar_session::SourceAnchor;
 use mizar_session::{SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};
+use std::sync::Arc;
 use std::{
     error::Error,
     fmt::{self, Write as _},
@@ -881,6 +882,7 @@ fn witness_target_key(target: SourceStatementWitnessTermTarget) -> String {
     }
 }
 
+#[cfg(test)]
 fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
@@ -1232,7 +1234,7 @@ fn task258b3m1_canonical_arena(source_id: SourceId) -> TypedArena {
 pub struct SourceProofLocalLetBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
+    pub lower_fingerprint: SourceProofLocalIntakeReceipt,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -1324,12 +1326,315 @@ impl SourceProofLocalLetBindingTable {
     }
 }
 
+/// Authenticated original-source intake for the supported proof-local binding profiles.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceProofLocalIntakeReceipt {
+    source_id: SourceId,
+    module_id: ModuleId,
+    original: Arc<[SourceNode]>,
+    declaration: ResolvedNodeId,
+    fingerprint: String,
+}
+
+impl fmt::Debug for SourceProofLocalIntakeReceipt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("SourceProofLocalIntakeReceipt")
+    }
+}
+
+impl SourceProofLocalIntakeReceipt {
+    pub fn from_source(source: &TypedAst, declaration: ResolvedNodeId) -> Option<Self> {
+        let mut receipt = Self {
+            source_id: source.source_id(),
+            module_id: source.module_id().clone(),
+            original: source.source_nodes()?.clone(),
+            declaration,
+            fingerprint: String::new(),
+        };
+        receipt.profile()?;
+        receipt.fingerprint = receipt.structural_fingerprint();
+        Some(receipt)
+    }
+
+    pub fn fingerprint(&self) -> &str {
+        &self.fingerprint
+    }
+
+    fn role(&self, kind: SurfaceNodeKind) -> Option<&SourceNode> {
+        unique_source_node(self.original.iter(), |row| row.kind() == &kind)
+    }
+
+    fn profile(&self) -> Option<usize> {
+        use SurfaceNodeKind::*;
+        use SurfaceTokenKind as T;
+        let root = self.role(Root)?;
+        let profile = [
+            "reserve x for set ; theorem FormulaStatementLetSmoke : x = x proof let y be set ; thus x = x ; end ;",
+            "reserve x for set ; theorem FormulaStatementGivenSmoke : thesis proof given y being set such that G : thesis ; thus thesis ; end ;",
+            "reserve x for set ; theorem FormulaStatementGivenSmoke : thesis proof given y being set such that G : thesis ; thus y = y ; end ;",
+            "reserve x for set ; theorem ProofLocalGivenConditionUseSmoke : thesis proof given y being set such that G : y = y ; thus thesis ; end ;",
+            "reserve x for set ; theorem ProofLocalGivenDescendantCaptureSmoke : thesis proof given y being set ; now set z = y ; set q = z ; thus thesis ; end ; thus thesis ; end ;",
+        ].iter().position(|text| root.spelling() == *text)?;
+        let token_count = self
+            .original
+            .iter()
+            .filter(|row| matches!(row.kind(), Token(_)))
+            .count();
+        // The original rows supply grammar, not merely the normalized token string.
+        for row in self.original.iter() {
+            if row.range().source_id != self.source_id
+                || row.recovery() != NodeRecoveryState::Normal
+            {
+                return None;
+            }
+            let formula_frame;
+            let (count, roles): (usize, &[(usize, SurfaceNodeKind)]) = match row.kind() {
+                Root => (1, &[(0, CompilationUnit)]),
+                CompilationUnit => (1, &[(0, ItemList)]),
+                ItemList => (2, &[(0, ReserveItem), (1, TheoremItem)]),
+                ReserveItem => (3, &[(1, ReserveSegment)]),
+                ReserveSegment | QualifiedVariableSegment => (3, &[(2, TypeExpression)]),
+                TheoremItem => (6, &[(3, FormulaExpression), (4, ProofBlock)]),
+                ProofBlock if profile == 0 => (4, &[(1, LetStatement), (2, ConclusionStatement)]),
+                ProofBlock if profile == 4 => (
+                    5,
+                    &[
+                        (1, GivenStatement),
+                        (2, NowStatement),
+                        (3, ConclusionStatement),
+                    ],
+                ),
+                ProofBlock => (4, &[(1, GivenStatement), (2, ConclusionStatement)]),
+                LetStatement => (3, &[(1, QualifiedVariableSegment)]),
+                GivenStatement if profile == 4 => (3, &[(1, QualifiedVariableSegment)]),
+                GivenStatement => (5, &[(1, QualifiedVariableSegment), (3, ConditionList)]),
+                ConditionList => (2, &[(1, Proposition)]),
+                Proposition
+                    if self
+                        .original
+                        .iter()
+                        .any(|p| Some(p.site()) == row.parent() && p.kind() == &ConditionList) =>
+                {
+                    (3, &[(2, FormulaExpression)])
+                }
+                Proposition => (1, &[(0, FormulaExpression)]),
+                ConclusionStatement => (3, &[(1, Proposition)]),
+                FormulaExpression => {
+                    let child = source_child_at(&self.original, row.site(), 0)?;
+                    if !matches!(
+                        child.kind(),
+                        BuiltinPredicateApplication
+                            | FormulaConstant(SurfaceFormulaConstant::Thesis)
+                    ) {
+                        return None;
+                    }
+                    formula_frame = [(0, child.kind().clone())];
+                    (1, &formula_frame)
+                }
+                BuiltinPredicateApplication => (3, &[(0, TermExpression), (2, TermExpression)]),
+                TermExpression => (1, &[(0, TermReference)]),
+                TermReference | TypeHead | FormulaConstant(SurfaceFormulaConstant::Thesis) => {
+                    (1, &[])
+                }
+                TypeExpression => (1, &[(0, TypeHead)]),
+                NowStatement => (
+                    6,
+                    &[
+                        (1, SetStatement),
+                        (2, SetStatement),
+                        (3, ConclusionStatement),
+                    ],
+                ),
+                SetStatement => (3, &[(1, Equating)]),
+                Equating => (3, &[(2, TermExpression)]),
+                Token(token) => {
+                    let kind = match token.text.as_ref() {
+                        ";" | ":" | "=" => T::ReservedSymbol,
+                        "reserve" | "for" | "set" | "theorem" | "proof" | "let" | "be"
+                        | "being" | "thus" | "end" | "given" | "such" | "that" | "thesis"
+                        | "now" => T::ReservedWord,
+                        _ => T::Identifier,
+                    };
+                    if token.kind != kind || token.text.as_ref() != row.spelling() {
+                        return None;
+                    }
+                    (0, &[])
+                }
+                _ => return None,
+            };
+            let children = source_children(&self.original, row.site()).collect::<Vec<_>>();
+            if children.len() != count
+                || children.iter().enumerate().any(|(i, child)| {
+                    (child.child_ordinal() != i
+                        && !(row.kind() == &Root && child.child_ordinal() == token_count))
+                        || child.preorder_ordinal() <= row.preorder_ordinal()
+                        || child.range().start < row.range().start
+                        || child.range().end > row.range().end
+                        || match roles.iter().find(|(ordinal, _)| *ordinal == i) {
+                            Some((_, kind)) => child.kind() != kind,
+                            None => !matches!(child.kind(), Token(_)),
+                        }
+                })
+            {
+                return None;
+            }
+        }
+        let theorem = self.role(TheoremItem)?;
+        let proof = source_unique_child(&self.original, theorem, ProofBlock)?;
+        let declaration = source_unique_child(
+            &self.original,
+            proof,
+            if profile == 0 {
+                LetStatement
+            } else {
+                GivenStatement
+            },
+        )?;
+        if declaration.site() != self.declaration {
+            return None;
+        }
+        Some(profile)
+    }
+
+    fn structural_fingerprint(&self) -> String {
+        let mut text = format!(
+            "proof-local-intake-v1:{:?}:{:?}:{};",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.declaration.index()
+        );
+        for row in self.original.iter() {
+            let kind = match row.kind() {
+                SurfaceNodeKind::Token(token) => format!("token:{:?}:{:?}", token.kind, token.text),
+                kind => format!("{kind:?}"),
+            };
+            write!(
+                text,
+                "{:?};",
+                (
+                    row.site().index(),
+                    kind,
+                    row.parent().map(|p| p.index()),
+                    row.child_ordinal(),
+                    row.preorder_ordinal(),
+                    row.range().start,
+                    row.range().end,
+                    row.recovery(),
+                    row.spelling()
+                )
+            )
+            .expect("String write");
+        }
+        text
+    }
+
+    fn matches(
+        &self,
+        source: SourceId,
+        module: &ModuleId,
+        profile: usize,
+        ranges: [SourceRange; 5],
+    ) -> bool {
+        use SurfaceNodeKind as K;
+        self.source_id == source
+            && &self.module_id == module
+            && self.profile() == Some(profile)
+            && self.fingerprint == self.structural_fingerprint()
+            && [
+                self.role(K::TheoremItem),
+                self.role(K::ProofBlock),
+                self.role(if profile == 0 {
+                    K::LetStatement
+                } else {
+                    K::GivenStatement
+                }),
+                self.role(K::QualifiedVariableSegment),
+                self.role(K::QualifiedVariableSegment)
+                    .and_then(|p| source_child_at(&self.original, p.site(), 0)),
+            ]
+            .into_iter()
+            .zip(ranges)
+            .all(|(row, range)| row.is_some_and(|r| r.range() == range))
+    }
+
+    pub(crate) fn type_rows(&self) -> [&SourceNode; 2] {
+        use SurfaceNodeKind as K;
+        [K::ReserveSegment, K::QualifiedVariableSegment].map(|kind| {
+            source_unique_child(
+                &self.original,
+                self.role(kind).expect("validated receipt segment"),
+                K::TypeExpression,
+            )
+            .expect("validated receipt type")
+        })
+    }
+    pub(crate) fn type_heads(&self) -> [&SourceNode; 2] {
+        self.type_rows().map(|row| {
+            source_unique_child(&self.original, row, SurfaceNodeKind::TypeHead)
+                .expect("validated type head")
+        })
+    }
+    pub(crate) fn root_row(&self) -> &SourceNode {
+        self.role(SurfaceNodeKind::Root)
+            .expect("validated receipt root")
+    }
+    fn reserve_name(&self) -> &SourceNode {
+        source_child_at(
+            &self.original,
+            self.role(SurfaceNodeKind::ReserveSegment)
+                .expect("validated reserve")
+                .site(),
+            0,
+        )
+        .expect("validated reserve name")
+    }
+    fn descendant_range(&self) -> Option<SourceRange> {
+        self.role(SurfaceNodeKind::NowStatement)
+            .map(SourceNode::range)
+    }
+    pub(crate) fn term_rows(&self) -> Option<Vec<&SourceNode>> {
+        use SurfaceNodeKind::*;
+        let owner = match self.profile()? {
+            2 => source_unique_child(&self.original, self.role(ProofBlock)?, ConclusionStatement)?,
+            3 => source_unique_child(&self.original, self.role(GivenStatement)?, ConditionList)?,
+            4 => {
+                let now = self.role(NowStatement)?;
+                let set = source_child_at(&self.original, now.site(), 1)?;
+                let equating = source_unique_child(&self.original, set, Equating)?;
+                return Some(vec![source_unique_child(
+                    &self.original,
+                    equating,
+                    TermExpression,
+                )?]);
+            }
+            _ => return None,
+        };
+        let proposition = source_unique_child(&self.original, owner, Proposition)?;
+        let formula = source_unique_child(&self.original, proposition, FormulaExpression)?;
+        let predicate = source_unique_child(&self.original, formula, BuiltinPredicateApplication)?;
+        [0, 2]
+            .into_iter()
+            .map(|ordinal| {
+                let term = source_child_at(&self.original, predicate.site(), ordinal)?;
+                if term.kind() != &TermExpression {
+                    return None;
+                }
+                let reference = source_unique_child(&self.original, term, TermReference)?;
+                let name = source_child_at(&self.original, reference.site(), 0)?;
+                let valid_name = matches!(name.kind(), Token(token)
+                if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "y");
+                valid_name.then_some(reference)
+            })
+            .collect()
+    }
+}
+
 /// Immutable proof-local `let` binding transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceProofLocalLetBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
+    lower_fingerprint: Box<SourceProofLocalIntakeReceipt>,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -1346,6 +1651,10 @@ pub struct SourceProofLocalLetBindingHandoff {
 }
 
 impl SourceProofLocalLetBindingHandoff {
+    pub(crate) fn intake(&self) -> &SourceProofLocalIntakeReceipt {
+        &self.lower_fingerprint
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -1355,7 +1664,7 @@ impl SourceProofLocalLetBindingHandoff {
     }
 
     pub fn lower_fingerprint(&self) -> &str {
-        &self.lower_fingerprint
+        self.lower_fingerprint.fingerprint()
     }
 
     pub const fn theorem_symbol(&self) -> &SymbolId {
@@ -1428,7 +1737,7 @@ impl SourceProofLocalLetBindingHandoff {
             ),
             self.module_id.package().as_str(),
             self.module_id.path().as_str(),
-            self.lower_fingerprint,
+            self.lower_fingerprint.fingerprint(),
             self.theorem_symbol.fqn().as_str(),
             self.theorem_definition.index(),
             self.contribution.index(),
@@ -1480,7 +1789,7 @@ impl SourceProofLocalLetBindingHandoff {
             segment_range: self.segment_range,
             name_range: self.name_range,
         })?;
-        if !exact_task269c_base_binding_env(&self.base_binding_env)
+        if !exact_task269c_base_binding_env(&self.base_binding_env, &self.lower_fingerprint)
             || self.base_binding_fingerprint != self.base_binding_env.debug_text()
         {
             return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
@@ -1498,8 +1807,12 @@ impl SourceProofLocalLetBindingHandoff {
         {
             return Err(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id });
         }
-        let expected =
-            extend_task269c_binding_env(&self.base_binding_env, self.proof_range, self.name_range)?;
+        let expected = extend_task269c_binding_env(
+            &self.base_binding_env,
+            &self.lower_fingerprint,
+            self.proof_range,
+            self.name_range,
+        )?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_task269_binding(
@@ -1529,7 +1842,7 @@ impl SourceProofLocalLetBindingHandoff {
 
     #[cfg(test)]
     pub(crate) fn set_lower_fingerprint_for_test(&mut self, value: impl Into<String>) {
-        self.lower_fingerprint = value.into();
+        self.lower_fingerprint.fingerprint = value.into();
     }
 
     #[cfg(test)]
@@ -1587,7 +1900,7 @@ impl SourceProofLocalLetBindingProducer {
             segment_range: input.segment_range,
             name_range: input.name_range,
         })?;
-        if !exact_task269c_base_binding_env(base_binding_env) {
+        if !exact_task269c_base_binding_env(base_binding_env, &input.lower_fingerprint) {
             return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
         }
         if !exact_task269c_input_declaration(&input) {
@@ -1595,8 +1908,12 @@ impl SourceProofLocalLetBindingProducer {
                 binding: SourceProofLocalLetBindingId::new(0),
             });
         }
-        let binding_env =
-            extend_task269c_binding_env(base_binding_env, input.proof_range, input.name_range)?;
+        let binding_env = extend_task269c_binding_env(
+            base_binding_env,
+            &input.lower_fingerprint,
+            input.proof_range,
+            input.name_range,
+        )?;
         if !exact_task269c_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
         }
@@ -1605,7 +1922,7 @@ impl SourceProofLocalLetBindingProducer {
         Ok(SourceProofLocalLetBindingHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            lower_fingerprint: input.lower_fingerprint,
+            lower_fingerprint: Box::new(input.lower_fingerprint),
             theorem_symbol: input.theorem_symbol,
             theorem_definition: input.theorem_definition,
             contribution: input.contribution,
@@ -1680,7 +1997,7 @@ impl Error for SourceProofLocalLetBindingError {}
 struct Task269cDependency<'a> {
     source_id: SourceId,
     module_id: &'a ModuleId,
-    lower_fingerprint: &'a str,
+    lower_fingerprint: &'a SourceProofLocalIntakeReceipt,
     theorem_symbol: &'a SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -1713,12 +2030,18 @@ fn validate_task269c_dependency(
     if !exact_symbol_identity
         || dependency.theorem_definition.index() != 0
         || dependency.contribution.index() != 0
-        || dependency.theorem_range != range(dependency.source_id, 19, 99)
-        || dependency.proof_range != range(dependency.source_id, 59, 98)
-        || dependency.let_range != range(dependency.source_id, 67, 80)
-        || dependency.segment_range != range(dependency.source_id, 71, 79)
-        || dependency.name_range != range(dependency.source_id, 71, 72)
-        || dependency.lower_fingerprint != exact_task269cp_lower_fingerprint(dependency)
+        || !dependency.lower_fingerprint.matches(
+            dependency.source_id,
+            dependency.module_id,
+            0,
+            [
+                dependency.theorem_range,
+                dependency.proof_range,
+                dependency.let_range,
+                dependency.segment_range,
+                dependency.name_range,
+            ],
+        )
     {
         return Err(SourceProofLocalLetBindingError::DependencyMismatch);
     }
@@ -1733,25 +2056,10 @@ fn escape_task269c_symbol_component(value: &str) -> String {
         .replace('/', "\\s")
 }
 
-fn exact_task269cp_lower_fingerprint(dependency: Task269cDependency<'_>) -> String {
-    format!(
-        concat!(
-            "source-proof-local-let-lower-debug-v1\n",
-            "module: {}::{}\n",
-            "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
-            "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
-            "let range=67..80 segment=71..79 source_ordinal=1\n",
-            "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
-            "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
-        ),
-        dependency.module_id.package().as_str(),
-        dependency.module_id.path().as_str(),
-        dependency.theorem_symbol.fqn().as_str(),
-    )
-}
-
-fn exact_task269c_base_binding_env(base: &BindingEnv) -> bool {
+fn exact_task269c_base_binding_env(
+    base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
+) -> bool {
     let Some(context) = base.contexts().get(BindingContextId::new(0)) else {
         return false;
     };
@@ -1778,12 +2086,12 @@ fn exact_task269c_base_binding_env(base: &BindingEnv) -> bool {
                 spelling,
                 declaration_range,
             } if spelling == "x"
-                && *declaration_range == range(base.source_id(), 8, 9)
+                && *declaration_range == receipt.reserve_name().range()
         )
         && binding.owner_context == BindingContextId::new(0)
-        && binding.declaration_range == range(base.source_id(), 8, 9)
+        && binding.declaration_range == receipt.reserve_name().range()
         && binding.visible_after_ordinal == 0
-        && binding.type_site == BindingTypeSite::Source(range(base.source_id(), 14, 17))
+        && binding.type_site == BindingTypeSite::Source(receipt.type_rows()[0].range())
         && binding.status == BindingStatus::Reserved
         && binding.captured.identities().is_empty()
         && binding.diagnostics.is_empty()
@@ -1863,10 +2171,11 @@ fn exact_task269_binding(
 
 fn extend_task269c_binding_env(
     base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
     proof_range: SourceRange,
     name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalLetBindingError> {
-    if !exact_task269c_base_binding_env(base) {
+    if !exact_task269c_base_binding_env(base, receipt) {
         return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
     }
     let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
@@ -1935,7 +2244,7 @@ const fn let_binding_recovery_key(recovery: SourceProofLocalLetBindingRecovery) 
 pub struct SourceProofLocalGivenBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
+    pub lower_fingerprint: SourceProofLocalIntakeReceipt,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -2037,7 +2346,7 @@ impl SourceProofLocalGivenBindingTable {
 pub struct SourceProofLocalGivenBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
+    lower_fingerprint: Box<SourceProofLocalIntakeReceipt>,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2054,6 +2363,10 @@ pub struct SourceProofLocalGivenBindingHandoff {
 }
 
 impl SourceProofLocalGivenBindingHandoff {
+    pub(crate) fn intake(&self) -> &SourceProofLocalIntakeReceipt {
+        &self.lower_fingerprint
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -2063,7 +2376,7 @@ impl SourceProofLocalGivenBindingHandoff {
     }
 
     pub fn lower_fingerprint(&self) -> &str {
-        &self.lower_fingerprint
+        self.lower_fingerprint.fingerprint()
     }
 
     pub const fn theorem_symbol(&self) -> &SymbolId {
@@ -2136,7 +2449,7 @@ impl SourceProofLocalGivenBindingHandoff {
             ),
             self.module_id.package().as_str(),
             self.module_id.path().as_str(),
-            self.lower_fingerprint,
+            self.lower_fingerprint.fingerprint(),
             self.theorem_symbol.fqn().as_str(),
             self.theorem_definition.index(),
             self.contribution.index(),
@@ -2188,7 +2501,7 @@ impl SourceProofLocalGivenBindingHandoff {
             segment_range: self.segment_range,
             name_range: self.name_range,
         })?;
-        if !exact_task269c_base_binding_env(&self.base_binding_env)
+        if !exact_task269c_base_binding_env(&self.base_binding_env, &self.lower_fingerprint)
             || self.base_binding_fingerprint != self.base_binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenBindingError::InvalidBaseBindingEnvironment);
@@ -2206,8 +2519,12 @@ impl SourceProofLocalGivenBindingHandoff {
         {
             return Err(SourceProofLocalGivenBindingError::InvalidDeclaration { binding: id });
         }
-        let expected =
-            extend_task269g_binding_env(&self.base_binding_env, self.proof_range, self.name_range)?;
+        let expected = extend_task269g_binding_env(
+            &self.base_binding_env,
+            &self.lower_fingerprint,
+            self.proof_range,
+            self.name_range,
+        )?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_task269_binding(
@@ -2237,7 +2554,7 @@ impl SourceProofLocalGivenBindingHandoff {
 
     #[cfg(test)]
     pub(crate) fn set_lower_fingerprint_for_test(&mut self, value: impl Into<String>) {
-        self.lower_fingerprint = value.into();
+        self.lower_fingerprint.fingerprint = value.into();
     }
 
     #[cfg(test)]
@@ -2295,7 +2612,7 @@ impl SourceProofLocalGivenBindingProducer {
             segment_range: input.segment_range,
             name_range: input.name_range,
         })?;
-        if !exact_task269c_base_binding_env(base_binding_env) {
+        if !exact_task269c_base_binding_env(base_binding_env, &input.lower_fingerprint) {
             return Err(SourceProofLocalGivenBindingError::InvalidBaseBindingEnvironment);
         }
         if !exact_task269g_input_declaration(&input) {
@@ -2303,8 +2620,12 @@ impl SourceProofLocalGivenBindingProducer {
                 binding: SourceProofLocalGivenBindingId::new(0),
             });
         }
-        let binding_env =
-            extend_task269g_binding_env(base_binding_env, input.proof_range, input.name_range)?;
+        let binding_env = extend_task269g_binding_env(
+            base_binding_env,
+            &input.lower_fingerprint,
+            input.proof_range,
+            input.name_range,
+        )?;
         if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenBindingError::InvalidBindingEnvironment);
         }
@@ -2313,7 +2634,7 @@ impl SourceProofLocalGivenBindingProducer {
         Ok(SourceProofLocalGivenBindingHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            lower_fingerprint: input.lower_fingerprint,
+            lower_fingerprint: Box::new(input.lower_fingerprint),
             theorem_symbol: input.theorem_symbol,
             theorem_definition: input.theorem_definition,
             contribution: input.contribution,
@@ -2387,7 +2708,7 @@ impl Error for SourceProofLocalGivenBindingError {}
 struct Task269gDependency<'a> {
     source_id: SourceId,
     module_id: &'a ModuleId,
-    lower_fingerprint: &'a str,
+    lower_fingerprint: &'a SourceProofLocalIntakeReceipt,
     theorem_symbol: &'a SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2420,34 +2741,22 @@ fn validate_task269g_dependency(
     if !exact_symbol_identity
         || dependency.theorem_definition.index() != 0
         || dependency.contribution.index() != 0
-        || dependency.theorem_range != range(dependency.source_id, 19, 128)
-        || dependency.proof_range != range(dependency.source_id, 62, 127)
-        || dependency.given_range != range(dependency.source_id, 70, 108)
-        || dependency.segment_range != range(dependency.source_id, 76, 87)
-        || dependency.name_range != range(dependency.source_id, 76, 77)
-        || dependency.lower_fingerprint != exact_task269gp_lower_fingerprint(dependency)
+        || !dependency.lower_fingerprint.matches(
+            dependency.source_id,
+            dependency.module_id,
+            1,
+            [
+                dependency.theorem_range,
+                dependency.proof_range,
+                dependency.given_range,
+                dependency.segment_range,
+                dependency.name_range,
+            ],
+        )
     {
         return Err(SourceProofLocalGivenBindingError::DependencyMismatch);
     }
     Ok(())
-}
-
-fn exact_task269gp_lower_fingerprint(dependency: Task269gDependency<'_>) -> String {
-    format!(
-        concat!(
-            "source-proof-local-given-lower-debug-v1\n",
-            "module: {}::{}\n",
-            "source-fingerprint: \"04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f\"\n",
-            "surface-fingerprint: \"58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..128 proof=62..127\n",
-            "given range=70..108 segment=76..87 source_ordinal=1\n",
-            "name range=76..77 spelling=\"y\"\n",
-            "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-        ),
-        dependency.module_id.package().as_str(),
-        dependency.module_id.path().as_str(),
-        dependency.theorem_symbol.fqn().as_str(),
-    )
 }
 
 fn exact_task269g_input_declaration(input: &SourceProofLocalGivenBindingHandoffInput) -> bool {
@@ -2469,10 +2778,11 @@ fn exact_task269g_output_binding(binding: &SourceProofLocalGivenBinding) -> bool
 
 fn extend_task269g_binding_env(
     base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
     proof_range: SourceRange,
     name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenBindingError> {
-    if !exact_task269c_base_binding_env(base) {
+    if !exact_task269c_base_binding_env(base, receipt) {
         return Err(SourceProofLocalGivenBindingError::InvalidBaseBindingEnvironment);
     }
     let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
@@ -2534,7 +2844,7 @@ fn exact_task269g_lookup_behavior(binding_env: &BindingEnv) -> bool {
 pub struct SourceProofLocalGivenUseBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
+    pub lower_fingerprint: SourceProofLocalIntakeReceipt,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -2552,7 +2862,7 @@ pub struct SourceProofLocalGivenUseBindingHandoffInput {
 pub struct SourceProofLocalGivenUseBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
+    lower_fingerprint: Box<SourceProofLocalIntakeReceipt>,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2571,6 +2881,10 @@ pub struct SourceProofLocalGivenUseBindingHandoff {
 // Rationale: Task 269GUP exposes this validator for the separate Task-269GUPT consumer.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalGivenUseBindingHandoff {
+    pub(crate) fn intake(&self) -> &SourceProofLocalIntakeReceipt {
+        &self.lower_fingerprint
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -2580,7 +2894,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
     }
 
     pub fn lower_fingerprint(&self) -> &str {
-        &self.lower_fingerprint
+        self.lower_fingerprint.fingerprint()
     }
 
     pub const fn theorem_symbol(&self) -> &SymbolId {
@@ -2653,7 +2967,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
             ),
             self.module_id.package().as_str(),
             self.module_id.path().as_str(),
-            self.lower_fingerprint,
+            self.lower_fingerprint.fingerprint(),
             self.theorem_symbol.fqn().as_str(),
             self.theorem_definition.index(),
             self.contribution.index(),
@@ -2705,7 +3019,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
             segment_range: self.segment_range,
             name_range: self.name_range,
         })?;
-        if !exact_task269c_base_binding_env(&self.base_binding_env)
+        if !exact_task269c_base_binding_env(&self.base_binding_env, &self.lower_fingerprint)
             || self.base_binding_fingerprint != self.base_binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
@@ -2725,6 +3039,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
         }
         let expected = extend_task269gup_binding_env(
             &self.base_binding_env,
+            &self.lower_fingerprint,
             self.proof_range,
             self.name_range,
         )?;
@@ -2744,7 +3059,7 @@ impl SourceProofLocalGivenUseBindingHandoff {
 
     #[cfg(test)]
     pub(crate) fn set_lower_fingerprint_for_task269gup_test(&mut self, value: impl Into<String>) {
-        self.lower_fingerprint = value.into();
+        self.lower_fingerprint.fingerprint = value.into();
     }
 
     #[cfg(test)]
@@ -2802,7 +3117,7 @@ impl SourceProofLocalGivenUseBindingProducer {
             segment_range: input.segment_range,
             name_range: input.name_range,
         })?;
-        if !exact_task269c_base_binding_env(base_binding_env) {
+        if !exact_task269c_base_binding_env(base_binding_env, &input.lower_fingerprint) {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
         }
         if !exact_task269gup_input_declaration(&input) {
@@ -2810,8 +3125,12 @@ impl SourceProofLocalGivenUseBindingProducer {
                 binding: SourceProofLocalGivenBindingId::new(0),
             });
         }
-        let binding_env =
-            extend_task269gup_binding_env(base_binding_env, input.proof_range, input.name_range)?;
+        let binding_env = extend_task269gup_binding_env(
+            base_binding_env,
+            &input.lower_fingerprint,
+            input.proof_range,
+            input.name_range,
+        )?;
         if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
         }
@@ -2820,7 +3139,7 @@ impl SourceProofLocalGivenUseBindingProducer {
         Ok(SourceProofLocalGivenUseBindingHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            lower_fingerprint: input.lower_fingerprint,
+            lower_fingerprint: Box::new(input.lower_fingerprint),
             theorem_symbol: input.theorem_symbol,
             theorem_definition: input.theorem_definition,
             contribution: input.contribution,
@@ -2891,7 +3210,7 @@ impl Error for SourceProofLocalGivenUseBindingError {}
 struct Task269gupDependency<'a> {
     source_id: SourceId,
     module_id: &'a ModuleId,
-    lower_fingerprint: &'a str,
+    lower_fingerprint: &'a SourceProofLocalIntakeReceipt,
     theorem_symbol: &'a SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -2924,34 +3243,22 @@ fn validate_task269gup_dependency(
     if !exact_symbol_identity
         || dependency.theorem_definition.index() != 0
         || dependency.contribution.index() != 0
-        || dependency.theorem_range != range(dependency.source_id, 19, 127)
-        || dependency.proof_range != range(dependency.source_id, 62, 126)
-        || dependency.given_range != range(dependency.source_id, 70, 108)
-        || dependency.segment_range != range(dependency.source_id, 76, 87)
-        || dependency.name_range != range(dependency.source_id, 76, 77)
-        || dependency.lower_fingerprint != exact_task269gup_lower_fingerprint(dependency)
+        || !dependency.lower_fingerprint.matches(
+            dependency.source_id,
+            dependency.module_id,
+            2,
+            [
+                dependency.theorem_range,
+                dependency.proof_range,
+                dependency.given_range,
+                dependency.segment_range,
+                dependency.name_range,
+            ],
+        )
     {
         return Err(SourceProofLocalGivenUseBindingError::DependencyMismatch);
     }
     Ok(())
-}
-
-fn exact_task269gup_lower_fingerprint(dependency: Task269gupDependency<'_>) -> String {
-    format!(
-        concat!(
-            "source-proof-local-given-use-lower-debug-v1\n",
-            "module: {}::{}\n",
-            "source-fingerprint: \"ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01\"\n",
-            "surface-fingerprint: \"c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
-            "given range=70..108 segment=76..87 source_ordinal=1\n",
-            "name range=76..77 spelling=\"y\"\n",
-            "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-        ),
-        dependency.module_id.package().as_str(),
-        dependency.module_id.path().as_str(),
-        dependency.theorem_symbol.fqn().as_str(),
-    )
 }
 
 fn exact_task269gup_input_declaration(input: &SourceProofLocalGivenUseBindingHandoffInput) -> bool {
@@ -2965,10 +3272,11 @@ fn exact_task269gup_input_declaration(input: &SourceProofLocalGivenUseBindingHan
 
 fn extend_task269gup_binding_env(
     base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
     proof_range: SourceRange,
     name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenUseBindingError> {
-    if !exact_task269c_base_binding_env(base) {
+    if !exact_task269c_base_binding_env(base, receipt) {
         return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
     }
     let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
@@ -3010,7 +3318,7 @@ fn extend_task269gup_binding_env(
 pub struct SourceProofLocalGivenConditionBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
+    pub lower_fingerprint: SourceProofLocalIntakeReceipt,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -3028,7 +3336,7 @@ pub struct SourceProofLocalGivenConditionBindingHandoffInput {
 pub struct SourceProofLocalGivenConditionBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
+    lower_fingerprint: Box<SourceProofLocalIntakeReceipt>,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -3045,6 +3353,10 @@ pub struct SourceProofLocalGivenConditionBindingHandoff {
 }
 
 impl SourceProofLocalGivenConditionBindingHandoff {
+    pub(crate) fn intake(&self) -> &SourceProofLocalIntakeReceipt {
+        &self.lower_fingerprint
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -3054,7 +3366,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
     }
 
     pub fn lower_fingerprint(&self) -> &str {
-        &self.lower_fingerprint
+        self.lower_fingerprint.fingerprint()
     }
 
     pub const fn theorem_symbol(&self) -> &SymbolId {
@@ -3127,7 +3439,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
             ),
             self.module_id.package().as_str(),
             self.module_id.path().as_str(),
-            self.lower_fingerprint,
+            self.lower_fingerprint.fingerprint(),
             self.theorem_symbol.fqn().as_str(),
             self.theorem_definition.index(),
             self.contribution.index(),
@@ -3179,7 +3491,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
             segment_range: self.segment_range,
             name_range: self.name_range,
         })?;
-        if !exact_task269c_base_binding_env(&self.base_binding_env)
+        if !exact_task269c_base_binding_env(&self.base_binding_env, &self.lower_fingerprint)
             || self.base_binding_fingerprint != self.base_binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBaseBindingEnvironment);
@@ -3200,6 +3512,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
         }
         let expected = extend_task269gc_binding_env(
             &self.base_binding_env,
+            &self.lower_fingerprint,
             self.proof_range,
             self.name_range,
         )?;
@@ -3232,7 +3545,7 @@ impl SourceProofLocalGivenConditionBindingHandoff {
 
     #[cfg(test)]
     pub(crate) fn set_lower_fingerprint_for_task269gc_test(&mut self, value: impl Into<String>) {
-        self.lower_fingerprint = value.into();
+        self.lower_fingerprint.fingerprint = value.into();
     }
 
     #[cfg(test)]
@@ -3293,7 +3606,7 @@ impl SourceProofLocalGivenConditionBindingProducer {
             segment_range: input.segment_range,
             name_range: input.name_range,
         })?;
-        if !exact_task269c_base_binding_env(base_binding_env) {
+        if !exact_task269c_base_binding_env(base_binding_env, &input.lower_fingerprint) {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBaseBindingEnvironment);
         }
         if !exact_task269gc_input_declaration(&input) {
@@ -3303,8 +3616,12 @@ impl SourceProofLocalGivenConditionBindingProducer {
                 },
             );
         }
-        let binding_env =
-            extend_task269gc_binding_env(base_binding_env, input.proof_range, input.name_range)?;
+        let binding_env = extend_task269gc_binding_env(
+            base_binding_env,
+            &input.lower_fingerprint,
+            input.proof_range,
+            input.name_range,
+        )?;
         if !exact_task269g_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalGivenConditionBindingError::InvalidBindingEnvironment);
         }
@@ -3313,7 +3630,7 @@ impl SourceProofLocalGivenConditionBindingProducer {
         Ok(SourceProofLocalGivenConditionBindingHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            lower_fingerprint: input.lower_fingerprint,
+            lower_fingerprint: Box::new(input.lower_fingerprint),
             theorem_symbol: input.theorem_symbol,
             theorem_definition: input.theorem_definition,
             contribution: input.contribution,
@@ -3385,7 +3702,7 @@ impl Error for SourceProofLocalGivenConditionBindingError {}
 struct Task269gcDependency<'a> {
     source_id: SourceId,
     module_id: &'a ModuleId,
-    lower_fingerprint: &'a str,
+    lower_fingerprint: &'a SourceProofLocalIntakeReceipt,
     theorem_symbol: &'a SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -3419,35 +3736,22 @@ fn validate_task269gc_dependency(
     if !exact_symbol_identity
         || dependency.theorem_definition.index() != 0
         || dependency.contribution.index() != 0
-        || dependency.theorem_range != range(dependency.source_id, 19, 133)
-        || dependency.proof_range != range(dependency.source_id, 68, 132)
-        || dependency.given_range != range(dependency.source_id, 76, 113)
-        || dependency.segment_range != range(dependency.source_id, 82, 93)
-        || dependency.name_range != range(dependency.source_id, 82, 83)
-        || dependency.lower_fingerprint
-            != exact_task269gc_lower_fingerprint(dependency.module_id, &expected_fqn)
+        || !dependency.lower_fingerprint.matches(
+            dependency.source_id,
+            dependency.module_id,
+            3,
+            [
+                dependency.theorem_range,
+                dependency.proof_range,
+                dependency.given_range,
+                dependency.segment_range,
+                dependency.name_range,
+            ],
+        )
     {
         return Err(SourceProofLocalGivenConditionBindingError::DependencyMismatch);
     }
     Ok(())
-}
-
-fn exact_task269gc_lower_fingerprint(module_id: &ModuleId, expected_fqn: &str) -> String {
-    format!(
-        concat!(
-            "source-proof-local-given-condition-lower-debug-v1\n",
-            "module: {}::{}\n",
-            "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
-            "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
-            "given range=76..113 segment=82..93 source_ordinal=1\n",
-            "name range=82..83 spelling=\"y\"\n",
-            "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
-        ),
-        module_id.package().as_str(),
-        module_id.path().as_str(),
-        expected_fqn,
-    )
 }
 
 fn exact_task269gc_input_declaration(
@@ -3463,10 +3767,11 @@ fn exact_task269gc_input_declaration(
 
 fn extend_task269gc_binding_env(
     base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
     proof_range: SourceRange,
     name_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenConditionBindingError> {
-    if !exact_task269c_base_binding_env(base) {
+    if !exact_task269c_base_binding_env(base, receipt) {
         return Err(SourceProofLocalGivenConditionBindingError::InvalidBaseBindingEnvironment);
     }
     let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
@@ -3510,7 +3815,7 @@ fn extend_task269gc_binding_env(
 pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
+    pub lower_fingerprint: SourceProofLocalIntakeReceipt,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -3531,7 +3836,7 @@ pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
 pub struct SourceProofLocalGivenDescendantBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
+    lower_fingerprint: Box<SourceProofLocalIntakeReceipt>,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -3550,6 +3855,10 @@ pub struct SourceProofLocalGivenDescendantBindingHandoff {
 }
 
 impl SourceProofLocalGivenDescendantBindingHandoff {
+    pub(crate) fn intake(&self) -> &SourceProofLocalIntakeReceipt {
+        &self.lower_fingerprint
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -3559,7 +3868,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
     }
 
     pub fn lower_fingerprint(&self) -> &str {
-        &self.lower_fingerprint
+        self.lower_fingerprint.fingerprint()
     }
 
     pub const fn theorem_symbol(&self) -> &SymbolId {
@@ -3649,7 +3958,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             ),
             self.module_id.package().as_str(),
             self.module_id.path().as_str(),
-            self.lower_fingerprint,
+            self.lower_fingerprint.fingerprint(),
             self.theorem_symbol.fqn().as_str(),
             self.theorem_definition.index(),
             self.contribution.index(),
@@ -3706,7 +4015,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             segment_range: self.segment_range,
             name_range: self.name_range,
         })?;
-        if !exact_task269c_base_binding_env(&self.base_binding_env)
+        if !exact_task269c_base_binding_env(&self.base_binding_env, &self.lower_fingerprint)
             || self.base_binding_fingerprint != self.base_binding_env.debug_text()
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
@@ -3725,7 +4034,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
                 SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
             );
         }
-        if self.descendant_range != range(self.source_id, 102, 159)
+        if Some(self.descendant_range) != self.lower_fingerprint.descendant_range()
             || self.descendant_context != BindingContextId::new(2)
             || !exact_task269sdc_descendant_context(&self.binding_env, self.descendant_range)
         {
@@ -3733,6 +4042,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
         }
         let expected = extend_task269sdc_binding_env(
             &self.base_binding_env,
+            &self.lower_fingerprint,
             self.proof_range,
             self.name_range,
             self.descendant_range,
@@ -3794,7 +4104,7 @@ impl SourceProofLocalGivenDescendantBindingProducer {
             segment_range: input.segment_range,
             name_range: input.name_range,
         })?;
-        if !exact_task269c_base_binding_env(base_binding_env) {
+        if !exact_task269c_base_binding_env(base_binding_env, &input.lower_fingerprint) {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
         }
         if !exact_task269sdc_input_declaration(&input) {
@@ -3804,13 +4114,14 @@ impl SourceProofLocalGivenDescendantBindingProducer {
                 },
             );
         }
-        if input.descendant_range != range(input.source_id, 102, 159)
+        if Some(input.descendant_range) != input.lower_fingerprint.descendant_range()
             || input.descendant_scope.path() != [0, 0]
         {
             return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
         }
         let binding_env = extend_task269sdc_binding_env(
             base_binding_env,
+            &input.lower_fingerprint,
             input.proof_range,
             input.name_range,
             input.descendant_range,
@@ -3823,7 +4134,7 @@ impl SourceProofLocalGivenDescendantBindingProducer {
         Ok(SourceProofLocalGivenDescendantBindingHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            lower_fingerprint: input.lower_fingerprint,
+            lower_fingerprint: Box::new(input.lower_fingerprint),
             theorem_symbol: input.theorem_symbol,
             theorem_definition: input.theorem_definition,
             contribution: input.contribution,
@@ -3901,7 +4212,7 @@ impl Error for SourceProofLocalGivenDescendantBindingError {}
 struct Task269sdcDependency<'a> {
     source_id: SourceId,
     module_id: &'a ModuleId,
-    lower_fingerprint: &'a str,
+    lower_fingerprint: &'a SourceProofLocalIntakeReceipt,
     theorem_symbol: &'a SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
@@ -3935,41 +4246,22 @@ fn validate_task269sdc_dependency(
     if !exact_symbol_identity
         || dependency.theorem_definition.index() != 0
         || dependency.contribution.index() != 0
-        || dependency.theorem_range != range(dependency.source_id, 19, 179)
-        || dependency.proof_range != range(dependency.source_id, 73, 178)
-        || dependency.given_range != range(dependency.source_id, 81, 99)
-        || dependency.segment_range != range(dependency.source_id, 87, 98)
-        || dependency.name_range != range(dependency.source_id, 87, 88)
-        || dependency.lower_fingerprint
-            != exact_task269sdc_lower_fingerprint(dependency.module_id, &expected_fqn)
+        || !dependency.lower_fingerprint.matches(
+            dependency.source_id,
+            dependency.module_id,
+            4,
+            [
+                dependency.theorem_range,
+                dependency.proof_range,
+                dependency.given_range,
+                dependency.segment_range,
+                dependency.name_range,
+            ],
+        )
     {
         return Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch);
     }
     Ok(())
-}
-
-fn exact_task269sdc_lower_fingerprint(module_id: &ModuleId, expected_fqn: &str) -> String {
-    format!(
-        concat!(
-            "source-proof-local-given-descendant-set-lower-debug-v1\n",
-            "module: {}::{}\n",
-            "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
-            "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
-            "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
-            "given range=81..99 segment=87..98 source_ordinal=1\n",
-            "given-name range=87..88 spelling=\"y\"\n",
-            "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
-            "descendant-now range=102..159\n",
-            "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
-            "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
-            "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
-            "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
-            "conclusions inner=140..152 outer=162..174\n",
-        ),
-        module_id.package().as_str(),
-        module_id.path().as_str(),
-        expected_fqn,
-    )
 }
 
 fn exact_task269sdc_input_declaration(
@@ -4008,11 +4300,12 @@ fn exact_task269sdc_descendant_context(
 
 fn extend_task269sdc_binding_env(
     base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
     proof_range: SourceRange,
     name_range: SourceRange,
     descendant_range: SourceRange,
 ) -> Result<BindingEnv, SourceProofLocalGivenDescendantBindingError> {
-    if !exact_task269c_base_binding_env(base) {
+    if !exact_task269c_base_binding_env(base, receipt) {
         return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
     }
     let local = LocalTermBinding::new("y", LocalTermScope::new(vec![0]), name_range, 1);
@@ -4092,6 +4385,296 @@ const fn given_binding_recovery_key(
 }
 
 #[cfg(test)]
+pub(crate) fn task286_source(
+    source: SourceId,
+    module: ModuleId,
+    profile: usize,
+    mutation: usize,
+) -> TypedAst {
+    use SurfaceNodeKind as K;
+    use SurfaceTokenKind as T;
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::{SurfaceAstBuilder, SurfaceBuilderNodeId};
+    let (name, theorem_formula, declaration, conclusion) = match profile {
+        0 => (
+            "FormulaStatementLetSmoke",
+            "x = x",
+            "let y be set;",
+            "x = x",
+        ),
+        1 => (
+            "FormulaStatementGivenSmoke",
+            "thesis",
+            "given y being set such that G: thesis;",
+            "thesis",
+        ),
+        2 => (
+            "FormulaStatementGivenSmoke",
+            "thesis",
+            "given y being set such that G: thesis;",
+            "y = y",
+        ),
+        3 => (
+            "ProofLocalGivenConditionUseSmoke",
+            "thesis",
+            "given y being set such that G: y = y;",
+            "thesis",
+        ),
+        4 => (
+            "ProofLocalGivenDescendantCaptureSmoke",
+            "thesis",
+            "given y being set;\n  now\n    set z = y;\n    set q = z;\n    thus thesis;\n  end;",
+            "thesis",
+        ),
+        _ => unreachable!(),
+    };
+    let text = format!(
+        "reserve x for set;\ntheorem {name}: {theorem_formula} proof\n  {declaration}\n  thus {conclusion};\nend;\n"
+    );
+    let mut b = SurfaceAstBuilder::new(source);
+    let mut t = Vec::new();
+    let mut cursor = 0;
+    while cursor < text.len() {
+        if text.as_bytes()[cursor].is_ascii_whitespace() {
+            cursor += 1;
+            continue;
+        }
+        let start = cursor;
+        cursor += 1;
+        if text.as_bytes()[start].is_ascii_alphanumeric() {
+            while cursor < text.len() && text.as_bytes()[cursor].is_ascii_alphanumeric() {
+                cursor += 1;
+            }
+        }
+        let word = &text[start..cursor];
+        let kind = match word {
+            ";" | ":" | "=" => T::ReservedSymbol,
+            "reserve" | "for" | "set" | "theorem" | "proof" | "let" | "be" | "being" | "thus"
+            | "end" | "given" | "such" | "that" | "thesis" | "now" => T::ReservedWord,
+            _ => T::Identifier,
+        };
+        let kind = if mutation == 2 && word == "y" {
+            T::UserSymbol
+        } else {
+            kind
+        };
+        let range = range(source, start, cursor);
+        let id = if mutation == 3 && word == "y" {
+            b.add_recovered_token(kind, word, range)
+        } else {
+            b.add_token(kind, word, range)
+        };
+        t.push(((id, range), word));
+    }
+    fn branch(
+        b: &mut SurfaceAstBuilder,
+        kind: K,
+        children: Vec<(SurfaceBuilderNodeId, SourceRange)>,
+    ) -> (SurfaceBuilderNodeId, SourceRange) {
+        let range = SourceRange {
+            end: children.last().unwrap().1.end,
+            ..children[0].1
+        };
+        (
+            b.add_node(kind, range, children.into_iter().map(|c| c.0).collect()),
+            range,
+        )
+    }
+    fn formula(
+        b: &mut SurfaceAstBuilder,
+        t: &[((SurfaceBuilderNodeId, SourceRange), &str)],
+        i: &mut usize,
+    ) -> (SurfaceBuilderNodeId, SourceRange) {
+        let body = if t[*i].1 == "thesis" {
+            *i += 1;
+            branch(
+                b,
+                K::FormulaConstant(SurfaceFormulaConstant::Thesis),
+                vec![t[*i - 1].0],
+            )
+        } else {
+            let mut terms = Vec::new();
+            for index in [*i, *i + 2] {
+                let reference = branch(b, K::TermReference, vec![t[index].0]);
+                terms.push(branch(b, K::TermExpression, vec![reference]));
+            }
+            *i += 3;
+            branch(
+                b,
+                K::BuiltinPredicateApplication,
+                vec![terms[0], t[*i - 2].0, terms[1]],
+            )
+        };
+        branch(b, K::FormulaExpression, vec![body])
+    }
+    fn statement(
+        b: &mut SurfaceAstBuilder,
+        t: &[((SurfaceBuilderNodeId, SourceRange), &str)],
+        i: &mut usize,
+        mutation: usize,
+    ) -> (SurfaceBuilderNodeId, SourceRange) {
+        let start = *i;
+        let mut children = vec![t[*i].0];
+        *i += 1;
+        let kind = match t[start].1 {
+            "let" | "given" => {
+                let head = branch(b, K::TypeHead, vec![t[*i + 2].0]);
+                let ty = branch(b, K::TypeExpression, vec![head]);
+                children.push(branch(
+                    b,
+                    if mutation == 1 {
+                        K::TermList
+                    } else {
+                        K::QualifiedVariableSegment
+                    },
+                    vec![t[*i].0, t[*i + 1].0, ty],
+                ));
+                *i += 3;
+                if t[*i].1 == "such" {
+                    children.push(t[*i].0);
+                    *i += 1;
+                    let begin = *i;
+                    *i += 3;
+                    let f = formula(b, t, i);
+                    let p = branch(b, K::Proposition, vec![t[begin + 1].0, t[begin + 2].0, f]);
+                    children.push(branch(b, K::ConditionList, vec![t[begin].0, p]));
+                }
+                if t[start].1 == "let" {
+                    K::LetStatement
+                } else {
+                    K::GivenStatement
+                }
+            }
+            "thus" => {
+                let f = formula(b, t, i);
+                children.push(branch(b, K::Proposition, vec![f]));
+                K::ConclusionStatement
+            }
+            "set" => {
+                let reference = branch(b, K::TermReference, vec![t[*i + 2].0]);
+                let term = branch(b, K::TermExpression, vec![reference]);
+                children.push(branch(b, K::Equating, vec![t[*i].0, t[*i + 1].0, term]));
+                *i += 3;
+                K::SetStatement
+            }
+            "now" => {
+                while t[*i].1 != "end" {
+                    children.push(statement(b, t, i, mutation));
+                }
+                children.push(t[*i].0);
+                *i += 1;
+                K::NowStatement
+            }
+            _ => unreachable!(),
+        };
+        children.push(t[*i].0);
+        *i += 1;
+        branch(b, kind, children)
+    }
+    let head = branch(&mut b, K::TypeHead, vec![t[3].0]);
+    let ty = branch(&mut b, K::TypeExpression, vec![head]);
+    let segment = branch(&mut b, K::ReserveSegment, vec![t[1].0, t[2].0, ty]);
+    let reserve = branch(&mut b, K::ReserveItem, vec![t[0].0, segment, t[4].0]);
+    let mut i = 8;
+    let f = formula(&mut b, &t, &mut i);
+    let mut proof_children = vec![t[i].0];
+    i += 1;
+    while t[i].1 != "end" {
+        proof_children.push(statement(&mut b, &t, &mut i, mutation));
+    }
+    proof_children.push(t[i].0);
+    i += 1;
+    if mutation == 4 {
+        let range = SourceRange {
+            start: proof_children[1].1.end,
+            ..proof_children[1].1
+        };
+        proof_children.insert(2, (b.add_node(K::LetStatement, range, vec![]), range));
+    }
+    let proof = branch(&mut b, K::ProofBlock, proof_children);
+    let theorem = branch(
+        &mut b,
+        K::TheoremItem,
+        vec![t[5].0, t[6].0, t[7].0, f, proof, t[i].0],
+    );
+    let items = branch(&mut b, K::ItemList, vec![reserve, theorem]);
+    let compilation = branch(&mut b, K::CompilationUnit, vec![items]);
+    let root = branch(
+        &mut b,
+        K::Root,
+        t.iter().map(|t| t.0).chain(Some(compilation)).collect(),
+    );
+    let ast = b.finish(Some(root.0), None);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let nodes = lowered
+        .arena()
+        .iter()
+        .map(|(id, row)| {
+            TypedNode::new("syntax", row.origin().anchor().clone())
+                .with_recovery(if row.origin().is_recovered() {
+                    NodeRecoveryState::Recovered
+                } else {
+                    NodeRecoveryState::Normal
+                })
+                .with_resolved_node(id)
+                .with_children(
+                    row.children()
+                        .iter()
+                        .map(|id| TypedNodeId::new(id.index()))
+                        .collect(),
+                )
+        })
+        .collect();
+    use crate::typed_ast::{
+        CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
+        TypeFactTable, TypeTable, TypedAstParts,
+    };
+    let mut typed = TypedAst::try_new(TypedAstParts {
+        source_id: source,
+        module_id: module,
+        resolved_root: Some(lowered.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(
+            Some(TypedNodeId::new(lowered.arena().root().index())),
+            nodes,
+        )
+        .unwrap(),
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .unwrap();
+    typed.install_source_nodes(&lowered).unwrap();
+    typed
+}
+
+#[cfg(test)]
+pub(crate) fn task286_receipt(
+    source: SourceId,
+    module: ModuleId,
+    profile: usize,
+) -> SourceProofLocalIntakeReceipt {
+    let typed = task286_source(source, module, profile, 0);
+    let declaration = typed
+        .source_node_entries()
+        .unwrap()
+        .find(|row| {
+            matches!(
+                row.kind(),
+                SurfaceNodeKind::LetStatement | SurfaceNodeKind::GivenStatement
+            )
+        })
+        .unwrap()
+        .site();
+    SourceProofLocalIntakeReceipt::from_source(&typed, declaration).unwrap()
+}
+
+#[cfg(test)]
 mod task269c_tests {
     use super::*;
     use crate::{
@@ -4132,6 +4715,76 @@ mod task269c_tests {
     };
 
     #[test]
+    fn task286_receipt_origin_grammar_and_fingerprint_are_independent() {
+        let f = fixture();
+        for profile in 0..5 {
+            let source = task286_source(f.source, f.module.clone(), profile, 0);
+            let before = source.clone();
+            let receipt = task286_receipt(f.source, f.module.clone(), profile);
+            let actual =
+                SourceProofLocalIntakeReceipt::from_source(&source, receipt.declaration).unwrap();
+            assert_eq!(actual.fingerprint(), receipt.fingerprint());
+            assert!(Arc::ptr_eq(
+                &actual.original,
+                source.source_nodes().unwrap()
+            ));
+            assert_eq!(format!("{actual:?}"), "SourceProofLocalIntakeReceipt");
+            assert_eq!(
+                actual.fingerprint(),
+                task286_receipt(other_source_id(), f.module.clone(), profile).fingerprint()
+            );
+            assert!(
+                SourceProofLocalIntakeReceipt::from_source(&source, actual.root_row().site())
+                    .is_none()
+            );
+            assert!(
+                SourceProofLocalIntakeReceipt::from_source(
+                    &empty_typed(f.source, f.module.clone()),
+                    receipt.declaration
+                )
+                .is_none()
+            );
+            assert_eq!(source, before);
+        }
+        // Independently spell the versioned module/site header and first original row record.
+        let r = &f.input.lower_fingerprint;
+        let root = r.root_row();
+        let header = format!(
+            "proof-local-intake-v1:\"pkg\":\"task269c\":{};",
+            r.declaration.index()
+        );
+        let first = format!(
+            "{:?};",
+            (
+                root.site().index(),
+                "Root",
+                None::<usize>,
+                0,
+                0,
+                0,
+                99,
+                NodeRecoveryState::Normal,
+                root.spelling()
+            )
+        );
+        assert!(r.fingerprint().starts_with(&(header + &first)));
+        for mutation in 1..5 {
+            let source = task286_source(f.source, f.module.clone(), 0, mutation);
+            assert_eq!(
+                source.source_nodes().unwrap()[0].spelling(),
+                r.root_row().spelling()
+            );
+            assert!(SourceProofLocalIntakeReceipt::from_source(&source, r.declaration).is_none());
+        }
+        let mut foreign = f.input.clone();
+        foreign.lower_fingerprint = task286_receipt(other_source_id(), f.module.clone(), 0);
+        assert_eq!(
+            SourceProofLocalLetBindingProducer::build(foreign, &empty_base(&f)),
+            Err(SourceProofLocalLetBindingError::DependencyMismatch)
+        );
+    }
+
+    #[test]
     fn exact_producer_output_debug_and_lookup_are_stable() {
         let fixture = fixture();
         let handoff = SourceProofLocalLetBindingProducer::build(fixture.input, &fixture.base)
@@ -4168,7 +4821,7 @@ mod task269c_tests {
                 "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
                 "final-binding-fingerprint: {:?}\n",
             ),
-            handoff.lower_fingerprint(),
+            task286_receipt(fixture.source, fixture.module.clone(), 0).fingerprint(),
             handoff.theorem_symbol().fqn().as_str(),
             handoff.base_binding_fingerprint(),
             handoff.final_binding_fingerprint(),
@@ -4187,12 +4840,23 @@ mod task269c_tests {
         );
 
         let mut wrong_dependency = fixture.input.clone();
-        wrong_dependency.lower_fingerprint.push_str("corrupt");
+        wrong_dependency
+            .lower_fingerprint
+            .fingerprint
+            .push_str("corrupt");
         assert_eq!(
             SourceProofLocalLetBindingProducer::build(wrong_dependency, &empty_base(&fixture)),
             Err(SourceProofLocalLetBindingError::DependencyMismatch)
         );
         let mut dependency_inputs = Vec::new();
+        let mut input = fixture.input.clone();
+        input.lower_fingerprint.declaration = input
+            .lower_fingerprint
+            .role(SurfaceNodeKind::QualifiedVariableSegment)
+            .unwrap()
+            .site();
+        input.lower_fingerprint.fingerprint = input.lower_fingerprint.structural_fingerprint();
+        dependency_inputs.push(input);
         let mut input = fixture.input.clone();
         let extra_local = format!("{}extra", input.theorem_symbol.local().as_str());
         input.theorem_symbol = SymbolId::new(
@@ -4315,6 +4979,22 @@ mod task269c_tests {
             assert_eq!(
                 coherent.validate_installation(fixture.source, &fixture.module),
                 Err(SourceProofLocalLetBindingError::DependencyMismatch)
+            );
+            assert!(Arc::ptr_eq(
+                &coherent.lower_fingerprint.original,
+                &handoff.lower_fingerprint.original
+            ));
+            let mut typed = empty_typed(fixture.source, fixture.module.clone());
+            assert_eq!(
+                typed
+                    .clone()
+                    .with_source_proof_local_let_binding(coherent.clone()),
+                Err(TypedAstError::InvalidSourceProofLocalLetBinding)
+            );
+            typed.inject_source_proof_local_let_binding_for_test(coherent);
+            assert_eq!(
+                assemble_empty(&typed),
+                Err(ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)
             );
         }
         assert_eq!(
@@ -4661,7 +5341,7 @@ mod task269c_tests {
                 "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
                 "final-binding-fingerprint: {:?}\n",
             ),
-            handoff.lower_fingerprint(),
+            task286_receipt(fixture.source, fixture.module.clone(), 1).fingerprint(),
             handoff.theorem_symbol().fqn().as_str(),
             handoff.base_binding_fingerprint(),
             handoff.final_binding_fingerprint(),
@@ -4675,7 +5355,10 @@ mod task269c_tests {
 
         let mut transaction_first = fixture.input.clone();
         transaction_first.source_id = other_source_id();
-        transaction_first.lower_fingerprint.push_str("corrupt");
+        transaction_first
+            .lower_fingerprint
+            .fingerprint
+            .push_str("corrupt");
         assert_eq!(
             SourceProofLocalGivenBindingProducer::build(
                 transaction_first,
@@ -4685,7 +5368,10 @@ mod task269c_tests {
         );
 
         let mut dependency_first = fixture.input.clone();
-        dependency_first.lower_fingerprint.push_str("corrupt");
+        dependency_first
+            .lower_fingerprint
+            .fingerprint
+            .push_str("corrupt");
         dependency_first.source_ordinal += 1;
         assert_eq!(
             SourceProofLocalGivenBindingProducer::build(
@@ -5163,7 +5849,10 @@ mod task269c_tests {
 
         assert_eq!(handoff.source_id(), fixture.source);
         assert_eq!(handoff.module_id(), &fixture.module);
-        assert_eq!(handoff.lower_fingerprint(), fixture.input.lower_fingerprint);
+        assert_eq!(
+            handoff.lower_fingerprint(),
+            fixture.input.lower_fingerprint.fingerprint()
+        );
         assert_eq!(handoff.theorem_symbol(), &fixture.input.theorem_symbol);
         assert_eq!(
             handoff.theorem_definition(),
@@ -5215,7 +5904,7 @@ mod task269c_tests {
             ),
             fixture.module.package().as_str(),
             fixture.module.path().as_str(),
-            fixture.input.lower_fingerprint,
+            fixture.input.lower_fingerprint.fingerprint(),
             fixture.input.theorem_symbol.fqn().as_str(),
             handoff.base_binding_fingerprint(),
             handoff.final_binding_fingerprint(),
@@ -5253,7 +5942,7 @@ mod task269c_tests {
 
         let mut dependency_inputs = Vec::new();
         let mut input = fixture.input.clone();
-        input.lower_fingerprint.push('!');
+        input.lower_fingerprint.fingerprint.push('!');
         dependency_inputs.push(input);
         let mut input = fixture.input.clone();
         input.theorem_symbol = SymbolId::new(
@@ -5340,7 +6029,9 @@ mod task269c_tests {
 
         let mut wrong_transaction_and_dependency = fixture.input.clone();
         wrong_transaction_and_dependency.source_id = other_source_id();
-        wrong_transaction_and_dependency.lower_fingerprint = "corrupt".to_owned();
+        wrong_transaction_and_dependency
+            .lower_fingerprint
+            .fingerprint = "corrupt".to_owned();
         assert_eq!(
             SourceProofLocalGivenUseBindingProducer::build(
                 wrong_transaction_and_dependency,
@@ -5349,7 +6040,9 @@ mod task269c_tests {
             Err(SourceProofLocalGivenUseBindingError::InvalidTransaction)
         );
         let mut wrong_dependency_and_declaration = fixture.input.clone();
-        wrong_dependency_and_declaration.lower_fingerprint = "corrupt".to_owned();
+        wrong_dependency_and_declaration
+            .lower_fingerprint
+            .fingerprint = "corrupt".to_owned();
         wrong_dependency_and_declaration.source_ordinal = 2;
         assert_eq!(
             SourceProofLocalGivenUseBindingProducer::build(
@@ -5645,7 +6338,10 @@ mod task269c_tests {
 
         assert_eq!(handoff.source_id(), fixture.source);
         assert_eq!(handoff.module_id(), &fixture.module);
-        assert_eq!(handoff.lower_fingerprint(), fixture.input.lower_fingerprint);
+        assert_eq!(
+            handoff.lower_fingerprint(),
+            fixture.input.lower_fingerprint.fingerprint()
+        );
         assert_eq!(handoff.theorem_symbol(), &fixture.input.theorem_symbol);
         assert_eq!(
             handoff.theorem_definition(),
@@ -5702,7 +6398,7 @@ mod task269c_tests {
             ),
             fixture.module.package().as_str(),
             fixture.module.path().as_str(),
-            fixture.input.lower_fingerprint,
+            fixture.input.lower_fingerprint.fingerprint(),
             fixture.input.theorem_symbol.fqn().as_str(),
             handoff.base_binding_fingerprint(),
             handoff.final_binding_fingerprint(),
@@ -5757,7 +6453,7 @@ mod task269c_tests {
 
         let mut dependencies = Vec::new();
         let mut input = fixture.input.clone();
-        input.lower_fingerprint.push('!');
+        input.lower_fingerprint.fingerprint.push('!');
         dependencies.push(input);
         let mut input = fixture.input.clone();
         input.theorem_symbol = SymbolId::new(
@@ -5788,8 +6484,9 @@ mod task269c_tests {
             LocalSymbolId::new(wrong_local),
             FullyQualifiedName::new(wrong_fqn.clone()),
         );
-        input.lower_fingerprint = input
+        input.lower_fingerprint.fingerprint = input
             .lower_fingerprint
+            .fingerprint
             .replace(fixture.input.theorem_symbol.fqn().as_str(), &wrong_fqn);
         dependencies.push(input);
         let mut input = fixture.input.clone();
@@ -6337,10 +7034,10 @@ mod task269c_tests {
             ),
             contribution,
         ));
-        let mut input = SourceProofLocalGivenConditionBindingHandoffInput {
+        let input = SourceProofLocalGivenConditionBindingHandoffInput {
             source_id: source,
             module_id: module.clone(),
-            lower_fingerprint: String::new(),
+            lower_fingerprint: task286_receipt(source, module.clone(), 3),
             theorem_symbol,
             theorem_definition,
             contribution,
@@ -6358,10 +7055,6 @@ mod task269c_tests {
             ),
             recovery: SourceProofLocalGivenBindingRecovery::Normal,
         };
-        input.lower_fingerprint = exact_task269gc_lower_fingerprint(
-            &input.module_id,
-            input.theorem_symbol.fqn().as_str(),
-        );
         GivenConditionFixture {
             source,
             module: module.clone(),
@@ -6450,10 +7143,10 @@ mod task269c_tests {
             ),
             contribution,
         ));
-        let mut input = SourceProofLocalGivenUseBindingHandoffInput {
+        let input = SourceProofLocalGivenUseBindingHandoffInput {
             source_id: source,
             module_id: module.clone(),
-            lower_fingerprint: String::new(),
+            lower_fingerprint: task286_receipt(source, module.clone(), 2),
             theorem_symbol,
             theorem_definition,
             contribution,
@@ -6471,19 +7164,6 @@ mod task269c_tests {
             ),
             recovery: SourceProofLocalGivenBindingRecovery::Normal,
         };
-        input.lower_fingerprint = exact_task269gup_lower_fingerprint(Task269gupDependency {
-            source_id: input.source_id,
-            module_id: &input.module_id,
-            lower_fingerprint: "",
-            theorem_symbol: &input.theorem_symbol,
-            theorem_definition: input.theorem_definition,
-            contribution: input.contribution,
-            theorem_range: input.theorem_range,
-            proof_range: input.proof_range,
-            given_range: input.given_range,
-            segment_range: input.segment_range,
-            name_range: input.name_range,
-        });
         GivenUseFixture {
             source,
             module: module.clone(),
@@ -6525,7 +7205,10 @@ mod task269c_tests {
         .expect("Task269SDC exact checker transaction");
         assert_eq!(handoff.source_id(), fixture.source);
         assert_eq!(handoff.module_id(), &fixture.module);
-        assert_eq!(handoff.lower_fingerprint(), fixture.input.lower_fingerprint);
+        assert_eq!(
+            handoff.lower_fingerprint(),
+            fixture.input.lower_fingerprint.fingerprint()
+        );
         assert_eq!(handoff.theorem_symbol(), &fixture.input.theorem_symbol);
         assert_eq!(
             handoff.theorem_definition(),
@@ -6581,7 +7264,7 @@ mod task269c_tests {
             ),
             fixture.module.package().as_str(),
             fixture.module.path().as_str(),
-            fixture.input.lower_fingerprint,
+            fixture.input.lower_fingerprint.fingerprint(),
             fixture.input.theorem_symbol.fqn().as_str(),
             handoff.base_binding_fingerprint(),
             handoff.final_binding_fingerprint(),
@@ -6634,7 +7317,7 @@ mod task269c_tests {
 
         let mut transaction = fixture.input.clone();
         transaction.source_id = other_source_id();
-        transaction.lower_fingerprint.push('!');
+        transaction.lower_fingerprint.fingerprint.push('!');
         assert_eq!(
             SourceProofLocalGivenDescendantBindingProducer::build(transaction, &fixture.base),
             Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
@@ -6648,7 +7331,7 @@ mod task269c_tests {
 
         let mut dependency_inputs = Vec::new();
         let mut input = fixture.input.clone();
-        input.lower_fingerprint.push('!');
+        input.lower_fingerprint.fingerprint.push('!');
         dependency_inputs.push(input);
         let mut input = fixture.input.clone();
         input.theorem_symbol = SymbolId::new(
@@ -6779,7 +7462,7 @@ mod task269c_tests {
 
         let mut transaction = handoff.clone();
         transaction.source_id = other_source_id();
-        transaction.lower_fingerprint.push('!');
+        transaction.lower_fingerprint.fingerprint.push('!');
         assert_eq!(
             transaction.validate_installation(fixture.source, &fixture.module),
             Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
@@ -6793,7 +7476,7 @@ mod task269c_tests {
         for mutate in 0..9 {
             let mut dependency = handoff.clone();
             match mutate {
-                0 => dependency.lower_fingerprint.push('!'),
+                0 => dependency.lower_fingerprint.fingerprint.push('!'),
                 1 => {
                     dependency.theorem_symbol = SymbolId::new(
                         fixture.module.clone(),
@@ -6822,10 +7505,9 @@ mod task269c_tests {
             LocalSymbolId::new("coherent-wrong"),
             FullyQualifiedName::new("pkg::task269sdc::CoherentWrong"),
         );
-        coherent_dependency.lower_fingerprint = exact_task269sdc_lower_fingerprint(
-            &fixture.module,
-            coherent_dependency.theorem_symbol.fqn().as_str(),
-        );
+        coherent_dependency.lower_fingerprint.fingerprint = coherent_dependency
+            .lower_fingerprint
+            .structural_fingerprint();
         assert_eq!(
             coherent_dependency.validate_installation(fixture.source, &fixture.module),
             Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
@@ -7302,10 +7984,10 @@ mod task269c_tests {
             ),
             contribution,
         ));
-        let mut input = SourceProofLocalGivenDescendantBindingHandoffInput {
+        let input = SourceProofLocalGivenDescendantBindingHandoffInput {
             source_id: source,
             module_id: module.clone(),
-            lower_fingerprint: String::new(),
+            lower_fingerprint: task286_receipt(source, module.clone(), 4),
             theorem_symbol,
             theorem_definition,
             contribution,
@@ -7325,10 +8007,6 @@ mod task269c_tests {
             descendant_scope: LocalTermScope::new(vec![0, 0]),
             recovery: SourceProofLocalGivenBindingRecovery::Normal,
         };
-        input.lower_fingerprint = exact_task269sdc_lower_fingerprint(
-            &input.module_id,
-            input.theorem_symbol.fqn().as_str(),
-        );
         Task269sdcFixture {
             source,
             module: module.clone(),
@@ -7913,10 +8591,10 @@ mod task269c_tests {
             ),
             contribution,
         ));
-        let mut input = SourceProofLocalGivenBindingHandoffInput {
+        let input = SourceProofLocalGivenBindingHandoffInput {
             source_id: source,
             module_id: module.clone(),
-            lower_fingerprint: String::new(),
+            lower_fingerprint: task286_receipt(source, module.clone(), 1),
             theorem_symbol,
             theorem_definition,
             contribution,
@@ -7934,19 +8612,6 @@ mod task269c_tests {
             ),
             recovery: SourceProofLocalGivenBindingRecovery::Normal,
         };
-        input.lower_fingerprint = exact_task269gp_lower_fingerprint(Task269gDependency {
-            source_id: input.source_id,
-            module_id: &input.module_id,
-            lower_fingerprint: "",
-            theorem_symbol: &input.theorem_symbol,
-            theorem_definition: input.theorem_definition,
-            contribution: input.contribution,
-            theorem_range: input.theorem_range,
-            proof_range: input.proof_range,
-            given_range: input.given_range,
-            segment_range: input.segment_range,
-            name_range: input.name_range,
-        });
         GivenFixture {
             source,
             module: module.clone(),
@@ -8035,10 +8700,10 @@ mod task269c_tests {
             ),
             contribution,
         ));
-        let mut input = SourceProofLocalLetBindingHandoffInput {
+        let input = SourceProofLocalLetBindingHandoffInput {
             source_id: source,
             module_id: module.clone(),
-            lower_fingerprint: String::new(),
+            lower_fingerprint: task286_receipt(source, module.clone(), 0),
             theorem_symbol,
             theorem_definition,
             contribution,
@@ -8056,19 +8721,6 @@ mod task269c_tests {
             ),
             recovery: SourceProofLocalLetBindingRecovery::Normal,
         };
-        input.lower_fingerprint = exact_task269cp_lower_fingerprint(Task269cDependency {
-            source_id: input.source_id,
-            module_id: &input.module_id,
-            lower_fingerprint: "",
-            theorem_symbol: &input.theorem_symbol,
-            theorem_definition: input.theorem_definition,
-            contribution: input.contribution,
-            theorem_range: input.theorem_range,
-            proof_range: input.proof_range,
-            let_range: input.let_range,
-            segment_range: input.segment_range,
-            name_range: input.name_range,
-        });
         Fixture {
             source,
             module,

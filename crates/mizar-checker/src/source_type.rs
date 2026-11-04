@@ -10,7 +10,7 @@ use crate::{
     source_proof_local_declaration::{
         SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenConditionBindingHandoff,
         SourceProofLocalGivenDescendantBindingHandoff, SourceProofLocalGivenUseBindingHandoff,
-        SourceProofLocalLetBindingHandoff,
+        SourceProofLocalIntakeReceipt, SourceProofLocalLetBindingHandoff,
     },
     typed_ast::{
         NodeRecoveryState, TypedArena, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
@@ -1006,9 +1006,13 @@ impl SourceProofLocalLetTypeHandoff {
         {
             return Err(SourceProofLocalLetTypeError::InvalidBindingEnvironment);
         }
-        if !exact_task269ct_source_type(&self.source_type, source_id, module_id)
-            || self.source_type_fingerprint != self.source_type.debug_text()
-            || !exact_task269ct_arena(source_id, arena)
+        if !exact_task269ct_source_type(
+            &self.source_type,
+            source_id,
+            module_id,
+            self.dependency.intake(),
+        ) || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269ct_arena(self.dependency.intake(), arena, "let")
             || self
                 .source_type
                 .validate_installation(source_id, module_id, arena)
@@ -1049,7 +1053,9 @@ impl SourceProofLocalLetTypeProducer {
             .map_err(|_| SourceProofLocalLetTypeError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
         let binding_env = task269ct_binding_env(&dependency)?;
-        if !exact_task269ct_input(&input) || !exact_task269ct_arena(input.source_id, arena) {
+        if !exact_task269ct_input(&input, dependency.intake())
+            || !exact_task269ct_arena(dependency.intake(), arena, "let")
+        {
             return Err(SourceProofLocalLetTypeError::InvalidSourceType);
         }
         validate_input(
@@ -1192,9 +1198,13 @@ impl SourceProofLocalGivenTypeHandoff {
         {
             return Err(SourceProofLocalGivenTypeError::InvalidBindingEnvironment);
         }
-        if !exact_task269gt_source_type(&self.source_type, source_id, module_id)
-            || self.source_type_fingerprint != self.source_type.debug_text()
-            || !exact_task269gt_arena(source_id, arena)
+        if !exact_task269ct_source_type(
+            &self.source_type,
+            source_id,
+            module_id,
+            self.dependency.intake(),
+        ) || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269ct_arena(self.dependency.intake(), arena, "given")
             || self
                 .source_type
                 .validate_installation(source_id, module_id, arena)
@@ -1235,7 +1245,9 @@ impl SourceProofLocalGivenTypeProducer {
             .map_err(|_| SourceProofLocalGivenTypeError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
         let binding_env = task269gt_binding_env(&dependency)?;
-        if !exact_task269gt_input(&input) || !exact_task269gt_arena(input.source_id, arena) {
+        if !exact_task269ct_input(&input, dependency.intake())
+            || !exact_task269ct_arena(dependency.intake(), arena, "given")
+        {
             return Err(SourceProofLocalGivenTypeError::InvalidSourceType);
         }
         validate_input(
@@ -1378,9 +1390,13 @@ impl SourceProofLocalGivenConditionTypeHandoff {
         {
             return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
         }
-        if !exact_task269gct_source_type(&self.source_type, source_id, module_id)
-            || self.source_type_fingerprint != self.source_type.debug_text()
-            || !exact_task269gct_arena(source_id, arena)
+        if !exact_task269ct_source_type(
+            &self.source_type,
+            source_id,
+            module_id,
+            self.dependency.intake(),
+        ) || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269ct_arena(self.dependency.intake(), arena, "given-condition")
             || self
                 .source_type
                 .validate_installation(source_id, module_id, arena)
@@ -1422,7 +1438,9 @@ impl SourceProofLocalGivenConditionTypeProducer {
             .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
         let binding_env = task269gct_binding_env(&dependency)?;
-        if !exact_task269gct_input(&input) || !exact_task269gct_arena(input.source_id, arena) {
+        if !exact_task269ct_input(&input, dependency.intake())
+            || !exact_task269ct_arena(dependency.intake(), arena, "given-condition")
+        {
             return Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType);
         }
         validate_input(
@@ -1564,9 +1582,13 @@ impl SourceProofLocalGivenDescendantTypeHandoff {
         {
             return Err(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment);
         }
-        if !exact_task269sdt_source_type(&self.source_type, source_id, module_id)
-            || self.source_type_fingerprint != self.source_type.debug_text()
-            || !exact_task269sdt_arena(source_id, arena)
+        if !exact_task269ct_source_type(
+            &self.source_type,
+            source_id,
+            module_id,
+            self.dependency.intake(),
+        ) || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269ct_arena(self.dependency.intake(), arena, "given-descendant")
             || self
                 .source_type
                 .validate_installation(source_id, module_id, arena)
@@ -1608,7 +1630,9 @@ impl SourceProofLocalGivenDescendantTypeProducer {
             .map_err(|_| SourceProofLocalGivenDescendantTypeError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
         let binding_env = task269sdt_binding_env(&dependency)?;
-        if !exact_task269sdt_input(&input) || !exact_task269sdt_arena(input.source_id, arena) {
+        if !exact_task269ct_input(&input, dependency.intake())
+            || !exact_task269ct_arena(dependency.intake(), arena, "given-descendant")
+        {
             return Err(SourceProofLocalGivenDescendantTypeError::InvalidSourceType);
         }
         validate_input(
@@ -1749,9 +1773,13 @@ impl SourceProofLocalGivenUseTypeHandoff {
         {
             return Err(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment);
         }
-        if !exact_task269gupt_source_type(&self.source_type, source_id, module_id)
-            || self.source_type_fingerprint != self.source_type.debug_text()
-            || !exact_task269gupt_arena(source_id, arena)
+        if !exact_task269ct_source_type(
+            &self.source_type,
+            source_id,
+            module_id,
+            self.dependency.intake(),
+        ) || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269ct_arena(self.dependency.intake(), arena, "given-use")
             || self
                 .source_type
                 .validate_installation(source_id, module_id, arena)
@@ -1792,7 +1820,9 @@ impl SourceProofLocalGivenUseTypeProducer {
             .map_err(|_| SourceProofLocalGivenUseTypeError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
         let binding_env = task269gupt_binding_env(&dependency)?;
-        if !exact_task269gupt_input(&input) || !exact_task269gupt_arena(input.source_id, arena) {
+        if !exact_task269ct_input(&input, dependency.intake())
+            || !exact_task269ct_arena(dependency.intake(), arena, "given-use")
+        {
             return Err(SourceProofLocalGivenUseTypeError::InvalidSourceType);
         }
         validate_input(
@@ -3408,19 +3438,22 @@ fn task269ct_binding_env(
 ) -> Result<BindingEnv, SourceProofLocalLetTypeError> {
     task269_type_binding_env(
         dependency.binding_env(),
-        task269ct_range(dependency.source_id(), 76, 79),
+        dependency.intake().type_rows()[1].range(),
         BindingKind::LetBinding,
         2,
     )
     .ok_or(SourceProofLocalLetTypeError::InvalidBindingEnvironment)
 }
 
-fn exact_task269ct_input(input: &SourceTypeHandoffInput) -> bool {
+fn exact_task269ct_input(
+    input: &SourceTypeHandoffInput,
+    receipt: &SourceProofLocalIntakeReceipt,
+) -> bool {
     if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
     {
         return false;
     }
-    for (index, (start, end)) in [(14, 17), (76, 79)].into_iter().enumerate() {
+    for (index, row) in receipt.type_rows().into_iter().enumerate() {
         let application = &input.applications[index];
         let expression = &input.expressions[index];
         if application.binding != BindingId::new(index)
@@ -3433,14 +3466,14 @@ fn exact_task269ct_input(input: &SourceTypeHandoffInput) -> bool {
                 TypedNodeId::new(index),
                 "source.type.expression",
             )
-            || expression.source_range != task269ct_range(input.source_id, start, end)
+            || expression.source_range != row.range()
             || expression.spelling != "set"
             || !task269ct_role_matches(
                 &expression.head_site,
                 TypedNodeId::new(index),
                 "source.type.head",
             )
-            || expression.head_range != task269ct_range(input.source_id, start, end)
+            || expression.head_range != receipt.type_heads()[index].range()
             || expression.head_spelling != "set"
             || expression.form != SourceTypeApplicationForm::Bare
             || expression.head != SourceTypeHead::BuiltinSet
@@ -3456,6 +3489,7 @@ fn exact_task269ct_source_type(
     handoff: &SourceTypeApplicationHandoff,
     source_id: SourceId,
     module_id: &ModuleId,
+    receipt: &SourceProofLocalIntakeReceipt,
 ) -> bool {
     if handoff.source_id() != source_id
         || handoff.module_id() != module_id
@@ -3468,7 +3502,7 @@ fn exact_task269ct_source_type(
     {
         return false;
     }
-    for (index, (start, end)) in [(14, 17), (76, 79)].into_iter().enumerate() {
+    for (index, row) in receipt.type_rows().into_iter().enumerate() {
         let Some(application) = handoff
             .applications()
             .get(SourceTypeApplicationId::new(index))
@@ -3493,14 +3527,14 @@ fn exact_task269ct_source_type(
                 TypedNodeId::new(index),
                 "source.type.expression",
             )
-            || expression.source_range() != task269ct_range(source_id, start, end)
+            || expression.source_range() != row.range()
             || expression.spelling() != "set"
             || !task269ct_role_matches(
                 expression.head_site(),
                 TypedNodeId::new(index),
                 "source.type.head",
             )
-            || expression.head_range() != task269ct_range(source_id, start, end)
+            || expression.head_range() != receipt.type_heads()[index].range()
             || expression.head_spelling() != "set"
             || expression.form() != SourceTypeApplicationForm::Bare
             || expression.head() != &SourceTypeHead::BuiltinSet
@@ -3512,28 +3546,31 @@ fn exact_task269ct_source_type(
     true
 }
 
-fn exact_task269ct_arena(source_id: SourceId, arena: &TypedArena) -> bool {
+fn exact_task269ct_arena(
+    receipt: &SourceProofLocalIntakeReceipt,
+    arena: &TypedArena,
+    profile: &str,
+) -> bool {
     if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
         return false;
     }
     let expected = [
-        ("source.proof-local.let.reserve-type", 14, 17, Vec::new()),
-        ("source.proof-local.let.type", 76, 79, Vec::new()),
+        ("reserve-type", receipt.type_rows()[0], Vec::new()),
+        ("type", receipt.type_rows()[1], Vec::new()),
         (
-            "source.proof-local.let.type-root",
-            0,
-            99,
+            "type-root",
+            receipt.root_row(),
             vec![TypedNodeId::new(0), TypedNodeId::new(1)],
         ),
     ];
     expected
         .into_iter()
         .enumerate()
-        .all(|(index, (kind, start, end, children))| {
+        .all(|(index, (kind, row, children))| {
             arena.node(TypedNodeId::new(index)).is_some_and(|node| {
-                node.kind.as_str() == kind
+                node.kind.as_str() == format!("source.proof-local.{profile}.{kind}")
                     && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269ct_range(source_id, start, end))
+                    && node.anchor == SourceAnchor::Range(row.range())
                     && node.children == children
                     && node.typing == TypingState::Unknown
                     && node.recovery == NodeRecoveryState::Normal
@@ -3550,159 +3587,16 @@ fn task269ct_role_matches(site: &TypedSiteRef, node: TypedNodeId, expected: &str
     )
 }
 
-fn task269ct_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
-}
-
 fn task269gt_binding_env(
     dependency: &SourceProofLocalGivenBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenTypeError> {
     task269_type_binding_env(
         dependency.binding_env(),
-        task269gt_range(dependency.source_id(), 84, 87),
+        dependency.intake().type_rows()[1].range(),
         BindingKind::GivenWitness,
         2,
     )
     .ok_or(SourceProofLocalGivenTypeError::InvalidBindingEnvironment)
-}
-
-fn exact_task269gt_input(input: &SourceTypeHandoffInput) -> bool {
-    if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (84, 87)].into_iter().enumerate() {
-        let application = &input.applications[index];
-        let expression = &input.expressions[index];
-        if application.binding != BindingId::new(index)
-            || application.source_ordinal != index
-            || application.root != SourceTypeExpressionId::new(index)
-            || expression.source_id != input.source_id
-            || expression.module_id != input.module_id
-            || !task269ct_role_matches(
-                &expression.site,
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range != task269gt_range(input.source_id, start, end)
-            || expression.spelling != "set"
-            || !task269ct_role_matches(
-                &expression.head_site,
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range != task269gt_range(input.source_id, start, end)
-            || expression.head_spelling != "set"
-            || expression.form != SourceTypeApplicationForm::Bare
-            || expression.head != SourceTypeHead::BuiltinSet
-            || expression.recovery != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gt_source_type(
-    handoff: &SourceTypeApplicationHandoff,
-    source_id: SourceId,
-    module_id: &ModuleId,
-) -> bool {
-    if handoff.source_id() != source_id
-        || handoff.module_id() != module_id
-        || handoff.applications().len() != 2
-        || handoff.expressions().len() != 2
-        || !handoff.arguments().is_empty()
-        || !handoff.definition_returns().is_empty()
-        || !handoff.mode_rhs().is_empty()
-        || !handoff.structure_members().is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (84, 87)].into_iter().enumerate() {
-        let Some(application) = handoff
-            .applications()
-            .get(SourceTypeApplicationId::new(index))
-        else {
-            return false;
-        };
-        let Some(expression) = handoff
-            .expressions()
-            .get(SourceTypeExpressionId::new(index))
-        else {
-            return false;
-        };
-        if application.id() != SourceTypeApplicationId::new(index)
-            || application.binding() != BindingId::new(index)
-            || application.source_ordinal() != index
-            || application.root() != SourceTypeExpressionId::new(index)
-            || expression.id() != SourceTypeExpressionId::new(index)
-            || expression.source_id() != source_id
-            || expression.module_id() != module_id
-            || !task269ct_role_matches(
-                expression.site(),
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range() != task269gt_range(source_id, start, end)
-            || expression.spelling() != "set"
-            || !task269ct_role_matches(
-                expression.head_site(),
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range() != task269gt_range(source_id, start, end)
-            || expression.head_spelling() != "set"
-            || expression.form() != SourceTypeApplicationForm::Bare
-            || expression.head() != &SourceTypeHead::BuiltinSet
-            || expression.recovery() != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gt_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
-        return false;
-    }
-    let expected = [
-        ("source.proof-local.given.reserve-type", 14, 17, Vec::new()),
-        ("source.proof-local.given.type", 84, 87, Vec::new()),
-        (
-            "source.proof-local.given.type-root",
-            0,
-            128,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269gt_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == TypedNodeLinks::default()
-            })
-        })
-}
-
-fn task269gt_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn task269gct_binding_env(
@@ -3710,156 +3604,11 @@ fn task269gct_binding_env(
 ) -> Result<BindingEnv, SourceProofLocalGivenConditionTypeError> {
     task269_type_binding_env(
         dependency.binding_env(),
-        task269gct_range(dependency.source_id(), 90, 93),
+        dependency.intake().type_rows()[1].range(),
         BindingKind::GivenWitness,
         2,
     )
     .ok_or(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)
-}
-
-fn exact_task269gct_input(input: &SourceTypeHandoffInput) -> bool {
-    if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (90, 93)].into_iter().enumerate() {
-        let application = &input.applications[index];
-        let expression = &input.expressions[index];
-        if application.binding != BindingId::new(index)
-            || application.source_ordinal != index
-            || application.root != SourceTypeExpressionId::new(index)
-            || expression.source_id != input.source_id
-            || expression.module_id != input.module_id
-            || !task269ct_role_matches(
-                &expression.site,
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range != task269gct_range(input.source_id, start, end)
-            || expression.spelling != "set"
-            || !task269ct_role_matches(
-                &expression.head_site,
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range != task269gct_range(input.source_id, start, end)
-            || expression.head_spelling != "set"
-            || expression.form != SourceTypeApplicationForm::Bare
-            || expression.head != SourceTypeHead::BuiltinSet
-            || expression.recovery != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gct_source_type(
-    handoff: &SourceTypeApplicationHandoff,
-    source_id: SourceId,
-    module_id: &ModuleId,
-) -> bool {
-    if handoff.source_id() != source_id
-        || handoff.module_id() != module_id
-        || handoff.applications().len() != 2
-        || handoff.expressions().len() != 2
-        || !handoff.arguments().is_empty()
-        || !handoff.definition_returns().is_empty()
-        || !handoff.mode_rhs().is_empty()
-        || !handoff.structure_members().is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (90, 93)].into_iter().enumerate() {
-        let Some(application) = handoff
-            .applications()
-            .get(SourceTypeApplicationId::new(index))
-        else {
-            return false;
-        };
-        let Some(expression) = handoff
-            .expressions()
-            .get(SourceTypeExpressionId::new(index))
-        else {
-            return false;
-        };
-        if application.id() != SourceTypeApplicationId::new(index)
-            || application.binding() != BindingId::new(index)
-            || application.source_ordinal() != index
-            || application.root() != SourceTypeExpressionId::new(index)
-            || expression.id() != SourceTypeExpressionId::new(index)
-            || expression.source_id() != source_id
-            || expression.module_id() != module_id
-            || !task269ct_role_matches(
-                expression.site(),
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range() != task269gct_range(source_id, start, end)
-            || expression.spelling() != "set"
-            || !task269ct_role_matches(
-                expression.head_site(),
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range() != task269gct_range(source_id, start, end)
-            || expression.head_spelling() != "set"
-            || expression.form() != SourceTypeApplicationForm::Bare
-            || expression.head() != &SourceTypeHead::BuiltinSet
-            || expression.recovery() != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gct_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
-        return false;
-    }
-    let expected = [
-        (
-            "source.proof-local.given-condition.reserve-type",
-            14,
-            17,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-condition.type",
-            90,
-            93,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-condition.type-root",
-            0,
-            133,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269gct_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == TypedNodeLinks::default()
-            })
-        })
-}
-
-fn task269gct_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn task269sdt_binding_env(
@@ -3867,156 +3616,11 @@ fn task269sdt_binding_env(
 ) -> Result<BindingEnv, SourceProofLocalGivenDescendantTypeError> {
     task269_type_binding_env(
         dependency.binding_env(),
-        task269sdt_range(dependency.source_id(), 95, 98),
+        dependency.intake().type_rows()[1].range(),
         BindingKind::GivenWitness,
         3,
     )
     .ok_or(SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment)
-}
-
-fn exact_task269sdt_input(input: &SourceTypeHandoffInput) -> bool {
-    if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (95, 98)].into_iter().enumerate() {
-        let application = &input.applications[index];
-        let expression = &input.expressions[index];
-        if application.binding != BindingId::new(index)
-            || application.source_ordinal != index
-            || application.root != SourceTypeExpressionId::new(index)
-            || expression.source_id != input.source_id
-            || expression.module_id != input.module_id
-            || !task269ct_role_matches(
-                &expression.site,
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range != task269sdt_range(input.source_id, start, end)
-            || expression.spelling != "set"
-            || !task269ct_role_matches(
-                &expression.head_site,
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range != task269sdt_range(input.source_id, start, end)
-            || expression.head_spelling != "set"
-            || expression.form != SourceTypeApplicationForm::Bare
-            || expression.head != SourceTypeHead::BuiltinSet
-            || expression.recovery != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269sdt_source_type(
-    handoff: &SourceTypeApplicationHandoff,
-    source_id: SourceId,
-    module_id: &ModuleId,
-) -> bool {
-    if handoff.source_id() != source_id
-        || handoff.module_id() != module_id
-        || handoff.applications().len() != 2
-        || handoff.expressions().len() != 2
-        || !handoff.arguments().is_empty()
-        || !handoff.definition_returns().is_empty()
-        || !handoff.mode_rhs().is_empty()
-        || !handoff.structure_members().is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (95, 98)].into_iter().enumerate() {
-        let Some(application) = handoff
-            .applications()
-            .get(SourceTypeApplicationId::new(index))
-        else {
-            return false;
-        };
-        let Some(expression) = handoff
-            .expressions()
-            .get(SourceTypeExpressionId::new(index))
-        else {
-            return false;
-        };
-        if application.id() != SourceTypeApplicationId::new(index)
-            || application.binding() != BindingId::new(index)
-            || application.source_ordinal() != index
-            || application.root() != SourceTypeExpressionId::new(index)
-            || expression.id() != SourceTypeExpressionId::new(index)
-            || expression.source_id() != source_id
-            || expression.module_id() != module_id
-            || !task269ct_role_matches(
-                expression.site(),
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range() != task269sdt_range(source_id, start, end)
-            || expression.spelling() != "set"
-            || !task269ct_role_matches(
-                expression.head_site(),
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range() != task269sdt_range(source_id, start, end)
-            || expression.head_spelling() != "set"
-            || expression.form() != SourceTypeApplicationForm::Bare
-            || expression.head() != &SourceTypeHead::BuiltinSet
-            || expression.recovery() != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269sdt_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
-        return false;
-    }
-    let expected = [
-        (
-            "source.proof-local.given-descendant.reserve-type",
-            14,
-            17,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-descendant.type",
-            95,
-            98,
-            Vec::new(),
-        ),
-        (
-            "source.proof-local.given-descendant.type-root",
-            0,
-            179,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269sdt_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == TypedNodeLinks::default()
-            })
-        })
-}
-
-fn task269sdt_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn task269gupt_binding_env(
@@ -4024,151 +3628,11 @@ fn task269gupt_binding_env(
 ) -> Result<BindingEnv, SourceProofLocalGivenUseTypeError> {
     task269_type_binding_env(
         dependency.binding_env(),
-        task269gupt_range(dependency.source_id(), 84, 87),
+        dependency.intake().type_rows()[1].range(),
         BindingKind::GivenWitness,
         2,
     )
     .ok_or(SourceProofLocalGivenUseTypeError::InvalidBindingEnvironment)
-}
-
-fn exact_task269gupt_input(input: &SourceTypeHandoffInput) -> bool {
-    if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (84, 87)].into_iter().enumerate() {
-        let application = &input.applications[index];
-        let expression = &input.expressions[index];
-        if application.binding != BindingId::new(index)
-            || application.source_ordinal != index
-            || application.root != SourceTypeExpressionId::new(index)
-            || expression.source_id != input.source_id
-            || expression.module_id != input.module_id
-            || !task269ct_role_matches(
-                &expression.site,
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range != task269gupt_range(input.source_id, start, end)
-            || expression.spelling != "set"
-            || !task269ct_role_matches(
-                &expression.head_site,
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range != task269gupt_range(input.source_id, start, end)
-            || expression.head_spelling != "set"
-            || expression.form != SourceTypeApplicationForm::Bare
-            || expression.head != SourceTypeHead::BuiltinSet
-            || expression.recovery != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gupt_source_type(
-    handoff: &SourceTypeApplicationHandoff,
-    source_id: SourceId,
-    module_id: &ModuleId,
-) -> bool {
-    if handoff.source_id() != source_id
-        || handoff.module_id() != module_id
-        || handoff.applications().len() != 2
-        || handoff.expressions().len() != 2
-        || !handoff.arguments().is_empty()
-        || !handoff.definition_returns().is_empty()
-        || !handoff.mode_rhs().is_empty()
-        || !handoff.structure_members().is_empty()
-    {
-        return false;
-    }
-    for (index, (start, end)) in [(14, 17), (84, 87)].into_iter().enumerate() {
-        let Some(application) = handoff
-            .applications()
-            .get(SourceTypeApplicationId::new(index))
-        else {
-            return false;
-        };
-        let Some(expression) = handoff
-            .expressions()
-            .get(SourceTypeExpressionId::new(index))
-        else {
-            return false;
-        };
-        if application.id() != SourceTypeApplicationId::new(index)
-            || application.binding() != BindingId::new(index)
-            || application.source_ordinal() != index
-            || application.root() != SourceTypeExpressionId::new(index)
-            || expression.id() != SourceTypeExpressionId::new(index)
-            || expression.source_id() != source_id
-            || expression.module_id() != module_id
-            || !task269ct_role_matches(
-                expression.site(),
-                TypedNodeId::new(index),
-                "source.type.expression",
-            )
-            || expression.source_range() != task269gupt_range(source_id, start, end)
-            || expression.spelling() != "set"
-            || !task269ct_role_matches(
-                expression.head_site(),
-                TypedNodeId::new(index),
-                "source.type.head",
-            )
-            || expression.head_range() != task269gupt_range(source_id, start, end)
-            || expression.head_spelling() != "set"
-            || expression.form() != SourceTypeApplicationForm::Bare
-            || expression.head() != &SourceTypeHead::BuiltinSet
-            || expression.recovery() != NodeRecoveryState::Normal
-        {
-            return false;
-        }
-    }
-    true
-}
-
-fn exact_task269gupt_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
-        return false;
-    }
-    let expected = [
-        (
-            "source.proof-local.given-use.reserve-type",
-            14,
-            17,
-            Vec::new(),
-        ),
-        ("source.proof-local.given-use.type", 84, 87, Vec::new()),
-        (
-            "source.proof-local.given-use.type-root",
-            0,
-            127,
-            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269gupt_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == TypedNodeLinks::default()
-            })
-        })
-}
-
-fn task269gupt_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn validate_input(
@@ -9533,21 +8997,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-let-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
-                "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
-                "let range=67..80 segment=71..79 source_ordinal=1\n",
-                "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
-                "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 0);
         let dependency = SourceProofLocalLetBindingProducer::build(
             SourceProofLocalLetBindingHandoffInput {
                 source_id: source,
@@ -9740,21 +9191,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f\"\n",
-                "surface-fingerprint: \"58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..128 proof=62..127\n",
-                "given range=70..108 segment=76..87 source_ordinal=1\n",
-                "name range=76..77 spelling=\"y\"\n",
-                "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 1);
         let dependency = SourceProofLocalGivenBindingProducer::build(
             SourceProofLocalGivenBindingHandoffInput {
                 source_id: source,
@@ -9890,21 +9328,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-condition-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
-                "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
-                "given range=76..113 segment=82..93 source_ordinal=1\n",
-                "name range=82..83 spelling=\"y\"\n",
-                "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 3);
         let dependency = SourceProofLocalGivenConditionBindingProducer::build(
             SourceProofLocalGivenConditionBindingHandoffInput {
                 source_id: source,
@@ -10054,27 +9479,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-descendant-set-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
-                "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
-                "given range=81..99 segment=87..98 source_ordinal=1\n",
-                "given-name range=87..88 spelling=\"y\"\n",
-                "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
-                "descendant-now range=102..159\n",
-                "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
-                "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
-                "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
-                "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
-                "conclusions inner=140..152 outer=162..174\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 4);
         let dependency = SourceProofLocalGivenDescendantBindingProducer::build(
             SourceProofLocalGivenDescendantBindingHandoffInput {
                 source_id: source,
@@ -10699,21 +10105,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-use-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01\"\n",
-                "surface-fingerprint: \"c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
-                "given range=70..108 segment=76..87 source_ordinal=1\n",
-                "name range=76..77 spelling=\"y\"\n",
-                "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 2);
         let dependency = SourceProofLocalGivenUseBindingProducer::build(
             SourceProofLocalGivenUseBindingHandoffInput {
                 source_id: source,
@@ -10784,21 +10177,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-let-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
-                "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
-                "let range=67..80 segment=71..79 source_ordinal=1\n",
-                "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
-                "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 0);
         let dependency = SourceProofLocalLetBindingProducer::build(
             SourceProofLocalLetBindingHandoffInput {
                 source_id: source,
@@ -10866,21 +10246,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f\"\n",
-                "surface-fingerprint: \"58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..128 proof=62..127\n",
-                "given range=70..108 segment=76..87 source_ordinal=1\n",
-                "name range=76..77 spelling=\"y\"\n",
-                "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 1);
         let dependency = SourceProofLocalGivenBindingProducer::build(
             SourceProofLocalGivenBindingHandoffInput {
                 source_id: source,
@@ -12309,7 +11676,11 @@ mod tests {
             assert_eq!(expression.head(), &SourceTypeHead::BuiltinSet);
             assert_eq!(expression.recovery(), NodeRecoveryState::Normal);
         }
-        assert!(exact_task269gct_arena(fixture.source, &fixture.arena));
+        assert!(exact_task269ct_arena(
+            handoff.dependency().intake(),
+            &fixture.arena,
+            "given-condition"
+        ));
         assert_eq!(
             handoff.debug_text(),
             format!(
@@ -13826,12 +13197,17 @@ mod tests {
             ),
             (2, 2, 0, 0, 0, 0)
         );
-        assert!(exact_task269sdt_source_type(
+        assert!(exact_task269ct_source_type(
             handoff.source_type(),
             fixture.source,
-            &fixture.module
+            &fixture.module,
+            handoff.dependency().intake()
         ));
-        assert!(exact_task269sdt_arena(fixture.source, &fixture.arena));
+        assert!(exact_task269ct_arena(
+            handoff.dependency().intake(),
+            &fixture.arena,
+            "given-descendant"
+        ));
         assert!(handoff.debug_text().ends_with('\n'));
         assert!(!handoff.debug_text().ends_with("\n\n"));
 
@@ -14348,10 +13724,14 @@ mod tests {
             )
             .is_ok()
         );
-        assert!(!exact_task269sdt_input(&task269gct_input(
-            neighbor.source,
-            neighbor.module
-        )));
+        assert!(!exact_task269ct_input(
+            &task269gct_input(neighbor.source, neighbor.module),
+            &crate::source_proof_local_declaration::task286_receipt(
+                fixture.source,
+                fixture.module.clone(),
+                4
+            )
+        ));
     }
 
     #[test]

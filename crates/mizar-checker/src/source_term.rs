@@ -9,6 +9,7 @@ use crate::{
         CapturedFreeVariables,
     },
     source_formula_composition::SourceNestedFraenkelBinderUseHandoff,
+    source_proof_local_declaration::SourceProofLocalIntakeReceipt,
     source_type::{
         SourceProofLocalGivenConditionTypeHandoff, SourceProofLocalGivenDescendantTypeHandoff,
         SourceProofLocalGivenUseTypeHandoff,
@@ -597,8 +598,9 @@ impl SourceProofLocalGivenUseTermHandoff {
         {
             return Err(SourceProofLocalGivenUseTermError::InvalidDependency);
         }
+        let intake = self.dependency.dependency().intake();
         let expected = SourcePrimaryTermProducer::build_with_profile(
-            task269gu_input(source_id, module_id.clone()),
+            task269gu_input(source_id, module_id.clone(), intake, 1),
             self.dependency.binding_env(),
             arena,
             SourcePrimaryTermBindingProfile::ProofLocalGivenUse,
@@ -609,7 +611,7 @@ impl SourceProofLocalGivenUseTermHandoff {
         {
             return Err(SourceProofLocalGivenUseTermError::InvalidSourceTerm);
         }
-        if !exact_task269gu_arena(source_id, arena) {
+        if !exact_task269gu_arena(intake, arena, "given-use") {
             return Err(SourceProofLocalGivenUseTermError::InvalidInstallation);
         }
         Ok(())
@@ -654,7 +656,8 @@ impl SourceProofLocalGivenUseTermProducer {
             .validate_installation(input.source_id, &input.module_id, &dependency_arena)
             .map_err(|_| SourceProofLocalGivenUseTermError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
-        if !exact_task269gu_input(&input) {
+        let intake = dependency.dependency().intake();
+        if !exact_task269gu_input(&input, intake, 1) {
             return Err(SourceProofLocalGivenUseTermError::InvalidSourceTerm);
         }
         let source_term = SourcePrimaryTermProducer::build_with_profile(
@@ -665,7 +668,7 @@ impl SourceProofLocalGivenUseTermProducer {
         )
         .map_err(|_| SourceProofLocalGivenUseTermError::InvalidSourceTerm)?;
         let source_term_fingerprint = source_term.debug_text();
-        if !exact_task269gu_arena(dependency.source_id(), arena) {
+        if !exact_task269gu_arena(intake, arena, "given-use") {
             return Err(SourceProofLocalGivenUseTermError::InvalidInstallation);
         }
         let handoff = SourceProofLocalGivenUseTermHandoff {
@@ -769,8 +772,9 @@ impl SourceProofLocalGivenDescendantUseTermHandoff {
         {
             return Err(SourceProofLocalGivenDescendantUseTermError::InvalidDependency);
         }
+        let intake = self.dependency.dependency().intake();
         let expected = SourcePrimaryTermProducer::build_with_profile(
-            task269sdu_input(source_id, module_id.clone()),
+            task269gu_input(source_id, module_id.clone(), intake, 2),
             self.dependency.binding_env(),
             arena,
             SourcePrimaryTermBindingProfile::ProofLocalGivenDescendantUse,
@@ -781,7 +785,7 @@ impl SourceProofLocalGivenDescendantUseTermHandoff {
         {
             return Err(SourceProofLocalGivenDescendantUseTermError::InvalidSourceTerm);
         }
-        if !exact_task269sdu_arena(source_id, arena) {
+        if !exact_task269gu_arena(intake, arena, "given-descendant-use") {
             return Err(SourceProofLocalGivenDescendantUseTermError::InvalidInstallation);
         }
         Ok(())
@@ -819,7 +823,8 @@ impl SourceProofLocalGivenDescendantUseTermProducer {
             .validate_installation(input.source_id, &input.module_id, &dependency_arena)
             .map_err(|_| SourceProofLocalGivenDescendantUseTermError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
-        if !exact_task269sdu_input(&input) {
+        let intake = dependency.dependency().intake();
+        if !exact_task269gu_input(&input, intake, 2) {
             return Err(SourceProofLocalGivenDescendantUseTermError::InvalidSourceTerm);
         }
         let source_term = SourcePrimaryTermProducer::build_with_profile(
@@ -830,7 +835,7 @@ impl SourceProofLocalGivenDescendantUseTermProducer {
         )
         .map_err(|_| SourceProofLocalGivenDescendantUseTermError::InvalidSourceTerm)?;
         let source_term_fingerprint = source_term.debug_text();
-        if !exact_task269sdu_arena(dependency.source_id(), arena) {
+        if !exact_task269gu_arena(intake, arena, "given-descendant-use") {
             return Err(SourceProofLocalGivenDescendantUseTermError::InvalidInstallation);
         }
         let handoff = SourceProofLocalGivenDescendantUseTermHandoff {
@@ -935,8 +940,9 @@ impl SourceProofLocalGivenConditionUseTermHandoff {
         {
             return Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency);
         }
+        let intake = self.dependency.dependency().intake();
         let expected = SourcePrimaryTermProducer::build_with_profile(
-            task269gcu_input(source_id, module_id.clone()),
+            task269gu_input(source_id, module_id.clone(), intake, 1),
             self.dependency.binding_env(),
             arena,
             SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse,
@@ -947,7 +953,7 @@ impl SourceProofLocalGivenConditionUseTermHandoff {
         {
             return Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm);
         }
-        if !exact_task269gcu_arena(source_id, arena) {
+        if !exact_task269gu_arena(intake, arena, "given-condition") {
             return Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation);
         }
         Ok(())
@@ -995,7 +1001,8 @@ impl SourceProofLocalGivenConditionUseTermProducer {
             .validate_installation(input.source_id, &input.module_id, &dependency_arena)
             .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidDependency)?;
         let dependency_fingerprint = dependency.debug_text();
-        if !exact_task269gcu_input(&input) {
+        let intake = dependency.dependency().intake();
+        if !exact_task269gu_input(&input, intake, 1) {
             return Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm);
         }
         let source_term = SourcePrimaryTermProducer::build_with_profile(
@@ -1006,7 +1013,7 @@ impl SourceProofLocalGivenConditionUseTermProducer {
         )
         .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)?;
         let source_term_fingerprint = source_term.debug_text();
-        if !exact_task269gcu_arena(dependency.source_id(), arena) {
+        if !exact_task269gu_arena(intake, arena, "given-condition") {
             return Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation);
         }
         let handoff = SourceProofLocalGivenConditionUseTermHandoff {
@@ -2120,28 +2127,34 @@ fn task269gu_dependency_arena(
         .map_err(|_| SourceProofLocalGivenUseTermError::InvalidDependency)
 }
 
-fn task269gu_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
+fn task269gu_input(
+    source_id: SourceId,
+    module_id: ModuleId,
+    receipt: &SourceProofLocalIntakeReceipt,
+    context: usize,
+) -> SourcePrimaryTermHandoffInput {
+    let rows = receipt
+        .term_rows()
+        .expect("validated proof-local term roles");
     SourcePrimaryTermHandoffInput {
         source_id,
         module_id,
-        terms: [(3, 116, 117), (4, 120, 121)]
-            .into_iter()
+        terms: rows
+            .iter()
             .enumerate()
-            .map(
-                |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(node)),
-                    source_range: task269gu_range(source_id, start, end),
-                    source_ordinal,
-                    context: crate::binding_env::BindingContextId::new(1),
-                    recovery: SourcePrimaryTermRecovery::Normal,
-                    spelling: "y".to_owned(),
-                    kind: SourcePrimaryTermKind::VariableReference,
-                    role: SourcePrimaryTermRole::Value,
-                    parent: None,
-                },
-            )
+            .map(|(index, row)| SourcePrimaryTermInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(index + 3)),
+                source_range: row.range(),
+                source_ordinal: index,
+                context: crate::binding_env::BindingContextId::new(context),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: "y".to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
             .collect(),
-        references: (0..2)
+        references: (0..rows.len())
             .map(|index| SourcePrimaryTermReferenceInput {
                 term: SourcePrimaryTermId::new(index),
                 binding: BindingId::new(1),
@@ -2152,51 +2165,47 @@ fn task269gu_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTer
     }
 }
 
-fn exact_task269gu_input(input: &SourcePrimaryTermHandoffInput) -> bool {
-    input == &task269gu_input(input.source_id, input.module_id.clone())
+fn exact_task269gu_input(
+    input: &SourcePrimaryTermHandoffInput,
+    receipt: &SourceProofLocalIntakeReceipt,
+    context: usize,
+) -> bool {
+    input == &task269gu_input(input.source_id, input.module_id.clone(), receipt, context)
 }
 
-fn exact_task269gu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 6 || arena.root() != Some(TypedNodeId::new(5)) {
+fn exact_task269gu_arena(
+    receipt: &SourceProofLocalIntakeReceipt,
+    arena: &TypedArena,
+    profile: &str,
+) -> bool {
+    let mut rows = receipt
+        .term_rows()
+        .expect("validated proof-local term roles");
+    let root = TypedNodeId::new(rows.len() + 3);
+    if arena.len() != root.index() + 1 || arena.root() != Some(root) {
         return false;
     }
-    // Both callers validate the GUPT type overlay before checking these term rows.
-    let expected = [
-        ("source.term.variable-reference", 116, 117, Vec::new()),
-        ("source.term.variable-reference", 120, 121, Vec::new()),
-        (
-            "source.proof-local.given-use.term-root",
-            0,
-            127,
-            vec![
-                TypedNodeId::new(2),
-                TypedNodeId::new(3),
-                TypedNodeId::new(4),
-            ],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269gu_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == Default::default()
-            })
+    rows.push(receipt.root_row());
+    rows.into_iter().enumerate().all(|(index, row)| {
+        let id = TypedNodeId::new(index + 3);
+        let (kind, children) = if id == root {
+            (
+                format!("source.proof-local.{profile}.term-root"),
+                (2..root.index()).map(TypedNodeId::new).collect(),
+            )
+        } else {
+            ("source.term.variable-reference".to_owned(), Vec::new())
+        };
+        arena.node(id).is_some_and(|node| {
+            node.kind.as_str() == kind
+                && node.resolved_node.is_none()
+                && node.anchor == SourceAnchor::Range(row.range())
+                && node.children == children
+                && node.typing == TypingState::Unknown
+                && node.recovery == NodeRecoveryState::Normal
+                && node.links == Default::default()
         })
-}
-
-fn task269gu_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
+    })
 }
 
 fn task269sdu_dependency_arena(
@@ -2214,64 +2223,7 @@ fn task269sdu_dependency_arena(
         .map_err(|_| SourceProofLocalGivenDescendantUseTermError::InvalidDependency)
 }
 
-fn task269sdu_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
-    SourcePrimaryTermHandoffInput {
-        source_id,
-        module_id,
-        terms: vec![SourcePrimaryTermInput {
-            site: TypedSiteRef::Node(TypedNodeId::new(3)),
-            source_range: task269sdu_range(source_id, 118, 119),
-            source_ordinal: 0,
-            context: crate::binding_env::BindingContextId::new(2),
-            recovery: SourcePrimaryTermRecovery::Normal,
-            spelling: "y".to_owned(),
-            kind: SourcePrimaryTermKind::VariableReference,
-            role: SourcePrimaryTermRole::Value,
-            parent: None,
-        }],
-        references: vec![SourcePrimaryTermReferenceInput {
-            term: SourcePrimaryTermId::new(0),
-            binding: BindingId::new(1),
-            role: SourcePrimaryTermReferenceRole::Variable,
-        }],
-        numeric_type_requests: Vec::new(),
-    }
-}
-
-fn exact_task269sdu_input(input: &SourcePrimaryTermHandoffInput) -> bool {
-    input == &task269sdu_input(input.source_id, input.module_id.clone())
-}
-
-fn exact_task269sdu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 5 || arena.root() != Some(TypedNodeId::new(4)) {
-        return false;
-    }
-    // Both callers validate the SDT type overlay before checking these term rows.
-    let expected = [
-        ("source.term.variable-reference", 118, 119, vec![]),
-        (
-            "source.proof-local.given-descendant-use.term-root",
-            0,
-            179,
-            vec![TypedNodeId::new(2), TypedNodeId::new(3)],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269sdu_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == Default::default()
-            })
-        })
-}
-
+#[cfg(test)]
 fn task269sdu_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
@@ -2293,85 +2245,6 @@ fn task269gcu_dependency_arena(
         .collect::<Result<Vec<_>, _>>()?;
     TypedArena::try_new(Some(TypedNodeId::new(2)), nodes)
         .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidDependency)
-}
-
-fn task269gcu_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
-    SourcePrimaryTermHandoffInput {
-        source_id,
-        module_id,
-        terms: [(3, 107, 108), (4, 111, 112)]
-            .into_iter()
-            .enumerate()
-            .map(
-                |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
-                    site: TypedSiteRef::Node(TypedNodeId::new(node)),
-                    source_range: task269gcu_range(source_id, start, end),
-                    source_ordinal,
-                    context: crate::binding_env::BindingContextId::new(1),
-                    recovery: SourcePrimaryTermRecovery::Normal,
-                    spelling: "y".to_owned(),
-                    kind: SourcePrimaryTermKind::VariableReference,
-                    role: SourcePrimaryTermRole::Value,
-                    parent: None,
-                },
-            )
-            .collect(),
-        references: (0..2)
-            .map(|index| SourcePrimaryTermReferenceInput {
-                term: SourcePrimaryTermId::new(index),
-                binding: BindingId::new(1),
-                role: SourcePrimaryTermReferenceRole::Variable,
-            })
-            .collect(),
-        numeric_type_requests: Vec::new(),
-    }
-}
-
-fn exact_task269gcu_input(input: &SourcePrimaryTermHandoffInput) -> bool {
-    input == &task269gcu_input(input.source_id, input.module_id.clone())
-}
-
-fn exact_task269gcu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
-    if arena.len() != 6 || arena.root() != Some(TypedNodeId::new(5)) {
-        return false;
-    }
-    // Both callers validate the GCT type overlay before checking these term rows.
-    let expected = [
-        ("source.term.variable-reference", 107, 108, Vec::new()),
-        ("source.term.variable-reference", 111, 112, Vec::new()),
-        (
-            "source.proof-local.given-condition.term-root",
-            0,
-            133,
-            vec![
-                TypedNodeId::new(2),
-                TypedNodeId::new(3),
-                TypedNodeId::new(4),
-            ],
-        ),
-    ];
-    expected
-        .into_iter()
-        .enumerate()
-        .all(|(index, (kind, start, end, children))| {
-            arena.node(TypedNodeId::new(index + 3)).is_some_and(|node| {
-                node.kind.as_str() == kind
-                    && node.resolved_node.is_none()
-                    && node.anchor == SourceAnchor::Range(task269gcu_range(source_id, start, end))
-                    && node.children == children
-                    && node.typing == TypingState::Unknown
-                    && node.recovery == NodeRecoveryState::Normal
-                    && node.links == Default::default()
-            })
-        })
-}
-
-fn task269gcu_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
-    SourceRange {
-        source_id,
-        start,
-        end,
-    }
 }
 
 fn valid_leaf_spelling(kind: SourcePrimaryTermKind, spelling: &str) -> bool {
@@ -2585,6 +2458,18 @@ mod tests {
 
     fn module(path: &str) -> ModuleId {
         ModuleId::new(PackageId::new("pkg"), ModulePath::new(path))
+    }
+
+    fn task269gu_test_input(source: SourceId, module: ModuleId) -> SourcePrimaryTermHandoffInput {
+        let receipt =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 2);
+        task269gu_input(source, module, &receipt, 1)
+    }
+
+    fn task269gcu_test_input(source: SourceId, module: ModuleId) -> SourcePrimaryTermHandoffInput {
+        let receipt =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 3);
+        task269gu_input(source, module, &receipt, 1)
     }
 
     fn range(source: SourceId, start: usize, end: usize) -> SourceRange {
@@ -3093,21 +2978,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-use-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01\"\n",
-                "surface-fingerprint: \"c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
-                "given range=70..108 segment=76..87 source_ordinal=1\n",
-                "name range=76..77 spelling=\"y\"\n",
-                "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 2);
         let binding = SourceProofLocalGivenUseBindingProducer::build(
             SourceProofLocalGivenUseBindingHandoffInput {
                 source_id: source,
@@ -3145,7 +3017,7 @@ mod tests {
             source,
             module: module.clone(),
             dependency,
-            input: task269gu_input(source, module),
+            input: task269gu_test_input(source, module),
             arena: task269gu_arena(source, 5, false),
         }
     }
@@ -3220,21 +3092,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-let-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
-                "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
-                "let range=67..80 segment=71..79 source_ordinal=1\n",
-                "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
-                "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 0);
         SourceProofLocalLetBindingProducer::build(
             SourceProofLocalLetBindingHandoffInput {
                 source_id: source,
@@ -3294,21 +3153,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f\"\n",
-                "surface-fingerprint: \"58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..128 proof=62..127\n",
-                "given range=70..108 segment=76..87 source_ordinal=1\n",
-                "name range=76..77 spelling=\"y\"\n",
-                "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 1);
         SourceProofLocalGivenBindingProducer::build(
             SourceProofLocalGivenBindingHandoffInput {
                 source_id: source,
@@ -3389,27 +3235,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-descendant-set-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
-                "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
-                "given range=81..99 segment=87..98 source_ordinal=1\n",
-                "given-name range=87..88 spelling=\"y\"\n",
-                "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
-                "descendant-now range=102..159\n",
-                "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
-                "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
-                "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
-                "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
-                "conclusions inner=140..152 outer=162..174\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 4);
         SourceProofLocalGivenDescendantBindingProducer::build(
             SourceProofLocalGivenDescendantBindingHandoffInput {
                 source_id: source,
@@ -4213,11 +4040,54 @@ mod tests {
         );
 
         let handoff = SourceProofLocalGivenUseTermProducer::build(
-            fixture.dependency,
-            fixture.input,
+            fixture.dependency.clone(),
+            fixture.input.clone(),
             &fixture.arena,
         )
         .expect("Task269GU valid handoff");
+        // Generic congruence accepts the counterfeit; the unchanged receipt must reject it.
+        let mut shifted = fixture.input.clone();
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (index, term) in shifted.terms.iter_mut().enumerate() {
+            term.source_range.start += 1;
+            term.source_range.end += 1;
+            nodes[index + 3].anchor = SourceAnchor::Range(term.source_range);
+        }
+        let arena = TypedArena::try_new(fixture.arena.root(), nodes).unwrap();
+        let generic = SourcePrimaryTermProducer::build_with_profile(
+            shifted.clone(),
+            fixture.dependency.binding_env(),
+            &arena,
+            SourcePrimaryTermBindingProfile::ProofLocalGivenUse,
+        )
+        .expect("coherent primary term has valid generic geometry");
+        assert_eq!(
+            SourceProofLocalGivenUseTermProducer::build(
+                fixture.dependency.clone(),
+                shifted,
+                &arena
+            ),
+            Err(SourceProofLocalGivenUseTermError::InvalidSourceTerm)
+        );
+        let mut counterfeit = handoff.clone();
+        counterfeit.source_term = generic;
+        counterfeit.source_term_fingerprint = counterfeit.source_term.debug_text();
+        let mut typed = task269gu_empty_typed(&fixture, arena).unwrap();
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_given_use_term(counterfeit.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenUseTerm)
+        );
+        typed.inject_source_proof_local_given_use_term_for_test(counterfeit);
+        assert_eq!(
+            task269gu_resolved_result(&typed),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenUseTerm)
+        );
         let mut dependency_corrupt = handoff.clone();
         dependency_corrupt.set_dependency_fingerprint_for_test("corrupt".to_owned());
         assert_eq!(
@@ -4615,21 +4485,8 @@ mod tests {
             ),
             contribution,
         ));
-        let lower_fingerprint = format!(
-            concat!(
-                "source-proof-local-given-condition-lower-debug-v1\n",
-                "module: {}::{}\n",
-                "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
-                "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
-                "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
-                "given range=76..113 segment=82..93 source_ordinal=1\n",
-                "name range=82..83 spelling=\"y\"\n",
-                "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
-            ),
-            module.package().as_str(),
-            module.path().as_str(),
-            theorem_symbol.fqn().as_str(),
-        );
+        let lower_fingerprint =
+            crate::source_proof_local_declaration::task286_receipt(source, module.clone(), 3);
         let binding = SourceProofLocalGivenConditionBindingProducer::build(
             SourceProofLocalGivenConditionBindingHandoffInput {
                 source_id: source,
@@ -4668,7 +4525,7 @@ mod tests {
             source,
             module: module.clone(),
             dependency,
-            input: task269gcu_input(source, module),
+            input: task269gcu_test_input(source, module),
             arena: task269gcu_test_arena(source),
         }
     }
@@ -6647,7 +6504,7 @@ mod tests {
         let fixture = task269sdu_fixture();
         let handoff = SourceProofLocalGivenDescendantUseTermProducer::build(
             fixture.dependency.clone(),
-            task269sdu_input(fixture.source, fixture.module.clone()),
+            task269sdu_test_input(&fixture),
             &fixture.arena,
         )
         .expect("Task269SDU exact handoff");
@@ -6709,7 +6566,7 @@ mod tests {
 
         let replay = SourceProofLocalGivenDescendantUseTermProducer::build(
             fixture.dependency.clone(),
-            task269sdu_input(fixture.source, fixture.module.clone()),
+            task269sdu_test_input(&fixture),
             &fixture.arena,
         )
         .expect("Task269SDU exact replay");
@@ -6746,12 +6603,21 @@ mod tests {
         let fixture = task269sdu_fixture();
         let exact = SourceProofLocalGivenDescendantUseTermProducer::build(
             fixture.dependency.clone(),
-            task269sdu_input(fixture.source, fixture.module.clone()),
+            task269sdu_test_input(&fixture),
             &fixture.arena,
         )
         .expect("Task269SDU exact handoff");
 
-        let mut wrong_dependency = task269sdu_input(fixture.source, module("task269sdu-wrong"));
+        let mut wrong_dependency = task269gu_input(
+            fixture.source,
+            module("task269sdu-wrong"),
+            &crate::source_proof_local_declaration::task286_receipt(
+                fixture.source,
+                fixture.module.clone(),
+                4,
+            ),
+            2,
+        );
         wrong_dependency.terms[0].source_range.end += 1;
         assert_eq!(
             SourceProofLocalGivenDescendantUseTermProducer::build(
@@ -6762,7 +6628,7 @@ mod tests {
             Err(SourceProofLocalGivenDescendantUseTermError::InvalidDependency)
         );
 
-        let mut wrong_input = task269sdu_input(fixture.source, fixture.module.clone());
+        let mut wrong_input = task269sdu_test_input(&fixture);
         wrong_input.references[0].binding = BindingId::new(0);
         assert_eq!(
             SourceProofLocalGivenDescendantUseTermProducer::build(
@@ -6775,7 +6641,7 @@ mod tests {
         assert_eq!(
             SourceProofLocalGivenDescendantUseTermProducer::build(
                 fixture.dependency.clone(),
-                task269sdu_input(fixture.source, fixture.module.clone()),
+                task269sdu_test_input(&fixture),
                 &task269sdu_test_arena(fixture.source, false, true),
             ),
             Err(SourceProofLocalGivenDescendantUseTermError::InvalidSourceTerm)
@@ -6783,7 +6649,7 @@ mod tests {
         assert_eq!(
             SourceProofLocalGivenDescendantUseTermProducer::build(
                 fixture.dependency.clone(),
-                task269sdu_input(fixture.source, fixture.module.clone()),
+                task269sdu_test_input(&fixture),
                 &task269sdu_test_arena(fixture.source, true, false),
             ),
             Err(SourceProofLocalGivenDescendantUseTermError::InvalidInstallation)
@@ -6840,7 +6706,7 @@ mod tests {
         let fixture = task269sdu_fixture();
         let handoff = SourceProofLocalGivenDescendantUseTermProducer::build(
             fixture.dependency.clone(),
-            task269sdu_input(fixture.source, fixture.module.clone()),
+            task269sdu_test_input(&fixture),
             &fixture.arena,
         )
         .expect("Task269SDU exact handoff");
@@ -7012,11 +6878,11 @@ mod tests {
         let fixture = task269sdu_fixture();
         let exact = SourceProofLocalGivenDescendantUseTermProducer::build(
             fixture.dependency.clone(),
-            task269sdu_input(fixture.source, fixture.module.clone()),
+            task269sdu_test_input(&fixture),
             &fixture.arena,
         )
         .expect("Task269SDU exact handoff");
-        let input = task269sdu_input(fixture.source, fixture.module.clone());
+        let input = task269sdu_test_input(&fixture);
         assert_eq!(
             input
                 .terms
@@ -7080,6 +6946,15 @@ mod tests {
         module: ModuleId,
         dependency: SourceProofLocalGivenDescendantTypeHandoff,
         arena: TypedArena,
+    }
+
+    fn task269sdu_test_input(fixture: &Task269sduFixture) -> SourcePrimaryTermHandoffInput {
+        task269gu_input(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.dependency.dependency().intake(),
+            2,
+        )
     }
 
     fn task269sdu_fixture() -> Task269sduFixture {

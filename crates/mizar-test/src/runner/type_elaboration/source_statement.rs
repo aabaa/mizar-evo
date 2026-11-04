@@ -71,6 +71,7 @@ use mizar_checker::{
     },
 };
 use mizar_checker::{
+    source_proof_local_declaration::SourceProofLocalIntakeReceipt,
     type_checker::CheckedStatementOwner,
     typed_ast::{NodeRecoveryState, SourceNode, TypedAst},
 };
@@ -6640,11 +6641,16 @@ pub(in crate::runner) struct SourceProofLocalLetLowerOutput {
     type_head_range: SourceRange,
     source_ordinal: usize,
     local: LocalTermBinding,
+    intake_receipt: Option<SourceProofLocalIntakeReceipt>,
 }
 
 // Rationale: Task 269CP keeps the complete read-only payload API dormant until its Task-269C consumer.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalLetLowerOutput {
+    pub(in crate::runner) fn intake_receipt(&self) -> Option<&SourceProofLocalIntakeReceipt> {
+        self.intake_receipt.as_ref()
+    }
+
     pub(in crate::runner) const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -7473,10 +7479,12 @@ fn source_proof_local_let_lower_output_impl(
         symbols,
         source_text,
         &rows,
+        &typed,
         mutations,
     ))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep the authenticated original receiver with its selected rows.
 fn build_source_proof_local_let_lower_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -7484,6 +7492,7 @@ fn build_source_proof_local_let_lower_output(
     symbols: &SymbolEnv,
     source_text: &str,
     rows: &[&SourceNode],
+    source: &TypedAst,
     mutations: SourceProofLocalLetMutations,
 ) -> Result<SourceProofLocalLetLowerOutput, String> {
     let SourceProofLocalLetMutations {
@@ -7821,6 +7830,7 @@ fn build_source_proof_local_let_lower_output(
             name.range(),
             1,
         ),
+        intake_receipt: SourceProofLocalIntakeReceipt::from_source(source, let_statement.site()),
     };
     #[cfg(test)]
     mutate_source_proof_local_let_lower_output(&mut output, _mutation);
@@ -8169,11 +8179,16 @@ pub(in crate::runner) struct SourceProofLocalGivenLowerOutput {
     type_head_range: SourceRange,
     type_spelling: String,
     source_ordinal: usize,
+    intake_receipt: Option<SourceProofLocalIntakeReceipt>,
 }
 
 // Rationale: Task 269GP keeps the complete read-only payload API dormant and runner-private.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalGivenLowerOutput {
+    pub(in crate::runner) fn intake_receipt(&self) -> Option<&SourceProofLocalIntakeReceipt> {
+        self.intake_receipt.as_ref()
+    }
+
     pub(in crate::runner) const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -8950,10 +8965,12 @@ fn source_proof_local_given_lower_output_impl(
         symbols,
         source_text,
         &rows,
+        &typed,
         mutations,
     ))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep the authenticated original receiver with its selected rows.
 fn build_source_proof_local_given_lower_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -8961,6 +8978,7 @@ fn build_source_proof_local_given_lower_output(
     symbols: &SymbolEnv,
     source_text: &str,
     rows: &[&SourceNode],
+    source: &TypedAst,
     mutations: SourceProofLocalGivenMutations,
 ) -> Result<SourceProofLocalGivenLowerOutput, String> {
     let SourceProofLocalGivenMutations {
@@ -9294,6 +9312,7 @@ fn build_source_proof_local_given_lower_output(
         type_head_range: type_head.range(),
         type_spelling: type_head.spelling().to_owned(),
         source_ordinal: 1,
+        intake_receipt: SourceProofLocalIntakeReceipt::from_source(source, given_statement.site()),
     };
     #[cfg(test)]
     mutate_source_proof_local_given_lower_output(&mut output, _mutation);
@@ -9608,11 +9627,16 @@ pub(in crate::runner) struct SourceProofLocalGivenUseLowerOutput {
     type_head_range: SourceRange,
     type_spelling: String,
     source_ordinal: usize,
+    intake_receipt: Option<SourceProofLocalIntakeReceipt>,
 }
 
 // Rationale: Task 269GUP exposes this frozen lower profile only to dormant test-owned consumers.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalGivenUseLowerOutput {
+    pub(in crate::runner) fn intake_receipt(&self) -> Option<&SourceProofLocalIntakeReceipt> {
+        self.intake_receipt.as_ref()
+    }
+
     pub(in crate::runner) const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -10422,10 +10446,12 @@ fn source_proof_local_given_use_lower_output_impl(
         symbols,
         source_text,
         &rows,
+        &typed,
         mutations,
     ))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep the authenticated original receiver with its selected rows.
 fn build_source_proof_local_given_use_lower_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -10433,6 +10459,7 @@ fn build_source_proof_local_given_use_lower_output(
     symbols: &SymbolEnv,
     source_text: &str,
     rows: &[&SourceNode],
+    source: &TypedAst,
     mutations: SourceProofLocalGivenUseMutations,
 ) -> Result<SourceProofLocalGivenUseLowerOutput, String> {
     let SourceProofLocalGivenUseMutations {
@@ -10767,6 +10794,7 @@ fn build_source_proof_local_given_use_lower_output(
         type_head_range: type_head.range(),
         type_spelling: type_head.spelling().to_owned(),
         source_ordinal: 1,
+        intake_receipt: SourceProofLocalIntakeReceipt::from_source(source, given_statement.site()),
     };
     #[cfg(test)]
     mutate_source_proof_local_given_use_lower_output(&mut output, _mutation);
@@ -11081,11 +11109,16 @@ pub(in crate::runner) struct SourceProofLocalGivenConditionLowerOutput {
     type_head_range: SourceRange,
     type_spelling: String,
     source_ordinal: usize,
+    intake_receipt: Option<SourceProofLocalIntakeReceipt>,
 }
 
 // Rationale: Task 269GCP exposes this frozen lower profile only to dormant test-owned consumers.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalGivenConditionLowerOutput {
+    pub(in crate::runner) fn intake_receipt(&self) -> Option<&SourceProofLocalIntakeReceipt> {
+        self.intake_receipt.as_ref()
+    }
+
     pub(in crate::runner) const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -11892,10 +11925,12 @@ fn source_proof_local_given_condition_lower_output_impl(
         symbols,
         source_text,
         &rows,
+        &typed,
         mutations,
     ))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep the authenticated original receiver with its selected rows.
 fn build_source_proof_local_given_condition_lower_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -11903,6 +11938,7 @@ fn build_source_proof_local_given_condition_lower_output(
     symbols: &SymbolEnv,
     source_text: &str,
     rows: &[&SourceNode],
+    source: &TypedAst,
     mutations: SourceProofLocalGivenConditionMutations,
 ) -> Result<SourceProofLocalGivenConditionLowerOutput, String> {
     let SourceProofLocalGivenConditionMutations {
@@ -12237,6 +12273,7 @@ fn build_source_proof_local_given_condition_lower_output(
         type_head_range: type_head.range(),
         type_spelling: type_head.spelling().to_owned(),
         source_ordinal: 1,
+        intake_receipt: SourceProofLocalIntakeReceipt::from_source(source, given_statement.site()),
     };
     #[cfg(test)]
     mutate_source_proof_local_given_condition_lower_output(&mut output, _mutation);
@@ -12608,11 +12645,16 @@ pub(in crate::runner) struct SourceProofLocalGivenDescendantSetLowerOutput {
     set_rows: [SourceProofLocalGivenDescendantSetLowerRow; 2],
     inner_conclusion_range: SourceRange,
     outer_conclusion_range: SourceRange,
+    intake_receipt: Option<SourceProofLocalIntakeReceipt>,
 }
 
 // Rationale: Task 269SDP output accessors are dormant outside the private tests until its consumer exists.
 #[cfg_attr(not(test), allow(dead_code))]
 impl SourceProofLocalGivenDescendantSetLowerOutput {
+    pub(in crate::runner) fn intake_receipt(&self) -> Option<&SourceProofLocalIntakeReceipt> {
+        self.intake_receipt.as_ref()
+    }
+
     pub(in crate::runner) const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -13529,10 +13571,12 @@ fn source_proof_local_given_descendant_set_lower_output_impl(
         symbols,
         source_text,
         &rows,
+        &typed,
         mutations,
     ))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep the authenticated original receiver with its selected rows.
 fn build_source_proof_local_given_descendant_set_lower_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -13540,6 +13584,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
     symbols: &SymbolEnv,
     source_text: &str,
     rows: &[&SourceNode],
+    source: &TypedAst,
     mutations: SourceProofLocalGivenDescendantSetMutations,
 ) -> Result<SourceProofLocalGivenDescendantSetLowerOutput, String> {
     let SourceProofLocalGivenDescendantSetMutations {
@@ -13934,6 +13979,7 @@ fn build_source_proof_local_given_descendant_set_lower_output(
         set_rows,
         inner_conclusion_range: inner_conclusion.range(),
         outer_conclusion_range: outer_conclusion.range(),
+        intake_receipt: SourceProofLocalIntakeReceipt::from_source(source, given_statement.site()),
     };
     #[cfg(test)]
     mutate_source_proof_local_given_descendant_set_lower_output(&mut output, _mutation);

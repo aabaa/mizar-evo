@@ -758,7 +758,7 @@ implementation commit does not satisfy a producer task.
   decides the nested-Fraenkel and condition-aggregate constants of
   `source_term.rs` and `source_formula_composition.rs`. Contract:
   [VELOCITY-ELEMENT-RULE-TRANSPORT](../../task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md).
-- [ ] **Task 286:** authenticated receipt for the public proof-local build
+- [x] **Task 286:** authenticated receipt for the public proof-local build
   inputs, retiring their thirty canonical literal guards and the proof-local
   constants Task 284 retained in `source_type.rs` and `source_term.rs` (full
   tier). Contract:

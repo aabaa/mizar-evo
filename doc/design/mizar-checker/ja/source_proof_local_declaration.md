@@ -6,20 +6,53 @@
 ## Native named-witness boundary
 historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
 
+## 認証済み proof-local intake
+
+Let・Given・Given-use・Given-condition・Given-descendant binding input は、
+一つの opaque source receipt を用いる。
+
+```rust
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceProofLocalIntakeReceipt { /* private fields */ }
+impl SourceProofLocalIntakeReceipt {
+    pub fn from_source(source: &TypedAst, declaration: ResolvedNodeId) -> Option<Self>;
+    pub fn fingerprint(&self) -> &str;
+}
+```
+
+`Debug` は opaque な receipt marker を出力する。
+
+既存の `lower_fingerprint` input field の型をこの receipt とし、build の他の
+signature は維持する。receipt は `TypedAst` から original generic table と
+source/module identity を保持し、table 内の実在 declaration を選択する。
+build・typed installation・resolved replay は candidate の range や cached
+fingerprint に頼らず元の role を照合する。handoff が receipt を保持し、type/term
+donor も同じ元の role を使う。既存 error class と phase 順序を維持する。
+
+同じ supported profile の純粋な layout 変更は、対応する genuine receipt により
+binding/type/term transport と replay が可能となる。名前・type・qualifier・label・
+arity・scope・visibility・未対応 profile の制約は維持する。condition fact・Set 展開・
+capture・dispatch・proof acceptance は追加しない。
+
+handoff の `lower_fingerprint()` は version 付き structural receipt fingerprint を
+返し、nested binding/type/term fingerprint もその identity を使う。runner の raw lower
+debug と source/surface hash の形式は維持する。receipt は raw bytes や追加の resolver
+symbol provenance を認証せず、source identity は決定的 fingerprint の content と別に照合する。
+
 ## Generic isolated Let source boundary
-Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。C/CTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・proof・dispatch・acceptance supportは加えない。
+Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。
 
 ## Generic isolated Given source boundary
-Runner-private GP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-leading-layout-transport)に従う。G/GTのcanonical dependency検査は維持し、noncanonical lower receiptによるbinding・condition fact・proof・dispatch・acceptance supportは加えない。
+Runner-private GP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-leading-layout-transport)に従う。
 
 ## Generic isolated Given-use source boundary
-Runner-private GUP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-use-leading-layout-transport)に従う。GUP binding・GUPT type・GU term producerはcanonical dependency検証を維持し、noncanonical lower receiptによるnative binding・term・proof・dispatch・acceptance supportは加えない。
+Runner-private GUP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-use-leading-layout-transport)に従う。
 
 ## Generic isolated Given-condition source boundary
-Runner-private GCP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-condition-source-transport)に従う。GC binding・GCT type・GCU term producerはcanonical dependency検証を維持し、noncanonical lower receiptによるcondition fact・native binding/term・proof・dispatch・acceptance supportは加えない。
+Runner-private GCP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-given-condition-source-transport)に従う。
 
 ## Generic descendant source boundary
-Runner-private SDP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-descendant-set-source-transport)に従う。SDC/SDT/SDUはcanonical dependency検証と既存Set/capture保留を維持し、noncanonical lower receiptによるnative binding・term・fact・proof・dispatch・acceptance supportは加えない。
+Runner-private SDP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-descendant-set-source-transport)に従う。
 
 ## 状態と authority
 
@@ -825,7 +858,6 @@ constructor/mutable accessorを置かない。
 pub struct SourceProofLocalLetBindingHandoffInput {
     pub source_id: SourceId,
     pub module_id: ModuleId,
-    pub lower_fingerprint: String,
     pub theorem_symbol: SymbolId,
     pub theorem_definition: DefinitionId,
     pub contribution: SourceContributionId,
@@ -893,7 +925,6 @@ impl SourceProofLocalLetBindingTable {
 pub struct SourceProofLocalLetBindingHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    lower_fingerprint: String,
     theorem_symbol: SymbolId,
     theorem_definition: DefinitionId,
     contribution: SourceContributionId,
