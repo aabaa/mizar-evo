@@ -3,12 +3,18 @@
 > canonical languageは英語である。canonical文書:
 > [../en/source_structure_definition.md](../en/source_structure_definition.md)。
 
-この Task 263 transport は凍結を維持します。
+## 元の inheritance の authority
+
+`SourceStructureDefinitionProducer::build` は generic table が install 済みの元の
+`TypedAst` を必須とする。inheritance 規則は candidate の field や保存済み identity に
+依存せず、正常な source owner と文法を選ぶ。handoff は同じ不変の table を build、
+typed installation、resolved replay で共有し、semantic arena は分離する。
+source receiver の identity と inheritance role は Resolver・definition・member の検証後、
+inheritance 段階で照合する。foreign receiver は `SourceIdentityMismatch`、元ソースの欠落や
+不正は `InvalidInheritance` とする。元ソースを伴わない scalar 互換性は private test policy とする。
 
 ## Ordinary Structure layout
 
-元のソース fixture・既存テストと正規 spelling 記述子は oracle として残す。
-現在の transport は既存 role site の同一 source・非空な相対範囲を使う。
 resolver の identity/signature/path/arity/effects 検査後、全 definition、全 member、
 inheritance、mapping/coverage、lower の順で検証し、coherence/baseline は arena より先。
 resolver は自身の正常な origin を検証し、呼出元の範囲/site とは照合しない。
@@ -17,8 +23,7 @@ stored origin の role/path/identity 不正は Resolver、正常な範囲の不�
 行エラーとし、どちらが stale かを断定しない。従来の正確な優先順位を保つ。
 
 contribution は順序付き origin を包含し、build は実際の contribution に inheritance
-が収まることも検査する。installation に contribution/block snapshot や Context はない。
-module-root74 の権威や raw block の端点を創作しない。definition は順序付き member、
+が収まることも検査する。module-root74 の権威や raw block の端点を創作しない。definition は順序付き member、
 member は Set3 RHS と末尾、inheritance は両 definition の後で順序付き mapping を包含。
 文法由来の header/closing/member/mapping 容量を検査し、完結した文の隣接は許す。
 正規記述子の長さや字下げは座標ではない。RHS arena の包含規則を保つ。
@@ -43,7 +48,7 @@ coherence と意味的 credit を追加しない境界を維持する。
 
 Checker Task 263は、2個の通常zero-parameter structure宣言、field/property
 selector宣言、1本のdirect inheritance edge、exact member coverage、fields-only
-constructor順序、root/path/view member associationのsyntax-free immutable intakeを
+constructor順序、root/path/view member associationのimmutable intakeを
 所有する。canonical authorityは`doc/spec/en/05.structures.md` §§5.1--5.8、
 constructor/selector declaration boundaryに限るChapter 13 §§13.3--13.3.3、
 definition-correctness/initial-obligation boundaryに限るChapter 16
@@ -121,9 +126,6 @@ associationは次の通りである。
 | 70 | `InheritanceDefinition` | `194..314` | `[31,66,33,67,35,68,69,46,47]` |
 | 71/72/73/74 | block/list/unit/root | `0..319` | canonical EN rows |
 
-checker productionにはsource text、parser type、raw
-token、Surface kind/node numberを渡さない。
-
 ## Frozen resolver provenance
 
 Task-263R後のexact resolver profileはshell/projection/symbol/definition/diagnostic
@@ -161,8 +163,6 @@ absentである。term/application/structure-term/set/formula/evidenceとTasks 2
 definition handoffはすべてabsentである。runnerは既存producerをcomposeするだけで、
 binding/context/application/return/mode-RHS/member type/resolver relation/semantic
 resultをfabricateしない。
-
-## Exact public syntax-free ABI
 
 new `source_structure_definition.rs`は次のdense IDsを追加する。
 
@@ -205,18 +205,6 @@ handoff private stateはimmutable
 `base_initial_obligations_snapshot: InitialObligationTable`も保持する。public getter
 はなくcaller-suppliedでもない。producerがauthenticated baselineからcloneする。
 public countはcompact cardinality invariantでありsnapshotの代替ではない。
-
-producer ABIは次である。
-
-```rust
-SourceStructureDefinitionProducer::build(
-    input,
-    env: &SymbolEnv,
-    source_type: &SourceTypeApplicationHandoff,
-    base_initial_obligations: &InitialObligationTable,
-    arena: &TypedArena,
-) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError>
-```
 
 projectionはbaseline clone、handoff、final obligation cloneを持つ。error variants
 はsource/dependency、resolver、definition/member/inheritance/mapping/coherence、

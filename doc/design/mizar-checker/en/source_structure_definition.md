@@ -3,12 +3,20 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_structure_definition.md](../ja/source_structure_definition.md).
 
-This Task 263 transport remains frozen.
+## Original inheritance authority
+
+`SourceStructureDefinitionProducer::build` requires the original `TypedAst`
+with its installed generic table. The inheritance rule selects its normal
+source owner and grammar independently of candidate fields and stored identity.
+The handoff shares the same immutable table for build, typed installation and
+resolved replay; the semantic arena remains separate. Source receiver identity
+and the inheritance role are checked at the inheritance phase, after Resolver,
+definition and member validation. Foreign receiver identity uses
+`SourceIdentityMismatch`; missing or malformed source uses `InvalidInheritance`.
+Source-free scalar compatibility remains private test policy.
 
 ## Ordinary Structure layout
 
-The original source/tests and canonical spelling descriptors remain fixture oracles;
-live transport uses relative same-source nonempty geometry at existing role sites.
 Keep all resolver identity/signature/path/arity/effect checks before all definition,
 member, inheritance, mapping/coverage and lower phases; coherence/baseline precede arena.
 Resolver validates its own normal origins, never caller ranges/sites. Each row phase
@@ -17,8 +25,8 @@ Stored-origin role/path/identity failures remain Resolver; normal range disagree
 are the corresponding row error, without stale-side blame. Preserve old exact winners.
 
 Contribution encloses ordered origins; build additionally checks the inheritance
-inside that actual contribution. Installation has no contribution/block snapshot or
-Context: do not invent module-root74 authority or raw block endpoints. Definitions
+inside that actual contribution. Do not invent module-root74 authority or raw block
+endpoints. Definitions
 contain their ordered members; members contain Set3 RHS/tail; inheritance follows both
 definitions and contains ordered mappings. Require grammar-derived header/closing and
 member/mapping capacities, allowing adjacent completed statements. Canonical descriptor
@@ -43,7 +51,7 @@ all supplied baseline obligations/snapshot and zero appended coherence or semant
 
 ## Task 263 Scope And Authority
 
-Checker Task 263 owns one syntax-free immutable intake for two ordinary
+Checker Task 263 owns one immutable intake for two ordinary
 zero-parameter structure declarations, their field/property selector
 declarations, one direct inheritance edge, exact member coverage, fields-only
 constructor order, and the resulting root/path/view member associations.
@@ -176,9 +184,6 @@ Rows 50--74 are exactly:
 | 72 | `ItemList` | `0..319` | `[71]` |
 | 73 | `CompilationUnit` | `0..319` | `[72]` |
 | 74 | `Root` | `0..319` | tokens 0--49 followed by `[73]` |
-
-Checker production receives no parser type,
-source text, raw token, Surface kind, or Surface node number.
 
 ## Frozen Resolver Provenance
 
@@ -425,6 +430,7 @@ impl SourceStructureDefinitionProducer {
         source_type: &SourceTypeApplicationHandoff,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
     ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError>;
 }
 ```

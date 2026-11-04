@@ -347,6 +347,7 @@ fn build_output(
             .ok_or_else(|| "Task249S handoff disappeared".to_owned())?,
         typed_ast.initial_obligations(),
         typed_ast.nodes(),
+        &syntax,
     )
     .map_err(|error| format!("Task263 structure definition: {error}"))?;
     typed_ast = typed_ast

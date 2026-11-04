@@ -32,6 +32,7 @@ use mizar_resolve::{
 use mizar_session::{
     BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
 };
+use mizar_syntax::SurfaceNodeKind;
 
 #[derive(Clone)]
 struct Fixture {
@@ -48,12 +49,27 @@ impl Fixture {
         &self,
         baseline: &InitialObligationTable,
     ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
+        SourceStructureDefinitionProducer::build_canonical(
+            self.input.clone(),
+            &self.env,
+            &self.source_type,
+            baseline,
+            &self.arena,
+        )
+    }
+
+    fn build_native(
+        &self,
+        baseline: &InitialObligationTable,
+        source: &TypedAst,
+    ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
         SourceStructureDefinitionProducer::build(
             self.input.clone(),
             &self.env,
             &self.source_type,
             baseline,
             &self.arena,
+            source,
         )
     }
 
@@ -276,7 +292,7 @@ fn task_263_structure_definition_resolver_and_row_corruption_fail_closed() {
     let (stale_effect_env, _) =
         resolver_env_with_effects(fixture.source, fixture.module.clone(), true, None);
     assert_eq!(
-        SourceStructureDefinitionProducer::build(
+        SourceStructureDefinitionProducer::build_canonical(
             fixture.input.clone(),
             &stale_effect_env,
             &fixture.source_type,
@@ -411,7 +427,7 @@ fn task_263_structure_definition_resolver_arity_is_authenticated_by_role() {
                 Some((definition_index, arity)),
             );
             assert_eq!(
-                SourceStructureDefinitionProducer::build(
+                SourceStructureDefinitionProducer::build_canonical(
                     fixture.input.clone(),
                     &env,
                     &fixture.source_type,
@@ -434,7 +450,7 @@ fn task_263_structure_definition_resolver_arity_is_authenticated_by_role() {
                 Some((definition_index, Some(arity))),
             );
             assert_eq!(
-                SourceStructureDefinitionProducer::build(
+                SourceStructureDefinitionProducer::build_canonical(
                     fixture.input.clone(),
                     &env,
                     &fixture.source_type,
@@ -1027,7 +1043,7 @@ fn fixture_build(
     input: SourceStructureDefinitionHandoffInput,
     baseline: &InitialObligationTable,
 ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
-    SourceStructureDefinitionProducer::build(
+    SourceStructureDefinitionProducer::build_canonical(
         input,
         &fixture.env,
         &fixture.source_type,
@@ -2865,4 +2881,429 @@ fn task_263_public_nonuniform_upper_ranges_preserve_real_lower_and_baseline() {
         assert_eq!(lower, lower_before, "{label}");
         assert_eq!(arena, arena_before, "{label}");
     }
+}
+
+enum NativeInheritanceSourceMutation {
+    None,
+    ParentKind,
+    FrameKind,
+    KeywordKind,
+    ParentKeyword,
+    Identifier,
+    Duplicate,
+}
+
+fn native_inheritance_source(f: &Fixture, mutation: NativeInheritanceSourceMutation) -> TypedAst {
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceTokenKind as T};
+    let canonical = include_str!(
+        "../../../../tests/miz/pass/types/pass_type_elaboration_structure_definition_payload_001.miz"
+    );
+    let extra = format!("  {}\n", f.input.inheritances[0].spelling);
+    let text = match &mutation {
+        NativeInheritanceSourceMutation::Identifier => {
+            canonical.replace("inherit Task263Derived", "inherit Task263DeriveX")
+        }
+        NativeInheritanceSourceMutation::Duplicate => {
+            canonical.replace("\nend;\n", &format!("\n{extra}end;\n"))
+        }
+        _ => canonical.to_owned(),
+    };
+    let words = "definition struct Task263Base where field carrier -> set ; property marker -> set ; end ; struct Task263Derived where field carrier -> set ; property marker -> set ; end ; inherit Task263Derived extends Task263Base where field carrier from carrier ; property marker from marker ; end ; end ;".split_ascii_whitespace().collect::<Vec<_>>();
+    let mut builder = SurfaceAstBuilder::new(f.source);
+    let mut sites = Vec::new();
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    for (index, word) in words.iter().enumerate() {
+        if index == 48 && matches!(&mutation, NativeInheritanceSourceMutation::Duplicate) {
+            cursor += extra.len();
+        }
+        let word =
+            if index == 32 && matches!(&mutation, NativeInheritanceSourceMutation::Identifier) {
+                "Task263DeriveX"
+            } else {
+                word
+            };
+        let start = cursor + text[cursor..].find(word).unwrap();
+        cursor = start + word.len();
+        let mut kind = match word {
+            "Task263Base" | "Task263Derived" | "Task263DeriveX" if index == 32 || index == 34 => {
+                T::UserSymbol
+            }
+            "Task263Base" | "Task263Derived" | "carrier" | "marker" => T::Identifier,
+            ";" | "->" => T::ReservedSymbol,
+            _ => T::ReservedWord,
+        };
+        if (index == 31 && matches!(&mutation, NativeInheritanceSourceMutation::KeywordKind))
+            || (index == 0 && matches!(&mutation, NativeInheritanceSourceMutation::ParentKeyword))
+        {
+            kind = T::Identifier;
+        }
+        sites.push(builder.add_token(kind, word, range(f.source, start, cursor)));
+        spans.push((start, cursor));
+    }
+    let mut duplicate = None;
+    let mut duplicate_tokens = Vec::new();
+    for (mut kind, children) in [
+        (K::StructurePattern, vec![2]),
+        (K::TypeHead, vec![7]),
+        (K::TypeExpression, vec![51]),
+        (K::StructureField, vec![4, 5, 6, 52, 8]),
+        (K::TypeHead, vec![12]),
+        (K::TypeExpression, vec![54]),
+        (K::StructureProperty, vec![9, 10, 11, 55, 13]),
+        (K::StructureDefinition, vec![1, 50, 3, 53, 56, 14, 15]),
+        (K::StructurePattern, vec![17]),
+        (K::TypeHead, vec![22]),
+        (K::TypeExpression, vec![59]),
+        (K::StructureField, vec![19, 20, 21, 60, 23]),
+        (K::TypeHead, vec![27]),
+        (K::TypeExpression, vec![62]),
+        (K::StructureProperty, vec![24, 25, 26, 63, 28]),
+        (K::StructureDefinition, vec![16, 58, 18, 61, 64, 29, 30]),
+        (K::InheritanceTarget, vec![32]),
+        (K::InheritanceTarget, vec![34]),
+        (K::FieldRedefinition, vec![36, 37, 38, 39, 40]),
+        (K::PropertyRedefinition, vec![41, 42, 43, 44, 45]),
+        (
+            K::InheritanceDefinition,
+            vec![31, 66, 33, 67, 35, 68, 69, 46, 47],
+        ),
+        (K::DefinitionBlockItem, vec![0, 57, 65, 70, 48, 49]),
+        (K::ItemList, vec![71]),
+        (K::CompilationUnit, vec![72]),
+        (K::Root, (0..50).chain([73]).collect()),
+    ] {
+        if kind == K::DefinitionBlockItem
+            && matches!(&mutation, NativeInheritanceSourceMutation::Duplicate)
+        {
+            let mut cursor = 315;
+            let mut extra_spans = Vec::new();
+            for (index, word) in words[31..48].iter().enumerate() {
+                let start = cursor + text[cursor..].find(word).unwrap();
+                cursor = start + word.len();
+                let token_kind = if index == 1 || index == 3 {
+                    T::UserSymbol
+                } else if matches!(*word, "carrier" | "marker") {
+                    T::Identifier
+                } else if *word == ";" {
+                    T::ReservedSymbol
+                } else {
+                    T::ReservedWord
+                };
+                duplicate_tokens.push(builder.add_token(
+                    token_kind,
+                    *word,
+                    range(f.source, start, cursor),
+                ));
+                extra_spans.push((start, cursor));
+            }
+            let target = builder.add_node(
+                K::InheritanceTarget,
+                range(f.source, extra_spans[1].0, extra_spans[1].1),
+                vec![duplicate_tokens[1]],
+            );
+            let parent = builder.add_node(
+                K::InheritanceTarget,
+                range(f.source, extra_spans[3].0, extra_spans[3].1),
+                vec![duplicate_tokens[3]],
+            );
+            let field = builder.add_node(
+                K::FieldRedefinition,
+                range(f.source, extra_spans[5].0, extra_spans[9].1),
+                duplicate_tokens[5..10].to_vec(),
+            );
+            let property = builder.add_node(
+                K::PropertyRedefinition,
+                range(f.source, extra_spans[10].0, extra_spans[14].1),
+                duplicate_tokens[10..15].to_vec(),
+            );
+            duplicate = Some(builder.add_node(
+                K::InheritanceDefinition,
+                range(f.source, extra_spans[0].0, extra_spans[16].1),
+                vec![
+                    duplicate_tokens[0],
+                    target,
+                    duplicate_tokens[2],
+                    parent,
+                    duplicate_tokens[4],
+                    field,
+                    property,
+                    duplicate_tokens[15],
+                    duplicate_tokens[16],
+                ],
+            ));
+        }
+        let start = spans[children[0]].0;
+        let end = spans[*children.last().unwrap()].1;
+        let mut actual = children
+            .iter()
+            .map(|index| sites[*index])
+            .collect::<Vec<_>>();
+        if kind == K::DefinitionBlockItem
+            && let Some(owner) = duplicate
+        {
+            actual.insert(4, owner);
+        }
+        if kind == K::Root && duplicate.is_some() {
+            actual = sites[..48]
+                .iter()
+                .chain(duplicate_tokens.iter())
+                .chain(sites[48..50].iter())
+                .copied()
+                .chain([sites[73]])
+                .collect();
+        }
+        if (kind == K::DefinitionBlockItem
+            && matches!(&mutation, NativeInheritanceSourceMutation::ParentKind))
+            || (kind == K::FieldRedefinition
+                && matches!(&mutation, NativeInheritanceSourceMutation::FrameKind))
+        {
+            kind = K::TermList;
+        }
+        sites.push(builder.add_node(kind, range(f.source, start, end), actual));
+        spans.push((start, end));
+    }
+    let ast = builder.finish(sites.last().copied(), None);
+    let source = SurfaceResolvedArena::lower(&ast, &f.module).unwrap();
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    )
+            })
+            .collect(),
+    )
+    .unwrap();
+    let mut syntax = TypedAst::try_new(TypedAstParts {
+        source_id: f.source,
+        module_id: f.module.clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .unwrap();
+    syntax.install_source_nodes(&source).unwrap();
+    syntax
+}
+
+#[test]
+fn inheritance_native_source_roles_and_compound_priorities() {
+    let f = fixture();
+    let source = native_inheritance_source(&f, NativeInheritanceSourceMutation::None);
+    let before = source.clone();
+    let baseline = unrelated_baseline(f.source, "native");
+    let projection = f.build_native(&baseline, &source).unwrap();
+    assert_eq!(
+        projection.handoff().debug_text(),
+        f.projection(&baseline).handoff().debug_text()
+    );
+    assert!(Arc::ptr_eq(
+        source.source_nodes().unwrap(),
+        projection.handoff.original_source_nodes.as_ref().unwrap()
+    ));
+    assert_eq!(source, before);
+    let missing = f.typed(baseline.clone());
+    let mut foreign = f.clone();
+    foreign.module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("inheritance"));
+    let foreign = native_inheritance_source(&foreign, NativeInheritanceSourceMutation::None);
+    for (authority, error) in [
+        (
+            &missing,
+            SourceStructureDefinitionError::InvalidInheritance { index: 0 },
+        ),
+        (
+            &foreign,
+            SourceStructureDefinitionError::SourceIdentityMismatch,
+        ),
+    ] {
+        assert_eq!(f.build_native(&baseline, authority), Err(error.clone()));
+        for stage in 0..3 {
+            let mut earlier = f.clone();
+            let expected = match stage {
+                0 => {
+                    earlier.input.members[3].definition = earlier.input.members[2].definition;
+                    SourceStructureDefinitionError::InvalidResolverDefinition { index: 5 }
+                }
+                1 => {
+                    earlier.input.definitions[1].source_ordinal = 9;
+                    SourceStructureDefinitionError::InvalidDefinition { index: 1 }
+                }
+                _ => {
+                    earlier.input.members[3].ordinal = 9;
+                    SourceStructureDefinitionError::InvalidMember { index: 3 }
+                }
+            };
+            assert_eq!(earlier.build_native(&baseline, authority), Err(expected));
+        }
+        let mut later = f.clone();
+        later.input.mappings[0].path.clear();
+        assert_eq!(
+            later.build_native(&baseline, &source),
+            Err(SourceStructureDefinitionError::InvalidMapping { index: 0 })
+        );
+        assert_eq!(later.build_native(&baseline, authority), Err(error.clone()));
+        let bad_baseline = unrelated_baseline(f.source, "source.definition.functor.bad");
+        assert_eq!(
+            f.build_native(&bad_baseline, &source),
+            Err(SourceStructureDefinitionError::InvalidObligation)
+        );
+        assert_eq!(f.build_native(&bad_baseline, authority), Err(error.clone()));
+        let mut later = f.clone();
+        let mut lower = source_type_input(f.source, f.module.clone());
+        lower.members[0].member_range.end += 1;
+        let owner = lower.members[0].member_range;
+        later.arena = TypedArena::try_new(
+            later.arena.root(),
+            later
+                .arena
+                .iter()
+                .map(|(id, node)| {
+                    let mut node = node.clone();
+                    if id.index() == 53 {
+                        node.anchor = SourceAnchor::Range(owner);
+                    }
+                    node
+                })
+                .collect(),
+        )
+        .unwrap();
+        later.source_type = SourceTypeStructureMemberProducer::build(lower, &later.arena).unwrap();
+        assert_eq!(
+            later.build_native(&baseline, &source),
+            Err(SourceStructureDefinitionError::InvalidMember { index: 0 })
+        );
+        assert_eq!(later.build_native(&baseline, authority), Err(error));
+    }
+    let mut foreign_id = f.clone();
+    foreign_id.source = other_source_id();
+    let foreign_id = native_inheritance_source(&foreign_id, NativeInheritanceSourceMutation::None);
+    assert_eq!(
+        f.build_native(&baseline, &foreign_id),
+        Err(SourceStructureDefinitionError::SourceIdentityMismatch)
+    );
+    for mutation in [
+        NativeInheritanceSourceMutation::ParentKind,
+        NativeInheritanceSourceMutation::FrameKind,
+        NativeInheritanceSourceMutation::KeywordKind,
+        NativeInheritanceSourceMutation::ParentKeyword,
+        NativeInheritanceSourceMutation::Identifier,
+        NativeInheritanceSourceMutation::Duplicate,
+    ] {
+        let malformed = native_inheritance_source(&f, mutation);
+        assert_eq!(
+            f.build_native(&baseline, &malformed),
+            Err(SourceStructureDefinitionError::InvalidInheritance { index: 0 })
+        );
+    }
+}
+
+#[test]
+fn inheritance_native_original_rows_refuse_coherent_forgery_and_replay() {
+    let f = fixture();
+    let source = native_inheritance_source(&f, NativeInheritanceSourceMutation::None);
+    let baseline = unrelated_baseline(f.source, "native-replay");
+    let projection = f.build_native(&baseline, &source).unwrap();
+    let typed = f
+        .typed(baseline.clone())
+        .with_source_structure_definition(projection.clone())
+        .unwrap();
+    assert!(typed.source_nodes().is_none());
+    assert!(assemble_empty(&typed).is_ok());
+    let mut counterfeit = f.clone();
+    let forged_range = range(f.source, 193, 315);
+    counterfeit.input.inheritances[0].source_range = forged_range;
+    counterfeit.arena = TypedArena::try_new(
+        f.arena.root(),
+        f.arena
+            .iter()
+            .map(|(id, node)| {
+                let mut node = node.clone();
+                if id.index() == 70 {
+                    node.anchor = SourceAnchor::Range(forged_range);
+                }
+                node
+            })
+            .collect(),
+    )
+    .unwrap();
+    assert!(counterfeit.build(&baseline).is_ok());
+    assert_eq!(
+        counterfeit.build_native(&baseline, &source),
+        Err(SourceStructureDefinitionError::InvalidInheritance { index: 0 })
+    );
+    let mut forged = projection.clone();
+    forged.handoff.inheritances.rows[0].source_range = forged_range;
+    assert_eq!(
+        counterfeit
+            .typed(baseline.clone())
+            .with_source_structure_definition(forged.clone()),
+        Err(TypedAstError::InvalidSourceStructureDefinition)
+    );
+    let mut injected = counterfeit.typed(baseline.clone());
+    injected.replace_initial_obligations_for_test(forged.initial_obligations);
+    injected.inject_source_structure_definition_for_test(forged.handoff);
+    assert_eq!(
+        assemble_empty(&injected),
+        Err(ResolvedTypedAstError::InvalidSourceStructureDefinition)
+    );
+    let duplicate = native_inheritance_source(&f, NativeInheritanceSourceMutation::Duplicate);
+    let mut recovered_duplicate = projection.clone();
+    recovered_duplicate.handoff.original_source_nodes = duplicate.source_nodes().cloned();
+    let rows = Arc::make_mut(
+        recovered_duplicate
+            .handoff
+            .original_source_nodes
+            .as_mut()
+            .unwrap(),
+    );
+    rows.iter_mut()
+        .rfind(|row| row.kind == SurfaceNodeKind::InheritanceDefinition)
+        .unwrap()
+        .recovery = NodeRecoveryState::Recovered;
+    assert_eq!(
+        f.typed(baseline.clone())
+            .with_source_structure_definition(recovered_duplicate),
+        Err(TypedAstError::InvalidSourceStructureDefinition)
+    );
+    let mut foreign = projection.clone();
+    Arc::make_mut(foreign.handoff.original_source_nodes.as_mut().unwrap())[0]
+        .range
+        .source_id = other_source_id();
+    assert_installation_error(
+        &f,
+        &foreign.handoff,
+        &f.source_type,
+        &baseline,
+        &f.arena,
+        SourceStructureDefinitionError::SourceIdentityMismatch,
+    );
+    let mut injected = typed.clone();
+    injected.inject_source_structure_definition_for_test(foreign.handoff);
+    assert_eq!(
+        assemble_empty(&injected),
+        Err(ResolvedTypedAstError::InvalidSourceStructureDefinition)
+    );
+    assert!(Arc::ptr_eq(
+        source.source_nodes().unwrap(),
+        projection.handoff.original_source_nodes.as_ref().unwrap()
+    ));
+    assert!(assemble_empty(&typed).is_ok());
 }

@@ -1,5 +1,3 @@
-//! Syntax-free structure-definition intake for checker phase 6.
-
 use crate::{
     source_mode_definition::validate_source_mode_definition_absence,
     source_type::{
@@ -7,8 +5,8 @@ use crate::{
         SourceTypeHead, SourceTypeStructureMemberId,
     },
     typed_ast::{
-        InitialObligationKind, InitialObligationTable, NodeRecoveryState, TypedArena, TypedNodeId,
-        TypedSiteRef,
+        InitialObligationKind, InitialObligationTable, NodeRecoveryState, SourceNode, TypedArena,
+        TypedAst, TypedNodeId, TypedSiteRef,
     },
 };
 use mizar_resolve::{
@@ -19,10 +17,12 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};
 use std::{
     collections::BTreeSet,
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -451,6 +451,7 @@ pub struct SourceStructureDefinitionHandoff {
     source_id: SourceId,
     module_id: ModuleId,
     source_type_fingerprint: String,
+    original_source_nodes: Option<Arc<[SourceNode]>>,
     base_initial_obligation_count: usize,
     base_initial_obligations_snapshot: InitialObligationTable,
     resolver_identity_snapshot: Vec<(SymbolId, DefinitionId, SourceContributionId)>,
@@ -769,6 +770,43 @@ impl SourceStructureDefinitionProducer {
         source_type: &SourceTypeApplicationHandoff,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
+    ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_type,
+            base_initial_obligations,
+            arena,
+            Some(source),
+        )
+    }
+
+    #[cfg(test)]
+    fn build_canonical(
+        input: SourceStructureDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_type: &SourceTypeApplicationHandoff,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+    ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_type,
+            base_initial_obligations,
+            arena,
+            None,
+        )
+    }
+
+    fn build_with_source(
+        input: SourceStructureDefinitionHandoffInput,
+        env: &SymbolEnv,
+        source_type: &SourceTypeApplicationHandoff,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+        source: Option<&TypedAst>,
     ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
         if env.module_id() != &input.module_id
             || source_type.source_id() != input.source_id
@@ -787,7 +825,25 @@ impl SourceStructureDefinitionProducer {
                 SourceAnchor::Range(range) => Some(*range),
                 _ => None,
             });
-        validate_inheritance_inputs(&input, &definition_origins, &mapping_origins, arena, block)?;
+        let original = source
+            .map(|source| {
+                if source.source_id() != input.source_id || source.module_id() != &input.module_id {
+                    return Err(SourceStructureDefinitionError::SourceIdentityMismatch);
+                }
+                source
+                    .source_nodes()
+                    .map(|rows| rows.as_ref())
+                    .ok_or(SourceStructureDefinitionError::InvalidInheritance { index: 0 })
+            })
+            .transpose()?;
+        validate_inheritance_inputs(
+            &input,
+            &definition_origins,
+            &mapping_origins,
+            arena,
+            block,
+            original,
+        )?;
         validate_mapping_inputs(&input, &mapping_origins)?;
         validate_lower(source_type, &input)?;
         validate_baseline(base_initial_obligations)?;
@@ -813,6 +869,7 @@ impl SourceStructureDefinitionProducer {
             source_id: input.source_id,
             module_id: input.module_id,
             source_type_fingerprint: source_type.debug_text(),
+            original_source_nodes: source.and_then(TypedAst::source_nodes).cloned(),
             base_initial_obligation_count: base_initial_obligations.len(),
             base_initial_obligations_snapshot: base_initial_obligations.clone(),
             resolver_identity_snapshot,
@@ -905,6 +962,7 @@ impl SourceStructureDefinitionProducer {
             },
             coherence_requests: SourceStructureCoherenceRequestTable { rows: Vec::new() },
         };
+        validate_handoff_rows(&handoff, source_type, arena)?;
         validate_arena(&handoff, source_type, arena)?;
         let initial_obligations = base_initial_obligations.clone();
         Ok(SourceStructureDefinitionProjection {
@@ -1260,15 +1318,110 @@ fn validate_member_inputs(
     Ok(())
 }
 
+pub(crate) fn inheritance_definition_rule(rows: &[SourceNode]) -> Option<&SourceNode> {
+    let mut owners = rows
+        .iter()
+        .filter(|row| row.kind() == &SurfaceNodeKind::InheritanceDefinition);
+    let owner = owners.next()?;
+    if owners.next().is_some()
+        || rows
+            .iter()
+            .any(|row| row.recovery() != NodeRecoveryState::Normal)
+    {
+        return None;
+    }
+    let block = rows.iter().find(|row| {
+        Some(row.site()) == owner.parent() && row.kind() == &SurfaceNodeKind::DefinitionBlockItem
+    })?;
+    let children = |parent: &SourceNode| {
+        rows.iter()
+            .filter(|row| row.parent() == Some(parent.site()))
+            .collect::<Vec<_>>()
+    };
+    let frame = children(owner);
+    let parent = children(block);
+    if frame.len() != 9
+        || parent.len() < 4
+        || owner.child_ordinal() == 0
+        || owner.child_ordinal() >= parent.len() - 2
+        || frame
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || parent
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+        || frame[5].kind() != &SurfaceNodeKind::FieldRedefinition
+        || frame[6].kind() != &SurfaceNodeKind::PropertyRedefinition
+    {
+        return None;
+    }
+    for (row, kind, text) in [
+        (frame[0], SurfaceTokenKind::ReservedWord, "inherit"),
+        (frame[2], SurfaceTokenKind::ReservedWord, "extends"),
+        (frame[4], SurfaceTokenKind::ReservedWord, "where"),
+        (frame[7], SurfaceTokenKind::ReservedWord, "end"),
+        (frame[8], SurfaceTokenKind::ReservedSymbol, ";"),
+        (parent[0], SurfaceTokenKind::ReservedWord, "definition"),
+        (
+            parent[parent.len() - 2],
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        ),
+        (
+            parent[parent.len() - 1],
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        ),
+    ] {
+        if !matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    for target in [frame[1], frame[3]] {
+        let names = children(target);
+        if target.kind() != &SurfaceNodeKind::InheritanceTarget
+            || names.len() != 1
+            || names[0].child_ordinal() != 0
+            || !matches!(names[0].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::UserSymbol)
+        {
+            return None;
+        }
+    }
+    Some(owner)
+}
+
 fn validate_inheritance_inputs(
     input: &SourceStructureDefinitionHandoffInput,
     definition_origins: &[SemanticOrigin],
     mapping_origins: &[SemanticOrigin],
     arena: &TypedArena,
     block: Option<SourceRange>,
+    original: Option<&[SourceNode]>,
 ) -> Result<(), SourceStructureDefinitionError> {
     let row = &input.inheritances[0];
     let error = SourceStructureDefinitionError::InvalidInheritance { index: 0 };
+    let original_owner = if let Some(rows) = original {
+        if rows
+            .iter()
+            .any(|row| row.range().source_id != input.source_id)
+        {
+            return Err(SourceStructureDefinitionError::SourceIdentityMismatch);
+        }
+        let owner = inheritance_definition_rule(rows).ok_or_else(|| error.clone())?;
+        if row.site != node_site(owner.site().index()) || row.source_range != owner.range() {
+            return Err(error);
+        }
+        Some(owner)
+    } else {
+        None
+    };
+    #[cfg(not(test))]
+    if original.is_none() {
+        return Err(error);
+    }
     let previous = origin_range(&definition_origins[1]).ok_or_else(|| error.clone())?;
     let first = origin_range(&mapping_origins[0]).ok_or_else(|| error.clone())?;
     let last = origin_range(&mapping_origins[1]).ok_or_else(|| error.clone())?;
@@ -1321,6 +1474,17 @@ fn validate_inheritance_inputs(
                 SourceStructureMappingId::new(0),
                 SourceStructureMappingId::new(1),
             ]
+    {
+        return Err(error);
+    }
+    if let Some(owner) = original_owner
+        && owner.spelling()
+            != row
+                .spelling
+                .replace(';', " ;")
+                .split_ascii_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
     {
         return Err(error);
     }
@@ -1569,7 +1733,14 @@ fn validate_handoff_rows(
     };
     validate_definition_inputs(&input, &origins.0, &origins.1)?;
     validate_member_inputs(&input, &origins.1)?;
-    validate_inheritance_inputs(&input, &origins.0, &origins.2, arena, None)?;
+    validate_inheritance_inputs(
+        &input,
+        &origins.0,
+        &origins.2,
+        arena,
+        None,
+        handoff.original_source_nodes.as_deref(),
+    )?;
     validate_mapping_inputs(&input, &origins.2)?;
     validate_lower(source_type, &input)?;
     if !handoff.coherence_requests.is_empty() {

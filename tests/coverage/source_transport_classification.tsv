@@ -77,7 +77,7 @@ IfStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ImportAliasDecl	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ImportItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 InfixExpression	referenced	referenced	existing source_* producer
-InheritanceDefinition	definition	b	checker Task 279 / Task 270
+InheritanceDefinition	definition	b	source_structure_definition
 InheritanceTarget	definition	b	checker Task 279 / Task 270
 InlineFunctorDefinition	definition	b	checker Task 279 / Task 270
 InlinePredicateApplication	referenced	referenced	existing source_* producer

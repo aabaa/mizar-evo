@@ -8,7 +8,7 @@ equating	definition	-	open	Equating
 field-argument	definition	-	open	FieldArgument
 field-redefinition	definition	-	open	FieldRedefinition
 functor-redefinition	definition	-	open	FunctorRedefinition
-inheritance-definition	definition	-	open	InheritanceDefinition
+inheritance-definition	definition	mode-property	done	InheritanceDefinition
 inheritance-target	definition	-	open	InheritanceTarget
 inline-functor-definition	definition	-	open	InlineFunctorDefinition
 inline-predicate-definition	definition	-	open	InlinePredicateDefinition

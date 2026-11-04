@@ -114,6 +114,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             || path == root.join("src/source_mode_definition.rs")
             || path == root.join("src/source_functor_definition.rs")
             || path == root.join("src/source_property_implementation.rs")
+            || path == root.join("src/source_structure_definition.rs")
         {
             let permitted = if path == root.join("src/source_property_implementation.rs") {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
