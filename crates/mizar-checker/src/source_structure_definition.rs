@@ -844,7 +844,13 @@ impl SourceStructureDefinitionProducer {
             block,
             original,
         )?;
-        validate_mapping_inputs(&input, &mapping_origins)?;
+        validate_mapping_inputs(
+            &input,
+            &mapping_origins,
+            &definition_origins,
+            &member_origins,
+            original,
+        )?;
         validate_lower(source_type, &input)?;
         validate_baseline(base_initial_obligations)?;
         let resolver_identity_snapshot = input
@@ -1393,6 +1399,102 @@ pub(crate) fn inheritance_definition_rule(rows: &[SourceNode]) -> Option<&Source
     Some(owner)
 }
 
+fn unique_original(
+    rows: &[SourceNode],
+    eligible: impl Fn(&SourceNode) -> bool,
+) -> Option<&SourceNode> {
+    let mut matches = rows.iter().filter(|row| eligible(row));
+    let row = matches.next()?;
+    matches.next().is_none().then_some(row)
+}
+
+fn original_children<'a>(rows: &'a [SourceNode], parent: &SourceNode) -> Vec<&'a SourceNode> {
+    rows.iter()
+        .filter(|row| row.parent() == Some(parent.site()))
+        .collect()
+}
+
+pub(crate) fn inheritance_target_rule<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+    ordinal: usize,
+) -> Option<&'a SourceNode> {
+    let target = unique_original(rows, |row| {
+        row.parent() == Some(owner.site())
+            && row.child_ordinal() == ordinal
+            && row.kind() == &SurfaceNodeKind::InheritanceTarget
+    })?;
+    let names = original_children(rows, target);
+    if names.len() != 1
+        || names[0].child_ordinal() != 0
+        || names[0].range() != target.range()
+        || !matches!(names[0].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::UserSymbol)
+    {
+        return None;
+    }
+    Some(names[0])
+}
+
+pub(crate) fn field_redefinition_rule<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<(&'a SourceNode, &'a SourceNode, &'a SourceNode)> {
+    let mapping = unique_original(rows, |row| {
+        row.parent() == Some(owner.site()) && row.kind() == &SurfaceNodeKind::FieldRedefinition
+    })?;
+    let frame = original_children(rows, mapping);
+    if frame.len() != 5
+        || frame
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+    {
+        return None;
+    }
+    for (index, kind, text) in [
+        (0, SurfaceTokenKind::ReservedWord, "field"),
+        (2, SurfaceTokenKind::ReservedWord, "from"),
+        (4, SurfaceTokenKind::ReservedSymbol, ";"),
+    ] {
+        if !matches!(frame[index].kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    if ![frame[1], frame[3]].iter().all(|row| matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)) { return None; }
+    Some((mapping, frame[1], frame[3]))
+}
+
+pub(crate) fn property_redefinition_rule<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<(&'a SourceNode, &'a SourceNode, &'a SourceNode)> {
+    let mapping = unique_original(rows, |row| {
+        row.parent() == Some(owner.site()) && row.kind() == &SurfaceNodeKind::PropertyRedefinition
+    })?;
+    let frame = original_children(rows, mapping);
+    if frame.len() != 5
+        || frame
+            .iter()
+            .enumerate()
+            .any(|(ordinal, row)| row.child_ordinal() != ordinal)
+    {
+        return None;
+    }
+    for (index, kind, text) in [
+        (0, SurfaceTokenKind::ReservedWord, "property"),
+        (2, SurfaceTokenKind::ReservedWord, "from"),
+        (4, SurfaceTokenKind::ReservedSymbol, ";"),
+    ] {
+        if !matches!(frame[index].kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    if ![frame[1], frame[3]].iter().all(|row| matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)) { return None; }
+    Some((mapping, frame[1], frame[3]))
+}
+
 fn validate_inheritance_inputs(
     input: &SourceStructureDefinitionHandoffInput,
     definition_origins: &[SemanticOrigin],
@@ -1477,6 +1579,35 @@ fn validate_inheritance_inputs(
     {
         return Err(error);
     }
+    if let (Some(rows), Some(owner)) = (original, original_owner) {
+        for (ordinal, definition) in [(1, row.child.index()), (3, row.parent.index())] {
+            let target =
+                inheritance_target_rule(rows, owner, ordinal).ok_or_else(|| error.clone())?;
+            let declaration = unique_original(rows, |candidate| {
+                candidate.kind() == &SurfaceNodeKind::StructureDefinition
+                    && candidate.parent() == owner.parent()
+                    && candidate.preorder_ordinal() < owner.preorder_ordinal()
+                    && Some(candidate.range()) == origin_range(&definition_origins[definition])
+            })
+            .ok_or_else(|| error.clone())?;
+            let pattern = unique_original(rows, |row| {
+                row.parent() == Some(declaration.site())
+                    && row.child_ordinal() == 1
+                    && row.kind() == &SurfaceNodeKind::StructurePattern
+            })
+            .ok_or_else(|| error.clone())?;
+            let names = original_children(rows, pattern);
+            if node_site(declaration.site().index()) != input.definitions[definition].site
+                || names.len() != 1
+                || names[0].child_ordinal() != 0
+                || names[0].range() != pattern.range()
+                || !matches!(names[0].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                || target.spelling() != names[0].spelling()
+            {
+                return Err(error);
+            }
+        }
+    }
     if let Some(owner) = original_owner
         && owner.spelling()
             != row
@@ -1494,6 +1625,9 @@ fn validate_inheritance_inputs(
 fn validate_mapping_inputs(
     input: &SourceStructureDefinitionHandoffInput,
     origins: &[SemanticOrigin],
+    definitions: &[SemanticOrigin],
+    members: &[SemanticOrigin],
+    original: Option<&[SourceNode]>,
 ) -> Result<(), SourceStructureDefinitionError> {
     let expected = [
         (
@@ -1537,6 +1671,52 @@ fn validate_mapping_inputs(
             || !view_coverage.insert(view)
         {
             return Err(SourceStructureDefinitionError::InvalidMapping { index });
+        }
+        if let Some(rows) = original {
+            let error = || SourceStructureDefinitionError::InvalidMapping { index };
+            let owner = inheritance_definition_rule(rows).ok_or_else(error)?;
+            let (mapping, local, from) = match kind {
+                SourceStructureMemberKind::Field => field_redefinition_rule(rows, owner),
+                SourceStructureMemberKind::Property => property_redefinition_rule(rows, owner),
+            }
+            .ok_or_else(error)?;
+            if node_site(mapping.site().index()) != row.site
+                || Some(mapping.range()) != origin_range(&origins[index])
+            {
+                return Err(error());
+            }
+            for (name, member) in [(local, view), (from, parent)] {
+                let declaration = unique_original(rows, |row| {
+                    row.kind() == &SurfaceNodeKind::StructureDefinition
+                        && row.parent() == owner.parent()
+                        && row.preorder_ordinal() < owner.preorder_ordinal()
+                        && Some(row.range())
+                            == origin_range(&definitions[input.members[member].owner.index()])
+                })
+                .ok_or_else(error)?;
+                let member_kind = if kind == SourceStructureMemberKind::Field {
+                    SurfaceNodeKind::StructureField
+                } else {
+                    SurfaceNodeKind::StructureProperty
+                };
+                let declared = unique_original(rows, |row| {
+                    row.parent() == Some(declaration.site())
+                        && row.preorder_ordinal() < owner.preorder_ordinal()
+                        && row.kind() == &member_kind
+                        && Some(row.range()) == origin_range(&members[member])
+                })
+                .ok_or_else(error)?;
+                let declared_name = unique_original(rows, |row| {
+                    row.parent() == Some(declared.site()) && row.child_ordinal() == 1
+                })
+                .ok_or_else(error)?;
+                if node_site(declared.site().index()) != input.members[member].site
+                    || !matches!(declared_name.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                    || declared_name.spelling() != name.spelling()
+                {
+                    return Err(error());
+                }
+            }
         }
         if input.members[view].owner != SourceStructureDefinitionId::new(1)
             || input.members[parent].owner != SourceStructureDefinitionId::new(0)
@@ -1741,7 +1921,13 @@ fn validate_handoff_rows(
         None,
         handoff.original_source_nodes.as_deref(),
     )?;
-    validate_mapping_inputs(&input, &origins.2)?;
+    validate_mapping_inputs(
+        &input,
+        &origins.2,
+        &origins.0,
+        &origins.1,
+        handoff.original_source_nodes.as_deref(),
+    )?;
     validate_lower(source_type, &input)?;
     if !handoff.coherence_requests.is_empty() {
         return Err(SourceStructureDefinitionError::InvalidCoherenceRequest { index: 0 });

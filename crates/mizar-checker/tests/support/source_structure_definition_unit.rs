@@ -2890,6 +2890,11 @@ enum NativeInheritanceSourceMutation {
     KeywordKind,
     ParentKeyword,
     Identifier,
+    DeclarationName,
+    FieldKeyword,
+    PropertyFrom,
+    LocalFieldName,
+    ParentPropertyName,
     Duplicate,
 }
 
@@ -2903,6 +2908,16 @@ fn native_inheritance_source(f: &Fixture, mutation: NativeInheritanceSourceMutat
     let text = match &mutation {
         NativeInheritanceSourceMutation::Identifier => {
             canonical.replace("inherit Task263Derived", "inherit Task263DeriveX")
+        }
+        NativeInheritanceSourceMutation::DeclarationName => {
+            canonical.replace("struct Task263Derived where", "struct Task263DeriveX where")
+        }
+        NativeInheritanceSourceMutation::LocalFieldName => canonical.replace(
+            "struct Task263Derived where\n    field carrier",
+            "struct Task263Derived where\n    field carriex",
+        ),
+        NativeInheritanceSourceMutation::ParentPropertyName => {
+            canonical.replacen("property marker", "property markex", 1)
         }
         NativeInheritanceSourceMutation::Duplicate => {
             canonical.replace("\nend;\n", &format!("\n{extra}end;\n"))
@@ -2918,24 +2933,41 @@ fn native_inheritance_source(f: &Fixture, mutation: NativeInheritanceSourceMutat
         if index == 48 && matches!(&mutation, NativeInheritanceSourceMutation::Duplicate) {
             cursor += extra.len();
         }
-        let word =
-            if index == 32 && matches!(&mutation, NativeInheritanceSourceMutation::Identifier) {
-                "Task263DeriveX"
-            } else {
-                word
-            };
+        let word = if (index == 32
+            && matches!(&mutation, NativeInheritanceSourceMutation::Identifier))
+            || (index == 17
+                && matches!(&mutation, NativeInheritanceSourceMutation::DeclarationName))
+        {
+            "Task263DeriveX"
+        } else if index == 20
+            && matches!(&mutation, NativeInheritanceSourceMutation::LocalFieldName)
+        {
+            "carriex"
+        } else if index == 10
+            && matches!(
+                &mutation,
+                NativeInheritanceSourceMutation::ParentPropertyName
+            )
+        {
+            "markex"
+        } else {
+            word
+        };
         let start = cursor + text[cursor..].find(word).unwrap();
         cursor = start + word.len();
         let mut kind = match word {
             "Task263Base" | "Task263Derived" | "Task263DeriveX" if index == 32 || index == 34 => {
                 T::UserSymbol
             }
-            "Task263Base" | "Task263Derived" | "carrier" | "marker" => T::Identifier,
+            "Task263Base" | "Task263Derived" | "Task263DeriveX" | "carrier" | "carriex"
+            | "marker" | "markex" => T::Identifier,
             ";" | "->" => T::ReservedSymbol,
             _ => T::ReservedWord,
         };
         if (index == 31 && matches!(&mutation, NativeInheritanceSourceMutation::KeywordKind))
             || (index == 0 && matches!(&mutation, NativeInheritanceSourceMutation::ParentKeyword))
+            || (index == 36 && matches!(&mutation, NativeInheritanceSourceMutation::FieldKeyword))
+            || (index == 43 && matches!(&mutation, NativeInheritanceSourceMutation::PropertyFrom))
         {
             kind = T::Identifier;
         }
@@ -3301,6 +3333,206 @@ fn inheritance_native_original_rows_refuse_coherent_forgery_and_replay() {
         assemble_empty(&injected),
         Err(ResolvedTypedAstError::InvalidSourceStructureDefinition)
     );
+    assert!(Arc::ptr_eq(
+        source.source_nodes().unwrap(),
+        projection.handoff.original_source_nodes.as_ref().unwrap()
+    ));
+    assert!(assemble_empty(&typed).is_ok());
+}
+
+#[test]
+fn inheritance_source_target_and_mapping_rules_have_independent_phase_controls() {
+    let f = fixture();
+    let baseline = unrelated_baseline(f.source, "role-bundle");
+    for (mutation, expected) in [
+        (
+            NativeInheritanceSourceMutation::DeclarationName,
+            SourceStructureDefinitionError::InvalidInheritance { index: 0 },
+        ),
+        (
+            NativeInheritanceSourceMutation::FieldKeyword,
+            SourceStructureDefinitionError::InvalidMapping { index: 0 },
+        ),
+        (
+            NativeInheritanceSourceMutation::PropertyFrom,
+            SourceStructureDefinitionError::InvalidMapping { index: 1 },
+        ),
+        (
+            NativeInheritanceSourceMutation::LocalFieldName,
+            SourceStructureDefinitionError::InvalidMapping { index: 0 },
+        ),
+        (
+            NativeInheritanceSourceMutation::ParentPropertyName,
+            SourceStructureDefinitionError::InvalidMapping { index: 1 },
+        ),
+    ] {
+        let source = native_inheritance_source(&f, mutation);
+        let before = source.clone();
+        let owner = inheritance_definition_rule(source.source_nodes().unwrap()).unwrap();
+        assert_eq!(owner.range(), f.input.inheritances[0].source_range);
+        assert_eq!(
+            owner.spelling(),
+            "inherit Task263Derived extends Task263Base where field carrier from carrier ; property marker from marker ; end ;"
+        );
+        assert_eq!(f.build_native(&baseline, &source), Err(expected));
+        assert_eq!(source, before);
+    }
+}
+
+#[test]
+fn inheritance_source_mapping_roles_replay_against_original_members() {
+    let f = fixture();
+    let baseline = unrelated_baseline(f.source, "role-replay");
+    let source = native_inheritance_source(&f, NativeInheritanceSourceMutation::None);
+    let projection = f.build_native(&baseline, &source).unwrap();
+    let typed = f
+        .typed(baseline.clone())
+        .with_source_structure_definition(projection.clone())
+        .unwrap();
+    for (index, mapping_node) in [(0, 68), (1, 69)] {
+        let mut counterfeit = f.clone();
+        let mut forged_range = counterfeit.input.mappings[index].source_range;
+        forged_range.start -= 1;
+        forged_range.end += 1;
+        counterfeit.input.mappings[index].source_range = forged_range;
+        let mut env = SymbolEnvIndexes {
+            imports: f.env.imports().clone(),
+            exports: f.env.exports().clone(),
+            symbols: Default::default(),
+            definitions: Default::default(),
+            contributions: f.env.contributions().clone(),
+            ..SymbolEnvIndexes::default()
+        };
+        for old in f.env.definitions().iter() {
+            let symbol = f.env.symbols().get(old.symbol()).unwrap();
+            let origin = if old.id() == f.input.mappings[index].definition {
+                SemanticOrigin::new(
+                    f.source,
+                    f.module.clone(),
+                    SourceAnchor::Range(forged_range),
+                    old.origin().structural_path().to_vec(),
+                )
+            } else {
+                old.origin().clone()
+            };
+            let mut entry = SymbolEntry::new(
+                old.symbol().clone(),
+                symbol.kind(),
+                symbol.namespace().clone(),
+                symbol.primary_spelling(),
+                origin.clone(),
+                old.contribution(),
+            )
+            .with_visibility(symbol.visibility())
+            .with_export_status(symbol.export_status());
+            if let Some(notation) = symbol.notation_spelling() {
+                entry = entry.with_notation_spelling(notation);
+            }
+            if let Some(signature) = symbol.signature() {
+                entry = entry.with_signature(signature.clone());
+            }
+            env.symbols.insert(entry);
+            let mut definition =
+                DefinitionShell::new(old.symbol().clone(), old.kind(), origin, old.contribution())
+                    .with_visibility(old.visibility());
+            if let Some(arity) = old.arity() {
+                definition = definition.with_arity(arity);
+            }
+            if let Some(notation) = old.notation_shape() {
+                definition = definition.with_notation_shape(notation);
+            }
+            if let Some(signature) = old.signature() {
+                definition = definition.with_signature(signature.clone());
+            }
+            assert_eq!(env.definitions.insert(definition), old.id());
+        }
+        counterfeit.env = SymbolEnv::new(f.module.clone(), env);
+        counterfeit.arena = TypedArena::try_new(
+            f.arena.root(),
+            f.arena
+                .iter()
+                .map(|(id, old)| {
+                    let mut node = old.clone();
+                    if id.index() == mapping_node {
+                        node.anchor = SourceAnchor::Range(forged_range);
+                    }
+                    node
+                })
+                .collect(),
+        )
+        .unwrap();
+        assert!(counterfeit.build(&baseline).is_ok());
+        assert_eq!(
+            counterfeit.build_native(&baseline, &source),
+            Err(SourceStructureDefinitionError::InvalidMapping { index })
+        );
+        let mut forged = projection.clone();
+        forged.handoff.mappings.rows[index].source_range = forged_range;
+        forged.handoff.mappings.rows[index].origin = counterfeit
+            .env
+            .definitions()
+            .get(f.input.mappings[index].definition)
+            .unwrap()
+            .origin()
+            .clone();
+        assert_installation_error(
+            &counterfeit,
+            &forged.handoff,
+            &counterfeit.source_type,
+            &baseline,
+            &counterfeit.arena,
+            SourceStructureDefinitionError::InvalidMapping { index },
+        );
+        assert_eq!(
+            counterfeit
+                .typed(baseline.clone())
+                .with_source_structure_definition(forged.clone()),
+            Err(TypedAstError::InvalidSourceStructureDefinition)
+        );
+        let mut injected = counterfeit.typed(baseline.clone());
+        injected.inject_source_structure_definition_for_test(forged.handoff);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceStructureDefinition)
+        );
+    }
+    for (mutation, error) in [
+        (
+            NativeInheritanceSourceMutation::DeclarationName,
+            SourceStructureDefinitionError::InvalidInheritance { index: 0 },
+        ),
+        (
+            NativeInheritanceSourceMutation::LocalFieldName,
+            SourceStructureDefinitionError::InvalidMapping { index: 0 },
+        ),
+        (
+            NativeInheritanceSourceMutation::ParentPropertyName,
+            SourceStructureDefinitionError::InvalidMapping { index: 1 },
+        ),
+    ] {
+        let wrong_original = native_inheritance_source(&f, mutation);
+        let mut forged = projection.clone();
+        forged.handoff.original_source_nodes = wrong_original.source_nodes().cloned();
+        assert_installation_error(
+            &f,
+            &forged.handoff,
+            &f.source_type,
+            &baseline,
+            &f.arena,
+            error,
+        );
+        assert_eq!(
+            f.typed(baseline.clone())
+                .with_source_structure_definition(forged.clone()),
+            Err(TypedAstError::InvalidSourceStructureDefinition)
+        );
+        let mut injected = typed.clone();
+        injected.inject_source_structure_definition_for_test(forged.handoff);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceStructureDefinition)
+        );
+    }
     assert!(Arc::ptr_eq(
         source.source_nodes().unwrap(),
         projection.handoff.original_source_nodes.as_ref().unwrap()

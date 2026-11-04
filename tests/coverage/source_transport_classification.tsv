@@ -57,7 +57,7 @@ ExistentialRegistration	referenced	referenced	existing source_* producer
 ExportItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 FailStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 FieldArgument	definition	b	checker Task 279 / Task 270
-FieldRedefinition	definition	b	checker Task 279 / Task 270
+FieldRedefinition	definition	b	source_structure_definition
 FieldUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ForCollectionStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ForRangeStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
@@ -78,7 +78,7 @@ ImportAliasDecl	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ImportItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 InfixExpression	referenced	referenced	existing source_* producer
 InheritanceDefinition	definition	b	source_structure_definition
-InheritanceTarget	definition	b	checker Task 279 / Task 270
+InheritanceTarget	definition	b	source_structure_definition
 InlineFunctorDefinition	definition	b	checker Task 279 / Task 270
 InlinePredicateApplication	referenced	referenced	existing source_* producer
 InlinePredicateDefinition	definition	b	checker Task 279 / Task 270
@@ -127,7 +127,7 @@ ProofHintOption	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ProofHintOptionList	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 PropertyClause	referenced	referenced	existing source_* producer
 PropertyImplementation	referenced	referenced	existing source_* producer
-PropertyRedefinition	definition	b	checker Task 279 / Task 270
+PropertyRedefinition	definition	b	source_structure_definition
 Proposition	referenced	referenced	existing source_* producer
 QuaExpression	reconsider	b	checker Task 271
 QualifiedReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
