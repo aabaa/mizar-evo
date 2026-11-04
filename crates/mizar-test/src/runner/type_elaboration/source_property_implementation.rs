@@ -1289,6 +1289,7 @@ fn primary_terms(
     .map_err(|error| format!("Task252 primary term: {error}"))
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: keep original syntax separate from the existing semantic arena.
 fn structure(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -1297,6 +1298,7 @@ fn structure(
     context: &mizar_checker::source_context::SourceBindingContextHandoff,
     terms: &mizar_checker::source_term::SourcePrimaryTermHandoff,
     arena: &TypedArena,
+    syntax: &TypedAst,
 ) -> Result<mizar_checker::source_structure::SourceStructureHandoff, String> {
     let source = ast.source_id;
     let mut input = SourceStructureHandoffInput {
@@ -1354,8 +1356,16 @@ fn structure(
     if mutation == SourcePropertyImplementationRouteMutation::WrongStructure {
         input.members[0].spelling = "marker".to_owned();
     }
-    SourceStructureProducer::build(input, symbols, context.binding_env(), terms, None, arena)
-        .map_err(|error| format!("Task254 structure: {error}"))
+    SourceStructureProducer::build(
+        input,
+        symbols,
+        context.binding_env(),
+        terms,
+        None,
+        arena,
+        syntax,
+    )
+    .map_err(|error| format!("Task254 structure: {error}"))
 }
 
 fn atomic_formula(
@@ -1662,6 +1672,7 @@ fn build_output(
                     .source_term()
                     .ok_or_else(|| "Task252 terms disappeared".to_owned())?,
                 typed.nodes(),
+                &syntax,
             )?;
             typed = typed
                 .with_source_structure(row)

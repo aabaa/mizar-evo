@@ -387,7 +387,7 @@ fn task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nod
     );
     invalid_update.field_updates[0].source_range.end -= 1;
     assert!(
-        SourceStructureProducer::build(
+        SourceStructureProducer::build_canonical(
             invalid_update,
             &fixture.symbols,
             &fixture.bindings,

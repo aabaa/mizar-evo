@@ -1961,7 +1961,7 @@ fn structure(
     else {
         panic!("selector range")
     };
-    SourceStructureProducer::build(
+    SourceStructureProducer::build_canonical(
         SourceStructureHandoffInput {
             source_id: source,
             module_id: module,
@@ -2640,7 +2640,9 @@ fn unrelated_baseline(source: SourceId) -> InitialObligationTable {
     table_from_drafts(vec![unrelated_draft(source)])
 }
 
-fn assemble_empty(typed_ast: &TypedAst) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+pub(crate) fn assemble_empty(
+    typed_ast: &TypedAst,
+) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
     let cluster_facts = ClusterFactTable::new();
     let collection = OverloadCollectionOutput::collect(
         Vec::<OverloadSiteInput>::new(),
@@ -4002,7 +4004,7 @@ fn task_264_public_measured_body_layout_installs_replays_and_keeps_phase_owners(
                         .collect(),
                 };
                 f.structure = Some(
-                    SourceStructureProducer::build(
+                    SourceStructureProducer::build_canonical(
                         input,
                         &f.env,
                         f.context.binding_env(),

@@ -2478,7 +2478,7 @@ fn optional_lower_fixture(fixture: &Fixture) -> OptionalLowerFixture {
     .expect("Task 253 optional lower family");
     let (structure_env, structure_symbol, structure_contribution) =
         optional_structure_env(fixture.source, fixture.module.clone());
-    let structure = SourceStructureProducer::build(
+    let structure = SourceStructureProducer::build_canonical(
         SourceStructureHandoffInput {
             source_id: fixture.source,
             module_id: fixture.module.clone(),

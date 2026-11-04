@@ -5662,7 +5662,7 @@ impl Task254SyntheticSyntax {
     }
 
     fn qualified_structure_named(&mut self, spelling: &str) -> SurfaceBuilderNodeId {
-        let token = self.token(SurfaceTokenKind::Identifier, spelling);
+        let token = self.token(SurfaceTokenKind::UserSymbol, spelling);
         let segment = self.node(SurfaceNodeKind::PathSegment, vec![token]);
         self.node(SurfaceNodeKind::QualifiedSymbol, vec![segment])
     }
@@ -5705,7 +5705,7 @@ impl Task254SyntheticSyntax {
         let mut cursor = first_value_start
             .checked_sub(prefix_width)
             .expect("synthetic constructor prefix range");
-        let root_token = self.token_at(SurfaceTokenKind::Identifier, spelling, &mut cursor);
+        let root_token = self.token_at(SurfaceTokenKind::UserSymbol, spelling, &mut cursor);
         let root_segment = self.node(SurfaceNodeKind::PathSegment, vec![root_token]);
         let root = self.node(SurfaceNodeKind::QualifiedSymbol, vec![root_segment]);
         let mut children = vec![root];

@@ -4049,7 +4049,7 @@ mod tests {
     }
 
     fn empty_structure(fixture: &Fixture) -> SourceStructureHandoff {
-        SourceStructureProducer::build(
+        SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: fixture.source,
                 module_id: fixture.module.clone(),
@@ -4071,7 +4071,7 @@ mod tests {
     }
 
     fn overlapping_structure(fixture: &Fixture) -> SourceStructureHandoff {
-        SourceStructureProducer::build(
+        SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: fixture.source,
                 module_id: fixture.module.clone(),
@@ -4728,7 +4728,7 @@ mod tests {
                 SourceAnchor::Range(range(source_id(), 44, 46)),
             ),
         ]);
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: structure_fixture.source,
                 module_id: structure_fixture.module.clone(),
@@ -6380,7 +6380,7 @@ mod tests {
             (0, 11, 12),
             BindingContextId::new(1),
         );
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),
@@ -6638,7 +6638,7 @@ mod tests {
             &structure_arena,
             &[(0, 12, 13, "1")],
         );
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),
@@ -7083,7 +7083,7 @@ mod tests {
         .expect("arena");
         let primary = primary_handoff_from(source, &module, &bindings, &arena, &[(0, 14, 15, "1")]);
         let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),

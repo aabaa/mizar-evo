@@ -599,6 +599,11 @@ impl TypedAst {
     }
 
     #[cfg(test)]
+    pub(crate) fn inject_source_structure_for_test(&mut self, handoff: SourceStructureHandoff) {
+        self.source_structure = Some(handoff);
+    }
+
+    #[cfg(test)]
     pub(crate) fn inject_source_statement_for_test(&mut self, statement: SourceStatementHandoff) {
         self.source_statement = Some(statement);
     }

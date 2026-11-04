@@ -154,7 +154,7 @@ SetStatement	proof-skeleton	b	checker Task 272 / Task 269
 SnapshotStatement	referenced	referenced	existing source_* producer
 StandaloneDiagnosticAnnotation	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 StatementItem	proof-skeleton	b	checker Task 272 / Task 269
-StructureConstructor	definition	b	checker Task 279 / Task 270
+StructureConstructor	definition	b	source_structure
 StructureDefinition	referenced	referenced	existing source_* producer
 StructureField	referenced	referenced	existing source_* producer
 StructurePattern	referenced	referenced	existing source_* producer

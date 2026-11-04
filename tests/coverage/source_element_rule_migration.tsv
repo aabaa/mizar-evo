@@ -17,7 +17,7 @@ functor-declaration-eligibility	definition	mode-property	done	inherited: Functor
 property-retained-constants	definition	mode-property	done	inherited: resolver origins, header, prefix initializer and Arena node/token associations use original roles in source_property_implementation
 property-redefinition	definition	mode-property	done	PropertyRedefinition
 row-navigation-helpers	definition	mode-property	open	consolidation: the mode, functor, property and structure rules read the generic table through shared helpers beside SourceNode in typed_ast.rs (contract, 2026-11-04); light tier, before the next definition rule
-structure-constructor	definition	-	open	StructureConstructor
+structure-constructor	definition	mode-property	done	StructureConstructor
 structure-property	definition	mode-property	done	StructureProperty
 case-item	proof-skeleton	-	open	CaseItem
 case-reasoning-statement	proof-skeleton	-	open	CaseReasoningStatement

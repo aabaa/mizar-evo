@@ -3151,7 +3151,7 @@ impl B3M2B2B2AFixture {
             &arena,
         )
         .expect("Task258B3M2B2B2A primary");
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             Self::structure_input(
                 source,
                 &module,
@@ -3592,7 +3592,7 @@ impl B3M2B2B2BFixture {
             &arena,
         )
         .expect("Task258B3M2B2B2B primary");
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             Self::structure_input(
                 source,
                 &module,
@@ -4125,7 +4125,7 @@ impl B3M2B2B2CFixture {
             &arena,
         )
         .expect("Task258B3M2B2B2C primary");
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             Self::structure_input(source, &module, structure_symbol, structure_contribution),
             &symbols,
             &bindings,

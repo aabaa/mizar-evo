@@ -63,7 +63,7 @@ use super::source_term::{
     source_term_parts_for_context_roots, synthetic_source_term_parts_for_roots,
 };
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver},
     source_ast::{
         direct_token_texts, exact_compilation_item_list, qualified_symbol_spelling,
         structural_child_ids, subtree_has_recovery, surface_site,
@@ -3738,6 +3738,7 @@ fn build_handoff_with_source_term(
         &source_term.handoff,
         application,
         &source_term.arena,
+        &source_syntax_receiver(ast, module)?,
     )
     .map_err(|error| error.to_string())
 }

@@ -3,12 +3,10 @@
 > 正本は英語です。英語版:
 > [../en/source_structure.md](../en/source_structure.md)。
 
-この Task 254 transport は凍結を維持します。
-
 ## スコープ
 
 Checker Task 254 は、source structure construction、selector access、
-functional update occurrence の syntax-free / immutable な記述を所有する。
+functional update occurrence の immutable な記述を所有する。
 source shape、resolver-authenticated constructor root、written member、
 `FieldUpdate` association、ordered child、unresolved request だけを運ぶ。
 field/property identity、inheritance view、constructor coverage/default、
@@ -20,12 +18,24 @@ Task 252 は primary-term child、Task 253 は functor-application child を所�
 Task 254 は row を複製せず dense root ID を参照する。structure-definition、
 member、inheritance-view、constructor semantic payload は Task 263 に残る。
 
+## 元の constructor の authority
+
+`SourceStructureProducer::build` は generic table が install 済みの元の `TypedAst` を
+第 7・最終引数として必須とする。constructor 規則は candidate の metadata に依存せず、
+実際の owner・qualified root・順序付き assignment container の role を供給する。
+handoff はその不変の table を build、typed installation、resolved replay で保持し、
+semantic arena は分離する。wrapper・recovery・imported root・unresolved request の既存境界を
+維持する。元ソースを伴わない scalar 互換性は private test policy とする。
+
+build は既存 root 検証をすべて終え、member 検証に入る前に元ソースとの対応を照合する。
+replay は既存 output 検証の後で照合する。元ソースの欠落・foreign identity は
+`EnvironmentMismatch`、constructor/root role の不正は既存の `InvalidTerm` / `InvalidRoot`
+とする。正常な元構文への対応済み semantic Degraded override を維持し、constructor 文法の
+transport に resolver の名前束縛 semantics は追加しない。
+
 ## Public transaction
 
-`SourceStructureProducer::build` は `SourceStructureHandoffInput`、
-`SymbolEnv`、`BindingEnv`、`SourcePrimaryTermHandoff`、optional
-`SourceFunctorApplicationHandoff`、`TypedArena` を受け取る。入力は次の
-7 個の source-ordered vector を持つ。
+入力は次の 7 個の source-ordered vector を持つ。
 
 - structure-family term
 - transparent structure wrapper
@@ -132,8 +142,7 @@ occurrenceをcontain/overlap/retargetできない。
 
 ## Private source consumer
 
-raw `SurfaceAst`、source node ID、syntax kind は
-`mizar-test::runner::type_elaboration::source_structure` だけに置く。production は
+production は
 `fail_type_elaboration_local_structure_term_gap_001` の 3 functor definiens だけを
 selectする。
 leafはreal declaration shellをconsumeしてTask 248の

@@ -704,7 +704,7 @@ fn task258b3m2b2b2a_dependencies_structure_witness_precedence_and_all_nodes_fail
             export,
             pad_contribution,
         );
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             B3M2B2B2AFixture::structure_input(
                 fixture.source,
                 &fixture.module,
@@ -753,7 +753,7 @@ fn task258b3m2b2b2a_dependencies_structure_witness_precedence_and_all_nodes_fail
             fixture.structure_contribution,
         );
         mutate(&mut input);
-        let structure = SourceStructureProducer::build(
+        let structure = SourceStructureProducer::build_canonical(
             input,
             &fixture.symbols,
             &fixture.bindings,
@@ -784,7 +784,7 @@ fn task258b3m2b2b2a_dependencies_structure_witness_precedence_and_all_nodes_fail
     );
     invalid_edge.edges[1].target = SourceStructureTarget::Primary(SourcePrimaryTermId::new(2));
     assert!(
-        SourceStructureProducer::build(
+        SourceStructureProducer::build_canonical(
             invalid_edge,
             &fixture.symbols,
             &fixture.bindings,

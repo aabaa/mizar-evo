@@ -3,11 +3,9 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_structure.md](../ja/source_structure.md).
 
-This Task 254 transport remains frozen.
-
 ## Scope
 
-Checker Task 254 owns a syntax-free, immutable description of source
+Checker Task 254 owns an immutable description of source
 structure construction, selector access, and functional update occurrences.
 It transports source shape, resolver-authenticated constructor roots, written
 members, `FieldUpdate` associations, ordered children, and unresolved
@@ -21,12 +19,39 @@ functor-application children. Task 254 links to their dense root IDs without
 copying rows. Task 263 retains structure-definition, member, inheritance-view,
 and constructor semantic payloads.
 
+## Original constructor authority
+
+`SourceStructureProducer::build` requires the original `TypedAst` as its
+seventh and final argument, with the installed generic table. The constructor
+rule supplies actual owner, qualified root and ordered assignment-container
+roles independently of candidate metadata. The handoff retains that immutable
+table for build, typed installation and resolved replay, separately from the
+semantic arena. Existing wrapper, recovery, imported-root and unresolved-request
+boundaries remain in force. Source-free scalar compatibility is private test
+policy.
+
+Build checks original-source association after all existing root checks and
+before member validation; replay checks it after existing output checks.
+Missing or foreign original authority uses `EnvironmentMismatch`; malformed
+constructor or root roles use the existing `InvalidTerm` or `InvalidRoot`.
+Normal original syntax may retain a supported semantic Degraded override.
+Constructor grammar transport does not add resolver name-binding semantics.
+
 ## Public Transaction
 
-`SourceStructureProducer::build` consumes `SourceStructureHandoffInput`,
-`SymbolEnv`, `BindingEnv`, `SourcePrimaryTermHandoff`, an optional
-`SourceFunctorApplicationHandoff`, and `TypedArena`. The input has seven
-source-ordered vectors:
+```rust
+SourceStructureProducer::build(
+    input: SourceStructureHandoffInput,
+    symbols: &SymbolEnv,
+    bindings: &BindingEnv,
+    primary_terms: &SourcePrimaryTermHandoff,
+    applications: Option<&SourceFunctorApplicationHandoff>,
+    arena: &TypedArena,
+    source: &TypedAst,
+) -> Result<SourceStructureHandoff, SourceStructureError>
+```
+
+The input has seven source-ordered vectors:
 
 - structure-family terms;
 - transparent structure wrappers;
@@ -136,8 +161,7 @@ cannot contain, overlap, or retarget an installed Task-255 occurrence.
 
 ## Private Source Consumer
 
-Raw `SurfaceAst`, source node IDs, and syntax kinds remain in
-`mizar-test::runner::type_elaboration::source_structure`. Production selects
+Production selects
 only the three functor definientia in
 `fail_type_elaboration_local_structure_term_gap_001`.
 The leaf consumes the real declaration shells and reuses Task 248's

@@ -5431,7 +5431,7 @@ pub(crate) mod tests {
             &[(0, 11, 12, "1")],
         );
         let symbols = SymbolEnv::new(structure_module.clone(), SymbolEnvIndexes::default());
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: structure_module.clone(),
@@ -5571,7 +5571,7 @@ pub(crate) mod tests {
                 .expect_err("targeted structure must be installed first"),
             TypedAstError::InvalidSourceAtomicFormula
         );
-        let substituted_structures = SourceStructureProducer::build(
+        let substituted_structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: structure_module.clone(),
@@ -5880,7 +5880,7 @@ pub(crate) mod tests {
             &arena,
         )
         .expect("nested application");
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),
@@ -6165,7 +6165,7 @@ pub(crate) mod tests {
             &arena,
         )
         .expect("disjoint application");
-        let structures = SourceStructureProducer::build(
+        let structures = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),
@@ -6387,7 +6387,7 @@ pub(crate) mod tests {
             &arena,
         )
         .expect("overlapping application");
-        let overlapping_structure = SourceStructureProducer::build(
+        let overlapping_structure = SourceStructureProducer::build_canonical(
             SourceStructureHandoffInput {
                 source_id: source,
                 module_id: module.clone(),

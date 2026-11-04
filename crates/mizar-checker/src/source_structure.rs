@@ -1,10 +1,8 @@
-//! Syntax-free transport for source structure-term occurrences.
-
 use crate::{
     binding_env::{BindingContextId, BindingEnv},
     source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
-    typed_ast::{NodeRecoveryState, TypedArena, TypedSiteRef},
+    typed_ast::{NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedSiteRef},
 };
 use mizar_resolve::{
     env::{
@@ -14,10 +12,12 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};
 use std::{
     collections::BTreeSet,
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -195,6 +195,7 @@ pub enum SourceStructureRequestKind {
 pub struct SourceStructureHandoff {
     source_id: SourceId,
     module_id: ModuleId,
+    original_source: Option<Arc<[SourceNode]>>,
     primary_term_fingerprint: String,
     application_fingerprint: Option<String>,
     terms: SourceStructureTermTable,
@@ -407,7 +408,25 @@ impl SourceStructureHandoff {
 
         validate_output_arena_and_references(self, arena)?;
         validate_output_targets(self, primary_terms, applications)?;
-        validate_output_application_ownership(self, applications)
+        validate_output_application_ownership(self, applications)?;
+        if let Some(rows) = original_rows(self.original_source.as_ref(), source_id)? {
+            for (id, term) in self.terms.iter() {
+                validate_original_constructor(
+                    rows,
+                    id,
+                    &term.site,
+                    term.source_range,
+                    &term.spelling,
+                    term.recovery,
+                    term.kind,
+                    self.roots
+                        .iter()
+                        .find(|(_, root)| root.term == id)
+                        .map(|(id, _)| id),
+                )?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -720,6 +739,47 @@ impl SourceStructureProducer {
         primary_terms: &SourcePrimaryTermHandoff,
         applications: Option<&SourceFunctorApplicationHandoff>,
         arena: &TypedArena,
+        source: &TypedAst,
+    ) -> Result<SourceStructureHandoff, SourceStructureError> {
+        Self::build_impl(
+            input,
+            symbols,
+            bindings,
+            primary_terms,
+            applications,
+            arena,
+            Some(source),
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn build_canonical(
+        input: SourceStructureHandoffInput,
+        symbols: &SymbolEnv,
+        bindings: &BindingEnv,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+        arena: &TypedArena,
+    ) -> Result<SourceStructureHandoff, SourceStructureError> {
+        Self::build_impl(
+            input,
+            symbols,
+            bindings,
+            primary_terms,
+            applications,
+            arena,
+            None,
+        )
+    }
+
+    fn build_impl(
+        input: SourceStructureHandoffInput,
+        symbols: &SymbolEnv,
+        bindings: &BindingEnv,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+        arena: &TypedArena,
+        source: Option<&TypedAst>,
     ) -> Result<SourceStructureHandoff, SourceStructureError> {
         let uses_applications = input
             .edges
@@ -732,7 +792,7 @@ impl SourceStructureProducer {
             primary_terms,
             applications,
             arena,
-            uses_applications,
+            source,
         )?;
 
         let primary_term_fingerprint = primary_terms.debug_text();
@@ -848,6 +908,7 @@ impl SourceStructureProducer {
         Ok(SourceStructureHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
+            original_source: source.and_then(TypedAst::source_nodes).cloned(),
             primary_term_fingerprint,
             application_fingerprint,
             terms,
@@ -1007,7 +1068,7 @@ fn validate_input(
     primary_terms: &SourcePrimaryTermHandoff,
     applications: Option<&SourceFunctorApplicationHandoff>,
     arena: &TypedArena,
-    uses_applications: bool,
+    source: Option<&TypedAst>,
 ) -> Result<(), SourceStructureError> {
     if symbols.module_id() != &input.module_id
         || bindings.source_id() != input.source_id
@@ -1027,7 +1088,12 @@ fn validate_input(
     {
         return Err(SourceStructureError::EnvironmentMismatch);
     }
-    if uses_applications && applications.is_none() {
+    if input
+        .edges
+        .iter()
+        .any(|edge| matches!(edge.target, SourceStructureTarget::Application(_)))
+        && applications.is_none()
+    {
         return Err(SourceStructureError::ApplicationDependencyMismatch);
     }
     if let Some(applications) = applications {
@@ -1048,6 +1114,32 @@ fn validate_input(
     let effective = input_effective_occurrences(input, &wrapper_groups);
     validate_term_preorder(input, &effective)?;
     validate_roots(input, symbols)?;
+    if let Some(source) = source
+        && (source.source_id() != input.source_id
+            || source.module_id() != &input.module_id
+            || source.source_nodes().is_none())
+    {
+        return Err(SourceStructureError::EnvironmentMismatch);
+    }
+    if let Some(rows) = original_rows(source.and_then(TypedAst::source_nodes), input.source_id)? {
+        for (index, term) in input.terms.iter().enumerate() {
+            let id = SourceStructureTermId::new(index);
+            validate_original_constructor(
+                rows,
+                id,
+                &term.site,
+                term.source_range,
+                &term.spelling,
+                term.recovery,
+                term.kind,
+                input
+                    .roots
+                    .iter()
+                    .position(|root| root.term == id)
+                    .map(SourceStructureRootId::new),
+            )?;
+        }
+    }
     let member_groups = validate_members(input, arena, &mut sites)?;
     let update_groups = validate_field_updates(input, arena, &member_groups, &mut sites)?;
     let edge_groups = validate_edges(
@@ -1063,6 +1155,141 @@ fn validate_input(
     validate_edge_shapes(input, &member_groups, &update_groups, &edge_groups)?;
     validate_input_application_ownership(input, &effective, applications)?;
     validate_requests(input, &member_groups)?;
+    Ok(())
+}
+
+fn original_rows(
+    rows: Option<&Arc<[SourceNode]>>,
+    source_id: SourceId,
+) -> Result<Option<&[SourceNode]>, SourceStructureError> {
+    #[cfg(test)]
+    if rows.is_none() {
+        return Ok(None);
+    }
+    let rows = rows.ok_or(SourceStructureError::EnvironmentMismatch)?;
+    if rows.iter().any(|row| row.range().source_id != source_id) {
+        return Err(SourceStructureError::EnvironmentMismatch);
+    }
+    Ok(Some(rows))
+}
+
+pub(crate) fn structure_constructor_rule<'a>(
+    rows: &'a [SourceNode],
+    owner: &'a SourceNode,
+) -> Option<(&'a SourceNode, &'a SourceNode, Vec<&'a SourceNode>)> {
+    let children = rows
+        .iter()
+        .filter(|row| row.parent() == Some(owner.site()))
+        .collect::<Vec<_>>();
+    let token = |row: &SourceNode, text: &str| {
+        matches!(row.kind(), SurfaceNodeKind::Token(t)
+        if t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == text)
+    };
+    if owner.kind() != &SurfaceNodeKind::StructureConstructor
+        || children.len() < 3
+        || children
+            .iter()
+            .enumerate()
+            .any(|(i, row)| row.child_ordinal() != i || !range_contains(owner.range(), row.range()))
+        || children
+            .windows(2)
+            .any(|pair| pair[0].range().end > pair[1].range().start)
+        || !token(children[1], "(")
+        || !token(children.last()?, ")")
+        || children[0].range().start != owner.range().start
+        || children.last()?.range().end != owner.range().end
+    {
+        return None;
+    }
+    let arguments = &children[2..children.len() - 1];
+    if (!arguments.is_empty() && arguments.len().is_multiple_of(2))
+        || arguments.iter().enumerate().any(|(i, row)| {
+            if i.is_multiple_of(2) {
+                row.kind() != &SurfaceNodeKind::FieldArgument
+            } else {
+                !token(row, ",")
+            }
+        })
+    {
+        return None;
+    }
+    Some((
+        owner,
+        children[0],
+        arguments.iter().step_by(2).copied().collect(),
+    ))
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: validate existing term fields without copying either source or candidate rows.
+fn validate_original_constructor(
+    rows: &[SourceNode],
+    term: SourceStructureTermId,
+    site: &TypedSiteRef,
+    range: SourceRange,
+    spelling: &str,
+    recovery: SourceStructureRecovery,
+    kind: SourceStructureTermKind,
+    root: Option<SourceStructureRootId>,
+) -> Result<(), SourceStructureError> {
+    let owner = rows.iter().find(|row| {
+        *site == TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(row.site().index()))
+    });
+    if kind != SourceStructureTermKind::Constructor
+        && owner.is_none_or(|row| row.kind() != &SurfaceNodeKind::StructureConstructor)
+    {
+        return Ok(());
+    }
+    let invalid = SourceStructureError::InvalidTerm { term };
+    let owner = owner.ok_or_else(|| invalid.clone())?;
+    if kind != SourceStructureTermKind::Constructor
+        || owner.range() != range
+        || owner.spelling() != spelling
+        || (recovery == SourceStructureRecovery::Normal
+            && owner.recovery() != NodeRecoveryState::Normal)
+    {
+        return Err(invalid);
+    }
+    let mut subtree = BTreeSet::from([owner.site()]);
+    for row in rows.iter().skip(owner.preorder_ordinal() + 1) {
+        if row.parent().is_none_or(|parent| !subtree.contains(&parent)) {
+            break;
+        }
+        subtree.insert(row.site());
+        if recovery == SourceStructureRecovery::Normal
+            && row.recovery() != NodeRecoveryState::Normal
+        {
+            return Err(invalid);
+        }
+    }
+    let (_, qualified, arguments) =
+        structure_constructor_rule(rows, owner).ok_or_else(|| invalid.clone())?;
+    let root_error = SourceStructureError::InvalidRoot {
+        root: root.ok_or_else(|| invalid.clone())?,
+    };
+    let segments = rows
+        .iter()
+        .filter(|row| row.parent() == Some(qualified.site()))
+        .collect::<Vec<_>>();
+    if qualified.kind() != &SurfaceNodeKind::QualifiedSymbol || segments.is_empty() || segments.len().is_multiple_of(2)
+        || segments.first().is_none_or(|row| row.range().start != qualified.range().start)
+        || segments.last().is_none_or(|row| row.range().end != qualified.range().end)
+        || segments.iter().enumerate().any(|(i, row)| row.child_ordinal() != i || if i % 2 == 1 {
+            !matches!(row.kind(), SurfaceNodeKind::Token(t) if t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == ".")
+        } else {
+            let names = rows.iter().filter(|name| name.parent() == Some(row.site())).collect::<Vec<_>>();
+            row.kind() != &SurfaceNodeKind::PathSegment || names.len() != 1
+                || names[0].child_ordinal() != 0 || names[0].range() != row.range()
+                || !matches!(names[0].kind(), SurfaceNodeKind::Token(t) if t.kind ==
+                    if i + 1 == segments.len() { SurfaceTokenKind::UserSymbol } else { SurfaceTokenKind::Identifier })
+        }) {
+        return Err(root_error);
+    }
+    if arguments
+        .iter()
+        .any(|row| !properly_contains(owner.range(), row.range()))
+    {
+        return Err(invalid);
+    }
     Ok(())
 }
 
@@ -3525,7 +3752,7 @@ mod tests {
     }
 
     fn build(fixture: &Fixture) -> Result<SourceStructureHandoff, SourceStructureError> {
-        SourceStructureProducer::build(
+        SourceStructureProducer::build_canonical(
             fixture.input.clone(),
             &fixture.symbols,
             &fixture.bindings,
@@ -3533,6 +3760,294 @@ mod tests {
             fixture.applications.as_ref(),
             &fixture.arena,
         )
+    }
+
+    fn native_constructor(mutation: usize) -> (Fixture, TypedAst) {
+        use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+        use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceTokenKind as T};
+        let mut f = constructor_fixture();
+        if mutation == 4 {
+            f.module = module("source.structure.foreign");
+        }
+        if mutation == 5 {
+            f.source = other_source_id("d4");
+        }
+        f.bindings = binding_env(f.source, &f.module);
+        let mut builder = SurfaceAstBuilder::new(f.source);
+        let mut sites = Vec::new();
+        for (kind, text, start, end) in [
+            (T::UserSymbol, "Pair", 10, 14),
+            (T::ReservedSymbol, "(", 15, 16),
+            (T::Identifier, "carrier", 17, 24),
+            (T::ReservedSymbol, ":", 25, 26),
+            (T::Numeral, "1", 27, 28),
+            (T::ReservedSymbol, ")", 29, 30),
+        ] {
+            let kind = if (mutation == 1 && text == "(") || (mutation == 7 && text == "Pair") {
+                T::Identifier
+            } else {
+                kind
+            };
+            sites.push(if mutation == 9 && text == "carrier" {
+                builder.add_recovered_token(kind, text, range(f.source, start, end))
+            } else {
+                builder.add_token(kind, text, range(f.source, start, end))
+            });
+        }
+        for (mut kind, start, end, children) in [
+            (K::PathSegment, 10, 14, vec![0]),
+            (K::QualifiedSymbol, 10, 14, vec![6]),
+            (K::NumeralTerm, 27, 28, vec![4]),
+            (K::FieldArgument, 17, 28, vec![2, 3, 8]),
+            (K::StructureConstructor, 10, 30, vec![7, 1, 9, 5]),
+            (K::Root, 10, 30, vec![10]),
+        ] {
+            if (mutation == 2 && kind == K::QualifiedSymbol)
+                || (mutation == 3 && kind == K::FieldArgument)
+            {
+                kind = K::TermList;
+            }
+            let children = children.into_iter().map(|i| sites[i]).collect();
+            sites.push(builder.add_node(kind, range(f.source, start, end), children));
+        }
+        let ast = builder.finish(sites.last().copied(), None);
+        let source = SurfaceResolvedArena::lower(&ast, &f.module).unwrap();
+        let mut parts = empty_typed_parts(&f);
+        parts.resolved_root = Some(source.arena().root());
+        parts.nodes = TypedArena::try_new(
+            Some(TypedNodeId::new(source.arena().root().index())),
+            source
+                .arena()
+                .iter()
+                .map(|(id, row)| {
+                    TypedNode::new("syntax", row.origin().anchor().clone())
+                        .with_recovery(if row.origin().is_recovered() {
+                            NodeRecoveryState::Recovered
+                        } else {
+                            NodeRecoveryState::Normal
+                        })
+                        .with_resolved_node(id)
+                        .with_children(
+                            row.children()
+                                .iter()
+                                .map(|id| TypedNodeId::new(id.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .unwrap();
+        let mut syntax = TypedAst::try_new(parts).unwrap();
+        syntax.install_source_nodes(&source).unwrap();
+        let mut nodes = syntax
+            .nodes()
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[2].kind = "source.term.structure.member.constructor-assignment".into();
+        nodes[8].kind = "source.term.numeral".into();
+        nodes[10].kind = "source.term.structure.constructor".into();
+        f.arena = TypedArena::try_new(None, nodes).unwrap();
+        f.input.terms[0].site = node(10);
+        f.input.members[0].site = node(2);
+        f.input.members[0].source_range = range(f.source, 17, 24);
+        f.primary = primary_handoff(
+            f.source,
+            &f.module,
+            &f.bindings,
+            &f.arena,
+            &[(8, 27, 28, "1")],
+        );
+        (f, syntax)
+    }
+
+    fn build_native(
+        f: &Fixture,
+        source: &TypedAst,
+    ) -> Result<SourceStructureHandoff, SourceStructureError> {
+        SourceStructureProducer::build(
+            f.input.clone(),
+            &f.symbols,
+            &f.bindings,
+            &f.primary,
+            f.applications.as_ref(),
+            &f.arena,
+            source,
+        )
+    }
+
+    #[test]
+    fn constructor_original_roles_reject_missing_foreign_and_malformed_authority() {
+        let (f, source) = native_constructor(0);
+        let pristine = source.clone();
+        let handoff = build_native(&f, &source).unwrap();
+        assert!(Arc::ptr_eq(
+            handoff.original_source.as_ref().unwrap(),
+            source.source_nodes().unwrap()
+        ));
+        let missing = TypedAst::try_new(empty_typed_parts(&f)).unwrap();
+        assert_eq!(
+            build_native(&f, &missing),
+            Err(SourceStructureError::EnvironmentMismatch)
+        );
+        let term = SourceStructureTermId::new(0);
+        let root = SourceStructureRootId::new(0);
+        for (mutation, error) in [
+            (1, SourceStructureError::InvalidTerm { term }),
+            (2, SourceStructureError::InvalidRoot { root }),
+            (3, SourceStructureError::InvalidTerm { term }),
+            (4, SourceStructureError::EnvironmentMismatch),
+            (5, SourceStructureError::EnvironmentMismatch),
+            (7, SourceStructureError::InvalidRoot { root }),
+            (9, SourceStructureError::InvalidTerm { term }),
+        ] {
+            assert_eq!(
+                build_native(&f, &native_constructor(mutation).1),
+                Err(error)
+            );
+        }
+        let mut selector = selector_fixture();
+        let mut nodes = selector
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes.resize(11, nodes[1].clone());
+        selector.arena = TypedArena::try_new(None, nodes).unwrap();
+        selector.input.terms[0].site = node(10);
+        assert!(build(&selector).is_ok());
+        assert_eq!(
+            build_native(&selector, &source),
+            Err(SourceStructureError::InvalidTerm { term })
+        );
+        assert_eq!(source, pristine);
+    }
+
+    #[test]
+    fn constructor_original_authority_replays_coherent_forgery_at_all_three_stages() {
+        use crate::source_property_implementation::tests::assemble_empty;
+        let (mut f, source) = native_constructor(0);
+        let handoff = build_native(&f, &source).unwrap();
+        let typed = TypedAst::try_new(empty_typed_parts(&f))
+            .unwrap()
+            .with_source_term(f.primary.clone())
+            .unwrap()
+            .with_source_structure(handoff.clone())
+            .unwrap();
+        assert!(assemble_empty(&typed).is_ok());
+        f.input.terms[0].source_range.end += 1;
+        let mut nodes = f
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[10].anchor = SourceAnchor::Range(f.input.terms[0].source_range);
+        f.arena = TypedArena::try_new(None, nodes).unwrap();
+        assert!(build(&f).is_ok());
+        assert_eq!(
+            build_native(&f, &source),
+            Err(SourceStructureError::InvalidTerm {
+                term: SourceStructureTermId::new(0)
+            })
+        );
+        let mut forged = handoff.clone();
+        forged.terms.rows[0].source_range = f.input.terms[0].source_range;
+        let mut changed = TypedAst::try_new(empty_typed_parts(&f))
+            .unwrap()
+            .with_source_term(f.primary.clone())
+            .unwrap();
+        assert_eq!(
+            changed.clone().with_source_structure(forged.clone()),
+            Err(TypedAstError::InvalidSourceStructure)
+        );
+        changed.inject_source_structure_for_test(forged);
+        assert!(assemble_empty(&changed).is_err());
+    }
+
+    #[test]
+    fn constructor_source_gate_preserves_build_and_replay_priorities_and_degraded_override() {
+        let (mut f, source) = native_constructor(0);
+        let missing = TypedAst::try_new(empty_typed_parts(&f)).unwrap();
+        let term = SourceStructureTermId::new(0);
+        let original = f.clone();
+        f.input.terms[0].spelling.clear();
+        assert_eq!(
+            build_native(&f, &missing),
+            Err(SourceStructureError::InvalidTerm { term })
+        );
+        f = original.clone();
+        f.input.roots[0].term = SourceStructureTermId::new(1);
+        assert_eq!(
+            build_native(&f, &missing),
+            Err(SourceStructureError::InvalidRoot {
+                root: SourceStructureRootId::new(0)
+            })
+        );
+        f = original.clone();
+        f.input.members[0].spelling.clear();
+        assert!(matches!(
+            build_native(&f, &source),
+            Err(SourceStructureError::InvalidMember { .. })
+        ));
+        assert_eq!(
+            build_native(&f, &missing),
+            Err(SourceStructureError::EnvironmentMismatch)
+        );
+        let mut handoff = build_native(&original, &source).unwrap();
+        handoff.original_source = native_constructor(5).1.source_nodes().cloned();
+        handoff.terms.rows[0].source_range.end += 1;
+        assert_eq!(
+            handoff.validate_installation(
+                original.source,
+                &original.module,
+                &original.primary,
+                None,
+                &original.arena
+            ),
+            Err(SourceStructureError::InvalidTerm { term })
+        );
+        f = original;
+        f.input.terms[0].recovery = SourceStructureRecovery::Degraded;
+        let nodes = f
+            .arena
+            .iter()
+            .map(|(id, row)| {
+                let mut row = row.clone();
+                if [2, 10].contains(&id.index()) {
+                    row.recovery = NodeRecoveryState::Degraded;
+                }
+                row
+            })
+            .collect();
+        f.arena = TypedArena::try_new(None, nodes).unwrap();
+        assert!(build_native(&f, &source).is_ok());
+
+        let app = application_target_fixture();
+        let mut handoff = build(&app).unwrap();
+        let replay = |handoff: &SourceStructureHandoff| {
+            handoff.validate_installation(
+                app.source,
+                &app.module,
+                &app.primary,
+                app.applications.as_ref(),
+                &app.arena,
+            )
+        };
+        assert_eq!(replay(&handoff), Ok(()));
+        let foreign = native_constructor(5).1.source_nodes().cloned();
+        handoff.original_source = foreign.clone();
+        assert_eq!(
+            replay(&handoff),
+            Err(SourceStructureError::EnvironmentMismatch)
+        );
+        handoff.edges.rows[0].target = SourceStructureTarget::Primary(SourcePrimaryTermId::new(0));
+        for source in [None, foreign] {
+            handoff.original_source = source;
+            assert_eq!(
+                replay(&handoff),
+                Err(SourceStructureError::ApplicationDependencyMismatch)
+            );
+        }
     }
 
     #[test]
@@ -4017,7 +4532,7 @@ mod tests {
             .clone()
             .expect("application target fixture carries Task 253");
         reverse.applications = None;
-        let reverse_result = SourceStructureProducer::build(
+        let reverse_result = SourceStructureProducer::build_canonical(
             reverse.input.clone(),
             &reverse.symbols,
             &reverse.bindings,
@@ -4918,7 +5433,7 @@ mod tests {
             ],
         };
         assert!(matches!(
-            SourceStructureProducer::build(
+            SourceStructureProducer::build_canonical(
                 input,
                 &symbols,
                 &bindings,

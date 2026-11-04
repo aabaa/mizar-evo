@@ -2385,6 +2385,7 @@ fn task258b3m2b2b3p_coherent_structure_fingerprint_probe(
         &source_term.handoff,
         None,
         &arena,
+        &super::checker_handoff::source_syntax_receiver(ast, module)?,
     )
     .map_err(|error| error.to_string())?;
     let arena = arena_with_overrides(

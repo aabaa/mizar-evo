@@ -4712,15 +4712,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             )
             .map_err(|error| error.to_string())?;
         let discharge = storage.get(&discharge).map_err(|error| error.to_string())?;
-        let Some((arena, env, _, typed, _)) =
+        let Some(source_metadata) =
             self.native_theorem_source_metadata(module, "native theorem candidate selection")?
         else {
             return Ok(None);
         };
-        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let (arena, env, _, typed, _) = source_metadata.as_ref();
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(arena, env)?;
         let check =
             mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &arena, &typed, &scope, &env, &labels, &resolved, None,
+                arena, typed, &scope, env, &labels, &resolved, None,
             )?;
         let generation = &vcs
             .vc(vc_id)
@@ -4739,9 +4740,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             decision,
             selection,
         ) = mizar_proof::status::select_source_theorem_candidate(
-            &arena,
+            arena,
             &check,
-            &env,
+            env,
             input.snapshot,
             vc_id,
             (generation, vcs.schema_version(), encoding.0, encoding.1),
@@ -4928,13 +4929,15 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         module: &mizar_build::module_index::ModuleId,
         prefix: &str,
     ) -> Result<
-        Option<(
-            mizar_resolve::resolved_ast::SurfaceResolvedArena,
-            mizar_resolve::env::SymbolEnv,
-            mizar_checker::type_checker::TermFormulaInferenceOutput,
-            mizar_checker::typed_ast::TypedAst,
-            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
-        )>,
+        Option<
+            Box<(
+                mizar_resolve::resolved_ast::SurfaceResolvedArena,
+                mizar_resolve::env::SymbolEnv,
+                mizar_checker::type_checker::TermFormulaInferenceOutput,
+                mizar_checker::typed_ast::TypedAst,
+                mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+            )>,
+        >,
         String,
     > {
         let version = unique(self.snapshot.source_versions.iter().filter(|version| {
@@ -4984,7 +4987,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         .map_err(|error| format!("{error:?}"))?;
         let metadata =
             mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
-        Ok(Some((arena, env, metadata.1, metadata.2, metadata.3)))
+        Ok(Some(Box::new((
+            arena, env, metadata.1, metadata.2, metadata.3,
+        ))))
     }
 
     #[expect(
@@ -5073,15 +5078,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let WorkUnit::Module { module } = &input.work_unit else {
             return Err("native theorem candidate witness file requires a module".to_owned());
         };
-        let Some((arena, env, _, typed, _)) =
+        let Some(source_metadata) =
             self.native_theorem_source_metadata(module, "native theorem candidate witness file")?
         else {
             return Ok(None);
         };
-        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let (arena, env, _, typed, _) = source_metadata.as_ref();
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(arena, env)?;
         let check =
             mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &arena, &typed, &scope, &env, &labels, &resolved, None,
+                arena, typed, &scope, env, &labels, &resolved, None,
             )?;
         let generation = &vcs
             .vc(vc_id)
@@ -5092,9 +5098,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .generation_schema_version;
         let (products, file, reference) =
             mizar_proof::status::source_theorem_candidate_witness_file_candidate(
-                &arena,
+                arena,
                 &check,
-                &env,
+                env,
                 self.snapshot,
                 vc_id,
                 (generation, vcs.schema_version(), encoding.0, encoding.1),
@@ -5340,15 +5346,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return no_draft;
         }
-        let Some((arena, env, inference, typed, metadata)) =
+        let Some(source_metadata) =
             self.native_theorem_source_metadata(module, "native theorem artifact draft")?
         else {
             return no_draft;
         };
-        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let (arena, env, inference, typed, metadata) = source_metadata.as_ref();
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(arena, env)?;
         let check =
             mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &arena, &typed, &scope, &env, &labels, &resolved, None,
+                arena, typed, &scope, env, &labels, &resolved, None,
             )?;
         let [(owner, owner_visibility)] = check.owners() else {
             return no_draft;

@@ -1349,7 +1349,7 @@ fn task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic
         "installed Task258A then B1B1"
     );
 
-    let structures = SourceStructureProducer::build(
+    let structures = SourceStructureProducer::build_canonical(
         SourceStructureHandoffInput {
             source_id: fixture.source,
             module_id: fixture.module.clone(),

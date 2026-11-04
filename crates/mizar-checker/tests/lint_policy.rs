@@ -115,6 +115,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             || path == root.join("src/source_functor_definition.rs")
             || path == root.join("src/source_property_implementation.rs")
             || path == root.join("src/source_structure_definition.rs")
+            || path == root.join("src/source_structure.rs")
         {
             let permitted = if path == root.join("src/source_property_implementation.rs") {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
@@ -124,7 +125,16 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
                 "use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};"
             };
             assert_eq!(source.matches(permitted).count(), 1);
-            source.replace(permitted, "")
+            let source = source.replace(permitted, "");
+            if path == root.join("src/source_structure.rs") {
+                let (production, tests) = source.split_once("#[cfg(test)]\nmod tests {").unwrap();
+                let fixture_import = "use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceTokenKind as T};";
+                assert!(!production.contains(fixture_import));
+                assert_eq!(tests.matches(fixture_import).count(), 1);
+                format!("{production}{}", tests.replace(fixture_import, ""))
+            } else {
+                source
+            }
         } else {
             source
         };

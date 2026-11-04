@@ -1212,7 +1212,7 @@ fn task258b3m2b1_paired_ownership_hybrids_and_all_family_orders_are_atomic() {
         &fixture.arena,
     )
     .expect("Task253 empty disjoint handoff");
-    let structures = SourceStructureProducer::build(
+    let structures = SourceStructureProducer::build_canonical(
         SourceStructureHandoffInput {
             source_id: fixture.source,
             module_id: fixture.module.clone(),
