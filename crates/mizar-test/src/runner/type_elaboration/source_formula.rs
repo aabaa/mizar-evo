@@ -1547,12 +1547,9 @@ pub(in crate::runner) const SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS:
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceBuiltinBinaryTermFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
-    pub(in crate::runner) formula_range: SourceRange,
     pub(in crate::runner) formula_kind: FormulaKind,
     pub(in crate::runner) left_site: TypedSiteRef,
-    pub(in crate::runner) left_range: SourceRange,
     pub(in crate::runner) right_site: TypedSiteRef,
-    pub(in crate::runner) right_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -1793,12 +1790,9 @@ pub(in crate::runner) fn extract_source_builtin_binary_term_formula(
     let right = exact_numeral_term_operand(ast, term_expressions[1], config.right)?;
     Some(SourceBuiltinBinaryTermFormula {
         formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
         formula_kind: config.formula_kind,
         left_site: surface_site(left.0),
-        left_range: left.1,
         right_site: surface_site(right.0),
-        right_range: right.1,
     })
 }
 

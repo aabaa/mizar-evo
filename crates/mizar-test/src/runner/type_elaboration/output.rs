@@ -697,6 +697,7 @@ pub(in crate::runner) fn source_builtin_binary_term_formula_detail_keys(
     let payload = extract_source_builtin_binary_term_formula(ast)?;
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
+    let formula_range = ast.nodes()[payload.formula_site.node().index()].range;
     let output = TermFormulaChecker::default().infer(
         symbols,
         &binding_env,
@@ -704,20 +705,20 @@ pub(in crate::runner) fn source_builtin_binary_term_formula_detail_keys(
             TermInput::new(
                 payload.left_site.clone(),
                 context,
-                payload.left_range,
+                ast.nodes()[payload.left_site.node().index()].range,
                 TermKind::Numeral,
             ),
             TermInput::new(
                 payload.right_site.clone(),
                 context,
-                payload.right_range,
+                ast.nodes()[payload.right_site.node().index()].range,
                 TermKind::Numeral,
             ),
         ],
         [FormulaInput::new(
             payload.formula_site,
             context,
-            payload.formula_range,
+            formula_range,
             payload.formula_kind,
         )
         .with_terms(vec![payload.left_site, payload.right_site])],

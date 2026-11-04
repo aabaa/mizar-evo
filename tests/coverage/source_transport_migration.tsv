@@ -99,3 +99,4 @@ connective-grouping-generic-transport	type-term-formula	direct-b1-formula-sites	
 nested-quantifier-generic-transport	type-term-formula	connective-grouping-generic-transport	done	Nested quantifier roles retain reserve and lexical ownership; generic rows supply source coordinates and spelling.
 bound-use-whole-generic-transport	type-term-formula	nested-quantifier-generic-transport	done	Bound-use roles retain lexical ownership; generic rows supply the whole lower tuple and owned arena anchors.
 composite-quantifier-generic-transport	type-term-formula	bound-use-whole-generic-transport	done	Composite quantifier whole input and owned arena anchors read generic rows; legacy deferred projection preserved.
+builtin-binary-numeral-generic-transport	type-term-formula	composite-quantifier-generic-transport	done	Shared equality, inequality and membership numeral configurations read generic rows; legacy projection preserved.

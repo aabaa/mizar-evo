@@ -163,12 +163,21 @@
                 &[formula_range],
             );
             assert_eq!(payload.formula_site, expected_formula_sites[0]);
-            assert_eq!(payload.formula_range, formula_range);
+            assert_eq!(
+                theorem.nodes()[payload.formula_site.node().index()].range,
+                formula_range
+            );
             assert_eq!(payload.formula_kind, formula_kind);
             assert_eq!(payload.left_site, expected_operand_sites[0]);
-            assert_eq!(payload.left_range, left_range);
+            assert_eq!(
+                theorem.nodes()[payload.left_site.node().index()].range,
+                left_range
+            );
             assert_eq!(payload.right_site, expected_operand_sites[1]);
-            assert_eq!(payload.right_range, right_range);
+            assert_eq!(
+                theorem.nodes()[payload.right_site.node().index()].range,
+                right_range
+            );
         }
         let equality_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");

@@ -17,15 +17,15 @@ use mizar_checker::{
     },
     source_set_term::SourceSetTermHandoff,
     source_term::{
-        SourcePrimaryTermHandoff, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
-        SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
-        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole,
-        SourcePrimaryTermRole,
+        SourceNumericTypeRequestInput, SourcePrimaryTermHandoff, SourcePrimaryTermHandoffInput,
+        SourcePrimaryTermId, SourcePrimaryTermInput, SourcePrimaryTermKind,
+        SourcePrimaryTermProducer, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput,
+        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts,
-        TypedNode, TypedNodeId, TypedSiteRef,
+        TypedNode, TypedNodeId, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -36,7 +36,9 @@ use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 use super::{
-    checker_handoff::{assemble_empty_resolved_typed_ast, source_module_binding_env},
+    checker_handoff::{
+        assemble_empty_resolved_typed_ast, source_module_binding_env, source_syntax_receiver,
+    },
     source_application::{
         imported_source_application_output_with_source_term,
         imported_source_application_owned_node_kinds,
@@ -458,6 +460,11 @@ fn build_output(
 ) -> Result<SourceAtomicFormulaRouteOutput, String> {
     let binding_env =
         source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
+    let syntax = if matches!(&route, ExactAtomicRoute::Binary(_)) {
+        Some(source_syntax_receiver(ast, &module)?)
+    } else {
+        None
+    };
     let formula_node = route.formula_node();
     let mut owned_kinds = route.atomic_owned_node_kinds(ast)?;
     if matches!(&route, ExactAtomicRoute::Predicate(_)) {
@@ -468,14 +475,103 @@ fn build_output(
         }
     }
     let primary_roots = route.primary_roots();
-    let source_term = source_term_parts_for_roots(
-        ast,
-        module.clone(),
-        &binding_env,
-        primary_roots,
-        BindingContextId::new(0),
-        &owned_kinds,
-    )?;
+    let source_term = if let (ExactAtomicRoute::Binary(_), Some(syntax)) = (&route, &syntax) {
+        let mut rows = primary_roots
+            .iter()
+            .map(|root| {
+                syntax
+                    .source_node_entries()
+                    .unwrap()
+                    .find(|row| row.site().index() == *root)
+                    .ok_or_else(|| "Task256 generic numeral row disappeared".to_owned())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        rows.sort_by_key(|row| row.preorder_ordinal());
+        let mut terms = Vec::new();
+        let mut numeric_type_requests = Vec::new();
+        for (source_ordinal, row) in rows.iter().enumerate() {
+            let site = TypedSiteRef::Node(TypedNodeId::new(row.site().index()));
+            terms.push(SourcePrimaryTermInput {
+                site: site.clone(),
+                source_range: row.range(),
+                source_ordinal,
+                context: BindingContextId::new(0),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: row.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::Numeral,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            });
+            numeric_type_requests.push(SourceNumericTypeRequestInput {
+                term: SourcePrimaryTermId::new(source_ordinal),
+                owner: site,
+                source_range: row.range(),
+                spelling: row.spelling().to_owned(),
+                request_ordinal: source_ordinal,
+            });
+        }
+        let mut nodes = Vec::new();
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let kind = if rows.iter().any(|row| row.site().index() == index) {
+                Some("source.term.numeral")
+            } else {
+                owned_kinds.get(&index).copied()
+            };
+            let range = if kind.is_some() {
+                syntax
+                    .source_node_entries()
+                    .unwrap()
+                    .find(|row| row.site().index() == index)
+                    .ok_or_else(|| "Task256 generic owned row disappeared".to_owned())?
+                    .range()
+            } else {
+                node.range
+            };
+            nodes.push(
+                TypedNode::new(
+                    kind.unwrap_or("source.surface.unowned"),
+                    SourceAnchor::Range(range),
+                )
+                .with_children(
+                    node.children
+                        .iter()
+                        .map(|child| TypedNodeId::new(child.index()))
+                        .collect(),
+                )
+                .with_typing(TypingState::Unknown)
+                .with_recovery(if node.recovered {
+                    NodeRecoveryState::Recovered
+                } else {
+                    NodeRecoveryState::Normal
+                }),
+            );
+        }
+        let arena =
+            TypedArena::try_new(ast.root().map(|root| TypedNodeId::new(root.index())), nodes)
+                .map_err(|error| error.to_string())?;
+        let handoff = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: ast.source_id,
+                module_id: module.clone(),
+                terms,
+                references: Vec::new(),
+                numeric_type_requests,
+            },
+            &binding_env,
+            &arena,
+        )
+        .map_err(|error| error.to_string())?;
+        SourceTermParts { arena, handoff }
+    } else {
+        source_term_parts_for_roots(
+            ast,
+            module.clone(),
+            &binding_env,
+            primary_roots,
+            BindingContextId::new(0),
+            &owned_kinds,
+        )?
+    };
     let mut typed_ast = lower_family_typed_ast(
         ast,
         module.clone(),
@@ -484,7 +580,7 @@ fn build_output(
         &route,
         source_term,
     )?;
-    let mut input = route.handoff_input(ast, symbols, &typed_ast)?;
+    let mut input = route.handoff_input(ast, symbols, &typed_ast, syntax.as_ref())?;
     mutate(&mut input);
     let handoff = SourceAtomicFormulaProducer::build(
         input,
@@ -626,17 +722,6 @@ impl ExactAtomicRoute {
             Self::PredicateChain(payload) => payload.formula_site.node().index(),
             Self::Attribute { payload, .. } => payload.formula_site.node().index(),
             Self::SetEnumeration(payload) => payload.formula_site.node().index(),
-        }
-    }
-
-    fn formula_range(&self) -> SourceRange {
-        match self {
-            Self::Binary(payload) => payload.formula_range,
-            Self::TypeAssertion(payload) => payload.formula_range,
-            Self::Predicate(payload) => payload.formula_range,
-            Self::PredicateChain(payload) => payload.formula_range,
-            Self::Attribute { payload, .. } => payload.formula_range,
-            Self::SetEnumeration(payload) => payload.formula_range,
         }
     }
 
@@ -796,12 +881,32 @@ impl ExactAtomicRoute {
         ast: &SurfaceAst,
         symbols: &SymbolEnv,
         typed_ast: &TypedAst,
+        syntax: Option<&TypedAst>,
     ) -> Result<SourceAtomicFormulaHandoffInput, String> {
         let formula = SourceAtomicFormulaId::new(0);
         let formula_node = ast
             .nodes()
             .get(self.formula_node())
             .ok_or_else(|| "Task256 formula node disappeared".to_owned())?;
+        let generic_row = |site: &TypedSiteRef| {
+            syntax
+                .and_then(|syntax| syntax.source_node_entries())
+                .and_then(|mut rows| rows.find(|row| row.site().index() == site.node().index()))
+                .ok_or_else(|| "Task256 generic atomic row disappeared".to_owned())
+        };
+        let formula_row = if let Self::Binary(payload) = self {
+            Some(generic_row(&payload.formula_site)?)
+        } else {
+            None
+        };
+        let formula_range = match self {
+            Self::Binary(_) => formula_row.unwrap().range(),
+            Self::TypeAssertion(payload) => payload.formula_range,
+            Self::Predicate(payload) => payload.formula_range,
+            Self::PredicateChain(payload) => payload.formula_range,
+            Self::Attribute { payload, .. } => payload.formula_range,
+            Self::SetEnumeration(payload) => payload.formula_range,
+        };
         let mut predicate_segments = Vec::new();
         let mut predicate_heads = Vec::new();
         let mut candidates = Vec::new();
@@ -816,13 +921,13 @@ impl ExactAtomicRoute {
                     typed_ast
                         .source_term()
                         .ok_or_else(|| "Task256 lost Task252".to_owned())?,
-                    payload.left_range,
+                    generic_row(&payload.left_site)?.range(),
                 )?;
                 let right = primary_target(
                     typed_ast
                         .source_term()
                         .ok_or_else(|| "Task256 lost Task252".to_owned())?,
-                    payload.right_range,
+                    generic_row(&payload.right_site)?.range(),
                 )?;
                 edges.extend([
                     edge(formula, 0, SourceAtomicEdgeRole::BuiltinLeftOperand, left),
@@ -1150,12 +1255,18 @@ impl ExactAtomicRoute {
             source_id: ast.source_id,
             module_id: typed_ast.module_id().clone(),
             formulas: vec![SourceAtomicFormulaInput {
-                site: self.formula_site(),
-                source_range: self.formula_range(),
+                site: formula_row.map_or_else(
+                    || self.formula_site(),
+                    |row| TypedSiteRef::Node(TypedNodeId::new(row.site().index())),
+                ),
+                source_range: formula_range,
                 source_ordinal: 0,
                 context: BindingContextId::new(0),
                 recovery: SourceAtomicFormulaRecovery::Normal,
-                spelling: subtree_tokens(ast, formula_node).join(" "),
+                spelling: formula_row.map_or_else(
+                    || subtree_tokens(ast, formula_node).join(" "),
+                    |row| row.spelling().to_owned(),
+                ),
                 kind: self.formula_kind(),
             }],
             wrappers: Vec::new(),

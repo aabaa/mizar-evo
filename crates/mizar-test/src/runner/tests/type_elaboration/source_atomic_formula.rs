@@ -169,6 +169,139 @@ fn task256_real_routes_publish_the_frozen_aggregate_and_preserve_final_ownership
     assert_eq!(primary_aggregate, [16, 0, 16]);
     assert_eq!(application_aggregate, [1, 1, 1, 2, 2]);
     assert_eq!(set_aggregate, [2, 0, 0, 0, 4, 2]);
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    for (id, expected_kind) in TASK256_CASES.into_iter().take(3) {
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate().find(|(_, case)| case.id.0 == id).unwrap();
+        let original = std::fs::read_to_string(&case.source_path).unwrap();
+        for source in [original.clone(), format!("\n:: layout\n{}", original.replace(' ', " \t "))] {
+            metamorphic_guard::with_source(case, &source, || {
+                use mizar_checker::source_atomic_formula::*;
+                use mizar_checker::source_term::*;
+                use mizar_checker::typed_ast::{NodeRecoveryState, TypedNode, TypedNodeId, TypedSiteRef};
+                let frontend = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+                assert!(frontend.diagnostics.is_empty());
+                assert_eq!(frontend.source_text.as_ref(), source);
+                let ast = frontend.ast.as_ref().unwrap();
+                let resolver = resolver_symbol_collection(&config.workspace_root, case, ast);
+                assert!(resolver.detail_keys.is_empty());
+                let module = resolver.module;
+                let symbols = augment_type_elaboration_import_summaries(ast, &module, resolver.env);
+                let output = source_atomic_formula_output_with_source(ast, module.clone(), &symbols, &source)
+                    .expect("genuine Binary selector").expect("genuine Binary transaction");
+                let replay = source_atomic_formula_output_with_source(ast, module.clone(), &symbols, &source)
+                    .unwrap().unwrap();
+                assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+                assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+                let primary = output.typed_ast.source_term().unwrap();
+                let atomic = task256_handoff(&output);
+                assert_eq!(output.resolved.source_term(), Some(primary));
+                assert_eq!(output.resolved.source_atomic_formula(), Some(atomic));
+                assert!(output.typed_ast.source_node_entries().is_none());
+                assert_eq!((primary.terms().len(), primary.references().len(), primary.numeric_type_requests().len()), (2, 0, 2));
+                let mut numerals = ast.nodes().iter().enumerate()
+                    .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::NumeralTerm)).collect::<Vec<_>>();
+                numerals.sort_by_key(|(_, node)| (node.range.start, node.range.end));
+                assert_eq!(numerals.len(), 2);
+                let formulas = ast.nodes().iter().enumerate()
+                    .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)).collect::<Vec<_>>();
+                let [(formula_index, formula_node)] = formulas.as_slice() else { panic!("one formula") };
+                let spelling = |range: SourceRange| {
+                    let mut tokens = ast.nodes().iter().filter_map(|node| match &node.kind {
+                        SurfaceNodeKind::Token(token) if range.start <= node.range.start && node.range.end <= range.end => Some((node.range.start, token.text.as_ref())),
+                        _ => None,
+                    }).collect::<Vec<_>>();
+                    tokens.sort_by_key(|(start, _)| *start);
+                    tokens.into_iter().map(|(_, text)| text).collect::<Vec<_>>().join(" ")
+                };
+                for ((term_id, term), (index, node)) in primary.terms().iter().zip(&numerals) {
+                    let ordinal = term_id.index();
+                    let site = TypedSiteRef::Node(TypedNodeId::new(*index));
+                    assert_eq!((term.site(), term.source_range(), term.spelling()), (&site, node.range, spelling(node.range).as_str()));
+                    assert_eq!((term.source_ordinal(), term.context(), term.recovery(), term.kind(), term.role(), term.parent()),
+                        (ordinal, BindingContextId::new(0), SourcePrimaryTermRecovery::Normal, SourcePrimaryTermKind::Numeral, SourcePrimaryTermRole::Value, None));
+                    let (request_id, request) = primary.numeric_type_requests().iter().nth(ordinal).unwrap();
+                    assert_eq!((request_id.index(), request.term(), request.owner(), request.source_range(), request.spelling(), request.request_ordinal()),
+                        (ordinal, term_id, &site, node.range, spelling(node.range).as_str(), ordinal));
+                }
+                let formula = atomic.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
+                assert_eq!((formula.site().node().index(), formula.source_range(), formula.spelling(), formula.kind(), formula.source_ordinal(), formula.context(), formula.recovery()),
+                    (*formula_index, formula_node.range, spelling(formula_node.range).as_str(), expected_kind, 0, BindingContextId::new(0), SourceAtomicFormulaRecovery::Normal));
+                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.type_sites().len(), atomic.attributes().len(), atomic.edges().len()), (1, 0, 0, 0, 0, 0, 0, 2));
+                let membership = expected_kind == SourceAtomicFormulaKind::Membership;
+                assert_eq!(atomic.requests().len(), if membership { 1 } else { 2 });
+                for (edge_id, edge) in atomic.edges().iter() {
+                    let ordinal = edge_id.index();
+                    assert_eq!((edge.formula(), edge.ordinal(), edge.role(), edge.target()),
+                        (SourceAtomicFormulaId::new(0), ordinal, [SourceAtomicEdgeRole::BuiltinLeftOperand, SourceAtomicEdgeRole::BuiltinRightOperand][ordinal], SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(ordinal))));
+                }
+                for (request_id, request) in atomic.requests().iter() {
+                    assert_eq!((request.formula(), request.ordinal(), request.kind(), request.edge(), request.candidate(), request.type_site(), request.attribute()),
+                        (SourceAtomicFormulaId::new(0), request_id.index(), SourceAtomicRequestKind::OperandExpectedType, Some(SourceAtomicEdgeId::new(if membership { 1 } else { request_id.index() })), None, None, None));
+                }
+                assert_eq!(atomic.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!((atomic.application_fingerprint(), atomic.structure_fingerprint(), atomic.set_term_fingerprint()), (None, None, None));
+                assert_eq!(output.typed_ast.nodes().len(), ast.nodes().len());
+                assert_eq!(output.resolved.nodes().len(), ast.nodes().len());
+                assert_eq!(output.typed_ast.nodes().root().unwrap().index(), ast.root().unwrap().index());
+                assert_eq!(output.resolved.nodes().root().unwrap().index(), ast.root().unwrap().index());
+                for ((typed_id, typed), (resolved_id, resolved)) in output.typed_ast.nodes().iter().zip(output.resolved.nodes().iter()) {
+                    let index = typed_id.index();
+                    let node = &ast.nodes()[index];
+                    let kind = if index == *formula_index {
+                        match expected_kind {
+                            SourceAtomicFormulaKind::Equality => "source.formula.atomic.equality",
+                            SourceAtomicFormulaKind::Inequality => "source.formula.atomic.inequality",
+                            SourceAtomicFormulaKind::Membership => "source.formula.atomic.membership",
+                            _ => unreachable!(),
+                        }
+                    } else if numerals.iter().any(|(site, _)| *site == index) { "source.term.numeral" } else { "source.surface.unowned" };
+                    let expected = TypedNode::new(kind, mizar_session::SourceAnchor::Range(node.range))
+                        .with_children(node.children.iter().map(|child| TypedNodeId::new(child.index())).collect())
+                        .with_recovery(if node.recovered { NodeRecoveryState::Recovered } else { NodeRecoveryState::Normal });
+                    assert_eq!(typed, &expected);
+                    assert_eq!((resolved_id.index(), resolved.id.index(), resolved.typed_node, resolved.source_range), (index, index, typed_id, node.range));
+                    assert_eq!(resolved.children.iter().map(|child| child.index()).collect::<Vec<_>>(), node.children.iter().map(|child| child.index()).collect::<Vec<_>>());
+                    assert_eq!(resolved.kind, mizar_checker::resolved_typed_ast::ResolvedTypedNodeKind::Degraded { reason: mizar_checker::resolved_typed_ast::ResolvedNodeRecoveryReason::TypingState(mizar_checker::typed_ast::TypingState::Unknown) });
+                    assert_eq!((resolved.final_type, resolved.metadata, resolved.diagnostics.as_slice(), resolved.recovery), (None, None, &[][..], mizar_checker::resolved_typed_ast::ResolvedNodeRecovery::Normal));
+                }
+                assert!(output.typed_ast.types().is_empty() && output.typed_ast.facts().is_empty() && output.typed_ast.coercions().is_empty() && output.typed_ast.initial_obligations().is_empty() && output.typed_ast.diagnostics().is_empty());
+                assert!(output.resolved.expr_metadata().is_empty() && output.resolved.cluster_facts().is_empty() && output.resolved.diagnostics().is_empty());
+                let legacy = crate::runner::source_builtin_binary_term_formula_detail_keys(ast, module.clone(), &symbols);
+                let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+                let mut rebuilt = Vec::new();
+                for node in ast.nodes() {
+                    let mut children = node.children.iter().map(|child| rebuilt[child.index()]).collect::<Vec<_>>();
+                    if matches!(node.kind, SurfaceNodeKind::Root) {
+                        let token = ast.token_nodes()[0];
+                        assert!(node.children.contains(&token));
+                        children.push(rebuilt[token.index()]);
+                    }
+                    rebuilt.push(match &node.kind {
+                        SurfaceNodeKind::Token(token) => builder.add_token(token.kind, token.text.clone(), node.range),
+                        kind => builder.add_node(kind.clone(), node.range, children),
+                    });
+                }
+                let alias = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), ast.expression_root().map(|id| rebuilt[id.index()]))
+                    .with_trivia(ast.trivia().clone());
+                assert_eq!(alias.nodes().len(), ast.nodes().len());
+                assert_eq!(alias.token_nodes(), ast.token_nodes());
+                assert!(alias.nodes().iter().zip(ast.nodes()).all(|(a, b)| a.range == b.range && a.kind == b.kind));
+                let alias_resolver = resolver_symbol_collection(&config.workspace_root, case, &alias);
+                assert!(alias_resolver.detail_keys.is_empty());
+                assert_eq!(alias_resolver.module, module);
+                assert_eq!(augment_type_elaboration_import_summaries(&alias, &module, alias_resolver.env), symbols);
+                assert_eq!(crate::runner::type_elaboration::source_module_binding_env(&alias, module.clone()).unwrap(),
+                    crate::runner::type_elaboration::source_module_binding_env(ast, module.clone()).unwrap());
+                assert!(extract_source_builtin_binary_term_formula(&alias).is_some());
+                assert_eq!(source_atomic_formula_output_with_source(&alias, module.clone(), &symbols, &source)
+                    .expect("alias preserves Binary selection").unwrap_err(), "typed AST source statement handoff is inconsistent");
+                assert_eq!(crate::runner::source_builtin_binary_term_formula_detail_keys(&alias, module, &symbols), legacy);
+            });
+        }
+    }
+
 }
 
 #[test]
@@ -2255,7 +2388,10 @@ fn task256_expected_slot_ranges(
         | "fail_type_elaboration_builtin_inequality_formula_gap_001"
         | "fail_type_elaboration_builtin_membership_formula_gap_001" => {
             let payload = extract_source_builtin_binary_term_formula(ast).expect("binary payload");
-            vec![payload.left_range, payload.right_range]
+            vec![
+                ast.nodes()[payload.left_site.node().index()].range,
+                ast.nodes()[payload.right_site.node().index()].range,
+            ]
         }
         "fail_type_elaboration_builtin_type_assertion_formula_gap_001" => vec![
             extract_source_builtin_type_assertion_formula(ast, module, symbols)
