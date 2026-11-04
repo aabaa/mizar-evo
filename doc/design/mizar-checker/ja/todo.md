@@ -703,13 +703,13 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [ALGDEF-CHECKER280-DEFINITION-CYCLES](../../task_contracts/ja/ALGDEF-CHECKER280-DEFINITION-CYCLES.md)。
 - [ ] resolver Task 33 の consumer delta: アルゴリズムの同義語の replay と使用箇所の制限。契約:
   [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/ja/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md)。
-- [ ] **Task 281:** テストファイルの形に合わせた厳密な文プロファイルを本番コードから撤去する。契約:
+- [x] **Task 281:** 厳密なプロファイルの撤去。Task 284 の終了基準 3 により完了。契約:
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/ja/QUALITY-EXACT-PROFILE-RETIREMENT.md)。
 - [ ] **Task 282:** メタデータとホバーのための展開後の命題。契約:
   [AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md)。
 - [x] **Task 283:** 2万行を超える checker ファイルの機械的分割 (light tier)。契約:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/ja/VELOCITY-LARGE-FILE-SPLIT.md)。
-- [~] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
+- [x] **Task 284:** 元ソース転送の汎用 producer と oracle。Task 281 を包含する。契約:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/ja/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)。
 - [ ] **Task 285:** 汎用 walk の上に載せる class `b` の要素規則 (Task 257, 269, 270,
   271, 272, 279 の role)。2026-11-04 に Task 284 から分離。契約:

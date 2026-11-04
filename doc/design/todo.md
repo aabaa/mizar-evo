@@ -136,7 +136,7 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
 
-### Velocity gate — November 2026 [ ]
+### Velocity gate — November 2026 [x]
 
 Selected before any further per-element source-transport slice. Tasks 1-2
 change how the remaining Task 257-279 families are produced and tested,
@@ -146,7 +146,7 @@ out of task 2 on 2026-11-04 and follow it under the same ledger discipline.
 1. [x] [Large file split](./task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md)
    — mechanical test-module split of the Rust files over 20k lines; light
    tier.
-2. [~] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
+2. [x] [Generic original-source transport](./task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md)
    — one AST-walking producer and one shape oracle replace per-element
    transport slices and literal-offset profiles; subsumes checker Task 281.
 3. [ ] [Element-rule transport](./task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md)
@@ -930,7 +930,7 @@ LSP entry point and do not block Steps 6-8.
 3. [ ] mizar-lsp 29 / mizar-driver 26 — [web playground](./task_contracts/en/WEB-PLAYGROUND.md)
    on the Lean 4 web editor model (server sessions; no browser-side WebAssembly).
 
-### Generalization and quality guards [ ]
+### Generalization and quality guards [x]
 
 These tasks check that producers generalize beyond the corpus files they were
 fitted to. They may run alongside Steps 6-8; the metamorphic guard should run
@@ -938,8 +938,8 @@ early because its result qualifies what the active corpus demonstrates.
 
 1. [x] mizar-test 23 — [metamorphic generalization guard](./task_contracts/en/QUALITY-METAMORPHIC-GUARD.md); named bridge defects belong to [mizar-test 26](./task_contracts/en/TEST-METAMORPHIC-BRIDGE-GENERALIZATION.md).
 2. [x] mizar-test 24 — [literal source-offset ratchet](./task_contracts/en/QUALITY-LITERAL-OFFSET-RATCHET.md).
-3. [ ] Checker 281 — [exact-profile retirement](./task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md);
-   deps items 1-2 and checker Task 258.
+3. [x] Checker 281 — [exact-profile retirement](./task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md);
+   completed through Task 284 exit criterion 3.
 
 ### Statement review aids (specification amendment) [ ]
 

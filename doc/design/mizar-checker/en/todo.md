@@ -727,15 +727,15 @@ implementation commit does not satisfy a producer task.
 - [ ] Consumer delta for resolver Task 33: synonym replay and use-site limits
   for algorithm synonyms. Contract:
   [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
-- [ ] **Task 281:** retire fixture-shaped exact statement profiles from
-  production code. Contract:
+- [x] **Task 281:** exact-profile retirement, completed through Task 284
+  exit criterion 3. Contract:
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md).
 - [ ] **Task 282:** elaborated statements for metadata and hover. Contract:
   [AIREV-ELABORATED-STATEMENTS](../../task_contracts/en/AIREV-ELABORATED-STATEMENTS.md).
 - [x] **Task 283:** mechanical split of the checker files over 20k lines
   (light tier). Contract:
   [VELOCITY-LARGE-FILE-SPLIT](../../task_contracts/en/VELOCITY-LARGE-FILE-SPLIT.md).
-- [~] **Task 284:** generic original-source transport producer and oracle;
+- [x] **Task 284:** generic original-source transport producer and oracle;
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
 - [ ] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
