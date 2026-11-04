@@ -5,7 +5,7 @@
 slice	family	predecessor	status	note
 attribute-redefinition	definition	-	open	AttributeRedefinition
 equating	definition	-	open	Equating
-field-argument	definition	-	open	FieldArgument
+field-argument	definition	mode-property	done	FieldArgument
 field-redefinition	definition	mode-property	done	FieldRedefinition
 functor-redefinition	definition	-	open	FunctorRedefinition
 inheritance-definition	definition	mode-property	done	InheritanceDefinition

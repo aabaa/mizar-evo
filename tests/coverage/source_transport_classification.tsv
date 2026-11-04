@@ -56,7 +56,7 @@ ErrorRecovery	referenced	referenced	existing source_* producer
 ExistentialRegistration	referenced	referenced	existing source_* producer
 ExportItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 FailStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
-FieldArgument	definition	b	checker Task 279 / Task 270
+FieldArgument	definition	b	source_structure
 FieldRedefinition	definition	b	source_structure_definition
 FieldUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ForCollectionStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)

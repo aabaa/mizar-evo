@@ -4,7 +4,7 @@ use crate::{
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
     typed_ast::{
         NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedSiteRef, source_children,
-        source_contiguous_child_count,
+        source_contiguous_child_count, unique_source_node,
     },
 };
 use mizar_resolve::{
@@ -427,6 +427,121 @@ impl SourceStructureHandoff {
                         .find(|(_, root)| root.term == id)
                         .map(|(id, _)| id),
                 )?;
+            }
+        }
+        self.validate_field_arguments(primary_terms, applications)
+    }
+
+    fn validate_field_arguments(
+        &self,
+        primary: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+    ) -> Result<(), SourceStructureError> {
+        let Some(rows) = original_rows(self.original_source.as_ref(), self.source_id)? else {
+            return Ok(());
+        };
+        for (id, term) in self
+            .terms
+            .iter()
+            .filter(|(_, term)| term.kind == SourceStructureTermKind::Constructor)
+        {
+            let invalid = SourceStructureError::InvalidTerm { term: id };
+            let owner = unique_source_node(rows, |row| {
+                term.site
+                    == TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(row.site().index()))
+            })
+            .ok_or_else(|| invalid.clone())?;
+            let (_, _, arguments) =
+                structure_constructor_rule(rows, owner).ok_or_else(|| invalid.clone())?;
+            let members = self
+                .members
+                .iter()
+                .filter(|(_, row)| row.term == id)
+                .collect::<Vec<_>>();
+            let edges = self
+                .edges
+                .iter()
+                .filter(|(_, row)| row.term == id)
+                .collect::<Vec<_>>();
+            if arguments.len() != members.len() || arguments.len() != edges.len() {
+                return Err(invalid);
+            }
+            for (ordinal, argument) in arguments.into_iter().enumerate() {
+                let (member_id, member) = members[ordinal];
+                let member_error = SourceStructureError::InvalidMember { member: member_id };
+                let (label, _, mut value) =
+                    field_argument_rule(rows, argument).ok_or_else(|| member_error.clone())?;
+                if member.ordinal != ordinal
+                    || member.role != SourceStructureMemberRole::ConstructorAssignment
+                    || member.parent.is_some()
+                    || member.site
+                        != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(
+                            label.site().index(),
+                        ))
+                    || member.source_range != label.range()
+                    || member.spelling != label.spelling()
+                {
+                    return Err(member_error);
+                }
+                let (edge_id, edge) = edges[ordinal];
+                let error = SourceStructureError::InvalidEdge { edge: edge_id };
+                if edge.ordinal != ordinal
+                    || edge.member != Some(member_id)
+                    || edge.role != SourceStructureEdgeRole::ConstructorValue
+                {
+                    return Err(error);
+                }
+                let (range, site, spelling) = match edge.target {
+                    SourceStructureTarget::Primary(id) => {
+                        let row = primary.terms().get(id).ok_or_else(|| error.clone())?;
+                        (row.source_range(), row.site().clone(), row.spelling())
+                    }
+                    SourceStructureTarget::Application(id) => application_effective_occurrence(
+                        applications.ok_or_else(|| error.clone())?,
+                        id,
+                    )
+                    .ok_or_else(|| error.clone())?,
+                    SourceStructureTarget::Structure(id) => {
+                        let row = self.terms.get(id).ok_or_else(|| error.clone())?;
+                        self.wrappers
+                            .iter()
+                            .find(|(_, wrapper)| wrapper.term == id && wrapper.ordinal == 0)
+                            .map_or(
+                                (row.source_range, row.site.clone(), row.spelling.as_str()),
+                                |(_, wrapper)| {
+                                    (
+                                        wrapper.source_range,
+                                        wrapper.site.clone(),
+                                        wrapper.spelling.as_str(),
+                                    )
+                                },
+                            )
+                    }
+                };
+                if value.range() != range || value.spelling() != spelling {
+                    return Err(error);
+                }
+                while site
+                    != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(value.site().index()))
+                    && value.kind() == &SurfaceNodeKind::TermExpression
+                {
+                    let mut children = source_children(rows, value.site());
+                    let child = children.next().ok_or_else(|| error.clone())?;
+                    if children.next().is_some()
+                        || child.child_ordinal() != 0
+                        || child.preorder_ordinal() <= value.preorder_ordinal()
+                        || child.range() != value.range()
+                        || child.spelling() != value.spelling()
+                    {
+                        return Err(error);
+                    }
+                    value = child;
+                }
+                if site
+                    != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(value.site().index()))
+                {
+                    return Err(error);
+                }
             }
         }
         Ok(())
@@ -908,7 +1023,7 @@ impl SourceStructureProducer {
                 .collect(),
         };
 
-        Ok(SourceStructureHandoff {
+        let handoff = SourceStructureHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
             original_source: source.and_then(TypedAst::source_nodes).cloned(),
@@ -921,7 +1036,9 @@ impl SourceStructureProducer {
             field_updates,
             edges,
             requests,
-        })
+        };
+        handoff.validate_field_arguments(primary_terms, applications)?;
+        Ok(handoff)
     }
 }
 
@@ -1218,6 +1335,63 @@ pub(crate) fn structure_constructor_rule<'a>(
         children[0],
         arguments.iter().step_by(2).copied().collect(),
     ))
+}
+
+pub(crate) fn field_argument_rule<'a>(
+    rows: &'a [SourceNode],
+    argument: &SourceNode,
+) -> Option<(&'a SourceNode, &'a SourceNode, &'a SourceNode)> {
+    unique_source_node(rows, |row| {
+        Some(row.site()) == argument.parent()
+            && row.kind() == &SurfaceNodeKind::StructureConstructor
+    })?;
+    let frame = source_children(rows, argument.site()).collect::<Vec<_>>();
+    if argument.kind() != &SurfaceNodeKind::FieldArgument
+        || source_contiguous_child_count(frame.iter().copied()) != Some(3)
+        || !matches!(frame[0].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+        || !matches!(frame[1].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ":")
+        || frame[0].range().start != argument.range().start
+        || frame[2].range().end != argument.range().end
+        || frame
+            .iter()
+            .any(|row| !range_contains(argument.range(), row.range()))
+        || frame
+            .windows(2)
+            .any(|pair| pair[0].range().end > pair[1].range().start)
+    {
+        return None;
+    }
+    let mut terminal = frame[2];
+    while terminal.kind() == &SurfaceNodeKind::TermExpression {
+        let mut children = source_children(rows, terminal.site());
+        let child = children.next()?;
+        if children.next().is_some()
+            || child.child_ordinal() != 0
+            || child.preorder_ordinal() <= terminal.preorder_ordinal()
+            || child.range() != terminal.range()
+            || child.spelling() != terminal.spelling()
+        {
+            return None;
+        }
+        terminal = child;
+    }
+    if !matches!(
+        terminal.kind(),
+        SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::PrefixExpression(_)
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_)
+    ) {
+        return None;
+    }
+    Some((frame[0], frame[1], frame[2]))
 }
 
 #[allow(clippy::too_many_arguments)] // Rationale: validate existing term fields without copying either source or candidate rows.
@@ -3781,7 +3955,12 @@ mod tests {
             (T::Numeral, "1", 27, 28),
             (T::ReservedSymbol, ")", 29, 30),
         ] {
-            let kind = if (mutation == 1 && text == "(") || (mutation == 7 && text == "Pair") {
+            let kind = if mutation == 10 && text == "carrier" {
+                T::UserSymbol
+            } else if (mutation == 1 && text == "(")
+                || (mutation == 7 && text == "Pair")
+                || (mutation == 11 && text == ":")
+            {
                 T::Identifier
             } else {
                 kind
@@ -3802,8 +3981,11 @@ mod tests {
         ] {
             if (mutation == 2 && kind == K::QualifiedSymbol)
                 || (mutation == 3 && kind == K::FieldArgument)
+                || (mutation == 12 && kind == K::NumeralTerm)
             {
                 kind = K::TermList;
+            } else if mutation == 13 && kind == K::NumeralTerm {
+                kind = K::TermExpression;
             }
             let children = children.into_iter().map(|i| sites[i]).collect();
             sites.push(builder.add_node(kind, range(f.source, start, end), children));
@@ -4046,6 +4228,83 @@ mod tests {
                 Err(SourceStructureError::ApplicationDependencyMismatch)
             );
         }
+    }
+
+    #[test]
+    fn field_argument_original_grammar_and_coherent_replays_are_causal() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_property_implementation::tests::assemble_empty,
+        };
+        let (f, source) = native_constructor(0);
+        let pristine = source.clone();
+        let handoff = build_native(&f, &source).unwrap();
+        let member_error = SourceStructureError::InvalidMember {
+            member: SourceStructureMemberId::new(0),
+        };
+        let edge_error = SourceStructureError::InvalidEdge {
+            edge: SourceStructureEdgeId::new(0),
+        };
+        for mutation in [10, 11, 12, 13] {
+            assert_eq!(
+                build_native(&f, &native_constructor(mutation).1),
+                Err(member_error.clone())
+            );
+        }
+        let typed = TypedAst::try_new(empty_typed_parts(&f))
+            .unwrap()
+            .with_source_term(f.primary.clone())
+            .unwrap()
+            .with_source_structure(handoff.clone())
+            .unwrap();
+        assert!(assemble_empty(&typed).is_ok());
+        for (site, error) in [(3, member_error), (7, edge_error)] {
+            let mut counterfeit = f.clone();
+            let mut nodes = counterfeit
+                .arena
+                .iter()
+                .map(|(_, row)| row.clone())
+                .collect::<Vec<_>>();
+            if site == 3 {
+                nodes[3] = nodes[2].clone();
+                counterfeit.input.members[0].site = node(3);
+            } else {
+                nodes[7] = nodes[8].clone();
+            }
+            counterfeit.arena = TypedArena::try_new(None, nodes).unwrap();
+            if site == 7 {
+                counterfeit.primary = primary_handoff(
+                    counterfeit.source,
+                    &counterfeit.module,
+                    &counterfeit.bindings,
+                    &counterfeit.arena,
+                    &[(7, 27, 28, "1")],
+                );
+            }
+            assert!(build(&counterfeit).is_ok());
+            assert_eq!(build_native(&counterfeit, &source), Err(error));
+            let mut forged = handoff.clone();
+            forged.members.rows[0].site = counterfeit.input.members[0].site.clone();
+            forged.primary_term_fingerprint = counterfeit.primary.debug_text();
+            assert!(Arc::ptr_eq(
+                forged.original_source.as_ref().unwrap(),
+                source.source_nodes().unwrap()
+            ));
+            let mut typed = TypedAst::try_new(empty_typed_parts(&counterfeit))
+                .unwrap()
+                .with_source_term(counterfeit.primary.clone())
+                .unwrap();
+            assert_eq!(
+                typed.clone().with_source_structure(forged.clone()),
+                Err(TypedAstError::InvalidSourceStructure)
+            );
+            typed.inject_source_structure_for_test(forged);
+            assert_eq!(
+                assemble_empty(&typed),
+                Err(ResolvedTypedAstError::InvalidSourceStructure)
+            );
+        }
+        assert_eq!(source, pristine);
     }
 
     #[test]
