@@ -538,7 +538,9 @@ test-runner threads and required test coverage.
   `AGENTS.md`, new/changed regression tests, affected unit and corpus checks,
   and a short representative end-to-end check for executable changes.
   Documentation-only changes run the affected documentation/ledger and link
-  checks. Reuse formatting/Clippy evidence only when relevant sources and
+  checks. A pattern slice runs the narrower set named under
+  [Pattern gates](#pattern-gates-bounded-repeat-of-a-reviewed-family).
+  Reuse formatting/Clippy evidence only when relevant sources and
   execution conditions are unchanged.
 - **Relevant changes:** run the affected long tests immediately when their
   obligations are changed: proof/kernel/acceptance, evidence participants,
@@ -664,19 +666,27 @@ Pattern-tier requirements (all mandatory):
 1. a contract that names the predecessor and the one input shape added; under
    a family contract (see Canonical Task Contracts) the slice's ledger row
    carries both;
-2. one combined specification/test-intent and trust review before
-   implementation, and one combined implementation and test-sufficiency
-   review after it (re-review only on findings);
+2. one combined implementation and test-sufficiency review after
+   implementation (re-review only on findings). A specification/trust review
+   before implementation is held only when the slice's plan departs from the
+   predecessor's pattern (a new refusal class, a new consumer, or a different
+   owner module); there is no intermediate delta review;
 3. one volume and scope review per three pattern slices, or immediately when
    a slice exceeds any budget in Volume And Scope Review;
-4. required verification under [Verification Cadence](#verification-cadence);
-   the family's focused checks bound the impact, so full `cargo test` follows
-   the cadence triggers only;
+4. required verification under [Verification Cadence](#verification-cadence),
+   which for a pattern slice is `cargo fmt --check`, Clippy, the owner
+   module's test group, the family's oracle and metamorphic cases, and the
+   ledger lints; the corpus, Driver, and documentation groups run once per
+   three pattern slices or with the volume review, whichever comes first, and
+   with every bundle. The family's focused checks bound the impact, so full
+   `cargo test` follows the cadence triggers only;
 5. a task-only commit naming the tier, the predecessor, and the slice.
 
-Not required in the pattern tier: the nine-gate tally, the quality-score
-evaluation, a separate consistency review when no owner document changed,
-and frozen-doc prerequisite commits.
+Not required in the pattern tier: before/after measurement probes or
+old-versus-new equivalence runs (the owner tests on the new tree are the
+evidence), the nine-gate tally, the quality-score evaluation, a separate
+consistency review when no owner document changed, and frozen-doc
+prerequisite commits.
 
 ### Light gates (zero-credit structural transport)
 

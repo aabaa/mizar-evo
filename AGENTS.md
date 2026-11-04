@@ -96,6 +96,12 @@ Its operational summary is:
   including ledger/link checks. Executable changes need a short end-to-end check.
   Run fmt/Clippy above each changed task; reuse evidence only with unchanged
   relevant inputs and execution conditions.
+- Pattern slice: one post-implementation review; a pre-implementation review
+  only when the plan departs from the predecessor; no delta review and no
+  before/after measurement probes. Checks are fmt, Clippy, the owner test
+  group, the family oracle/metamorphic cases, and ledger lints; corpus,
+  Driver, and docs groups run every third slice, with the volume review, or
+  with every bundle (protocol: "Pattern gates").
 - Select function and cost separately using the protocol command table. Quick
   checks are edit-loop feedback; heavy groups are additional, not cumulative.
   Record deferred groups/reasons/deadlines and the trigger for each full run.
