@@ -739,10 +739,16 @@ implementation commit does not satisfy a producer task.
   subsumes Task 281. Contract:
   [VELOCITY-GENERIC-SOURCE-TRANSPORT](../../task_contracts/en/VELOCITY-GENERIC-SOURCE-TRANSPORT.md).
 - [ ] **Task 285:** class `b` element rules over the generic walk (Tasks 257,
-  269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Contract:
+  269, 270, 271, 272, 279 roles); split from Task 284 on 2026-11-04. Also owns
+  the definition-policy constants Task 284 retained in
+  `source_functor_definition.rs` and `source_property_implementation.rs`, and
+  decides the nested-Fraenkel and condition-aggregate constants of
+  `source_term.rs` and `source_formula_composition.rs`. Contract:
   [VELOCITY-ELEMENT-RULE-TRANSPORT](../../task_contracts/en/VELOCITY-ELEMENT-RULE-TRANSPORT.md).
 - [ ] **Task 286:** authenticated receipt for the public proof-local build
-  inputs, retiring their thirty canonical literal guards (full tier). Contract:
+  inputs, retiring their thirty canonical literal guards and the proof-local
+  constants Task 284 retained in `source_type.rs` and `source_term.rs` (full
+  tier). Contract:
   [CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE](../../task_contracts/en/CHECKER-PROOF-LOCAL-AUTHENTICATED-INTAKE.md).
 
 ## Task 257B2 Frozen-Contract Addendum
