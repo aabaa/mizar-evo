@@ -628,6 +628,14 @@ impl TypedAst {
     }
 
     #[cfg(test)]
+    pub(crate) fn inject_source_property_implementation_for_test(
+        &mut self,
+        handoff: SourcePropertyImplementationHandoff,
+    ) {
+        self.source_property_implementation = Some(handoff);
+    }
+
+    #[cfg(test)]
     pub(crate) fn inject_source_mode_definition_for_test(
         &mut self,
         handoff: SourceModeDefinitionHandoff,

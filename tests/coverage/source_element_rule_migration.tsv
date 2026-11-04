@@ -14,10 +14,10 @@ inline-functor-definition	definition	-	open	InlineFunctorDefinition
 inline-predicate-definition	definition	-	open	InlinePredicateDefinition
 mode-property	definition	native-consumer	done	ModeProperty
 functor-declaration-eligibility	definition	mode-property	done	inherited: FunctorDefinition resolver declaration eligibility in source_functor_definition
-property-retained-constants	definition	mode-property	open	inherited: resolver-origin, admission and prefix-geometry authority in source_property_implementation
+property-retained-constants	definition	mode-property	open	inherited: resolver origins, header and prefix initializer use original roles; canonical Arena reference in source_property_implementation remains
 property-redefinition	definition	-	open	PropertyRedefinition
 structure-constructor	definition	-	open	StructureConstructor
-structure-property	definition	-	open	StructureProperty
+structure-property	definition	mode-property	done	StructureProperty
 case-item	proof-skeleton	-	open	CaseItem
 case-reasoning-statement	proof-skeleton	-	open	CaseReasoningStatement
 consider-statement	proof-skeleton	-	open	ConsiderStatement

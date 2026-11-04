@@ -2,7 +2,7 @@ path	count
 crates/mizar-checker/src/resolved_typed_ast.rs	3
 crates/mizar-checker/src/source_formula_composition.rs	4
 crates/mizar-checker/src/source_proof_local_declaration.rs	30
-crates/mizar-checker/src/source_property_implementation.rs	6
+crates/mizar-checker/src/source_property_implementation.rs	1
 crates/mizar-checker/src/source_term.rs	7
 crates/mizar-checker/src/source_type.rs	5
 crates/mizar-checker/src/type_checker.rs	1

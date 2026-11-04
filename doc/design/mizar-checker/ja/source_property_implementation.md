@@ -10,21 +10,17 @@ property implementation は subject structure の resolver-authenticated propert
 check する。`equals` は existence/uniqueness を要求せず direct value term を normalize し、
 `means` は `it` を束縛して ordered existence と uniqueness の両 clause を要求する。
 
+## 元の property の authority
+
+`SourcePropertyImplementationProducer::build` は generic table が install 済みの元の
+`TypedAst` を必須とする。要素規則は candidate の field や保存済み carrier identity に
+依存せず、宣言・Type・header・parameter identifier の role を選ぶ。handoff はその不変の
+table を build、typed installation、resolved replay で共有し、semantic arena は分離する。
+native の source position は semantic prefix alias の適格判定に依存しない。不正な
+semantic alias は Arena 検証で拒否し、保存済み carrier identity は従来の後段で source role と
+照合する。元ソースを伴わない scalar eligibility と canonical fallback は private test policy とする。
+
 ## Fixed-width local spelling
-
-元の固定幅 profile は引き続き受理する。正常な Env origin、実際の Type、prefix Arena
-の完全な scalar geometry が一致する場合だけ相対範囲を適格とする。prefix0..18 と9個の
-alias に幅・語の区切り・source・state・leaf 端点の厳密な一致を要求する。PI member owner
-は厳密一致であり、一般 Type の包含だけでは足りない。raw prefix の証拠はなく、供給された
-artifact の整合性と実現可能な配置を検査し、独立した loaded source の由来を証明しない。
-
-不適格な場合は canonical Resolver・prefix Type・header の検査と順序をそのまま適用し、
-後段 Arena の28個すべての canonical prefix pin も維持する。不一致の診断責務を新たに
-決めない。適格な配置は一致した範囲だけを置換し、既存の後段の子
-エラーに到達できる。prefix 適格判定では body19・parameter Type 範囲・入力の子の範囲や表記
-を読まない。replay は
-相対配置の許可前に、target の symbol／definition／contribution／origin 関連だけを含む
-保存済み identity の不変条件を黙って検査し、実際の identity エラーは元の後段に保つ。
 
 既知の ASCII 語・数・記号を native preprocessing と source map から測る。
 SP／TAB／LF と通常の行・block comment を許し、diagnostic、documentation／annotation、
@@ -57,8 +53,7 @@ unowned19 や入力の子の範囲・表記を先行参照しない。先行す�
 
 ## Task 264 scope / authority
 
-Task 264はstruct property implementationとinitial correctness obligationの
-syntax-free immutable intakeだけを所有します。authorityはChapter 5のvirtual
+authorityはChapter 5のvirtual
 property/value-source境界、Chapter 7 §§7.4.1/7.8.2/7.10、Chapter 13
 §§13.1.2/13.8.2、Chapter 16 §§16.6.1/16.6.2/16.7.2、Parser Task 48
 pass/recovery、inactive overlap seed、implemented Tasks 248--255、259、263、
@@ -269,9 +264,7 @@ Equalsはowner 52です。
 Public non-exhaustive enumsはstyle `Equals/Means`、definiens target
 `Primary/Application/Structure/SetTerm/AtomicFormula`、correctness
 `Existence/Uniqueness`、recovery `Normal/Degraded`、category-specific errorです。
-ProducerはSymbolEnv、source context/type/term、optional application/structure/
-set/atomic、base obligations、arenaをexplicitにconsumeし、atomic projectionを
-返します。Mutable getter/raw syntax/public constructor/replacement/property valueは
+Producerはatomic projectionを返します。Mutable getter/raw syntax/public constructor/replacement/property valueは
 ありません。Handoff getter surfaceはexactly次です。
 
 ```rust

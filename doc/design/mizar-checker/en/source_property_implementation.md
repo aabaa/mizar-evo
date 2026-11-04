@@ -10,23 +10,19 @@ subject structure. `equals` normalizes its direct value term without existence o
 obligations. `means` binds `it` and requires both ordered existence and uniqueness clauses before
 the implementation is admitted.
 
+## Original property authority
+
+`SourcePropertyImplementationProducer::build` requires the original `TypedAst`
+with its installed generic table. The element rule selects declaration, type,
+header and parameter-identifier roles independently of candidate fields and
+stored carrier identity. The handoff shares that immutable table for build,
+typed installation and resolved replay; the semantic arena remains separate.
+Native source positions do not depend on semantic prefix alias eligibility.
+A malformed semantic alias fails at Arena validation; stored carrier identity
+is checked against the source roles at the existing late identity phase.
+Source-free scalar eligibility and canonical fallback remain private test policy.
+
 ## Fixed-width local spelling
-
-The original fixed-width profile remains admitted. Relative prefix ranges are eligible
-only when normal Env origins, actual Type rows and complete scalar prefix Arena geometry
-agree. Prefix0..18 and nine aliases require exact widths, word separation, source,
-state and leaf endpoints; PI member owners are exact, while generic Type containment
-alone is insufficient. No raw prefix witness is available: this proves supplied
-artifact agreement and realizability, not independent loaded-source provenance.
-
-Unavailable eligibility keeps the exact canonical Resolver, prefix Type and header
-checks in their existing order, including all28 canonical prefix pins at late Arena,
-without choosing a new disagreement owner. Eligible
-coherent layouts replace only agreed ranges and can reach existing later child errors.
-Prefix eligibility reads no body19, parameter-Type ranges or input-child ranges/spellings.
-Replay silently qualifies
-stored identity invariants, including only the target symbol/definition/contribution/
-origin association, before any relative permit and keeps its actual error late.
 
 Measure known ASCII word/number/punctuation atoms through native preprocessing and
 its source map. Permit SP/TAB/LF and ordinary line/block comments; reject diagnostics,
@@ -61,9 +57,7 @@ child error ownership, all original arena refusals and semantic-obligation bound
 
 ## Task 264 Scope And Authority
 
-Checker Task 264 owns one syntax-free, immutable source-to-checker intake for
-struct-property implementations and their initial correctness obligations. Its
-canonical authority is Chapter 5's virtual-property/value-source boundary;
+Canonical authority is Chapter 5's virtual-property/value-source boundary;
 Chapter 7 §§7.4.1, 7.8.2, and 7.10; Chapter 13 §§13.1.2 and 13.8.2; Chapter 16
 §§16.6.1, 16.6.2, and 16.7.2; the Parser Task-48 pass/recovery fixtures; the
 inactive overlap-without-coherence seed; and committed Tasks 248--255, 259,
@@ -630,6 +624,7 @@ impl SourcePropertyImplementationProducer {
         atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
     ) -> Result<SourcePropertyImplementationProjection,
                 SourcePropertyImplementationError>;
 }

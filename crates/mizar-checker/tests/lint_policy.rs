@@ -113,8 +113,11 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
         } else if path == root.join("src/typed_ast.rs")
             || path == root.join("src/source_mode_definition.rs")
             || path == root.join("src/source_functor_definition.rs")
+            || path == root.join("src/source_property_implementation.rs")
         {
-            let permitted = if path == root.join("src/typed_ast.rs") {
+            let permitted = if path == root.join("src/source_property_implementation.rs") {
+                "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
+            } else if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"
             } else {
                 "use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};"

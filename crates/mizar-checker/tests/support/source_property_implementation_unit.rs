@@ -77,6 +77,27 @@ impl Fixture {
         &self,
         base: &InitialObligationTable,
     ) -> Result<SourcePropertyImplementationProjection, SourcePropertyImplementationError> {
+        SourcePropertyImplementationProducer::build_with_source(
+            self.input.clone(),
+            &self.env,
+            &self.context,
+            &self.source_type,
+            &self.terms,
+            None,
+            self.structure.as_ref(),
+            None,
+            self.formula.as_ref(),
+            base,
+            &self.arena,
+            None,
+        )
+    }
+
+    fn build_native(
+        &self,
+        base: &InitialObligationTable,
+        source: &TypedAst,
+    ) -> Result<SourcePropertyImplementationProjection, SourcePropertyImplementationError> {
         SourcePropertyImplementationProducer::build(
             self.input.clone(),
             &self.env,
@@ -89,6 +110,7 @@ impl Fixture {
             self.formula.as_ref(),
             base,
             &self.arena,
+            source,
         )
     }
 
@@ -832,6 +854,7 @@ fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
             &means.source_type,
             Some(range(means.source, 130, 144)),
             None,
+            None,
         )
         .is_err()
     );
@@ -841,6 +864,7 @@ fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
             equals.source,
             &equals.source_type,
             Some(range(equals.source, 130, 144)),
+            None,
             None,
         )
         .is_err()
@@ -4518,6 +4542,35 @@ fn task_264_public_coherent_prefix_layout_and_legacy_disagreements() {
                 assert_eq!(result, Err(expected), "legacy {profile:?}/{case}");
                 continue;
             }
+            let original_source =
+                native_property_source(&original, NativePropertySourceMutation::None);
+            let native = original.build_native(&base, &original_source).unwrap();
+            assert_eq!(
+                f.build_native(&base, &original_source),
+                Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+            );
+            let mut counterfeit = result.as_ref().unwrap().clone();
+            counterfeit.handoff.original_source_nodes = native.handoff.original_source_nodes;
+            assert_eq!(
+                f.validate_handoff(
+                    &counterfeit.handoff,
+                    &counterfeit.initial_obligations,
+                    &f.arena
+                ),
+                Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 })
+            );
+            assert_eq!(
+                f.typed_base(base.clone())
+                    .with_source_property_implementation(counterfeit.clone()),
+                Err(TypedAstError::InvalidSourcePropertyImplementation)
+            );
+            let mut injected = f.typed_base(base.clone());
+            injected.replace_initial_obligations_for_test(counterfeit.initial_obligations);
+            injected.inject_source_property_implementation_for_test(counterfeit.handoff);
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
+            );
             for fault in ["child", "unowned19"] {
                 let mut bad = f.clone();
                 if fault == "child" {
@@ -4665,5 +4718,369 @@ fn task_264_public_coherent_prefix_layout_and_legacy_disagreements() {
         assert!(resolved.statement_semantics().is_empty());
         assert!(resolved.checked_proofs().is_empty());
         assert!(resolved.diagnostics().is_empty());
+    }
+}
+
+enum NativePropertySourceMutation {
+    None,
+    PropertyType,
+    HeadToken,
+    MemberName,
+    BodyContent,
+}
+
+fn native_property_source(f: &Fixture, mutation: NativePropertySourceMutation) -> TypedAst {
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::SurfaceTokenKind;
+    let (text, tokens, nodes) = match f.profile {
+        TestProfile::Means => (
+            include_str!(
+                "../../../../tests/miz/pass/types/pass_type_elaboration_property_implementation_means_payload_001.miz"
+            ),
+            "definition struct Task264Carrier where field carrier -> set ; property marker -> set ; end ; end ; definition let M be Task264Carrier ; property M . marker means it = it ; existence by computation ( steps : 1 ) ; uniqueness by computation ( steps : 1 ) ; end ;",
+            vec![
+                (SurfaceNodeKind::StructurePattern, vec![2]),
+                (SurfaceNodeKind::TypeHead, vec![7]),
+                (SurfaceNodeKind::TypeExpression, vec![54]),
+                (SurfaceNodeKind::StructureField, vec![4, 5, 6, 55, 8]),
+                (SurfaceNodeKind::TypeHead, vec![12]),
+                (SurfaceNodeKind::TypeExpression, vec![57]),
+                (SurfaceNodeKind::StructureProperty, vec![9, 10, 11, 58, 13]),
+                (
+                    SurfaceNodeKind::StructureDefinition,
+                    vec![1, 53, 3, 56, 59, 14, 15],
+                ),
+                (SurfaceNodeKind::DefinitionBlockItem, vec![0, 60, 16, 17]),
+                (SurfaceNodeKind::PathSegment, vec![22]),
+                (SurfaceNodeKind::QualifiedSymbol, vec![62]),
+                (SurfaceNodeKind::TypeHead, vec![63]),
+                (
+                    SurfaceNodeKind::DefinitionParameter,
+                    vec![19, 20, 21, 64, 23],
+                ),
+                (SurfaceNodeKind::ItTerm, vec![29]),
+                (SurfaceNodeKind::TermExpression, vec![66]),
+                (SurfaceNodeKind::ItTerm, vec![31]),
+                (SurfaceNodeKind::TermExpression, vec![68]),
+                (
+                    SurfaceNodeKind::BuiltinPredicateApplication,
+                    vec![67, 30, 69],
+                ),
+                (SurfaceNodeKind::FormulaExpression, vec![70]),
+                (SurfaceNodeKind::FormulaDefiniens, vec![71]),
+                (SurfaceNodeKind::ComputationOption, vec![37, 38, 39]),
+                (
+                    SurfaceNodeKind::ComputationJustification,
+                    vec![35, 36, 73, 40],
+                ),
+                (SurfaceNodeKind::JustificationClause, vec![34, 74]),
+                (SurfaceNodeKind::CorrectnessCondition, vec![33, 75, 41]),
+                (SurfaceNodeKind::ComputationOption, vec![46, 47, 48]),
+                (
+                    SurfaceNodeKind::ComputationJustification,
+                    vec![44, 45, 77, 49],
+                ),
+                (SurfaceNodeKind::JustificationClause, vec![43, 78]),
+                (SurfaceNodeKind::CorrectnessCondition, vec![42, 79, 50]),
+                (
+                    SurfaceNodeKind::PropertyImplementation,
+                    vec![18, 65, 24, 25, 26, 27, 28, 72, 32, 76, 80, 51, 52],
+                ),
+                (SurfaceNodeKind::ItemList, vec![61, 81]),
+                (SurfaceNodeKind::CompilationUnit, vec![82]),
+                (
+                    SurfaceNodeKind::Root,
+                    vec![
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                        40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 83,
+                    ],
+                ),
+            ],
+        ),
+        TestProfile::Equals => (
+            include_str!(
+                "../../../../tests/miz/pass/types/pass_type_elaboration_property_implementation_equals_payload_001.miz"
+            ),
+            "definition struct Task264Carrier where field carrier -> set ; property marker -> set ; end ; end ; definition let M be Task264Carrier ; property M . marker equals M . carrier ; end ;",
+            vec![
+                (SurfaceNodeKind::StructurePattern, vec![2]),
+                (SurfaceNodeKind::TypeHead, vec![7]),
+                (SurfaceNodeKind::TypeExpression, vec![36]),
+                (SurfaceNodeKind::StructureField, vec![4, 5, 6, 37, 8]),
+                (SurfaceNodeKind::TypeHead, vec![12]),
+                (SurfaceNodeKind::TypeExpression, vec![39]),
+                (SurfaceNodeKind::StructureProperty, vec![9, 10, 11, 40, 13]),
+                (
+                    SurfaceNodeKind::StructureDefinition,
+                    vec![1, 35, 3, 38, 41, 14, 15],
+                ),
+                (SurfaceNodeKind::DefinitionBlockItem, vec![0, 42, 16, 17]),
+                (SurfaceNodeKind::PathSegment, vec![22]),
+                (SurfaceNodeKind::QualifiedSymbol, vec![44]),
+                (SurfaceNodeKind::TypeHead, vec![45]),
+                (
+                    SurfaceNodeKind::DefinitionParameter,
+                    vec![19, 20, 21, 46, 23],
+                ),
+                (SurfaceNodeKind::TermReference, vec![29]),
+                (SurfaceNodeKind::SelectorAccess, vec![48, 30, 31]),
+                (SurfaceNodeKind::TermExpression, vec![49]),
+                (SurfaceNodeKind::TermDefiniens, vec![50]),
+                (
+                    SurfaceNodeKind::PropertyImplementation,
+                    vec![18, 47, 24, 25, 26, 27, 28, 51, 32, 33, 34],
+                ),
+                (SurfaceNodeKind::ItemList, vec![43, 52]),
+                (SurfaceNodeKind::CompilationUnit, vec![53]),
+                (
+                    SurfaceNodeKind::Root,
+                    vec![
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 54,
+                    ],
+                ),
+            ],
+        ),
+    };
+    let text = if matches!(&mutation, NativePropertySourceMutation::MemberName) {
+        text.replacen("property marker", "property wrongx", 1)
+    } else if matches!(&mutation, NativePropertySourceMutation::BodyContent) {
+        if f.profile == TestProfile::Means {
+            text.replace("it = it", "it = ix")
+        } else {
+            text.replace("equals M.carrier", "equals M.wrongxx")
+        }
+    } else {
+        text.to_owned()
+    };
+    let mut builder = SurfaceAstBuilder::new(f.source);
+    let mut sites = Vec::new();
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    for (index, token) in tokens.split_ascii_whitespace().enumerate() {
+        let token = if index == 10 && matches!(&mutation, NativePropertySourceMutation::MemberName)
+        {
+            "wrongx"
+        } else if index == 31 && matches!(&mutation, NativePropertySourceMutation::BodyContent) {
+            if f.profile == TestProfile::Means {
+                "ix"
+            } else {
+                "wrongxx"
+            }
+        } else {
+            token
+        };
+        let start = cursor + text[cursor..].find(token).unwrap();
+        cursor = start + token.len();
+        let mut kind = match token {
+            "Task264Carrier" if index == 22 => SurfaceTokenKind::UserSymbol,
+            "Task264Carrier" | "carrier" | "marker" | "wrongx" | "wrongxx" | "M" | "steps"
+            | "ix" => SurfaceTokenKind::Identifier,
+            "1" => SurfaceTokenKind::Numeral,
+            ";" | "->" | "." | "=" | "(" | ")" | ":" => SurfaceTokenKind::ReservedSymbol,
+            _ => SurfaceTokenKind::ReservedWord,
+        };
+        if index == 12 && matches!(&mutation, NativePropertySourceMutation::HeadToken) {
+            kind = SurfaceTokenKind::Identifier;
+        }
+        sites.push(builder.add_token(kind, token, range(f.source, start, cursor)));
+        spans.push((start, cursor));
+    }
+    for (mut kind, children) in nodes {
+        if kind == SurfaceNodeKind::TypeExpression
+            && sites.len()
+                == if f.profile == TestProfile::Means {
+                    58
+                } else {
+                    40
+                }
+            && matches!(&mutation, NativePropertySourceMutation::PropertyType)
+        {
+            kind = SurfaceNodeKind::TermList;
+        }
+        if kind == SurfaceNodeKind::ItTerm
+            && sites.len() == 68
+            && matches!(&mutation, NativePropertySourceMutation::BodyContent)
+        {
+            kind = SurfaceNodeKind::TermReference;
+        }
+        let start = spans[children[0]].0;
+        let end = spans[*children.last().unwrap()].1;
+        let children = children.into_iter().map(|index| sites[index]).collect();
+        sites.push(builder.add_node(kind, range(f.source, start, end), children));
+        spans.push((start, end));
+    }
+    let ast = builder.finish(sites.last().copied(), None);
+    let source = SurfaceResolvedArena::lower(&ast, &f.module).unwrap();
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new("syntax", node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    )
+            })
+            .collect(),
+    )
+    .unwrap();
+    let mut parts = f.typed_parts(InitialObligationTable::new());
+    parts.source_context = None;
+    parts.source_type = None;
+    parts.resolved_root = Some(source.arena().root());
+    parts.nodes = nodes;
+    let mut syntax = TypedAst::try_new(parts).unwrap();
+    syntax.install_source_nodes(&source).unwrap();
+    syntax
+}
+
+#[test]
+fn structure_property_native_source_authority_and_content_are_required() {
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let f = fixture(profile);
+        let base = InitialObligationTable::new();
+        let source = native_property_source(&f, NativePropertySourceMutation::None);
+        let before = source.clone();
+        let projection = f.build_native(&base, &source).unwrap();
+        assert_eq!(
+            projection.handoff().debug_text(),
+            f.projection(&base).handoff().debug_text()
+        );
+        assert!(Arc::ptr_eq(
+            source.source_nodes().unwrap(),
+            projection.handoff.original_source_nodes.as_ref().unwrap()
+        ));
+        assert_eq!(source, before);
+        assert_eq!(
+            f.build_native(&base, &f.typed_base(base.clone())),
+            Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+        );
+        for foreign_id in [false, true] {
+            let mut foreign = f.clone();
+            if foreign_id {
+                foreign.source = source_id(if profile == TestProfile::Means {
+                    TestProfile::Equals
+                } else {
+                    TestProfile::Means
+                });
+            } else {
+                foreign.module =
+                    ModuleId::new(PackageId::new("foreign"), ModulePath::new("property"));
+            }
+            let source = native_property_source(&foreign, NativePropertySourceMutation::None);
+            assert_eq!(
+                f.build_native(&base, &source),
+                Err(SourcePropertyImplementationError::SourceIdentityMismatch)
+            );
+        }
+        for mutation in [
+            NativePropertySourceMutation::PropertyType,
+            NativePropertySourceMutation::HeadToken,
+            NativePropertySourceMutation::MemberName,
+        ] {
+            let bad = native_property_source(&f, mutation);
+            assert_eq!(
+                f.build_native(&base, &bad),
+                Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+            );
+        }
+        let bad_body = native_property_source(&f, NativePropertySourceMutation::BodyContent);
+        assert_eq!(
+            f.build_native(&base, &bad_body),
+            Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 })
+        );
+        let mut wrong_style = f.clone();
+        wrong_style.input.implementations[0].style = if profile == TestProfile::Means {
+            SourcePropertyImplementationStyle::Equals
+        } else {
+            SourcePropertyImplementationStyle::Means
+        };
+        assert_eq!(
+            wrong_style.build_native(&base, &source),
+            Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 })
+        );
+    }
+}
+
+#[test]
+fn structure_property_native_replay_keeps_late_identity_and_arena_priorities() {
+    for profile in [TestProfile::Means, TestProfile::Equals] {
+        let f = fixture(profile);
+        let source = native_property_source(&f, NativePropertySourceMutation::None);
+        let base = InitialObligationTable::new();
+        let projection = f.build_native(&base, &source).unwrap();
+        let typed = f
+            .typed_base(base.clone())
+            .with_source_property_implementation(projection.clone())
+            .unwrap();
+        assert!(typed.source_nodes().is_none());
+        assert!(assemble_empty(&typed).is_ok());
+        for fault in ["identity_path", "target_origin"] {
+            let mut bad = projection.clone();
+            if fault == "identity_path" {
+                bad.handoff.carrier_identity.field.origin = SemanticOrigin::new(
+                    f.source,
+                    f.module.clone(),
+                    bad.handoff.carrier_identity.field.origin.anchor().clone(),
+                    vec![4, 0, 11, 0, 18, 9],
+                );
+            } else {
+                bad.handoff.targets.rows[0].origin =
+                    bad.handoff.carrier_identity.field.origin.clone();
+            }
+            assert!(Arc::ptr_eq(
+                bad.handoff.original_source_nodes.as_ref().unwrap(),
+                source.source_nodes().unwrap()
+            ));
+            assert_eq!(
+                f.validate_handoff(&bad.handoff, &bad.initial_obligations, &f.arena),
+                Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+            );
+            assert_eq!(
+                f.typed_base(base.clone())
+                    .with_source_property_implementation(bad.clone()),
+                Err(TypedAstError::InvalidSourcePropertyImplementation)
+            );
+            let mut injected = typed.clone();
+            injected.inject_source_property_implementation_for_test(bad.handoff.clone());
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
+            );
+            bad.handoff.parameters.rows[0].ordinal = 1;
+            assert_eq!(
+                f.validate_handoff(&bad.handoff, &bad.initial_obligations, &f.arena),
+                Err(SourcePropertyImplementationError::InvalidParameter { index: 0 })
+            );
+        }
+        let mut malformed = projection.clone();
+        let rows = Arc::make_mut(malformed.handoff.original_source_nodes.as_mut().unwrap());
+        rows.iter_mut()
+            .find(|row| row.kind == SurfaceNodeKind::StructureProperty)
+            .unwrap()
+            .kind = SurfaceNodeKind::TermList;
+        assert_eq!(
+            f.validate_handoff(&malformed.handoff, &malformed.initial_obligations, &f.arena),
+            Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+        );
+        assert_eq!(
+            f.typed_base(base.clone())
+                .with_source_property_implementation(malformed.clone()),
+            Err(TypedAstError::InvalidSourcePropertyImplementation)
+        );
+        let mut injected = typed.clone();
+        injected.inject_source_property_implementation_for_test(malformed.handoff);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation)
+        );
+        assert!(assemble_empty(&typed).is_ok());
     }
 }

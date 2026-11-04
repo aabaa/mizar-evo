@@ -62,7 +62,7 @@ use mizar_resolve::{
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
-use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::checker_handoff::{assemble_empty_resolved_typed_ast, source_syntax_receiver};
 use super::source_ast::{
     leaf_token_texts, subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
@@ -127,6 +127,7 @@ pub(in crate::runner) enum SourcePropertyImplementationRouteMutation {
     WrongFormula,
     WrongImplementation,
     WrongArena,
+    WrongNativePrefixAlias,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1014,6 +1015,12 @@ fn task264_arena(
         } else {
             ast.nodes()[index].range
         };
+        let mut anchor = anchor;
+        if mutation == SourcePropertyImplementationRouteMutation::WrongNativePrefixAlias
+            && index == if profile == Profile::Means { 61 } else { 43 }
+        {
+            anchor.end += 1;
+        }
         let context = if kind == "source.module" {
             LocalTypeContextId::new(0)
         } else {
@@ -1580,6 +1587,7 @@ fn build_output(
     {
         return Err("Task264 source association is invalid".to_owned());
     }
+    let syntax = source_syntax_receiver(ast, &module)?;
     let arena = task264_arena(ast, profile, mutation)?;
     let context = source_context(ast, module.clone(), shells, profile, mutation)?;
     let source_type = source_type(
@@ -1683,6 +1691,7 @@ fn build_output(
         typed.source_atomic_formula(),
         typed.initial_obligations(),
         typed.nodes(),
+        &syntax,
     )
     .map_err(|error| format!("Task264 property implementation: {error}"))?;
     typed = typed

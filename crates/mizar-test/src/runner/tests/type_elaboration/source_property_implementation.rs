@@ -3512,3 +3512,91 @@ fn task264_raw_prefix_bridge_preserves_transport_and_selected_errors() {
         assert!(resolved.diagnostics().is_empty());
     }
 }
+
+#[test]
+fn task264_native_original_prefix_alias_has_late_arena_owner() {
+    use mizar_syntax::SurfaceNodeKind;
+
+    for (ordinal, (profile, original)) in [
+        ("means", SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT),
+        ("equals", SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let baseline = task257c4c1_frontend_output(original, 265_400 + ordinal * 2);
+        assert!(baseline.diagnostics.is_empty(), "{profile} baseline");
+        let baseline_ast = baseline.ast.as_ref().expect("native baseline AST");
+        let source = metamorphic_edits::variants(baseline_ast, original)
+            .into_iter()
+            .find(|(kind, _)| *kind == "intertoken_layout")
+            .map(|(_, edits)| metamorphic_edits::apply(original, &edits))
+            .expect("native intertoken-layout variant");
+        assert_ne!(source, original);
+        let frontend = task257c4c1_frontend_output(&source, 265_401 + ordinal * 2);
+        assert!(
+            frontend.diagnostics.is_empty()
+                && frontend.preprocessed.diagnostics.is_empty()
+                && frontend.tokens.diagnostics.is_empty(),
+            "{profile} frontend, preprocessing, or lexer diagnostics"
+        );
+        assert_eq!(frontend.source.source_text.as_ref(), source);
+        let ast = frontend.ast.as_ref().expect("native variant AST");
+        assert_eq!(ast.source_id, frontend.source.source_id);
+        assert!(ast.node_views().all(|node| !node.is_recovered()));
+        let first_block = |ast: &mizar_syntax::SurfaceAst| {
+            ast.nodes()
+                .iter()
+                .position(|node| matches!(&node.kind, SurfaceNodeKind::DefinitionBlockItem))
+                .expect("native DefinitionBlockItem")
+        };
+        let (baseline_index, index) = (first_block(baseline_ast), first_block(ast));
+        assert_eq!(index, baseline_index, "{profile} first block identity");
+        let (block, baseline_block) = (&ast.nodes()[index], &baseline_ast.nodes()[baseline_index]);
+        assert_eq!(block.kind, baseline_block.kind);
+        assert_ne!(
+            (block.range.start, block.range.end),
+            (baseline_block.range.start, baseline_block.range.end)
+        );
+
+        let module = mizar_resolve::resolved_ast::ModuleId::new(
+            frontend.source.package_id.clone(),
+            frontend.source.module_path.clone(),
+        );
+        let shells = mizar_resolve::declarations::DeclarationShellCollector::new(ast, &module).collect();
+        let collected = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty(), "{profile} resolver");
+        let env = collected.into_env();
+        let source_arc = frontend.source.source_text.clone();
+        let ast_before = ast.clone();
+        let pristine = source_property_implementation_output(
+            ast, module.clone(), &shells, &env, source_arc.as_ref(),
+        );
+        assert!(
+            pristine.as_ref().is_some_and(|result| result.is_ok()),
+            "{profile} pristine route: {pristine:?}"
+        );
+        assert_eq!(ast, &ast_before);
+        let error = source_property_implementation_output_with_mutation(
+            ast,
+            module,
+            &shells,
+            &env,
+            source_arc.as_ref(),
+            SourcePropertyImplementationRouteMutation::WrongNativePrefixAlias,
+        )
+        .expect("native selector")
+        .expect_err("corrupt native prefix alias must fail at its arena owner");
+        assert_eq!(
+            error,
+            "Task264 property implementation: invalid property-implementation typed-arena ownership"
+        );
+        assert_eq!(ast, &ast_before);
+        assert_eq!(frontend.source.source_text, source_arc);
+    }
+}

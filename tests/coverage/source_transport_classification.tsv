@@ -158,7 +158,7 @@ StructureConstructor	definition	b	checker Task 279 / Task 270
 StructureDefinition	referenced	referenced	existing source_* producer
 StructureField	referenced	referenced	existing source_* producer
 StructurePattern	referenced	referenced	existing source_* producer
-StructureProperty	definition	b	checker Task 279 / Task 270
+StructureProperty	definition	b	source_property_implementation
 StructureUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 SupposeItem	proof-skeleton	b	checker Task 272 / Task 269
 TakeStatement	referenced	referenced	existing source_* producer

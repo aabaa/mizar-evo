@@ -1,4 +1,6 @@
-//! Syntax-free struct-property-implementation intake for checker phase 6.
+use self::SourcePropertyImplementationError::{
+    InvalidImplementation, InvalidResolverTarget, SourceIdentityMismatch,
+};
 
 use crate::{
     binding_env::{
@@ -34,7 +36,8 @@ use crate::{
     typed_ast::{
         InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
         InitialObligationProvenance, InitialObligationStatus, InitialObligationTable,
-        LocalTypeContextId, NodeRecoveryState, TypedArena, TypedNodeId, TypedSiteRef, TypingState,
+        LocalTypeContextId, NodeRecoveryState, SourceNode, TypedArena, TypedAst, TypedNodeId,
+        TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -46,9 +49,11 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};
 use std::{
     error::Error,
     fmt::{self, Write as _},
+    sync::Arc,
 };
 
 macro_rules! dense_id {
@@ -556,6 +561,7 @@ pub struct SourcePropertyImplementationHandoff {
     source_id: SourceId,
     module_id: ModuleId,
     carrier_identity: SourcePropertyCarrierIdentity,
+    original_source_nodes: Option<Arc<[SourceNode]>>,
     source_context_fingerprint: String,
     source_type_fingerprint: String,
     source_term_fingerprint: String,
@@ -1440,6 +1446,39 @@ impl SourcePropertyImplementationProducer {
         atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
         base_initial_obligations: &InitialObligationTable,
         arena: &TypedArena,
+        source: &TypedAst,
+    ) -> Result<SourcePropertyImplementationProjection, SourcePropertyImplementationError> {
+        Self::build_with_source(
+            input,
+            env,
+            source_context,
+            source_type,
+            source_term,
+            applications,
+            structures,
+            set_terms,
+            atomic_formulas,
+            base_initial_obligations,
+            arena,
+            Some(source),
+        )
+    }
+
+    // Rationale: original source authority stays separate from the frozen lower inputs.
+    #[allow(clippy::too_many_arguments)]
+    fn build_with_source(
+        input: SourcePropertyImplementationHandoffInput,
+        env: &SymbolEnv,
+        source_context: &SourceBindingContextHandoff,
+        source_type: &SourceTypeApplicationHandoff,
+        source_term: &SourcePrimaryTermHandoff,
+        applications: Option<&SourceFunctorApplicationHandoff>,
+        structures: Option<&SourceStructureHandoff>,
+        set_terms: Option<&SourceSetTermHandoff>,
+        atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
+        base_initial_obligations: &InitialObligationTable,
+        arena: &TypedArena,
+        source: Option<&TypedAst>,
     ) -> Result<SourcePropertyImplementationProjection, SourcePropertyImplementationError> {
         validate_dependency_identity(
             input.source_id,
@@ -1458,7 +1497,7 @@ impl SourcePropertyImplementationProducer {
         }
         validate_shape(&input)?;
         validate_baseline(base_initial_obligations)?;
-        let carrier_identity = validate_resolver_target(&input, env, source_type, arena)?;
+        let carrier_identity = validate_resolver_target(&input, env, source_type, arena, source)?;
         validate_input(
             &input,
             &carrier_identity,
@@ -1471,6 +1510,9 @@ impl SourcePropertyImplementationProducer {
             set_terms,
             atomic_formulas,
             arena,
+            source
+                .and_then(TypedAst::source_nodes)
+                .map(|rows| rows.as_ref()),
         )?;
 
         let mut initial_obligations = base_initial_obligations.clone();
@@ -1609,6 +1651,7 @@ impl SourcePropertyImplementationProducer {
             source_id: input.source_id,
             module_id: input.module_id,
             carrier_identity,
+            original_source_nodes: source.and_then(TypedAst::source_nodes).cloned(),
             source_context_fingerprint: source_context.debug_text(),
             source_type_fingerprint: source_type.debug_text(),
             source_term_fingerprint: source_term.debug_text(),
@@ -1748,7 +1791,8 @@ fn validate_resolver_target(
     input: &SourcePropertyImplementationHandoffInput,
     env: &SymbolEnv,
     source_type: &SourceTypeApplicationHandoff,
-    arena: &TypedArena,
+    _arena: &TypedArena,
+    source: Option<&TypedAst>,
 ) -> Result<SourcePropertyCarrierIdentity, SourcePropertyImplementationError> {
     if env.symbols().len() != 3 || env.definitions().len() != 3 || env.contributions().len() != 1 {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
@@ -1776,21 +1820,18 @@ fn validate_resolver_target(
             SymbolKind::Structure,
             DefinitionKind::Structure,
             "Task264Carrier",
-            range(input.source_id, 13, 101),
             &[4, 0, 11, 0][..],
         ),
         (
             SymbolKind::Selector,
             DefinitionKind::Selector,
             "carrier",
-            range(input.source_id, 45, 66),
             &[4, 0, 11, 0, 18, 0][..],
         ),
         (
             SymbolKind::Selector,
             DefinitionKind::Selector,
             "marker",
-            range(input.source_id, 71, 94),
             &[4, 0, 11, 0, 19, 1][..],
         ),
     ];
@@ -1821,7 +1862,7 @@ fn validate_resolver_target(
                 let SourceAnchor::Range(origin_range) = definition.origin().anchor() else {
                     return false;
                 };
-                let (symbol_kind, definition_kind, spelling, _, path) = expected[index];
+                let (symbol_kind, definition_kind, spelling, path) = expected[index];
                 resolver_identity_matches(
                     symbol,
                     definition,
@@ -1845,11 +1886,36 @@ fn validate_resolver_target(
         && row.symbol == *rows[2].1.symbol()
         && row.definition == rows[2].1.id()
         && carrier_head_matches;
+    if !normal_env {
+        return Err(InvalidResolverTarget { index: 0 });
+    }
+    if let Some(source) = source {
+        if source.source_id() != input.source_id || source.module_id() != &input.module_id {
+            return Err(SourceIdentityMismatch);
+        }
+        let roles = source
+            .source_nodes()
+            .and_then(|rows| structure_property_rule(rows))
+            .ok_or(InvalidResolverTarget { index: 0 })?;
+        if rows.iter().enumerate().any(|(index, (_, definition))| {
+            definition.origin().anchor()
+                != &SourceAnchor::Range(roles.prefix[[26, 22, 25][index]].range())
+                || roles.prefix[[2, 5, 10][index]].spelling() != expected[index].2
+        }) {
+            return Err(InvalidResolverTarget { index: 0 });
+        }
+    }
+    #[cfg(not(test))]
+    if source.is_none() {
+        return Err(InvalidResolverTarget { index: 0 });
+    }
+    #[cfg(test)]
     let profile = match input.implementations[0].style {
         SourcePropertyImplementationStyle::Means => Profile::Means,
         SourcePropertyImplementationStyle::Equals => Profile::Equals,
     };
-    let prefix = prefix_geometry(profile, input.source_id, arena).filter(|prefix| {
+    #[cfg(test)]
+    let prefix = prefix_geometry(profile, input.source_id, _arena).filter(|prefix| {
         normal_env
             && validate_source_type_profile(
                 profile,
@@ -1857,6 +1923,7 @@ fn validate_resolver_target(
                 source_type,
                 None,
                 Some(prefix),
+                None,
             )
             .is_ok()
             && rows
@@ -1866,11 +1933,17 @@ fn validate_resolver_target(
                     definition.origin().anchor() == &SourceAnchor::Range(prefix[index])
                 })
     });
-    if !normal_env
-        || rows.iter().enumerate().any(|(index, (_, definition))| {
-            let expected_range = prefix
-                .as_ref()
-                .map_or(expected[index].3, |prefix| prefix[[26, 22, 25][index]]);
+    #[cfg(test)]
+    if source.is_none()
+        && rows.iter().enumerate().any(|(index, (_, definition))| {
+            let expected_range = prefix.as_ref().map_or(
+                [
+                    range(input.source_id, 13, 101),
+                    range(input.source_id, 45, 66),
+                    range(input.source_id, 71, 94),
+                ][index],
+                |prefix| prefix[[26, 22, 25][index]],
+            );
             definition.origin().anchor() != &SourceAnchor::Range(expected_range)
         })
     {
@@ -1972,6 +2045,160 @@ enum Profile {
     Equals,
 }
 
+pub(crate) struct StructurePropertyRoles<'a> {
+    prefix: [&'a SourceNode; 28],
+    implementation: &'a SourceNode,
+    parameter_type: [&'a SourceNode; 2],
+    parameter_identifier: &'a SourceNode,
+    profile: Profile,
+}
+
+pub(crate) fn structure_property_rule(rows: &[SourceNode]) -> Option<StructurePropertyRoles<'_>> {
+    let unique = |kind| {
+        let mut found = rows.iter().filter(|row| row.kind() == &kind);
+        let row = found.next()?;
+        found.next().is_none().then_some(row)
+    };
+    let child = |parent: &SourceNode, ordinal| {
+        rows.iter()
+            .find(|row| row.parent() == Some(parent.site()) && row.child_ordinal() == ordinal)
+    };
+    let structure = unique(K::StructureDefinition)?;
+    let field = unique(K::StructureField)?;
+    let property = unique(K::StructureProperty)?;
+    let owner = unique(K::PropertyImplementation)?;
+    let block = rows.iter().find(|row| {
+        Some(row.site()) == structure.parent() && row.kind() == &K::DefinitionBlockItem
+    })?;
+    let pattern = child(structure, 1)?;
+    let field_type = child(field, 3)?;
+    let property_type = child(property, 3)?;
+    let field_head = child(field_type, 0)?;
+    let property_head = child(property_type, 0)?;
+    let parameter = child(owner, 1)?;
+    let parameter_head = child(parameter, 3)?;
+    let parameter_type = child(parameter_head, 0)?;
+    let path = child(parameter_type, 0)?;
+    let header = child(owner, 0)?;
+    let K::Token(style) = child(owner, 6)?.kind() else {
+        return None;
+    };
+    if style.kind != T::ReservedWord {
+        return None;
+    }
+    let (profile, owner_count, body_kind) = match style.text.as_ref() {
+        "means" => (Profile::Means, 13, K::FormulaDefiniens),
+        "equals" => (Profile::Equals, 11, K::TermDefiniens),
+        _ => return None,
+    };
+    if rows.iter().any(|row| {
+        row.recovery() != NodeRecoveryState::Normal
+            || row.range().source_id != structure.range().source_id
+    }) || field.parent() != Some(structure.site())
+        || field.child_ordinal() != 3
+        || property.parent() != Some(structure.site())
+        || property.child_ordinal() != 4
+        || block.preorder_ordinal() >= owner.preorder_ordinal()
+    {
+        return None;
+    }
+    for (row, kind, count) in [
+        (structure, K::StructureDefinition, 7),
+        (block, K::DefinitionBlockItem, 4),
+        (pattern, K::StructurePattern, 1),
+        (field, K::StructureField, 5),
+        (property, K::StructureProperty, 5),
+        (field_type, K::TypeExpression, 1),
+        (property_type, K::TypeExpression, 1),
+        (field_head, K::TypeHead, 1),
+        (property_head, K::TypeHead, 1),
+        (parameter, K::DefinitionParameter, 5),
+        (parameter_head, K::TypeHead, 1),
+        (parameter_type, K::QualifiedSymbol, 1),
+        (path, K::PathSegment, 1),
+        (owner, K::PropertyImplementation, owner_count),
+    ] {
+        let children = rows
+            .iter()
+            .filter(|child| child.parent() == Some(row.site()))
+            .collect::<Vec<_>>();
+        if row.kind() != &kind || children.len() != count {
+            return None;
+        }
+    }
+    if child(owner, 7)?.kind() != &body_kind {
+        return None;
+    }
+    for (parent, ordinal, kind, text) in [
+        (block, 0, T::ReservedWord, "definition"),
+        (block, 2, T::ReservedWord, "end"),
+        (block, 3, T::ReservedSymbol, ";"),
+        (owner, owner_count - 2, T::ReservedWord, "end"),
+        (owner, owner_count - 1, T::ReservedSymbol, ";"),
+        (structure, 0, T::ReservedWord, "struct"),
+        (structure, 2, T::ReservedWord, "where"),
+        (structure, 5, T::ReservedWord, "end"),
+        (structure, 6, T::ReservedSymbol, ";"),
+        (field, 0, T::ReservedWord, "field"),
+        (property, 0, T::ReservedWord, "property"),
+        (field, 2, T::ReservedSymbol, "->"),
+        (property, 2, T::ReservedSymbol, "->"),
+        (field, 4, T::ReservedSymbol, ";"),
+        (property, 4, T::ReservedSymbol, ";"),
+        (owner, 0, T::ReservedWord, "definition"),
+        (parameter, 0, T::ReservedWord, "let"),
+        (parameter, 2, T::ReservedWord, "be"),
+        (parameter, 4, T::ReservedSymbol, ";"),
+        (field_head, 0, T::ReservedWord, "set"),
+        (property_head, 0, T::ReservedWord, "set"),
+        (path, 0, T::UserSymbol, child(pattern, 0)?.spelling()),
+    ] {
+        if !matches!(child(parent, ordinal)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == text)
+        {
+            return None;
+        }
+    }
+    for row in [
+        child(pattern, 0)?,
+        child(field, 1)?,
+        child(property, 1)?,
+        child(parameter, 1)?,
+    ] {
+        if !matches!(row.kind(), K::Token(token) if token.kind == T::Identifier) {
+            return None;
+        }
+    }
+    let tokens = rows
+        .iter()
+        .filter(|row| {
+            row.preorder_ordinal() <= header.preorder_ordinal() && matches!(row.kind(), K::Token(_))
+        })
+        .collect::<Vec<_>>();
+    if tokens.len() != 19 {
+        return None;
+    }
+    let mut prefix = [tokens[0]; 28];
+    prefix[..19].copy_from_slice(&tokens);
+    prefix[19..].copy_from_slice(&[
+        pattern,
+        field_head,
+        field_type,
+        field,
+        property_head,
+        property_type,
+        property,
+        structure,
+        block,
+    ]);
+    Some(StructurePropertyRoles {
+        prefix,
+        implementation: owner,
+        parameter_type: [parameter_type, parameter_head],
+        parameter_identifier: child(parameter, 1)?,
+        profile,
+    })
+}
+
 // Rationale: row validation keeps each optional lower family explicit and independently testable.
 #[allow(clippy::too_many_arguments)]
 fn validate_input(
@@ -1986,6 +2213,7 @@ fn validate_input(
     set_terms: Option<&SourceSetTermHandoff>,
     atomic_formulas: Option<&SourceAtomicFormulaHandoff>,
     arena: &TypedArena,
+    original: Option<&[SourceNode]>,
 ) -> Result<[SourceRange; 28], SourcePropertyImplementationError> {
     let implementation = &input.implementations[0];
     let (
@@ -2008,22 +2236,43 @@ fn validate_input(
             "M.carrier",
         ),
     };
-    let actual_prefix = prefix_geometry(profile, input.source_id, arena);
+    let roles = original
+        .map(|rows| structure_property_rule(rows).ok_or(InvalidResolverTarget { index: 0 }))
+        .transpose()?;
+    let actual_prefix = roles
+        .as_ref()
+        .map(|roles| roles.prefix.map(SourceNode::range));
+    #[cfg(test)]
+    let actual_prefix = actual_prefix.or_else(|| {
+        roles
+            .is_none()
+            .then(|| prefix_geometry(profile, input.source_id, arena))
+            .flatten()
+    });
     let prefix = actual_prefix.filter(|prefix| {
-        validate_source_type_profile(profile, input.source_id, source_type, None, Some(prefix))
-            .is_ok()
-            && validate_carrier_identity(
-                carrier_identity,
-                input,
-                target_origin,
+        roles.is_some()
+            || validate_source_type_profile(
+                profile,
+                input.source_id,
                 source_type,
-                prefix,
+                None,
+                Some(prefix),
+                None,
             )
             .is_ok()
+                && validate_carrier_identity(
+                    carrier_identity,
+                    input,
+                    target_origin,
+                    source_type,
+                    prefix,
+                )
+                .is_ok()
     });
-    let header = prefix
-        .as_ref()
-        .map_or(range(input.source_id, 108, 118), |prefix| prefix[18]);
+    let header = prefix.as_ref().map(|prefix| prefix[18]);
+    #[cfg(test)]
+    let header = header.or_else(|| roles.is_none().then_some(range(input.source_id, 108, 118)));
+    let header = header.ok_or(InvalidResolverTarget { index: 0 })?;
     if implementation.shell.index() != 4
         || implementation.site != TypedSiteRef::Node(TypedNodeId::new(owner_node))
         || implementation.source_range.source_id != input.source_id
@@ -2044,8 +2293,27 @@ fn validate_input(
         None,
     )
     .ok_or(SourcePropertyImplementationError::InvalidImplementation { index: 0 })?;
-    if body[0] != header {
-        return Err(SourcePropertyImplementationError::InvalidImplementation { index: 0 });
+    if roles.as_ref().is_some_and(|roles| {
+        roles.profile != profile
+            || roles.implementation.site().index() != owner_node
+            || roles.implementation.range() != implementation.source_range
+    }) || body[0] != header
+    {
+        return Err(InvalidImplementation { index: 0 });
+    }
+    let normalized = match profile {
+        Profile::Means => {
+            "definition let M be Task264Carrier ; property M . marker means it = it ; existence by computation ( steps : 1 ) ; uniqueness by computation ( steps : 1 ) ; end ;"
+        }
+        Profile::Equals => {
+            "definition let M be Task264Carrier ; property M . marker equals M . carrier ; end ;"
+        }
+    };
+    if roles
+        .as_ref()
+        .is_some_and(|roles| roles.implementation.spelling() != normalized)
+    {
+        return Err(InvalidImplementation { index: 0 });
     }
     let expected_ranges = [implementation.source_range, body[2], body[4]];
     if let (Some(item), Some((_, declaration)), Some(binding)) = (
@@ -2097,6 +2365,7 @@ fn validate_input(
                 source_type,
                 Some(declaration.written_type_range),
                 prefix.as_ref(),
+                roles.as_ref(),
             )
             .is_ok()
             && (declaration.declaration_range != expected_ranges[1]
@@ -2115,6 +2384,9 @@ fn validate_input(
         || parameter.site != TypedSiteRef::Node(TypedNodeId::new(parameter_node))
         || parameter.source_range != range(input.source_id, body[1].start, body[5].end)
         || parameter.declaration_range != body[2]
+        || roles
+            .as_ref()
+            .is_some_and(|roles| parameter.declaration_range != roles.parameter_identifier.range())
         || parameter.context != BindingContextId::new(1)
         || parameter.recovery != SourcePropertyImplementationRecovery::Normal
         || local_spelling_matches(
@@ -2133,6 +2405,7 @@ fn validate_input(
         source_type,
         Some(expected_ranges[2]),
         prefix.as_ref(),
+        roles.as_ref(),
     )?;
 
     let target = &input.targets[0];
@@ -2208,6 +2481,7 @@ fn validate_input(
         source_type,
         Some(expected_ranges[2]),
         Some(&actual_prefix),
+        roles.as_ref(),
     )
     .map_err(|_| SourcePropertyImplementationError::InvalidArenaOwnership)?;
     if prefix.is_none()
@@ -2384,6 +2658,7 @@ fn validate_source_type_profile(
     handoff: &SourceTypeApplicationHandoff,
     parameter_type_range: Option<SourceRange>,
     prefix: Option<&[SourceRange; 28]>,
+    roles: Option<&StructurePropertyRoles<'_>>,
 ) -> Result<(), SourcePropertyImplementationError> {
     if parameter_type_range.is_some_and(|span| span.source_id != source)
         || handoff.applications().len() != 1
@@ -2431,6 +2706,17 @@ fn validate_source_type_profile(
     .into_iter()
     .enumerate()
     {
+        let original_type = roles.map(|roles| {
+            let member = if index == 1 { 20 } else { 23 };
+            if index == 0 {
+                roles.parameter_type
+            } else {
+                [roles.prefix[member + 1], roles.prefix[member]]
+            }
+        });
+        let (site, head_site) = original_type.map_or((site, head_site), |[expression, head]| {
+            (expression.site().index(), head.site().index())
+        });
         let expression = handoff
             .expressions()
             .get(SourceTypeExpressionId::new(index))
@@ -2456,6 +2742,12 @@ fn validate_source_type_profile(
             || expression.head_spelling() != spelling
             || expression.form() != SourceTypeApplicationForm::Bare
             || expression.recovery() != NodeRecoveryState::Normal
+            || original_type.is_some_and(|[original, head]| {
+                expression.spelling() != original.spelling()
+                    || expression.head_spelling() != head.spelling()
+                    || expression.source_range() != original.range()
+                    || expression.head_range() != head.range()
+            })
             || !head_matches
         {
             return Err(SourcePropertyImplementationError::DependencyMismatch);
@@ -2480,6 +2772,11 @@ fn validate_source_type_profile(
     .into_iter()
     .enumerate()
     {
+        let site = roles.map_or(site, |roles| {
+            roles.prefix[if index == 0 { 22 } else { 25 }]
+                .site()
+                .index()
+        });
         let member = handoff
             .structure_members()
             .get(SourceTypeStructureMemberId::new(index))
@@ -2796,7 +3093,10 @@ fn prefix_geometry(
         Profile::Means => 53,
         Profile::Equals => 35,
     };
-    let mut ranges = [range(source, 0, 0); 28];
+    let SourceAnchor::Range(first) = arena.node(TypedNodeId::new(0))?.anchor else {
+        return None;
+    };
+    let mut ranges = [first; 28];
     for index in 0..28 {
         let node_index = if index < 19 {
             index
@@ -3122,6 +3422,7 @@ fn validate_handoff(
         set_terms,
         atomic_formulas,
         arena,
+        handoff.original_source_nodes.as_deref(),
     )?;
     validate_carrier_identity(
         &handoff.carrier_identity,
