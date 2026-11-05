@@ -97,6 +97,13 @@ body と terminal まで保持する。明示 terminal goal は bound-alpha 正�
 Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・後続 alias 利用・
 一般的な freshening は後続に残す。
 
+先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
+を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
+実 item・proof・theorem owner を対応付け、後続 conclusion の source Pending が Blocked
+owner を解除しない。Rejected/Pending target は利用可能な alias 型を与えない。元ソース全体の
+census 後に認証済み theorem owner で goal 推論を分割し、明示的な definition/registration
+metadata owner のみを除外する。それらの goal は生成しない。
+
 ## Descendant Set 名の binding 境界
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` は元ソースの

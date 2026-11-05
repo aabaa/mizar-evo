@@ -3497,6 +3497,12 @@ fn task271_native_conversions_consume_whole_inactive_seed_without_activating_it(
             .iter()
             .any(|case| case.id == old.id)
     );
+    let prepared = super::run_advanced_semantics_case(&config.workspace_root, old, 0);
+    assert_eq!(prepared.status, super::TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        prepared.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
 }
 
 #[test]
@@ -4539,6 +4545,12 @@ fn task272_native_proof_intents_consume_real_inactive_narrowing_without_status_l
             .iter()
             .any(|result| result.id == old.id)
     );
+    let prepared = super::run_advanced_semantics_case(&config.workspace_root, old, 0);
+    assert_eq!(prepared.status, super::TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        prepared.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
     let unrelated = text.replace(
         "reconsider k = s as keen set;",
         "reconsider k = s as object; A: s = s by Unknown;",
@@ -5555,4 +5567,517 @@ fn task272b1_native_witness_goals_guard_exact_admission_and_actual_as_paths() {
     for source in ["reserve seed for set; set alias = seed;".to_owned(),include_str!("../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz").replace("thus thesis;","thus s = o & o = s;")] {
         let report=metamorphic_guard::with_source(case,&source,||super::run_advanced_semantics_corpus(&config)).unwrap();assert_eq!(report.results.iter().find(|result|result.id==case.id).unwrap().status,super::TypeElaborationCaseStatus::Failed);
     }
+}
+
+#[test]
+fn task272b2_blocked_goals_execute_whole_inactive_case() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    assert!(old.expectation.tags.is_empty());
+    let frontend = super::run_frontend(&config.workspace_root, old, 0).unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.expect("genuine whole old source");
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, old, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    let handoff = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap();
+    println!(
+        "Task272B2 test-first: authentic unchanged old source, symbols, native transaction and Typed/Resolved replay succeeded"
+    );
+    let (steps, _, _, _, _) = handoff.check_witness_goals().expect(
+        "actual whole inactive case must return typed conversion checkpoint and remaining goal",
+    );
+    assert_eq!(steps.len(), 4);
+}
+
+fn task272b2_old_source_handoff(
+    source: &str,
+) -> mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    let frontend = metamorphic_guard::with_source(old, source, || {
+        super::run_frontend(&config.workspace_root, old, 0)
+    })
+    .unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, old, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap()
+}
+
+#[test]
+fn task272b2_blocked_goals_match_manual_checkpoint_owner_and_type_oracles() {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::{FormulaKind, TermReference, TermStatus, TypeHeadRef},
+        typed_ast::{TypeEntryActual, TypeStatus},
+    };
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    let source = std::fs::read_to_string(&old.source_path).unwrap();
+    let handoff = task272b2_old_source_handoff(&source);
+    assert_eq!(
+        handoff
+            .scope()
+            .bindings()
+            .iter()
+            .map(|binding| binding.spelling())
+            .collect::<Vec<_>>(),
+        ["s", "s", "k"]
+    );
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [0, 0, 1]
+    );
+    let (h, p, k) = (
+        task272b1_binding(&handoff, 0),
+        task272b1_binding(&handoff, 1),
+        task272b1_binding(&handoff, 2),
+    );
+    let (steps, witness_inputs, witness_pending, witness_checked, inference) =
+        handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 4);
+    assert!(witness_inputs.is_empty());
+    assert!(witness_pending.is_empty());
+    assert!(witness_checked.coercions().is_empty());
+    assert!(witness_checked.initial_obligations().is_empty());
+    let initial = format!("forall({0}:Set,eq({0},{0}))", h.index());
+    let remaining = format!("eq({0},{0})", p.index());
+    assert_eq!(
+        steps.iter().map(|step| step.matched()).collect::<Vec<_>>(),
+        [None, Some((h, p)), None, None]
+    );
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let original = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        let id = handoff
+            .source()
+            .nodes()
+            .node(site.node())
+            .unwrap()
+            .resolved_node
+            .unwrap();
+        rows.iter().copied().find(|row| row.site() == id).unwrap()
+    };
+    for (index, step) in steps.iter().enumerate() {
+        assert_eq!(
+            task272b1_goal_text(step.before()),
+            if index < 2 {
+                initial.clone()
+            } else {
+                remaining.clone()
+            }
+        );
+        assert_eq!(
+            task272b1_goal_text(step.after()),
+            if index == 0 {
+                initial.clone()
+            } else {
+                remaining.clone()
+            }
+        );
+        assert_eq!(step.free(), if index == 0 { vec![] } else { vec![p] });
+        assert!(step.avoided().is_empty());
+        assert_eq!(step.owner(), steps[0].site());
+        assert_eq!(step.context(), steps[0].context());
+        match index {
+            0 => assert_eq!(original(step.site()).kind(), &K::TheoremItem),
+            1 => assert_eq!(
+                original(step.site()).range(),
+                handoff.scope().bindings()[1].range()
+            ),
+            2 => assert_eq!(original(step.site()).kind(), &K::ReconsiderItem),
+            3 => assert_eq!(original(step.site()).kind(), &K::ConclusionStatement),
+            _ => unreachable!(),
+        }
+    }
+    assert_eq!(inference.terms().len(), 5);
+    assert_eq!(inference.formulas().len(), 1);
+    for (_, term) in inference.terms().iter() {
+        assert_eq!(term.status, TermStatus::Inferred);
+        assert_ne!(term.reference, Some(TermReference::Binding(k)));
+        let entry = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(entry.status, TypeStatus::Known);
+        let TypeEntryActual::Known(id) = entry.actual else {
+            panic!("genuine known declaration type");
+        };
+        assert_eq!(
+            inference.normalized_types().get(id).unwrap().head,
+            TypeHeadRef::BuiltinSet
+        );
+    }
+    assert_eq!(
+        inference.formulas().iter().next().unwrap().1.kind,
+        FormulaKind::Equality
+    );
+    let (intents, _) = handoff.check_proof_intents().unwrap();
+    for index in [0, 2] {
+        assert!(
+            intents
+                .iter()
+                .any(|(site, _, status)| site == steps[index].site() && *status == S::Blocked)
+        );
+    }
+    assert!(
+        intents
+            .iter()
+            .any(|(site, _, status)| site == steps[3].site() && *status == S::Pending)
+    );
+    let registration = rows
+        .iter()
+        .copied()
+        .find(|row| {
+            row.kind() == &K::ProofBlock
+                && row.parent().is_some_and(|id| {
+                    rows.iter().any(|parent| {
+                        parent.site() == id && parent.kind() == &K::CorrectnessCondition
+                    })
+                })
+        })
+        .unwrap();
+    assert!(intents.iter().any(
+        |(site, _, status)| original(site).site() == registration.site() && *status == S::Pending
+    ));
+    assert!(
+        steps
+            .iter()
+            .all(|step| original(step.site()).range().start > registration.range().end)
+    );
+    let observed = super::native_witness_goal_observation(&handoff).unwrap();
+    let terminals = observed
+        .iter()
+        .filter(|key| key.starts_with("remaining."))
+        .collect::<Vec<_>>();
+    assert_eq!(terminals.len(), 1);
+    assert!(terminals[0].contains(&format!("terminal={:?}", steps[3].site())));
+    assert!(!terminals[0].contains(&format!("terminal={:?}", steps[2].site())));
+    let result = super::run_advanced_semantics_case(&config.workspace_root, old, 0);
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
+    assert!(old.expectation.tags.is_empty());
+    assert!(
+        !super::run_advanced_semantics_corpus(&config)
+            .unwrap()
+            .results
+            .iter()
+            .any(|case| case.id == old.id)
+    );
+    assert!(handoff.source().facts().is_empty());
+    assert!(handoff.source().types().is_empty());
+    assert!(handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b2_prepared_case_refuses_metadata_drift_and_error_key_matching() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    for mutation in 0..20 {
+        let mut bad = old.clone();
+        match mutation {
+            0 => bad.id.0 = "other".into(),
+            1 => bad.expectation.id.0 = "other".into(),
+            2 => bad.expectation.schema_version = 2,
+            3 => bad.source_path = config.workspace_root.join("tests/miz/fail/types/other.miz"),
+            4 => {
+                bad.expectation_path = config
+                    .workspace_root
+                    .join("tests/miz/fail/types/other.expect.toml")
+            }
+            5 => bad.expectation.stage = crate::staged_model::Stage::TypeElaboration,
+            6 => bad.expectation.domain = "checker.native_witness_goals".into(),
+            7 => bad.expectation.kind = crate::expectation::TestKind::Pass,
+            8 => bad.expectation.expected_outcome = crate::expectation::ExpectedOutcome::Pass,
+            9 => {
+                bad.expectation.expected_phase =
+                    Some(crate::expectation::PipelinePhase::Elaboration)
+            }
+            10 => bad.expectation.failure_category = None,
+            11 => bad.expectation.rejection_reason = None,
+            12 => bad.expectation.stable_detail_key = None,
+            13 => bad.expectation.spec_refs.clear(),
+            14 => bad.expectation.profiles.clear(),
+            15 => bad
+                .expectation
+                .tags
+                .push("active_advanced_semantics".into()),
+            16 => bad.expectation.diagnostic_codes.push("unexpected".into()),
+            17 => bad.expectation.snapshots = Some("unexpected".into()),
+            18 => bad.expectation.source = "other.miz".into(),
+            _ => bad
+                .expectation
+                .declaration_symbol_payloads
+                .push("unexpected".into()),
+        }
+        let result = super::run_advanced_semantics_case(&config.workspace_root, &bad, 0);
+        assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+        assert_eq!(
+            result.actual_detail_keys,
+            ["advanced_semantics.invalid_prepared_case"]
+        );
+    }
+    let mut counterfeit = old.clone();
+    counterfeit.expectation.stable_detail_key =
+        Some("advanced_semantics.invalid_prepared_case".into());
+    let result = super::run_advanced_semantics_case(&config.workspace_root, &counterfeit, 0);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["advanced_semantics.invalid_prepared_case"]
+    );
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+}
+
+#[test]
+fn task272b2_prepared_case_consumes_near_misses_registration_and_goal_bypass() {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::TypeFactQueryStatus, typed_ast::CoercionStatus,
+    };
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    let source = std::fs::read_to_string(&old.source_path).unwrap();
+    let prior =
+        "theorem Prior: for p being set holds p = p proof let p be set; thus thesis; end;\n";
+    let pending = format!(
+        "{prior}{}",
+        source.replace(
+            "reconsider k = s as keen set;",
+            "reconsider k = s as keen set by Prior;"
+        )
+    );
+    let widening = source.replace(
+        "reconsider k = s as keen set;",
+        "reconsider k = s as object;",
+    );
+    let unrelated = source.replace(
+        "reconsider k = s as keen set;",
+        "reconsider k = s as object by Unknown;",
+    );
+    for (text, expected) in [
+        (&pending, CoercionStatus::RequiresObligation),
+        (&widening, CoercionStatus::Candidate),
+        (&unrelated, CoercionStatus::Candidate),
+    ] {
+        let handoff = task272b2_old_source_handoff(text);
+        let (_, checked, _) = handoff.check_conversions().unwrap();
+        assert_eq!(
+            checked.coercions().iter().next().unwrap().1.status,
+            expected
+        );
+        handoff.check_witness_goals().unwrap();
+        assert!(checked.diagnostics().is_empty());
+        if text == &unrelated {
+            assert!(
+                handoff
+                    .check_proof_intents()
+                    .unwrap()
+                    .0
+                    .iter()
+                    .any(|(_, _, status)| *status == S::Blocked)
+            );
+        }
+        let result = metamorphic_guard::with_source(old, text, || {
+            super::run_advanced_semantics_case(&config.workspace_root, old, 0)
+        });
+        assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+        assert!(result.actual_detail_keys.is_empty());
+    }
+    let registration = source.replace(
+        "existence proof thus thesis; end;",
+        "existence proof thus contradiction; end;",
+    );
+    let handoff = task272b2_old_source_handoff(&registration);
+    let (steps, _, _, _, inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 4);
+    assert_eq!(inference.terms().len(), 5);
+    assert_eq!(inference.formulas().len(), 1);
+    let result = metamorphic_guard::with_source(old, &registration, || {
+        super::run_advanced_semantics_case(&config.workspace_root, old, 0)
+    });
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
+    let unsupported = source.replace(
+        "for s being set holds s = s",
+        "for s being set holds s = s implies s = s",
+    );
+    let handoff = task272b2_old_source_handoff(&unsupported);
+    let (_, checked, queries) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        checked.coercions().iter().next().unwrap().1.status,
+        CoercionStatus::Rejected
+    );
+    assert_eq!(queries[0].status(), TypeFactQueryStatus::Missing);
+    assert!(handoff.check_witness_goals().is_err());
+    let result = metamorphic_guard::with_source(old, &unsupported, || {
+        super::run_advanced_semantics_case(&config.workspace_root, old, 0)
+    });
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+    assert_ne!(
+        result.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
+    let alias = "theorem AliasUse: for s being set ex a being object st a = s proof let s be set; reconsider k = s as object; take k; thus thesis; end;";
+    let handoff = task272b2_old_source_handoff(alias);
+    assert_eq!(
+        handoff
+            .check_conversions()
+            .unwrap()
+            .1
+            .coercions()
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .status,
+        CoercionStatus::Candidate
+    );
+    assert!(handoff.check_witness_goals().is_err());
+    let result = metamorphic_guard::with_source(old, alias, || {
+        super::run_advanced_semantics_case(&config.workspace_root, old, 0)
+    });
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+}
+
+#[test]
+fn task272b2_blocked_checkpoints_stay_with_their_actual_theorem_owner() {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofIntentStatus as S, typed_ast::CoercionStatus,
+    };
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    let source = std::fs::read_to_string(&old.source_path).unwrap();
+    let later = "\ntheorem OtherOwner: for s being set holds s = s proof let s be set; reconsider k = s as object; thus thesis; end;";
+    let source = format!("{source}{later}");
+    let handoff = task272b2_old_source_handoff(&source);
+    let (steps, _, _, _, _) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 8);
+    assert_ne!(steps[0].owner(), steps[4].owner());
+    assert_ne!(steps[0].context(), steps[4].context());
+    assert_ne!(steps[3].after(), steps[7].after());
+    let (requests, checked, _) = handoff.check_conversions().unwrap();
+    assert_eq!(requests.len(), 2);
+    assert_eq!(
+        checked
+            .coercions()
+            .iter()
+            .find(|(_, row)| row.site == *steps[2].site())
+            .unwrap()
+            .1
+            .status,
+        CoercionStatus::Rejected
+    );
+    assert_eq!(
+        checked
+            .coercions()
+            .iter()
+            .find(|(_, row)| row.site == *steps[6].site())
+            .unwrap()
+            .1
+            .status,
+        CoercionStatus::Candidate
+    );
+    let (intents, _) = handoff.check_proof_intents().unwrap();
+    for (owner, status) in [
+        (steps[0].owner(), S::Blocked),
+        (steps[4].owner(), S::Pending),
+    ] {
+        assert!(
+            intents
+                .iter()
+                .any(|(site, _, actual)| site == owner && *actual == status)
+        );
+    }
+    let observations = super::native_witness_goal_observation(&handoff).unwrap();
+    assert_eq!(
+        observations
+            .iter()
+            .filter(|key| key.starts_with("remaining."))
+            .count(),
+        2
+    );
+    for step in [steps[2].site(), steps[6].site()] {
+        let id = handoff
+            .source()
+            .nodes()
+            .node(step.node())
+            .unwrap()
+            .resolved_node
+            .unwrap();
+        assert!(
+            handoff
+                .source()
+                .source_node_entries()
+                .unwrap()
+                .any(|row| row.site() == id && row.kind() == &K::ReconsiderItem)
+        );
+    }
+    let result = metamorphic_guard::with_source(old, &source, || {
+        super::run_advanced_semantics_case(&config.workspace_root, old, 0)
+    });
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["conversion.reconsider.narrowing_requires_proof"]
+    );
 }

@@ -36,8 +36,13 @@ the same native installation. The existing FS existential multi-witness case
 keeps its semantic checker and additionally consumes those derived results.
 Pass observes unproved remaining goals; each unresolved type guard stays joined
 to its actual Witness and owning body through terminal. It supplies no proof
-acceptance or discharge. Broader proof effects and the old omitted-AS final
-goal consumer remain Task 272B.
+acceptance or discharge. Broader proof effects remain with Task272.
+
+Direct execution of the exact inactive omitted-reconsider case consumes
+the typed remaining goal, source owner states and real conversion failure into
+the existing case result. Its tags, default selection and expectations stay fixed;
+Task49 owns activation after the remaining prerequisites. Infrastructure errors
+never satisfy its expected failure key.
 
 ## Native conversion classification
 

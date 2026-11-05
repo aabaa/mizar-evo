@@ -30,8 +30,12 @@ Set-Take の意味論検査を維持し、native 経路も要求する。旧 omi
 実ソース順の Let/Take 型検査・guard request・具体化した goal replay を消費する。
 既存 FS existential multi-witness の意味論 checker を維持し、派生結果の消費も要求する。
 Pass は未証明の残余 goal の観測であり、未解決型 guard は実 Witness・owner body と
-terminal まで対応を保持する。証明受理・discharge は与えない。広い proof effect と
-旧 omitted-AS の最終 goal consumer は Task 272B に残す。
+terminal まで対応を保持する。証明受理・discharge は与えない。広い proof effect は
+Task272 に残す。
+
+正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
+実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
+残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。
 
 ## Native conversion classification
 

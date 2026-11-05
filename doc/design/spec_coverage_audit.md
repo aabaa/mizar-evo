@@ -51,16 +51,16 @@ guards, explicit substitution replay/results and binder freshness under MT10-AS.
 
 `spec.en.08.reconsider.native_classification.metadata` is covered by the same
 checker owner and [native classification consumer](./mizar-test/en/harness.md#native-conversion-classification).
-This is request/result metadata only; general proof-skeleton pending/blocked
-consumption and the inactive omitted-justification seed remain with Task 272.
+This is request/result metadata only. The inactive omitted-justification case has
+a prepared typed-goal/blocked-owner consumer; Task49 retains default activation.
 
 `spec.en.15.statements.native_proof_intents.metadata` covers retained source
 requests and actual local-label/status observation through the same checker owner
 and [native proof-intent consumer](./mizar-test/en/harness.md#native-proof-intents).
 `spec.en.15.statements.witness_goals.typed_replay.metadata` adds bounded plain
 Set/Object Let/Take typed guard/result replay observation through those owners.
-Broader goal/substitution coverage and the old omitted-AS final consumer remain
-Task 272B; neither metadata requirement grants proof acceptance.
+Broader goal/substitution coverage remains with Task272; the prepared old-AS
+consumer adds no default activation or proof acceptance to either metadata requirement.
 
 ## Coverage Matrix
 

@@ -112,6 +112,14 @@ checks source, typing, guards and results. These are unproved remaining obligati
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
 proof effects, later alias uses and general freshening remain deferred.
 
+Named Reconsider items with a prior Let RHS can retain an unchanged goal
+checkpoint when the alias is unused. Ordinary conversion requests/results and A's
+source states stay separate from witness guards. Checkpoints join the actual item,
+proof and theorem owner; a later Pending source conclusion cannot clear a Blocked
+owner. Rejected or Pending targets provide no usable alias type. Goal inference
+partitions authenticated theorem owners after the whole source census, excluding
+only explicit definition/registration metadata owners without inventing their goals.
+
 ## Descendant Set-name binding boundary
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` consumes
