@@ -146,7 +146,9 @@ pub fn source_proof_inputs(
     Ok((scope, collection, labels))
 }
 
-pub(crate) fn validated_source_symbol_ast(
+/// Reconstructs original structure and checks agreement with the complete symbol environment.
+/// This does not authenticate raw source text or establish any proof result.
+pub fn validated_source_symbol_ast(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
 ) -> Result<SurfaceAst, String> {

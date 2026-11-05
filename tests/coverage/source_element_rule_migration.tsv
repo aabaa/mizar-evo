@@ -19,18 +19,18 @@ property-redefinition	definition	mode-property	done	PropertyRedefinition
 row-navigation-helpers	definition	mode-property	done	consolidation: the mode, functor, property and structure rules read the generic table through shared helpers beside SourceNode in typed_ast.rs (contract, 2026-11-04); light tier, before the next definition rule
 structure-constructor	definition	mode-property	done	StructureConstructor
 structure-property	definition	mode-property	done	StructureProperty
-case-item	proof-skeleton	checker-task-272	blocked	CaseItem
-case-reasoning-statement	proof-skeleton	checker-task-272	blocked	CaseReasoningStatement
-consider-statement	proof-skeleton	checker-task-272	blocked	ConsiderStatement
-given-statement	proof-skeleton	checker-task-272	blocked	GivenStatement
-hereby-statement	proof-skeleton	checker-task-272	blocked	HerebyStatement
-iterative-equality-statement	proof-skeleton	checker-task-272	blocked	IterativeEqualityStatement
-iterative-equality-step	proof-skeleton	checker-task-272	blocked	IterativeEqualityStep
-now-statement	proof-skeleton	checker-task-272	blocked	NowStatement
-set-statement	proof-skeleton	checker-task-272	blocked	SetStatement; capture-avoiding expansion stays deferred (EN15 §15.11.2)
-statement-item	proof-skeleton	checker-task-272	blocked	StatementItem
-suppose-item	proof-skeleton	checker-task-272	blocked	SupposeItem
-then-statement	proof-skeleton	checker-task-272	blocked	ThenStatement
+case-item	proof-skeleton	native-consumer	done	CaseItem; original source intent roles in source_proof_local_declaration
+case-reasoning-statement	proof-skeleton	case-item	done	CaseReasoningStatement; original source intent roles in source_proof_local_declaration
+consider-statement	proof-skeleton	case-item	done	ConsiderStatement; original source intent roles in source_proof_local_declaration
+given-statement	proof-skeleton	case-item	done	GivenStatement; original source intent roles in source_proof_local_declaration
+hereby-statement	proof-skeleton	case-item	done	HerebyStatement; original source intent roles in source_proof_local_declaration
+iterative-equality-statement	proof-skeleton	case-item	done	IterativeEqualityStatement; original source intent roles in source_proof_local_declaration
+iterative-equality-step	proof-skeleton	case-item	done	IterativeEqualityStep; original source intent roles in source_proof_local_declaration
+now-statement	proof-skeleton	case-item	done	NowStatement; original source intent roles in source_proof_local_declaration
+set-statement	proof-skeleton	case-item	done	SetStatement; original source intent roles in source_proof_local_declaration; capture-avoiding expansion stays deferred (EN15 §15.11.2)
+statement-item	proof-skeleton	case-item	done	StatementItem; original source intent roles in source_proof_local_declaration
+suppose-item	proof-skeleton	case-item	done	SupposeItem; original source intent roles in source_proof_local_declaration
+then-statement	proof-skeleton	case-item	done	ThenStatement; original source intent roles in source_proof_local_declaration
 qua-expression	reconsider	native-consumer	done	QuaExpression; original conversion roles in source_proof_local_declaration
 reconsider-item	reconsider	qua-expression	done	ReconsiderItem; original conversion roles in source_proof_local_declaration
 reconsider-statement	reconsider	qua-expression	done	ReconsiderStatement; original conversion roles in source_proof_local_declaration

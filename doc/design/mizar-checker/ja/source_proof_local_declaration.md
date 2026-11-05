@@ -75,6 +75,14 @@ base binding を更新しない。要求固有の型 role は対応する元 typ
 site で結合する。query は現在の要求に一致する実 builtin fact だけを使い、記述された
 宣言・tail は証拠を与えない。owner のない namespace 内の変換 subtree は拒否する。
 
+引数なしの `check_proof_intents()` は元の Typed site・直接記述された justification site・
+`SourceProofIntentStatus::{Pending, Blocked}` と実 `LabelResolutionResult` を返す。
+Pending は module wrapper・独立した registration proof を含む未処理の source intent で、
+論理的 obligation を生成しない。Blocked は未解決の局所 citation・実変換の拒否・
+隣接 Then premise の欠落に限定し、重複 label と未対応 reference は拒否する。
+Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
+Task180 の checked table と論理 goal/witness/置換の elaboration は別に保つ。
+
 ## Descendant Set 名の binding 境界
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` は元ソースの
@@ -564,6 +572,7 @@ SHA-256
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofIntentStatus` | `#[non_exhaustive]`。caller は後続の source-request state を扱う。 |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-local declaration formを許容する。 |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
 | `SourceProofLocalDeclarationError` | `#[non_exhaustive]`。callerはvalidation/installation failureをexhaustive matchしない。 |

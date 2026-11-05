@@ -193,8 +193,8 @@ fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
     }
     let report = super::super::run_advanced_semantics_corpus(&step5c11_config()).unwrap();
     assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
-    assert_eq!(report.results.len(), 8);
-    assert_eq!(report.passed_count(), 8);
+    assert_eq!(report.results.len(), 9);
+    assert_eq!(report.passed_count(), 9);
 }
 
 #[test]

@@ -1,0 +1,14 @@
+theorem NativeProofIntents: for x being set holds x = x
+proof
+  let x be set;
+  set a = x;
+  A: a = a;
+  N: now
+    B: a = a by A;
+    then a = a by B;
+    thus a = a by A;
+  end;
+  hereby
+    thus x = x by N;
+  end;
+end;

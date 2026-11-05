@@ -1,6 +1,7 @@
 # Module: symbols
 
 `validate_source_symbol_env` は既存の収集処理を再利用して局所記号環境全体の由来を照合する。
+`validated_source_symbol_ast` は構造と全環境の一致を照合した元の AST を返す。原文の鮮度や証明結果は保証しない。
 
 > 正本は英語です。英語版: [../en/symbols.md](../en/symbols.md)。
 

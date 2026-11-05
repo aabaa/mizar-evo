@@ -701,9 +701,10 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   Contract: [native conversions](../../task_contracts/ja/CHECKER271-NATIVE-CONVERSIONS.md).
   producer と実 FS/AS 分類は完了。omitted seed は非 active のまま、
   最終的な証明状態の消費は Task 272 に残す。
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。この task で
-  blocked の Task 285 要素規則 (`tests/coverage/source_element_rule_migration.tsv`
-  の proof-skeleton 12 種) を producer と同時に出荷する。
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。
+  native source intent と元の要素規則は A で出荷し、型付き witness 照合・
+  goal/置換の replay と結果は B に残す。
+  - [x] **Task 272A:** [native source intents](../../task_contracts/ja/CHECKER272A-NATIVE-PROOF-INTENTS.md)。型付き witness/goal replay は 272B に残す。
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer。
 - [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import/
   activation adapter。canonical authorityがupstream owner/schema/authentication

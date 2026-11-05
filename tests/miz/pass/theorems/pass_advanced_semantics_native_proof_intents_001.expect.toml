@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_native_proof_intents_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "checker.native_proof_intents"
+source = "pass_advanced_semantics_native_proof_intents_001.miz"
+expected_outcome = "pass"
+expected_phase = "elaboration"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.15.statements.native_proof_intents.metadata"]
+notes = "Source-intent observation only: original proof organization, real local label resolution and Pending requests reach the native producer and Typed/Resolved replay consumers. Pass does not accept the theorem, citations, conditions, goals or proof; no Take matching, witness type obligations, substitution result, proof search, discharge, Core or VC. The older omitted-justification AS source, expectation and inactivity remain unchanged."

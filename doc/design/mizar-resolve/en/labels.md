@@ -1,5 +1,7 @@
 # Module: labels
 
+`collect_with_native_proof_organization` combines actual owner, branch, condition and conversion citations, including proofless owner tails. Native callers first authenticate the complete original/environment; resolved identities grant no proof evidence. All four older profiles remain unchanged. Native traversal unwraps ordinary/library annotation prefixes without adding a label clock step.
+
 The theorem-owner opt-in admits exact unrecovered public/private VisibleItem/VisibilityMarker/TheoremItem wrappers. Derive an optional private/public requirement from the real marker and require matching Private/LocalOnly or Public/Exported symbol state, retaining the inner owner node/range; direct-item matching remains unchanged. Whole source/symbol/definition authentication stays with candidate validation below; other wrappers and generic collector profiles remain unchanged.
 
 `collect_with_theorem_owners` is an opt-in extension for theorem/lemma declarations

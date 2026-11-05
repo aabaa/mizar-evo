@@ -1,6 +1,7 @@
 # Module: symbols
 
 `validate_source_symbol_env` reuses resolver collection to authenticate the complete local symbol environment.
+`validated_source_symbol_ast` returns the reconstructed original after structural and complete environment agreement; it establishes neither raw-text freshness nor proof results.
 
 > Canonical language: English. Japanese companion: [../ja/symbols.md](../ja/symbols.md).
 

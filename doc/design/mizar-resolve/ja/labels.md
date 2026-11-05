@@ -1,5 +1,7 @@
 # Module: labels
 
+`collect_with_native_proof_organization` は owner・分岐・条件・変換引用と proofless owner の末尾を収集する。呼出側が元の全構造と環境を認証し、解決された識別子も証明根拠にはならない。既存4経路は変更しない。 native traversal は通常/library annotation の prefix を外し、label clock の step を追加しない。
+
 theorem-owner opt-in は正確で recovery のない public/private VisibleItem/VisibilityMarker/TheoremItem wrapper を扱う。実 marker から optional private/public 条件を得て Private/LocalOnly または Public/Exported symbol を要求し、内部 owner node/range を保持する。直接項目の照合は保持し、全 source/symbol/definition 認証は下記 candidate 検証が所有する。他の wrapper と generic collector の範囲は変えない。
 
 `collect_with_theorem_owners` は theorem/lemma 宣言と証明内引用の opt-in 収集である。

@@ -84,6 +84,16 @@ pub enum SourceProofLocalDeclarationRecovery {
     Normal,
 }
 
+/// State of retained source intent, without a checked goal or accepted evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofIntentStatus {
+    /// Source operation awaits its logical or evidence elaboration.
+    Pending,
+    /// An authenticated source dependency prevents this intent from proceeding.
+    Blocked,
+}
+
 /// One validated proof-local declaration and its checker-owned binding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceProofLocalDeclaration {
@@ -1719,6 +1729,604 @@ impl SourceProofLocalBindingHandoff {
         Ok((requests, output, queries))
     }
 
+    // Rationale: existing sites and resolver output avoid another retained proof graph/DTO.
+    #[allow(clippy::type_complexity)]
+    pub fn check_proof_intents(
+        &self,
+    ) -> Result<
+        (
+            Vec<(
+                crate::typed_ast::TypedSiteRef,
+                Option<crate::typed_ast::TypedSiteRef>,
+                SourceProofIntentStatus,
+            )>,
+            mizar_resolve::labels::LabelResolutionResult,
+        ),
+        SourceProofLocalDeclarationError,
+    > {
+        use crate::typed_ast::{CoercionStatus, TypedSiteRef};
+        use SurfaceNodeKind as K;
+        use mizar_resolve::{
+            env::{ContributionKind, NamespacePath},
+            labels::{LabelResolver, ProofLabelSourceCollector},
+            resolved_ast::{LabelKind, LabelResolution},
+        };
+        let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
+        self.validate_complete_installation(
+            self.original.source_id(),
+            self.original.module_id(),
+            true,
+        )?;
+        let original = self.original.as_ref();
+        let rows = original.source_nodes().ok_or_else(invalid)?;
+        let ast = mizar_resolve::symbols::validated_source_symbol_ast(&self.native, &self.symbols)
+            .map_err(|_| invalid())?;
+        let contribution = self.symbols.contributions().iter().find(|entry|
+            matches!(entry.kind(), ContributionKind::LocalSource { source_id } if *source_id == original.source_id())
+                && entry.module() == original.module_id()).ok_or_else(invalid)?;
+        let namespace = NamespacePath::new(original.module_id().path().as_str());
+        let collection = ProofLabelSourceCollector::new(
+            &ast,
+            original.module_id(),
+            namespace.clone(),
+            contribution.id(),
+            &self.native,
+        )
+        .and_then(|collector| collector.collect_with_native_proof_organization(&self.symbols))
+        .map_err(|_| invalid())?;
+        let labels = LabelResolver::new(collection.projections()).resolve(
+            original.module_id(),
+            &namespace,
+            collection.references(),
+        );
+        if !labels.diagnostics().is_empty() {
+            return Err(invalid());
+        }
+        let row_for = |site| {
+            rows.iter()
+                .find(|row| row.site() == site)
+                .ok_or_else(invalid)
+        };
+        let typed = |row: &SourceNode| {
+            let mut nodes = original
+                .nodes()
+                .iter()
+                .filter(|(_, node)| node.resolved_node == Some(row.site()));
+            let (id, node) = nodes.next().ok_or_else(invalid)?;
+            if nodes.next().is_some()
+                || node.anchor != mizar_session::SourceAnchor::Range(row.range())
+                || node.recovery != NodeRecoveryState::Normal
+            {
+                return Err(invalid());
+            }
+            Ok(TypedSiteRef::Node(id))
+        };
+        let mut expected_labels = Vec::new();
+        let mut references = BTreeSet::new();
+        let mut intents = Vec::new();
+        let mut blocked = BTreeSet::new();
+        for row in rows.iter() {
+            let children = source_children(rows, row.site()).collect::<Vec<_>>();
+            if matches!(
+                row.kind(),
+                K::TheoremItem
+                    | K::ProofBlock
+                    | K::AssumptionStatement
+                    | K::CompactStatement
+                    | K::ConclusionStatement
+                    | K::TakeStatement
+                    | K::Proposition
+                    | K::ConditionList
+                    | K::JustificationClause
+                    | K::ReferenceList
+                    | K::Reference
+            ) && source_contiguous_child_count(children.iter().copied()) != Some(children.len())
+            {
+                return Err(invalid());
+            }
+            let theorem = {
+                let mut ancestor = Some(row);
+                let mut found = None;
+                while let Some(current) = ancestor {
+                    if current.kind() == &K::TheoremItem {
+                        found = Some(current);
+                        break;
+                    }
+                    ancestor = current.parent().map(row_for).transpose()?;
+                }
+                found
+            };
+            match row.kind() {
+                K::LemmaItem => return Err(invalid()),
+                K::TheoremItem => {
+                    let start = usize::from(
+                        matches!(children.first().map(|row| row.kind()), Some(K::Token(t))
+                        if t.kind == SurfaceTokenKind::ReservedWord && matches!(t.text.as_ref(), "open" | "assumed")),
+                    );
+                    if !matches!(children.get(start).map(|row| row.kind()), Some(K::Token(t))
+                        if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == "theorem")
+                        || !matches!(children.get(start + 1).map(|row| row.kind()), Some(K::Token(t)) if t.kind == SurfaceTokenKind::Identifier)
+                        || !source_inline_token(&children, start + 2, ":")
+                        || children
+                            .get(start + 3)
+                            .is_none_or(|r| r.kind() != &K::FormulaExpression)
+                        || !source_inline_token(&children, children.len().saturating_sub(1), ";")
+                        || !(children.len() == start + 5
+                            || children.len() == start + 6
+                                && matches!(
+                                    children[start + 4].kind(),
+                                    K::JustificationClause | K::ProofBlock
+                                ))
+                    {
+                        return Err(invalid());
+                    }
+                    expected_labels.push((
+                        children[start + 1].range(),
+                        children[start + 1].spelling().to_owned(),
+                        LabelKind::Theorem,
+                    ));
+                }
+                K::GivenStatement => {
+                    source_given_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::ConsiderStatement => {
+                    source_consider_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::NowStatement => {
+                    source_now_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::HerebyStatement => {
+                    source_hereby_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::CaseItem => {
+                    source_case_item_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::SupposeItem => {
+                    source_suppose_item_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::CaseReasoningStatement => {
+                    source_case_reasoning_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::SetStatement => {
+                    source_set_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::StatementItem => {
+                    source_statement_item_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::IterativeEqualityStatement => {
+                    source_iterative_equality_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::IterativeEqualityStep => {
+                    source_iterative_equality_step_roles(rows, row).ok_or_else(invalid)?;
+                }
+                K::LetStatement => {
+                    source_proof_introduction_roles(rows, row, "let", false, false)
+                        .ok_or_else(invalid)?;
+                }
+                K::AnnotatedStatement => {
+                    if children.len() < 2
+                        || source_contiguous_child_count(children.iter().copied())
+                            != Some(children.len())
+                        || children[..children.len() - 1]
+                            .iter()
+                            .any(|r| !matches!(r.kind(), K::Annotation | K::LibraryAnnotation))
+                        || !source_proof_statement_kind(children[children.len() - 1].kind())
+                        || matches!(
+                            children[children.len() - 1].kind(),
+                            K::AnnotatedStatement | K::StandaloneDiagnosticAnnotation
+                        )
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::TakeStatement => {
+                    if children.len() < 3
+                        || children.len().is_multiple_of(2)
+                        || !source_inline_token(&children, 0, "take")
+                        || !source_inline_token(&children, children.len() - 1, ";")
+                        || (1..children.len() - 1).any(|i| {
+                            if !i.is_multiple_of(2) {
+                                children[i].kind() != &K::Witness
+                            } else {
+                                !source_inline_token(&children, i, ",")
+                            }
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::ProofBlock => {
+                    if children.len() < 2
+                        || !source_inline_token(&children, 0, "proof")
+                        || !source_inline_token(&children, children.len() - 1, "end")
+                        || children[1..children.len() - 1]
+                            .iter()
+                            .any(|r| !source_proof_statement_kind(r.kind()))
+                    {
+                        return Err(invalid());
+                    }
+                    let parent = row_for(row.parent().ok_or_else(invalid)?)?;
+                    if !matches!(
+                        parent.kind(),
+                        K::TheoremItem
+                            | K::CompactStatement
+                            | K::ConclusionStatement
+                            | K::ReconsiderStatement
+                            | K::CorrectnessCondition
+                    ) {
+                        return Err(invalid());
+                    }
+                    if parent.kind() == &K::CorrectnessCondition {
+                        let registration = row_for(parent.parent().ok_or_else(invalid)?)?;
+                        let keyword = match registration.kind() {
+                            K::ExistentialRegistration => "existence",
+                            K::ConditionalRegistration | K::FunctorialRegistration => "coherence",
+                            K::ReductionRegistration => "reducibility",
+                            _ => return Err(invalid()),
+                        };
+                        let condition = source_proof_frame(rows, parent).ok_or_else(invalid)?;
+                        if condition.len() != 3
+                            || !matches!(condition[0].kind(), K::Token(t)
+                            if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == keyword)
+                            || condition[1].site() != row.site()
+                            || !source_inline_token(&condition, 2, ";")
+                            || source_children(rows, registration.site())
+                                .filter(|r| r.kind() == &K::CorrectnessCondition)
+                                .count()
+                                != 1
+                        {
+                            return Err(invalid());
+                        }
+                        let mut container = row_for(registration.parent().ok_or_else(invalid)?)?;
+                        if container.kind() == &K::AnnotatedRegistrationContent {
+                            let parts = source_proof_frame(rows, container).ok_or_else(invalid)?;
+                            if parts.len() < 2
+                                || parts.last().is_none_or(|r| r.site() != registration.site())
+                                || parts[..parts.len() - 1].iter().any(|r| {
+                                    !matches!(r.kind(), K::Annotation | K::LibraryAnnotation)
+                                })
+                            {
+                                return Err(invalid());
+                            }
+                            container = row_for(container.parent().ok_or_else(invalid)?)?;
+                        }
+                        if container.kind() != &K::RegistrationBlockItem {
+                            return Err(invalid());
+                        }
+                    }
+                }
+                K::CompactStatement | K::AssumptionStatement | K::ConclusionStatement => {
+                    let start = usize::from(row.kind() != &K::CompactStatement);
+                    if start == 1
+                        && !source_inline_token(
+                            &children,
+                            0,
+                            if row.kind() == &K::AssumptionStatement {
+                                "assume"
+                            } else if source_inline_token(&children, 0, "hence") {
+                                "hence"
+                            } else {
+                                "thus"
+                            },
+                        )
+                    {
+                        return Err(invalid());
+                    }
+                    if children.get(start).is_none_or(|r| {
+                        r.kind() != &K::Proposition
+                            && !(row.kind() == &K::AssumptionStatement
+                                && r.kind() == &K::ConditionList)
+                    }) {
+                        return Err(invalid());
+                    }
+                    let mut end = start + 1;
+                    if row.kind() != &K::AssumptionStatement
+                        && children.get(end).is_some_and(|r| {
+                            matches!(r.kind(), K::JustificationClause | K::ProofBlock)
+                        })
+                    {
+                        end += 1;
+                    }
+                    if !source_inline_token(&children, end, ";") || children.len() != end + 1 {
+                        return Err(invalid());
+                    }
+                }
+                K::Proposition => {
+                    let start = usize::from(children.len() == 3) * 2;
+                    if start == 2
+                        && (!matches!(children[0].kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                            || !source_inline_token(&children, 1, ":"))
+                    {
+                        return Err(invalid());
+                    }
+                    if children.len() != start + 1
+                        || children[start].kind() != &K::FormulaExpression
+                    {
+                        return Err(invalid());
+                    }
+                    if start == 2 {
+                        theorem.ok_or_else(invalid)?;
+                        expected_labels.push((
+                            children[0].range(),
+                            children[0].spelling().to_owned(),
+                            LabelKind::ProofStep,
+                        ));
+                    }
+                }
+                K::ConditionList => {
+                    if children.len() < 2
+                        || !children.len().is_multiple_of(2)
+                        || !source_inline_token(&children, 0, "that")
+                        || children.iter().enumerate().skip(1).any(|(i, r)| {
+                            if !i.is_multiple_of(2) {
+                                r.kind() != &K::Proposition
+                            } else {
+                                !source_inline_token(&children, i, "and")
+                            }
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::JustificationClause => {
+                    if children.len() != 2
+                        || !source_inline_token(&children, 0, "by")
+                        || children[1].kind() != &K::ReferenceList
+                        || theorem.is_none()
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::ReferenceList => {
+                    if children.is_empty()
+                        || children.len().is_multiple_of(2)
+                        || children.iter().enumerate().any(|(i, r)| {
+                            if i.is_multiple_of(2) {
+                                r.kind() != &K::Reference
+                            } else {
+                                !source_inline_token(&children, i, ",")
+                            }
+                        })
+                        || row_for(row.parent().ok_or_else(invalid)?)?.kind()
+                            != &K::JustificationClause
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::Reference => {
+                    if children.len() != 1
+                        || !matches!(children[0].kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                        || theorem.is_none()
+                        || row_for(row.parent().ok_or_else(invalid)?)?.kind() != &K::ReferenceList
+                    {
+                        return Err(invalid());
+                    }
+                    references.insert(row.site());
+                }
+                _ => {}
+            }
+            if matches!(row.kind(), K::NowStatement | K::IterativeEqualityStatement)
+                && matches!(children.first().map(|r| r.kind()), Some(K::Token(t)) if t.kind == SurfaceTokenKind::Identifier)
+            {
+                theorem.ok_or_else(invalid)?;
+                expected_labels.push((
+                    children[0].range(),
+                    children[0].spelling().to_owned(),
+                    LabelKind::ProofStep,
+                ));
+            }
+            if row.kind() == &K::ThenStatement
+                || row.kind() == &K::ConclusionStatement
+                    && source_inline_token(&children, 0, "hence")
+            {
+                if row.kind() == &K::ThenStatement {
+                    source_then_roles(rows, row).ok_or_else(invalid)?;
+                }
+                let mut current = row;
+                while matches!(
+                    row_for(current.parent().ok_or_else(invalid)?)?.kind(),
+                    K::AnnotatedStatement | K::StatementItem | K::ThenStatement
+                ) {
+                    current = row_for(current.parent().ok_or_else(invalid)?)?;
+                }
+                let parent = row_for(current.parent().ok_or_else(invalid)?)?;
+                let siblings = source_proof_frame(rows, parent).ok_or_else(invalid)?;
+                let index = siblings
+                    .iter()
+                    .position(|r| r.site() == current.site())
+                    .ok_or_else(invalid)?;
+                let previous = index.checked_sub(1).map(|i| siblings[i]);
+                let previous =
+                    if matches!(parent.kind(), K::CaseItem | K::SupposeItem) && index == 3 {
+                        Some(siblings[1])
+                    } else {
+                        previous
+                    };
+                let mut previous = previous;
+                while previous.is_some_and(|r| {
+                    matches!(
+                        r.kind(),
+                        K::AnnotatedStatement | K::StatementItem | K::ThenStatement
+                    )
+                }) {
+                    let parts = source_children(rows, previous.ok_or_else(invalid)?.site())
+                        .collect::<Vec<_>>();
+                    previous = parts.last().copied();
+                }
+                if !previous.is_some_and(|r| {
+                    matches!(
+                        r.kind(),
+                        K::Proposition
+                            | K::ConditionList
+                            | K::AssumptionStatement
+                            | K::CompactStatement
+                            | K::ConclusionStatement
+                            | K::ConsiderStatement
+                            | K::ReconsiderStatement
+                            | K::NowStatement
+                            | K::HerebyStatement
+                            | K::CaseReasoningStatement
+                            | K::IterativeEqualityStatement
+                    ) || matches!(r.kind(), K::GivenStatement | K::LetStatement)
+                        && source_children(rows, r.site()).any(|c| c.kind() == &K::ConditionList)
+                }) {
+                    blocked.insert(row.site());
+                }
+            }
+            if matches!(
+                row.kind(),
+                K::TheoremItem
+                    | K::ProofBlock
+                    | K::LetStatement
+                    | K::AssumptionStatement
+                    | K::CompactStatement
+                    | K::ConclusionStatement
+                    | K::TakeStatement
+                    | K::ReconsiderStatement
+                    | K::ReconsiderItem
+                    | K::GivenStatement
+                    | K::ConsiderStatement
+                    | K::NowStatement
+                    | K::HerebyStatement
+                    | K::CaseItem
+                    | K::SupposeItem
+                    | K::CaseReasoningStatement
+                    | K::SetStatement
+                    | K::StatementItem
+                    | K::ThenStatement
+                    | K::IterativeEqualityStatement
+                    | K::IterativeEqualityStep
+            ) {
+                let parent = row_for(row.parent().ok_or_else(invalid)?)?;
+                if row.kind() == &K::TheoremItem {
+                    if !matches!(parent.kind(), K::ItemList | K::VisibleItem) {
+                        return Err(invalid());
+                    }
+                } else if !matches!(
+                    row.kind(),
+                    K::StatementItem
+                        | K::ProofBlock
+                        | K::ReconsiderItem
+                        | K::IterativeEqualityStep
+                        | K::CaseItem
+                        | K::SupposeItem
+                ) && !matches!(
+                    parent.kind(),
+                    K::ProofBlock
+                        | K::NowStatement
+                        | K::HerebyStatement
+                        | K::CaseItem
+                        | K::SupposeItem
+                        | K::ThenStatement
+                        | K::AnnotatedStatement
+                        | K::StatementItem
+                ) {
+                    return Err(invalid());
+                }
+                let mut tails = children
+                    .iter()
+                    .filter(|r| matches!(r.kind(), K::JustificationClause | K::ProofBlock));
+                let tail = tails.next().copied();
+                if tails.next().is_some() {
+                    return Err(invalid());
+                }
+                intents.push((row, typed(row)?, tail.map(typed).transpose()?));
+            }
+        }
+        let actual_labels = collection
+            .projections()
+            .iter()
+            .map(|p| {
+                (
+                    p.declaration_range(),
+                    p.primary_spelling().to_owned(),
+                    p.kind(),
+                )
+            })
+            .collect::<Vec<_>>();
+        if expected_labels.len() != actual_labels.len()
+            || expected_labels.iter().any(|expected| {
+                actual_labels
+                    .iter()
+                    .filter(|actual| *actual == expected)
+                    .count()
+                    != 1
+            })
+            || references
+                != collection
+                    .references()
+                    .iter()
+                    .map(|r| r.site().node())
+                    .collect::<BTreeSet<_>>()
+            || references.len() != collection.references().len()
+        {
+            return Err(invalid());
+        }
+        for reference in collection.references() {
+            let row = row_for(reference.site().node())?;
+            if row.kind() != &K::Reference
+                || row.range() != reference.site().range()
+                || reference.origin().source_id() != original.source_id()
+                || reference.origin().module_id() != original.module_id()
+                || reference.site().spelling()
+                    != source_children(rows, row.site())
+                        .next()
+                        .ok_or_else(invalid)?
+                        .spelling()
+            {
+                return Err(invalid());
+            }
+        }
+        for id in labels.ids() {
+            let entry = labels.table().get(*id).ok_or_else(invalid)?;
+            if matches!(entry.resolution(), LabelResolution::Unresolved(_)) {
+                blocked.insert(entry.site().node());
+            }
+        }
+        let (conversions, checked, _) = self.check_conversions()?;
+        for (_, conversion) in checked.coercions().iter() {
+            if matches!(
+                conversion.status,
+                CoercionStatus::Rejected | CoercionStatus::Blocked
+            ) {
+                let input = conversions
+                    .iter()
+                    .find(|r| r.site == conversion.site)
+                    .ok_or_else(invalid)?;
+                let row = rows
+                    .iter()
+                    .find(|row| typed(row).as_ref() == Ok(&input.site))
+                    .ok_or_else(invalid)?;
+                blocked.insert(row.site());
+            }
+        }
+        let mut affected = BTreeSet::new();
+        for site in blocked {
+            let mut current = Some(row_for(site)?);
+            while let Some(row) = current {
+                affected.insert(row.site());
+                current = row.parent().map(row_for).transpose()?;
+            }
+        }
+        Ok((
+            intents
+                .into_iter()
+                .map(|(row, site, tail)| {
+                    (
+                        site,
+                        tail,
+                        if affected.contains(&row.site()) {
+                            SourceProofIntentStatus::Blocked
+                        } else {
+                            SourceProofIntentStatus::Pending
+                        },
+                    )
+                })
+                .collect(),
+            labels,
+        ))
+    }
+
     pub(crate) fn validate_complete_installation(
         &self,
         source: SourceId,
@@ -1780,6 +2388,25 @@ fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> 
             | "qua"
             | "by"
             | "proof"
+            | "case"
+            | "suppose"
+            | "per"
+            | "cases"
+            | "given"
+            | "such"
+            | "that"
+            | "consider"
+            | "hereby"
+            | "now"
+            | "end"
+            | "set"
+            | "then"
+            | "let"
+            | "assume"
+            | "take"
+            | "thus"
+            | "hence"
+            | "and"
     ) {
         SurfaceTokenKind::ReservedWord
     } else {
@@ -2051,6 +2678,396 @@ pub(crate) fn source_reconsider_statement_roles<'a>(
     Some((items, target, tail))
 }
 
+fn source_proof_frame<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
+    (source_contiguous_child_count(children.iter().copied()) == Some(children.len()))
+        .then_some(children)
+}
+
+fn source_proof_statement_kind(kind: &SurfaceNodeKind) -> bool {
+    use SurfaceNodeKind as K;
+    matches!(
+        kind,
+        K::LetStatement
+            | K::AssumptionStatement
+            | K::GivenStatement
+            | K::ConsiderStatement
+            | K::SetStatement
+            | K::TakeStatement
+            | K::CompactStatement
+            | K::ConclusionStatement
+            | K::NowStatement
+            | K::HerebyStatement
+            | K::ThenStatement
+            | K::CaseReasoningStatement
+            | K::IterativeEqualityStatement
+            | K::ReconsiderStatement
+            | K::InlineFunctorDefinition
+            | K::InlinePredicateDefinition
+            | K::AnnotatedStatement
+            | K::StandaloneDiagnosticAnnotation
+    )
+}
+
+fn source_proof_body<'a>(children: &[&'a SourceNode], start: usize) -> Option<Vec<&'a SourceNode>> {
+    let end = children.len().checked_sub(2)?;
+    if start > end
+        || !source_inline_token(children, end, "end")
+        || !source_inline_token(children, end + 1, ";")
+        || children[start..end]
+            .iter()
+            .any(|row| !source_proof_statement_kind(row.kind()))
+    {
+        return None;
+    }
+    Some(children[start..end].to_vec())
+}
+
+fn source_proof_introduction_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+    opener: &str,
+    require_condition: bool,
+    require_by: bool,
+) -> Option<Vec<&'a SourceNode>> {
+    use SurfaceNodeKind as K;
+    let children = source_proof_frame(rows, owner)?;
+    if !source_inline_token(&children, 0, opener) {
+        return None;
+    }
+    let mut cursor = 1;
+    let mut roles = Vec::new();
+    loop {
+        let segment = *children.get(cursor)?;
+        if segment.kind() != &K::QualifiedVariableSegment {
+            return None;
+        }
+        let parts = source_proof_frame(rows, segment)?;
+        let mut index = 0;
+        loop {
+            if !matches!(parts.get(index)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+            {
+                return None;
+            }
+            index += 1;
+            if !source_inline_token(&parts, index, ",") {
+                break;
+            }
+            index += 1;
+        }
+        if index != parts.len()
+            && (!(source_inline_token(&parts, index, "be")
+                || source_inline_token(&parts, index, "being"))
+                || parts.get(index + 1)?.kind() != &K::TypeExpression
+                || parts.len() != index + 2)
+        {
+            return None;
+        }
+        roles.push(segment);
+        cursor += 1;
+        if !source_inline_token(&children, cursor, ",") {
+            break;
+        }
+        cursor += 1;
+    }
+    let condition = source_inline_token(&children, cursor, "such");
+    if require_condition && !condition {
+        return None;
+    }
+    if condition {
+        let row = *children.get(cursor + 1)?;
+        if row.kind() != &K::ConditionList {
+            return None;
+        }
+        roles.push(row);
+        cursor += 2;
+    }
+    let by = children
+        .get(cursor)
+        .is_some_and(|row| row.kind() == &K::JustificationClause);
+    if require_by && !by || by && owner.kind() == &K::GivenStatement {
+        return None;
+    }
+    if by {
+        roles.push(children[cursor]);
+        cursor += 1;
+    }
+    (source_inline_token(&children, cursor, ";") && children.len() == cursor + 1).then_some(roles)
+}
+
+pub(crate) fn source_given_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    (owner.kind() == &SurfaceNodeKind::GivenStatement).then_some(())?;
+    source_proof_introduction_roles(rows, owner, "given", false, false)
+}
+
+pub(crate) fn source_consider_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    (owner.kind() == &SurfaceNodeKind::ConsiderStatement).then_some(())?;
+    source_proof_introduction_roles(rows, owner, "consider", true, true)
+}
+
+pub(crate) fn source_now_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_proof_frame(rows, owner)?;
+    let start = if matches!(children.first()?.kind(), SurfaceNodeKind::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+    {
+        if !source_inline_token(&children, 1, ":") {
+            return None;
+        }
+        2
+    } else {
+        0
+    };
+    if owner.kind() != &SurfaceNodeKind::NowStatement
+        || !source_inline_token(&children, start, "now")
+    {
+        return None;
+    }
+    source_proof_body(&children, start + 1)
+}
+
+pub(crate) fn source_hereby_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &SurfaceNodeKind::HerebyStatement
+        || !source_inline_token(&children, 0, "hereby")
+    {
+        return None;
+    }
+    source_proof_body(&children, 1)
+}
+
+pub(crate) fn source_case_item_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &SurfaceNodeKind::CaseItem
+        || !source_inline_token(&children, 0, "case")
+        || !matches!(
+            children.get(1)?.kind(),
+            SurfaceNodeKind::Proposition | SurfaceNodeKind::ConditionList
+        )
+        || !source_inline_token(&children, 2, ";")
+        || !rows.iter().any(|row| {
+            Some(row.site()) == owner.parent()
+                && row.kind() == &SurfaceNodeKind::CaseReasoningStatement
+        })
+    {
+        return None;
+    }
+    let mut roles = vec![children[1]];
+    roles.extend(source_proof_body(&children, 3)?);
+    Some(roles)
+}
+
+pub(crate) fn source_suppose_item_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &SurfaceNodeKind::SupposeItem
+        || !source_inline_token(&children, 0, "suppose")
+        || !matches!(
+            children.get(1)?.kind(),
+            SurfaceNodeKind::Proposition | SurfaceNodeKind::ConditionList
+        )
+        || !source_inline_token(&children, 2, ";")
+        || !rows.iter().any(|row| {
+            Some(row.site()) == owner.parent()
+                && row.kind() == &SurfaceNodeKind::CaseReasoningStatement
+        })
+    {
+        return None;
+    }
+    let mut roles = vec![children[1]];
+    roles.extend(source_proof_body(&children, 3)?);
+    Some(roles)
+}
+
+pub(crate) fn source_case_reasoning_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    use SurfaceNodeKind as K;
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &K::CaseReasoningStatement
+        || !source_inline_token(&children, 0, "per")
+        || !source_inline_token(&children, 1, "cases")
+    {
+        return None;
+    }
+    let mut cursor = 2;
+    let mut roles = Vec::new();
+    if children
+        .get(cursor)
+        .is_some_and(|row| row.kind() == &K::JustificationClause)
+    {
+        roles.push(children[cursor]);
+        cursor += 1;
+    }
+    if !source_inline_token(&children, cursor, ";") {
+        return None;
+    }
+    cursor += 1;
+    let kind = children.get(cursor)?.kind();
+    if !matches!(kind, K::CaseItem | K::SupposeItem)
+        || children[cursor..].iter().any(|row| row.kind() != kind)
+    {
+        return None;
+    }
+    roles.extend_from_slice(&children[cursor..]);
+    Some(roles)
+}
+
+pub(crate) fn source_set_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &SurfaceNodeKind::SetStatement
+        || !source_inline_token(&children, 0, "set")
+        || children.len() < 3
+        || children.len().is_multiple_of(2)
+        || !source_inline_token(&children, children.len() - 1, ";")
+    {
+        return None;
+    }
+    let mut roles = Vec::new();
+    for cursor in (1..children.len() - 1).step_by(2) {
+        let row = children[cursor];
+        if row.kind() != &SurfaceNodeKind::Equating
+            || source_equating_roles(rows, row).is_none()
+            || (cursor > 1 && !source_inline_token(&children, cursor - 1, ","))
+        {
+            return None;
+        }
+        roles.push(row);
+    }
+    Some(roles)
+}
+
+pub(crate) fn source_then_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<&'a SourceNode> {
+    use SurfaceNodeKind as K;
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &K::ThenStatement
+        || children.len() != 2
+        || !source_inline_token(&children, 0, "then")
+        || !matches!(
+            children[1].kind(),
+            K::CompactStatement
+                | K::ConclusionStatement
+                | K::ConsiderStatement
+                | K::ReconsiderStatement
+                | K::IterativeEqualityStatement
+                | K::CaseReasoningStatement
+        )
+    {
+        return None;
+    }
+    Some(children[1])
+}
+
+pub(crate) fn source_statement_item_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<&'a SourceNode> {
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &SurfaceNodeKind::StatementItem
+        || children.len() != 1
+        || !source_proof_statement_kind(children[0].kind())
+        || !rows.iter().any(|row| {
+            Some(row.site()) == owner.parent() && row.kind() == &SurfaceNodeKind::ItemList
+        })
+    {
+        return None;
+    }
+    Some(children[0])
+}
+
+pub(crate) fn source_iterative_equality_step_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    use SurfaceNodeKind as K;
+    let children = source_proof_frame(rows, owner)?;
+    if owner.kind() != &K::IterativeEqualityStep
+        || !matches!(children.len(), 2 | 3)
+        || !source_inline_token(&children, 0, ".=")
+        || children[1].kind() != &K::TermExpression
+        || (children.len() == 3 && children[2].kind() != &K::JustificationClause)
+        || !rows.iter().any(|row| {
+            Some(row.site()) == owner.parent() && row.kind() == &K::IterativeEqualityStatement
+        })
+    {
+        return None;
+    }
+    Some(children[1..].to_vec())
+}
+
+pub(crate) fn source_iterative_equality_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<Vec<&'a SourceNode>> {
+    use SurfaceNodeKind as K;
+    let children = source_proof_frame(rows, owner)?;
+    let mut cursor = if matches!(children.first()?.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+    {
+        if !source_inline_token(&children, 1, ":") {
+            return None;
+        }
+        2
+    } else {
+        0
+    };
+    if owner.kind() != &K::IterativeEqualityStatement
+        || children.get(cursor)?.kind() != &K::TermExpression
+        || !source_inline_token(&children, cursor + 1, "=")
+        || children.get(cursor + 2)?.kind() != &K::TermExpression
+    {
+        return None;
+    }
+    let mut roles = vec![children[cursor], children[cursor + 2]];
+    cursor += 3;
+    if children
+        .get(cursor)
+        .is_some_and(|row| row.kind() == &K::JustificationClause)
+    {
+        roles.push(children[cursor]);
+        cursor += 1;
+    }
+    let start = cursor;
+    while children
+        .get(cursor)
+        .is_some_and(|row| row.kind() == &K::IterativeEqualityStep)
+    {
+        roles.push(children[cursor]);
+        cursor += 1;
+    }
+    if start == cursor
+        || !source_inline_token(&children, cursor, ";")
+        || children.len() != cursor + 1
+    {
+        return None;
+    }
+    Some(roles)
+}
+
 fn native_proof_local_binding_env(
     original: &TypedAst,
     native: &SurfaceResolvedArena,
@@ -2182,6 +3199,24 @@ fn native_proof_local_binding_env(
     let mut written_types = BTreeMap::new();
     let mut bare_names = BTreeSet::new();
     for row in rows.iter() {
+        let valid_proof_roles = match row.kind() {
+            K::CaseItem => source_case_item_roles(rows, row).is_some(),
+            K::CaseReasoningStatement => source_case_reasoning_roles(rows, row).is_some(),
+            K::ConsiderStatement => source_consider_roles(rows, row).is_some(),
+            K::GivenStatement => source_given_roles(rows, row).is_some(),
+            K::HerebyStatement => source_hereby_roles(rows, row).is_some(),
+            K::IterativeEqualityStatement => source_iterative_equality_roles(rows, row).is_some(),
+            K::IterativeEqualityStep => source_iterative_equality_step_roles(rows, row).is_some(),
+            K::NowStatement => source_now_roles(rows, row).is_some(),
+            K::SetStatement => source_set_roles(rows, row).is_some(),
+            K::StatementItem => source_statement_item_roles(rows, row).is_some(),
+            K::SupposeItem => source_suppose_item_roles(rows, row).is_some(),
+            K::ThenStatement => source_then_roles(rows, row).is_some(),
+            _ => true,
+        };
+        if !valid_proof_roles {
+            return Err(invalid());
+        }
         if row.kind() == &K::ReconsiderItem {
             source_reconsider_item_roles(rows, row).ok_or_else(invalid)?;
         }
@@ -12233,5 +13268,569 @@ mod task269c_tests {
             mismatched.check_conversions(),
             Err(SourceProofLocalDeclarationError::DependencyMismatch)
         );
+    }
+
+    #[test]
+    fn native_proof_element_rules_preserve_borrowed_roles_and_refuse_isolated_shapes() {
+        use SurfaceNodeKind as K;
+        use SurfaceTokenKind as T;
+        let source = source_id();
+        let receipt = task286_receipt(
+            source,
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("proof_roles")),
+            4,
+        );
+        let prototype = receipt
+            .original
+            .iter()
+            .find(|row| matches!(row.kind(), K::Token(_)))
+            .unwrap();
+        let sites = receipt
+            .original
+            .iter()
+            .map(SourceNode::site)
+            .collect::<Vec<_>>();
+        let token = |kind, text: &str| {
+            let K::Token(mut t) = prototype.kind.clone() else {
+                unreachable!()
+            };
+            t.kind = kind;
+            t.text = text.into();
+            K::Token(t)
+        };
+        let rows = |descriptors: Vec<(K, Option<usize>, usize)>| {
+            descriptors
+                .into_iter()
+                .enumerate()
+                .map(|(index, (kind, parent, ordinal))| {
+                    let mut row = prototype.clone();
+                    row.spelling = match &kind {
+                        K::Token(t) => t.text.to_string(),
+                        _ => String::new(),
+                    };
+                    row.kind = kind;
+                    row.site = sites[index];
+                    row.parent = parent.map(|i| sites[i]);
+                    row.child_ordinal = ordinal;
+                    row.preorder_ordinal = index;
+                    row.range = range(source, 0, 100);
+                    row
+                })
+                .collect::<Vec<_>>()
+        };
+        let roles = |case: usize, rows: &[SourceNode]| {
+            let owner = &rows[if matches!(case, 4 | 5 | 9 | 11) { 1 } else { 0 }];
+            let borrowed = match case {
+                0 => source_given_roles(rows, owner),
+                1 => source_consider_roles(rows, owner),
+                2 => source_now_roles(rows, owner),
+                3 => source_hereby_roles(rows, owner),
+                4 => source_case_item_roles(rows, owner),
+                5 => source_suppose_item_roles(rows, owner),
+                6 => source_case_reasoning_roles(rows, owner),
+                7 => source_set_roles(rows, owner),
+                8 => source_then_roles(rows, owner).map(|row| vec![row]),
+                9 => source_statement_item_roles(rows, owner).map(|row| vec![row]),
+                10 => source_iterative_equality_roles(rows, owner),
+                11 => source_iterative_equality_step_roles(rows, owner),
+                _ => unreachable!(),
+            };
+            borrowed.map(|rows| rows.into_iter().map(SourceNode::site).collect::<Vec<_>>())
+        };
+        let mut frames = Vec::new();
+        for (kind, word, by) in [
+            (K::GivenStatement, "given", false),
+            (K::ConsiderStatement, "consider", true),
+        ] {
+            let mut frame = vec![
+                (kind, None, 0),
+                (token(T::ReservedWord, word), Some(0), 0),
+                (K::QualifiedVariableSegment, Some(0), 1),
+                (token(T::Identifier, "x"), Some(2), 0),
+                (token(T::ReservedWord, "be"), Some(2), 1),
+                (K::TypeExpression, Some(2), 2),
+                (token(T::ReservedWord, "such"), Some(0), 2),
+                (K::ConditionList, Some(0), 3),
+            ];
+            if by {
+                frame.push((K::JustificationClause, Some(0), 4));
+            }
+            frame.push((
+                token(T::ReservedSymbol, ";"),
+                Some(0),
+                if by { 5 } else { 4 },
+            ));
+            frames.push(frame);
+        }
+        for (kind, word) in [(K::NowStatement, "now"), (K::HerebyStatement, "hereby")] {
+            frames.push(vec![
+                (kind, None, 0),
+                (token(T::ReservedWord, word), Some(0), 0),
+                (K::CompactStatement, Some(0), 1),
+                (token(T::ReservedWord, "end"), Some(0), 2),
+                (token(T::ReservedSymbol, ";"), Some(0), 3),
+            ]);
+        }
+        for (kind, word) in [(K::CaseItem, "case"), (K::SupposeItem, "suppose")] {
+            frames.push(vec![
+                (K::CaseReasoningStatement, None, 0),
+                (kind, Some(0), 0),
+                (token(T::ReservedWord, word), Some(1), 0),
+                (K::Proposition, Some(1), 1),
+                (token(T::ReservedSymbol, ";"), Some(1), 2),
+                (K::CompactStatement, Some(1), 3),
+                (token(T::ReservedWord, "end"), Some(1), 4),
+                (token(T::ReservedSymbol, ";"), Some(1), 5),
+            ]);
+        }
+        frames.push(vec![
+            (K::CaseReasoningStatement, None, 0),
+            (token(T::ReservedWord, "per"), Some(0), 0),
+            (token(T::ReservedWord, "cases"), Some(0), 1),
+            (K::JustificationClause, Some(0), 2),
+            (token(T::ReservedSymbol, ";"), Some(0), 3),
+            (K::CaseItem, Some(0), 4),
+            (K::CaseItem, Some(0), 5),
+        ]);
+        frames.push(vec![
+            (K::SetStatement, None, 0),
+            (token(T::ReservedWord, "set"), Some(0), 0),
+            (K::Equating, Some(0), 1),
+            (token(T::ReservedSymbol, ";"), Some(0), 2),
+            (token(T::Identifier, "x"), Some(2), 0),
+            (token(T::ReservedSymbol, "="), Some(2), 1),
+            (K::TermExpression, Some(2), 2),
+        ]);
+        frames.push(vec![
+            (K::ThenStatement, None, 0),
+            (token(T::ReservedWord, "then"), Some(0), 0),
+            (K::CompactStatement, Some(0), 1),
+        ]);
+        frames.push(vec![
+            (K::ItemList, None, 0),
+            (K::StatementItem, Some(0), 0),
+            (K::CompactStatement, Some(1), 0),
+        ]);
+        frames.push(vec![
+            (K::IterativeEqualityStatement, None, 0),
+            (K::TermExpression, Some(0), 0),
+            (token(T::ReservedSymbol, "="), Some(0), 1),
+            (K::TermExpression, Some(0), 2),
+            (K::JustificationClause, Some(0), 3),
+            (K::IterativeEqualityStep, Some(0), 4),
+            (token(T::ReservedSymbol, ";"), Some(0), 5),
+        ]);
+        frames.push(vec![
+            (K::IterativeEqualityStatement, None, 0),
+            (K::IterativeEqualityStep, Some(0), 0),
+            (token(T::ReservedSymbol, ".="), Some(1), 0),
+            (K::TermExpression, Some(1), 1),
+            (K::JustificationClause, Some(1), 2),
+        ]);
+        let expected = [
+            vec![2, 7],
+            vec![2, 7, 8],
+            vec![2],
+            vec![2],
+            vec![3, 5],
+            vec![3, 5],
+            vec![3, 5, 6],
+            vec![2],
+            vec![2],
+            vec![2],
+            vec![1, 3, 4, 5],
+            vec![3, 4],
+        ];
+        for (case, frame) in frames.into_iter().enumerate() {
+            let original = rows(frame);
+            assert_eq!(
+                roles(case, &original),
+                Some(expected[case].iter().map(|index| sites[*index]).collect()),
+                "case {case}"
+            );
+            let owner = if matches!(case, 4 | 5 | 9 | 11) { 1 } else { 0 };
+            let mut bad = original.clone();
+            bad[owner].kind = K::Proposition;
+            assert!(roles(case, &bad).is_none(), "kind {case}");
+            let first = original
+                .iter()
+                .position(|row| row.parent() == Some(original[owner].site()))
+                .unwrap();
+            let mut bad = original.clone();
+            bad[first].child_ordinal = 1;
+            assert!(roles(case, &bad).is_none(), "order {case}");
+            if case != 9 {
+                let keyword = if case == 10 { 2 } else { first };
+                let K::Token(t) = original[keyword].kind() else {
+                    unreachable!()
+                };
+                for kind in [token(T::Identifier, &t.text), token(t.kind, "wrong")] {
+                    let mut bad = original.clone();
+                    bad[keyword].kind = kind;
+                    assert!(roles(case, &bad).is_none(), "token {case}");
+                }
+            }
+            let mut bad = original.clone();
+            let mut extra = prototype.clone();
+            extra.kind = K::Proposition;
+            extra.site = sites[bad.len()];
+            extra.parent = Some(bad[owner].site());
+            extra.child_ordinal = source_children(&bad, bad[owner].site()).count();
+            bad.push(extra);
+            assert!(roles(case, &bad).is_none(), "tail {case}");
+            if matches!(case, 4 | 5 | 9 | 11) {
+                let mut bad = original.clone();
+                bad[owner].parent = None;
+                assert!(roles(case, &bad).is_none(), "orphan {case}");
+            }
+            if case == 6 {
+                let mut bad = original.clone();
+                bad[6].kind = K::SupposeItem;
+                assert!(roles(case, &bad).is_none());
+            }
+            if case == 0 {
+                let mut bad = original.clone();
+                let mut by = prototype.clone();
+                by.kind = K::JustificationClause;
+                by.site = sites[9];
+                by.parent = Some(sites[0]);
+                by.child_ordinal = 4;
+                bad[8].child_ordinal = 5;
+                bad.insert(8, by);
+                assert!(roles(case, &bad).is_none());
+            }
+            if case == 1 {
+                let mut bad = original.clone();
+                bad.remove(8);
+                bad[8].child_ordinal = 4;
+                assert!(roles(case, &bad).is_none());
+            }
+            if case == 7 {
+                let mut bad = original.clone();
+                bad[6].kind = K::TypeExpression;
+                assert!(roles(case, &bad).is_none());
+            }
+            if case == 8 {
+                let mut bad = original.clone();
+                bad[2].kind = K::LetStatement;
+                assert!(roles(case, &bad).is_none());
+            }
+            if case == 11 {
+                let mut bad = original.clone();
+                bad[4].kind = K::ProofBlock;
+                assert!(roles(case, &bad).is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn native_proof_intents_require_take_assumption_and_given_source_frames() {
+        use SurfaceNodeKind as K;
+        let template = |mutation: usize| {
+            let source = source_id();
+            let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("proof_frames"));
+            let sections = [
+                vec!["reserve", "x", "for", "set", ";"],
+                vec!["theorem", "T", ":", "thesis", "proof"],
+                if mutation == 2 {
+                    vec!["assume", "A", ":", "thesis", "by", "A", ";"]
+                } else {
+                    vec!["assume", "A", ":", "thesis", ";"]
+                },
+                vec!["take", "x", ";"],
+                if mutation == 3 {
+                    vec!["given", "y", "be", "set", "by", "A", ";"]
+                } else {
+                    vec!["given", "y", "be", "set", ";"]
+                },
+                vec!["thus", "thesis", "by", "A", ";"],
+                vec!["end", ";"],
+            ];
+            let mut builder = SurfaceAstBuilder::new(source);
+            let mut tokens = vec![Vec::new(); sections.len()];
+            let mut spans = vec![Vec::new(); sections.len()];
+            let mut cursor = 0;
+            for (section, words) in sections.iter().enumerate() {
+                for (index, word) in words.iter().enumerate() {
+                    let span = range(source, cursor, cursor + word.len());
+                    cursor += word.len() + 1;
+                    let kind = if matches!(*word, "x" | "y" | "T" | "A")
+                        || mutation == 1 && section == 3 && index == 0
+                    {
+                        SurfaceTokenKind::Identifier
+                    } else if matches!(*word, ":" | ";") {
+                        SurfaceTokenKind::ReservedSymbol
+                    } else {
+                        SurfaceTokenKind::ReservedWord
+                    };
+                    tokens[section].push(builder.add_token(kind, *word, span));
+                    spans[section].push(span);
+                }
+            }
+            let node = |b: &mut SurfaceAstBuilder,
+                        kind,
+                        section: usize,
+                        first: usize,
+                        last: usize,
+                        children| {
+                b.add_node(
+                    kind,
+                    range(
+                        source,
+                        spans[section][first].start,
+                        spans[section][last].end,
+                    ),
+                    children,
+                )
+            };
+            let reserve_head = node(&mut builder, K::TypeHead, 0, 3, 3, vec![tokens[0][3]]);
+            let reserve_type = node(&mut builder, K::TypeExpression, 0, 3, 3, vec![reserve_head]);
+            let reserve_segment = node(
+                &mut builder,
+                K::ReserveSegment,
+                0,
+                1,
+                3,
+                vec![tokens[0][1], tokens[0][2], reserve_type],
+            );
+            let reserve = node(
+                &mut builder,
+                K::ReserveItem,
+                0,
+                0,
+                4,
+                vec![tokens[0][0], reserve_segment, tokens[0][4]],
+            );
+            let mut formulas = BTreeMap::new();
+            for (section, index) in [(1, 3), (2, 3), (5, 1)] {
+                let thesis = node(
+                    &mut builder,
+                    K::FormulaConstant(SurfaceFormulaConstant::Thesis),
+                    section,
+                    index,
+                    index,
+                    vec![tokens[section][index]],
+                );
+                formulas.insert(
+                    section,
+                    node(
+                        &mut builder,
+                        K::FormulaExpression,
+                        section,
+                        index,
+                        index,
+                        vec![thesis],
+                    ),
+                );
+            }
+            let mut tails = BTreeMap::new();
+            for section in [2, 4, 5] {
+                if section != 5 && sections[section].len() == 5 {
+                    continue;
+                }
+                let index = if section == 5 { 3 } else { 5 };
+                let reference = node(
+                    &mut builder,
+                    K::Reference,
+                    section,
+                    index,
+                    index,
+                    vec![tokens[section][index]],
+                );
+                let list = node(
+                    &mut builder,
+                    K::ReferenceList,
+                    section,
+                    index,
+                    index,
+                    vec![reference],
+                );
+                tails.insert(
+                    section,
+                    node(
+                        &mut builder,
+                        K::JustificationClause,
+                        section,
+                        index - 1,
+                        index,
+                        vec![tokens[section][index - 1], list],
+                    ),
+                );
+            }
+            let assumption_proposition = node(
+                &mut builder,
+                K::Proposition,
+                2,
+                1,
+                3,
+                vec![tokens[2][1], tokens[2][2], formulas[&2]],
+            );
+            let mut children = vec![tokens[2][0], assumption_proposition];
+            children.extend(tails.get(&2));
+            children.push(*tokens[2].last().unwrap());
+            let assumption = node(
+                &mut builder,
+                K::AssumptionStatement,
+                2,
+                0,
+                sections[2].len() - 1,
+                children,
+            );
+            let reference = node(&mut builder, K::TermReference, 3, 1, 1, vec![tokens[3][1]]);
+            let term = node(&mut builder, K::TermExpression, 3, 1, 1, vec![reference]);
+            let witness = node(&mut builder, K::Witness, 3, 1, 1, vec![term]);
+            let take = node(
+                &mut builder,
+                K::TakeStatement,
+                3,
+                0,
+                2,
+                vec![tokens[3][0], witness, tokens[3][2]],
+            );
+            let head = node(&mut builder, K::TypeHead, 4, 3, 3, vec![tokens[4][3]]);
+            let ty = node(&mut builder, K::TypeExpression, 4, 3, 3, vec![head]);
+            let segment = node(
+                &mut builder,
+                K::QualifiedVariableSegment,
+                4,
+                1,
+                3,
+                vec![tokens[4][1], tokens[4][2], ty],
+            );
+            let mut children = vec![tokens[4][0], segment];
+            children.extend(tails.get(&4));
+            children.push(*tokens[4].last().unwrap());
+            let given = node(
+                &mut builder,
+                K::GivenStatement,
+                4,
+                0,
+                sections[4].len() - 1,
+                children,
+            );
+            let proposition = node(&mut builder, K::Proposition, 5, 1, 1, vec![formulas[&5]]);
+            let conclusion = node(
+                &mut builder,
+                K::ConclusionStatement,
+                5,
+                0,
+                4,
+                vec![tokens[5][0], proposition, tails[&5], tokens[5][4]],
+            );
+            let proof = builder.add_node(
+                K::ProofBlock,
+                range(source, spans[1][4].start, spans[6][0].end),
+                vec![
+                    tokens[1][4],
+                    assumption,
+                    take,
+                    given,
+                    conclusion,
+                    tokens[6][0],
+                ],
+            );
+            let theorem = builder.add_node(
+                K::TheoremItem,
+                range(source, spans[1][0].start, spans[6][1].end),
+                vec![
+                    tokens[1][0],
+                    tokens[1][1],
+                    tokens[1][2],
+                    formulas[&1],
+                    proof,
+                    tokens[6][1],
+                ],
+            );
+            let span = range(source, 0, cursor - 1);
+            let items = builder.add_node(K::ItemList, span, vec![reserve, theorem]);
+            let compilation = builder.add_node(K::CompilationUnit, span, vec![items]);
+            let mut roots = tokens.into_iter().flatten().collect::<Vec<_>>();
+            roots.push(compilation);
+            let root = builder.add_node(K::Root, span, roots);
+            let ast = builder.finish(Some(root), None);
+            let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            let mut original = TypedAst::try_new(TypedAstParts {
+                source_id: source,
+                module_id: module,
+                resolved_root: Some(native.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    Some(TypedNodeId::new(native.arena().root().index())),
+                    native
+                        .arena()
+                        .iter()
+                        .map(|(id, row)| {
+                            TypedNode::new("syntax", row.origin().anchor().clone())
+                                .with_resolved_node(id)
+                                .with_children(
+                                    row.children()
+                                        .iter()
+                                        .map(|id| TypedNodeId::new(id.index()))
+                                        .collect(),
+                                )
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .unwrap();
+            original.install_source_nodes(&native).unwrap();
+            original
+        };
+        for mutation in 0..4 {
+            let (original, native, symbols, scope) =
+                native_binding_inputs(&template(mutation), false);
+            let built = SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope,
+            );
+            if mutation != 0 {
+                assert_eq!(
+                    built.and_then(|handoff| handoff.check_proof_intents().map(|_| ())),
+                    Err(SourceProofLocalDeclarationError::DependencyMismatch),
+                    "mutation {mutation}"
+                );
+                continue;
+            }
+            let handoff = built.unwrap();
+            let (intents, labels) = handoff.check_proof_intents().unwrap();
+            assert!(
+                intents
+                    .iter()
+                    .all(|(_, _, status)| *status == SourceProofIntentStatus::Pending)
+            );
+            assert!(!labels.has_unresolved());
+            for kind in [K::TakeStatement, K::AssumptionStatement, K::GivenStatement] {
+                let row = original
+                    .source_node_entries()
+                    .unwrap()
+                    .find(|row| row.kind() == &kind)
+                    .unwrap();
+                let site = original
+                    .nodes()
+                    .iter()
+                    .find(|(_, node)| node.resolved_node == Some(row.site()))
+                    .unwrap()
+                    .0;
+                assert!(intents.iter().any(|(actual, _, _)| actual.node() == site));
+            }
+            let installed = empty_typed(original.source_id(), original.module_id().clone())
+                .with_source_proof_local_binding(handoff)
+                .unwrap();
+            assert!(
+                installed.types().is_empty()
+                    && installed.facts().is_empty()
+                    && installed.coercions().is_empty()
+            );
+            let resolved = assemble_empty(&installed).unwrap();
+            assert!(resolved.checked_proofs().is_empty() && resolved.checked_formulas().is_empty());
+        }
     }
 }

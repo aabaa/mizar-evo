@@ -3436,6 +3436,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.statements.native_proof_intents.metadata"
+source = "doc/spec/en/15.statements.md"
+section = "15.3 Statements"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_advanced_semantics_native_proof_intents_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.15.statements.per_cases.completeness_obligation"
 source = "doc/spec/en/15.statements.md"
 section = "15.6 Proof Organization"

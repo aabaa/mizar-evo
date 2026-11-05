@@ -3827,3 +3827,998 @@ fn task271_native_conversions_refuse_genuine_legacy_bare_and_self_rhs_authority(
         assert!(SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &resolver.env, &current).is_ok());
     }
 }
+
+#[test]
+fn task272_native_proof_intents_execute_metadata_runtime() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let id = "pass_advanced_semantics_native_proof_intents_001";
+    let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+    let frontend = super::run_frontend(&config.workspace_root, case, 0).unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.as_ref().expect("genuine parsed proof source");
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, case, ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    let native = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver.module)
+        .expect("genuine source lowering");
+    native.validate_against(ast, &resolver.module).unwrap();
+    println!(
+        "Task272 test-first: frontend, symbol collection and authentic native lowering succeeded"
+    );
+    let report = super::run_advanced_semantics_corpus(&config).unwrap();
+    let result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == id)
+        .unwrap_or_else(|| {
+            panic!(
+                "proof-intent metadata case missing: {:?}",
+                report.diagnostics
+            )
+        });
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+}
+
+fn task272_proof_intent_source(
+    text: &str,
+) -> (
+    mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+    mizar_resolve::env::SymbolEnv,
+) {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_PROOF_INTENT_ID)
+        .unwrap();
+    let frontend = metamorphic_guard::with_source(case, text, || {
+        super::run_frontend(&config.workspace_root, case, 0)
+    })
+    .unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, case, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    (
+        super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap(),
+        resolver.env,
+    )
+}
+
+#[test]
+fn task272_native_proof_intents_match_manual_original_rows_bindings_and_citations() {
+    use mizar_checker::{
+        binding_env::{BinderIdentity, BindingId},
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        typed_ast::TypedSiteRef,
+    };
+    use mizar_resolve::resolved_ast::LabelResolution;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_PROOF_INTENT_ID)
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let (handoff, _) = task272_proof_intent_source(&text);
+    let (intents, labels) = handoff.check_proof_intents().unwrap();
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let original = |site: &TypedSiteRef| {
+        let id = handoff
+            .source()
+            .nodes()
+            .node(site.node())
+            .unwrap()
+            .resolved_node
+            .unwrap();
+        rows.iter().copied().find(|row| row.site() == id).unwrap()
+    };
+    let expected = [
+        K::TheoremItem,
+        K::ProofBlock,
+        K::LetStatement,
+        K::SetStatement,
+        K::CompactStatement,
+        K::NowStatement,
+        K::CompactStatement,
+        K::ThenStatement,
+        K::CompactStatement,
+        K::ConclusionStatement,
+        K::HerebyStatement,
+        K::ConclusionStatement,
+    ];
+    assert_eq!(intents.len(), expected.len());
+    let nearest_parents = [
+        None,
+        Some(0),
+        Some(1),
+        Some(1),
+        Some(1),
+        Some(1),
+        Some(5),
+        Some(5),
+        Some(7),
+        Some(5),
+        Some(1),
+        Some(10),
+    ];
+    for (index, ((site, justification, status), kind)) in intents.iter().zip(expected).enumerate() {
+        let row = original(site);
+        assert_eq!(row.kind(), &kind);
+        assert_eq!(*status, S::Pending);
+        let mut parent = row.parent();
+        let nearest = loop {
+            let Some(id) = parent else {
+                break None;
+            };
+            if let Some(index) = intents
+                .iter()
+                .position(|(site, _, _)| original(site).site() == id)
+            {
+                break Some(index);
+            }
+            parent = rows.iter().find(|row| row.site() == id).unwrap().parent();
+        };
+        assert_eq!(nearest, nearest_parents[index]);
+        match index {
+            0 => assert_eq!(
+                justification.as_ref().map(original).map(|row| row.site()),
+                Some(original(&intents[1].0).site())
+            ),
+            6 | 8 | 9 | 11 => {
+                let clause = original(justification.as_ref().unwrap());
+                assert_eq!(clause.kind(), &K::JustificationClause);
+                assert_eq!(clause.parent(), Some(row.site()));
+                let spelling = match index {
+                    8 => "by B",
+                    11 => "by N",
+                    _ => "by A",
+                };
+                assert_eq!(
+                    text[clause.range().start..clause.range().end].trim(),
+                    spelling
+                );
+            }
+            _ => assert!(justification.is_none()),
+        }
+        let original_text = text[row.range().start..row.range().end].trim_end();
+        if kind == K::ProofBlock {
+            assert!(original_text.ends_with("end"));
+        } else {
+            assert!(original_text.ends_with(';'));
+        }
+        if index > 0 {
+            assert!(original(&intents[index - 1].0).preorder_ordinal() < row.preorder_ordinal());
+        }
+    }
+    let before = original(&intents[6].0);
+    let then = original(&intents[7].0);
+    assert_eq!(before.parent(), then.parent());
+    assert_eq!(before.child_ordinal() + 1, then.child_ordinal());
+    assert!(before.spelling().starts_with("B :"));
+    assert_eq!(
+        handoff
+            .scope()
+            .bindings()
+            .iter()
+            .map(|binding| (binding.id().index(), binding.spelling()))
+            .collect::<Vec<_>>(),
+        [(0, "x"), (1, "x"), (2, "a")]
+    );
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| (reference.id().index(), reference.binding().index()))
+            .collect::<Vec<_>>(),
+        [
+            (0, 0),
+            (1, 0),
+            (2, 1),
+            (3, 2),
+            (4, 2),
+            (5, 2),
+            (6, 2),
+            (7, 2),
+            (8, 2),
+            (9, 2),
+            (10, 2),
+            (11, 1),
+            (12, 1)
+        ]
+    );
+    let proof_x = &handoff.scope().bindings()[1];
+    assert_eq!(
+        handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(2))
+            .unwrap()
+            .captured
+            .identities(),
+        [BinderIdentity::ResolverLocal {
+            scope: proof_x.scope().clone(),
+            ordinal: proof_x.ordinal(),
+            declaration_range: proof_x.range()
+        }]
+    );
+    assert!(labels.diagnostics().is_empty());
+    assert!(!labels.has_unresolved());
+    let mut declared = labels
+        .index()
+        .iter()
+        .map(|label| label.primary_spelling())
+        .collect::<Vec<_>>();
+    declared.sort_unstable();
+    assert_eq!(declared, ["A", "B", "N", "NativeProofIntents"]);
+    assert_eq!(labels.ids().len(), 4);
+    for (id, name) in labels.ids().iter().zip(["A", "B", "A", "N"]) {
+        let entry = labels.table().get(*id).unwrap();
+        assert_eq!(entry.site().spelling(), name);
+        let LabelResolution::Resolved(target) = entry.resolution() else {
+            panic!("real local citation must resolve");
+        };
+        let declaration = labels
+            .index()
+            .iter()
+            .find(|label| label.origin_path() == target.origin())
+            .unwrap();
+        assert_eq!(declaration.primary_spelling(), name);
+        let mizar_session::SourceAnchor::Range(range) = declaration.origin().anchor() else {
+            panic!("original declaration range");
+        };
+        assert_eq!(&text[range.start..range.end], name);
+        assert_eq!(target.range(), entry.site().range());
+    }
+    let direct = super::native_proof_intent_observation(&handoff).unwrap();
+    assert_eq!(
+        direct
+            .iter()
+            .filter(|key| key.starts_with("intent."))
+            .count(),
+        12
+    );
+    assert_eq!(
+        direct
+            .iter()
+            .filter(|key| key.starts_with("citation."))
+            .count(),
+        4
+    );
+    assert_eq!(
+        direct,
+        {
+            let frontend = super::run_frontend(&config.workspace_root, case, 0).unwrap();
+            assert!(frontend.diagnostics.is_empty());
+            let ast = frontend.ast.unwrap();
+            let resolver = super::resolver_symbol_collection(&config.workspace_root, case, &ast);
+            assert!(resolver.detail_keys.is_empty());
+            let fresh = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap();
+            super::native_proof_intent_observation(&fresh).unwrap()
+        }
+    );
+    assert!(handoff.source().facts().is_empty());
+    assert!(handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272_native_proof_intents_cover_all_twelve_rules_without_goal_acceptance() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let prefix = "theorem Roles: for x being set holds x = x proof let x be set; A: x = x;";
+    for (body, required) in [
+        (
+            "given g being set such that GG: g = g; consider c being set such that CC: c = c by A;",
+            vec![K::GivenStatement, K::ConsiderStatement],
+        ),
+        (
+            "E: x = x by A .= x by A;",
+            vec![K::IterativeEqualityStatement, K::IterativeEqualityStep],
+        ),
+        (
+            "per cases by A; case C1: x = x; thus x = x by C1; end; case C2: not x = x; thus x = x by A; end;",
+            vec![K::CaseReasoningStatement, K::CaseItem, K::CaseItem],
+        ),
+        (
+            "per cases; suppose S1: x = x; thus x = x by S1; end; suppose S2: not x = x; thus x = x by A; end;",
+            vec![K::CaseReasoningStatement, K::SupposeItem, K::SupposeItem],
+        ),
+        (
+            "N: now B: x = x by A; then x = x by B; thus x = x by A; end; hereby thus x = x by N; end;",
+            vec![K::NowStatement, K::ThenStatement, K::HerebyStatement],
+        ),
+    ] {
+        let source = format!("{prefix} {body} thus x = x by A; end;");
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert!(intents.iter().all(|(_, _, status)| *status == S::Pending));
+        assert!(!labels.has_unresolved());
+        let kinds = intents
+            .iter()
+            .map(|(site, _, _)| {
+                let id = handoff
+                    .source()
+                    .nodes()
+                    .node(site.node())
+                    .unwrap()
+                    .resolved_node
+                    .unwrap();
+                handoff
+                    .source()
+                    .source_node_entries()
+                    .unwrap()
+                    .find(|row| row.site() == id)
+                    .unwrap()
+                    .kind()
+                    .clone()
+            })
+            .collect::<Vec<_>>();
+        for kind in &required {
+            assert_eq!(
+                kinds.iter().filter(|actual| *actual == kind).count(),
+                required.iter().filter(|actual| *actual == kind).count()
+            );
+        }
+        super::native_proof_intent_observation(&handoff).unwrap();
+    }
+    let module = "reserve module_seed for set; set module_alias = module_seed; theorem ModuleIntent: for x being set holds x = x proof let x be set; thus x = x; end;";
+    let (handoff, _) = task272_proof_intent_source(module);
+    let (intents, _) = handoff.check_proof_intents().unwrap();
+    assert!(intents.iter().all(|(_, _, status)| *status == S::Pending));
+    assert_eq!(intents.len(), 6);
+    let first = intents
+        .iter()
+        .take(2)
+        .map(|(site, just, _)| {
+            let id = handoff
+                .source()
+                .nodes()
+                .node(site.node())
+                .unwrap()
+                .resolved_node
+                .unwrap();
+            let row = handoff
+                .source()
+                .source_node_entries()
+                .unwrap()
+                .find(|row| row.site() == id)
+                .unwrap();
+            assert!(just.is_none());
+            row.kind().clone()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(first, [K::StatementItem, K::SetStatement]);
+    let witness = "theorem WitnessIntent: for x being set ex y being set st y = x proof let x be set; take x; thus x = x; end;";
+    let (handoff, _) = task272_proof_intent_source(witness);
+    assert_eq!(handoff.check_proof_intents().unwrap().0.len(), 5);
+    assert!(handoff.source().types().is_empty());
+    assert!(handoff.source().facts().is_empty());
+    assert!(handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272_native_proof_intents_then_requires_adjacent_premise_and_local_branch_header() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    use mizar_syntax::SurfaceNodeKind as K;
+    for (intervening, expected) in [
+        ("", S::Pending),
+        ("let other be set;", S::Blocked),
+        ("set other = x;", S::Blocked),
+    ] {
+        let source = format!(
+            "theorem Adjacent: for x being set holds x = x proof let x be set; A: x = x; {intervening} then x = x by A; thus x = x by A; end;"
+        );
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert!(!labels.has_unresolved());
+        for (site, _, status) in &intents {
+            let id = handoff
+                .source()
+                .nodes()
+                .node(site.node())
+                .unwrap()
+                .resolved_node
+                .unwrap();
+            let row = handoff
+                .source()
+                .source_node_entries()
+                .unwrap()
+                .find(|row| row.site() == id)
+                .unwrap();
+            let is_affected = matches!(
+                row.kind(),
+                K::TheoremItem | K::ProofBlock | K::ThenStatement
+            );
+            assert_eq!(
+                *status,
+                if is_affected { expected } else { S::Pending },
+                "{:?}",
+                row.kind()
+            );
+        }
+    }
+    for branch in ["case", "suppose"] {
+        let source = format!(
+            "theorem Branch: for x being set holds x = x proof let x be set; per cases; {branch} C: x = x; then x = x by C; thus x = x by C; end; end;"
+        );
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert!(intents.iter().all(|(_, _, status)| *status == S::Pending));
+        assert!(!labels.has_unresolved());
+    }
+    let assumed = "theorem Assumed: for x being set holds x = x implies x = x proof let x be set; assume A: x = x; then x = x by A; thus x = x by A; end;";
+    assert!(
+        task272_proof_intent_source(assumed)
+            .0
+            .check_proof_intents()
+            .unwrap()
+            .0
+            .iter()
+            .all(|(_, _, status)| *status == S::Pending)
+    );
+}
+
+#[test]
+fn task272_native_proof_intents_block_only_actual_citation_path_and_refuse_unsupported_evidence() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    use mizar_syntax::SurfaceNodeKind as K;
+    for body in [
+        "A: x = x by Missing; B: x = x; thus x = x by B;",
+        "A: x = x by B; B: x = x; thus x = x by B;",
+        "N: now B: x = x; thus x = x by B; end; A: x = x by B; thus x = x;",
+        "N: now A: x = x by N; thus x = x; end; B: x = x; thus x = x by B;",
+    ] {
+        let source = format!(
+            "theorem CitationPath: for x being set holds x = x proof let x be set; {body} end;"
+        );
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert!(labels.has_unresolved());
+        assert_eq!(intents[0].2, S::Blocked);
+        assert_eq!(intents[1].2, S::Blocked);
+        for (site, _, status) in &intents {
+            let id = handoff
+                .source()
+                .nodes()
+                .node(site.node())
+                .unwrap()
+                .resolved_node
+                .unwrap();
+            let row = handoff
+                .source()
+                .source_node_entries()
+                .unwrap()
+                .find(|row| row.site() == id)
+                .unwrap();
+            if row.kind() == &K::LetStatement || row.spelling() == "B : x = x ;" {
+                assert_eq!(*status, S::Pending);
+            }
+        }
+        assert!(
+            !super::native_proof_intent_observation(&handoff)
+                .unwrap()
+                .iter()
+                .any(|key| key == "conversion.reconsider.narrowing_requires_proof")
+        );
+    }
+    for body in [
+        "A: x = x; A: x = x; thus x = x;",
+        "A: x = x; now A: x = x; thus x = x; end; thus x = x;",
+        "A: x = x; thus x = x by A[set];",
+    ] {
+        let source = format!(
+            "theorem Unsupported: for x being set holds x = x proof let x be set; {body} end;"
+        );
+        let (original, native, symbols, scope) = task272_proof_intent_inputs(&source);
+        assert!(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &scope)
+            .and_then(|handoff| handoff.check_proof_intents()).is_err());
+    }
+}
+
+#[test]
+fn task272_native_proof_intents_guard_exact_admission_and_actual_fs_as_consumers() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_PROOF_INTENT_ID)
+        .unwrap();
+    assert!(super::native_proof_intents_admitted(
+        &config.workspace_root,
+        case
+    ));
+    for mutation in 0..9 {
+        let mut bad = case.clone();
+        match mutation {
+            0 => bad.expectation.domain = "checker.native_conversions".into(),
+            1 => bad.expectation.tags.clear(),
+            2 => {
+                bad.expectation.expected_phase = Some(crate::expectation::PipelinePhase::TypeCheck)
+            }
+            3 => bad.source_path = config.workspace_root.join("tests/miz/pass/other.miz"),
+            4 => bad.expectation.spec_refs.clear(),
+            5 => bad.expectation.stable_detail_key = Some("unexpected".into()),
+            6 => bad.expectation.tags.push("extra".into()),
+            7 => {
+                bad.expectation_path = config
+                    .workspace_root
+                    .join("tests/miz/pass/other.expect.toml")
+            }
+            _ => bad.expectation.id.0 = "wrong_identity".into(),
+        }
+        assert!(!super::native_proof_intents_admitted(
+            &config.workspace_root,
+            &bad
+        ));
+        let mut invalid = plan.clone();
+        invalid.cases.push(bad);
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-ADVANCED-SEMANTICS-ADMISSION")
+        );
+    }
+    let mut duplicate = plan.clone();
+    duplicate.cases.push(case.clone());
+    let mut missing = plan.clone();
+    missing.cases.retain(|candidate| candidate.id != case.id);
+    for invalid in [duplicate, missing] {
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key
+                    == format!(
+                        "advanced_semantics.inventory.{}",
+                        super::NATIVE_PROOF_INTENT_ID
+                    ))
+        );
+    }
+    for source in [
+        "reserve seed for set; set alias = seed;",
+        "theorem BadEvidence: for x being set holds x = x proof let x be set; A: x = x; thus x = x by A[set]; end;",
+    ] {
+        let report = metamorphic_guard::with_source(case, source, || {
+            super::run_advanced_semantics_corpus(&config)
+        })
+        .unwrap();
+        assert_eq!(
+            report
+                .results
+                .iter()
+                .find(|result| result.id == case.id)
+                .unwrap()
+                .status,
+            super::TypeElaborationCaseStatus::Failed
+        );
+    }
+    for id in [
+        "pass_formula_statement_consider_choice_001",
+        "pass_formula_statement_given_existential_assumption_001",
+        "pass_formula_statement_now_diffuse_statement_001",
+        "pass_formula_statement_hereby_diffuse_conclusion_001",
+        "pass_formula_statement_iterative_equality_001",
+        "pass_formula_statement_per_cases_suppose_001",
+        "pass_formula_statement_then_hence_linking_001",
+        "pass_formula_statement_set_local_constant_take_001",
+    ] {
+        let fs = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        assert_eq!(
+            super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0)
+                .status,
+            super::FormulaStatementCaseStatus::Passed,
+            "{id}"
+        );
+        let text = std::fs::read_to_string(&fs.source_path).unwrap();
+        super::native_proof_intent_observation(&task272_proof_intent_source(&text).0).unwrap();
+    }
+    // Preserve the existing semantic consumer and prove its genuine unused-label bypass.
+    let fs = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_formula_statement_set_local_constant_take_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&fs.source_path).unwrap();
+    let modified = text.replace(
+        "let x be object;",
+        "let x be object; Unused: x = x; Unused: x = x;",
+    );
+    let frontend = metamorphic_guard::with_source(fs, &modified, || {
+        super::run_frontend(&config.workspace_root, fs, 0)
+    })
+    .unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, fs, &ast);
+    assert!(
+        super::source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env)
+            .is_empty()
+    );
+    let result = metamorphic_guard::with_source(fs, &modified, || {
+        super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0)
+    });
+    assert_eq!(result.status, super::FormulaStatementCaseStatus::Failed);
+    assert!(
+        result
+            .actual_detail_keys
+            .iter()
+            .any(|key| key.contains("native proof intent"))
+    );
+}
+
+#[test]
+fn task272_native_proof_intents_consume_real_inactive_narrowing_without_status_laundering() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    assert!(old.expectation.tags.is_empty());
+    let text = std::fs::read_to_string(&old.source_path).unwrap();
+    let frontend = super::run_frontend(&config.workspace_root, old, 0).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, old, &ast);
+    assert!(resolver.detail_keys.is_empty());
+    let handoff = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap();
+    let (intents, _) = handoff.check_proof_intents().unwrap();
+    let mut registration_proof = false;
+    for (site, _, status) in &intents {
+        let id = handoff
+            .source()
+            .nodes()
+            .node(site.node())
+            .unwrap()
+            .resolved_node
+            .unwrap();
+        let row = handoff
+            .source()
+            .source_node_entries()
+            .unwrap()
+            .find(|row| row.site() == id)
+            .unwrap();
+        if row.kind() == &K::TheoremItem
+            || row.kind() == &K::ReconsiderStatement
+            || row.kind() == &K::ReconsiderItem
+        {
+            assert_eq!(*status, S::Blocked);
+        }
+        if row.kind() == &K::ProofBlock && row.spelling().contains("reconsider") {
+            assert_eq!(*status, S::Blocked);
+        }
+        if row.kind() == &K::ProofBlock && !row.spelling().contains("reconsider") {
+            assert_eq!(*status, S::Pending);
+            registration_proof = true;
+        }
+    }
+    assert!(registration_proof);
+    assert_eq!(
+        super::native_proof_intent_observation(&handoff)
+            .unwrap()
+            .iter()
+            .filter(|key| key.as_str() == "conversion.reconsider.narrowing_requires_proof")
+            .count(),
+        1
+    );
+    assert_eq!(
+        old.expectation.stable_detail_key.as_deref(),
+        Some("conversion.reconsider.narrowing_requires_proof")
+    );
+    assert!(
+        !super::run_advanced_semantics_corpus(&config)
+            .unwrap()
+            .results
+            .iter()
+            .any(|result| result.id == old.id)
+    );
+    let unrelated = text.replace(
+        "reconsider k = s as keen set;",
+        "reconsider k = s as object; A: s = s by Unknown;",
+    );
+    let (handoff, _) = task272_proof_intent_source(&unrelated);
+    assert!(
+        handoff
+            .check_proof_intents()
+            .unwrap()
+            .0
+            .iter()
+            .any(|(_, _, status)| *status == S::Blocked)
+    );
+    assert!(
+        !super::native_proof_intent_observation(&handoff)
+            .unwrap()
+            .iter()
+            .any(|key| key == "conversion.reconsider.narrowing_requires_proof")
+    );
+    let pending = text.replace(
+        "reconsider k = s as keen set;",
+        "A: s = s; reconsider k = s as keen set by A;",
+    );
+    let (handoff, _) = task272_proof_intent_source(&pending);
+    assert!(
+        handoff
+            .check_proof_intents()
+            .unwrap()
+            .0
+            .iter()
+            .all(|(_, _, status)| *status == S::Pending)
+    );
+    assert!(
+        !super::native_proof_intent_observation(&handoff)
+            .unwrap()
+            .iter()
+            .any(|key| key == "conversion.reconsider.narrowing_requires_proof")
+    );
+}
+
+#[test]
+fn task272_native_proof_intents_preserve_layout_and_names_without_derived_oracles() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_proof_intents_001.miz"
+    );
+    for source in [
+        format!(":: layout\n{}", base.replace("let x be", "let\nx\tbe")),
+        base.replace("NativeProofIntents", "RenamedIntents")
+            .replace("x", "seed")
+            .replace("a", "alias")
+            .replace("A:", "Start:")
+            .replace("by A", "by Start"),
+    ] {
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert_eq!(intents.len(), 12);
+        assert!(intents.iter().all(|(_, _, status)| *status == S::Pending));
+        assert_eq!(labels.ids().len(), 4);
+        assert!(!labels.has_unresolved());
+        assert_eq!(
+            handoff
+                .scope()
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+        );
+        super::native_proof_intent_observation(&handoff).unwrap();
+    }
+}
+
+fn task272_proof_intent_inputs(
+    source: &str,
+) -> (
+    mizar_checker::typed_ast::TypedAst,
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_resolve::env::SymbolEnv,
+    mizar_resolve::names::ResolvedVariableScope,
+) {
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, 2_724_001);
+    assert_eq!(diagnostics, 0);
+    let original = super::type_elaboration::source_syntax_receiver(&ast, &module).unwrap();
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .unwrap();
+    (original, native, symbols, scope)
+}
+
+#[test]
+fn task272_native_proof_intents_refuse_foreign_roles_and_complete_legacy_case_omission() {
+    use mizar_checker::source_proof_local_declaration::{
+        SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::validate_source_proof_occurrences,
+    };
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_proof_intents_001.miz"
+    );
+    let (original, native, symbols, current) = task272_proof_intent_inputs(base);
+    SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &current)
+        .unwrap()
+        .check_proof_intents()
+        .unwrap();
+    for foreign in [
+        base.replace("then a = a by B;", "then x = x by B;"),
+        base.replace("N: now", "M: now").replace("by N", "by M"),
+        base.replace("A: a = a;", "A: x = x;"),
+        base.replace("B: a = a by A;", "B: a = a by A; set intervening = a;"),
+    ] {
+        let (coherent, native, symbols, scope) = task272_proof_intent_inputs(&foreign);
+        assert_eq!(coherent.source_id(), original.source_id());
+        assert_eq!(coherent.module_id(), original.module_id());
+        SourceProofLocalDeclarationProducer::build_bindings(&coherent, &native, &symbols, &scope)
+            .unwrap()
+            .check_proof_intents()
+            .unwrap();
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+    }
+    let (ast, module, _, _, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(base, 2_724_001);
+    assert_eq!(diagnostics, 0);
+    let legacy = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(&ast, &module, &symbols),
+    )
+    .unwrap();
+    validate_source_proof_occurrences(&native, &symbols, &legacy).unwrap();
+    assert_eq!(legacy, current);
+    SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &legacy)
+        .unwrap()
+        .check_proof_intents()
+        .unwrap();
+
+    let source = "theorem CaseProfile: for x being set holds x = x proof let x be set; A: x = x; per cases; case C: x = x; thus x = x by C; end; thus x = x by A; end;";
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, 2_724_001);
+    assert_eq!(diagnostics, 0);
+    let native = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+        .unwrap();
+    let legacy = mizar_resolve::labels::ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace,
+        owner.contribution(),
+        &native,
+    )
+    .unwrap()
+    .collect_with_proof_organization()
+    .unwrap();
+    assert_eq!(
+        legacy
+            .projections()
+            .iter()
+            .map(|entry| entry.primary_spelling())
+            .collect::<Vec<_>>(),
+        ["A"]
+    );
+    assert_eq!(
+        legacy
+            .references()
+            .iter()
+            .map(|entry| entry.site().spelling())
+            .collect::<Vec<_>>(),
+        ["A"]
+    );
+    let (handoff, _) = task272_proof_intent_source(source);
+    let (_, labels) = handoff.check_proof_intents().unwrap();
+    assert!(!labels.has_unresolved());
+    assert_eq!(labels.ids().len(), 2);
+    for (id, spelling) in labels.ids().iter().zip(["C", "A"]) {
+        let entry = labels.table().get(*id).unwrap();
+        assert_eq!(entry.site().spelling(), spelling);
+        let mizar_resolve::resolved_ast::LabelResolution::Resolved(target) = entry.resolution()
+        else {
+            panic!("authentic native Case citation");
+        };
+        assert_eq!(
+            labels
+                .index()
+                .iter()
+                .find(|entry| entry.origin_path() == target.origin())
+                .unwrap()
+                .primary_spelling(),
+            spelling
+        );
+    }
+}
+
+#[test]
+fn task272_native_proof_intents_preserve_annotated_compact_then_and_now_ownership() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_proof_intents_001.miz"
+    );
+    for (compact, now, then) in [
+        ("@trace(\"compact\")", "@trace(\"now\")", "@trace(\"then\")"),
+        ("@[simp]", "@[simp]", "@[simp]"),
+    ] {
+        let source = base
+            .replace("A: a = a;", &format!("{compact} A: a = a;"))
+            .replace("N: now", &format!("{now} N: now"))
+            .replace("then a = a by B;", &format!("{then} then a = a by B;"));
+
+        let (handoff, _) = task272_proof_intent_source(&source);
+        let rows = handoff
+            .source()
+            .source_node_entries()
+            .unwrap()
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rows.iter()
+                .filter(|row| row.kind() == &K::AnnotatedStatement)
+                .count(),
+            3
+        );
+        let (intents, labels) = handoff.check_proof_intents().unwrap();
+        assert_eq!(intents.len(), 12);
+        assert!(intents.iter().all(|(_, _, status)| *status == S::Pending));
+        assert!(!labels.has_unresolved());
+        assert_eq!(
+            labels
+                .ids()
+                .iter()
+                .map(|id| labels.table().get(*id).unwrap().site().spelling())
+                .collect::<Vec<_>>(),
+            ["A", "B", "A", "N"]
+        );
+        for ordinal in [4, 5, 7] {
+            let node = handoff
+                .source()
+                .nodes()
+                .node(intents[ordinal].0.node())
+                .unwrap()
+                .resolved_node
+                .unwrap();
+            let row = rows.iter().find(|row| row.site() == node).unwrap();
+            let parent = rows
+                .iter()
+                .find(|candidate| Some(candidate.site()) == row.parent())
+                .unwrap();
+            assert_eq!(parent.kind(), &K::AnnotatedStatement);
+            assert!(intents[ordinal].1.is_none());
+        }
+        assert_eq!(
+            handoff
+                .scope()
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+        );
+        let observed = super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(
+            observed
+                .iter()
+                .find(|key| key.starts_with("then.7."))
+                .unwrap()
+                .contains("previous=Some((CompactStatement,")
+        );
+    }
+}

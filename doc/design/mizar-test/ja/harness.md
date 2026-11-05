@@ -20,6 +20,14 @@ fresh Typed 設置・Resolved replay を実行し、元の本体・型 site、�
 replay・freshness を伴う強い smoke は未完のままである。
 
 
+## Native proof intents
+
+AS domain `checker.native_proof_intents` は実 native 設置/replay・元 intent の site/tail/status・
+実局所 label 解決を消費する。Pass は観測だけで証明受理ではない。既存 FS organization/
+Set-Take の意味論検査を維持し、native 経路も要求する。旧 omitted-AS seed は非 active の
+まま、全ソース control は実変換の拒否/Missing/diagnostic と同じ theorem の Blocked 祖先を
+要求する。witness 照合・型付き goal・置換結果は Task 272B に残す。
+
 ## Native conversion classification
 
 AS の対応 domain `checker.native_conversions` は実 native build・fresh Typed/Resolved

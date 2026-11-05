@@ -1806,6 +1806,45 @@ const INLINE_CLOSURE_REQUEST_ID: &str = "pass_advanced_semantics_inline_closure_
 
 const NATIVE_CONVERSION_ID: &str = "pass_advanced_semantics_reconsider_classification_001";
 
+const NATIVE_PROOF_INTENT_ID: &str = "pass_advanced_semantics_native_proof_intents_001";
+
+fn native_proof_intents_admitted(root: &Path, case: &TestCase) -> bool {
+    let path = format!("tests/miz/pass/theorems/{NATIVE_PROOF_INTENT_ID}.miz");
+    case.id.0 == NATIVE_PROOF_INTENT_ID
+        && case.expectation.id == case.id
+        && case.expectation.schema_version == 1
+        && case.expectation.domain == "checker.native_proof_intents"
+        && case.expectation.profiles.as_slice() == ["fast"]
+        && case
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq(["spec.en.15.statements.native_proof_intents.metadata"])
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::Elaboration)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
 fn native_conversions_admitted(root: &Path, case: &TestCase) -> bool {
     let path = format!("tests/miz/pass/variables/{NATIVE_CONVERSION_ID}.miz");
     case.id.0 == NATIVE_CONVERSION_ID
@@ -2184,6 +2223,207 @@ fn native_conversion_handoff(
         .ok_or_else(invalid)
 }
 
+fn native_proof_intent_observation(
+    handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+) -> Result<Vec<String>, String> {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::{CoercionJustification, CoercionRequestKind, TypeFactQueryStatus},
+        typed_ast::{CoercionStatus, TypedSiteRef},
+    };
+    use mizar_resolve::resolved_ast::LabelResolution;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let invalid = || "native proof intent does not match original source".to_owned();
+    let (intents, labels) = handoff.check_proof_intents().map_err(|_| invalid())?;
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .ok_or_else(invalid)?
+        .collect::<Vec<_>>();
+    let expected = rows
+        .iter()
+        .copied()
+        .filter(|row| {
+            matches!(
+                row.kind(),
+                K::TheoremItem
+                    | K::ProofBlock
+                    | K::LetStatement
+                    | K::AssumptionStatement
+                    | K::CompactStatement
+                    | K::ConclusionStatement
+                    | K::TakeStatement
+                    | K::ReconsiderStatement
+                    | K::ReconsiderItem
+                    | K::CaseItem
+                    | K::CaseReasoningStatement
+                    | K::ConsiderStatement
+                    | K::GivenStatement
+                    | K::HerebyStatement
+                    | K::IterativeEqualityStatement
+                    | K::IterativeEqualityStep
+                    | K::NowStatement
+                    | K::SetStatement
+                    | K::StatementItem
+                    | K::SupposeItem
+                    | K::ThenStatement
+            )
+        })
+        .collect::<Vec<_>>();
+    if expected.len() != intents.len() || intents.is_empty() || !labels.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    let source_site = |site: &TypedSiteRef| {
+        handoff
+            .source()
+            .nodes()
+            .node(site.node())
+            .and_then(|node| node.resolved_node)
+    };
+    let mut observations = Vec::new();
+    for (ordinal, ((site, justification, status), row)) in intents.iter().zip(&expected).enumerate()
+    {
+        if !matches!(site, TypedSiteRef::Node(_)) || source_site(site) != Some(row.site()) {
+            return Err(invalid());
+        }
+        let direct = rows
+            .iter()
+            .copied()
+            .filter(|child| {
+                child.parent() == Some(row.site())
+                    && matches!(child.kind(), K::JustificationClause | K::ProofBlock)
+            })
+            .collect::<Vec<_>>();
+        if direct.len() > 1
+            || justification.as_ref().and_then(source_site)
+                != direct.first().map(|child| child.site())
+        {
+            return Err(invalid());
+        }
+        let parent = row
+            .parent()
+            .and_then(|id| rows.iter().copied().find(|row| row.site() == id));
+        observations.push(format!(
+            "intent.{ordinal}.kind={:?}.parent={:?}.order={}.justification={:?}.status={status:?}",
+            row.kind(),
+            parent.map(|row| row.kind()),
+            row.child_ordinal(),
+            direct.first().map(|row| row.kind())
+        ));
+        if row.kind() == &K::ThenStatement {
+            let mut body_statement = *row;
+            while let Some(parent) = body_statement
+                .parent()
+                .and_then(|id| rows.iter().copied().find(|row| row.site() == id))
+            {
+                if !matches!(
+                    parent.kind(),
+                    K::AnnotatedStatement | K::StatementItem | K::ThenStatement
+                ) {
+                    break;
+                }
+                body_statement = parent;
+            }
+            let previous = rows
+                .iter()
+                .copied()
+                .filter(|candidate| {
+                    candidate.parent() == body_statement.parent()
+                        && candidate.child_ordinal() < body_statement.child_ordinal()
+                        && !matches!(candidate.kind(), K::Token(_))
+                })
+                .max_by_key(|candidate| candidate.child_ordinal());
+            observations.push(format!(
+                "then.{ordinal}.previous={:?}",
+                previous.map(|row| (row.kind(), row.site()))
+            ));
+        }
+    }
+    for id in labels.ids() {
+        let entry = labels.table().get(*id).ok_or_else(invalid)?;
+        let reference = rows
+            .iter()
+            .copied()
+            .find(|row| row.site() == entry.site().node())
+            .ok_or_else(invalid)?;
+        if reference.range() != entry.site().range() || reference.kind() != &K::Reference {
+            return Err(invalid());
+        }
+        let target = match entry.resolution() {
+            LabelResolution::Resolved(target) => {
+                let declaration = labels
+                    .index()
+                    .iter()
+                    .find(|label| label.origin_path() == target.origin())
+                    .ok_or_else(invalid)?;
+                if target.range() != entry.site().range() {
+                    return Err(invalid());
+                }
+                format!(
+                    "{}:{:?}",
+                    declaration.primary_spelling(),
+                    declaration.origin()
+                )
+            }
+            LabelResolution::Unresolved(_) => "unresolved".to_owned(),
+            _ => return Err(invalid()),
+        };
+        observations.push(format!(
+            "citation.{}.spelling={}.target={target}",
+            id.index(),
+            entry.site().spelling()
+        ));
+    }
+    if rows.iter().any(|row| row.kind() == &K::ReconsiderItem) {
+        let (requests, checked, queries) = handoff.check_conversions().map_err(|_| invalid())?;
+        for request in &requests {
+            let Some(row) = source_site(&request.site)
+                .and_then(|id| rows.iter().copied().find(|row| row.site() == id))
+            else {
+                return Err(invalid());
+            };
+            let rejected = checked.coercions().iter().any(|(_, result)| {
+                result.site == request.site
+                    && result.status == CoercionStatus::Rejected
+                    && result.obligation.is_none()
+            });
+            let missing = queries.iter().any(|query| {
+                query.query().subject == request.site
+                    && query.status() == TypeFactQueryStatus::Missing
+            });
+            let diagnostic = checked.diagnostics().iter().any(|(_, diagnostic)| {
+                diagnostic.owner.as_ref() == Some(&request.site)
+                    && diagnostic.source_range == request.source_range
+                    && diagnostic.message_key == "type.narrowing_requires_proof"
+            });
+            if row.kind() == &K::ReconsiderItem
+                && request.kind == CoercionRequestKind::Narrowing
+                && request.justification == CoercionJustification::Omitted
+                && rejected
+                && missing
+                && diagnostic
+            {
+                let mut current = Some(row.site());
+                while let Some(site) = current {
+                    if let Some(index) = expected
+                        .iter()
+                        .position(|candidate| candidate.site() == site)
+                        && intents[index].2 != S::Blocked
+                    {
+                        return Err(invalid());
+                    }
+                    current = rows
+                        .iter()
+                        .find(|candidate| candidate.site() == site)
+                        .and_then(|row| row.parent());
+                }
+                observations.push("conversion.reconsider.narrowing_requires_proof".to_owned());
+            }
+        }
+    }
+    Ok(observations)
+}
+
 fn native_conversion_observation(
     handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
 ) -> Result<Vec<String>, String> {
@@ -2508,6 +2748,21 @@ fn validate_step5c11_registration_inventory(
     if plan
         .cases
         .iter()
+        .filter(|case| native_proof_intents_admitted(root, case))
+        .count()
+        != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            root,
+            "advanced_semantics",
+            "E-ADVANCED-SEMANTICS-INVENTORY",
+            format!("advanced_semantics.inventory.{NATIVE_PROOF_INTENT_ID}"),
+            "native proof intents require exactly one admitted source/sidecar pair",
+        ));
+    }
+    if plan
+        .cases
+        .iter()
         .filter(|case| native_conversions_admitted(root, case))
         .count()
         != 1
@@ -2574,6 +2829,15 @@ fn validate_step5c11_registration_inventory(
             || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
             || case.id.0 == INLINE_CLOSURE_REQUEST_ID
             || case.expectation.id.0 == INLINE_CLOSURE_REQUEST_ID
+            || case.id.0 == NATIVE_PROOF_INTENT_ID
+            || case.expectation.id.0 == NATIVE_PROOF_INTENT_ID
+            || case
+                .source_path
+                .file_stem()
+                .is_some_and(|name| name == NATIVE_PROOF_INTENT_ID)
+            || case.expectation_path.file_name().is_some_and(|name| {
+                name == format!("{NATIVE_PROOF_INTENT_ID}.expect.toml").as_str()
+            })
             || case.id.0 == NATIVE_CONVERSION_ID
             || case.expectation.id.0 == NATIVE_CONVERSION_ID
             || case
@@ -2601,6 +2865,7 @@ fn validate_step5c11_registration_inventory(
             && !step5c13_overload_admitted(root, case)
             && !inline_closure_requests_admitted(root, case)
             && !native_conversions_admitted(root, case)
+            && !native_proof_intents_admitted(root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
                 "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
@@ -2631,11 +2896,34 @@ pub fn run_advanced_semantics_corpus(
                     || step5c13_overload_admitted(&root, case)
                     || inline_closure_requests_admitted(&root, case)
                     || native_conversions_admitted(&root, case)
+                    || native_proof_intents_admitted(&root, case)
             })
             .enumerate()
         {
             let result = run_frontend(&root, case, ordinal).and_then(|output| {
-                if native_conversions_admitted(&root, case) {
+                if native_proof_intents_admitted(&root, case) {
+                    if !output.diagnostics.is_empty() {
+                        return Err("native proof intent frontend diagnostics".to_owned());
+                    }
+                    let ast = output
+                        .ast
+                        .ok_or_else(|| "native proof intent missing AST".to_owned())?;
+                    let resolver = resolver_symbol_collection(&root, case, &ast);
+                    if !resolver.detail_keys.is_empty() {
+                        return Err(resolver.detail_keys.join(","));
+                    }
+                    let handoff = native_conversion_handoff(&ast, &resolver.module, &resolver.env)?;
+                    if !handoff
+                        .source()
+                        .source_node_entries()
+                        .is_some_and(|mut rows| {
+                            rows.any(|row| row.kind() == &mizar_syntax::SurfaceNodeKind::TheoremItem)
+                        })
+                    {
+                        return Err("native proof intent missing theorem source".to_owned());
+                    }
+                    native_proof_intent_observation(&handoff).map(|_| Vec::new())
+                } else if native_conversions_admitted(&root, case) {
                     source_native_conversions(&root, case, output).map(|_| Vec::new())
                 } else if inline_closure_requests_admitted(&root, case) {
                     source_inline_closure_requests(&root, case, output).map(|_| Vec::new())

@@ -84,6 +84,15 @@ Request-local type roles use mapped original typed nodes; results join by site.
 Queries use actual current-request builtin facts; written declarations/tails
 supply no proof. Unowned namespace conversion subtrees refuse.
 
+The parameterless `check_proof_intents()` returns actual original Typed sites,
+optional direct written justification sites and `SourceProofIntentStatus::{Pending, Blocked}`
+with genuine `LabelResolutionResult`. Pending is unfinished source intent, including
+module wrappers and separate registration proofs; it creates no logical obligation.
+Blocked is limited to unresolved local citations, real rejected/blocked conversions
+or an absent adjacent Then premise. Duplicate labels and unsupported references refuse.
+The immutable graph retains Then/body/branch associations; no new graph or slot is stored.
+Checked Task180 tables and logical goal/witness/substitution elaboration remain separate.
+
 ## Descendant Set-name binding boundary
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` consumes
@@ -629,6 +638,7 @@ parent-owned.
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofIntentStatus` | `#[non_exhaustive]`; callers must handle later source-request states. |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-local declaration forms. |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourceProofLocalDeclarationError` | `#[non_exhaustive]`; callers must not exhaustively match validation or installation failures. |

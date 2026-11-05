@@ -138,6 +138,483 @@ fn private_theorem_owner_opt_in_collects_real_source_label_and_citation() {
 }
 
 #[test]
+fn native_proof_organization_preserves_original_labels_and_four_legacy_profiles() {
+    let text = concat!(
+        "theorem Earlier: thesis;\ntheorem Use: thesis proof\n",
+        "let x be set such that L1: x = x and L2: x = x;\n",
+        "A: x = x;\nthen x = x;\nreconsider y = x as object by A;\n",
+        "reconsider z = x as object proof D: x = x; thus Q: x = x by D, A; end;\n",
+        "per cases;\ncase C: x = x; thus R: x = x by C, L1, L2, Earlier; end;\n",
+        "case E: x = x; thus x = x by C, R, E; end;\n",
+        "thus x = x by Q, R;\nend;\n",
+    );
+    let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(text);
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "Use")
+        .unwrap();
+    let collector = ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace.clone(),
+        owner.contribution(),
+        &native,
+    )
+    .unwrap();
+    for (legacy, names, ordinal) in [
+        (collector.collect().unwrap(), vec!["A"], 2),
+        (
+            collector.collect_with_let_conditions().unwrap(),
+            vec!["A"],
+            2,
+        ),
+        (
+            collector.collect_with_proof_organization().unwrap(),
+            vec!["A"],
+            6,
+        ),
+        (
+            collector.collect_with_theorem_owners(&symbols).unwrap(),
+            vec!["Use", "A"],
+            2,
+        ),
+    ] {
+        assert_eq!(
+            legacy
+                .projections()
+                .iter()
+                .map(LabelProjection::primary_spelling)
+                .collect::<Vec<_>>(),
+            names
+        );
+        assert_eq!(
+            legacy
+                .references()
+                .iter()
+                .map(|reference| (reference.site().spelling(), reference.ordinal()))
+                .collect::<Vec<_>>(),
+            [("Q", ordinal), ("R", ordinal)]
+        );
+    }
+    let collection = collector
+        .collect_with_native_proof_organization(&symbols)
+        .unwrap();
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        ["Earlier", "Use", "L1", "L2", "A", "D", "Q", "C", "R", "E"]
+    );
+    assert_eq!(
+        collection
+            .references()
+            .iter()
+            .map(|reference| reference.site().spelling())
+            .collect::<Vec<_>>(),
+        [
+            "A", "D", "A", "C", "L1", "L2", "Earlier", "C", "R", "E", "Q", "R"
+        ]
+    );
+    let resolved = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &namespace,
+        collection.references(),
+    );
+    for (index, reference) in collection.references().iter().enumerate() {
+        let original = ast
+            .node_views()
+            .find(|node| {
+                node.range() == reference.site().range()
+                    && node.kind() == &SurfaceNodeKind::Reference
+            })
+            .unwrap();
+        assert_eq!(
+            native.resolved_node_for(original.id()),
+            Some(reference.site().node())
+        );
+        assert_eq!(
+            reference.origin().anchor(),
+            &SourceAnchor::Range(original.range())
+        );
+        let entry = resolved.table().get(resolved.ids()[index]).unwrap();
+        assert_eq!(entry.site(), reference.site());
+        assert_eq!(entry.origin(), reference.origin());
+        if matches!(index, 7 | 8 | 10 | 11) {
+            assert_unresolved_label(
+                &resolved,
+                index,
+                reference.expectation(),
+                reference.site().spelling(),
+            );
+        } else {
+            let target = collection
+                .projections()
+                .iter()
+                .find(|projection| projection.primary_spelling() == reference.site().spelling())
+                .unwrap();
+            assert_resolved_label(&resolved, index, target.origin_path().as_str());
+        }
+    }
+    assert!(
+        collection
+            .references()
+            .windows(2)
+            .all(|pair| pair[0].ordinal() <= pair[1].ordinal())
+    );
+}
+
+#[test]
+fn native_proof_organization_keeps_proofless_owner_order_and_source_authentication() {
+    let text = concat!(
+        "theorem Early: thesis;\ntheorem Self: thesis by Early, Self, Late;\n",
+        "theorem Late: thesis;\ntheorem Use: thesis proof thus thesis by Early, Self, Late; end;\n",
+    );
+    let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(text);
+    let rebuilt = crate::symbols::validated_source_symbol_ast(&native, &symbols).unwrap();
+    native.validate_against(&rebuilt, &module).unwrap();
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "Use")
+        .unwrap();
+    let collector = ProofLabelSourceCollector::new(
+        &rebuilt,
+        &module,
+        namespace.clone(),
+        owner.contribution(),
+        &native,
+    )
+    .unwrap();
+    let old = collector.collect_with_theorem_owners(&symbols).unwrap();
+    assert_eq!(
+        old.projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        ["Use"]
+    );
+    let collection = collector
+        .collect_with_native_proof_organization(&symbols)
+        .unwrap();
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        ["Early", "Self", "Late", "Use"]
+    );
+    assert_eq!(
+        collection
+            .references()
+            .iter()
+            .map(|reference| (reference.site().spelling(), reference.ordinal()))
+            .collect::<Vec<_>>(),
+        [
+            ("Early", 2),
+            ("Self", 2),
+            ("Late", 2),
+            ("Early", 4),
+            ("Self", 4),
+            ("Late", 4)
+        ]
+    );
+    let resolved = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &namespace,
+        collection.references(),
+    );
+    for (index, reference) in collection.references().iter().enumerate() {
+        if matches!(index, 1 | 2) {
+            assert_unresolved_label(
+                &resolved,
+                index,
+                reference.expectation(),
+                reference.site().spelling(),
+            );
+        } else {
+            let target = collection
+                .projections()
+                .iter()
+                .find(|projection| projection.primary_spelling() == reference.site().spelling())
+                .unwrap();
+            assert_resolved_label(&resolved, index, target.origin_path().as_str());
+        }
+    }
+    let (other, _, _, other_symbols, other_native) =
+        parsed_private_theorem_fixture("theorem Foreign: thesis;");
+    assert!(crate::symbols::validated_source_symbol_ast(&native, &other_symbols).is_err());
+    assert!(crate::symbols::validated_source_symbol_ast(&other_native, &symbols).is_err());
+    assert!(
+        ProofLabelSourceCollector::new(&other, &module, namespace, owner.contribution(), &native)
+            .is_err()
+    );
+    native.validate_against(&ast, &module).unwrap();
+}
+
+#[test]
+fn native_proof_organization_keeps_now_hereby_suppose_and_hence_scopes_distinct() {
+    let text = concat!(
+        "theorem T: thesis proof\nN: now I: thesis; thus thesis by I, N; end;\n",
+        "hereby thus H: thesis by N; end;\nper cases;\n",
+        "suppose S: thesis; thus thesis by S, N; end;\n",
+        "suppose R: thesis; thus thesis by S, R; end;\nhence thesis by N, H; end;\n",
+    );
+    let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(text);
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "T")
+        .unwrap();
+    let collection = ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace.clone(),
+        owner.contribution(),
+        &native,
+    )
+    .unwrap()
+    .collect_with_native_proof_organization(&symbols)
+    .unwrap();
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        ["T", "N", "I", "H", "S", "R"]
+    );
+    assert_eq!(
+        collection
+            .references()
+            .iter()
+            .map(|reference| reference.site().spelling())
+            .collect::<Vec<_>>(),
+        ["I", "N", "N", "S", "N", "S", "R", "N", "H"]
+    );
+    let resolved = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &namespace,
+        collection.references(),
+    );
+    for (index, reference) in collection.references().iter().enumerate() {
+        if matches!(index, 1 | 5 | 8) {
+            assert_unresolved_label(
+                &resolved,
+                index,
+                reference.expectation(),
+                reference.site().spelling(),
+            );
+        } else {
+            let target = collection
+                .projections()
+                .iter()
+                .find(|projection| projection.primary_spelling() == reference.site().spelling())
+                .unwrap();
+            assert_resolved_label(&resolved, index, target.origin_path().as_str());
+        }
+    }
+}
+
+#[test]
+fn native_proof_organization_retains_whole_old_seed_without_registration_owner() {
+    let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(include_str!(
+        "../../../../tests/miz/fail/types/fail_types_reconsider_omitted_justification_001.miz"
+    ));
+    assert!(
+        ast.node_views()
+            .any(|node| node.kind() == &SurfaceNodeKind::RegistrationBlockItem)
+    );
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "ReconsiderOmittedJustification")
+        .unwrap();
+    let collection =
+        ProofLabelSourceCollector::new(&ast, &module, namespace, owner.contribution(), &native)
+            .unwrap()
+            .collect_with_native_proof_organization(&symbols)
+            .unwrap();
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        ["ReconsiderOmittedJustification"]
+    );
+    assert!(collection.references().is_empty());
+    assert_eq!(
+        collection.projections()[0].origin().source_id(),
+        ast.source_id
+    );
+    assert!(
+        collection.projections()[0].declaration_range().start
+            > ast
+                .node_views()
+                .find(|node| node.kind() == &SurfaceNodeKind::RegistrationBlockItem)
+                .unwrap()
+                .range()
+                .end
+    );
+}
+
+#[test]
+fn native_proof_organization_refuses_richer_citations_without_changing_old_profiles() {
+    for reference in ["m.A", "m.{A}", "m.*", "A[set]", "computation(f(0))"] {
+        let text = format!("theorem T: thesis proof A: thesis; thus thesis by {reference}; end;");
+        let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(&text);
+        let owner = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.primary_spelling() == "T")
+            .unwrap();
+        let collector =
+            ProofLabelSourceCollector::new(&ast, &module, namespace, owner.contribution(), &native)
+                .unwrap();
+        assert!(
+            collector
+                .collect_with_native_proof_organization(&symbols)
+                .is_err(),
+            "{reference}"
+        );
+        for legacy in [
+            collector.collect(),
+            collector.collect_with_let_conditions(),
+            collector.collect_with_proof_organization(),
+            collector.collect_with_theorem_owners(&symbols),
+        ] {
+            assert!(legacy.unwrap().references().is_empty(), "{reference}");
+        }
+    }
+}
+
+#[test]
+fn native_proof_organization_annotations_preserve_wrapped_scope_and_clocks() {
+    let plain = "theorem T: thesis proof A: thesis; then thesis by A; thus Z: thesis by A; thus thesis by Z; end;";
+    let annotated = concat!(
+        "theorem T: thesis proof @[simp] @custom(flag) A: thesis;\n",
+        "@proof_hint(timeout: 1) then thesis by A;\n",
+        "@custom(note) thus Z: thesis by A; @custom(final) thus thesis by Z; end;",
+    );
+    for (index, text) in [plain, annotated].into_iter().enumerate() {
+        let (ast, module, namespace, symbols, native) = parsed_private_theorem_fixture(text);
+        let owner = symbols.symbols().iter().next().unwrap();
+        let collector = ProofLabelSourceCollector::new(
+            &ast,
+            &module,
+            namespace.clone(),
+            owner.contribution(),
+            &native,
+        )
+        .unwrap();
+        let collection = collector
+            .collect_with_native_proof_organization(&symbols)
+            .unwrap();
+        assert_eq!(
+            collection
+                .projections()
+                .iter()
+                .map(LabelProjection::primary_spelling)
+                .collect::<Vec<_>>(),
+            ["T", "A", "Z"]
+        );
+        assert_eq!(
+            collection
+                .references()
+                .iter()
+                .map(|reference| (reference.site().spelling(), reference.ordinal()))
+                .collect::<Vec<_>>(),
+            [("A", 3), ("A", 4), ("Z", 5)]
+        );
+        let resolved = LabelResolver::new(collection.projections()).resolve(
+            &module,
+            &namespace,
+            collection.references(),
+        );
+        assert!(!resolved.has_unresolved());
+        if index == 1 {
+            for old in [
+                collector.collect(),
+                collector.collect_with_let_conditions(),
+                collector.collect_with_proof_organization(),
+            ] {
+                let old = old.unwrap();
+                assert!(old.projections().is_empty() && old.references().is_empty());
+            }
+            let old = collector.collect_with_theorem_owners(&symbols).unwrap();
+            assert_eq!(old.projections().len(), 1);
+            assert!(old.references().is_empty());
+            let wrapper = ast
+                .node_views()
+                .find(|row| row.kind() == &SurfaceNodeKind::AnnotatedStatement)
+                .unwrap();
+            for (target, wrong_kind) in [
+                (wrapper.children()[0], SurfaceNodeKind::Proposition),
+                (
+                    *wrapper.children().last().unwrap(),
+                    SurfaceNodeKind::TypeExpression,
+                ),
+            ] {
+                let mut builder = SurfaceAstBuilder::new(ast.source_id);
+                let mut ids = Vec::new();
+                for (index, row) in ast.nodes().iter().enumerate() {
+                    let kind = if index == target.index() {
+                        &wrong_kind
+                    } else {
+                        &row.kind
+                    };
+                    ids.push(if let SurfaceNodeKind::Token(token) = kind {
+                        builder.add_token(token.kind, token.text.clone(), row.range)
+                    } else {
+                        builder.add_node(
+                            kind.clone(),
+                            row.range,
+                            row.children
+                                .iter()
+                                .map(|child| ids[child.index()])
+                                .collect(),
+                        )
+                    });
+                }
+                let changed = builder.finish(Some(ids[ast.root().unwrap().index()]), None);
+                assert!(native.validate_against(&changed, &module).is_err());
+                let changed_native = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+                let shells = crate::declarations::DeclarationShellCollector::new(&changed, &module)
+                    .collect();
+                let collected = crate::symbols::SignatureProjectionExtractor::new(
+                    &changed,
+                    &shells,
+                    namespace.clone(),
+                )
+                .collect(&module);
+                assert!(collected.diagnostics().is_empty());
+                assert!(
+                    crate::symbols::validated_source_symbol_ast(&changed_native, collected.env())
+                        .is_ok()
+                );
+                let changed_collector = ProofLabelSourceCollector::new(
+                    &changed,
+                    &module,
+                    namespace.clone(),
+                    owner.contribution(),
+                    &changed_native,
+                )
+                .unwrap();
+                assert!(
+                    changed_collector
+                        .collect_with_native_proof_organization(collected.env())
+                        .is_err()
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn theorem_owner_requires_marker_visibility_and_export_correspondence() {
     let fixture = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
@@ -4497,7 +4974,8 @@ fn source_public_theorem_formula_candidates_refuse_malformed_written_nodes_after
         .unwrap()
         .child_views()
         .find(|item| {
-            exact_theorem_owner(*item, true).is_some_and(|owner| owner.spelling == "UsePriv1")
+            exact_theorem_owner(*item, true, false)
+                .is_some_and(|owner| owner.spelling == "UsePriv1")
         })
         .unwrap();
     let children = owner.child_views().collect::<Vec<_>>();
@@ -4742,7 +5220,8 @@ fn source_theorem_label_reference_candidates_refuse_incomplete_coverage() {
         .unwrap()
         .child_views()
         .find(|item| {
-            exact_theorem_owner(*item, true).is_some_and(|owner| owner.spelling == "UsePriv1")
+            exact_theorem_owner(*item, true, false)
+                .is_some_and(|owner| owner.spelling == "UsePriv1")
         })
         .unwrap();
     assert_eq!(owner.range().source_id, ast.source_id);

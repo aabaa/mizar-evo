@@ -54,6 +54,11 @@ checker owner and [native classification consumer](./mizar-test/en/harness.md#na
 This is request/result metadata only; general proof-skeleton pending/blocked
 consumption and the inactive omitted-justification seed remain with Task 272.
 
+`spec.en.15.statements.native_proof_intents.metadata` covers retained source
+requests and actual local-label/status observation through the same checker owner
+and [native proof-intent consumer](./mizar-test/en/harness.md#native-proof-intents).
+Typed witness/goal/substitution replay remains Task 272B; no proof acceptance follows.
+
 ## Coverage Matrix
 
 | Spec chapter | Design coverage | Status | Follow-up |

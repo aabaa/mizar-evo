@@ -22,6 +22,16 @@ of requests grants no expanded result, proof acceptance or semantic substitution
 coverage; the stronger MT10-AS guard/replay/freshness smoke remains deferred.
 
 
+## Native proof intents
+
+The mapped AS domain `checker.native_proof_intents` consumes genuine native
+installation/replay, source intent sites/tails/statuses and real local label resolution.
+Pass is an observation, never accepted proof. Existing FS organization/Set-Take
+semantic checks remain authoritative and additionally require the native path.
+The old omitted-AS seed stays inactive; its whole-source control requires actual
+conversion rejection/Missing/diagnostic plus the same blocked theorem ancestry.
+Witness matching, typed goals and substitution results remain Task 272B.
+
 ## Native conversion classification
 
 The mapped AS domain `checker.native_conversions` consumes genuine native build,

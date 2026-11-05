@@ -35,8 +35,8 @@ BinderExpression	expression	b	checker Task 257
 BreakStatement	referenced	referenced	existing source_* producer
 BuiltinPredicateApplication	referenced	referenced	existing source_* producer
 BulkReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
-CaseItem	proof-skeleton	b	checker Task 272 / Task 269
-CaseReasoningStatement	proof-skeleton	b	checker Task 272 / Task 269
+CaseItem	proof-skeleton	b	source_proof_local_declaration::source_case_item_roles / Task 269
+CaseReasoningStatement	proof-skeleton	b	source_proof_local_declaration::source_case_reasoning_roles / Task 269
 ChoiceTerm	referenced	referenced	existing source_* producer
 ClaimBlockItem	referenced	referenced	existing source_* producer
 CoherenceCondition	referenced	referenced	existing source_* producer
@@ -48,7 +48,7 @@ ComputationOption	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT
 ConclusionStatement	referenced	referenced	existing source_* producer
 ConditionList	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ConditionalRegistration	referenced	referenced	existing source_* producer
-ConsiderStatement	proof-skeleton	b	checker Task 272 / Task 269
+ConsiderStatement	proof-skeleton	b	source_proof_local_declaration::source_consider_roles / Task 269
 ContinueStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 CorrectnessCondition	referenced	referenced	existing source_* producer
 DefinitionBlockItem	referenced	referenced	existing source_* producer
@@ -71,10 +71,10 @@ FunctorDefinition	referenced	referenced	source_functor_definition
 FunctorPattern	referenced	referenced	existing source_* producer
 FunctorRedefinition	definition	b	checker Task 279 / Task 270
 FunctorialRegistration	referenced	referenced	existing source_* producer
-GivenStatement	proof-skeleton	b	checker Task 272 / Task 269
+GivenStatement	proof-skeleton	b	source_proof_local_declaration::source_given_roles / Task 269
 GroupedReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 GroupedReferenceItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
-HerebyStatement	proof-skeleton	b	checker Task 272 / Task 269
+HerebyStatement	proof-skeleton	b	source_proof_local_declaration::source_hereby_roles / Task 269
 IfStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
 ImportAliasDecl	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 ImportItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
@@ -87,8 +87,8 @@ InlinePredicateDefinition	definition	b	source_proof_local_declaration::source_in
 IsAssertion	referenced	referenced	existing source_* producer
 ItTerm	referenced	referenced	existing source_* producer
 ItemList	referenced	referenced	existing source_* producer
-IterativeEqualityStatement	proof-skeleton	b	checker Task 272 / Task 269
-IterativeEqualityStep	proof-skeleton	b	checker Task 272 / Task 269
+IterativeEqualityStatement	proof-skeleton	b	source_proof_local_declaration::source_iterative_equality_roles / Task 269
+IterativeEqualityStep	proof-skeleton	b	source_proof_local_declaration::source_iterative_equality_step_roles / Task 269
 JustificationClause	referenced	referenced	existing source_* producer
 LemmaItem	referenced	referenced	existing source_* producer
 LetStatement	referenced	referenced	existing source_* producer
@@ -107,7 +107,7 @@ ModulePath	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 NamespacePath	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 NotationAlias	referenced	referenced	existing source_* producer
 NotationPattern	referenced	referenced	existing source_* producer
-NowStatement	proof-skeleton	b	checker Task 272 / Task 269
+NowStatement	proof-skeleton	b	source_proof_local_declaration::source_now_roles / Task 269
 NumeralTerm	referenced	referenced	existing source_* producer
 OperatorDeclaration	referenced	referenced	existing source_* producer
 ParameterPrefix	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
@@ -152,17 +152,17 @@ Root	referenced	referenced	existing source_* producer
 SelectorAccess	referenced	referenced	existing source_* producer
 SetComprehension	referenced	referenced	existing source_* producer
 SetEnumeration	referenced	referenced	existing source_* producer
-SetStatement	proof-skeleton	b	checker Task 272 / Task 269
+SetStatement	proof-skeleton	b	source_proof_local_declaration::source_set_roles / Task 269
 SnapshotStatement	referenced	referenced	existing source_* producer
 StandaloneDiagnosticAnnotation	annotation	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
-StatementItem	proof-skeleton	b	checker Task 272 / Task 269
+StatementItem	proof-skeleton	b	source_proof_local_declaration::source_statement_item_roles / Task 269
 StructureConstructor	definition	b	source_structure
 StructureDefinition	referenced	referenced	existing source_* producer
 StructureField	referenced	referenced	existing source_* producer
 StructurePattern	referenced	referenced	existing source_* producer
 StructureProperty	definition	b	source_property_implementation
 StructureUpdate	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT)
-SupposeItem	proof-skeleton	b	checker Task 272 / Task 269
+SupposeItem	proof-skeleton	b	source_proof_local_declaration::source_suppose_item_roles / Task 269
 TakeStatement	referenced	referenced	existing source_* producer
 TemplateArgument	referenced	referenced	existing source_* producer
 TemplateArguments	referenced	referenced	existing source_* producer
@@ -175,7 +175,7 @@ TermExpression	referenced	referenced	existing source_* producer
 TermList	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 TermPlaceholder	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 TermReference	referenced	referenced	existing source_* producer
-ThenStatement	proof-skeleton	b	checker Task 272 / Task 269
+ThenStatement	proof-skeleton	b	source_proof_local_declaration::source_then_roles / Task 269
 TheoremItem	referenced	referenced	existing source_* producer
 Token	referenced	referenced	existing source_* producer
 TypeArguments	referenced	referenced	existing source_* producer

@@ -592,7 +592,17 @@ fn formula_statement_detail_keys(
         } else {
             check_formula_ast(&ast, &resolver.module, &resolver.env)
         };
-        let semantics = checked.err().into_iter().collect();
+        let mut semantics = checked.err().into_iter().collect::<Vec<_>>();
+        if semantics.is_empty()
+            && is_step5c9_candidate(case)
+            && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        {
+            semantics.extend(
+                super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)
+                    .and_then(|handoff| super::native_proof_intent_observation(&handoff))
+                    .err(),
+            );
+        }
         return reconcile_frontend_and_semantics(frontend_keys, semantics);
     }
     if case.id.0 == "pass_formula_statement_attr_negated_chain_assertion_001"
@@ -639,6 +649,16 @@ fn formula_statement_detail_keys(
             Ok(())
         })();
         semantics.extend(checked.err());
+    }
+    if semantics.is_empty()
+        && case.id.0 == "pass_formula_statement_set_local_constant_take_001"
+        && is_active_formula_statement(workspace_root, case)
+    {
+        semantics.extend(
+            super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)
+                .and_then(|handoff| super::native_proof_intent_observation(&handoff))
+                .err(),
+        );
     }
     reconcile_frontend_and_semantics(frontend_keys, semantics)
 }

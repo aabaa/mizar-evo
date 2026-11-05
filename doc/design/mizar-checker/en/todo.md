@@ -724,9 +724,10 @@ unchecked row below is one future nonempty logical task and one commit.
   Contract: [native conversions](../../task_contracts/en/CHECKER271-NATIVE-CONVERSIONS.md).
   Producer and actual FS/AS classification complete; the omitted seed stays
   inactive and final proof-state consumption remains with Task 272.
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer. Ships
-  the Task 285 element rules blocked on it (the twelve proof-skeleton kinds of
-  `tests/coverage/source_element_rule_migration.tsv`) with the producer.
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
+  Native source intents and the twelve original rules ship in A; typed witness
+  matching, goal/substitution replay and results remain open in B.
+  - [x] **Task 272A:** [native source intents](../../task_contracts/en/CHECKER272A-NATIVE-PROOF-INTENTS.md); typed witness/goal replay remains 272B.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
