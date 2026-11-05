@@ -79,7 +79,10 @@ next scope, authority/contract paths, unresolved issues, and verification state.
 Reference completed work; do not copy its history. Use automatic context
 compaction, then read the checkpoint and continue without requesting manual
 compaction or resume instructions. Respect user stops, usage limits, and
-protocol stop conditions.
+protocol stop conditions. A bounded scope instruction expires when its
+candidates are exhausted; then select the next open item from
+`doc/design/todo.md` in sequential-plan order instead of waiting for a new
+instruction.
 
 ## Verification
 
