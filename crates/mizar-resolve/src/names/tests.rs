@@ -365,6 +365,119 @@ fn proof_bindings_reject_malformed_named_witness_separator() {
 }
 
 #[test]
+fn proof_bindings_inline_captures_exclude_body_local_binders() {
+    use mizar_frontend::{
+        lexical_env::LocalLexicalDeclarations,
+        lexing::{ParserLexContext, ParserLexingPlan, ScopeView, Token, TokenStream},
+        parsing::{
+            MizarParserSeam, OperatorFixityTable, ParseRequest, ParserInputs, ParserSeam,
+            StringRequiredContext,
+        },
+    };
+    let source = source_id();
+    let module = module_id("pkg", "inline_captures");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let mut captures = Vec::new();
+    for (text, targets) in [
+        (
+            "let m be object;\ndefpred P(n be object) means for q being object st q = n holds q = m;\n",
+            vec![3, 2, 3, 0],
+        ),
+        (
+            "let m be object;\ndeffunc F(n be object) -> set equals {q where q is object : q = m};\n",
+            vec![3, 3, 0],
+        ),
+    ] {
+        let raw = mizar_lexer::scan_raw(text).unwrap();
+        let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let skeleton = mizar_lexer::build_scope_skeleton(&raw);
+        assert!(skeleton.diagnostics.is_empty());
+        let context = ParserLexContext::general();
+        let lexed = mizar_lexer::disambiguate(&raw, &environment, &context, &skeleton);
+        assert!(lexed.diagnostics().is_empty());
+        let tokens = TokenStream {
+            source_id: source,
+            parser_context: context,
+            parser_lexing_plan: ParserLexingPlan::uniform(context),
+            tokens: lexed
+                .tokens()
+                .iter()
+                .map(|token| Token {
+                    kind: token.kind,
+                    text: token.lexeme.as_str().into(),
+                    span: range(source, token.span.start, token.span.end),
+                })
+                .collect(),
+            scope_view: ScopeView::empty(source),
+            local_declarations: LocalLexicalDeclarations::empty(),
+            diagnostics: Vec::new(),
+        };
+        let parsed = MizarParserSeam.parse(ParseRequest::new(
+            &tokens,
+            ParserInputs::new(
+                Edition::new("2026"),
+                OperatorFixityTable::empty(),
+                StringRequiredContext::None,
+            ),
+        ));
+        assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+        let ast = parsed.ast.unwrap();
+        assert!(ast.node_views().all(|node| !node.is_recovered()));
+        let legacy = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(
+            legacy,
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            ))
+            .unwrap()
+        );
+        assert_eq!(
+            legacy
+                .bindings()
+                .iter()
+                .map(|binding| binding.spelling())
+                .collect::<Vec<_>>(),
+            [
+                "m",
+                if text.contains("defpred") { "P" } else { "F" },
+                "n",
+                "q"
+            ]
+        );
+        assert_eq!(
+            legacy.bindings()[1].captures(),
+            [SourceVariableBindingId(0), SourceVariableBindingId(3)]
+        );
+        let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(
+            scope
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            targets
+        );
+        captures.push(scope.bindings()[1].captures().to_vec());
+        let mut normalized = scope;
+        normalized.bindings[1].captures = legacy.bindings[1].captures.clone();
+        assert_eq!(normalized, legacy);
+    }
+    assert_eq!(
+        captures,
+        [
+            vec![SourceVariableBindingId(0)],
+            vec![SourceVariableBindingId(0)]
+        ]
+    );
+}
+
+#[test]
 fn proof_binding_native_validator_authenticates_both_genuine_profiles() {
     use crate::{
         declarations::DeclarationShellCollector,

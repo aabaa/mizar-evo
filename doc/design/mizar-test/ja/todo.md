@@ -188,6 +188,7 @@ regression test を追加した。
       definition-time capture smokeも実行する。さらにparser Task 47とchecker Tasks
       251/271-272後のexisting advanced-semantics omitted-`reconsider` caseを所有し、
       explicit non-accepting pending/blocked intentとproof searchなしをassertする。
+      native inline closure/request の観測は実行可能だが、guard 検証・置換 replay/result・binder freshness は MT10-AS に残る。
       空/placeholder runnerや24-fixture
       Task-49 reconciliation setの早期activationは禁止。完全な
       dependency/blocked gateはchecker

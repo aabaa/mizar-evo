@@ -2543,3 +2543,484 @@ mod step5c4;
 mod step5c5;
 mod step5c6;
 mod terminating;
+
+#[test]
+fn task270_advanced_inline_closure_requests_execute_the_active_consumer() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let id = "pass_advanced_semantics_inline_closure_requests_001";
+    let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+    assert_eq!(case.expectation.stage, crate::Stage::AdvancedSemantics);
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = super::formula_statement::step5c8_test_frontend(&text);
+    assert!(frontend.ast.is_some());
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let report = super::run_advanced_semantics_corpus(&config).unwrap();
+    let result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == id)
+        .unwrap_or_else(|| panic!("request case missing: {:?}", report.diagnostics));
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+}
+
+#[test]
+fn task270_advanced_inline_closure_requests_build_the_native_transaction() {
+    use mizar_checker::{
+        binding_env::BinderIdentity,
+        source_proof_local_declaration::SourceProofLocalDeclarationProducer,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_advanced_semantics_inline_closure_requests_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&text, 2_704_001);
+    assert_eq!(diagnostics, 0);
+    let original =
+        super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, &text).unwrap();
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .unwrap();
+    assert_eq!(
+        scope
+            .bindings()
+            .iter()
+            .map(|binding| binding.spelling())
+            .collect::<Vec<_>>(),
+        ["m", "a", "F", "n", "k", "P", "n", "m"]
+    );
+    let handoff =
+        SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &scope)
+            .expect("native inline closure transaction");
+    let outer = &scope.bindings()[0];
+    let expected_capture = BinderIdentity::ResolverLocal {
+        scope: outer.scope().clone(),
+        ordinal: outer.ordinal(),
+        declaration_range: outer.range(),
+    };
+    for id in [2, 5] {
+        assert_eq!(
+            handoff
+                .binding_env()
+                .bindings()
+                .get(mizar_checker::binding_env::BindingId::new(id))
+                .unwrap()
+                .captured
+                .identities(),
+            std::slice::from_ref(&expected_capture)
+        );
+    }
+}
+
+fn task270_request_handoff(
+    text: &str,
+) -> mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff {
+    let (original, native, symbols, scope) = task270_request_inputs(text);
+    mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &scope).unwrap()
+}
+
+fn task270_request_inputs(
+    text: &str,
+) -> (
+    mizar_checker::typed_ast::TypedAst,
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_resolve::env::SymbolEnv,
+    mizar_resolve::names::ResolvedVariableScope,
+) {
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(text, 2_704_100);
+    assert_eq!(diagnostics, 0);
+    let original =
+        super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, text).unwrap();
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .unwrap();
+    (original, native, symbols, scope)
+}
+
+#[test]
+fn task270_advanced_inline_closure_requests_match_original_role_and_identity_oracles() {
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::INLINE_CLOSURE_REQUEST_ID)
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let handoff = task270_request_handoff(&text);
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let child = |parent, ordinal| {
+        rows.iter()
+            .copied()
+            .find(|row| row.parent() == Some(parent) && row.child_ordinal() == ordinal)
+            .unwrap()
+    };
+    let f = rows
+        .iter()
+        .find(|row| row.kind() == &K::InlineFunctorDefinition)
+        .unwrap();
+    let p = rows
+        .iter()
+        .find(|row| row.kind() == &K::InlinePredicateDefinition)
+        .unwrap();
+    let fc = rows
+        .iter()
+        .find(|row| row.kind() == &K::ApplicationTerm)
+        .unwrap();
+    let pc = rows
+        .iter()
+        .find(|row| row.kind() == &K::InlinePredicateApplication)
+        .unwrap();
+    let fb = child(f.site(), 10).site().index();
+    let ft = child(f.site(), 8).site().index();
+    let pb = child(p.site(), 6).site().index();
+    let ng = child(child(f.site(), 3).site(), 2).site().index();
+    let kg = child(child(f.site(), 5).site(), 2).site().index();
+    let pg = child(child(p.site(), 3).site(), 2).site().index();
+    use mizar_checker::binding_env::{BindingContextLayer, BindingContextOwner, BindingId, BindingTypeSite};
+    let env = handoff.binding_env();
+    let binding = |id| env.bindings().get(BindingId::new(id)).unwrap();
+    let proof = binding(0).owner_context;
+    assert_eq!(env.contexts().get(proof).unwrap().layer, BindingContextLayer::Proof);
+    for (name, formal, members, definition) in [(2, 3, vec![3, 4], *f), (5, 6, vec![6], *p)] {
+        assert_eq!(binding(name).owner_context, proof);
+        let context = env.contexts().get(binding(formal).owner_context).unwrap();
+        assert_eq!(context.layer, BindingContextLayer::Declaration);
+        assert_eq!(context.parent, Some(proof));
+        assert_eq!(context.owner, BindingContextOwner::SourceStatement { source_range: definition.range() });
+        assert_eq!(context.bindings, members.iter().copied().map(BindingId::new).collect::<Vec<_>>());
+        for id in members {
+            assert_eq!(binding(id).owner_context, context.id);
+            assert_eq!(context.lexical_scope.as_ref(), Some(handoff.scope().bindings()[id].scope()));
+        }
+    }
+    for (id, site) in [(2, ft), (3, ng), (4, kg), (6, pg)] {
+        let original = rows.iter().find(|row| row.site().index() == site).unwrap();
+        assert_eq!(binding(id).type_site, BindingTypeSite::Source(original.range()));
+    }
+    assert_eq!(binding(5).type_site, BindingTypeSite::Missing);
+    let mut expected = vec![
+        format!("closure.2.InlineFunctor.body={fb}.result={ft}.arity=2"),
+        format!("formal.2.0.binding=3.guard={ng}.state=pending"),
+        format!("formal.2.1.binding=4.guard={kg}.state=pending"),
+        "capture.2.0".to_owned(),
+        format!("closure.5.InlinePredicate.body={pb}.result=none.arity=1"),
+        format!("formal.5.0.binding=6.guard={pg}.state=pending"),
+        "capture.5.0".to_owned(),
+    ];
+    for (id, target) in [0, 6, 0, 5, 7, 2, 7, 1, 7].into_iter().enumerate() {
+        expected.push(format!("reference.{id}.target={target}.ordinal={id}"));
+        if id == 3 {
+            expected.push(format!(
+                "request.3.callee=5.call={}.body={pb}.arity=1.state=pending",
+                pc.site().index()
+            ));
+            expected.push(format!(
+                "argument.3.0.formal=6.actual={}.guard={pg}.state=pending",
+                child(pc.site(), 2).site().index()
+            ));
+        } else if id == 5 {
+            expected.push(format!(
+                "request.5.callee=2.call={}.body={fb}.arity=2.state=pending",
+                fc.site().index()
+            ));
+            expected.push(format!(
+                "argument.5.0.formal=3.actual={}.guard={ng}.state=pending",
+                child(fc.site(), 2).site().index()
+            ));
+            expected.push(format!(
+                "argument.5.1.formal=4.actual={}.guard={kg}.state=pending",
+                child(fc.site(), 4).site().index()
+            ));
+        }
+    }
+    assert_eq!(
+        super::inline_closure_request_observation(&handoff).unwrap(),
+        expected
+    );
+    let actual = super::source_inline_closure_requests(
+        &config.workspace_root,
+        case,
+        super::run_frontend(&config.workspace_root, case, 0).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(actual, expected);
+    let swapped = text.replace("F(m, a)", "F(a, m)");
+    let swapped =
+        super::inline_closure_request_observation(&task270_request_handoff(&swapped)).unwrap();
+    assert_ne!(swapped, expected);
+    assert!(swapped.contains(&"reference.6.target=1.ordinal=6".to_owned()));
+    assert!(swapped.contains(&"reference.7.target=7.ordinal=7".to_owned()));
+}
+
+#[test]
+fn task270_advanced_inline_closure_requests_keep_zero_roots_and_formal_body_identity() {
+    let text = "theorem Zero: thesis proof let m be object; deffunc C() -> object equals m; defpred Q() means m = m; now let m be object; A: Q(); thus C() = m; end; thus thesis; end;";
+    let handoff = task270_request_handoff(text);
+    let actual = super::inline_closure_request_observation(&handoff).unwrap();
+    let roots = actual
+        .iter()
+        .filter(|key| key.starts_with("request."))
+        .collect::<Vec<_>>();
+    assert_eq!(roots.len(), 2);
+    assert!(roots[0].starts_with("request.3.callee=2."));
+    assert!(roots[1].starts_with("request.4.callee=1."));
+    assert!(
+        roots
+            .iter()
+            .all(|key| key.ends_with(".arity=0.state=pending"))
+    );
+    assert!(
+        !actual
+            .iter()
+            .any(|key| key.starts_with("formal.") || key.starts_with("argument."))
+    );
+    assert!(actual.contains(&"capture.1.0".to_owned()));
+    assert!(actual.contains(&"capture.2.0".to_owned()));
+    let formal = task270_request_handoff(
+        "theorem FormalBody: thesis proof let m, a be object; deffunc F(n be object, k be object) -> object equals n; defpred P(n be object, k be object) means n = m & k = k; now let m be object; A: P(m, a); thus F(m, a) = m; end; thus thesis; end;",
+    );
+    let actual = super::inline_closure_request_observation(&formal).unwrap();
+    assert!(!actual.iter().any(|key| key.starts_with("capture.2.")));
+    assert!(actual.contains(&"reference.0.target=3.ordinal=0".to_owned()));
+    assert!(actual.contains(&"capture.5.0".to_owned()));
+    assert!(
+        actual
+            .iter()
+            .any(|key| key.starts_with("formal.5.1.binding=7.") && key.ends_with(".state=pending"))
+    );
+}
+
+#[test]
+fn task270_advanced_inline_closure_requests_admit_only_the_frozen_case_and_keep_layout() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::INLINE_CLOSURE_REQUEST_ID)
+        .unwrap();
+    assert!(super::inline_closure_requests_admitted(
+        &config.workspace_root,
+        case
+    ));
+    for mutation in 0..7 {
+        let mut bad = case.clone();
+        match mutation {
+            0 => bad.expectation.domain = "resolve.declaration_symbol".to_owned(),
+            1 => bad.source_path = config.workspace_root.join("tests/miz/pass/other.miz"),
+            2 => bad.expectation.tags.clear(),
+            3 => {
+                bad.expectation.expected_phase = Some(crate::expectation::PipelinePhase::TypeCheck)
+            }
+            4 => bad.expectation.stable_detail_key = Some("unexpected.key".to_owned()),
+            5 => bad.expectation.spec_refs.clear(),
+            _ => bad.expectation.profiles.push("heavy".to_owned()),
+        }
+        assert!(!super::inline_closure_requests_admitted(
+            &config.workspace_root,
+            &bad
+        ));
+        let mut invalid = plan.clone();
+        invalid.cases.push(bad);
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-ADVANCED-SEMANTICS-ADMISSION")
+        );
+    }
+    let mut duplicate = plan.clone();
+    duplicate.cases.push(case.clone());
+    let mut missing = plan.clone();
+    missing.cases.retain(|candidate| candidate.id != case.id);
+    for invalid in [duplicate, missing] {
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key
+                    == format!(
+                        "advanced_semantics.inventory.{}",
+                        super::INLINE_CLOSURE_REQUEST_ID
+                    ))
+        );
+    }
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let baseline =
+        super::inline_closure_request_observation(&task270_request_handoff(&text)).unwrap();
+    for source in [
+        format!(
+            ":: genuine layout\n{}",
+            text.replace("n be object, k be object", "n\tbe object,\n k being object")
+        ),
+        text.replace("InlineClosureRequests", "RenamedRequests")
+            .replace("m,", "outer_name,")
+            .replace("m;", "outer_name;")
+            .replace("m)", "outer_name)")
+            .replace("m be", "outer_name be")
+            .replace("n be", "formal be")
+            .replace("n =", "formal ="),
+    ] {
+        let actual = super::source_inline_closure_requests(
+            &config.workspace_root,
+            case,
+            super::formula_statement::step5c8_test_frontend(&source),
+        )
+        .unwrap();
+        assert_eq!(actual, baseline);
+    }
+    let unused = text
+        .replace("A: P(m);", "A: m = m;")
+        .replace("thus F(m, a) = m;", "thus m = m;");
+    let report = metamorphic_guard::with_source(case, &unused, || {
+        super::run_advanced_semantics_corpus(&config)
+    })
+    .unwrap();
+    let result = report
+        .results
+        .iter()
+        .find(|result| result.id == case.id)
+        .unwrap();
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Failed);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["inline closure request does not match original roles"]
+    );
+}
+
+#[test]
+fn task270_advanced_inline_closure_requests_refuse_legacy_local_capture_and_foreign_roles() {
+    use mizar_checker::source_proof_local_declaration::{
+        SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::validate_source_proof_occurrences,
+    };
+    for definition in [
+        "defpred P(n be object) means for q being object holds q = m; A: P(m);",
+        "deffunc F(n be object) -> set equals {q where q is object : q = m}; A: F(m) = F(m);",
+    ] {
+        let text = format!(
+            "theorem LocalCapture: thesis proof let m be object; {definition} thus thesis; end;"
+        );
+        let (original, native, symbols, current) = task270_request_inputs(&text);
+        let (ast, module, _, _, _) =
+            task253_ast_from_source_text_with_diagnostic_count(&text, 2_704_100);
+        let legacy = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        validate_source_proof_occurrences(&native, &symbols, &legacy).unwrap();
+        let inline = current
+            .bindings()
+            .iter()
+            .find(|binding| binding.arity().is_some())
+            .unwrap();
+        assert_eq!(
+            inline
+                .captures()
+                .iter()
+                .map(|id| current.bindings()[id.index()].spelling())
+                .collect::<Vec<_>>(),
+            ["m"]
+        );
+        assert_eq!(
+            legacy.bindings()[inline.id().index()]
+                .captures()
+                .iter()
+                .map(|id| legacy.bindings()[id.index()].spelling())
+                .collect::<Vec<_>>(),
+            ["m", "q"]
+        );
+        assert!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &current
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &legacy
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+    }
+    let plan = crate::harness::build_test_plan(&step5c11_config()).unwrap();
+    let text = std::fs::read_to_string(
+        &plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::INLINE_CLOSURE_REQUEST_ID)
+            .unwrap()
+            .source_path,
+    )
+    .unwrap();
+    let (original, _, _, _) = task270_request_inputs(&text);
+    for foreign in [
+        text.replace("n be object, k", "n be set, k"),
+        text.replace("equals m", "equals n"),
+        text.replace("n be object, k be object", "k be object, n be object"),
+        text.replace("F(m, a)", "F(a, m)"),
+    ] {
+        let (foreign_original, native, symbols, scope) = task270_request_inputs(&foreign);
+        assert_eq!(foreign_original.source_id(), original.source_id());
+        assert_eq!(foreign_original.module_id(), original.module_id());
+        assert!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &foreign_original,
+                &native,
+                &symbols,
+                &scope
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+    }
+    for (definition, bare) in [
+        ("deffunc F() -> object equals m;", "F"),
+        ("defpred P() means m = m;", "P"),
+    ] {
+        let text = format!(
+            "theorem Bare: thesis proof let m be object; {definition} set a = {bare}; thus thesis; end;"
+        );
+        let (original, native, symbols, scope) = task270_request_inputs(&text);
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+    }
+}

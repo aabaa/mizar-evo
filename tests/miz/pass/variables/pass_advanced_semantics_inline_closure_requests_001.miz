@@ -1,0 +1,11 @@
+theorem InlineClosureRequests: thesis proof
+  let m, a be object;
+  deffunc F(n be object, k be object) -> object equals m;
+  defpred P(n be object) means n = m;
+  now
+    let m be object;
+    A: P(m);
+    thus F(m, a) = m;
+  end;
+  thus thesis;
+end;

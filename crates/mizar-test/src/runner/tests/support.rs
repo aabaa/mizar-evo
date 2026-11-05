@@ -8238,7 +8238,9 @@ mod metamorphic_guard {
             .chain(active_formula_statement_cases(root, &plan))
             .chain(active_proof_verification_cases(&plan))
             .chain(plan.cases.iter().filter(|case| {
-                step5c11_registration_admitted(root, case) || step5c13_overload_admitted(root, case)
+                step5c11_registration_admitted(root, case)
+                    || step5c13_overload_admitted(root, case)
+                    || inline_closure_requests_admitted(root, case)
             }))
         {
             assert!(

@@ -11,6 +11,15 @@ payload は binding の ID/kind/名前/scope/宣言順、capture の owner/targe
 型の正当性・witness 充足・置換・証明受理を表明しない。
 
 
+## Native inline closure requests
+
+advanced-semantics の対応 domain `checker.inline_closure_requests` は native build・
+fresh Typed 設置・Resolved replay を実行し、元の本体・型 site、仮引数順、厳密な capture、
+実引数から仮引数への要求を消費する。零引数の要求 root を含め guard は保留のままである。
+要求の観測は展開結果・証明受理・意味論的置換 coverage を与えず、MT10-AS の guard 検証・
+replay・freshness を伴う強い smoke は未完のままである。
+
+
 偽 coherence・偽 reducibility の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
 簡約行では `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` と `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` を元の正本参照と共に認証する。
 失敗観測前に、実ソースから再生成した不変の完全な VcSet 同士と `debug_text()` 全体を baseline と比較し、baseline の欠落・破損、metadata・stage の変更を拒否する。

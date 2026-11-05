@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_inline_closure_requests_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "checker.inline_closure_requests"
+source = "pass_advanced_semantics_inline_closure_requests_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.15.statements.inline_closure_requests.metadata"]
+notes = "Request observation only: genuine definition-time closures, ordered formal/actual identity associations, original body/type sites and pending written guards survive build, Typed installation and Resolved replay. No fulfilled guard, expanded result, substitution replay, fact, accepted proof, Core or VC is claimed. Existing semantic capture-avoidance coverage remains deferred."

@@ -6550,6 +6550,25 @@ impl<'a> VariableResolveState<'a> {
                 binding: binding_id,
             });
             self.reference_by_node.insert(reference.node, id);
+            if self.proof_bindings {
+                if let Some(owner) =
+                    nearest_inline_definition(reference.node, &self.parents, self.ast)
+                {
+                    let owner_id = self
+                        .binding_by_owner
+                        .get(&owner)
+                        .copied()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    if binding_id != owner_id
+                        && self.bindings[binding_id.index()]
+                            .scope
+                            .contains(&self.bindings[owner_id.index()].scope)
+                    {
+                        self.bindings[owner_id.index()].captures.push(binding_id);
+                    }
+                }
+                continue;
+            }
             if matches!(
                 binding_kind,
                 SourceVariableBindingKind::InlineFunctor

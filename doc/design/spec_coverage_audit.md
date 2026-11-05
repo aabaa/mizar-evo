@@ -44,6 +44,11 @@ by the [checker binding owner](./mizar-checker/en/source_proof_local_declaration
 and its [declaration-symbol consumer](./mizar-test/en/harness.md#native-proof-local-binding-metadata).
 Type, substitution, FOL and proof-acceptance obligations retain their existing deferrals.
 
+The inline closure request metadata requirement is covered by the same checker
+owner and the [advanced request consumer](./mizar-test/en/harness.md#native-inline-closure-requests).
+The semantic capture-avoidance requirement remains deferred pending validated
+guards, explicit substitution replay/results and binder freshness under MT10-AS.
+
 ## Coverage Matrix
 
 | Spec chapter | Design coverage | Status | Follow-up |

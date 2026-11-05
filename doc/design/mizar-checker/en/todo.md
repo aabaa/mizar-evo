@@ -712,9 +712,12 @@ unchecked row below is one future nonempty logical task and one commit.
   Equating roles use the original-row rule. Type inference, executable substitution
   and proof acceptance remain with their downstream owners. Contract:
   [CHECKER269-NATIVE-BINDINGS](../../task_contracts/en/CHECKER269-NATIVE-BINDINGS.md).
-- [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
+- [x] **Task 270:** inline-definition closure/capture/substitution-request producer.
   Ships the Task 285 element rules blocked on it (InlineFunctorDefinition,
   InlinePredicateDefinition) with the producer.
+  Contract: [native inline bindings](../../task_contracts/en/CHECKER270-INLINE-BINDINGS.md).
+  Producer and actual AS request observation complete; MT10-AS guard validation,
+  substitution replay/results and binder freshness remain open.
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
   depends on parser Task 47. Ships the Task 285 element rules blocked on it
   (QuaExpression, ReconsiderItem, ReconsiderStatement) with the producer.

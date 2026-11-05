@@ -38,6 +38,8 @@ shadow されない chain は leading path を namespace、final segment を qua
 名前付き Witness の導入・定義 RHS 内の自己参照除外・形式間の同一 scope 重複検査を追加する。
 既存 entry point の出力は維持し、native proof-scope 検証はこの経路の正確な結果も認証する。
 証明結果を推論しない。
+この opt-in 経路の inline capture は、定義名の scope を包含する lexical scope の
+参照先だけを保持し、仮引数と本体内 binder を除外する。既存経路の capture 出力は維持する。
 
 
 ## 参照

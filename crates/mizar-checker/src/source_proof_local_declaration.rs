@@ -1304,6 +1304,151 @@ impl SourceProofLocalDeclarationProducer {
     }
 }
 
+fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> bool {
+    let kind = if matches!(
+        text,
+        "deffunc" | "defpred" | "equals" | "means" | "be" | "being"
+    ) {
+        SurfaceTokenKind::ReservedWord
+    } else {
+        SurfaceTokenKind::ReservedSymbol
+    };
+    children.get(ordinal).is_some_and(|row|
+        matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text))
+}
+
+fn source_inline_parameter_roles<'a>(
+    rows: &'a [SourceNode],
+    parameter: &SourceNode,
+) -> Option<[&'a SourceNode; 2]> {
+    let children = source_children(rows, parameter.site()).collect::<Vec<_>>();
+    if parameter.kind() != &SurfaceNodeKind::TypedParameter
+        || source_contiguous_child_count(children.iter().copied()) != Some(3)
+        || !(source_inline_token(&children, 1, "be") || source_inline_token(&children, 1, "being"))
+    {
+        return None;
+    }
+    let name = children[0];
+    let guard = source_unique_child(rows, parameter, SurfaceNodeKind::TypeExpression)?;
+    if !matches!(name.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+        || guard.child_ordinal() != 2
+    {
+        return None;
+    }
+    Some([name, guard])
+}
+
+// Rationale: borrowed original name/formal/guard/body/result roles, with no duplicate stored graph.
+#[allow(clippy::type_complexity)]
+pub(crate) fn source_inline_functor_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<(
+    &'a SourceNode,
+    Vec<[&'a SourceNode; 2]>,
+    &'a SourceNode,
+    Option<&'a SourceNode>,
+)> {
+    use SurfaceNodeKind as K;
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
+    if owner.kind() != &K::InlineFunctorDefinition
+        || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
+        || !source_inline_token(&children, 0, "deffunc")
+        || !source_inline_token(&children, 2, "(")
+    {
+        return None;
+    }
+    let name = *children.get(1)?;
+    if !matches!(name.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier) {
+        return None;
+    }
+    let formals = children
+        .iter()
+        .filter(|row| row.kind() == &K::TypedParameter)
+        .enumerate()
+        .map(|(index, parameter)| {
+            if parameter.child_ordinal() != index * 2 + 3
+                || (index > 0 && !source_inline_token(&children, index * 2 + 2, ","))
+            {
+                return None;
+            }
+            source_inline_parameter_roles(rows, parameter)
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let close = if formals.is_empty() {
+        3
+    } else {
+        formals.len() * 2 + 2
+    };
+    let result = source_unique_child(rows, owner, K::TypeExpression)?;
+    let body = source_unique_child(rows, owner, K::TermExpression)?;
+    if !source_inline_token(&children, close, ")")
+        || !source_inline_token(&children, close + 1, "->")
+        || result.child_ordinal() != close + 2
+        || !source_inline_token(&children, close + 3, "equals")
+        || body.child_ordinal() != close + 4
+        || !source_inline_token(&children, close + 5, ";")
+        || children.len() != close + 6
+    {
+        return None;
+    }
+    Some((name, formals, body, Some(result)))
+}
+
+// Rationale: same borrowed role shape as the functor rule; no public or stored role DTO.
+#[allow(clippy::type_complexity)]
+pub(crate) fn source_inline_predicate_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<(
+    &'a SourceNode,
+    Vec<[&'a SourceNode; 2]>,
+    &'a SourceNode,
+    Option<&'a SourceNode>,
+)> {
+    use SurfaceNodeKind as K;
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
+    if owner.kind() != &K::InlinePredicateDefinition
+        || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
+        || !source_inline_token(&children, 0, "defpred")
+        || !source_inline_token(&children, 2, "(")
+    {
+        return None;
+    }
+    let name = *children.get(1)?;
+    if !matches!(name.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier) {
+        return None;
+    }
+    let formals = children
+        .iter()
+        .filter(|row| row.kind() == &K::TypedParameter)
+        .enumerate()
+        .map(|(index, parameter)| {
+            if parameter.child_ordinal() != index * 2 + 3
+                || (index > 0 && !source_inline_token(&children, index * 2 + 2, ","))
+            {
+                return None;
+            }
+            source_inline_parameter_roles(rows, parameter)
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let close = if formals.is_empty() {
+        3
+    } else {
+        formals.len() * 2 + 2
+    };
+    let body = source_unique_child(rows, owner, K::FormulaExpression)?;
+    if !source_inline_token(&children, close, ")")
+        || !source_inline_token(&children, close + 1, "means")
+        || body.child_ordinal() != close + 2
+        || !source_inline_token(&children, close + 3, ";")
+        || children.len() != close + 4
+    {
+        return None;
+    }
+    Some((name, formals, body, None))
+}
+
 fn native_proof_local_binding_env(
     original: &TypedAst,
     native: &SurfaceResolvedArena,
@@ -1312,6 +1457,7 @@ fn native_proof_local_binding_env(
 ) -> Result<BindingEnv, SourceProofLocalDeclarationError> {
     use SourceVariableBindingKind as B;
     use SurfaceNodeKind as K;
+    use mizar_resolve::names::SourceVariableReferenceKind as R;
     let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
     if native.source_id() != original.source_id()
         || native.module() != original.module_id()
@@ -1334,12 +1480,7 @@ fn native_proof_local_binding_env(
         || !scope.statements().is_empty()
         || rows.iter().any(|row| {
             row.recovery() != NodeRecoveryState::Normal
-                || matches!(
-                    row.kind(),
-                    K::InlineFunctorDefinition
-                        | K::InlinePredicateDefinition
-                        | K::ReconsiderStatement
-                )
+                || matches!(row.kind(), K::ReconsiderStatement)
         })
         || crate::type_checker::source_nodes(native, original)
             .map_err(|_| invalid())?
@@ -1401,6 +1542,12 @@ fn native_proof_local_binding_env(
                 },
                 BindingContextLayer::Expression,
             ),
+            K::InlineFunctorDefinition | K::InlinePredicateDefinition => (
+                BindingContextOwner::SourceStatement {
+                    source_range: row.range(),
+                },
+                BindingContextLayer::Declaration,
+            ),
             _ => return Err(invalid()),
         };
         if boundaries
@@ -1421,8 +1568,70 @@ fn native_proof_local_binding_env(
 
     // Census every original introduction, including names not referenced later.
     let mut names = BTreeMap::new();
+    let mut inline_definitions = BTreeMap::new();
+    let mut written_types = BTreeMap::new();
     for row in rows.iter() {
         let (kind, rhs) = match row.kind() {
+            K::InlineFunctorDefinition | K::InlinePredicateDefinition => {
+                let functor = row.kind() == &K::InlineFunctorDefinition;
+                let (name, parameters, body, result) = if functor {
+                    source_inline_functor_roles(rows, row)
+                } else {
+                    source_inline_predicate_roles(rows, row)
+                }
+                .ok_or_else(invalid)?;
+                let declaration = scope
+                    .bindings()
+                    .iter()
+                    .find(|binding| {
+                        row_for(binding.node()).is_some_and(|r| r.site() == name.site())
+                    })
+                    .ok_or_else(invalid)?;
+                let kind = if functor {
+                    B::InlineFunctor
+                } else {
+                    B::InlinePredicate
+                };
+                let mut formals = Vec::new();
+                for [formal, guard] in parameters {
+                    let binding = scope
+                        .bindings()
+                        .iter()
+                        .find(|binding| {
+                            row_for(binding.node()).is_some_and(|r| r.site() == formal.site())
+                        })
+                        .ok_or_else(invalid)?;
+                    if binding.kind() != B::InlineParameter
+                        || binding.declared_type().is_none()
+                        || formals
+                            .last()
+                            .is_some_and(|previous| previous >= &binding.id())
+                        || names
+                            .insert(formal.site(), (B::InlineParameter, None))
+                            .is_some()
+                        || written_types.insert(formal.site(), guard.range()).is_some()
+                    {
+                        return Err(invalid());
+                    }
+                    formals.push(binding.id());
+                }
+                if declaration.kind() != kind
+                    || declaration.arity() != Some(formals.len())
+                    || (functor && declaration.declared_type().is_none())
+                    || names
+                        .insert(name.site(), (kind, Some(body.site())))
+                        .is_some()
+                    || inline_definitions
+                        .insert(declaration.id(), formals)
+                        .is_some()
+                {
+                    return Err(invalid());
+                }
+                if let Some(result) = result {
+                    written_types.insert(name.site(), result.range());
+                }
+                continue;
+            }
             K::ReserveSegment => (B::Reserve, None),
             K::QuantifierVariableSegment => (B::Quantifier, None),
             K::ComprehensionVariableSegment => (B::ComprehensionGenerator, None),
@@ -1506,10 +1715,22 @@ fn native_proof_local_binding_env(
     for binding in scope.bindings() {
         let name = row_for(binding.node()).ok_or_else(invalid)?;
         let (kind, rhs) = names.remove(&name.site()).ok_or_else(invalid)?;
+        let expected_scope = if matches!(kind, B::InlineFunctor | B::InlinePredicate) {
+            let definition = rows
+                .iter()
+                .find(|r| Some(r.site()) == name.parent())
+                .ok_or_else(invalid)?;
+            scopes
+                .iter()
+                .find(|(id, _)| native.resolved_node_for(**id) == definition.parent())
+                .map(|(_, local)| local)
+        } else {
+            scopes.get(&binding.node())
+        };
         if binding.kind() != kind
             || binding.range() != name.range()
             || binding.spelling() != name.spelling()
-            || scopes.get(&binding.node()) != Some(binding.scope())
+            || expected_scope != Some(binding.scope())
             || (kind != B::Reserve
                 && !introduced.insert((binding.scope().clone(), binding.spelling())))
         {
@@ -1529,6 +1750,8 @@ fn native_proof_local_binding_env(
                 B::Let => BindingKind::LetBinding,
                 B::GivenWitness | B::ConsiderWitness => BindingKind::GivenWitness,
                 B::Set | B::NamedWitness => BindingKind::LocalAbbreviation,
+                B::InlineFunctor | B::InlinePredicate => BindingKind::LocalAbbreviation,
+                B::InlineParameter => BindingKind::DefinitionParameter,
                 _ => return Err(invalid()),
             },
             &local,
@@ -1538,6 +1761,9 @@ fn native_proof_local_binding_env(
                 spelling: binding.spelling().to_owned(),
                 declaration_range: binding.range(),
             };
+        }
+        if let Some(written) = written_types.remove(&name.site()) {
+            draft.type_site = BindingTypeSite::Source(written);
         }
         let actual = BindingId::new(drafts.len());
         drafts.push(draft);
@@ -1550,7 +1776,7 @@ fn native_proof_local_binding_env(
             return Err(invalid());
         }
     }
-    if !names.is_empty() {
+    if !names.is_empty() || !written_types.is_empty() {
         return Err(invalid());
     }
     let mut captures: BTreeMap<BindingId, Vec<BinderIdentity>> = BTreeMap::new();
@@ -1562,15 +1788,87 @@ fn native_proof_local_binding_env(
         if target.id() != reference.binding() {
             return Err(invalid());
         }
+        match (reference.kind(), target.kind()) {
+            (R::InlineFunctor { .. }, B::InlineFunctor)
+            | (R::InlinePredicate { .. }, B::InlinePredicate) => {}
+            (_, B::InlineFunctor | B::InlinePredicate)
+            | (R::InlineFunctor { .. } | R::InlinePredicate { .. }, _) => return Err(invalid()),
+            _ => {}
+        }
+        if let Some(arity) = reference.kind().arity() {
+            let formals = inline_definitions.get(&target.id()).ok_or_else(invalid)?;
+            let callee = row_for(reference.node()).ok_or_else(invalid)?;
+            let call = rows
+                .iter()
+                .find(|row| Some(row.site()) == callee.parent())
+                .ok_or_else(invalid)?;
+            let expected_kind = if target.kind() == B::InlineFunctor {
+                K::ApplicationTerm
+            } else {
+                K::InlinePredicateApplication
+            };
+            let children = source_children(rows, call.site()).collect::<Vec<_>>();
+            let token = |index, text| source_inline_token(&children, index, text);
+            let callee_name = if target.kind() == B::InlineFunctor {
+                if source_contiguous_child_count(source_children(rows, callee.site())) != Some(1) {
+                    return Err(invalid());
+                }
+                source_child_at(rows, callee.site(), 0).ok_or_else(invalid)?
+            } else {
+                callee
+            };
+            if !matches!(callee_name.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                || call.kind() != &expected_kind
+                || callee.child_ordinal() != 0
+                || formals.len() != arity
+                || !token(1, "(")
+                || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
+                || children.len() != if arity == 0 { 3 } else { arity * 2 + 2 }
+                || !token(children.len().saturating_sub(1), ")")
+            {
+                return Err(invalid());
+            }
+            // The request domain is exactly the ordered formal list; guards stay written,
+            // not discharged. Original actual subtrees remain source-scoped graph edges.
+            for (index, formal) in formals.iter().enumerate() {
+                let binding = scope.bindings().get(formal.index()).ok_or_else(invalid)?;
+                let name = row_for(binding.node()).ok_or_else(invalid)?;
+                let parameter = rows
+                    .iter()
+                    .find(|row| Some(row.site()) == name.parent())
+                    .ok_or_else(invalid)?;
+                let [written_name, guard] =
+                    source_inline_parameter_roles(rows, parameter).ok_or_else(invalid)?;
+                if written_name.site() != name.site()
+                    || drafts.get(formal.index()).is_none_or(|draft| {
+                        draft.type_site != BindingTypeSite::Source(guard.range())
+                    })
+                    || children
+                        .get(index * 2 + 2)
+                        .is_none_or(|arg| arg.kind() != &K::TermExpression)
+                    || (index + 1 < arity && !token(index * 2 + 3, ","))
+                    || scope.bindings().get(formal.index()).is_none_or(|binding| {
+                        binding.kind() != B::InlineParameter || binding.declared_type().is_none()
+                    })
+                {
+                    return Err(invalid());
+                }
+            }
+        }
         let mut current = Some(reference.node());
         while let Some(id) = current {
             let site = native.resolved_node_for(id).ok_or_else(invalid)?;
             if let Some(owner) = rhs_owners.get(&site) {
-                if owner.index() == target.id().index() {
+                let declaration = &scope.bindings()[owner.index()];
+                if owner.index() == target.id().index()
+                    && matches!(declaration.kind(), B::Set | B::NamedWitness)
+                {
                     return Err(invalid());
                 }
-                let declaration = &scope.bindings()[owner.index()];
-                if declaration.kind() == B::Set
+                if matches!(
+                    declaration.kind(),
+                    B::Set | B::InlineFunctor | B::InlinePredicate
+                ) && owner.index() != target.id().index()
                     && declaration
                         .scope()
                         .path()
@@ -1587,6 +1885,24 @@ fn native_proof_local_binding_env(
                 break;
             }
             current = parents.get(&id).copied();
+        }
+    }
+    for id in inline_definitions.keys() {
+        let expected = CapturedFreeVariables::new(
+            scope.bindings()[id.index()]
+                .captures()
+                .iter()
+                .map(|id| drafts[id.index()].identity.clone())
+                .collect(),
+        );
+        let actual = CapturedFreeVariables::new(
+            captures
+                .get(&BindingId::new(id.index()))
+                .cloned()
+                .unwrap_or_default(),
+        );
+        if expected != actual {
+            return Err(invalid());
         }
     }
     let mut bindings = BindingTable::new();
@@ -8736,6 +9052,128 @@ mod task269c_tests {
         .unwrap();
         original.install_source_nodes(&native).unwrap();
         (original, native, symbols, scope)
+    }
+
+    #[test]
+    fn inline_element_rules_reject_isolated_role_corruption() {
+        use SurfaceNodeKind as K;
+        use SurfaceTokenKind as T;
+        let source = source_id();
+        let receipt = task286_receipt(
+            source,
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("inline_roles")),
+            4,
+        );
+        let prototype = receipt
+            .original
+            .iter()
+            .find(|row| matches!(row.kind(), K::Token(_)))
+            .unwrap()
+            .clone();
+        let sites = receipt
+            .original
+            .iter()
+            .map(SourceNode::site)
+            .collect::<Vec<_>>();
+        let token = |kind, text: &str| {
+            let K::Token(mut token) = prototype.kind.clone() else {
+                unreachable!()
+            };
+            token.kind = kind;
+            token.text = text.into();
+            K::Token(token)
+        };
+        for functor in [true, false] {
+            let mut frame = vec![
+                token(T::ReservedWord, if functor { "deffunc" } else { "defpred" }),
+                token(T::Identifier, "F"),
+                token(T::ReservedSymbol, "("),
+                K::TypedParameter,
+                token(T::ReservedSymbol, ")"),
+            ];
+            if functor {
+                frame.extend([token(T::ReservedSymbol, "->"), K::TypeExpression]);
+            }
+            frame.extend([
+                token(T::ReservedWord, if functor { "equals" } else { "means" }),
+                if functor {
+                    K::TermExpression
+                } else {
+                    K::FormulaExpression
+                },
+                token(T::ReservedSymbol, ";"),
+            ]);
+            let mut descriptors = vec![(
+                if functor {
+                    K::InlineFunctorDefinition
+                } else {
+                    K::InlinePredicateDefinition
+                },
+                None,
+                0,
+            )];
+            descriptors.extend(
+                frame
+                    .into_iter()
+                    .enumerate()
+                    .map(|(ordinal, kind)| (kind, Some(0), ordinal)),
+            );
+            let qualifier = descriptors.len() + 1;
+            descriptors.extend([
+                (token(T::Identifier, "n"), Some(4), 0),
+                (token(T::ReservedWord, "be"), Some(4), 1),
+                (K::TypeExpression, Some(4), 2),
+            ]);
+            let rows = descriptors
+                .into_iter()
+                .enumerate()
+                .map(|(index, (kind, parent, ordinal))| {
+                    let mut row = prototype.clone();
+                    row.spelling = match &kind {
+                        K::Token(token) => token.text.to_string(),
+                        _ => String::new(),
+                    };
+                    row.kind = kind;
+                    row.site = sites[index];
+                    row.parent = parent.map(|index| sites[index]);
+                    row.child_ordinal = ordinal;
+                    row.preorder_ordinal = index;
+                    row.range = range(source, 0, 100);
+                    row
+                })
+                .collect::<Vec<_>>();
+            let rule = if functor {
+                source_inline_functor_roles
+            } else {
+                source_inline_predicate_roles
+            };
+            let (name, formals, body, result) = rule(&rows, &rows[0]).unwrap();
+            assert_eq!(name.site(), rows[2].site());
+            assert_eq!(formals.len(), 1);
+            assert_eq!(result.is_some(), functor);
+            let body = rows
+                .iter()
+                .position(|row| row.site() == body.site())
+                .unwrap();
+            let guard = rows
+                .iter()
+                .position(|row| row.site() == formals[0][1].site())
+                .unwrap();
+            for (index, kind) in [
+                (
+                    1,
+                    token(T::Identifier, if functor { "deffunc" } else { "defpred" }),
+                ),
+                (2, token(T::ReservedWord, "F")),
+                (qualifier, token(T::Identifier, "be")),
+                (body, K::TermList),
+                (guard, K::TermList),
+            ] {
+                let mut corrupted = rows.clone();
+                corrupted[index].kind = kind;
+                assert!(rule(&corrupted, &corrupted[0]).is_none());
+            }
+        }
     }
 
     #[test]

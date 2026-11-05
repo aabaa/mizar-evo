@@ -243,8 +243,8 @@ fn step5c11_advanced_admission_is_exact_and_rejects_stage_fallback() {
     }
     let report = super::super::run_advanced_semantics_corpus(&config).unwrap();
     assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
-    assert_eq!(report.results.len(), 6);
-    assert_eq!(report.passed_count(), 6);
+    assert_eq!(report.results.len(), 7);
+    assert_eq!(report.passed_count(), 7);
 }
 
 #[test]

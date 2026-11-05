@@ -12,6 +12,16 @@ RHS ownership follows original Equating/Witness ancestry. No declaration payload
 asserts type correctness, witness discharge, substitution or proof acceptance.
 
 
+## Native inline closure requests
+
+The mapped advanced-semantics domain `checker.inline_closure_requests` executes
+native build, fresh Typed installation and Resolved replay, then consumes original
+body/type sites, ordered formals, exact captures and actual-to-formal requests.
+Written guards remain pending, including zero-arity request roots. Observation
+of requests grants no expanded result, proof acceptance or semantic substitution
+coverage; the stronger MT10-AS guard/replay/freshness smoke remains deferred.
+
+
 The exact false-coherence and false-reducibility proof rows consume authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy their failure keys.
 The reduction row also authenticates `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` and `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` alongside its original canonical reference.
 Before failure observation, compare immutable complete source-to-VC reruns and their `debug_text()` bytes with the full baseline; missing or corrupt baselines, metadata and cross-stage changes fail closed.

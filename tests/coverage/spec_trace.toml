@@ -3374,6 +3374,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.statements.inline_closure_requests.metadata"
+source = "doc/spec/en/15.statements.md"
+section = "15.2.3 Inline Function Definition / 15.2.4 Inline Predicate Definition"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_advanced_semantics_inline_closure_requests_001.expect.toml",
+]
+notes = "Request metadata only: definition-time closure captures, original formal/body/type/actual associations and pending guard/substitution requests. No fulfilled guard, expanded result, substitution replay, fact, accepted proof, Core or VC credit; the existing semantic capture-avoidance requirement remains deferred."
+
+[[requirement]]
 id = "spec.en.15.statements.inline_definition_payload_gap"
 source = "doc/spec/en/15.statements.md"
 section = "15.2.3 Inline Function Definition (`deffunc`); 15.2.4 Inline Predicate Definition (`defpred`); 15.12 Complete Syntax"

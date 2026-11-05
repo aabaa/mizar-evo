@@ -81,9 +81,9 @@ ImportItem	expression	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 InfixExpression	referenced	referenced	existing source_* producer
 InheritanceDefinition	definition	b	source_structure_definition
 InheritanceTarget	definition	b	source_structure_definition
-InlineFunctorDefinition	definition	b	checker Task 279 / Task 270
+InlineFunctorDefinition	definition	b	source_proof_local_declaration::source_inline_functor_roles
 InlinePredicateApplication	referenced	referenced	existing source_* producer
-InlinePredicateDefinition	definition	b	checker Task 279 / Task 270
+InlinePredicateDefinition	definition	b	source_proof_local_declaration::source_inline_predicate_roles
 IsAssertion	referenced	referenced	existing source_* producer
 ItTerm	referenced	referenced	existing source_* producer
 ItemList	referenced	referenced	existing source_* producer

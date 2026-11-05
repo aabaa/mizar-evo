@@ -57,6 +57,13 @@ transaction 全体を独立に replay する。型・fact・存在目標の充�
 resolver の宣言順と参照順は別の clock であり、参照先と参照順を保持し、参照順を
 BindingEnv の宣言可視性 clock として使わない。
 
+inline functor/predicate 名は外側 context、順序付き仮引数は定義 context の
+DefinitionParameter binding に属する。本体・仮引数 guard・functor 戻り型は元 graph の
+対応を保持し、記述された型の site は guard を充足しない。capture は本体内 binder を除外し、
+外側の解決済み identity を保持する。callee・arity・実引数順から、零引数の root も含む
+保留中の置換要求を得る。advanced-semantics consumer は Typed/Resolved replay 後の
+要求を観測し、展開結果や意味論的 capture-avoidance coverage を生成しない。
+
 ## Descendant Set 名の binding 境界
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` は元ソースの

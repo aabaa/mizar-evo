@@ -194,7 +194,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       outer resolved identity across display-name shadowing. It also owns the
       existing advanced-semantics omitted-`reconsider` case after parser Task
       47 and checker Tasks 251/271-272, including explicit non-accepting pending/
-      blocked intent and no proof search. Neither increment
+      blocked intent and no proof search. Native inline closure/request observation
+      is executable; guard validation, substitution replay/results and binder
+      freshness remain under MT10-AS. Neither increment
       may be an empty/placeholder runner or activate the 24-fixture Task-49
       reconciliation set early. Their complete dependencies and blocked gates are
       canonical in checker

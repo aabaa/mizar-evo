@@ -10,8 +10,8 @@ field-redefinition	definition	mode-property	done	FieldRedefinition
 functor-redefinition	definition	checker-task-279	blocked	FunctorRedefinition
 inheritance-definition	definition	mode-property	done	InheritanceDefinition
 inheritance-target	definition	mode-property	done	InheritanceTarget
-inline-functor-definition	definition	checker-task-270	blocked	InlineFunctorDefinition
-inline-predicate-definition	definition	checker-task-270	blocked	InlinePredicateDefinition
+inline-functor-definition	definition	mode-property	done	InlineFunctorDefinition; original inline roles in source_proof_local_declaration
+inline-predicate-definition	definition	mode-property	done	InlinePredicateDefinition; original inline roles in source_proof_local_declaration
 mode-property	definition	native-consumer	done	ModeProperty
 functor-declaration-eligibility	definition	mode-property	done	inherited: FunctorDefinition resolver declaration eligibility in source_functor_definition
 property-retained-constants	definition	mode-property	done	inherited: resolver origins, header, prefix initializer and Arena node/token associations use original roles in source_property_implementation

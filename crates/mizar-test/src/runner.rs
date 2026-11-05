@@ -1802,6 +1802,300 @@ const STEP5C13_OVERLOAD_IDS: [&str; 2] = [
     "fail_advanced_semantics_overload_ambiguous_candidates_001",
 ];
 
+const INLINE_CLOSURE_REQUEST_ID: &str = "pass_advanced_semantics_inline_closure_requests_001";
+
+fn inline_closure_requests_admitted(root: &Path, case: &TestCase) -> bool {
+    let path = format!("tests/miz/pass/variables/{INLINE_CLOSURE_REQUEST_ID}.miz");
+    case.id.0 == INLINE_CLOSURE_REQUEST_ID
+        && case.expectation.id == case.id
+        && case.expectation.schema_version == 1
+        && case.expectation.domain == "checker.inline_closure_requests"
+        && case.expectation.profiles.as_slice() == ["fast"]
+        && case
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq(["spec.en.15.statements.inline_closure_requests.metadata"])
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::Resolve)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
+fn inline_closure_request_observation(
+    handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+) -> Result<Vec<String>, String> {
+    use mizar_resolve::names::{SourceVariableBindingKind as B, SourceVariableReferenceKind as R};
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+    let invalid = || "inline closure request does not match original roles".to_owned();
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .ok_or_else(invalid)?
+        .collect::<Vec<_>>();
+    let scope = handoff.scope();
+    let mut observations = Vec::new();
+    let mut definitions = std::collections::BTreeMap::new();
+    for binding in scope
+        .bindings()
+        .iter()
+        .filter(|binding| matches!(binding.kind(), B::InlineFunctor | B::InlinePredicate))
+    {
+        let name = rows
+            .iter()
+            .copied()
+            .find(|row| row.range() == binding.range() && matches!(row.kind(), K::Token(_)))
+            .ok_or_else(invalid)?;
+        let definition = rows
+            .iter()
+            .copied()
+            .find(|row| Some(row.site()) == name.parent())
+            .ok_or_else(invalid)?;
+        let body_kind = if binding.kind() == B::InlineFunctor {
+            K::TermExpression
+        } else {
+            K::FormulaExpression
+        };
+        let body = rows
+            .iter()
+            .copied()
+            .find(|row| row.parent() == Some(definition.site()) && row.kind() == &body_kind)
+            .ok_or_else(invalid)?;
+        let result_type = rows.iter().copied().find(|row| {
+            row.parent() == Some(definition.site()) && row.kind() == &K::TypeExpression
+        });
+        if (binding.kind() == B::InlineFunctor) != result_type.is_some() {
+            return Err(invalid());
+        }
+        let mut parameters = rows
+            .iter()
+            .copied()
+            .filter(|row| {
+                row.parent() == Some(definition.site()) && row.kind() == &K::TypedParameter
+            })
+            .collect::<Vec<_>>();
+        parameters.sort_by_key(|row| row.child_ordinal());
+        if binding.arity() != Some(parameters.len()) {
+            return Err(invalid());
+        }
+        observations.push(format!(
+            "closure.{}.{:?}.body={}.result={}.arity={}",
+            binding.id().index(),
+            binding.kind(),
+            body.site().index(),
+            result_type.map_or_else(|| "none".to_owned(), |row| row.site().index().to_string()),
+            parameters.len()
+        ));
+        let mut formals = Vec::new();
+        for (ordinal, parameter) in parameters.into_iter().enumerate() {
+            let name = rows
+                .iter()
+                .copied()
+                .find(|row| row.parent() == Some(parameter.site()) && row.child_ordinal() == 0)
+                .ok_or_else(invalid)?;
+            let guard = rows
+                .iter()
+                .copied()
+                .find(|row| {
+                    row.parent() == Some(parameter.site()) && row.kind() == &K::TypeExpression
+                })
+                .ok_or_else(invalid)?;
+            let formal = scope
+                .bindings()
+                .iter()
+                .find(|formal| {
+                    formal.range() == name.range() && formal.kind() == B::InlineParameter
+                })
+                .ok_or_else(invalid)?;
+            observations.push(format!(
+                "formal.{}.{}.binding={}.guard={}.state=pending",
+                binding.id().index(),
+                ordinal,
+                formal.id().index(),
+                guard.site().index()
+            ));
+            formals.push((formal.id().index(), guard.site()));
+        }
+        let entry = handoff
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(
+                binding.id().index(),
+            ))
+            .ok_or_else(invalid)?;
+        for captured in entry.captured.identities() {
+            let target = handoff
+                .binding_env()
+                .bindings()
+                .iter()
+                .find(|(_, target)| &target.identity == captured)
+                .ok_or_else(invalid)?
+                .0;
+            observations.push(format!(
+                "capture.{}.{}",
+                binding.id().index(),
+                target.index()
+            ));
+        }
+        definitions.insert(binding.id(), (body.site(), formals));
+    }
+    if definitions.is_empty() {
+        return Err(invalid());
+    }
+    let mut requests = 0;
+    for reference in scope.references() {
+        observations.push(format!(
+            "reference.{}.target={}.ordinal={}",
+            reference.id().index(),
+            reference.binding().index(),
+            reference.ordinal()
+        ));
+        let arity = match reference.kind() {
+            R::InlineFunctor { arity } | R::InlinePredicate { arity } => arity,
+            _ => continue,
+        };
+        let mut call = rows
+            .iter()
+            .copied()
+            .find(|row| {
+                row.range() == reference.range()
+                    && match reference.kind() {
+                        R::InlineFunctor { .. } => row.kind() == &K::TermReference,
+                        _ => matches!(row.kind(), K::Token(_)),
+                    }
+            })
+            .ok_or_else(invalid)?;
+        while !matches!(
+            call.kind(),
+            K::ApplicationTerm | K::InlinePredicateApplication
+        ) {
+            call = rows
+                .iter()
+                .copied()
+                .find(|row| Some(row.site()) == call.parent())
+                .ok_or_else(invalid)?;
+        }
+        let (body, formals) = definitions.get(&reference.binding()).ok_or_else(invalid)?;
+        let mut actuals = rows
+            .iter()
+            .copied()
+            .filter(|row| row.parent() == Some(call.site()) && row.kind() == &K::TermExpression)
+            .collect::<Vec<_>>();
+        actuals.sort_by_key(|row| row.child_ordinal());
+        if actuals.len() != arity || formals.len() != arity {
+            return Err(invalid());
+        }
+        observations.push(format!(
+            "request.{}.callee={}.call={}.body={}.arity={}.state=pending",
+            reference.id().index(),
+            reference.binding().index(),
+            call.site().index(),
+            body.index(),
+            arity
+        ));
+        for (ordinal, ((formal, guard), actual)) in formals.iter().zip(actuals).enumerate() {
+            observations.push(format!(
+                "argument.{}.{}.formal={}.actual={}.guard={}.state=pending",
+                reference.id().index(),
+                ordinal,
+                formal,
+                actual.site().index(),
+                guard.index()
+            ));
+        }
+        requests += 1;
+    }
+    if requests == 0 {
+        return Err(invalid());
+    }
+    Ok(observations)
+}
+
+fn source_inline_closure_requests(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<Vec<String>, String> {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofLocalDeclarationProducer,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts},
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let details = frontend_detail_keys(case, &output.diagnostics);
+    if !details.is_empty() {
+        return Err(details.join(","));
+    }
+    let invalid = || "inline closure request source authority mismatch".to_owned();
+    let ast = output.ast.ok_or_else(invalid)?;
+    let resolver = resolver_symbol_collection(root, case, &ast);
+    if !resolver.detail_keys.is_empty() {
+        return Err(resolver.detail_keys.join(","));
+    }
+    let original = type_elaboration::source_proof_local_syntax_receiver(
+        &ast,
+        &resolver.module,
+        &output.source_text,
+    )
+    .ok_or_else(invalid)?;
+    let native = SurfaceResolvedArena::lower(&ast, &resolver.module).map_err(|_| invalid())?;
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast,
+        &resolver.module,
+        &resolver.env,
+    ))
+    .map_err(|_| invalid())?;
+    let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+        &original,
+        &native,
+        &resolver.env,
+        &scope,
+    )
+    .map_err(|_| invalid())?;
+    let typed = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: resolver.module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(None, Vec::new()).map_err(|_| invalid())?,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|_| invalid())?
+    .with_source_proof_local_binding(handoff)
+    .map_err(|_| invalid())?;
+    let resolved = type_elaboration::assemble_empty_resolved_typed_ast(&typed, Vec::new())
+        .map_err(|_| invalid())?;
+    inline_closure_request_observation(resolved.source_proof_local_binding().ok_or_else(invalid)?)
+}
+
 fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
     STEP5C13_OVERLOAD_IDS.iter().any(|id| {
         case.id.0 == *id
@@ -1981,6 +2275,21 @@ fn validate_step5c11_registration_inventory(
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
+    if plan
+        .cases
+        .iter()
+        .filter(|case| inline_closure_requests_admitted(root, case))
+        .count()
+        != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            root,
+            "advanced_semantics",
+            "E-ADVANCED-SEMANTICS-INVENTORY",
+            format!("advanced_semantics.inventory.{INLINE_CLOSURE_REQUEST_ID}"),
+            "inline closure requests require exactly one admitted source/sidecar pair",
+        ));
+    }
     for id in STEP5C11_REGISTRATION_IDS {
         if plan
             .cases
@@ -2018,6 +2327,15 @@ fn validate_step5c11_registration_inventory(
     for case in &plan.cases {
         if (is_step5c11_registration_candidate(case)
             || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
+            || case.id.0 == INLINE_CLOSURE_REQUEST_ID
+            || case.expectation.id.0 == INLINE_CLOSURE_REQUEST_ID
+            || case
+                .source_path
+                .file_stem()
+                .is_some_and(|name| name == INLINE_CLOSURE_REQUEST_ID)
+            || case.expectation_path.file_name().is_some_and(|name| {
+                name == format!("{INLINE_CLOSURE_REQUEST_ID}.expect.toml").as_str()
+            })
             || (is_step5c13_overload_candidate(case) && !case.expectation.tags.is_empty())
             || case
                 .expectation
@@ -2026,6 +2344,7 @@ fn validate_step5c11_registration_inventory(
                 .any(|tag| tag == "active_advanced_semantics"))
             && !step5c11_registration_admitted(root, case)
             && !step5c13_overload_admitted(root, case)
+            && !inline_closure_requests_admitted(root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
                 "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
@@ -2054,11 +2373,14 @@ pub fn run_advanced_semantics_corpus(
             .filter(|case| {
                 step5c11_registration_admitted(&root, case)
                     || step5c13_overload_admitted(&root, case)
+                    || inline_closure_requests_admitted(&root, case)
             })
             .enumerate()
         {
             let result = run_frontend(&root, case, ordinal).and_then(|output| {
-                if step5c13_overload_admitted(&root, case) {
+                if inline_closure_requests_admitted(&root, case) {
+                    source_inline_closure_requests(&root, case, output).map(|_| Vec::new())
+                } else if step5c13_overload_admitted(&root, case) {
                     let (source,nodes,symbols)=source_registration_inputs(&root,case,output)?;
                     let database=if case.id.0==STEP5C13_OVERLOAD_IDS[1] {
                         Some(mizar_proof::status::prove_source_existential_registration(&source,&nodes,&symbols,shared::snapshot_id(0),&mizar_proof::policy::VerifierPolicy::release())?)

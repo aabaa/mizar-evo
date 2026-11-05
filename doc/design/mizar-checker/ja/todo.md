@@ -689,9 +689,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   Typed/Resolved replay まで transport する。Equating は元 row の規則を使う。
   型推論・置換適用・証明受理は下流 owner に残す。
   [契約](../../task_contracts/ja/CHECKER269-NATIVE-BINDINGS.md)。
-- [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
+- [x] **Task 270:** inline-definition closure/capture/substitution-request producer。
   この task で blocked の Task 285 要素規則 (InlineFunctorDefinition,
   InlinePredicateDefinition) を producer と同時に出荷する。
+  Contract: [native inline bindings](../../task_contracts/ja/CHECKER270-INLINE-BINDINGS.md).
+  producer と AS の要求観測は完了。MT10-AS の guard 検証・置換 replay/result・
+  binder freshness は未完のままである。
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
   parser Task 47に依存。この task で blocked の Task 285 要素規則 (QuaExpression,
   ReconsiderItem, ReconsiderStatement) を producer と同時に出荷する。

@@ -62,6 +62,15 @@ is produced. Unsupported native binding families fail closed.
 Resolver declaration and reference ordinals are separate clocks; preserve reference
 targets and ordinals without using them as BindingEnv declaration visibility clocks.
 
+Inline functor/predicate names use the enclosing context; their ordered formals
+use DefinitionParameter bindings in the definition context. Original body,
+formal guard and functor return annotations remain source graph associations;
+written type sites do not discharge guards. Captures exclude all body-local
+binders and retain outer resolved identities. Callee/arity and ordered actual
+roles define pending substitution requests, including zero-arity request roots.
+The advanced-semantics consumer observes these requests after Typed/Resolved
+replay; it produces no expanded result or semantic capture-avoidance credit.
+
 ## Descendant Set-name binding boundary
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` consumes
