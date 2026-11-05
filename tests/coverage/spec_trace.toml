@@ -3548,6 +3548,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.statements.witness_goals.typed_replay.metadata"
+source = "doc/spec/en/15.statements.md"
+section = "15.4.4 Witness Introduction (take)"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.16.correctness_conditions.parser"
 source = "doc/spec/en/16.theorems_and_proofs.md"
 section = "16.6 Correctness Conditions; Appendix A.16 Theorems and Correctness Blocks"

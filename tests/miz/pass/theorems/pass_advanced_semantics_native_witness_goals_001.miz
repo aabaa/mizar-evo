@@ -1,0 +1,9 @@
+theorem NativeWitnessGoals:
+  for s being set, o being object
+  ex a being set, b being object st a = s & b = o
+proof
+  let s be set;
+  let o be object;
+  take k = s, o;
+  thus thesis;
+end;

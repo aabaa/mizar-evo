@@ -51,8 +51,9 @@ opaque handoff は `binding_env()`・`source()`・`scope()`・`debug_text()` を
 capture し、名前付き Take は名前と RHS の対応を保持するが Set の展開意味論を付与しない。
 Given/Consider の metadata は `GivenWitness` を使い、旧 donor の権限を与えない。
 Typed/Resolved に一つの slot を追加し、fresh empty receiver と既存 family との排他を検査し、
-transaction 全体を独立に replay する。型・fact・存在目標の充足・置換適用・証明受理は生成せず、
-未対応の native binding family は fail closed とする。
+transaction 全体を独立に replay する。binding transaction は checked 型・fact・witness の
+充足・証明受理を設置しない。以下の method は semantic table を埋めずに request ごとの
+結果を計算する。未対応の native binding family は fail closed とする。
 
 resolver の宣言順と参照順は別の clock であり、参照先と参照順を保持し、参照順を
 BindingEnv の宣言可視性 clock として使わない。
@@ -81,7 +82,20 @@ Pending は module wrapper・独立した registration proof を含む未処理�
 論理的 obligation を生成しない。Blocked は未解決の局所 citation・実変換の拒否・
 隣接 Then premise の欠落に限定し、重複 label と未対応 reference は拒否する。
 Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
-Task180 の checked table と論理 goal/witness/置換の elaboration は別に保つ。
+Task180 の checked table は source intent・派生 witness goal とは別に保つ。
+
+引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・連言を、
+順次 Let/Take と terminal Thus に沿って導出する。`SourceProofGoal` は実 binding identity
+と論理 body を保持し、元 Typed site は出典のみとする。不変の `SourceProofGoalStep` は
+owner/context/event・対応 identity・置換前後の goal・free/retained-binder 集合を公開する。
+既存 handoff/slot のまま、実 coercion/直接 initial-obligation 入力と検査・項式推論出力を返す。
+元の guard・sealed 宣言型・導入順を再検証し、header/Let の type site は Missing を維持する。
+未使用 binder も宣言値用 role で型検査し、元 reference を作らない。Let は同一の plain guard、
+Take は builtin 適合性または Pending narrowing guard を要求する。未解決 guard は置換後の
+body と terminal まで保持する。明示 terminal goal は bound-alpha 正規構造と実 free ID で照合する。
+独立 replay が元ソース・型・guard・結果を検査する。残余 obligation は未証明のままで、
+Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・後続 alias 利用・
+一般的な freshening は後続に残す。
 
 ## Descendant Set 名の binding 境界
 
@@ -572,6 +586,7 @@ SHA-256
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofGoal` | `#[non_exhaustive]`。caller は後続の派生論理形式を扱う。 |
 | `SourceProofIntentStatus` | `#[non_exhaustive]`。caller は後続の source-request state を扱う。 |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-local declaration formを許容する。 |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |

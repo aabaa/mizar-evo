@@ -26,7 +26,12 @@ AS domain `checker.native_proof_intents` は実 native 設置/replay・元 inten
 実局所 label 解決を消費する。Pass は観測だけで証明受理ではない。既存 FS organization/
 Set-Take の意味論検査を維持し、native 経路も要求する。旧 omitted-AS seed は非 active の
 まま、全ソース control は実変換の拒否/Missing/diagnostic と同じ theorem の Blocked 祖先を
-要求する。witness 照合・型付き goal・置換結果は Task 272B に残す。
+要求する。別の AS 観測 `checker.native_witness_goals` は同じ native 設置後に、
+実ソース順の Let/Take 型検査・guard request・具体化した goal replay を消費する。
+既存 FS existential multi-witness の意味論 checker を維持し、派生結果の消費も要求する。
+Pass は未証明の残余 goal の観測であり、未解決型 guard は実 Witness・owner body と
+terminal まで対応を保持する。証明受理・discharge は与えない。広い proof effect と
+旧 omitted-AS の最終 goal consumer は Task 272B に残す。
 
 ## Native conversion classification
 

@@ -121,7 +121,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             let permitted = if path == root.join("src/source_property_implementation.rs") {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
             } else if path == root.join("src/source_proof_local_declaration.rs") {
-                "use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};"
+                "use mizar_syntax::ast::{\n    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceNodeKind, SurfaceQuantifierKind,\n    SurfaceTokenKind,\n};"
             } else if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"
             } else {
@@ -133,10 +133,16 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
                 let (production, tests) = source
                     .split_once("#[cfg(test)]\npub(crate) fn task286_source(")
                     .unwrap();
-                let fixture_import = "use mizar_syntax::{SurfaceAstBuilder, SurfaceBuilderNodeId};";
-                assert!(!production.contains(fixture_import));
-                assert_eq!(tests.matches(fixture_import).count(), 1);
-                format!("{production}{}", tests.replace(fixture_import, ""))
+                let mut tests = tests.to_owned();
+                for fixture_import in [
+                    "use mizar_syntax::{SurfaceAstBuilder, SurfaceBuilderNodeId};",
+                    "use mizar_syntax::ast::SurfaceFormulaBinaryOperator;",
+                ] {
+                    assert!(!production.contains(fixture_import));
+                    assert_eq!(tests.matches(fixture_import).count(), 1);
+                    tests = tests.replace(fixture_import, "");
+                }
+                format!("{production}{tests}")
             } else if path == root.join("src/source_structure.rs") {
                 let (production, tests) = source.split_once("#[cfg(test)]\nmod tests {").unwrap();
                 let fixture_import = "use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceTokenKind as T};";

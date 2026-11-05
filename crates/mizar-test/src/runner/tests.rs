@@ -4822,3 +4822,737 @@ fn task272_native_proof_intents_preserve_annotated_compact_then_and_now_ownershi
         );
     }
 }
+
+#[test]
+fn task272b1_native_witness_goals_execute_metadata_runtime() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let id = "pass_advanced_semantics_native_witness_goals_001";
+    let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+    let frontend = super::run_frontend(&config.workspace_root, case, 0).unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend
+        .ast
+        .as_ref()
+        .expect("genuine parsed witness source");
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, case, ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    let native = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver.module)
+        .expect("genuine witness source lowering");
+    native.validate_against(ast, &resolver.module).unwrap();
+    println!(
+        "Task272B1 test-first: frontend, symbol collection and authentic native lowering succeeded"
+    );
+    let report = super::run_advanced_semantics_corpus(&config).unwrap();
+    let result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == id)
+        .unwrap_or_else(|| panic!("witness-goal case missing: {:?}", report.diagnostics));
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+}
+
+fn task272b1_witness_source(
+    source: &str,
+) -> mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_WITNESS_GOAL_ID)
+        .unwrap();
+    let frontend = metamorphic_guard::with_source(case, source, || {
+        super::run_frontend(&config.workspace_root, case, 0)
+    })
+    .unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, case, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap()
+}
+
+fn task272b1_binding(
+    handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+    index: usize,
+) -> mizar_checker::binding_env::BindingId {
+    use mizar_checker::binding_env::BinderIdentity;
+    let binding = &handoff.scope().bindings()[index];
+    handoff
+        .binding_env()
+        .bindings()
+        .iter()
+        .find(|(_, actual)| {
+            actual.identity
+                == BinderIdentity::ResolverLocal {
+                    scope: binding.scope().clone(),
+                    ordinal: binding.ordinal(),
+                    declaration_range: binding.range(),
+                }
+        })
+        .unwrap()
+        .0
+}
+
+fn task272b1_goal_text(
+    goal: &mizar_checker::source_proof_local_declaration::SourceProofGoal,
+) -> String {
+    use mizar_checker::source_proof_local_declaration::SourceProofGoal as G;
+    match goal {
+        G::Equality { left, right, .. } => format!("eq({},{})", left.index(), right.index()),
+        G::Conjunction { left, right, .. } => format!(
+            "and({},{})",
+            task272b1_goal_text(left),
+            task272b1_goal_text(right)
+        ),
+        G::Universal {
+            binding,
+            radix,
+            body,
+            ..
+        } => format!(
+            "forall({}:{radix:?},{})",
+            binding.index(),
+            task272b1_goal_text(body)
+        ),
+        G::Existential {
+            binding,
+            radix,
+            body,
+            ..
+        } => format!(
+            "exists({}:{radix:?},{})",
+            binding.index(),
+            task272b1_goal_text(body)
+        ),
+        _ => panic!("unsupported derived goal"),
+    }
+}
+
+#[test]
+fn task272b1_native_witness_goals_match_manual_trees_steps_types_and_guards() {
+    use mizar_checker::{
+        type_checker::{
+            CoercionEvidence, CoercionJustification, CoercionRequestKind, TermReference,
+            TypeHeadInput,
+        },
+        typed_ast::{CoercionStatus, FactStatus, TypedSiteRef},
+    };
+    use mizar_syntax::SurfaceNodeKind as K;
+    let source = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz"
+    );
+    let handoff = task272b1_witness_source(source);
+    assert_eq!(
+        handoff
+            .scope()
+            .bindings()
+            .iter()
+            .map(|binding| binding.spelling())
+            .collect::<Vec<_>>(),
+        ["s", "o", "a", "b", "s", "o", "k"]
+    );
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [2, 0, 3, 1, 4, 5]
+    );
+    let [s0, o1, a2, b3, s4, o5, k6] =
+        std::array::from_fn::<_, 7, _>(|index| task272b1_binding(&handoff, index));
+    let (s, o, a, b, x, y) = (
+        s0.index(),
+        o1.index(),
+        a2.index(),
+        b3.index(),
+        s4.index(),
+        o5.index(),
+    );
+    let g0 = format!(
+        "forall({s}:Set,forall({o}:Object,exists({a}:Set,exists({b}:Object,and(eq({a},{s}),eq({b},{o}))))))"
+    );
+    let g1 = format!(
+        "forall({o}:Object,exists({a}:Set,exists({b}:Object,and(eq({a},{x}),eq({b},{o})))))"
+    );
+    let g2 = format!("exists({a}:Set,exists({b}:Object,and(eq({a},{x}),eq({b},{y}))))");
+    let g3 = format!("exists({b}:Object,and(eq({x},{x}),eq({b},{y})))");
+    let g4 = format!("and(eq({x},{x}),eq({y},{y}))");
+    let expected = [
+        (&g0, &g0),
+        (&g0, &g1),
+        (&g1, &g2),
+        (&g2, &g3),
+        (&g3, &g4),
+        (&g4, &g4),
+    ];
+    let (steps, inputs, pending, checked, inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 6);
+    assert_eq!(
+        steps.iter().map(|step| step.matched()).collect::<Vec<_>>(),
+        [
+            None,
+            Some((s0, s4)),
+            Some((o1, o5)),
+            Some((a2, s4)),
+            Some((b3, o5)),
+            None
+        ]
+    );
+    let expected_free = [
+        vec![],
+        vec![s4],
+        vec![s4, o5],
+        vec![s4, o5],
+        vec![s4, o5],
+        vec![s4, o5],
+    ];
+    let expected_avoided = [
+        vec![],
+        vec![o1, a2, b3],
+        vec![a2, b3],
+        vec![b3],
+        vec![],
+        vec![],
+    ];
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let original = |site: &TypedSiteRef| {
+        let id = handoff
+            .source()
+            .nodes()
+            .node(site.node())
+            .unwrap()
+            .resolved_node
+            .unwrap();
+        rows.iter().copied().find(|row| row.site() == id).unwrap()
+    };
+    for (index, step) in steps.iter().enumerate() {
+        assert_eq!(task272b1_goal_text(step.before()), *expected[index].0);
+        assert_eq!(task272b1_goal_text(step.after()), *expected[index].1);
+        assert_eq!(step.free(), expected_free[index]);
+        assert_eq!(step.avoided(), expected_avoided[index]);
+        assert_eq!(step.owner(), steps[0].site());
+        assert_eq!(step.context(), steps[0].context());
+        let row = original(step.site());
+        match index {
+            0 => assert_eq!(row.kind(), &K::TheoremItem),
+            1 | 2 => {
+                assert!(matches!(row.kind(), K::Token(_)));
+                assert_eq!(row.range(), handoff.scope().bindings()[index + 3].range());
+            }
+            3 | 4 => assert_eq!(row.kind(), &K::Witness),
+            5 => assert_eq!(row.kind(), &K::ConclusionStatement),
+            _ => unreachable!(),
+        }
+        assert!(!step.free().contains(&k6));
+    }
+    assert_eq!(inputs.len(), 2);
+    assert!(pending.is_empty());
+    assert!(checked.initial_obligations().is_empty());
+    for (input, head) in inputs
+        .iter()
+        .zip([TypeHeadInput::BuiltinSet, TypeHeadInput::BuiltinObject])
+    {
+        assert_eq!(input.kind, CoercionRequestKind::Widening);
+        assert_eq!(input.justification, CoercionJustification::Omitted);
+        assert_eq!(input.evidence, CoercionEvidence::BuiltinRadix);
+        assert_eq!(input.from_type.as_ref().unwrap().head, head);
+        assert_eq!(input.to_type.head, head);
+        let step = steps
+            .iter()
+            .find(|step| step.site() == &input.site)
+            .unwrap();
+        assert_eq!(input.source_range, original(step.site()).range());
+        let result = checked
+            .coercions()
+            .iter()
+            .find(|(_, result)| result.site == input.site)
+            .unwrap()
+            .1;
+        assert_eq!(result.status, CoercionStatus::Candidate);
+        assert!(result.obligation.is_none());
+        assert!(
+            checked
+                .facts()
+                .iter()
+                .any(|(_, fact)| fact.subject == input.site && fact.status == FactStatus::Known)
+        );
+    }
+    assert!(checked.diagnostics().is_empty());
+    for reference in handoff.scope().references() {
+        let binding = task272b1_binding(&handoff, reference.binding().index());
+        assert!(inference.terms().iter().any(|(_, term)| term.reference
+            == Some(TermReference::Binding(binding))
+            && original(&term.site).range() == reference.range()));
+    }
+    for binding in [s4, o5] {
+        assert!(inference.terms().iter().any(|(_,term)| term.reference==Some(TermReference::Binding(binding)) && matches!(&term.site,TypedSiteRef::Role {node,role} if role.as_str()=="witness-goal.declaration-value" && handoff.source().nodes().node(*node).unwrap().resolved_node.is_some_and(|id| rows.iter().any(|row| row.site()==id && row.range()==handoff.binding_env().bindings().get(binding).unwrap().declaration_range)))));
+    }
+    let observed = super::native_witness_goal_observation(&handoff).unwrap();
+    assert_eq!(
+        observed
+            .iter()
+            .filter(|key| key.starts_with("step."))
+            .count(),
+        6
+    );
+    assert_eq!(
+        observed
+            .iter()
+            .filter(|key| key.starts_with("guard."))
+            .count(),
+        2
+    );
+    assert!(
+        observed
+            .iter()
+            .any(|key| key.starts_with("remaining.") && key.ends_with("pending=[]"))
+    );
+    assert!(handoff.source().types().is_empty());
+    assert!(handoff.source().facts().is_empty());
+    assert!(handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b1_native_witness_goals_keep_pending_guard_and_changed_body_in_order() {
+    use mizar_checker::{
+        type_checker::{InitialRequirementKind, TypeHeadInput},
+        typed_ast::{CoercionStatus, FactStatus, InitialObligationStatus},
+    };
+    let source = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz"
+    )
+    .replace("take k = s, o;", "take k = o, s;");
+    let handoff = task272b1_witness_source(&source);
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [2, 0, 3, 1, 5, 4]
+    );
+    let (steps, success, pending, checked, _) = handoff.check_witness_goals().unwrap();
+    let (a, b, s, o) = (
+        task272b1_binding(&handoff, 2),
+        task272b1_binding(&handoff, 3),
+        task272b1_binding(&handoff, 4),
+        task272b1_binding(&handoff, 5),
+    );
+    assert_eq!(steps[3].matched(), Some((a, o)));
+    assert_eq!(steps[4].matched(), Some((b, s)));
+    assert_eq!(
+        task272b1_goal_text(steps[3].after()),
+        format!(
+            "exists({}:Object,and(eq({},{}),eq({},{})))",
+            b.index(),
+            o.index(),
+            s.index(),
+            b.index(),
+            o.index()
+        )
+    );
+    let body = format!(
+        "and(eq({},{}),eq({},{}))",
+        o.index(),
+        s.index(),
+        s.index(),
+        o.index()
+    );
+    assert_eq!(task272b1_goal_text(steps[4].after()), body);
+    assert_eq!(steps[5].before(), steps[4].after());
+    assert_eq!(steps[5].after(), steps[4].after());
+    assert_eq!(
+        (
+            success.len(),
+            pending.len(),
+            checked.coercions().len(),
+            checked.initial_obligations().len()
+        ),
+        (1, 1, 1, 1)
+    );
+    assert_eq!(pending[0].site, *steps[3].site());
+    assert_eq!(pending[0].kind, InitialRequirementKind::Narrowing);
+    assert_eq!(pending[0].target_type.head, TypeHeadInput::BuiltinSet);
+    assert_eq!(success[0].site, *steps[4].site());
+    assert_eq!(
+        success[0].from_type.as_ref().unwrap().head,
+        TypeHeadInput::BuiltinSet
+    );
+    assert_eq!(success[0].to_type.head, TypeHeadInput::BuiltinObject);
+    assert_eq!(
+        checked.coercions().iter().next().unwrap().1.status,
+        CoercionStatus::Candidate
+    );
+    let obligation = checked.initial_obligations().iter().next().unwrap().1;
+    assert_eq!(obligation.owner, *steps[3].site());
+    assert_eq!(obligation.status, InitialObligationStatus::Pending);
+    assert!(
+        checked
+            .facts()
+            .iter()
+            .any(|(_, fact)| fact.status == FactStatus::PendingObligation
+                && !fact.status.is_unconditionally_consumable())
+    );
+    assert!(checked.diagnostics().is_empty());
+    let observed = super::native_witness_goal_observation(&handoff).unwrap();
+    assert!(
+        observed
+            .iter()
+            .any(|key| key.starts_with("guard.0.") && key.contains("status=Pending"))
+    );
+    assert!(observed.iter().any(|key| key.starts_with("remaining.")
+        && key.contains(&format!("pending=[{:?}]", obligation.id))));
+}
+
+#[test]
+fn task272b1_native_witness_goals_cover_lists_segments_unused_and_retained_binders() {
+    use mizar_checker::type_checker::TermReference;
+    use mizar_checker::typed_ast::TypedSiteRef;
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz"
+    );
+    for source in [
+        base.replace(
+            "let s be set;\n  let o be object;",
+            "let s be set, o be object;",
+        ),
+        base.replace("take k = s, o;", "take k = s; take o;"),
+        base.replace("take k = s, o;", "take s, o;"),
+        base.replace("thus thesis;", "thus s = s & o = o;"),
+    ] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps, success, pending, _, _) = handoff.check_witness_goals().unwrap();
+        assert_eq!(steps.len(), 6);
+        assert_eq!(success.len(), 2);
+        assert!(pending.is_empty());
+        let (s, o) = (
+            task272b1_binding(&handoff, 4),
+            task272b1_binding(&handoff, 5),
+        );
+        assert_eq!(
+            task272b1_goal_text(steps[5].after()),
+            format!("and(eq({0},{0}),eq({1},{1}))", s.index(), o.index())
+        );
+        super::native_witness_goal_observation(&handoff).unwrap();
+    }
+    let multi = "theorem Multi: for s, t being set ex a, b being set st a = s & b = t proof let s, t be set; take s, t; thus thesis; end;";
+    let handoff = task272b1_witness_source(multi);
+    let (steps, success, pending, _, _) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 6);
+    assert_eq!(success.len(), 2);
+    assert!(pending.is_empty());
+    assert_eq!(
+        steps[1].matched(),
+        Some((
+            task272b1_binding(&handoff, 0),
+            task272b1_binding(&handoff, 4)
+        ))
+    );
+    assert_eq!(
+        steps[2].matched(),
+        Some((
+            task272b1_binding(&handoff, 1),
+            task272b1_binding(&handoff, 5)
+        ))
+    );
+    assert_ne!(steps[1].site(), steps[2].site());
+    let unused = "theorem Unused: for unused being object, s being set ex a being set st a = s proof let unused be object; let s be set; take s; thus thesis; end;";
+    let handoff = task272b1_witness_source(unused);
+    let (steps, _, _, _, inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [2, 1, 4]
+    );
+    let local = task272b1_binding(&handoff, 3);
+    assert_eq!(
+        steps[1].matched(),
+        Some((task272b1_binding(&handoff, 0), local))
+    );
+    assert!(steps[1].free().is_empty());
+    assert_eq!(
+        steps[1].avoided(),
+        [
+            task272b1_binding(&handoff, 1),
+            task272b1_binding(&handoff, 2)
+        ]
+    );
+    assert!(inference.terms().iter().any(|(_, term)| term.reference
+        == Some(TermReference::Binding(local))
+        && matches!(term.site, TypedSiteRef::Role { .. })));
+    super::native_witness_goal_observation(&handoff).unwrap();
+    for terminal in ["thesis", "for z being set holds y = z"] {
+        let source = format!(
+            "theorem Retained: for y being set ex x being set st for y being set holds x = y proof let y be set; take y; thus {terminal}; end;"
+        );
+        let handoff = task272b1_witness_source(&source);
+        let (steps, _, _, _, _) = handoff.check_witness_goals().unwrap();
+        assert_eq!(steps.len(), 4);
+        let (inner, local) = (
+            task272b1_binding(&handoff, 2),
+            task272b1_binding(&handoff, 3),
+        );
+        assert_eq!(
+            task272b1_goal_text(steps[2].after()),
+            format!(
+                "forall({}:Set,eq({},{}))",
+                inner.index(),
+                local.index(),
+                inner.index()
+            )
+        );
+        assert_eq!(steps[2].free(), [local]);
+        assert_eq!(steps[2].avoided(), [inner]);
+        assert!(steps[3].avoided().is_empty());
+        assert_eq!(steps[3].before(), steps[3].after());
+        super::native_witness_goal_observation(&handoff).unwrap();
+    }
+    for body in ["thus thesis;", "let x be set; thus thesis;"] {
+        let source = format!(
+            "theorem Unfinished: for x being set ex y being set st y = x proof {body} end;"
+        );
+        let handoff = task272b1_witness_source(&source);
+        let (steps, success, pending, _, _) = handoff.check_witness_goals().unwrap();
+        assert_eq!(steps.len(), if body.starts_with("let") { 3 } else { 2 });
+        assert!(success.is_empty());
+        assert!(pending.is_empty());
+        assert_eq!(
+            steps.last().unwrap().before(),
+            steps.last().unwrap().after()
+        );
+        assert!(task272b1_goal_text(steps.last().unwrap().after()).contains("exists("));
+        super::native_witness_goal_observation(&handoff).unwrap();
+    }
+}
+
+#[test]
+fn task272b1_native_witness_goals_refuse_wrong_events_terminal_and_foreign_authority() {
+    use mizar_checker::source_proof_local_declaration::{
+        SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+    };
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz"
+    );
+    for source in [
+        base.replace("let o be object;", "let o be set;"),
+        base.replace("let o be object;\n  take k = s, o;", "take k = s; let o be object; take o;"),
+        base.replace("take k = s, o;", "take k = s, o, s;"),
+        base.replace("thus thesis;", "thus s = o & o = s;"),
+        base.replace("thus thesis;", "thus k = s & o = o;"),
+        "theorem NotExistential: for s being set holds s = s proof let s be set; take s; thus thesis; end;".to_owned(),
+        "theorem WrongAlpha: for y being set ex x being set st for y being set holds x = y proof let y be set; take y; thus for y being set holds y = y; end;".to_owned(),
+        "theorem WrongGuard: for y being set ex x being set st for y being set holds x = y proof let y be set; take y; thus for z being object holds y = z; end;".to_owned(),
+    ] { assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}"); }
+    let (original, _, _, _) = task272_proof_intent_inputs(base);
+    for source in [
+        base.replace("take k = s, o;", "take k = o, s;"),
+        base.replace("a = s & b = o", "a = o & b = s"),
+        base.replace("let s be set;", "let s be object;"),
+        base.replace("thus thesis;", "thus s = s & o = o;"),
+    ] {
+        let (coherent, native, symbols, scope) = task272_proof_intent_inputs(&source);
+        assert_eq!(coherent.source_id(), original.source_id());
+        assert_eq!(coherent.module_id(), original.module_id());
+        assert!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &coherent, &native, &symbols, &scope
+            )
+            .is_ok()
+        );
+        assert!(matches!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        ));
+    }
+}
+
+#[test]
+fn task272b1_native_witness_goals_keep_owner_local_pending_and_real_fs_consumer() {
+    let base = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz"
+    );
+    let source = format!(
+        "{}\n{}",
+        base.replace("NativeWitnessGoals", "FirstWitnessGoals")
+            .replace("take k = s, o;", "take k = o, s;"),
+        base.replace("NativeWitnessGoals", "SecondWitnessGoals")
+    );
+    let handoff = task272b1_witness_source(&source);
+    let (steps, success, pending, checked, _) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 12);
+    assert_ne!(steps[0].owner(), steps[6].owner());
+    assert_ne!(steps[0].context(), steps[6].context());
+    assert_eq!(
+        (
+            success.len(),
+            pending.len(),
+            checked.initial_obligations().len()
+        ),
+        (3, 1, 1)
+    );
+    assert_eq!(pending[0].site, *steps[3].site());
+    let observed = super::native_witness_goal_observation(&handoff).unwrap();
+    let remaining = observed
+        .iter()
+        .filter(|key| key.starts_with("remaining."))
+        .collect::<Vec<_>>();
+    assert_eq!(remaining.len(), 2);
+    assert!(!remaining[0].ends_with("pending=[]"));
+    assert!(remaining[1].ends_with("pending=[]"));
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let fs = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_formula_statement_existential_multi_witness_001")
+        .unwrap();
+    assert_eq!(
+        super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0).status,
+        super::FormulaStatementCaseStatus::Passed
+    );
+    let frontend = super::run_frontend(&config.workspace_root, fs, 0).unwrap();
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, fs, &ast);
+    let handoff = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap();
+    let (steps, success, pending, _, _) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(), 5);
+    assert_eq!(success.len(), 2);
+    assert!(pending.is_empty());
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [1, 0, 2, 0, 3, 3, 3, 3, 3, 3]
+    );
+    let local = task272b1_binding(&handoff, 3);
+    assert_eq!(
+        task272b1_goal_text(steps[4].after()),
+        format!("and(eq({0},{0}),eq({0},{0}))", local.index())
+    );
+    let text = std::fs::read_to_string(&fs.source_path).unwrap();
+    let modified = text.replace("theorem ExMulti1:", "open theorem ExMulti1:");
+    let frontend = metamorphic_guard::with_source(fs, &modified, || {
+        super::run_frontend(&config.workspace_root, fs, 0)
+    })
+    .unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, fs, &ast);
+    assert!(
+        super::formula_statement::check_formula_ast_with_organization(
+            &ast,
+            &resolver.module,
+            &resolver.env,
+            false
+        )
+        .unwrap()
+    );
+    let result = metamorphic_guard::with_source(fs, &modified, || {
+        super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0)
+    });
+    assert_eq!(result.status, super::FormulaStatementCaseStatus::Failed);
+    assert!(
+        result
+            .actual_detail_keys
+            .iter()
+            .any(|key| key.contains("native witness goal"))
+    );
+}
+
+#[test]
+fn task272b1_native_witness_goals_guard_exact_admission_and_actual_as_paths() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_WITNESS_GOAL_ID)
+        .unwrap();
+    assert!(super::native_witness_goals_admitted(
+        &config.workspace_root,
+        case
+    ));
+    for mutation in 0..9 {
+        let mut bad = case.clone();
+        match mutation {
+            0 => bad.expectation.domain = "checker.native_proof_intents".into(),
+            1 => bad.expectation.tags.clear(),
+            2 => {
+                bad.expectation.expected_phase = Some(crate::expectation::PipelinePhase::TypeCheck)
+            }
+            3 => bad.source_path = config.workspace_root.join("tests/miz/pass/other.miz"),
+            4 => bad.expectation.spec_refs.clear(),
+            5 => bad.expectation.stable_detail_key = Some("unexpected".into()),
+            6 => bad.expectation.tags.push("extra".into()),
+            7 => {
+                bad.expectation_path = config
+                    .workspace_root
+                    .join("tests/miz/pass/other.expect.toml")
+            }
+            _ => bad.expectation.id.0 = "wrong_identity".into(),
+        };
+        assert!(!super::native_witness_goals_admitted(
+            &config.workspace_root,
+            &bad
+        ));
+        let mut invalid = plan.clone();
+        invalid.cases.push(bad);
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-ADVANCED-SEMANTICS-ADMISSION")
+        );
+    }
+    let mut duplicate = plan.clone();
+    duplicate.cases.push(case.clone());
+    let mut missing = plan.clone();
+    missing.cases.retain(|candidate| candidate.id != case.id);
+    for invalid in [duplicate, missing] {
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key
+                    == format!(
+                        "advanced_semantics.inventory.{}",
+                        super::NATIVE_WITNESS_GOAL_ID
+                    ))
+        );
+    }
+    for source in ["reserve seed for set; set alias = seed;".to_owned(),include_str!("../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_witness_goals_001.miz").replace("thus thesis;","thus s = o & o = s;")] {
+        let report=metamorphic_guard::with_source(case,&source,||super::run_advanced_semantics_corpus(&config)).unwrap();assert_eq!(report.results.iter().find(|result|result.id==case.id).unwrap().status,super::TypeElaborationCaseStatus::Failed);
+    }
+}

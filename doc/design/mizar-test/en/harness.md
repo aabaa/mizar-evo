@@ -30,7 +30,14 @@ Pass is an observation, never accepted proof. Existing FS organization/Set-Take
 semantic checks remain authoritative and additionally require the native path.
 The old omitted-AS seed stays inactive; its whole-source control requires actual
 conversion rejection/Missing/diagnostic plus the same blocked theorem ancestry.
-Witness matching, typed goals and substitution results remain Task 272B.
+The separate `checker.native_witness_goals` AS observation consumes actual
+source-order Let/Take typing, guard requests and materialized goal replay after
+the same native installation. The existing FS existential multi-witness case
+keeps its semantic checker and additionally consumes those derived results.
+Pass observes unproved remaining goals; each unresolved type guard stays joined
+to its actual Witness and owning body through terminal. It supplies no proof
+acceptance or discharge. Broader proof effects and the old omitted-AS final
+goal consumer remain Task 272B.
 
 ## Native conversion classification
 

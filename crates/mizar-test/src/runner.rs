@@ -1808,6 +1808,45 @@ const NATIVE_CONVERSION_ID: &str = "pass_advanced_semantics_reconsider_classific
 
 const NATIVE_PROOF_INTENT_ID: &str = "pass_advanced_semantics_native_proof_intents_001";
 
+const NATIVE_WITNESS_GOAL_ID: &str = "pass_advanced_semantics_native_witness_goals_001";
+
+fn native_witness_goals_admitted(root: &Path, case: &TestCase) -> bool {
+    let path = format!("tests/miz/pass/theorems/{NATIVE_WITNESS_GOAL_ID}.miz");
+    case.id.0 == NATIVE_WITNESS_GOAL_ID
+        && case.expectation.id == case.id
+        && case.expectation.schema_version == 1
+        && case.expectation.domain == "checker.native_witness_goals"
+        && case.expectation.profiles.as_slice() == ["fast"]
+        && case
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq(["spec.en.15.statements.witness_goals.typed_replay.metadata"])
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::Elaboration)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
 fn native_proof_intents_admitted(root: &Path, case: &TestCase) -> bool {
     let path = format!("tests/miz/pass/theorems/{NATIVE_PROOF_INTENT_ID}.miz");
     case.id.0 == NATIVE_PROOF_INTENT_ID
@@ -2221,6 +2260,152 @@ fn native_conversion_handoff(
         .source_proof_local_binding()
         .cloned()
         .ok_or_else(invalid)
+}
+
+fn native_witness_goal_observation(
+    handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+) -> Result<Vec<String>, String> {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofGoal,
+        type_checker::{FormulaStatus, TermReference, TermStatus},
+        typed_ast::{
+            CoercionStatus, FactProvenance, FactStatus, InitialObligationStatus, TypeEntryActual,
+            TypeStatus,
+        },
+    };
+    let invalid = || "native witness goal result does not match source".to_owned();
+    let (steps, coercions, obligations, checked, inference) =
+        handoff.check_witness_goals().map_err(|_| invalid())?;
+    if steps.is_empty()
+        || !checked.diagnostics().is_empty()
+        || !inference.diagnostics().is_empty()
+        || inference
+            .formulas()
+            .iter()
+            .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+    {
+        return Err(invalid());
+    }
+    let mut observations = Vec::new();
+    for (_, term) in inference.terms().iter() {
+        let Some(TermReference::Binding(binding)) = term.reference else {
+            return Err(invalid());
+        };
+        let entry = inference
+            .type_entries()
+            .get(term.type_entry)
+            .ok_or_else(invalid)?;
+        let TypeEntryActual::Known(ty) = entry.actual else {
+            return Err(invalid());
+        };
+        let normalized = inference.normalized_types().get(ty).ok_or_else(invalid)?;
+        if term.status != TermStatus::Inferred || entry.status != TypeStatus::Known {
+            return Err(invalid());
+        }
+        observations.push(format!(
+            "typed.binding={}.head={:?}.site={:?}",
+            binding.index(),
+            normalized.head,
+            term.site
+        ));
+    }
+    for (ordinal, step) in steps.iter().enumerate() {
+        observations.push(format!("step.{ordinal}.owner={:?}.context={:?}.site={:?}.matched={:?}.before={:?}.after={:?}.free={:?}.avoided={:?}", step.owner(), step.context(), step.site(), step.matched(), step.before(), step.after(), step.free(), step.avoided()));
+    }
+    let witnesses = steps
+        .iter()
+        .filter(|step| {
+            step.matched().is_some() && matches!(step.before(), SourceProofGoal::Existential { .. })
+        })
+        .collect::<Vec<_>>();
+    if coercions.len() + obligations.len() != witnesses.len() {
+        return Err(invalid());
+    }
+    for (ordinal, step) in witnesses.iter().enumerate() {
+        let (_, actual) = step.matched().ok_or_else(invalid)?;
+        let term = inference
+            .terms()
+            .iter()
+            .find(|(_, term)| {
+                term.reference == Some(TermReference::Binding(actual))
+                    && term.context == step.context()
+            })
+            .ok_or_else(invalid)?
+            .1;
+        let entry = inference
+            .type_entries()
+            .get(term.type_entry)
+            .ok_or_else(invalid)?;
+        let TypeEntryActual::Known(ty) = entry.actual else {
+            return Err(invalid());
+        };
+        let from = &inference
+            .normalized_types()
+            .get(ty)
+            .ok_or_else(invalid)?
+            .head;
+        if let Some(input) = coercions.iter().find(|input| &input.site == step.site()) {
+            let result = checked
+                .coercions()
+                .iter()
+                .find(|(_, result)| &result.site == step.site())
+                .ok_or_else(invalid)?
+                .1;
+            if result.status != CoercionStatus::Candidate
+                || !checked.facts().iter().any(|(_, fact)| {
+                    &fact.subject == step.site() && fact.status == FactStatus::Known
+                })
+            {
+                return Err(invalid());
+            }
+            observations.push(format!("guard.{ordinal}.owner={:?}.context={:?}.site={:?}.from={from:?}.to={:?}.status=Candidate", step.owner(), step.context(), step.site(), input.to_type.head));
+        } else {
+            let input = obligations
+                .iter()
+                .find(|input| &input.site == step.site())
+                .ok_or_else(invalid)?;
+            let result = checked
+                .initial_obligations()
+                .iter()
+                .find(|(_, result)| &result.owner == step.site())
+                .ok_or_else(invalid)?
+                .1;
+            if result.status != InitialObligationStatus::Pending
+                || !checked.facts().iter().any(|(_, fact)| {
+                    matches!(fact.provenance, FactProvenance::Obligation(id) if id == result.id)
+                        && fact.status == FactStatus::PendingObligation
+                        && !fact.status.is_unconditionally_consumable()
+                })
+            {
+                return Err(invalid());
+            }
+            observations.push(format!("guard.{ordinal}.owner={:?}.context={:?}.site={:?}.from={from:?}.to={:?}.status=Pending.id={:?}", step.owner(), step.context(), step.site(), input.target_type.head, result.id));
+        }
+    }
+    for terminal in steps
+        .iter()
+        .filter(|step| step.matched().is_none() && step.site() != step.owner())
+    {
+        let pending = witnesses
+            .iter()
+            .filter(|step| step.owner() == terminal.owner())
+            .filter_map(|step| {
+                checked
+                    .initial_obligations()
+                    .iter()
+                    .find(|(_, obligation)| &obligation.owner == step.site())
+                    .map(|(_, obligation)| obligation.id)
+            })
+            .collect::<Vec<_>>();
+        observations.push(format!(
+            "remaining.owner={:?}.context={:?}.terminal={:?}.goal={:?}.pending={pending:?}",
+            terminal.owner(),
+            terminal.context(),
+            terminal.site(),
+            terminal.after()
+        ));
+    }
+    Ok(observations)
 }
 
 fn native_proof_intent_observation(
@@ -2748,6 +2933,21 @@ fn validate_step5c11_registration_inventory(
     if plan
         .cases
         .iter()
+        .filter(|case| native_witness_goals_admitted(root, case))
+        .count()
+        != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            root,
+            "advanced_semantics",
+            "E-ADVANCED-SEMANTICS-INVENTORY",
+            format!("advanced_semantics.inventory.{NATIVE_WITNESS_GOAL_ID}"),
+            "native witness goals require exactly one admitted source/sidecar pair",
+        ));
+    }
+    if plan
+        .cases
+        .iter()
         .filter(|case| native_proof_intents_admitted(root, case))
         .count()
         != 1
@@ -2829,6 +3029,15 @@ fn validate_step5c11_registration_inventory(
             || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
             || case.id.0 == INLINE_CLOSURE_REQUEST_ID
             || case.expectation.id.0 == INLINE_CLOSURE_REQUEST_ID
+            || case.id.0 == NATIVE_WITNESS_GOAL_ID
+            || case.expectation.id.0 == NATIVE_WITNESS_GOAL_ID
+            || case
+                .source_path
+                .file_stem()
+                .is_some_and(|name| name == NATIVE_WITNESS_GOAL_ID)
+            || case.expectation_path.file_name().is_some_and(|name| {
+                name == format!("{NATIVE_WITNESS_GOAL_ID}.expect.toml").as_str()
+            })
             || case.id.0 == NATIVE_PROOF_INTENT_ID
             || case.expectation.id.0 == NATIVE_PROOF_INTENT_ID
             || case
@@ -2866,6 +3075,7 @@ fn validate_step5c11_registration_inventory(
             && !inline_closure_requests_admitted(root, case)
             && !native_conversions_admitted(root, case)
             && !native_proof_intents_admitted(root, case)
+            && !native_witness_goals_admitted(root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
                 "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
@@ -2897,11 +3107,29 @@ pub fn run_advanced_semantics_corpus(
                     || inline_closure_requests_admitted(&root, case)
                     || native_conversions_admitted(&root, case)
                     || native_proof_intents_admitted(&root, case)
+                    || native_witness_goals_admitted(&root, case)
             })
             .enumerate()
         {
             let result = run_frontend(&root, case, ordinal).and_then(|output| {
-                if native_proof_intents_admitted(&root, case) {
+                if native_witness_goals_admitted(&root, case) {
+                    if !output.diagnostics.is_empty() {
+                        return Err("native witness goal frontend diagnostics".to_owned());
+                    }
+                    let ast = output
+                        .ast
+                        .ok_or_else(|| "native witness goal missing AST".to_owned())?;
+                    let resolver = resolver_symbol_collection(&root, case, &ast);
+                    if !resolver.detail_keys.is_empty() {
+                        return Err(resolver.detail_keys.join(","));
+                    }
+                    native_witness_goal_observation(&native_conversion_handoff(
+                        &ast,
+                        &resolver.module,
+                        &resolver.env,
+                    )?)
+                    .map(|_| Vec::new())
+                } else if native_proof_intents_admitted(&root, case) {
                     if !output.diagnostics.is_empty() {
                         return Err("native proof intent frontend diagnostics".to_owned());
                     }

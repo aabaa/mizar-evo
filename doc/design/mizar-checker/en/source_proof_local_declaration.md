@@ -56,8 +56,9 @@ named Take retains name/RHS association without Set-style expansion semantics.
 Given/Consider use `GivenWitness` binding metadata without legacy donor privileges.
 One new Typed/Resolved slot accepts a fresh empty receiver and independently
 replays the entire transaction; existing source families remain mutually exclusive.
-No type, fact, existential discharge, substitution application or proof acceptance
-is produced. Unsupported native binding families fail closed.
+The binding transaction installs no checked type, fact, witness discharge or proof
+acceptance. Methods below compute request-local results without populating semantic
+tables. Unsupported native binding families fail closed.
 
 Resolver declaration and reference ordinals are separate clocks; preserve reference
 targets and ordinals without using them as BindingEnv declaration visibility clocks.
@@ -91,7 +92,25 @@ module wrappers and separate registration proofs; it creates no logical obligati
 Blocked is limited to unresolved local citations, real rejected/blocked conversions
 or an absent adjacent Then premise. Duplicate labels and unsupported references refuse.
 The immutable graph retains Then/body/branch associations; no new graph or slot is stored.
-Checked Task180 tables and logical goal/witness/substitution elaboration remain separate.
+Checked Task180 tables remain separate from source intents and derived witness goals.
+
+The parameterless `check_witness_goals()` derives plain Set/Object quantified,
+variable-equality/conjunction goals through sequential Let/Take and terminal Thus.
+`SourceProofGoal` stores actual binding identities and logical bodies; original
+Typed sites are provenance, never generated original formulas. Immutable
+`SourceProofGoalStep` exposes source owner/context/event, matched identities,
+before/after goals and recomputed free/retained-binder sets. The method returns
+these steps with actual coercion/direct initial-obligation inputs and checking/
+term-formula inference outputs, using the existing handoff and installation slot.
+Source guards, sealed declaration types and temporal introductions are revalidated;
+native header/Let type sites remain Missing. Declaration-value roles type unused
+binders without inventing original references. Let requires equal plain guards;
+Take uses intrinsic builtin compatibility or retains a Pending narrowing guard
+alongside the substituted body through terminal. Explicit terminal goals compare
+canonical bound-alpha structure and exact free identities. Independent replay
+checks source, typing, guards and results. These are unproved remaining obligations;
+Task180 checked tables and proof acceptance stay separate. Broader goals, nested
+proof effects, later alias uses and general freshening remain deferred.
 
 ## Descendant Set-name binding boundary
 
@@ -638,6 +657,7 @@ parent-owned.
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofGoal` | `#[non_exhaustive]`; callers must handle later derived logical forms. |
 | `SourceProofIntentStatus` | `#[non_exhaustive]`; callers must handle later source-request states. |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-local declaration forms. |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |

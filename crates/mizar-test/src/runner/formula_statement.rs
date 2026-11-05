@@ -603,6 +603,15 @@ fn formula_statement_detail_keys(
                     .err(),
             );
         }
+        if semantics.is_empty()
+            && case.id.0 == "pass_formula_statement_existential_multi_witness_001"
+        {
+            semantics.extend(
+                super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)
+                    .and_then(|handoff| super::native_witness_goal_observation(&handoff))
+                    .err(),
+            );
+        }
         return reconcile_frontend_and_semantics(frontend_keys, semantics);
     }
     if case.id.0 == "pass_formula_statement_attr_negated_chain_assertion_001"

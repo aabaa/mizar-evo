@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_native_witness_goals_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "checker.native_witness_goals"
+source = "pass_advanced_semantics_native_witness_goals_001.miz"
+expected_outcome = "pass"
+expected_phase = "elaboration"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.15.statements.witness_goals.typed_replay.metadata"]
+notes = "Typed goal observation only: real declared binding/witness typing, ordered existential matching, authentic guard checking, materialized goal substitution and independent replay reach the actual consumer. Pass observes the unproved remaining conjunction and Pending proof requests; it does not prove the remaining formula, discharge pending obligations, accept the theorem, expand aliases, run proof search, or enter Core/VC. The existing omitted-reconsider AS source, expectation, trace and inactivity are unchanged."

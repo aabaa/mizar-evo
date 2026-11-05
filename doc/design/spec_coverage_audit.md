@@ -57,7 +57,10 @@ consumption and the inactive omitted-justification seed remain with Task 272.
 `spec.en.15.statements.native_proof_intents.metadata` covers retained source
 requests and actual local-label/status observation through the same checker owner
 and [native proof-intent consumer](./mizar-test/en/harness.md#native-proof-intents).
-Typed witness/goal/substitution replay remains Task 272B; no proof acceptance follows.
+`spec.en.15.statements.witness_goals.typed_replay.metadata` adds bounded plain
+Set/Object Let/Take typed guard/result replay observation through those owners.
+Broader goal/substitution coverage and the old omitted-AS final consumer remain
+Task 272B; neither metadata requirement grants proof acceptance.
 
 ## Coverage Matrix
 

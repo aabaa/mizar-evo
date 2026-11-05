@@ -8243,6 +8243,7 @@ mod metamorphic_guard {
                     || inline_closure_requests_admitted(root, case)
                     || native_conversions_admitted(root, case)
                     || native_proof_intents_admitted(root, case)
+                    || native_witness_goals_admitted(root, case)
             }))
         {
             assert!(
