@@ -604,7 +604,11 @@ fn formula_statement_detail_keys(
             );
         }
         if semantics.is_empty()
-            && case.id.0 == "pass_formula_statement_existential_multi_witness_001"
+            && matches!(
+                case.id.0.as_str(),
+                "pass_formula_statement_existential_multi_witness_001"
+                    | "pass_formula_statement_then_hence_linking_001"
+            )
         {
             semantics.extend(
                 super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)

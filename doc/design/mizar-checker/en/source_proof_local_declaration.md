@@ -95,7 +95,7 @@ The immutable graph retains Then/body/branch associations; no new graph or slot 
 Checked Task180 tables remain separate from source intents and derived witness goals.
 
 The parameterless `check_witness_goals()` derives plain Set/Object quantified,
-variable-equality/conjunction goals through sequential Let/Take and terminal Thus.
+variable-equality/conjunction/implication goals through Let/Take/Assume and terminal Thus/Hence.
 `SourceProofGoal` stores actual binding identities and logical bodies; original
 Typed sites are provenance, never generated original formulas. Immutable
 `SourceProofGoalStep` exposes source owner/context/event, matched identities,
@@ -111,6 +111,13 @@ canonical bound-alpha structure and exact free identities. Independent replay
 checks source, typing, guards and results. These are unproved remaining obligations;
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
 proof effects and general freshening remain deferred.
+
+Restricted universals retain the type guard and an implication body. A single
+source Assume matching its antecedent leaves the unproved consequent; the ordered
+step and original labelled source retain hypothesis provenance. Linked Compact
+claims preserve the matching residual goal. Actual Then wrapper/Hence source intents
+must be unblocked after adjacency validation. Terminal residuals containing implication,
+collective assumptions and explicit citations remain unsupported.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's

@@ -111,6 +111,11 @@ pub enum SourceProofGoal {
         left: Box<Self>,
         right: Box<Self>,
     },
+    Implication {
+        origin: crate::typed_ast::TypedSiteRef,
+        antecedent: Box<Self>,
+        consequent: Box<Self>,
+    },
     Universal {
         origin: crate::typed_ast::TypedSiteRef,
         binding: BindingId,
@@ -180,7 +185,12 @@ impl SourceProofGoal {
                     }
                 }
             }
-            Self::Conjunction { left, right, .. } => {
+            Self::Conjunction { left, right, .. }
+            | Self::Implication {
+                antecedent: left,
+                consequent: right,
+                ..
+            } => {
                 left.binding_sets(bound, free, retained);
                 right.binding_sets(bound, free, retained);
             }
@@ -212,6 +222,15 @@ impl SourceProofGoal {
                 origin: origin.clone(),
                 left: Box::new(left.substitute(formal, actual)),
                 right: Box::new(right.substitute(formal, actual)),
+            },
+            Self::Implication {
+                origin,
+                antecedent,
+                consequent,
+            } => Self::Implication {
+                origin: origin.clone(),
+                antecedent: Box::new(antecedent.substitute(formal, actual)),
+                consequent: Box::new(consequent.substitute(formal, actual)),
             },
             Self::Universal {
                 origin,
@@ -275,6 +294,18 @@ impl SourceProofGoal {
                     origin: b,
                     left,
                     right,
+                },
+            )
+            | (
+                Self::Implication {
+                    origin: a,
+                    antecedent: l,
+                    consequent: r,
+                },
+                Self::Implication {
+                    origin: b,
+                    antecedent: left,
+                    consequent: right,
                 },
             ) => {
                 a == b
@@ -346,6 +377,18 @@ impl SourceProofGoal {
                 },
                 Self::Conjunction {
                     left: c, right: d, ..
+                },
+            )
+            | (
+                Self::Implication {
+                    antecedent: a,
+                    consequent: b,
+                    ..
+                },
+                Self::Implication {
+                    antecedent: c,
+                    consequent: d,
+                    ..
                 },
             ) => a.alpha_matches(c, binders) && b.alpha_matches(d, binders),
             (
@@ -1930,6 +1973,18 @@ impl SourceProofLocalBindingHandoff {
                     right: Box::new(self.witness_goal_formula(parts[2])?),
                 })
             }
+            K::BinaryFormula(op)
+                if op.connective == SurfaceFormulaConnective::Implies
+                    && !op.repeated
+                    && parts.len() == 3
+                    && source_inline_token(&parts, 1, "implies") =>
+            {
+                Ok(SourceProofGoal::Implication {
+                    origin,
+                    antecedent: Box::new(self.witness_goal_formula(parts[0])?),
+                    consequent: Box::new(self.witness_goal_formula(parts[2])?),
+                })
+            }
             K::QuantifiedFormula(kind) => {
                 if !matches!(parts.first().map(|r| r.kind()), Some(K::Token(t)) if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == if *kind == SurfaceQuantifierKind::Universal { "for" } else { "ex" })
                 {
@@ -1955,6 +2010,14 @@ impl SourceProofLocalBindingHandoff {
                         break;
                     }
                 }
+                let antecedent = if *kind == SurfaceQuantifierKind::Universal
+                    && source_inline_token(&parts, cursor, "st")
+                {
+                    cursor += 2;
+                    Some(self.witness_goal_formula(*parts.get(cursor - 1).ok_or_else(invalid)?)?)
+                } else {
+                    None
+                };
                 if matches!(parts.get(cursor).map(|r| r.kind()), Some(K::Token(t)) if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == if *kind == SurfaceQuantifierKind::Universal { "holds" } else { "st" })
                 {
                     cursor += 1;
@@ -1970,6 +2033,13 @@ impl SourceProofLocalBindingHandoff {
                     return Err(invalid());
                 }
                 let mut body = self.witness_goal_formula(parts[cursor])?;
+                if let Some(antecedent) = antecedent {
+                    body = SourceProofGoal::Implication {
+                        origin: origin.clone(),
+                        antecedent: Box::new(antecedent),
+                        consequent: Box::new(body),
+                    };
+                }
                 for (binding, radix) in binders.into_iter().rev() {
                     body = if *kind == SurfaceQuantifierKind::Universal {
                         SourceProofGoal::Universal {
@@ -2387,21 +2457,71 @@ impl SourceProofLocalBindingHandoff {
             }
             for (index, statement) in body.iter().enumerate().take(body.len() - 1).skip(1) {
                 used.insert(statement.site());
-                if index == body.len() - 2 {
-                    if statement.kind() != &K::ConclusionStatement {
+                let linked = statement.kind() == &K::ThenStatement;
+                let statement = if linked {
+                    if !intents.iter().any(|(site, _, status)| {
+                        self.witness_goal_site(statement).as_ref() == Ok(site)
+                            && *status != SourceProofIntentStatus::Blocked
+                    }) {
                         return Err(invalid());
                     }
-                    let tail = source_proof_frame(rows, statement).ok_or_else(invalid)?;
-                    if tail.len() != 3
-                        || !source_inline_token(&tail, 0, "thus")
-                        || tail[1].kind() != &K::Proposition
-                        || !source_inline_token(&tail, 2, ";")
+                    let child = source_then_roles(rows, statement).ok_or_else(invalid)?;
+                    used.insert(child.site());
+                    child
+                } else {
+                    statement
+                };
+                if linked
+                    && !matches!(
+                        statement.kind(),
+                        K::CompactStatement | K::ConclusionStatement
+                    )
+                {
+                    return Err(invalid());
+                }
+                let terminal = index == body.len() - 2;
+                if terminal
+                    || matches!(
+                        statement.kind(),
+                        K::AssumptionStatement | K::CompactStatement
+                    )
+                {
+                    if terminal && statement.kind() != &K::ConclusionStatement
+                        || !terminal && statement.kind() == &K::CompactStatement && !linked
                     {
                         return Err(invalid());
                     }
-                    let formula = source_unique_child(rows, tail[1], K::FormulaExpression)
+                    let tail = source_proof_frame(rows, statement).ok_or_else(invalid)?;
+                    let assumption = statement.kind() == &K::AssumptionStatement;
+                    let start = usize::from(statement.kind() != &K::CompactStatement);
+                    let hence = source_inline_token(&tail, 0, "hence");
+                    if tail.len() != start + 2
+                        || start == 1
+                            && !source_inline_token(
+                                &tail,
+                                0,
+                                if assumption {
+                                    "assume"
+                                } else if hence {
+                                    "hence"
+                                } else {
+                                    "thus"
+                                },
+                            )
+                        || tail[start].kind() != &K::Proposition
+                        || !source_inline_token(&tail, start + 1, ";")
+                        || hence
+                            && !intents.iter().any(|(site, _, status)| {
+                                self.witness_goal_site(statement).as_ref() == Ok(site)
+                                    && *status != SourceProofIntentStatus::Blocked
+                            })
+                    {
+                        return Err(invalid());
+                    }
+                    let formula = source_unique_child(rows, tail[start], K::FormulaExpression)
                         .ok_or_else(invalid)?;
-                    if source_children(rows, tail[1].site()).count() != 1 {
+                    let proposition = source_proof_frame(rows, tail[start]).ok_or_else(invalid)?;
+                    if proposition.len() != 1 && !(assumption && proposition.len() == 3) {
                         return Err(invalid());
                     }
                     let content = source_proof_frame(rows, formula).ok_or_else(invalid)?;
@@ -2409,7 +2529,7 @@ impl SourceProofLocalBindingHandoff {
                         && content[0].kind() == &K::FormulaConstant(SurfaceFormulaConstant::Thesis)
                         && matches!(source_proof_frame(rows, content[0]).as_deref(), Some([word]) if matches!(word.kind(), K::Token(t) if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == "thesis"));
                     let site = self.witness_goal_site(statement)?;
-                    if !thesis {
+                    if !thesis || !terminal {
                         goals.insert(site.clone(), self.witness_goal_formula(formula)?);
                     }
                     events.push((owner.clone(), context, site, None));
@@ -2627,7 +2747,12 @@ impl SourceProofLocalBindingHandoff {
                     self.witness_goal_guard(*binding, origin, "formation")?;
                 }
             }
-            SourceProofGoal::Conjunction { left, right, .. } => {
+            SourceProofGoal::Conjunction { left, right, .. }
+            | SourceProofGoal::Implication {
+                antecedent: left,
+                consequent: right,
+                ..
+            } => {
                 self.witness_goal_formation(left, frontier, bound)?;
                 self.witness_goal_formation(right, frontier, bound)?;
             }
@@ -2696,18 +2821,18 @@ impl SourceProofLocalBindingHandoff {
             }
             let before = current.clone().ok_or_else(invalid)?;
             let mut avoided = BTreeSet::new();
+            let row = self
+                .original
+                .nodes()
+                .node(site.node())
+                .and_then(|n| n.resolved_node)
+                .and_then(|id| {
+                    self.original
+                        .source_node_entries()?
+                        .find(|r| r.site() == id)
+                })
+                .ok_or_else(invalid)?;
             let (matched, after) = if let Some(actual) = actual {
-                let row = self
-                    .original
-                    .nodes()
-                    .node(site.node())
-                    .and_then(|n| n.resolved_node)
-                    .and_then(|id| {
-                        self.original
-                            .source_node_entries()?
-                            .find(|r| r.site() == id)
-                    })
-                    .ok_or_else(invalid)?;
                 let (formal, body) = match (&before, row.kind()) {
                     (
                         SourceProofGoal::Universal { binding, body, .. },
@@ -2730,6 +2855,20 @@ impl SourceProofLocalBindingHandoff {
                     Some((formal, actual)),
                     body.substitute(formal, self.witness_goal_alias_value(actual)?),
                 )
+            } else if row.kind() == &SurfaceNodeKind::AssumptionStatement {
+                let SourceProofGoal::Implication {
+                    antecedent,
+                    consequent,
+                    ..
+                } = &before
+                else {
+                    return Err(invalid());
+                };
+                if !antecedent.alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
+                {
+                    return Err(invalid());
+                }
+                (None, consequent.as_ref().clone())
             } else {
                 (None, before.clone())
             };
@@ -2940,6 +3079,22 @@ impl SourceProofLocalBindingHandoff {
                         }
                     }
                 }
+            } else if row.kind() == &SurfaceNodeKind::AssumptionStatement {
+                let SourceProofGoal::Implication {
+                    antecedent,
+                    consequent,
+                    ..
+                } = before
+                else {
+                    return Err(invalid());
+                };
+                if step.matched.is_some()
+                    || !antecedent
+                        .alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
+                    || step.after != **consequent
+                {
+                    return Err(invalid());
+                }
             } else {
                 if step.matched.is_some() || step.before != step.after {
                     return Err(invalid());
@@ -2965,12 +3120,28 @@ impl SourceProofLocalBindingHandoff {
                         return Err(invalid());
                     }
                 } else if site != owner
-                    && (row.kind() != &SurfaceNodeKind::ConclusionStatement
-                        || goals
-                            .get(&site)
-                            .is_some_and(|goal| !before.alpha_matches(goal, &mut Vec::new())))
+                    && (!matches!(
+                        row.kind(),
+                        SurfaceNodeKind::ConclusionStatement | SurfaceNodeKind::CompactStatement
+                    ) || goals
+                        .get(&site)
+                        .is_some_and(|goal| !before.alpha_matches(goal, &mut Vec::new())))
                 {
                     return Err(invalid());
+                }
+                if row.kind() == &SurfaceNodeKind::ConclusionStatement {
+                    let mut pending = vec![before];
+                    while let Some(goal) = pending.pop() {
+                        match goal {
+                            SourceProofGoal::Implication { .. } => return Err(invalid()),
+                            SourceProofGoal::Conjunction { left, right, .. } => {
+                                pending.extend([left.as_ref(), right.as_ref()])
+                            }
+                            SourceProofGoal::Universal { body, .. }
+                            | SourceProofGoal::Existential { body, .. } => pending.push(body),
+                            SourceProofGoal::Equality { .. } => {}
+                        }
+                    }
                 }
             }
             self.witness_goal_formation(&step.after, &frontier, &mut Vec::new())?;
@@ -4152,6 +4323,8 @@ fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> 
             | "take"
             | "thus"
             | "hence"
+            | "implies"
+            | "st"
             | "and"
     ) {
         SurfaceTokenKind::ReservedWord
@@ -17181,6 +17354,360 @@ mod task269c_tests {
                 && installed.types().is_empty()
                 && resolved.checked_proofs().is_empty()
                 && resolved.checked_formulas().is_empty()
+        );
+    }
+    #[test]
+    fn task272b4_implication_edges_replay_source_and_coherent_tampering() {
+        use crate::type_checker::{TermFormulaChecker, TermStatus, TypeHeadInput};
+        use SurfaceNodeKind as K;
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            symbols::SignatureProjectionExtractor,
+        };
+        let fixture = |source| {
+            let module =
+                ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
+            let words = [
+                "theorem", "T", ":", "for", "x", "being", "set", "st", "x", "=", "x", "holds", "x",
+                "=", "x", "proof", "let", "x", "be", "set", ";", "assume", "A1", ":", "x", "=",
+                "x", ";", "then", "x", "=", "x", ";", "hence", "x", "=", "x", ";", "end", ";",
+            ];
+            let mut builder = SurfaceAstBuilder::new(source);
+            let mut spans = Vec::new();
+            let mut tokens = Vec::new();
+            let mut cursor = 0;
+            for word in words {
+                let span = range(source, cursor, cursor + word.len());
+                cursor += word.len() + 1;
+                let kind = if matches!(word, "T" | "x" | "A1") {
+                    SurfaceTokenKind::Identifier
+                } else if matches!(word, ":" | "=" | ";") {
+                    SurfaceTokenKind::ReservedSymbol
+                } else {
+                    SurfaceTokenKind::ReservedWord
+                };
+                tokens.push(builder.add_token(kind, word, span));
+                spans.push(span);
+            }
+            let node = |b: &mut SurfaceAstBuilder, kind, start: usize, end: usize, children| {
+                b.add_node(
+                    kind,
+                    range(source, spans[start].start, spans[end].end),
+                    children,
+                )
+            };
+            let mut segments = BTreeMap::new();
+            for (i, kind) in [
+                (4, K::QuantifierVariableSegment),
+                (17, K::QualifiedVariableSegment),
+            ] {
+                let head = node(&mut builder, K::TypeHead, i + 2, i + 2, vec![tokens[i + 2]]);
+                let ty = node(&mut builder, K::TypeExpression, i + 2, i + 2, vec![head]);
+                segments.insert(
+                    i,
+                    node(
+                        &mut builder,
+                        kind,
+                        i,
+                        i + 2,
+                        vec![tokens[i], tokens[i + 1], ty],
+                    ),
+                );
+            }
+            let mut formulas = BTreeMap::new();
+            for i in [8, 12, 24, 29, 34] {
+                let mut terms = Vec::new();
+                for j in [i, i + 2] {
+                    let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
+                    terms.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
+                }
+                let eq = node(
+                    &mut builder,
+                    K::BuiltinPredicateApplication,
+                    i,
+                    i + 2,
+                    vec![terms[0], tokens[i + 1], terms[1]],
+                );
+                formulas.insert(
+                    i,
+                    node(&mut builder, K::FormulaExpression, i, i + 2, vec![eq]),
+                );
+            }
+            let forall = node(
+                &mut builder,
+                K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                3,
+                14,
+                vec![
+                    tokens[3],
+                    segments[&4],
+                    tokens[7],
+                    formulas[&8],
+                    tokens[11],
+                    formulas[&12],
+                ],
+            );
+            let header = node(&mut builder, K::FormulaExpression, 3, 14, vec![forall]);
+            let let_row = node(
+                &mut builder,
+                K::LetStatement,
+                16,
+                20,
+                vec![tokens[16], segments[&17], tokens[20]],
+            );
+            let assume_proposition = node(
+                &mut builder,
+                K::Proposition,
+                22,
+                26,
+                vec![tokens[22], tokens[23], formulas[&24]],
+            );
+            let assume = node(
+                &mut builder,
+                K::AssumptionStatement,
+                21,
+                27,
+                vec![tokens[21], assume_proposition, tokens[27]],
+            );
+            let linked_proposition =
+                node(&mut builder, K::Proposition, 29, 31, vec![formulas[&29]]);
+            let compact = node(
+                &mut builder,
+                K::CompactStatement,
+                29,
+                32,
+                vec![linked_proposition, tokens[32]],
+            );
+            let then = node(
+                &mut builder,
+                K::ThenStatement,
+                28,
+                32,
+                vec![tokens[28], compact],
+            );
+            let terminal_proposition =
+                node(&mut builder, K::Proposition, 34, 36, vec![formulas[&34]]);
+            let terminal = node(
+                &mut builder,
+                K::ConclusionStatement,
+                33,
+                37,
+                vec![tokens[33], terminal_proposition, tokens[37]],
+            );
+            let proof = node(
+                &mut builder,
+                K::ProofBlock,
+                15,
+                38,
+                vec![tokens[15], let_row, assume, then, terminal, tokens[38]],
+            );
+            let theorem = node(
+                &mut builder,
+                K::TheoremItem,
+                0,
+                39,
+                vec![tokens[0], tokens[1], tokens[2], header, proof, tokens[39]],
+            );
+            let items = node(&mut builder, K::ItemList, 0, 39, vec![theorem]);
+            let compilation = node(&mut builder, K::CompilationUnit, 0, 39, vec![items]);
+            let mut children = tokens;
+            children.push(compilation);
+            let root = node(&mut builder, K::Root, 0, 39, children);
+            let ast = builder.finish(Some(root), None);
+            let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(&ast, &module).collect();
+            let collection = SignatureProjectionExtractor::new(
+                &ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(collection.diagnostics().is_empty());
+            let symbols = collection.env().clone();
+            let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+                SourceVariableScopeInput::new(&ast, &module, &symbols),
+            )
+            .unwrap();
+            let mut original = TypedAst::try_new(TypedAstParts {
+                source_id: source,
+                module_id: module,
+                resolved_root: Some(native.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    Some(TypedNodeId::new(native.arena().root().index())),
+                    native
+                        .arena()
+                        .iter()
+                        .map(|(id, n)| {
+                            TypedNode::new("syntax", n.origin().anchor().clone())
+                                .with_resolved_node(id)
+                                .with_children(
+                                    n.children()
+                                        .iter()
+                                        .map(|c| TypedNodeId::new(c.index()))
+                                        .collect(),
+                                )
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .unwrap();
+            original.install_source_nodes(&native).unwrap();
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope,
+            )
+            .unwrap()
+        };
+        let genuine = fixture(source_id());
+        let (steps, guards, initial, checked, inference) = genuine.check_witness_goals().unwrap();
+        let (formal, actual) = steps[1].matched.unwrap();
+        let SourceProofGoal::Implication {
+            antecedent,
+            consequent,
+            ..
+        } = &steps[1].after
+        else {
+            panic!("implication")
+        };
+        assert_eq!(steps[2].after, **consequent);
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        for branch in [antecedent, consequent] {
+            assert!(
+                matches!(branch.as_ref(),SourceProofGoal::Equality{left,right,..} if *left==actual && *right==actual)
+            );
+        }
+        // Both branches participate in alpha/free/retained/substitution, preserving provenance.
+        let mut free = BTreeSet::new();
+        steps[1]
+            .after
+            .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+        assert_eq!(free, BTreeSet::from([actual]));
+        let mut renamed = steps[1].after.substitute(actual, formal);
+        assert!(!renamed.alpha_matches(&steps[1].after, &mut Vec::new()));
+        assert!(renamed.replays_substitution(&steps[1].after, actual, formal));
+        if let SourceProofGoal::Implication { consequent, .. } = &mut renamed {
+            **consequent = steps[2].after.clone();
+        }
+        assert!(!renamed.replays_substitution(&steps[1].after, actual, formal));
+        for change_antecedent in [true, false] {
+            let mut one_branch = steps[1].after.clone();
+            let SourceProofGoal::Implication {
+                antecedent,
+                consequent,
+                ..
+            } = &mut one_branch
+            else {
+                unreachable!()
+            };
+            let branch = if change_antecedent {
+                antecedent
+            } else {
+                consequent
+            };
+            **branch = branch.substitute(actual, formal);
+            assert!(!one_branch.alpha_matches(&steps[1].after, &mut Vec::new()));
+            assert!(!one_branch.replays_substitution(&steps[1].after, actual, formal));
+        }
+        for mutation in 0..14 {
+            let mut bad = steps.clone();
+            match mutation {
+                0 | 1 => {
+                    let SourceProofGoal::Implication {
+                        antecedent,
+                        consequent,
+                        ..
+                    } = &mut bad[1].after
+                    else {
+                        unreachable!()
+                    };
+                    let branch = if mutation == 0 {
+                        antecedent
+                    } else {
+                        consequent
+                    };
+                    **branch = branch.substitute(actual, formal);
+                }
+                2 => {
+                    let SourceProofGoal::Implication { origin, .. } = &mut bad[1].after else {
+                        unreachable!()
+                    };
+                    *origin = steps[2].site.clone();
+                }
+                3 => bad[2].after = *antecedent.clone(),
+                4 => bad[2].before = steps[2].after.clone(),
+                5 => bad[2].matched = Some((formal, actual)),
+                6 => bad[2].avoided = vec![actual],
+                7 => bad[2].free.clear(),
+                8 => bad[2].owner = steps[3].site.clone(),
+                9 => {
+                    bad[2].context = genuine
+                        .binding_env
+                        .bindings()
+                        .get(formal)
+                        .unwrap()
+                        .owner_context
+                }
+                10 => bad[2].site = steps[3].site.clone(),
+                11 => bad.swap(2, 3),
+                12 => {
+                    bad.remove(2);
+                }
+                _ => bad.insert(3, bad[2].clone()),
+            }
+            assert!(
+                genuine
+                    .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err(),
+                "mutation{mutation}"
+            );
+        }
+        // Recompute internally valid inference; source-result equality still rejects it.
+        let (_, _, mut terms, formulas, _) = genuine.witness_goal_inputs().unwrap();
+        let ty = terms[0].result_type.as_mut().unwrap();
+        ty.head = TypeHeadInput::BuiltinObject;
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&genuine.symbols, &genuine.binding_env, terms, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .terms()
+                .iter()
+                .all(|(_, t)| t.status == TermStatus::Inferred)
+        );
+        assert!(
+            genuine
+                .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
+                .is_err()
+        );
+        let foreign = fixture(other_source_id());
+        let products = foreign.check_witness_goals().unwrap();
+        assert!(
+            genuine
+                .replay_witness_goals(
+                    &products.0,
+                    &products.1,
+                    &products.2,
+                    &products.3,
+                    &products.4
+                )
+                .is_err()
+        );
+        assert!(
+            genuine
+                .replay_witness_goals(&steps, &guards, &initial, &checked, &products.4)
+                .is_err()
         );
     }
 }

@@ -84,8 +84,8 @@ Pending は module wrapper・独立した registration proof を含む未処理�
 Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
 Task180 の checked table は source intent・派生 witness goal とは別に保つ。
 
-引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・連言を、
-順次 Let/Take と terminal Thus に沿って導出する。`SourceProofGoal` は実 binding identity
+引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・連言・含意を、
+Let/Take/Assume と terminal Thus/Hence に沿って導出する。`SourceProofGoal` は実 binding identity
 と論理 body を保持し、元 Typed site は出典のみとする。不変の `SourceProofGoalStep` は
 owner/context/event・対応 identity・置換前後の goal・free/retained-binder 集合を公開する。
 既存 handoff/slot のまま、実 coercion/直接 initial-obligation 入力と検査・項式推論出力を返す。
@@ -96,6 +96,12 @@ body と terminal まで保持する。明示 terminal goal は bound-alpha 正�
 独立 replay が元ソース・型・guard・結果を検査する。残余 obligation は未証明のままで、
 Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・
 一般的な freshening は後続に残す。
+
+制限付き全称は型 guard と含意 body を保持する。単一の Assume が前件に一致すると、
+残余は未証明の後件となり、順序付き step と元の label 付きソースが仮定の出典を保つ。
+リンクした Compact は一致する残余 goal を維持する。隣接関係の検証後、実 Then wrapper
+と Hence 自身の source intent が Blocked でないことを要求する。含意を含む terminal 残余、
+集合的仮定と明示 citation は未対応とする。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。

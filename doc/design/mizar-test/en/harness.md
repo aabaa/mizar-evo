@@ -32,8 +32,8 @@ The old omitted-AS seed stays inactive; its whole-source control requires actual
 conversion rejection/Missing/diagnostic plus the same blocked theorem ancestry.
 The separate `checker.native_witness_goals` AS observation consumes actual
 source-order Let/Take typing, guard requests and materialized goal replay after
-the same native installation. Existing FS multi-witness and local Set/Take cases
-keep their semantic checkers and additionally consume those derived results.
+the same native installation. Existing FS multi-witness, local Set/Take and
+Then/Hence cases keep their semantic checkers and additionally consume derived goals.
 Pass observes unproved remaining goals; each unresolved type guard stays joined
 to its actual Witness and owning body through terminal. It supplies no proof
 acceptance or discharge. Broader proof effects remain with Task272.
