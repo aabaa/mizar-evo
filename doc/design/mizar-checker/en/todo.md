@@ -733,6 +733,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B2:** [typed blocked conversion goals](../../task_contracts/en/CHECKER272B2-BLOCKED-GOAL-RESULTS.md); prepare the inactive old-AS consumer while Task49 retains activation.
   - [x] **Task 272B3:** [typed local alias goals](../../task_contracts/en/CHECKER272B3-LOCAL-ALIAS-GOALS.md); variable Set/named-Take RHS, type and substitution replay.
   - [x] **Task 272B4:** [typed assumption goal replay](../../task_contracts/en/CHECKER272B4-IMPLICATION-GOALS.md); implication residuals and authenticated linked claims.
+  - [x] **Task 272B5:** [conditioned Let goal replay](../../task_contracts/en/CHECKER272B5-CONDITIONED-LET-GOALS.md); single Let hypothesis and terminal local citation intent.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);

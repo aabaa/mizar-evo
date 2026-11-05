@@ -100,8 +100,14 @@ Task180 checked table・証明受理とは別に保つ。広い goal・入れ子
 制限付き全称は型 guard と含意 body を保持する。単一の Assume が前件に一致すると、
 残余は未証明の後件となり、順序付き step と元の label 付きソースが仮定の出典を保つ。
 リンクした Compact は一致する残余 goal を維持する。隣接関係の検証後、実 Then wrapper
-と Hence 自身の source intent が Blocked でないことを要求する。含意を含む terminal 残余、
-集合的仮定と明示 citation は未対応とする。
+と Hence 自身の source intent が Blocked でないことを要求する。含意を含む terminal 残余と
+集合的仮定は未対応とする。
+
+単一の Let 条件は、Let 名の導入後に元の ConditionList を仮定 step として記録する。
+terminal Thus/Hence は先行する局所 Assume/条件 label を一つ引用でき、実解決済み
+ProofStep と index の宣言・ソース出典を照合する。元 justification は intent として
+保持し、残余 goal はすべて未証明のままとする。Let の型制約 By、Compact By、
+非局所・複数 citation は後続に残す。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。

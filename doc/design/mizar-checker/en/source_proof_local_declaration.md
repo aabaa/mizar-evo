@@ -116,8 +116,14 @@ Restricted universals retain the type guard and an implication body. A single
 source Assume matching its antecedent leaves the unproved consequent; the ordered
 step and original labelled source retain hypothesis provenance. Linked Compact
 claims preserve the matching residual goal. Actual Then wrapper/Hence source intents
-must be unblocked after adjacency validation. Terminal residuals containing implication,
-collective assumptions and explicit citations remain unsupported.
+must be unblocked after adjacency validation. Terminal residuals containing implication
+and collective assumptions remain unsupported.
+
+A single Let condition emits an original ConditionList assumption step after its
+Let names. Terminal Thus/Hence may cite one prior local Assume/condition label,
+using real resolved ProofStep and index declaration/source provenance. The original
+justification is retained as intent only; every remaining goal stays unproved.
+Let type-constraint By, Compact By and non-local or multiple citations remain deferred.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's

@@ -664,7 +664,11 @@ fn formula_statement_detail_keys(
         semantics.extend(checked.err());
     }
     if semantics.is_empty()
-        && case.id.0 == "pass_formula_statement_set_local_constant_take_001"
+        && matches!(
+            case.id.0.as_str(),
+            "pass_formula_statement_set_local_constant_take_001"
+                | "pass_formula_statement_let_such_that_assumption_001"
+        )
         && is_active_formula_statement(workspace_root, case)
     {
         semantics.extend(
