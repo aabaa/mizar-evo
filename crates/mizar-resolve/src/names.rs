@@ -6426,6 +6426,42 @@ impl<'a> VariableResolveState<'a> {
                 },
             });
         }
+        if self.proof_bindings {
+            for item in self
+                .ast
+                .node_views()
+                .filter(|view| matches!(view.kind(), SurfaceNodeKind::ReconsiderItem))
+            {
+                if self.in_definition_block(item.id()) || has_direct_equals(self.ast, item.id()) {
+                    continue;
+                }
+                let [name] = item.children() else {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                };
+                let name = self.view(*name)?;
+                let Some(token) = name
+                    .as_token()
+                    .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+                else {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                };
+                if self
+                    .parents
+                    .get(&item.id())
+                    .and_then(|parent| self.ast.node(*parent))
+                    .is_none_or(|parent| parent.kind != SurfaceNodeKind::ReconsiderStatement)
+                {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+                refs.push(VariableReferenceSite {
+                    node: name.id(),
+                    spelling: token.text.to_string(),
+                    range: name.range(),
+                    scope: self.scope_of(name.id()),
+                    kind: SourceVariableReferenceKind::Term,
+                });
+            }
+        }
         refs.sort_by_key(|reference| {
             (
                 reference.range.start,
@@ -6632,6 +6668,7 @@ impl<'a> VariableResolveState<'a> {
                             binding.kind,
                             SourceVariableBindingKind::Set
                                 | SourceVariableBindingKind::NamedWitness
+                                | SourceVariableBindingKind::Reconsider
                         )
                         || {
                             let rhs = direct_term_child(

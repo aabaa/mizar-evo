@@ -20,6 +20,14 @@ fresh Typed 設置・Resolved replay を実行し、元の本体・型 site、�
 replay・freshness を伴う強い smoke は未完のままである。
 
 
+## Native conversion classification
+
+AS の対応 domain `checker.native_conversions` は実 native build・fresh Typed/Resolved
+replay・coercion/query の実結果を消費し、Pass は分類の観測だけを意味する。
+既存 FS builtin widening は意味論 checker を維持し、この native 経路も要求する。
+omitted-justification AS seed は非 active のまま、pending/blocked を扱う最終証明
+consumer は Task 272 に残す。
+
 偽 coherence・偽 reducibility の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
 簡約行では `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` と `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` を元の正本参照と共に認証する。
 失敗観測前に、実ソースから再生成した不変の完全な VcSet 同士と `debug_text()` 全体を baseline と比較し、baseline の欠落・破損、metadata・stage の変更を拒否する。

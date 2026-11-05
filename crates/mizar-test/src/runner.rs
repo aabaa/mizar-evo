@@ -1804,6 +1804,45 @@ const STEP5C13_OVERLOAD_IDS: [&str; 2] = [
 
 const INLINE_CLOSURE_REQUEST_ID: &str = "pass_advanced_semantics_inline_closure_requests_001";
 
+const NATIVE_CONVERSION_ID: &str = "pass_advanced_semantics_reconsider_classification_001";
+
+fn native_conversions_admitted(root: &Path, case: &TestCase) -> bool {
+    let path = format!("tests/miz/pass/variables/{NATIVE_CONVERSION_ID}.miz");
+    case.id.0 == NATIVE_CONVERSION_ID
+        && case.expectation.id == case.id
+        && case.expectation.schema_version == 1
+        && case.expectation.domain == "checker.native_conversions"
+        && case.expectation.profiles.as_slice() == ["fast"]
+        && case
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq(["spec.en.08.reconsider.native_classification.metadata"])
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
 fn inline_closure_requests_admitted(root: &Path, case: &TestCase) -> bool {
     let path = format!("tests/miz/pass/variables/{INLINE_CLOSURE_REQUEST_ID}.miz");
     case.id.0 == INLINE_CLOSURE_REQUEST_ID
@@ -2096,6 +2135,197 @@ fn source_inline_closure_requests(
     inline_closure_request_observation(resolved.source_proof_local_binding().ok_or_else(invalid)?)
 }
 
+fn native_conversion_handoff(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff, String> {
+    use mizar_checker::{
+        source_proof_local_declaration::SourceProofLocalDeclarationProducer,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts},
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let invalid = || "native conversion transaction does not match source".to_owned();
+    let original = type_elaboration::source_syntax_receiver(ast, module)?;
+    let native = SurfaceResolvedArena::lower(ast, module).map_err(|_| invalid())?;
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        ast, module, symbols,
+    ))
+    .map_err(|_| invalid())?;
+    let handoff =
+        SourceProofLocalDeclarationProducer::build_bindings(&original, &native, symbols, &scope)
+            .map_err(|_| invalid())?;
+    let typed = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(None, Vec::new()).map_err(|_| invalid())?,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|_| invalid())?
+    .with_source_proof_local_binding(handoff)
+    .map_err(|_| invalid())?;
+    let resolved = type_elaboration::assemble_empty_resolved_typed_ast(&typed, Vec::new())
+        .map_err(|_| invalid())?;
+    resolved
+        .source_proof_local_binding()
+        .cloned()
+        .ok_or_else(invalid)
+}
+
+fn native_conversion_observation(
+    handoff: &mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+) -> Result<Vec<String>, String> {
+    use mizar_checker::{
+        type_checker::{CoercionRequestKind, TypeFactQueryEngine},
+        typed_ast::Polarity,
+    };
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+    let invalid = || "native conversion classification does not match request".to_owned();
+    let (requests, checked, queries) = handoff.check_conversions().map_err(|_| invalid())?;
+    if requests.is_empty() || checked.coercions().len() != requests.len() {
+        return Err(invalid());
+    }
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .ok_or_else(invalid)?
+        .collect::<Vec<_>>();
+    let mut observations = Vec::new();
+    let mut query_count = 0;
+    let mut sites = std::collections::BTreeSet::new();
+    for (ordinal, request) in requests.iter().enumerate() {
+        if !sites.insert(request.site.clone()) {
+            return Err(invalid());
+        }
+        let node = handoff
+            .source()
+            .nodes()
+            .node(request.site.node())
+            .and_then(|node| node.resolved_node)
+            .ok_or_else(invalid)?;
+        let row = rows
+            .iter()
+            .copied()
+            .find(|row| row.site() == node)
+            .ok_or_else(invalid)?;
+        if row.range() != request.source_range {
+            return Err(invalid());
+        }
+        let intent = if row.kind() == &K::QuaExpression {
+            "qua"
+        } else if row.kind() == &K::ReconsiderItem {
+            let parent = row.parent().ok_or_else(invalid)?;
+            if rows
+                .iter()
+                .any(|row| row.parent() == Some(parent) && row.kind() == &K::JustificationClause)
+            {
+                "by"
+            } else if rows
+                .iter()
+                .any(|row| row.parent() == Some(parent) && row.kind() == &K::ProofBlock)
+            {
+                "proof"
+            } else {
+                "omitted"
+            }
+        } else {
+            return Err(invalid());
+        };
+        let matched = checked
+            .coercions()
+            .iter()
+            .filter(|(_, coercion)| coercion.site == request.site)
+            .collect::<Vec<_>>();
+        let [(_, coercion)] = matched.as_slice() else {
+            return Err(invalid());
+        };
+        let query = queries
+            .iter()
+            .filter(|query| query.query().subject == request.site)
+            .collect::<Vec<_>>();
+        let query_status = if request.kind == CoercionRequestKind::SourceQua {
+            if !query.is_empty() {
+                return Err(invalid());
+            }
+            "none".to_owned()
+        } else {
+            let [query] = query.as_slice() else {
+                return Err(invalid());
+            };
+            if query.query().source_range != request.source_range
+                || query.query().polarity != Polarity::Positive
+                || query.query().predicate.as_str() != "coercion.widening.builtin_radix"
+                || TypeFactQueryEngine::new(checked.facts()).query(query.query().clone()) != **query
+            {
+                return Err(invalid());
+            }
+            query_count += 1;
+            format!("{:?}", query.status())
+        };
+        let obligation = coercion
+            .obligation
+            .map(|id| {
+                checked
+                    .initial_obligations()
+                    .get(id)
+                    .map(|entry| format!("{:?}", entry.status))
+                    .ok_or_else(invalid)
+            })
+            .transpose()?
+            .unwrap_or_else(|| "none".to_owned());
+        let from = request.from_type.as_ref().ok_or_else(invalid)?;
+        observations.push(format!("conversion.{ordinal}.kind={:?}.intent={intent}.from={:?}.to={:?}.attributes={:?}.status={:?}.query={query_status}.obligation={obligation}", request.kind, from.head, request.to_type.head, request.to_type.attributes.iter().map(|attribute| attribute.spelling.as_str()).collect::<Vec<_>>(), coercion.status));
+        observations.push(format!(
+            "roles.{ordinal}.item={:?}.from={:?}.to={:?}",
+            request.site, from.site, request.to_type.site
+        ));
+        for attribute in &request.to_type.attributes {
+            observations.push(format!(
+                "attribute.{ordinal}.symbol={:?}.polarity={:?}.range={:?}",
+                attribute.symbol, attribute.polarity, attribute.source_range
+            ));
+        }
+    }
+    if query_count != queries.len() {
+        return Err(invalid());
+    }
+    Ok(observations)
+}
+
+fn source_native_conversions(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<Vec<String>, String> {
+    if !output.diagnostics.is_empty() {
+        return Err("native conversion frontend diagnostics".to_owned());
+    }
+    let ast = output
+        .ast
+        .ok_or_else(|| "native conversion missing AST".to_owned())?;
+    let resolver = resolver_symbol_collection(root, case, &ast);
+    if !resolver.detail_keys.is_empty() {
+        return Err(resolver.detail_keys.join(","));
+    }
+    native_conversion_observation(&native_conversion_handoff(
+        &ast,
+        &resolver.module,
+        &resolver.env,
+    )?)
+}
+
 fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
     STEP5C13_OVERLOAD_IDS.iter().any(|id| {
         case.id.0 == *id
@@ -2278,6 +2508,21 @@ fn validate_step5c11_registration_inventory(
     if plan
         .cases
         .iter()
+        .filter(|case| native_conversions_admitted(root, case))
+        .count()
+        != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            root,
+            "advanced_semantics",
+            "E-ADVANCED-SEMANTICS-INVENTORY",
+            format!("advanced_semantics.inventory.{NATIVE_CONVERSION_ID}"),
+            "native conversions require exactly one admitted source/sidecar pair",
+        ));
+    }
+    if plan
+        .cases
+        .iter()
         .filter(|case| inline_closure_requests_admitted(root, case))
         .count()
         != 1
@@ -2329,6 +2574,16 @@ fn validate_step5c11_registration_inventory(
             || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
             || case.id.0 == INLINE_CLOSURE_REQUEST_ID
             || case.expectation.id.0 == INLINE_CLOSURE_REQUEST_ID
+            || case.id.0 == NATIVE_CONVERSION_ID
+            || case.expectation.id.0 == NATIVE_CONVERSION_ID
+            || case
+                .source_path
+                .file_stem()
+                .is_some_and(|name| name == NATIVE_CONVERSION_ID)
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{NATIVE_CONVERSION_ID}.expect.toml").as_str())
             || case
                 .source_path
                 .file_stem()
@@ -2345,6 +2600,7 @@ fn validate_step5c11_registration_inventory(
             && !step5c11_registration_admitted(root, case)
             && !step5c13_overload_admitted(root, case)
             && !inline_closure_requests_admitted(root, case)
+            && !native_conversions_admitted(root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
                 "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
@@ -2374,11 +2630,14 @@ pub fn run_advanced_semantics_corpus(
                 step5c11_registration_admitted(&root, case)
                     || step5c13_overload_admitted(&root, case)
                     || inline_closure_requests_admitted(&root, case)
+                    || native_conversions_admitted(&root, case)
             })
             .enumerate()
         {
             let result = run_frontend(&root, case, ordinal).and_then(|output| {
-                if inline_closure_requests_admitted(&root, case) {
+                if native_conversions_admitted(&root, case) {
+                    source_native_conversions(&root, case, output).map(|_| Vec::new())
+                } else if inline_closure_requests_admitted(&root, case) {
                     source_inline_closure_requests(&root, case, output).map(|_| Vec::new())
                 } else if step5c13_overload_admitted(&root, case) {
                     let (source,nodes,symbols)=source_registration_inputs(&root,case,output)?;

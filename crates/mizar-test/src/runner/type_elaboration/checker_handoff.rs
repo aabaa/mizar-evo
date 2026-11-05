@@ -57,7 +57,7 @@ use super::source_formula::{SourceFormulaStatement, extract_source_contradiction
 #[cfg(test)]
 use super::source_reserve::SourceReserveExtraction;
 
-pub(super) fn source_syntax_receiver(
+pub(in crate::runner) fn source_syntax_receiver(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
 ) -> Result<TypedAst, String> {

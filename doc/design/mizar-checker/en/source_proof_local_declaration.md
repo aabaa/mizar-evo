@@ -71,6 +71,19 @@ roles define pending substitution requests, including zero-arity request roots.
 The advanced-semantics consumer observes these requests after Typed/Resolved
 replay; it produces no expanded result or semantic capture-avoidance credit.
 
+The parameterless `check_conversions()` revalidates authority and returns
+`Result<(Vec<CoercionInput>, CoercionCheckingOutput, Vec<TypeFactQueryOutput>),
+SourceProofLocalDeclarationError>` without installing semantic tables.
+Original Qua/Item/Statement rules retain target, RHS and omitted/by/proof roles.
+Plain Set/Object sources and authenticated local nullary attribute targets feed
+real coercion/query checking; unsupported dependencies refuse. Only independently
+qualified builtin Candidate views become usable; pending/rejected targets do not.
+Reconsider retains original proof-source types alongside lexical view history;
+qua uses the latest apparent view and never updates the base binding.
+Request-local type roles use mapped original typed nodes; results join by site.
+Queries use actual current-request builtin facts; written declarations/tails
+supply no proof. Unowned namespace conversion subtrees refuse.
+
 ## Descendant Set-name binding boundary
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` consumes

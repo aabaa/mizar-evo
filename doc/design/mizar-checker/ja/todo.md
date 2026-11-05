@@ -695,9 +695,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   Contract: [native inline bindings](../../task_contracts/ja/CHECKER270-INLINE-BINDINGS.md).
   producer と AS の要求観測は完了。MT10-AS の guard 検証・置換 replay/result・
   binder freshness は未完のままである。
-- [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
+- [x] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
   parser Task 47に依存。この task で blocked の Task 285 要素規則 (QuaExpression,
   ReconsiderItem, ReconsiderStatement) を producer と同時に出荷する。
+  Contract: [native conversions](../../task_contracts/ja/CHECKER271-NATIVE-CONVERSIONS.md).
+  producer と実 FS/AS 分類は完了。omitted seed は非 active のまま、
+  最終的な証明状態の消費は Task 272 に残す。
 - [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。この task で
   blocked の Task 285 要素規則 (`tests/coverage/source_element_rule_migration.tsv`
   の proof-skeleton 12 種) を producer と同時に出荷する。

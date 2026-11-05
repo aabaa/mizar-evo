@@ -98,8 +98,8 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
    名前なし term になり得る空でない先頭形状は、束縛を捏造せず scope-skeleton
    diagnostic も出さずに文末まで回復します。authoritative term syntax は引き続き
    parser の所有です。`reconsider` は `type_change_list` を保守的に走査し、各 item
-   先頭の識別子を記録し、任意の等号右辺を括弧・角括弧・波括弧の深さを追跡しながら
-   トップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` / `const` は、depth 0 の comma 以降が
+   先頭識別子の直後が `=` の場合だけ束縛を記録し、等号右辺を括弧・角括弧・波括弧の深さを追跡しながら
+   トップレベルのカンマまたは `as` まで読み飛ばします。 bare item は既存 view を変更するだけで束縛を追加せず、文の lexical context は維持します。アルゴリズムの `var` / `const` は、depth 0 の comma 以降が
    `, WordIdentifier (, WordIdentifier)* (Other := | Other = | Word as | Semicolon)`を
    満たす場合だけ後続宣言名を認識します。`WordIdentifier` はtoken kindが
    `Word`で、既存の`is_identifier`もtrueである必要があります。pure probeは最初の

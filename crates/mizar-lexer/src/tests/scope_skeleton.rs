@@ -86,15 +86,120 @@ end;";
             ("y", BindingShapeKind::Consider),
             ("br", BindingShapeKind::Reconsider),
             ("setterm", BindingShapeKind::Reconsider),
-            ("u", BindingShapeKind::Reconsider),
             ("v", BindingShapeKind::Reconsider),
-            ("z", BindingShapeKind::Reconsider),
         ]
     );
     assert!(skeleton.binding_overrides_symbol("x", nth_index(source, "reconsider", 0)));
-    assert!(skeleton.binding_overrides_symbol("u", nth_index(source, "set by A", 0)));
-    assert!(skeleton.binding_overrides_symbol("z", nth_index(source, "set by A", 0)));
+    assert!(!skeleton.binding_overrides_symbol("u", nth_index(source, "set by A", 0)));
+    assert!(!skeleton.binding_overrides_symbol("z", nth_index(source, "set by A", 0)));
     assert!(skeleton.diagnostics.is_empty());
+}
+
+#[test]
+fn scope_skeleton_reconsider_bare_items_keep_statement_without_introducing_names() {
+    let source = "reconsider u, z as set;";
+    let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+
+    assert!(skeleton.frames.is_empty());
+    assert!(skeleton.diagnostics.is_empty());
+    assert_eq!(
+        skeleton.statements,
+        vec![LexicalStatementRange {
+            kind: LexicalStatementKind::Binder,
+            range: SourceSpan {
+                start: 0,
+                end: source.len()
+            },
+        }]
+    );
+    assert!(!skeleton.binding_overrides_symbol("u", source.len() - 1));
+    assert!(!skeleton.binding_overrides_symbol("z", source.len() - 1));
+}
+
+#[test]
+fn scope_skeleton_reconsider_repeated_bare_items_preserve_original_let() {
+    let source =
+        "proof\nlet x be set;\nreconsider x as object;\nreconsider x, y = f(x, x) as set;\nend;";
+    let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+
+    assert!(
+        skeleton.diagnostics.is_empty(),
+        "{:?}",
+        skeleton.diagnostics
+    );
+    assert_eq!(skeleton.frames.len(), 1);
+    assert_eq!(
+        skeleton.frames[0]
+            .bindings
+            .iter()
+            .map(|binding| (
+                binding.spelling.as_str(),
+                binding.kind,
+                binding.introduced_at
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                "x",
+                BindingShapeKind::Let,
+                SourceSpan {
+                    start: nth_index(source, "x be", 0),
+                    end: nth_index(source, "x be", 0) + 1,
+                }
+            ),
+            (
+                "y",
+                BindingShapeKind::Reconsider,
+                SourceSpan {
+                    start: nth_index(source, "y =", 0),
+                    end: nth_index(source, "y =", 0) + 1,
+                }
+            ),
+        ]
+    );
+    assert!(skeleton.binding_overrides_symbol("x", nth_index(source, "end;", 0)));
+}
+
+#[test]
+fn scope_skeleton_reconsider_bare_items_preserve_true_duplicate_and_malformed_controls() {
+    let source =
+        "proof\nreconsider x = y as set;\nreconsider x as object;\nreconsider x = z as set;\nend;";
+    let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+    assert_eq!(skeleton.frames[0].bindings.len(), 1);
+    assert_eq!(
+        skeleton.frames[0].bindings[0].kind,
+        BindingShapeKind::Reconsider
+    );
+    assert_eq!(
+        skeleton.frames[0].bindings[0].introduced_at.start,
+        nth_index(source, "x = y", 0)
+    );
+    assert_eq!(skeleton.diagnostics.len(), 1);
+    assert_eq!(
+        skeleton.diagnostics[0].code,
+        ScopeSkeletonDiagnosticCode::DuplicateBindingName
+    );
+    assert_eq!(
+        skeleton.diagnostics[0].span,
+        SourceSpan {
+            start: nth_index(source, "x = z", 0),
+            end: nth_index(source, "x = z", 0) + 1,
+        }
+    );
+
+    for (source, malformed) in [
+        ("reconsider , as set;", true),
+        ("reconsider , u as set;", false),
+    ] {
+        let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+        assert_eq!(skeleton.diagnostics.len(), usize::from(malformed));
+        if malformed {
+            assert_eq!(
+                skeleton.diagnostics[0].code,
+                ScopeSkeletonDiagnosticCode::MalformedBinderList
+            );
+        }
+    }
 }
 
 #[test]

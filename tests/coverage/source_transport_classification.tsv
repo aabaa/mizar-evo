@@ -131,14 +131,14 @@ PropertyClause	referenced	referenced	existing source_* producer
 PropertyImplementation	referenced	referenced	existing source_* producer
 PropertyRedefinition	definition	b	source_structure_definition
 Proposition	referenced	referenced	existing source_* producer
-QuaExpression	reconsider	b	checker Task 271
+QuaExpression	reconsider	b	source_proof_local_declaration::source_qua_roles
 QualifiedReference	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT
 QualifiedSymbol	referenced	referenced	existing source_* producer
 QualifiedVariableSegment	referenced	referenced	existing source_* producer
 QuantifiedFormula	referenced	referenced	existing source_* producer
 QuantifierVariableSegment	referenced	referenced	existing source_* producer
-ReconsiderItem	reconsider	b	checker Task 271
-ReconsiderStatement	reconsider	b	checker Task 271
+ReconsiderItem	reconsider	b	source_proof_local_declaration::source_reconsider_item_roles
+ReconsiderStatement	reconsider	b	source_proof_local_declaration::source_reconsider_statement_roles
 ReductionRegistration	referenced	referenced	existing source_* producer
 Reference	referenced	referenced	existing source_* producer
 ReferenceList	referenced	referenced	existing source_* producer

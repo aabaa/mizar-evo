@@ -49,6 +49,11 @@ owner and the [advanced request consumer](./mizar-test/en/harness.md#native-inli
 The semantic capture-avoidance requirement remains deferred pending validated
 guards, explicit substitution replay/results and binder freshness under MT10-AS.
 
+`spec.en.08.reconsider.native_classification.metadata` is covered by the same
+checker owner and [native classification consumer](./mizar-test/en/harness.md#native-conversion-classification).
+This is request/result metadata only; general proof-skeleton pending/blocked
+consumption and the inactive omitted-justification seed remain with Task 272.
+
 ## Coverage Matrix
 
 | Spec chapter | Design coverage | Status | Follow-up |

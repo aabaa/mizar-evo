@@ -1257,6 +1257,468 @@ impl SourceProofLocalBindingHandoff {
         )
     }
 
+    // Rationale: reuse existing request/check/query types without adding a stored conversion DTO.
+    #[allow(clippy::type_complexity)]
+    pub fn check_conversions(
+        &self,
+    ) -> Result<
+        (
+            Vec<crate::type_checker::CoercionInput>,
+            crate::type_checker::CoercionCheckingOutput,
+            Vec<crate::type_checker::TypeFactQueryOutput>,
+        ),
+        SourceProofLocalDeclarationError,
+    > {
+        self.validate_complete_installation(
+            self.original.source_id(),
+            self.original.module_id(),
+            true,
+        )?;
+        let original = self.original.as_ref();
+        let native = self.native.as_ref();
+        let symbols = self.symbols.as_ref();
+        let scope = self.scope.as_ref();
+
+        use crate::type_checker::{
+            AttributeInput, AttributePolarity, CoercionEvidence, CoercionInput,
+            CoercionJustification, CoercionObligationChecker, CoercionRequestKind,
+            NormalizedTypeStatus, TypeExpressionInput, TypeFactQuery, TypeFactQueryEngine,
+            TypeHeadInput,
+        };
+        use crate::typed_ast::{
+            CoercionStatus, Polarity, TypeFactTable, TypePredicateRef, TypeRole, TypeStatus,
+            TypedSiteRef,
+        };
+        use SurfaceNodeKind as K;
+        use mizar_resolve::env::{ContributionKind, DefinitionKind, NamespacePath, SymbolKind};
+        use mizar_resolve::names::{
+            LocalTermScope, SourceVariableBindingId, SourceVariableReferenceKind,
+        };
+        let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
+        let rows = original.source_nodes().ok_or_else(invalid)?;
+        let row_for = |site| {
+            rows.iter()
+                .find(|row| row.site() == site)
+                .ok_or_else(invalid)
+        };
+        let mut typed_nodes = BTreeMap::new();
+        for (id, node) in original.nodes().iter() {
+            let site = node.resolved_node.ok_or_else(invalid)?;
+            let row = row_for(site)?;
+            if node.anchor != mizar_session::SourceAnchor::Range(row.range())
+                || node.recovery != NodeRecoveryState::Normal
+                || typed_nodes.insert(site, id).is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        let (source_scopes, _) =
+            mizar_resolve::symbols::source_proof_scope_maps(native, symbols, scope)
+                .map_err(|_| invalid())?;
+        let scopes = source_scopes
+            .into_iter()
+            .map(|(node, local)| {
+                native
+                    .resolved_node_for(node)
+                    .map(|site| (site, local))
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let references = scope
+            .references()
+            .iter()
+            .map(|reference| {
+                native
+                    .resolved_node_for(reference.node())
+                    .map(|site| (site, reference))
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let names = scope
+            .bindings()
+            .iter()
+            .map(|binding| {
+                native
+                    .resolved_node_for(binding.node())
+                    .map(|site| (site, binding))
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let namespace = NamespacePath::new(original.module_id().path().as_str());
+        let type_input = |ty: &SourceNode, request: ResolvedNodeId, role: &str| {
+            let children = source_children(rows, ty.site()).collect::<Vec<_>>();
+            let (head, chain) = match children.as_slice() {
+                [head] => (*head, None),
+                [chain, head] if chain.kind() == &K::AttributeChain => (*head, Some(*chain)),
+                _ => return Err(invalid()),
+            };
+            let head_parts = source_children(rows, head.site()).collect::<Vec<_>>();
+            let [word] = head_parts.as_slice() else {
+                return Err(invalid());
+            };
+            if ty.kind() != &K::TypeExpression || head.kind() != &K::TypeHead {
+                return Err(invalid());
+            }
+            let head = match word.kind() {
+                K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord => {
+                    match token.text.as_ref() {
+                        "set" => TypeHeadInput::BuiltinSet,
+                        "object" => TypeHeadInput::BuiltinObject,
+                        _ => return Err(invalid()),
+                    }
+                }
+                _ => return Err(invalid()),
+            };
+            let mut attributes = Vec::new();
+            if let Some(chain) = chain {
+                for attribute in source_children(rows, chain.site()) {
+                    let parts = source_children(rows, attribute.site()).collect::<Vec<_>>();
+                    let [qualified] = parts.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let parts = source_children(rows, qualified.site()).collect::<Vec<_>>();
+                    let [segment] = parts.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let parts = source_children(rows, segment.site()).collect::<Vec<_>>();
+                    let [token] = parts.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if attribute.kind() != &K::AttributeRef
+                        || qualified.kind() != &K::QualifiedSymbol
+                        || segment.kind() != &K::PathSegment
+                        || !matches!(token.kind(), K::Token(t) if matches!(t.kind,
+                        SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
+                    {
+                        return Err(invalid());
+                    }
+                    let candidates = symbols
+                        .symbols()
+                        .visible_candidates(&namespace, token.spelling());
+                    let [entry] = candidates.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let definition = symbols
+                        .definitions()
+                        .by_symbol(entry.symbol())
+                        .ok_or_else(invalid)?;
+                    let contribution = symbols
+                        .contributions()
+                        .get(entry.contribution())
+                        .ok_or_else(invalid)?;
+                    let origin = entry.origin();
+                    let mizar_session::SourceAnchor::Range(declaration) = origin.anchor() else {
+                        return Err(invalid());
+                    };
+                    if entry.kind() != SymbolKind::Attribute
+                        || entry.symbol().module() != original.module_id()
+                        || origin.source_id() != original.source_id()
+                        || origin.module_id() != original.module_id()
+                        || origin.import_edge().is_some()
+                        || origin.is_recovered()
+                        || declaration.end > token.range().start
+                        || definition.kind() != DefinitionKind::Attribute
+                        || definition.arity() != Some(0)
+                        || definition.origin() != origin
+                        || definition.contribution() != entry.contribution()
+                        || definition.conflict().is_some()
+                        || contribution.module() != original.module_id()
+                        || !matches!(contribution.kind(), ContributionKind::LocalSource { source_id }
+                        if *source_id == original.source_id())
+                        || !contribution.effects().symbols().contains(entry.symbol())
+                        || !contribution
+                            .effects()
+                            .definitions()
+                            .contains(&definition.id())
+                        || !rows.iter().any(|row| {
+                            row.kind() == &K::AttributeDefinition && row.range() == *declaration
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    attributes.push(AttributeInput::new(
+                        entry.symbol().clone(),
+                        AttributePolarity::Positive,
+                        attribute.range(),
+                        token.spelling(),
+                    ));
+                }
+                if attributes.is_empty() {
+                    return Err(invalid());
+                }
+            }
+            Ok(TypeExpressionInput::new(
+                TypedSiteRef::Role {
+                    node: *typed_nodes.get(&ty.site()).ok_or_else(invalid)?,
+                    role: TypeRole::new(format!(
+                        "conversion.{}.{}",
+                        typed_nodes.get(&request).ok_or_else(invalid)?.index(),
+                        role
+                    )),
+                },
+                ty.range(),
+                ty.spelling(),
+                head,
+            )
+            .with_attributes(attributes))
+        };
+        let supports = |from: &TypeExpressionInput, to: &TypeExpressionInput| {
+            from.args.is_empty()
+                && to.args.is_empty()
+                && from.attributes.is_empty()
+                && to.attributes.is_empty()
+                && matches!(
+                    (&from.head, &to.head),
+                    (
+                        TypeHeadInput::BuiltinSet,
+                        TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+                    ) | (TypeHeadInput::BuiltinObject, TypeHeadInput::BuiltinObject)
+                )
+        };
+        // Originals are immutable; qualified views never erase source type knowledge.
+        let mut originals = BTreeMap::new();
+        for binding in scope.bindings().iter().filter(|binding| {
+            matches!(
+                binding.kind(),
+                SourceVariableBindingKind::Let
+                    | SourceVariableBindingKind::Reserve
+                    | SourceVariableBindingKind::Quantifier
+            )
+        }) {
+            if binding
+                .declared_type()
+                .is_none_or(|ty| !ty.attributes().is_empty())
+            {
+                continue;
+            }
+            let name = row_for(
+                native
+                    .resolved_node_for(binding.node())
+                    .ok_or_else(invalid)?,
+            )?;
+            let segment = row_for(name.parent().ok_or_else(invalid)?)?;
+            if let Some(ty) = source_unique_child(rows, segment, K::TypeExpression) {
+                let input = type_input(ty, name.site(), "original")?;
+                if supports(&input, &input) {
+                    originals.insert(binding.id(), ty.site());
+                }
+            }
+        }
+        let mut views: BTreeMap<
+            SourceVariableBindingId,
+            Vec<(usize, LocalTermScope, ResolvedNodeId)>,
+        > = BTreeMap::new();
+        let mut expression_views = BTreeMap::new();
+        let mut events = rows
+            .iter()
+            .filter(|row| matches!(row.kind(), K::QuaExpression | K::ReconsiderItem))
+            .collect::<Vec<_>>();
+        // A contained qua is checked before the item or outer qua that consumes it.
+        events.sort_by_key(|row| {
+            (
+                row.range().end,
+                std::cmp::Reverse(row.range().start),
+                std::cmp::Reverse(row.preorder_ordinal()),
+            )
+        });
+        let checker = CoercionObligationChecker::default();
+        let no_facts = TypeFactTable::new();
+        let mut requests = Vec::new();
+        let mut query_sites = Vec::new();
+        let mut statuses = BTreeMap::new();
+        for event in events {
+            let qua = event.kind() == &K::QuaExpression;
+            let (value, target, statement, declared, explicit) = if qua {
+                let [base, target] = source_qua_roles(rows, event).ok_or_else(invalid)?;
+                (base, target, None, None, true)
+            } else {
+                let statement = row_for(event.parent().ok_or_else(invalid)?)?;
+                let (items, target, tail) =
+                    source_reconsider_statement_roles(rows, statement).ok_or_else(invalid)?;
+                if !items.iter().any(|item| item.site() == event.site()) {
+                    return Err(invalid());
+                }
+                let (name, value) =
+                    source_reconsider_item_roles(rows, event).ok_or_else(invalid)?;
+                let declared = if value.is_some() {
+                    Some(names.get(&name.site()).ok_or_else(invalid)?.id())
+                } else {
+                    None
+                };
+                (
+                    value.unwrap_or(name),
+                    target,
+                    Some(statement),
+                    declared,
+                    tail.is_some(),
+                )
+            };
+            // Resolve supported value graphs through sealed occurrence identities.
+            let (original_type, candidates) = {
+                let mut current = value;
+                loop {
+                    match current.kind() {
+                        K::TermExpression => {
+                            let children =
+                                source_children(rows, current.site()).collect::<Vec<_>>();
+                            let [child] = children.as_slice() else {
+                                return Err(invalid());
+                            };
+                            current = child;
+                        }
+                        K::ParenthesizedTerm => {
+                            let children =
+                                source_children(rows, current.site()).collect::<Vec<_>>();
+                            if children.len() != 3
+                                || !source_inline_token(&children, 0, "(")
+                                || !source_inline_token(&children, 2, ")")
+                                || children[1].kind() != &K::TermExpression
+                            {
+                                return Err(invalid());
+                            }
+                            current = children[1];
+                        }
+                        K::QuaExpression => {
+                            let target =
+                                *expression_views.get(&current.site()).ok_or_else(invalid)?;
+                            break (target, Vec::new());
+                        }
+                        K::TermReference | K::Token(_) => {
+                            let reference = references.get(&current.site()).ok_or_else(invalid)?;
+                            if reference.kind() != SourceVariableReferenceKind::Term {
+                                return Err(invalid());
+                            }
+                            let binding = reference.binding();
+                            let original_type = *originals.get(&binding).ok_or_else(invalid)?;
+                            let local = scopes.get(&event.site()).ok_or_else(invalid)?;
+                            let available = views
+                                .get(&binding)
+                                .into_iter()
+                                .flatten()
+                                .rev()
+                                .filter(|(order, scope, _)| {
+                                    *order <= event.range().start
+                                        && local.path().starts_with(scope.path())
+                                })
+                                .map(|(_, _, ty)| *ty)
+                                .collect::<Vec<_>>();
+                            break (original_type, available);
+                        }
+                        _ => return Err(invalid()),
+                    }
+                }
+            };
+            let to_type = type_input(target, event.site(), "to")?;
+            let mut from_type = type_input(row_for(original_type)?, event.site(), "from")?;
+            for candidate in candidates {
+                let input = type_input(row_for(candidate)?, event.site(), "from")?;
+                if qua || supports(&input, &to_type) {
+                    from_type = input;
+                    break;
+                }
+            }
+            let intrinsic = supports(&from_type, &to_type);
+            let site = TypedSiteRef::Node(*typed_nodes.get(&event.site()).ok_or_else(invalid)?);
+            let mut input = CoercionInput::new(
+                site.clone(),
+                event.range(),
+                if qua {
+                    CoercionRequestKind::SourceQua
+                } else if intrinsic {
+                    CoercionRequestKind::Widening
+                } else {
+                    CoercionRequestKind::Narrowing
+                },
+                to_type,
+            )
+            .with_from_type(from_type)
+            .with_justification(if explicit {
+                CoercionJustification::Explicit
+            } else {
+                CoercionJustification::Omitted
+            });
+            if intrinsic {
+                input = input.with_evidence(if qua {
+                    CoercionEvidence::StaticUpcast
+                } else {
+                    CoercionEvidence::BuiltinRadix
+                });
+            }
+            let checked = checker.check(symbols, &no_facts, [input.clone()], []);
+            let mut entries = checked.coercions().iter().map(|(_, row)| row);
+            let result = entries.next().ok_or_else(invalid)?;
+            if entries.next().is_some()
+                || result.site != site
+                || statuses.insert(site.clone(), result.status).is_some()
+            {
+                return Err(invalid());
+            }
+            let qualified = intrinsic
+                && result.status == CoercionStatus::Candidate
+                && result
+                    .from
+                    .and_then(|id| checked.normalized_types().get(id))
+                    .is_some_and(|ty| ty.status == NormalizedTypeStatus::Known)
+                && checked
+                    .normalized_types()
+                    .get(result.to)
+                    .is_some_and(|ty| ty.status == NormalizedTypeStatus::Known)
+                && [
+                    &input.from_type.as_ref().ok_or_else(invalid)?.site,
+                    &input.to_type.site,
+                ]
+                .iter()
+                .all(|site| {
+                    checked.type_entries().iter().any(|(_, entry)| {
+                        &entry.owner == *site && entry.status == TypeStatus::Known
+                    })
+                });
+            if qualified {
+                if qua {
+                    expression_views.insert(event.site(), target.site());
+                } else {
+                    let binding = if let Some(declared) = declared {
+                        originals.insert(declared, original_type);
+                        declared
+                    } else {
+                        references.get(&value.site()).ok_or_else(invalid)?.binding()
+                    };
+                    views.entry(binding).or_default().push((
+                        event.range().end,
+                        scopes.get(&event.site()).ok_or_else(invalid)?.clone(),
+                        target.site(),
+                    ));
+                }
+            }
+            if statement.is_some() {
+                query_sites.push((site, event.range()));
+            }
+            requests.push(input);
+        }
+        let output = checker.check(symbols, &no_facts, requests.clone(), []);
+        if output.coercions().len() != requests.len()
+            || output
+                .coercions()
+                .iter()
+                .any(|(_, row)| statuses.get(&row.site) != Some(&row.status))
+        {
+            return Err(invalid());
+        }
+        // Core output sorting can differ from dependency order; subject joins are exact.
+        let queries = query_sites
+            .into_iter()
+            .map(|(site, range)| {
+                TypeFactQueryEngine::new(output.facts()).query(TypeFactQuery::new(
+                    site,
+                    TypePredicateRef::new("coercion.widening.builtin_radix"),
+                    Polarity::Positive,
+                    range,
+                ))
+            })
+            .collect();
+        Ok((requests, output, queries))
+    }
+
     pub(crate) fn validate_complete_installation(
         &self,
         source: SourceId,
@@ -1307,7 +1769,17 @@ impl SourceProofLocalDeclarationProducer {
 fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> bool {
     let kind = if matches!(
         text,
-        "deffunc" | "defpred" | "equals" | "means" | "be" | "being"
+        "deffunc"
+            | "defpred"
+            | "equals"
+            | "means"
+            | "be"
+            | "being"
+            | "reconsider"
+            | "as"
+            | "qua"
+            | "by"
+            | "proof"
     ) {
         SurfaceTokenKind::ReservedWord
     } else {
@@ -1449,6 +1921,136 @@ pub(crate) fn source_inline_predicate_roles<'a>(
     Some((name, formals, body, None))
 }
 
+pub(crate) fn source_qua_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<[&'a SourceNode; 2]> {
+    use SurfaceNodeKind as K;
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
+    if owner.kind() != &K::QuaExpression
+        || source_contiguous_child_count(children.iter().copied()) != Some(3)
+        || !source_inline_token(&children, 1, "qua")
+    {
+        return None;
+    }
+    let base = children[0];
+    let target = source_unique_child(rows, owner, K::TypeExpression)?;
+    if target.child_ordinal() != 2
+        || !matches!(
+            base.kind(),
+            K::TermExpression
+                | K::TermReference
+                | K::NumeralTerm
+                | K::ItTerm
+                | K::ParenthesizedTerm
+                | K::ChoiceTerm
+                | K::ApplicationTerm
+                | K::StructureConstructor
+                | K::SetEnumeration
+                | K::SetComprehension
+                | K::SelectorAccess
+                | K::StructureUpdate
+                | K::QuaExpression
+                | K::PrefixExpression(_)
+                | K::PostfixExpression(_)
+                | K::InfixExpression(_)
+                | K::BinderExpression
+        )
+    {
+        return None;
+    }
+    Some([base, target])
+}
+
+pub(crate) fn source_reconsider_item_roles<'a>(
+    rows: &'a [SourceNode],
+    item: &SourceNode,
+) -> Option<(&'a SourceNode, Option<&'a SourceNode>)> {
+    use SurfaceNodeKind as K;
+    let children = source_children(rows, item.site()).collect::<Vec<_>>();
+    let count = source_contiguous_child_count(children.iter().copied())?;
+    if item.kind() != &K::ReconsiderItem
+        || !matches!(count, 1 | 3)
+        || !rows.iter().any(|parent| {
+            Some(parent.site()) == item.parent() && parent.kind() == &K::ReconsiderStatement
+        })
+    {
+        return None;
+    }
+    let name = children[0];
+    if !matches!(name.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier) {
+        return None;
+    }
+    let value = if count == 3 {
+        let value = source_unique_child(rows, item, K::TermExpression)?;
+        if !source_inline_token(&children, 1, "=") || value.child_ordinal() != 2 {
+            return None;
+        }
+        Some(value)
+    } else {
+        None
+    };
+    Some((name, value))
+}
+
+// Rationale: borrowed original item/target/tail roles, without a second statement representation.
+#[allow(clippy::type_complexity)]
+pub(crate) fn source_reconsider_statement_roles<'a>(
+    rows: &'a [SourceNode],
+    owner: &SourceNode,
+) -> Option<(Vec<&'a SourceNode>, &'a SourceNode, Option<&'a SourceNode>)> {
+    use SurfaceNodeKind as K;
+    let children = source_children(rows, owner.site()).collect::<Vec<_>>();
+    if owner.kind() != &K::ReconsiderStatement
+        || source_contiguous_child_count(children.iter().copied()) != Some(children.len())
+        || !source_inline_token(&children, 0, "reconsider")
+    {
+        return None;
+    }
+    let items = children
+        .iter()
+        .copied()
+        .filter(|row| row.kind() == &K::ReconsiderItem)
+        .collect::<Vec<_>>();
+    if items.is_empty()
+        || items.iter().enumerate().any(|(index, item)| {
+            item.child_ordinal() != index * 2 + 1
+                || (index > 0 && !source_inline_token(&children, index * 2, ","))
+        })
+    {
+        return None;
+    }
+    let target = source_unique_child(rows, owner, K::TypeExpression)?;
+    let mut cursor = items.len() * 2;
+    if !source_inline_token(&children, cursor, "as") || target.child_ordinal() != cursor + 1 {
+        return None;
+    }
+    cursor += 2;
+    let tail = children
+        .get(cursor)
+        .copied()
+        .filter(|row| matches!(row.kind(), K::JustificationClause | K::ProofBlock));
+    if let Some(tail) = tail {
+        let parts = source_children(rows, tail.site()).collect::<Vec<_>>();
+        if !source_inline_token(
+            &parts,
+            0,
+            if tail.kind() == &K::ProofBlock {
+                "proof"
+            } else {
+                "by"
+            },
+        ) {
+            return None;
+        }
+        cursor += 1;
+    }
+    if !source_inline_token(&children, cursor, ";") || children.len() != cursor + 1 {
+        return None;
+    }
+    Some((items, target, tail))
+}
+
 fn native_proof_local_binding_env(
     original: &TypedAst,
     native: &SurfaceResolvedArena,
@@ -1478,10 +2080,9 @@ fn native_proof_local_binding_env(
         || !original.diagnostics().is_empty()
         || scope.thesis().is_some()
         || !scope.statements().is_empty()
-        || rows.iter().any(|row| {
-            row.recovery() != NodeRecoveryState::Normal
-                || matches!(row.kind(), K::ReconsiderStatement)
-        })
+        || rows
+            .iter()
+            .any(|row| row.recovery() != NodeRecoveryState::Normal)
         || crate::type_checker::source_nodes(native, original)
             .map_err(|_| invalid())?
             .as_slice()
@@ -1490,6 +2091,8 @@ fn native_proof_local_binding_env(
         return Err(invalid());
     }
     let (scopes, parents) = mizar_resolve::symbols::source_proof_scope_maps(native, symbols, scope)
+        .map_err(|_| invalid())?;
+    let shells = mizar_resolve::symbols::source_declaration_shells(native, symbols)
         .map_err(|_| invalid())?;
     let row_for = |id| {
         rows.iter()
@@ -1548,6 +2151,13 @@ fn native_proof_local_binding_env(
                 },
                 BindingContextLayer::Declaration,
             ),
+            K::DefinitionBlockItem => (
+                BindingContextOwner::DeclarationShell(shells.declarations().iter()
+                    .find(|shell| native.resolved_node_for(shell.node_id()) == Some(row.site())
+                        && shell.kind() == mizar_resolve::declarations::DeclarationShellKind::DefinitionBlock)
+                    .ok_or_else(invalid)?.id()),
+                BindingContextLayer::Declaration,
+            ),
             _ => return Err(invalid()),
         };
         if boundaries
@@ -1570,8 +2180,56 @@ fn native_proof_local_binding_env(
     let mut names = BTreeMap::new();
     let mut inline_definitions = BTreeMap::new();
     let mut written_types = BTreeMap::new();
+    let mut bare_names = BTreeSet::new();
     for row in rows.iter() {
+        if row.kind() == &K::ReconsiderItem {
+            source_reconsider_item_roles(rows, row).ok_or_else(invalid)?;
+        }
+        let mut ancestor = Some(row);
+        let mut namespace_owned = false;
+        while let Some(current) = ancestor {
+            if current.kind() == &K::DefinitionBlockItem {
+                namespace_owned = true;
+                break;
+            }
+            ancestor = rows
+                .iter()
+                .find(|parent| Some(parent.site()) == current.parent());
+        }
+        if namespace_owned {
+            if matches!(
+                row.kind(),
+                K::QuaExpression | K::ReconsiderStatement | K::ReconsiderItem
+            ) {
+                return Err(invalid());
+            }
+            continue;
+        }
         let (kind, rhs) = match row.kind() {
+            K::QuaExpression => {
+                source_qua_roles(rows, row).ok_or_else(invalid)?;
+                continue;
+            }
+            K::ReconsiderStatement => {
+                let (items, target, _) =
+                    source_reconsider_statement_roles(rows, row).ok_or_else(invalid)?;
+                for item in items {
+                    let (name, value) =
+                        source_reconsider_item_roles(rows, item).ok_or_else(invalid)?;
+                    if let Some(value) = value {
+                        if names
+                            .insert(name.site(), (B::Reconsider, Some(value.site())))
+                            .is_some()
+                            || written_types.insert(name.site(), target.range()).is_some()
+                        {
+                            return Err(invalid());
+                        }
+                    } else if !bare_names.insert(name.site()) {
+                        return Err(invalid());
+                    }
+                }
+                continue;
+            }
             K::InlineFunctorDefinition | K::InlinePredicateDefinition => {
                 let functor = row.kind() == &K::InlineFunctorDefinition;
                 let (name, parameters, body, result) = if functor {
@@ -1749,7 +2407,7 @@ fn native_proof_local_binding_env(
                 B::Quantifier | B::ComprehensionGenerator => BindingKind::QuantifierBinder,
                 B::Let => BindingKind::LetBinding,
                 B::GivenWitness | B::ConsiderWitness => BindingKind::GivenWitness,
-                B::Set | B::NamedWitness => BindingKind::LocalAbbreviation,
+                B::Set | B::NamedWitness | B::Reconsider => BindingKind::LocalAbbreviation,
                 B::InlineFunctor | B::InlinePredicate => BindingKind::LocalAbbreviation,
                 B::InlineParameter => BindingKind::DefinitionParameter,
                 _ => return Err(invalid()),
@@ -1786,6 +2444,12 @@ fn native_proof_local_binding_env(
             .get(reference.binding().index())
             .ok_or_else(invalid)?;
         if target.id() != reference.binding() {
+            return Err(invalid());
+        }
+        if let Some(row) = row_for(reference.node())
+            && bare_names.remove(&row.site())
+            && reference.kind() != R::Term
+        {
             return Err(invalid());
         }
         match (reference.kind(), target.kind()) {
@@ -1861,7 +2525,7 @@ fn native_proof_local_binding_env(
             if let Some(owner) = rhs_owners.get(&site) {
                 let declaration = &scope.bindings()[owner.index()];
                 if owner.index() == target.id().index()
-                    && matches!(declaration.kind(), B::Set | B::NamedWitness)
+                    && matches!(declaration.kind(), B::Set | B::NamedWitness | B::Reconsider)
                 {
                     return Err(invalid());
                 }
@@ -1886,6 +2550,9 @@ fn native_proof_local_binding_env(
             }
             current = parents.get(&id).copied();
         }
+    }
+    if !bare_names.is_empty() {
+        return Err(invalid());
     }
     for id in inline_definitions.keys() {
         let expected = CapturedFreeVariables::new(
@@ -9055,6 +9722,493 @@ mod task269c_tests {
     }
 
     #[test]
+    fn native_conversion_authority_and_coherent_environment_are_replayed() {
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            symbols::SignatureProjectionExtractor,
+        };
+        let inputs = |from: &str, to: &str| {
+            let source = source_id();
+            let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("conversion_trust"));
+            let words = [
+                "theorem",
+                "T",
+                ":",
+                "thesis",
+                "proof",
+                "let",
+                "s",
+                "be",
+                from,
+                ";",
+                "reconsider",
+                "a",
+                "=",
+                "s",
+                "as",
+                to,
+                ";",
+                "end",
+                ";",
+            ];
+            let mut builder = SurfaceAstBuilder::new(source);
+            let mut tokens = Vec::new();
+            let mut spans = Vec::new();
+            let mut cursor = 0;
+            for word in words {
+                let span = range(source, cursor, cursor + word.len());
+                cursor += word.len() + 1;
+                let kind = if matches!(word, "T" | "s" | "a") {
+                    SurfaceTokenKind::Identifier
+                } else if matches!(word, ":" | ";" | "=") {
+                    SurfaceTokenKind::ReservedSymbol
+                } else {
+                    SurfaceTokenKind::ReservedWord
+                };
+                tokens.push(builder.add_token(kind, word, span));
+                spans.push(span);
+            }
+            let node =
+                |builder: &mut SurfaceAstBuilder, kind, start: usize, end: usize, children| {
+                    builder.add_node(
+                        kind,
+                        range(source, spans[start].start, spans[end].end),
+                        children,
+                    )
+                };
+            let from_head = node(
+                &mut builder,
+                SurfaceNodeKind::TypeHead,
+                8,
+                8,
+                vec![tokens[8]],
+            );
+            let from_type = node(
+                &mut builder,
+                SurfaceNodeKind::TypeExpression,
+                8,
+                8,
+                vec![from_head],
+            );
+            let segment = node(
+                &mut builder,
+                SurfaceNodeKind::QualifiedVariableSegment,
+                6,
+                8,
+                vec![tokens[6], tokens[7], from_type],
+            );
+            let declaration = node(
+                &mut builder,
+                SurfaceNodeKind::LetStatement,
+                5,
+                9,
+                vec![tokens[5], segment, tokens[9]],
+            );
+            let reference = node(
+                &mut builder,
+                SurfaceNodeKind::TermReference,
+                13,
+                13,
+                vec![tokens[13]],
+            );
+            let value = node(
+                &mut builder,
+                SurfaceNodeKind::TermExpression,
+                13,
+                13,
+                vec![reference],
+            );
+            let item = node(
+                &mut builder,
+                SurfaceNodeKind::ReconsiderItem,
+                11,
+                13,
+                vec![tokens[11], tokens[12], value],
+            );
+            let to_head = node(
+                &mut builder,
+                SurfaceNodeKind::TypeHead,
+                15,
+                15,
+                vec![tokens[15]],
+            );
+            let target = node(
+                &mut builder,
+                SurfaceNodeKind::TypeExpression,
+                15,
+                15,
+                vec![to_head],
+            );
+            let conversion = node(
+                &mut builder,
+                SurfaceNodeKind::ReconsiderStatement,
+                10,
+                16,
+                vec![tokens[10], item, tokens[14], target, tokens[16]],
+            );
+            let thesis = node(
+                &mut builder,
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+                3,
+                3,
+                vec![tokens[3]],
+            );
+            let formula = node(
+                &mut builder,
+                SurfaceNodeKind::FormulaExpression,
+                3,
+                3,
+                vec![thesis],
+            );
+            let proof = node(
+                &mut builder,
+                SurfaceNodeKind::ProofBlock,
+                4,
+                17,
+                vec![tokens[4], declaration, conversion, tokens[17]],
+            );
+            let theorem = node(
+                &mut builder,
+                SurfaceNodeKind::TheoremItem,
+                0,
+                18,
+                vec![tokens[0], tokens[1], tokens[2], formula, proof, tokens[18]],
+            );
+            let items = node(
+                &mut builder,
+                SurfaceNodeKind::ItemList,
+                0,
+                18,
+                vec![theorem],
+            );
+            let compilation = node(
+                &mut builder,
+                SurfaceNodeKind::CompilationUnit,
+                0,
+                18,
+                vec![items],
+            );
+            tokens.push(compilation);
+            let root = node(&mut builder, SurfaceNodeKind::Root, 0, 18, tokens);
+            let ast = builder.finish(Some(root), None);
+            let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(&ast, &module).collect();
+            let collection = SignatureProjectionExtractor::new(
+                &ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(collection.diagnostics().is_empty());
+            let symbols = collection.env().clone();
+            let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+                SourceVariableScopeInput::new(&ast, &module, &symbols),
+            )
+            .unwrap();
+            let mut original = TypedAst::try_new(TypedAstParts {
+                source_id: source,
+                module_id: module,
+                resolved_root: Some(native.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    Some(TypedNodeId::new(native.arena().root().index())),
+                    native
+                        .arena()
+                        .iter()
+                        .map(|(id, node)| {
+                            TypedNode::new("syntax", node.origin().anchor().clone())
+                                .with_resolved_node(id)
+                                .with_children(
+                                    node.children()
+                                        .iter()
+                                        .map(|id| TypedNodeId::new(id.index()))
+                                        .collect(),
+                                )
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .unwrap();
+            original.install_source_nodes(&native).unwrap();
+            (original, native, symbols, scope)
+        };
+        let (original, native, symbols, scope) = inputs("set", "object");
+        let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+            &original, &native, &symbols, &scope,
+        )
+        .unwrap();
+        let (_, checked, queries) = handoff.check_conversions().unwrap();
+        assert_eq!(checked.coercions().len(), 1);
+        assert_eq!(
+            queries[0].status(),
+            crate::type_checker::TypeFactQueryStatus::Satisfied
+        );
+        let (other, other_native, other_symbols, other_scope) = inputs("object", "object");
+        assert_eq!(original.source_id(), other.source_id());
+        assert!(
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &other,
+                &other_native,
+                &other_symbols,
+                &other_scope
+            )
+            .is_ok()
+        );
+        for forged in [
+            SourceProofLocalDeclarationProducer::build_bindings(&other, &native, &symbols, &scope),
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &other_native,
+                &other_symbols,
+                &other_scope,
+            ),
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &native,
+                &other_symbols,
+                &scope,
+            ),
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &native,
+                &symbols,
+                &other_scope,
+            ),
+        ] {
+            assert_eq!(
+                forged,
+                Err(SourceProofLocalDeclarationError::DependencyMismatch)
+            );
+        }
+        let (narrow, narrow_native, narrow_symbols, narrow_scope) = inputs("object", "set");
+        let negative = SourceProofLocalDeclarationProducer::build_bindings(
+            &narrow,
+            &narrow_native,
+            &narrow_symbols,
+            &narrow_scope,
+        )
+        .unwrap()
+        .check_conversions()
+        .unwrap();
+        assert_eq!(
+            negative.1.coercions().iter().next().unwrap().1.status,
+            crate::typed_ast::CoercionStatus::Rejected
+        );
+        assert!(negative.1.initial_obligations().is_empty());
+        let empty = empty_typed(original.source_id(), original.module_id().clone());
+        let installed = empty
+            .clone()
+            .with_source_proof_local_binding(handoff.clone())
+            .unwrap();
+        assert!(
+            installed.types().is_empty()
+                && installed.facts().is_empty()
+                && installed.coercions().is_empty()
+        );
+        assert_eq!(
+            assemble_empty(&installed)
+                .unwrap()
+                .source_proof_local_binding(),
+            Some(&handoff)
+        );
+        assert!(
+            installed
+                .with_source_proof_local_binding(handoff.clone())
+                .is_err()
+        );
+        let mut bad_site = handoff.clone();
+        let source_guard = bad_site
+            .original
+            .source_node_entries()
+            .unwrap()
+            .find(|row| row.kind() == &SurfaceNodeKind::TypeExpression)
+            .unwrap()
+            .range();
+        bad_site
+            .binding_env
+            .binding_mut_for_test(BindingId::new(1))
+            .unwrap()
+            .type_site = BindingTypeSite::Source(source_guard);
+        let mut bad_capture = handoff.clone();
+        let identity = bad_capture
+            .binding_env
+            .bindings()
+            .get(BindingId::new(0))
+            .unwrap()
+            .identity
+            .clone();
+        bad_capture
+            .binding_env
+            .binding_mut_for_test(BindingId::new(1))
+            .unwrap()
+            .captured = CapturedFreeVariables::new(vec![identity]);
+        let mut bad_original = handoff;
+        bad_original.original = Arc::new(other);
+        for forged in [bad_site, bad_capture, bad_original] {
+            assert!(forged.check_conversions().is_err());
+            assert!(
+                empty
+                    .clone()
+                    .with_source_proof_local_binding(forged.clone())
+                    .is_err()
+            );
+            let mut injected = empty.clone();
+            injected.inject_source_proof_local_binding_for_test(forged);
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)
+            );
+        }
+    }
+
+    #[test]
+    fn conversion_element_rules_reject_isolated_role_corruption() {
+        use SurfaceNodeKind as K;
+        use SurfaceTokenKind as T;
+        let source = source_id();
+        let receipt = task286_receipt(
+            source,
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("conversion_roles")),
+            4,
+        );
+        let prototype = receipt
+            .original
+            .iter()
+            .find(|row| matches!(row.kind(), K::Token(_)))
+            .unwrap();
+        let sites = receipt
+            .original
+            .iter()
+            .map(SourceNode::site)
+            .collect::<Vec<_>>();
+        let token = |kind, text: &str| {
+            let K::Token(mut token) = prototype.kind.clone() else {
+                unreachable!()
+            };
+            token.kind = kind;
+            token.text = text.into();
+            K::Token(token)
+        };
+        let rows = |descriptors: Vec<(K, Option<usize>, usize)>| {
+            descriptors
+                .into_iter()
+                .enumerate()
+                .map(|(index, (kind, parent, ordinal))| {
+                    let mut row = prototype.clone();
+                    row.spelling = match &kind {
+                        K::Token(t) => t.text.to_string(),
+                        _ => String::new(),
+                    };
+                    row.kind = kind;
+                    row.site = sites[index];
+                    row.parent = parent.map(|index| sites[index]);
+                    row.child_ordinal = ordinal;
+                    row.preorder_ordinal = index;
+                    row.range = range(source, 0, 100);
+                    row
+                })
+                .collect::<Vec<_>>()
+        };
+        let statement = rows(vec![
+            (K::ReconsiderStatement, None, 0),
+            (token(T::ReservedWord, "reconsider"), Some(0), 0),
+            (K::ReconsiderItem, Some(0), 1),
+            (token(T::ReservedSymbol, ","), Some(0), 2),
+            (K::ReconsiderItem, Some(0), 3),
+            (token(T::ReservedWord, "as"), Some(0), 4),
+            (K::TypeExpression, Some(0), 5),
+            (K::JustificationClause, Some(0), 6),
+            (token(T::ReservedSymbol, ";"), Some(0), 7),
+            (token(T::Identifier, "x"), Some(2), 0),
+            (token(T::ReservedSymbol, "="), Some(2), 1),
+            (K::TermExpression, Some(2), 2),
+            (token(T::Identifier, "y"), Some(4), 0),
+            (token(T::ReservedWord, "by"), Some(7), 0),
+        ]);
+        let (items, target, tail) =
+            source_reconsider_statement_roles(&statement, &statement[0]).unwrap();
+        assert_eq!(
+            items.iter().map(|row| row.site()).collect::<Vec<_>>(),
+            [sites[2], sites[4]]
+        );
+        assert_eq!(target.site(), sites[6]);
+        assert_eq!(tail.unwrap().site(), sites[7]);
+        assert_eq!(
+            source_reconsider_item_roles(&statement, items[0])
+                .unwrap()
+                .1
+                .unwrap()
+                .site(),
+            sites[11]
+        );
+        assert!(
+            source_reconsider_item_roles(&statement, items[1])
+                .unwrap()
+                .1
+                .is_none()
+        );
+        for (index, kind) in [
+            (1, token(T::Identifier, "reconsider")),
+            (3, token(T::Identifier, ",")),
+            (5, token(T::ReservedSymbol, "as")),
+            (6, K::TermExpression),
+            (7, K::ProofBlock),
+            (8, token(T::Identifier, ";")),
+        ] {
+            let mut bad = statement.clone();
+            bad[index].kind = kind;
+            assert!(source_reconsider_statement_roles(&bad, &bad[0]).is_none());
+        }
+        for (index, kind) in [
+            (9, token(T::ReservedWord, "x")),
+            (10, token(T::ReservedWord, "=")),
+            (11, K::TypeExpression),
+        ] {
+            let mut bad = statement.clone();
+            bad[index].kind = kind;
+            assert!(source_reconsider_item_roles(&bad, &bad[2]).is_none());
+        }
+        let mut orphan = statement.clone();
+        orphan[2].parent = None;
+        assert!(source_reconsider_item_roles(&orphan, &orphan[2]).is_none());
+        let qua = rows(vec![
+            (K::QuaExpression, None, 0),
+            (K::TermReference, Some(0), 0),
+            (token(T::ReservedWord, "qua"), Some(0), 1),
+            (K::TypeExpression, Some(0), 2),
+        ]);
+        assert_eq!(
+            source_qua_roles(&qua, &qua[0])
+                .unwrap()
+                .map(SourceNode::site),
+            [sites[1], sites[3]]
+        );
+        for (index, kind) in [
+            (1, K::FormulaExpression),
+            (2, token(T::Identifier, "qua")),
+            (3, K::TermExpression),
+        ] {
+            let mut bad = qua.clone();
+            bad[index].kind = kind;
+            assert!(source_qua_roles(&bad, &bad[0]).is_none());
+        }
+        let mut reordered = qua;
+        reordered[3].child_ordinal = 1;
+        assert!(source_qua_roles(&reordered, &reordered[0]).is_none());
+    }
+
+    #[test]
     fn inline_element_rules_reject_isolated_role_corruption() {
         use SurfaceNodeKind as K;
         use SurfaceTokenKind as T;
@@ -10682,5 +11836,402 @@ mod task269c_tests {
         allocator
             .next_source_id(snapshot)
             .expect("Task269C other source")
+    }
+
+    #[test]
+    fn native_conversion_local_attribute_authority_is_source_point_checked() {
+        use SurfaceNodeKind as K;
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::{NamespacePath, SymbolKind},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            symbols::SignatureProjectionExtractor,
+        };
+        let inputs = |predicate: bool, future: bool| {
+            let source = source_id();
+            let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("attribute_trust"));
+            let definition = if predicate {
+                vec![
+                    "definition",
+                    "pred",
+                    "Marked",
+                    ":",
+                    "marked1",
+                    "means",
+                    "thesis",
+                    ";",
+                    "end",
+                    ";",
+                ]
+            } else {
+                vec![
+                    "definition",
+                    "let",
+                    "d",
+                    "be",
+                    "set",
+                    ";",
+                    "attr",
+                    "Marked",
+                    ":",
+                    "d",
+                    "is",
+                    "marked1",
+                    "means",
+                    "d",
+                    "=",
+                    "d",
+                    ";",
+                    "end",
+                    ";",
+                ]
+            };
+            let theorem = vec![
+                "theorem",
+                "T",
+                ":",
+                "thesis",
+                "proof",
+                "let",
+                "s",
+                "be",
+                "set",
+                ";",
+                "reconsider",
+                "a",
+                "=",
+                "s",
+                "as",
+                "marked1",
+                "set",
+                ";",
+                "end",
+                ";",
+            ];
+            let sections = [definition, theorem];
+            let mut builder = SurfaceAstBuilder::new(source);
+            let mut tokens = [Vec::new(), Vec::new()];
+            let mut spans = [Vec::new(), Vec::new()];
+            let mut cursor = 0;
+            for section in if future { [1, 0] } else { [0, 1] } {
+                for word in &sections[section] {
+                    let span = range(source, cursor, cursor + word.len());
+                    cursor += word.len() + 1;
+                    let kind = if *word == "marked1" && (section == 0 || !future) {
+                        SurfaceTokenKind::UserSymbol
+                    } else if matches!(*word, "T" | "Marked" | "d" | "s" | "a" | "marked1") {
+                        SurfaceTokenKind::Identifier
+                    } else if matches!(*word, ":" | ";" | "=") {
+                        SurfaceTokenKind::ReservedSymbol
+                    } else {
+                        SurfaceTokenKind::ReservedWord
+                    };
+                    tokens[section].push(builder.add_token(kind, *word, span));
+                    spans[section].push(span);
+                }
+            }
+            let node = |builder: &mut SurfaceAstBuilder,
+                        kind,
+                        section: usize,
+                        first: usize,
+                        last: usize,
+                        children| {
+                builder.add_node(
+                    kind,
+                    range(
+                        source,
+                        spans[section][first].start,
+                        spans[section][last].end,
+                    ),
+                    children,
+                )
+            };
+            let d = &tokens[0];
+            let declaration = if predicate {
+                let pattern = node(&mut builder, K::PredicatePattern, 0, 4, 4, vec![d[4]]);
+                let thesis = node(
+                    &mut builder,
+                    K::FormulaConstant(SurfaceFormulaConstant::Thesis),
+                    0,
+                    6,
+                    6,
+                    vec![d[6]],
+                );
+                let formula = node(&mut builder, K::FormulaExpression, 0, 6, 6, vec![thesis]);
+                let body = node(&mut builder, K::FormulaDefiniens, 0, 6, 6, vec![formula]);
+                let definition = node(
+                    &mut builder,
+                    K::PredicateDefinition,
+                    0,
+                    1,
+                    7,
+                    vec![d[1], d[2], d[3], pattern, d[5], body, d[7]],
+                );
+                node(
+                    &mut builder,
+                    K::DefinitionBlockItem,
+                    0,
+                    0,
+                    9,
+                    vec![d[0], definition, d[8], d[9]],
+                )
+            } else {
+                let head = node(&mut builder, K::TypeHead, 0, 4, 4, vec![d[4]]);
+                let ty = node(&mut builder, K::TypeExpression, 0, 4, 4, vec![head]);
+                let segment = node(
+                    &mut builder,
+                    K::QualifiedVariableSegment,
+                    0,
+                    2,
+                    4,
+                    vec![d[2], d[3], ty],
+                );
+                let parameter = node(
+                    &mut builder,
+                    K::DefinitionParameter,
+                    0,
+                    1,
+                    5,
+                    vec![d[1], segment, d[5]],
+                );
+                let pattern = node(&mut builder, K::AttributePattern, 0, 11, 11, vec![d[11]]);
+                let left_ref = node(&mut builder, K::TermReference, 0, 13, 13, vec![d[13]]);
+                let left = node(&mut builder, K::TermExpression, 0, 13, 13, vec![left_ref]);
+                let right_ref = node(&mut builder, K::TermReference, 0, 15, 15, vec![d[15]]);
+                let right = node(&mut builder, K::TermExpression, 0, 15, 15, vec![right_ref]);
+                let equality = node(
+                    &mut builder,
+                    K::BuiltinPredicateApplication,
+                    0,
+                    13,
+                    15,
+                    vec![left, d[14], right],
+                );
+                let formula = node(
+                    &mut builder,
+                    K::FormulaExpression,
+                    0,
+                    13,
+                    15,
+                    vec![equality],
+                );
+                let body = node(&mut builder, K::FormulaDefiniens, 0, 13, 15, vec![formula]);
+                let definition = node(
+                    &mut builder,
+                    K::AttributeDefinition,
+                    0,
+                    6,
+                    16,
+                    vec![d[6], d[7], d[8], d[9], d[10], pattern, d[12], body, d[16]],
+                );
+                node(
+                    &mut builder,
+                    K::DefinitionBlockItem,
+                    0,
+                    0,
+                    18,
+                    vec![d[0], parameter, definition, d[17], d[18]],
+                )
+            };
+            let t = &tokens[1];
+            let head = node(&mut builder, K::TypeHead, 1, 8, 8, vec![t[8]]);
+            let ty = node(&mut builder, K::TypeExpression, 1, 8, 8, vec![head]);
+            let segment = node(
+                &mut builder,
+                K::QualifiedVariableSegment,
+                1,
+                6,
+                8,
+                vec![t[6], t[7], ty],
+            );
+            let let_statement = node(
+                &mut builder,
+                K::LetStatement,
+                1,
+                5,
+                9,
+                vec![t[5], segment, t[9]],
+            );
+            let reference = node(&mut builder, K::TermReference, 1, 13, 13, vec![t[13]]);
+            let value = node(&mut builder, K::TermExpression, 1, 13, 13, vec![reference]);
+            let item = node(
+                &mut builder,
+                K::ReconsiderItem,
+                1,
+                11,
+                13,
+                vec![t[11], t[12], value],
+            );
+            let segment = node(&mut builder, K::PathSegment, 1, 15, 15, vec![t[15]]);
+            let qualified = node(&mut builder, K::QualifiedSymbol, 1, 15, 15, vec![segment]);
+            let attribute = node(&mut builder, K::AttributeRef, 1, 15, 15, vec![qualified]);
+            let chain = node(&mut builder, K::AttributeChain, 1, 15, 15, vec![attribute]);
+            let head = node(&mut builder, K::TypeHead, 1, 16, 16, vec![t[16]]);
+            let target = node(
+                &mut builder,
+                K::TypeExpression,
+                1,
+                15,
+                16,
+                vec![chain, head],
+            );
+            let conversion = node(
+                &mut builder,
+                K::ReconsiderStatement,
+                1,
+                10,
+                17,
+                vec![t[10], item, t[14], target, t[17]],
+            );
+            let thesis = node(
+                &mut builder,
+                K::FormulaConstant(SurfaceFormulaConstant::Thesis),
+                1,
+                3,
+                3,
+                vec![t[3]],
+            );
+            let formula = node(&mut builder, K::FormulaExpression, 1, 3, 3, vec![thesis]);
+            let proof = node(
+                &mut builder,
+                K::ProofBlock,
+                1,
+                4,
+                18,
+                vec![t[4], let_statement, conversion, t[18]],
+            );
+            let theorem = node(
+                &mut builder,
+                K::TheoremItem,
+                1,
+                0,
+                19,
+                vec![t[0], t[1], t[2], formula, proof, t[19]],
+            );
+            let order = if future {
+                vec![theorem, declaration]
+            } else {
+                vec![declaration, theorem]
+            };
+            let span = range(source, 0, cursor - 1);
+            let items = builder.add_node(K::ItemList, span, order);
+            let compilation = builder.add_node(K::CompilationUnit, span, vec![items]);
+            let mut root_children = Vec::new();
+            for section in if future { [1, 0] } else { [0, 1] } {
+                root_children.extend_from_slice(&tokens[section]);
+            }
+            root_children.push(compilation);
+            let root = builder.add_node(K::Root, span, root_children);
+            let ast = builder.finish(Some(root), None);
+            let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(&ast, &module).collect();
+            let collection = SignatureProjectionExtractor::new(
+                &ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(
+                collection.diagnostics().is_empty(),
+                "{:?}",
+                collection.diagnostics()
+            );
+            let symbols = collection.env().clone();
+            let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+                SourceVariableScopeInput::new(&ast, &module, &symbols),
+            )
+            .unwrap();
+            let mut original = TypedAst::try_new(TypedAstParts {
+                source_id: source,
+                module_id: module,
+                resolved_root: Some(native.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(
+                    Some(TypedNodeId::new(native.arena().root().index())),
+                    native
+                        .arena()
+                        .iter()
+                        .map(|(id, node)| {
+                            TypedNode::new("syntax", node.origin().anchor().clone())
+                                .with_resolved_node(id)
+                                .with_children(
+                                    node.children()
+                                        .iter()
+                                        .map(|id| TypedNodeId::new(id.index()))
+                                        .collect(),
+                                )
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .unwrap();
+            original.install_source_nodes(&native).unwrap();
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope,
+            )
+            .unwrap()
+        };
+        let genuine = inputs(false, false);
+        let attribute = genuine
+            .symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Attribute)
+            .unwrap();
+        assert_eq!(
+            genuine
+                .symbols
+                .definitions()
+                .by_symbol(attribute.symbol())
+                .unwrap()
+                .arity(),
+            Some(0)
+        );
+        let (requests, checked, queries) = genuine.check_conversions().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(
+            requests[0].to_type.attributes[0].symbol,
+            *attribute.symbol()
+        );
+        assert_eq!(
+            queries[0].status(),
+            crate::type_checker::TypeFactQueryStatus::Missing
+        );
+        assert_eq!(
+            checked.coercions().iter().next().unwrap().1.status,
+            crate::typed_ast::CoercionStatus::Rejected
+        );
+        assert!(checked.initial_obligations().is_empty());
+        let wrong_kind = inputs(true, false);
+        assert!(
+            wrong_kind
+                .symbols
+                .symbols()
+                .iter()
+                .any(|entry| entry.kind() == SymbolKind::Predicate
+                    && entry.primary_spelling() == "marked1")
+        );
+        let future = inputs(false, true);
+        for handoff in [&wrong_kind, &future] {
+            assert_eq!(
+                handoff.check_conversions(),
+                Err(SourceProofLocalDeclarationError::DependencyMismatch)
+            );
+        }
+        let mut mismatched = genuine.clone();
+        mismatched.symbols = wrong_kind.symbols;
+        assert_eq!(
+            mismatched.check_conversions(),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
     }
 }

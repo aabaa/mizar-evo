@@ -31,8 +31,8 @@ set-statement	proof-skeleton	checker-task-272	blocked	SetStatement; capture-avoi
 statement-item	proof-skeleton	checker-task-272	blocked	StatementItem
 suppose-item	proof-skeleton	checker-task-272	blocked	SupposeItem
 then-statement	proof-skeleton	checker-task-272	blocked	ThenStatement
-qua-expression	reconsider	checker-task-271	blocked	QuaExpression
-reconsider-item	reconsider	checker-task-271	blocked	ReconsiderItem
-reconsider-statement	reconsider	checker-task-271	blocked	ReconsiderStatement
+qua-expression	reconsider	native-consumer	done	QuaExpression; original conversion roles in source_proof_local_declaration
+reconsider-item	reconsider	qua-expression	done	ReconsiderItem; original conversion roles in source_proof_local_declaration
+reconsider-statement	reconsider	qua-expression	done	ReconsiderStatement; original conversion roles in source_proof_local_declaration
 binder-expression	expression	checker-task-257B	blocked	BinderExpression
 term-case	expression	checker-task-257B	blocked	TermCase

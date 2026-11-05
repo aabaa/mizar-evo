@@ -22,6 +22,14 @@ of requests grants no expanded result, proof acceptance or semantic substitution
 coverage; the stronger MT10-AS guard/replay/freshness smoke remains deferred.
 
 
+## Native conversion classification
+
+The mapped AS domain `checker.native_conversions` consumes genuine native build,
+fresh Typed/Resolved replay and real coercion/query results. Pass observes
+classification only. Existing FS builtin widening retains its semantic checker
+and additionally requires this native path. The omitted-justification AS seed
+stays inactive; its pending/blocked proof consumer belongs to Task 272.
+
 The exact false-coherence and false-reducibility proof rows consume authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy their failure keys.
 The reduction row also authenticates `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` and `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` alongside its original canonical reference.
 Before failure observation, compare immutable complete source-to-VC reruns and their `debug_text()` bytes with the full baseline; missing or corrupt baselines, metadata and cross-stage changes fail closed.

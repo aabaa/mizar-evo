@@ -100,9 +100,10 @@ The implementation is a conservative single pass over a reduced token stream.
    an unnamed term is recovered to the statement end without inventing a
    binding or emitting a scope-skeleton diagnostic. Authoritative term syntax
    remains parser-owned. `reconsider` scans the `type_change_list`
-   conservatively, records each item-head identifier, and skips optional
+   conservatively, records only item-head identifiers followed by `=`, and skips
    equated right-hand sides until a top-level comma or `as` while tracking
-   parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders recognize a later declaration head only
+   parenthesis, bracket, and brace depth. Bare items change an existing view,
+   add no binder, and retain the statement lexical context. Algorithm `var` and `const` binders recognize a later declaration head only
    when an inline pure probe from a depth-zero comma proves
    `, WordIdentifier (, WordIdentifier)* (Other := | Other = | Word as | Semicolon)`.
    `WordIdentifier` requires both `Word` token kind and existing `is_identifier`. The raw-only `=` alternative preserves legacy lexical declaration shapes; it does not change Parser initializer grammar.

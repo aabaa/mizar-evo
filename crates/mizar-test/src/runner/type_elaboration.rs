@@ -259,7 +259,7 @@ pub(super) use checker_handoff::{
     assemble_source_contradiction_checker_handoff, assemble_source_reserve_checker_handoff,
     assert_source_contradiction_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
-    has_exact_source_contradiction_owner, source_module_binding_env,
+    has_exact_source_contradiction_owner, source_module_binding_env, source_syntax_receiver,
 };
 #[cfg(test)]
 pub(super) use output::{

@@ -64,6 +64,17 @@ DefinitionParameter binding に属する。本体・仮引数 guard・functor �
 保留中の置換要求を得る。advanced-semantics consumer は Typed/Resolved replay 後の
 要求を観測し、展開結果や意味論的 capture-avoidance coverage を生成しない。
 
+引数なしの `check_conversions()` は authority を再検証し、意味論 table を設置せず
+`Result<(Vec<CoercionInput>, CoercionCheckingOutput, Vec<TypeFactQueryOutput>),
+SourceProofLocalDeclarationError>` を返す。Qua/Item/Statement の元 row から
+対象型・RHS・omitted/by/proof を保持し、plain Set/Object と認証済み局所零引数属性を
+実際の coercion/query checker に渡す。未対応依存は拒否する。独立に確認した builtin
+Candidate view だけを後続で使い、pending/rejected target は型根拠にしない。
+reconsider は元の型と lexical view 履歴を保持し、qua は最新の見かけの型を使い
+base binding を更新しない。要求固有の型 role は対応する元 typed node に置き、結果は
+site で結合する。query は現在の要求に一致する実 builtin fact だけを使い、記述された
+宣言・tail は証拠を与えない。owner のない namespace 内の変換 subtree は拒否する。
+
 ## Descendant Set 名の binding 境界
 
 `SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` は元ソースの

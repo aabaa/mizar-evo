@@ -1734,6 +1734,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.08.reconsider.native_classification.metadata"
+source = "doc/spec/en/08.type_inference.md"
+section = "8.2 Type Conversion"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_advanced_semantics_reconsider_classification_001.expect.toml",
+]
+notes = "Classification metadata only: authenticated native conversion requests, intrinsic proof-free queries and actual Candidate/RequiresObligation/Rejected results. Pending obligations and rejected conversions remain non-accepting; no proof search, dispatch, Core/VC or activation of the older omitted-justification AS seed."
+
+[[requirement]]
 id = "spec.en.08.reconsider.omitted_justification.semantic"
 source = "doc/spec/en/08.type_inference.md"
 section = "8.2.2 Explicit Conversion; 8.3 Type Checking Process; with 15.5.1 Type Reconsideration"

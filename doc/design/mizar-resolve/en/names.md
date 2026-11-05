@@ -10,6 +10,8 @@ ownership, order and recovery; it creates no new binding or symbol representatio
 named-Witness introductions, defining-RHS exclusion and cross-form uniqueness;
 legacy entry points retain their existing output. Native proof-scope validation
 also authenticates exact results of this profile, without inferring proof results.
+Named Reconsider excludes its own binding within its RHS; bare Reconsider retains
+the original Identifier as a Term reference to an existing binding, without introduction.
 Inline captures in this opt-in profile retain exactly targets whose lexical scope
 contains the definition-name scope; formals and body-local binders are excluded.
 Existing resolver profiles keep their prior capture outputs.

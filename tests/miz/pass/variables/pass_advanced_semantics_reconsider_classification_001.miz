@@ -1,0 +1,20 @@
+definition
+  let d be set;
+  attr NativeMarked: d is marked1 means d = d;
+end;
+
+theorem NativeConversions: thesis proof
+  let s be set;
+  let o be object;
+  A: thesis;
+  reconsider a = s, s as object;
+  reconsider again = a as object;
+  reconsider e = o as set by A;
+  reconsider p = o as set
+  proof
+    thus thesis;
+  end;
+  reconsider rejected = s as marked1 set;
+  set viewed = s qua object;
+  thus thesis;
+end;

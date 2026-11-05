@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_reconsider_classification_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "checker.native_conversions"
+source = "pass_advanced_semantics_reconsider_classification_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.08.reconsider.native_classification.metadata"]
+notes = "Classification observation only: original named/bare/shared-target/omitted/by/proof/qua requests reach real native checking, query and Typed/Resolved replay consumers. Pass observes Candidate, pending RequiresObligation and Rejected subrequests; it does not accept every conversion or the theorem. No proof search, discharge, dispatch, Core or VC; the older omitted-justification AS seed remains inactive."

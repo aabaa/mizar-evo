@@ -718,9 +718,12 @@ unchecked row below is one future nonempty logical task and one commit.
   Contract: [native inline bindings](../../task_contracts/en/CHECKER270-INLINE-BINDINGS.md).
   Producer and actual AS request observation complete; MT10-AS guard validation,
   substitution replay/results and binder freshness remain open.
-- [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
+- [x] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
   depends on parser Task 47. Ships the Task 285 element rules blocked on it
   (QuaExpression, ReconsiderItem, ReconsiderStatement) with the producer.
+  Contract: [native conversions](../../task_contracts/en/CHECKER271-NATIVE-CONVERSIONS.md).
+  Producer and actual FS/AS classification complete; the omitted seed stays
+  inactive and final proof-state consumption remains with Task 272.
 - [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer. Ships
   the Task 285 element rules blocked on it (the twelve proof-skeleton kinds of
   `tests/coverage/source_element_rule_migration.tsv`) with the producer.

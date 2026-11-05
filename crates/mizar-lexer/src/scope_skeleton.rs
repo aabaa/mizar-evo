@@ -799,6 +799,7 @@ impl ScopeSkeletonBuilder {
 
     fn parse_reconsider_binders(&mut self, keyword_span: SourceSpan) {
         let mut bindings = Vec::new();
+        let mut saw_item = false;
         let mut saw_malformed_separator = false;
 
         while let Some(token) = self.peek().cloned() {
@@ -817,11 +818,16 @@ impl ScopeSkeletonBuilder {
 
             if token.kind == ScopeSkeletonTokenKind::Word && is_identifier(&token.lexeme) {
                 let token = self.advance().expect("peeked token exists");
-                bindings.push(ScopedBindingShape {
-                    spelling: token.lexeme,
-                    introduced_at: token.span,
-                    kind: BindingShapeKind::Reconsider,
-                });
+                saw_item = true;
+                if self.peek().is_some_and(|token| {
+                    token.kind == ScopeSkeletonTokenKind::Other && token.lexeme == "="
+                }) {
+                    bindings.push(ScopedBindingShape {
+                        spelling: token.lexeme,
+                        introduced_at: token.span,
+                        kind: BindingShapeKind::Reconsider,
+                    });
+                }
                 self.skip_reconsider_item_tail();
                 continue;
             }
@@ -829,7 +835,7 @@ impl ScopeSkeletonBuilder {
             break;
         }
 
-        if bindings.is_empty() && saw_malformed_separator {
+        if !saw_item && saw_malformed_separator {
             let span = self.peek().map_or(keyword_span, |token| token.span);
             self.diagnostic(
                 ScopeSkeletonDiagnosticCode::MalformedBinderList,
@@ -839,7 +845,7 @@ impl ScopeSkeletonBuilder {
         }
 
         let statement_end = self.recover_to_binder_statement_end();
-        if bindings.is_empty() {
+        if !saw_item {
             return;
         }
         self.statements.push(LexicalStatementRange {

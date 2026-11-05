@@ -15,7 +15,7 @@ registration
   existence proof thus thesis; end;
 end;
 
-theorem
+theorem ReconsiderOmittedJustification: for s being set holds s = s
 proof
   let s be set;
   reconsider k = s as keen set;

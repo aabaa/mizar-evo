@@ -3024,3 +3024,806 @@ fn task270_advanced_inline_closure_requests_refuse_legacy_local_capture_and_fore
         );
     }
 }
+
+#[test]
+fn task271_native_conversions_build_from_existing_formula_fixture() {
+    use mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer;
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_formula_statement_reconsider_builtin_widening_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(&text, 2_714_001);
+    assert_eq!(diagnostics, 0);
+    let original =
+        super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, &text).unwrap();
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .unwrap();
+    SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &symbols, &scope)
+        .expect("native reconsider transaction");
+}
+
+#[test]
+fn task271_native_conversions_execute_classification_runtime() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let id = "pass_advanced_semantics_reconsider_classification_001";
+    let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+    let frontend = super::run_frontend(&config.workspace_root, case, 0).unwrap();
+    assert!(frontend.ast.is_some());
+    let report = super::run_advanced_semantics_corpus(&config).unwrap();
+    let result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == id)
+        .unwrap_or_else(|| panic!("classification case missing: {:?}", report.diagnostics));
+    assert_eq!(result.status, super::TypeElaborationCaseStatus::Passed);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+}
+
+fn task271_conversion_source(
+    text: &str,
+) -> (
+    mizar_checker::source_proof_local_declaration::SourceProofLocalBindingHandoff,
+    mizar_resolve::env::SymbolEnv,
+) {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_CONVERSION_ID)
+        .unwrap();
+    let frontend = metamorphic_guard::with_source(case, text, || {
+        super::run_frontend(&config.workspace_root, case, 0)
+    })
+    .unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, case, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    (
+        super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap(),
+        resolver.env,
+    )
+}
+
+#[test]
+fn task271_native_conversions_match_manual_original_requests_queries_and_statuses() {
+    use mizar_checker::{
+        type_checker::{CoercionRequestKind as C, TypeFactQueryStatus as Q, TypeHeadInput as H},
+        typed_ast::{
+            CoercionStatus as S, InitialObligationStatus, Polarity, TypeRole, TypedSiteRef,
+        },
+    };
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_CONVERSION_ID)
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let (handoff, symbols) = task271_conversion_source(&text);
+    assert_eq!(
+        handoff
+            .scope()
+            .bindings()
+            .iter()
+            .map(|binding| binding.spelling())
+            .collect::<Vec<_>>(),
+        ["s", "o", "a", "again", "e", "p", "rejected", "viewed"]
+    );
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.binding().index())
+            .collect::<Vec<_>>(),
+        [0, 0, 2, 1, 1, 0, 0]
+    );
+    let (requests, checked, queries) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        (
+            requests.len(),
+            checked.coercions().len(),
+            queries.len(),
+            checked.initial_obligations().len()
+        ),
+        (7, 7, 6, 2)
+    );
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let mut items = rows
+        .iter()
+        .copied()
+        .filter(|row| row.kind() == &K::ReconsiderItem)
+        .collect::<Vec<_>>();
+    items.sort_by_key(|row| row.preorder_ordinal());
+    let qua = rows
+        .iter()
+        .copied()
+        .find(|row| row.kind() == &K::QuaExpression)
+        .unwrap();
+    let target = |item: &mizar_checker::typed_ast::SourceNode| {
+        rows.iter()
+            .copied()
+            .find(|row| row.parent() == item.parent() && row.kind() == &K::TypeExpression)
+            .unwrap()
+    };
+    let targets = items.iter().map(|item| target(item)).collect::<Vec<_>>();
+    assert_eq!(targets[0].site(), targets[1].site());
+    let declared_type = |name: &str| {
+        let binding = handoff
+            .scope()
+            .bindings()
+            .iter()
+            .find(|binding| binding.spelling() == name)
+            .unwrap();
+        let token = rows
+            .iter()
+            .copied()
+            .find(|row| row.range() == binding.range() && matches!(row.kind(), K::Token(_)))
+            .unwrap();
+        rows.iter()
+            .copied()
+            .find(|row| row.parent() == token.parent() && row.kind() == &K::TypeExpression)
+            .unwrap()
+    };
+    let st = declared_type("s");
+    let ot = declared_type("o");
+    let qt = rows
+        .iter()
+        .copied()
+        .find(|row| row.parent() == Some(qua.site()) && row.kind() == &K::TypeExpression)
+        .unwrap();
+    let from_nodes = [st, st, targets[0], ot, ot, st, targets[1]];
+    let to_nodes = [
+        targets[0], targets[1], targets[2], targets[3], targets[4], targets[5], qt,
+    ];
+    let expected = [
+        (
+            C::Widening,
+            H::BuiltinSet,
+            H::BuiltinObject,
+            S::Candidate,
+            Some(Q::Satisfied),
+        ),
+        (
+            C::Widening,
+            H::BuiltinSet,
+            H::BuiltinObject,
+            S::Candidate,
+            Some(Q::Satisfied),
+        ),
+        (
+            C::Widening,
+            H::BuiltinObject,
+            H::BuiltinObject,
+            S::Candidate,
+            Some(Q::Satisfied),
+        ),
+        (
+            C::Narrowing,
+            H::BuiltinObject,
+            H::BuiltinSet,
+            S::RequiresObligation,
+            Some(Q::Missing),
+        ),
+        (
+            C::Narrowing,
+            H::BuiltinObject,
+            H::BuiltinSet,
+            S::RequiresObligation,
+            Some(Q::Missing),
+        ),
+        (
+            C::Narrowing,
+            H::BuiltinSet,
+            H::BuiltinSet,
+            S::Rejected,
+            Some(Q::Missing),
+        ),
+        (
+            C::SourceQua,
+            H::BuiltinObject,
+            H::BuiltinObject,
+            S::Candidate,
+            None,
+        ),
+    ];
+    let typed_node = |row: &mizar_checker::typed_ast::SourceNode| {
+        handoff
+            .source()
+            .nodes()
+            .iter()
+            .find(|(_, node)| node.resolved_node == Some(row.site()))
+            .unwrap()
+            .0
+    };
+    for (index, (request, (kind, from, to, status, query_status))) in
+        requests.iter().zip(expected).enumerate()
+    {
+        let original = if index < 6 { items[index] } else { qua };
+        assert_eq!(request.site, TypedSiteRef::Node(typed_node(original)));
+        assert_eq!(request.kind, kind);
+        if index < 6 {
+            assert_eq!(
+                request.justification,
+                if index == 3 || index == 4 {
+                    mizar_checker::type_checker::CoercionJustification::Explicit
+                } else {
+                    mizar_checker::type_checker::CoercionJustification::Omitted
+                }
+            );
+        }
+        assert_eq!(request.from_type.as_ref().unwrap().head, from);
+        assert_eq!(request.to_type.head, to);
+        assert_eq!(
+            request.from_type.as_ref().unwrap().source_range,
+            from_nodes[index].range()
+        );
+        assert_eq!(request.to_type.source_range, to_nodes[index].range());
+        assert_eq!(
+            request.from_type.as_ref().unwrap().site,
+            TypedSiteRef::Role {
+                node: typed_node(from_nodes[index]),
+                role: TypeRole::new(format!("conversion.{}.from", typed_node(original).index()))
+            }
+        );
+        assert_eq!(
+            request.to_type.site,
+            TypedSiteRef::Role {
+                node: typed_node(to_nodes[index]),
+                role: TypeRole::new(format!("conversion.{}.to", typed_node(original).index()))
+            }
+        );
+        let result = checked
+            .coercions()
+            .iter()
+            .find(|(_, result)| result.site == request.site)
+            .unwrap()
+            .1;
+        assert_eq!(result.status, status);
+        if index == 3 || index == 4 {
+            assert_eq!(
+                checked
+                    .initial_obligations()
+                    .get(result.obligation.unwrap())
+                    .unwrap()
+                    .status,
+                InitialObligationStatus::Pending
+            );
+        } else {
+            assert!(result.obligation.is_none());
+        }
+        let query = queries
+            .iter()
+            .find(|query| query.query().subject == request.site);
+        assert_eq!(query.map(|query| query.status()), query_status);
+        if let Some(query) = query {
+            assert_eq!(query.query().polarity, Polarity::Positive);
+            assert_eq!(
+                query.query().predicate.as_str(),
+                "coercion.widening.builtin_radix"
+            );
+            assert_eq!(query.query().source_range, original.range());
+            assert_eq!(query.matched_facts().len(), usize::from(index < 3));
+            for id in query.matched_facts() {
+                assert_eq!(checked.facts().get(*id).unwrap().subject, request.site);
+            }
+        }
+    }
+    assert_ne!(requests[0].to_type.site, requests[1].to_type.site);
+    assert_eq!(requests[5].to_type.attributes.len(), 1);
+    let attribute = &requests[5].to_type.attributes[0];
+    assert_eq!(
+        symbols
+            .symbols()
+            .get(&attribute.symbol)
+            .unwrap()
+            .primary_spelling(),
+        "marked1"
+    );
+    assert_eq!(
+        symbols.symbols().get(&attribute.symbol).unwrap().kind(),
+        mizar_resolve::env::SymbolKind::Attribute
+    );
+    assert_eq!(
+        checked
+            .diagnostics()
+            .iter()
+            .map(|(_, diagnostic)| diagnostic.message_key.as_str())
+            .collect::<Vec<_>>(),
+        ["type.narrowing_requires_proof"]
+    );
+    let observed = super::source_native_conversions(
+        &config.workspace_root,
+        case,
+        super::run_frontend(&config.workspace_root, case, 0).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        observed,
+        super::native_conversion_observation(&handoff).unwrap()
+    );
+    let conversions = observed
+        .iter()
+        .filter(|key| key.starts_with("conversion."))
+        .collect::<Vec<_>>();
+    assert_eq!(conversions.len(), 7);
+    assert!(conversions[3].contains(".intent=by."));
+    assert!(conversions[4].contains(".intent=proof."));
+    assert!(conversions[5].contains(".intent=omitted."));
+}
+
+#[test]
+fn task271_native_conversions_keep_view_lifetimes_and_refuse_pending_alias_laundering() {
+    use mizar_checker::type_checker::TypeHeadInput as H;
+    let text = "theorem Views: thesis proof let s be set; now reconsider s as object; reconsider t = s as object; thus thesis; end; reconsider u = s as object; thus thesis; end;";
+    let (handoff, _) = task271_conversion_source(text);
+    let (requests, _, _) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        requests
+            .iter()
+            .map(|request| request.from_type.as_ref().unwrap().head.clone())
+            .collect::<Vec<_>>(),
+        [H::BuiltinSet, H::BuiltinObject, H::BuiltinSet]
+    );
+    let (handoff, _) = task271_conversion_source(
+        "theorem OriginalAlias: thesis proof let s be set; reconsider a = s as object; reconsider b = a as set; thus thesis; end;",
+    );
+    let (requests, _, _) = handoff.check_conversions().unwrap();
+    assert_eq!(requests[1].from_type.as_ref().unwrap().head, H::BuiltinSet);
+    for text in [
+        "theorem Pending: thesis proof let o be object; A: thesis; reconsider e = o as set by A; reconsider leaked = e as object; thus thesis; end;",
+        "theorem QuaChain: thesis proof let o be object; set a = (o qua set) qua object; thus thesis; end;",
+    ] {
+        assert!(
+            task271_conversion_source(text)
+                .0
+                .check_conversions()
+                .is_err()
+        );
+    }
+    let (handoff, _) = task271_conversion_source(
+        "theorem PendingView: thesis proof let o be object; A: thesis; reconsider o as set by A; reconsider a = o as object; thus thesis; end;",
+    );
+    let (requests, checked, _) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        requests[1].from_type.as_ref().unwrap().head,
+        H::BuiltinObject
+    );
+    assert_eq!(
+        checked
+            .coercions()
+            .iter()
+            .find(|(_, result)| result.site == requests[1].site)
+            .unwrap()
+            .1
+            .status,
+        mizar_checker::typed_ast::CoercionStatus::Candidate
+    );
+}
+
+#[test]
+fn task271_native_conversions_consume_whole_inactive_seed_without_activating_it() {
+    use mizar_checker::{type_checker::TypeFactQueryStatus, typed_ast::CoercionStatus};
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let old = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_types_reconsider_omitted_justification_001")
+        .unwrap();
+    assert!(old.expectation.tags.is_empty());
+    assert_eq!(
+        old.expectation.stable_detail_key.as_deref(),
+        Some("conversion.reconsider.narrowing_requires_proof")
+    );
+    let frontend = super::run_frontend(&config.workspace_root, old, 0).unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, old, &ast);
+    assert!(resolver.detail_keys.is_empty());
+    let handoff = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env).unwrap();
+    assert!(
+        handoff
+            .source()
+            .source_node_entries()
+            .unwrap()
+            .any(|row| matches!(
+                row.kind(),
+                mizar_syntax::SurfaceNodeKind::DefinitionBlockItem
+            ))
+    );
+    let (requests, checked, queries) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        (requests.len(), checked.coercions().len(), queries.len()),
+        (1, 1, 1)
+    );
+    assert_eq!(requests[0].to_type.attributes.len(), 1);
+    assert_eq!(requests[0].to_type.attributes[0].spelling, "keen");
+    assert_eq!(
+        checked.coercions().iter().next().unwrap().1.status,
+        CoercionStatus::Rejected
+    );
+    assert_eq!(queries[0].status(), TypeFactQueryStatus::Missing);
+    assert!(checked.initial_obligations().is_empty());
+    assert_eq!(
+        checked
+            .diagnostics()
+            .iter()
+            .map(|(_, diagnostic)| diagnostic.message_key.as_str())
+            .collect::<Vec<_>>(),
+        ["type.narrowing_requires_proof"]
+    );
+    assert!(
+        !super::run_advanced_semantics_corpus(&config)
+            .unwrap()
+            .results
+            .iter()
+            .any(|case| case.id == old.id)
+    );
+}
+
+#[test]
+fn task271_native_conversions_guard_admission_and_actual_semantic_consumer_paths() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_CONVERSION_ID)
+        .unwrap();
+    assert!(super::native_conversions_admitted(
+        &config.workspace_root,
+        case
+    ));
+    for mutation in 0..6 {
+        let mut bad = case.clone();
+        match mutation {
+            0 => bad.expectation.domain = "types.conversion".to_owned(),
+            1 => bad.expectation.tags.clear(),
+            2 => bad.expectation.expected_phase = Some(crate::expectation::PipelinePhase::Resolve),
+            3 => bad.source_path = config.workspace_root.join("tests/miz/pass/other.miz"),
+            4 => bad.expectation.spec_refs.clear(),
+            _ => bad.expectation.stable_detail_key = Some("unexpected".to_owned()),
+        }
+        assert!(!super::native_conversions_admitted(
+            &config.workspace_root,
+            &bad
+        ));
+        let mut invalid = plan.clone();
+        invalid.cases.push(bad);
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-ADVANCED-SEMANTICS-ADMISSION")
+        );
+    }
+    let mut duplicate = plan.clone();
+    duplicate.cases.push(case.clone());
+    let mut missing = plan.clone();
+    missing.cases.retain(|candidate| candidate.id != case.id);
+    for invalid in [duplicate, missing] {
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key
+                    == format!(
+                        "advanced_semantics.inventory.{}",
+                        super::NATIVE_CONVERSION_ID
+                    ))
+        );
+    }
+    let empty = "theorem NoConversions: thesis proof let s be set; thus thesis; end;";
+    let report = metamorphic_guard::with_source(case, empty, || {
+        super::run_advanced_semantics_corpus(&config)
+    })
+    .unwrap();
+    assert_eq!(
+        report
+            .results
+            .iter()
+            .find(|result| result.id == case.id)
+            .unwrap()
+            .status,
+        super::TypeElaborationCaseStatus::Failed
+    );
+    let unsupported_alias = "theorem UnsupportedAlias: thesis proof let s be set; set alias = s; reconsider a = alias as object; thus thesis; end;";
+    assert!(
+        task271_conversion_source(unsupported_alias)
+            .0
+            .check_conversions()
+            .is_err()
+    );
+    let report = metamorphic_guard::with_source(case, unsupported_alias, || {
+        super::run_advanced_semantics_corpus(&config)
+    })
+    .unwrap();
+    assert_eq!(
+        report
+            .results
+            .iter()
+            .find(|result| result.id == case.id)
+            .unwrap()
+            .status,
+        super::TypeElaborationCaseStatus::Failed
+    );
+    let fs = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_formula_statement_reconsider_builtin_widening_001")
+        .unwrap();
+    assert_eq!(
+        super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0).status,
+        super::FormulaStatementCaseStatus::Passed
+    );
+    let source = std::fs::read_to_string(&fs.source_path)
+        .unwrap()
+        .replace("reconsider Y = X", "set alias = X;\n  reconsider Y = alias");
+    let frontend = metamorphic_guard::with_source(fs, &source, || {
+        super::run_frontend(&config.workspace_root, fs, 0)
+    })
+    .unwrap();
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root, fs, &ast);
+    assert!(
+        super::formula_statement::source_variable_semantics_detail_keys(
+            &ast,
+            &resolver.module,
+            &resolver.env
+        )
+        .is_empty()
+    );
+    let failed = metamorphic_guard::with_source(fs, &source, || {
+        super::formula_statement::run_formula_statement_case(&config.workspace_root, fs, 0)
+    });
+    assert_eq!(failed.status, super::FormulaStatementCaseStatus::Failed);
+    assert!(
+        failed
+            .actual_detail_keys
+            .iter()
+            .any(|key| key.contains("native reconsider"))
+    );
+}
+
+#[test]
+fn task271_native_conversions_preserve_layout_names_and_refuse_rejected_aliases() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_CONVERSION_ID)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let baseline = super::native_conversion_observation(&task271_conversion_source(&source).0)
+        .unwrap()
+        .into_iter()
+        .filter(|key| key.starts_with("conversion."))
+        .collect::<Vec<_>>();
+    let renamed = source
+        .replace("NativeConversions", "RenamedConversions")
+        .replace("marked1", "marked2")
+        .replace("let s be", "let seed be")
+        .replace("= s, s as", "= seed, seed as")
+        .replace("rejected = s as", "rejected = seed as")
+        .replace("viewed = s qua", "viewed = seed qua");
+    for (text, expected) in [
+        (
+            format!(
+                ":: genuine conversion layout\n{}",
+                source.replace(
+                    "reconsider a = s, s as object",
+                    "reconsider\ta = s,\n s as object"
+                )
+            ),
+            baseline.clone(),
+        ),
+        (
+            renamed,
+            baseline
+                .iter()
+                .map(|key| key.replace("marked1", "marked2"))
+                .collect(),
+        ),
+    ] {
+        let actual = super::native_conversion_observation(&task271_conversion_source(&text).0)
+            .unwrap()
+            .into_iter()
+            .filter(|key| key.starts_with("conversion."))
+            .collect::<Vec<_>>();
+        assert_eq!(actual, expected);
+    }
+    let rejected_alias = source.replace(
+        "set viewed =",
+        "reconsider laundered = rejected as object;\n  set viewed =",
+    );
+    assert!(
+        task271_conversion_source(&rejected_alias)
+            .0
+            .check_conversions()
+            .is_err()
+    );
+}
+
+#[test]
+fn task271_native_conversions_qua_uses_apparent_view_while_reconsider_retains_original() {
+    use mizar_checker::{
+        type_checker::{CoercionRequestKind as C, TypeFactQueryStatus as Q, TypeHeadInput as H},
+        typed_ast::CoercionStatus as S,
+    };
+    let source = "theorem Apparent: thesis proof let s be set; now reconsider s as object; set denied = s qua set; reconsider keep = s as set; thus thesis; end; set restored = s qua set; thus thesis; end;";
+    let (handoff, _) = task271_conversion_source(source);
+    let (requests, checked, queries) = handoff.check_conversions().unwrap();
+    assert_eq!(
+        (requests.len(), checked.coercions().len(), queries.len()),
+        (4, 4, 2)
+    );
+    for (request, (kind, from, to, status, query)) in requests.iter().zip([
+        (
+            C::Widening,
+            H::BuiltinSet,
+            H::BuiltinObject,
+            S::Candidate,
+            Some(Q::Satisfied),
+        ),
+        (
+            C::SourceQua,
+            H::BuiltinObject,
+            H::BuiltinSet,
+            S::Rejected,
+            None,
+        ),
+        (
+            C::Widening,
+            H::BuiltinSet,
+            H::BuiltinSet,
+            S::Candidate,
+            Some(Q::Satisfied),
+        ),
+        (
+            C::SourceQua,
+            H::BuiltinSet,
+            H::BuiltinSet,
+            S::Candidate,
+            None,
+        ),
+    ]) {
+        assert_eq!(request.kind, kind);
+        assert_eq!(request.from_type.as_ref().unwrap().head, from);
+        assert_eq!(request.to_type.head, to);
+        let result = checked
+            .coercions()
+            .iter()
+            .find(|(_, result)| result.site == request.site)
+            .unwrap()
+            .1;
+        assert_eq!(result.status, status);
+        assert!(result.obligation.is_none());
+        assert_eq!(
+            queries
+                .iter()
+                .find(|entry| entry.query().subject == request.site)
+                .map(|entry| entry.status()),
+            query
+        );
+    }
+    assert!(checked.initial_obligations().is_empty());
+    assert_eq!(
+        checked
+            .diagnostics()
+            .iter()
+            .map(|(_, diagnostic)| diagnostic.message_key.as_str())
+            .collect::<Vec<_>>(),
+        ["checker.coercion.invalid_source_qua_target"]
+    );
+}
+
+#[test]
+fn task271_native_conversions_accept_infix_qua_roles_without_inventing_type() {
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+    let source = "definition let lhs, rhs be set; func JoinDef: lhs ++ rhs -> set equals lhs; end; infix_operator(\"++\", left, 80); theorem InfixQua: thesis proof let x, y be set; set viewed = x ++ y qua object; thus thesis; end;";
+    let (handoff, _) = task271_conversion_source(source);
+    let rows = handoff
+        .source()
+        .source_node_entries()
+        .unwrap()
+        .collect::<Vec<_>>();
+    let qua = rows
+        .iter()
+        .find(|row| row.kind() == &K::QuaExpression)
+        .unwrap();
+    let base = rows
+        .iter()
+        .find(|row| row.parent() == Some(qua.site()) && row.child_ordinal() == 0)
+        .unwrap();
+    assert!(matches!(base.kind(), K::InfixExpression(_)));
+    assert_eq!(
+        handoff
+            .scope()
+            .references()
+            .iter()
+            .map(|reference| reference.spelling())
+            .collect::<Vec<_>>(),
+        ["x", "y"]
+    );
+    assert!(handoff.check_conversions().is_err());
+}
+
+#[test]
+fn task271_native_conversions_refuse_genuine_legacy_bare_and_self_rhs_authority() {
+    use mizar_checker::source_proof_local_declaration::{
+        SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+        symbols::validate_source_proof_occurrences,
+    };
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::NATIVE_CONVERSION_ID)
+        .unwrap();
+    for (index, source) in [
+        "theorem BareTotality: thesis proof let s be set; reconsider s as object; thus thesis; end;",
+        "theorem OwnRhs: thesis proof let s be set; now reconsider s = s as object; thus thesis; end; thus thesis; end;",
+    ].into_iter().enumerate() {
+        let frontend = metamorphic_guard::with_source(case, source, || super::run_frontend(&config.workspace_root, case, 0)).unwrap();
+        assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+        let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let original = super::type_elaboration::source_syntax_receiver(&ast, &resolver.module).unwrap();
+        let native = SurfaceResolvedArena::lower(&ast, &resolver.module).unwrap();
+        let legacy = SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env)).unwrap();
+        validate_source_proof_occurrences(&native, &resolver.env, &legacy).unwrap();
+        assert_eq!(SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &resolver.env, &legacy), Err(SourceProofLocalDeclarationError::DependencyMismatch));
+        let current = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env)).unwrap();
+        if index == 0 {
+            assert!(legacy.references().is_empty());
+            assert_eq!(current.references().len(), 1);
+        } else {
+            assert_eq!(legacy.references()[0].binding().index(), 1);
+            assert_eq!(current.references()[0].binding().index(), 0);
+        }
+        assert!(SourceProofLocalDeclarationProducer::build_bindings(&original, &native, &resolver.env, &current).is_ok());
+    }
+}

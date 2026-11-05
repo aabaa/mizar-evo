@@ -364,8 +364,7 @@ fn proof_bindings_reject_malformed_named_witness_separator() {
     }
 }
 
-#[test]
-fn proof_bindings_inline_captures_exclude_body_local_binders() {
+fn proof_binding_source_ast(source: SourceId, text: &str) -> SurfaceAst {
     use mizar_frontend::{
         lexical_env::LocalLexicalDeclarations,
         lexing::{ParserLexContext, ParserLexingPlan, ScopeView, Token, TokenStream},
@@ -374,6 +373,50 @@ fn proof_bindings_inline_captures_exclude_body_local_binders() {
             StringRequiredContext,
         },
     };
+    let raw = mizar_lexer::scan_raw(text).unwrap();
+    let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+    let skeleton = mizar_lexer::build_scope_skeleton(&raw);
+    assert!(
+        skeleton.diagnostics.is_empty(),
+        "{text}: {:?}",
+        skeleton.diagnostics
+    );
+    let context = ParserLexContext::general();
+    let lexed = mizar_lexer::disambiguate(&raw, &environment, &context, &skeleton);
+    assert!(lexed.diagnostics().is_empty());
+    let tokens = TokenStream {
+        source_id: source,
+        parser_context: context,
+        parser_lexing_plan: ParserLexingPlan::uniform(context),
+        tokens: lexed
+            .tokens()
+            .iter()
+            .map(|token| Token {
+                kind: token.kind,
+                text: token.lexeme.as_str().into(),
+                span: range(source, token.span.start, token.span.end),
+            })
+            .collect(),
+        scope_view: ScopeView::empty(source),
+        local_declarations: LocalLexicalDeclarations::empty(),
+        diagnostics: Vec::new(),
+    };
+    let parsed = MizarParserSeam.parse(ParseRequest::new(
+        &tokens,
+        ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        ),
+    ));
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+    let ast = parsed.ast.unwrap();
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    ast
+}
+
+#[test]
+fn proof_bindings_inline_captures_exclude_body_local_binders() {
     let source = source_id();
     let module = module_id("pkg", "inline_captures");
     let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
@@ -388,41 +431,7 @@ fn proof_bindings_inline_captures_exclude_body_local_binders() {
             vec![3, 3, 0],
         ),
     ] {
-        let raw = mizar_lexer::scan_raw(text).unwrap();
-        let environment = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
-        let skeleton = mizar_lexer::build_scope_skeleton(&raw);
-        assert!(skeleton.diagnostics.is_empty());
-        let context = ParserLexContext::general();
-        let lexed = mizar_lexer::disambiguate(&raw, &environment, &context, &skeleton);
-        assert!(lexed.diagnostics().is_empty());
-        let tokens = TokenStream {
-            source_id: source,
-            parser_context: context,
-            parser_lexing_plan: ParserLexingPlan::uniform(context),
-            tokens: lexed
-                .tokens()
-                .iter()
-                .map(|token| Token {
-                    kind: token.kind,
-                    text: token.lexeme.as_str().into(),
-                    span: range(source, token.span.start, token.span.end),
-                })
-                .collect(),
-            scope_view: ScopeView::empty(source),
-            local_declarations: LocalLexicalDeclarations::empty(),
-            diagnostics: Vec::new(),
-        };
-        let parsed = MizarParserSeam.parse(ParseRequest::new(
-            &tokens,
-            ParserInputs::new(
-                Edition::new("2026"),
-                OperatorFixityTable::empty(),
-                StringRequiredContext::None,
-            ),
-        ));
-        assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
-        let ast = parsed.ast.unwrap();
-        assert!(ast.node_views().all(|node| !node.is_recovered()));
+        let ast = proof_binding_source_ast(source, text);
         let legacy = SourceVariableScopeResolver::resolve_occurrences(
             SourceVariableScopeInput::new(&ast, &module, &symbols),
         )
@@ -474,6 +483,182 @@ fn proof_bindings_inline_captures_exclude_body_local_binders() {
             vec![SourceVariableBindingId(0)],
             vec![SourceVariableBindingId(0)]
         ]
+    );
+}
+
+#[test]
+fn proof_bindings_reconsider_preserves_bare_identity_list_order_and_outer_shadow() {
+    let source = source_id();
+    let module = module_id("pkg", "reconsider_bindings");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let mut observed = Vec::new();
+    for (text, names, old_targets, targets, bare, old_shape_error) in [
+        (
+            "let x be set; now reconsider x = x as object; reconsider x as object; end; reconsider x as object;",
+            vec!["x", "x"],
+            vec![1],
+            vec![0, 1, 0],
+            vec![1, 2],
+            true,
+        ),
+        (
+            "let x be set; reconsider x, y = x, z = y as object;",
+            vec!["x", "y", "z"],
+            vec![0, 1],
+            vec![0, 0, 1],
+            vec![0],
+            false,
+        ),
+    ] {
+        let ast = proof_binding_source_ast(source, text);
+        let legacy = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(
+            legacy,
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            ))
+            .unwrap()
+        );
+        let semantic = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        ));
+        if old_shape_error {
+            assert_eq!(semantic, Err(SourceVariableScopeError::InvalidShape));
+        } else {
+            let semantic = semantic.unwrap();
+            assert_eq!(semantic.bindings(), legacy.bindings());
+            assert_eq!(semantic.references(), legacy.references());
+        }
+        assert_eq!(
+            legacy
+                .bindings()
+                .iter()
+                .map(|binding| binding.spelling())
+                .collect::<Vec<_>>(),
+            names
+        );
+        assert_eq!(
+            legacy
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            old_targets
+        );
+        let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(scope.bindings(), legacy.bindings());
+        for (index, reference) in scope.references().iter().enumerate() {
+            assert_eq!(reference.id().index(), index);
+            assert_eq!(reference.ordinal(), index);
+            assert_eq!(reference.range(), ast.node(reference.node()).unwrap().range);
+            assert_eq!(reference.kind(), SourceVariableReferenceKind::Term);
+        }
+        assert_eq!(
+            bare.iter()
+                .map(|index| scope.references()[*index].node())
+                .collect::<Vec<_>>(),
+            ast.node_views()
+                .filter(
+                    |node| matches!(node.kind(), SurfaceNodeKind::ReconsiderItem)
+                        && node.children().len() == 1
+                )
+                .map(|node| node.children()[0])
+                .collect::<Vec<_>>()
+        );
+        observed.push((
+            scope
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            targets,
+        ));
+    }
+    assert!(
+        observed.iter().all(|(actual, expected)| actual == expected),
+        "{observed:?}"
+    );
+}
+
+#[test]
+fn proof_bindings_reconsider_rejects_own_unbound_and_forward_sources_only_in_new_mode() {
+    let source = source_id();
+    let module = module_id("pkg", "reconsider_bindings");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let mut observed = Vec::new();
+    for (text, expected, legacy_targets, old_shape_error) in [
+        (
+            "reconsider x = x as object;",
+            SourceVariableScopeError::UnresolvedReference,
+            Some(vec![0]),
+            false,
+        ),
+        (
+            "reconsider x as object;",
+            SourceVariableScopeError::UnresolvedReference,
+            Some(vec![]),
+            true,
+        ),
+        (
+            "let x be set; reconsider y = z, z = x as object;",
+            SourceVariableScopeError::ForwardReference,
+            None,
+            false,
+        ),
+        (
+            "let x be set; reconsider z as object; reconsider z = x as object;",
+            SourceVariableScopeError::ForwardReference,
+            Some(vec![0]),
+            true,
+        ),
+    ] {
+        let ast = proof_binding_source_ast(source, text);
+        for (index, resolve) in [
+            SourceVariableScopeResolver::resolve,
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let legacy = resolve(SourceVariableScopeInput::new(&ast, &module, &symbols));
+            if index == 0 && old_shape_error {
+                assert_eq!(legacy, Err(SourceVariableScopeError::InvalidShape));
+                continue;
+            }
+            if let Some(targets) = &legacy_targets {
+                assert_eq!(
+                    &legacy
+                        .unwrap_or_else(|error| panic!("{text}: {error:?}"))
+                        .references()
+                        .iter()
+                        .map(|reference| reference.binding().index())
+                        .collect::<Vec<_>>(),
+                    targets
+                );
+            } else {
+                assert_eq!(legacy, Err(SourceVariableScopeError::ForwardReference));
+            }
+        }
+        observed.push((
+            SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+                &ast, &module, &symbols,
+            ))
+            .err(),
+            expected,
+        ));
+    }
+    assert!(
+        observed
+            .iter()
+            .all(|(actual, expected)| *actual == Some(*expected)),
+        "{observed:?}"
     );
 }
 

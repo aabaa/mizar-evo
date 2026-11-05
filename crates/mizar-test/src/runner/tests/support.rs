@@ -8241,6 +8241,7 @@ mod metamorphic_guard {
                 step5c11_registration_admitted(root, case)
                     || step5c13_overload_admitted(root, case)
                     || inline_closure_requests_admitted(root, case)
+                    || native_conversions_admitted(root, case)
             }))
         {
             assert!(

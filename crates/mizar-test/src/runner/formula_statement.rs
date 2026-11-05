@@ -605,7 +605,41 @@ fn formula_statement_detail_keys(
         );
         return reconcile_frontend_and_semantics(frontend_keys, keys);
     }
-    let semantics = source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env);
+    let mut semantics =
+        source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env);
+    if semantics.is_empty()
+        && case.id.0 == "pass_formula_statement_reconsider_builtin_widening_001"
+        && is_active_formula_statement(workspace_root, case)
+    {
+        let checked = (|| -> Result<(), String> {
+            use mizar_checker::{
+                type_checker::{CoercionRequestKind, TypeFactQueryEngine, TypeFactQueryStatus},
+                typed_ast::CoercionStatus,
+            };
+            let handoff = super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)?;
+            let (requests, output, queries) = handoff
+                .check_conversions()
+                .map_err(|_| "native reconsider check failed".to_owned())?;
+            if requests.len() != 1
+                || requests[0].kind != CoercionRequestKind::Widening
+                || output.coercions().len() != 1
+                || output.coercions().iter().any(|(_, row)| {
+                    row.status != CoercionStatus::Candidate || row.site != requests[0].site
+                })
+                || queries.len() != 1
+                || queries[0].status() != TypeFactQueryStatus::Satisfied
+                || queries[0].query().subject != requests[0].site
+                || TypeFactQueryEngine::new(output.facts()).query(queries[0].query().clone())
+                    != queries[0]
+                || !output.initial_obligations().is_empty()
+                || !output.diagnostics().is_empty()
+            {
+                return Err("native reconsider widening classification mismatch".to_owned());
+            }
+            Ok(())
+        })();
+        semantics.extend(checked.err());
+    }
     reconcile_frontend_and_semantics(frontend_keys, semantics)
 }
 
