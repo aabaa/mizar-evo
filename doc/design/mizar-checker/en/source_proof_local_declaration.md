@@ -50,9 +50,10 @@ Its existing handoff retains that scope and reconstructs the complete binding
 environment during installation and replay. The Given table still contains
 only the Given declaration; the environment additionally owns both descendant
 Set names with genuine resolver identities, scopes and declaration clocks.
-The original `build` keeps its existing output. This additional path transports
-names only: types, captures, substitution, FOL facts and proof acceptance remain
-deferred. The existing type/term donors do not accept this expanded environment.
+The original `build` keeps its existing output. The additional path retains
+direct definition-site captures by resolved identity. Types, transitive closure
+expansion, substitution, FOL facts and proof acceptance remain deferred. The
+existing type/term donors do not accept this expanded environment.
 
 ## Generic isolated Let source boundary
 The runner-private CP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-let-leading-layout-transport).
@@ -105,8 +106,7 @@ not credit positive proof-local binding semantics. The fixture mixes `let`,
 `given`, `consider`, `set`, and `reconsider`, so it cannot safely represent
 any exact Task-269 slice by itself. No blocking `spec_gap` exists for the
 completed slices or lower-only Task 269SDP. The Chapter-4/15 conflict over
-later `set` effects remains nonblocking for SDP syntax transport and blocking
-for every capture/closure consumer.
+FOL encoding does not block syntax transport or direct capture identities.
 
 The historical Task-269A selection inventory was HEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b` on `main`, clean before this docs

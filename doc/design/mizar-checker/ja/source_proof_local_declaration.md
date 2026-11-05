@@ -46,8 +46,9 @@ intake receipt と sealed な resolver proof-occurrence scope を受け取る。
 既存 handoff が scope を保持し、設置・replay 時に binding 環境全体を再構築する。
 Given table は Given 宣言のみを保持し、環境には実際の resolver identity・scope・
 宣言順を持つ二つの子孫 Set 名が加わる。既存 `build` の出力は維持する。
-追加経路は名前の transport のみを扱い、型・capture・置換・FOL facts・証明受理は
-後続に残す。既存の型・項 donor は拡張した環境を受け付けない。
+追加経路は定義時に解決した identity による直接 capture も保持する。型・推移的な
+closure 展開・置換・FOL facts・証明受理は後続に残す。既存の型・項 donor は
+拡張した環境を受け付けない。
 
 ## Generic isolated Let source boundary
 Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。
@@ -97,8 +98,8 @@ covered diagnostic-gap trace rowはread-onlyのままにする。これらのrow
 positive proof-local binding semanticsをcreditしない。このfixtureは`let`、
 `given`、`consider`、`set`、`reconsider`を混在させるためindividual
 Task-269 sliceの安全な表現には単独で使えない。completed sliceとlower-only
-SDPをblockする`spec_gap`はない。Ch.4/15のlater `set` effect矛盾はSDP syntax
-transportにはnonblocking、capture/closure consumerにはblockingである。
+SDPをblockする`spec_gap`はない。Ch.4/15の FOL encoding 矛盾は syntax
+transport と直接 capture identity の妨げにはならない。
 
 historical Task-269A selection inventoryはHEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`、`main`、docs edit前clean、

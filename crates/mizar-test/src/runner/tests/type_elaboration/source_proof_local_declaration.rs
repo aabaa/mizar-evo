@@ -12026,7 +12026,15 @@ fn task269_set_bindings_runner_preserves_resolver_authority_and_replays() {
                 declaration_range: original.range(),
             });
             assert_eq!(binding.type_site, BindingTypeSite::Missing);
-            assert!(binding.captured.identities().is_empty());
+            if id == 1 {
+                assert!(binding.captured.identities().is_empty());
+            } else {
+                let target = &scope.bindings()[id - 1];
+                assert_eq!(binding.captured.identities(), &[BinderIdentity::ResolverLocal {
+                    scope: target.scope().clone(), ordinal: target.ordinal(),
+                    declaration_range: target.range(),
+                }]);
+            }
             assert!(binding.diagnostics.is_empty());
             let lookup = |clock| env.lookup(&BindingLookupSite::new(
                 spelling, handoff.descendant_context(), Some(LocalTermScope::new(vec![4, 2])), clock,

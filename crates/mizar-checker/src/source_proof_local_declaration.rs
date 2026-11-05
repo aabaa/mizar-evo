@@ -10,7 +10,7 @@ use crate::{
         BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
         BindingContextOwner, BindingContextRecovery, BindingDraft, BindingEnv, BindingEnvParts,
         BindingId, BindingKind, BindingLookupResult, BindingLookupSite, BindingRecoveryState,
-        BindingStatus, BindingTypeSite,
+        BindingStatus, BindingTypeSite, CapturedFreeVariables,
     },
     source_statement::{
         SourceStatementHandoff, SourceStatementWitnessHandoff, SourceStatementWitnessId,
@@ -4548,7 +4548,7 @@ fn source_descendant_set_binding_env(
             binding.range(),
             binding.ordinal(),
         );
-        bindings.insert(BindingDraft::from_local_term(
+        let mut draft = BindingDraft::from_local_term(
             context,
             if binding.kind() == B::GivenWitness {
                 BindingKind::GivenWitness
@@ -4556,7 +4556,15 @@ fn source_descendant_set_binding_env(
                 BindingKind::LocalAbbreviation
             },
             &local,
-        ));
+        );
+        if binding.kind() == B::Set {
+            let reference = &scope.references()[binding.ordinal() - 2];
+            let captured = bindings
+                .get(BindingId::new(reference.binding().index()))
+                .ok_or_else(invalid)?;
+            draft.captured = CapturedFreeVariables::new(vec![captured.identity.clone()]);
+        }
+        bindings.insert(draft);
     }
     let mut contexts = base.contexts().clone();
     for (index, owner, lexical_scope, own, visible) in [
@@ -8308,7 +8316,19 @@ mod task269c_tests {
                 }
             );
             assert_eq!(actual.type_site, BindingTypeSite::Missing);
-            assert!(actual.captured.identities().is_empty());
+            if index.index() == 1 {
+                assert!(actual.captured.identities().is_empty());
+            } else {
+                let target = &scope.bindings()[index.index() - 1];
+                assert_eq!(
+                    actual.captured.identities(),
+                    &[BinderIdentity::ResolverLocal {
+                        scope: target.scope().clone(),
+                        ordinal: target.ordinal(),
+                        declaration_range: target.range(),
+                    }]
+                );
+            }
         }
         assert!(handoff.debug_text().contains("scope=[4,2]"));
         handoff
@@ -8325,6 +8345,40 @@ mod task269c_tests {
                 .source_proof_local_given_descendant_binding(),
             Some(&handoff)
         );
+        for wrong_capture in [
+            handoff
+                .binding_env
+                .bindings()
+                .get(BindingId::new(1))
+                .unwrap()
+                .identity
+                .clone(),
+            BinderIdentity::ResolverLocal {
+                scope: scope.bindings()[2].scope().clone(),
+                ordinal: scope.bindings()[2].ordinal() + 1,
+                declaration_range: scope.bindings()[2].range(),
+            },
+        ] {
+            let mut forged = handoff.clone();
+            forged
+                .binding_env
+                .binding_mut_for_test(BindingId::new(3))
+                .unwrap()
+                .captured = CapturedFreeVariables::new(vec![wrong_capture]);
+            forged.final_binding_fingerprint = forged.binding_env.debug_text();
+            assert_eq!(
+                empty
+                    .clone()
+                    .with_source_proof_local_given_descendant_binding(forged.clone()),
+                Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+            );
+            let mut injected = empty.clone();
+            injected.inject_source_proof_local_given_descendant_binding_for_test(forged);
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+            );
+        }
         let mut forged = handoff.clone();
         let mut parts = BindingEnvParts {
             source_id: fixture.source,
@@ -8340,7 +8394,7 @@ mod task269c_tests {
                 binding.range(),
                 binding.ordinal() + 1,
             );
-            parts.bindings.insert(BindingDraft::from_local_term(
+            let mut draft = BindingDraft::from_local_term(
                 BindingContextId::new(if binding.ordinal() == 1 { 1 } else { 2 }),
                 if binding.ordinal() == 1 {
                     BindingKind::GivenWitness
@@ -8348,7 +8402,15 @@ mod task269c_tests {
                     BindingKind::LocalAbbreviation
                 },
                 &local,
-            ));
+            );
+            draft.captured = handoff
+                .binding_env
+                .bindings()
+                .get(BindingId::new(binding.ordinal()))
+                .unwrap()
+                .captured
+                .clone();
+            parts.bindings.insert(draft);
         }
         forged.binding_env = BindingEnv::try_new(parts).unwrap();
         forged.final_binding_fingerprint = forged.binding_env.debug_text();
