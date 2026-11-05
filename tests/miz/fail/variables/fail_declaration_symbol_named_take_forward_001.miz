@@ -1,0 +1,5 @@
+reserve r for set;
+theorem NamedTakeForward: thesis proof
+  take a = b, b = r;
+  thus thesis;
+end;

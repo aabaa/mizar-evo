@@ -250,15 +250,16 @@ pub(super) use binary_routes::{
 };
 #[cfg(test)]
 pub(super) use checker_handoff::{
-    SourceContradictionHandoffCorruption, assemble_empty_resolved_typed_ast,
-    assemble_source_checker_handoff, source_contradiction_handoff_corruption_error,
+    SourceContradictionHandoffCorruption, assemble_source_checker_handoff,
+    source_contradiction_handoff_corruption_error,
     source_contradiction_handoff_with_extra_expression,
 };
 pub(super) use checker_handoff::{
-    SourceReserveHandoff, assemble_source_contradiction_checker_handoff,
-    assemble_source_reserve_checker_handoff, assert_source_contradiction_handoff,
-    assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
-    assert_source_reserve_handoff, has_exact_source_contradiction_owner, source_module_binding_env,
+    SourceReserveHandoff, assemble_empty_resolved_typed_ast,
+    assemble_source_contradiction_checker_handoff, assemble_source_reserve_checker_handoff,
+    assert_source_contradiction_handoff, assert_source_reserve_core_context_readiness,
+    assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
+    has_exact_source_contradiction_owner, source_module_binding_env,
 };
 #[cfg(test)]
 pub(super) use output::{
@@ -538,7 +539,6 @@ pub(super) use source_set_term::{
     synthetic_source_set_term_output, synthetic_source_set_term_output_with_mutation,
 };
 pub(super) use source_set_term::{source_set_term_transport_detail_keys, step5c7_term_detail_keys};
-pub(super) use source_statement::source_statement_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_statement::{
     SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
@@ -697,6 +697,9 @@ pub(super) use source_statement::{
     task258b5a_surface_profile_with_mutation_for_test,
     task258b5b_surface_profile_with_mutation_for_test, validate_task258b5a_enriched_resolver_env,
     validate_task258b5a_raw_resolver_env,
+};
+pub(super) use source_statement::{
+    source_proof_local_syntax_receiver, source_statement_transport_detail_keys,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]

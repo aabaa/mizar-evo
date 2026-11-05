@@ -1,0 +1,33 @@
+schema_version = 1
+id = "pass_declaration_symbol_proof_local_bindings_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "checker.proof_local_bindings"
+source = "pass_declaration_symbol_proof_local_bindings_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.proof_local.binding.0.Reserve.r.scope=[].ordinal=0",
+  "declaration_symbol.proof_local.binding.1.Let.x.scope=[4].ordinal=1",
+  "declaration_symbol.proof_local.binding.2.GivenWitness.y.scope=[4].ordinal=2",
+  "declaration_symbol.proof_local.binding.3.ConsiderWitness.c.scope=[4].ordinal=3",
+  "declaration_symbol.proof_local.binding.4.Set.a.scope=[4].ordinal=4",
+  "declaration_symbol.proof_local.binding.5.Set.b.scope=[4].ordinal=5",
+  "declaration_symbol.proof_local.binding.6.NamedWitness.t.scope=[4].ordinal=6",
+  "declaration_symbol.proof_local.binding.7.Let.x.scope=[4,6].ordinal=7",
+  "declaration_symbol.proof_local.binding.8.Set.a.scope=[4,6].ordinal=8",
+  "declaration_symbol.proof_local.binding.9.NamedWitness.u.scope=[4,6].ordinal=9",
+  "declaration_symbol.proof_local.capture.4.1",
+  "declaration_symbol.proof_local.capture.5.4",
+  "declaration_symbol.proof_local.capture.8.7",
+  "declaration_symbol.proof_local.reference.0.target=1.scope=[4].ordinal=0.rhs=4",
+  "declaration_symbol.proof_local.reference.1.target=4.scope=[4].ordinal=1.rhs=5",
+  "declaration_symbol.proof_local.reference.2.target=5.scope=[4].ordinal=2.rhs=6",
+  "declaration_symbol.proof_local.reference.3.target=5.scope=[4].ordinal=3.rhs=none",
+  "declaration_symbol.proof_local.reference.4.target=7.scope=[4,6].ordinal=4.rhs=8",
+  "declaration_symbol.proof_local.reference.5.target=8.scope=[4,6].ordinal=5.rhs=9",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.04.variables.proof_local.binding_metadata"]
+notes = "Metadata only: manually specified native binding kinds, lexical scopes, separate declaration/reference clocks, direct Set captures and RHS ownership. Named Take capture/expansion, types, facts, existential discharge, substitution and accepted proofs remain deferred; thesis/justifications are syntax only."

@@ -4,7 +4,7 @@
 > [../ja/source_proof_local_declaration.md](../ja/source_proof_local_declaration.md).
 
 ## Native named-witness boundary
-The historical raw B3N profile and Task269A exact profile/runner remain confined to existing private tests; native B3N named-witness syntax remains supported. Native mixed B3M1 also records syntax only and supplies no declaration. Retire the coupled Task269B historical production graph while preserving the public declaration API, types, producer, errors, signatures and slots; unavailable native declaration authority returns the existing `DependencyMismatch` after transaction-identity validation. Preserve historical B3M1/Task269B positives and faults in existing private tests. Public GCU coverage transfers to the native mixed source-family pair in both orders with no upper declaration; the existing private SourceTerm GCU sentinel continues to own both-order declaration-slot exclusion.
+The historical raw B3N profile and Task269A exact profile/runner remain confined to existing private tests; native B3N named-witness syntax remains supported. Native mixed B3M1 also records syntax only and supplies no declaration. Retire the coupled Task269B historical production graph while preserving the public declaration API, types, producer, errors, signatures and slots; unavailable native authority for the legacy witness-based `build` returns the existing `DependencyMismatch` after transaction-identity validation. Preserve historical B3M1/Task269B positives and faults in existing private tests. Public GCU coverage transfers to the native mixed source-family pair in both orders with no upper declaration; the existing private SourceTerm GCU sentinel continues to own both-order declaration-slot exclusion.
 
 ## Authenticated proof-local intake
 
@@ -41,6 +41,26 @@ fingerprint. Nested binding/type/term fingerprints use that identity. Raw runner
 lower debug text and its source/surface hashes retain their format. A structural
 receipt does not attest raw bytes or additional resolver symbol provenance;
 source identity is checked separately from deterministic fingerprint content.
+
+## Native proof-local binding boundary
+
+The original intake has empty semantic tables.
+`SourceProofLocalDeclarationProducer::build_bindings(original: &TypedAst,
+native: &SurfaceResolvedArena, symbols: &SymbolEnv, scope: &ResolvedVariableScope)`
+returns `Result<SourceProofLocalBindingHandoff, SourceProofLocalDeclarationError>`.
+The opaque handoff exposes `binding_env()`, `source()`, `scope()` and `debug_text()`.
+It retains immutable original/native/symbol/scope authority, recomputes original
+rows and resolver lexical maps, and requires every original declaration name to
+have exactly one sealed binding. Set captures use free definition-site identities;
+named Take retains name/RHS association without Set-style expansion semantics.
+Given/Consider use `GivenWitness` binding metadata without legacy donor privileges.
+One new Typed/Resolved slot accepts a fresh empty receiver and independently
+replays the entire transaction; existing source families remain mutually exclusive.
+No type, fact, existential discharge, substitution application or proof acceptance
+is produced. Unsupported native binding families fail closed.
+
+Resolver declaration and reference ordinals are separate clocks; preserve reference
+targets and ordinals without using them as BindingEnv declaration visibility clocks.
 
 ## Descendant Set-name binding boundary
 
@@ -105,8 +125,7 @@ its existing covered diagnostic-gap trace rows remain read-only. Those rows do
 not credit positive proof-local binding semantics. The fixture mixes `let`,
 `given`, `consider`, `set`, and `reconsider`, so it cannot safely represent
 any exact Task-269 slice by itself. No blocking `spec_gap` exists for the
-completed slices or lower-only Task 269SDP. The Chapter-4/15 conflict over
-FOL encoding does not block syntax transport or direct capture identities.
+completed slices or lower-only Task 269SDP.
 
 The historical Task-269A selection inventory was HEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b` on `main`, clean before this docs

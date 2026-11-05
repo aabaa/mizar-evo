@@ -1,0 +1,15 @@
+reserve r for set;
+theorem ProofLocalBindings: thesis proof
+  let x be set;
+  given y being set such that G: thesis;
+  consider c being set such that C: thesis by G;
+  set a = x, b = a;
+  take t = b, b;
+  now
+    let x be object;
+    set a = x;
+    take u = a;
+    thus thesis;
+  end;
+  thus thesis;
+end;

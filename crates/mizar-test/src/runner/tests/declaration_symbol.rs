@@ -183,7 +183,7 @@ fn task258b5c_exact_cases_replay_and_reverse_order_without_disturbing_existing_c
     let active = super::active_declaration_symbol_cases(&plan)
         .enumerate()
         .collect::<Vec<_>>();
-    assert_eq!(active.len(), 11);
+    assert_eq!(active.len(), 13);
 
     let run = |entries: &[(usize, &crate::harness::TestCase)]| {
         entries
@@ -1560,4 +1560,294 @@ fn task_metamorphic_label_confinement_does_not_classify_other_reference_relation
             assert_ne!(detail, Some(PROOF_LABEL_CONFINEMENT_DETAIL), "{label}");
         }
     }
+}
+
+
+#[test]
+fn task269_native_binding_runtime_matches_manual_oracle_and_detects_bypass() {
+    let (root, plan) = step5c6_plan();
+    let (ordinal, case) = plan.cases.iter().enumerate().find(|(_, case)|
+        case.id.0 == "pass_declaration_symbol_proof_local_bindings_001").unwrap();
+    let run = |case| super::declaration_symbol::run_declaration_symbol_case(&root, case, ordinal);
+    let actual = run(case);
+    assert_eq!(actual.status, super::DeclarationSymbolCaseStatus::Passed);
+    assert_eq!(actual.actual_payload_keys.len(), 19);
+    let mut wrong_capture = case.clone();
+    let capture = wrong_capture.expectation.declaration_symbol_payloads.iter_mut()
+        .find(|key| key.ends_with("capture.8.7")).unwrap();
+    *capture = "declaration_symbol.proof_local.capture.8.1".to_owned();
+    assert_eq!(run(&wrong_capture).status, super::DeclarationSymbolCaseStatus::Failed);
+    let mut bypass = case.clone();
+    bypass.expectation.domain = "resolve.declaration_symbol".to_owned();
+    let bypass = run(&bypass);
+    assert_eq!(bypass.status, super::DeclarationSymbolCaseStatus::Failed);
+    assert_ne!(bypass.actual_payload_keys, actual.actual_payload_keys);
+    let (ordinal, refusal) = plan.cases.iter().enumerate().find(|(_, case)|
+        case.id.0 == "fail_declaration_symbol_named_take_forward_001").unwrap();
+    let refusal = super::declaration_symbol::run_declaration_symbol_case(&root, refusal, ordinal);
+    assert_eq!(refusal.status, super::DeclarationSymbolCaseStatus::Passed);
+    assert_eq!(refusal.actual_detail_keys, ["variables.local_constant.forward_reference"]);
+    assert!(refusal.actual_payload_keys.is_empty());
+}
+
+#[test]
+fn task269_native_binding_runtime_keeps_layout_names_conditions_and_scope_identity() {
+    let (root, plan) = step5c6_plan();
+    let (ordinal, case) = plan.cases.iter().enumerate().find(|(_, case)|
+        case.id.0 == "pass_declaration_symbol_proof_local_bindings_001").unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let mut variants = Vec::new();
+    variants.push((format!(":: original native layout\n{}", source.replace("set a = x, b = a", "set\ta\n= x,\n b = a")), case.clone()));
+    let renamed = source.replace("reserve r for", "reserve reserved_name for")
+        .replace("let x be", "let arbitrary be").replace("= x", "= arbitrary")
+        .replace("given y being", "given witness being")
+        .replace("consider c being", "consider chosen being")
+        .replace("ProofLocalBindings", "RenamedBindingMetadata");
+    let mut renamed_case = case.clone();
+    for key in &mut renamed_case.expectation.declaration_symbol_payloads {
+        *key = key.replace(".Reserve.r.", ".Reserve.reserved_name.")
+            .replace(".Let.x.", ".Let.arbitrary.")
+            .replace(".GivenWitness.y.", ".GivenWitness.witness.")
+            .replace(".ConsiderWitness.c.", ".ConsiderWitness.chosen.");
+    }
+    variants.push((renamed, renamed_case));
+    variants.push((source.replace("  end;\n  thus thesis;", "  end;\n  now\n    thus thesis;\n  end;\n  thus thesis;"), case.clone()));
+    let mut restored_case = case.clone();
+    restored_case.expectation.declaration_symbol_payloads.extend([
+        "declaration_symbol.proof_local.binding.10.Set.restored.scope=[4].ordinal=10".to_owned(),
+        "declaration_symbol.proof_local.capture.10.4".to_owned(),
+        "declaration_symbol.proof_local.reference.6.target=4.scope=[4].ordinal=6.rhs=10".to_owned(),
+    ]);
+    variants.push((source.replace("  end;\n  thus thesis;", "  end;\n  set restored = a;\n  thus thesis;"), restored_case));
+    let conditions = source.replace("let x be set;", "let x be set such that L: x = x;")
+        .replace("G: thesis", "G: y = y").replace("C: thesis", "C: c = c");
+    let mut conditions_case = case.clone();
+    conditions_case.expectation.declaration_symbol_payloads.retain(|key| !key.contains(".reference."));
+    for (id, target, path, owner) in [
+        (0, 1, "4", "none"), (1, 1, "4", "none"),
+        (2, 2, "4", "none"), (3, 2, "4", "none"),
+        (4, 3, "4", "none"), (5, 3, "4", "none"),
+        (6, 1, "4", "4"), (7, 4, "4", "5"),
+        (8, 5, "4", "6"), (9, 5, "4", "none"),
+        (10, 7, "4,6", "8"), (11, 8, "4,6", "9"),
+    ] {
+        conditions_case.expectation.declaration_symbol_payloads.push(format!(
+            "declaration_symbol.proof_local.reference.{id}.target={target}.scope=[{path}].ordinal={id}.rhs={owner}"));
+    }
+    variants.push((conditions, conditions_case));
+    for (source, case) in variants {
+        let actual = metamorphic_guard::with_source(&case, &source, ||
+            super::declaration_symbol::run_declaration_symbol_case(&root, &case, ordinal));
+        assert_eq!(actual.status, super::DeclarationSymbolCaseStatus::Passed, "{source}\n{actual:?}");
+    }
+}
+
+#[test]
+fn task269_native_binding_runtime_rejects_authenticated_legacy_scope_gaps() {
+    use mizar_checker::{
+        binding_env::{BinderIdentity, BindingId},
+        typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId},
+        source_proof_local_declaration::{
+            SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+        },
+    };
+    use mizar_resolve::{
+        names::{
+            SourceVariableBindingKind as Kind, SourceVariableScopeError,
+            SourceVariableScopeInput, SourceVariableScopeResolver,
+        },
+        resolved_ast::SurfaceResolvedArena,
+        symbols::validate_source_proof_occurrences,
+    };
+
+    let (root, plan) = step5c6_plan();
+    let case = plan.cases.iter().find(|case|
+        case.id.0 == "pass_declaration_symbol_proof_local_bindings_001").unwrap();
+    let combined = std::fs::read_to_string(root.join(&case.source_path)).unwrap();
+    for (index, source) in [
+        combined.as_str(),
+        "reserve r for set; theorem OwnRhs: thesis proof let a be set; now set a = a; thus thesis; end; thus thesis; end;",
+        "reserve r for set; theorem Duplicate: thesis proof let a be set; set a = r; thus thesis; end;",
+    ].into_iter().enumerate() {
+        let (ast, module, _, symbols, _) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 2_693_100 + index);
+        let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let original = if let Some(original) = super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, source) {
+            original
+        } else {
+            // The duplicate emits a lexical advisory; test the public producer after native intake.
+            assert_eq!(index, 2);
+            let nodes = TypedArena::try_new(Some(TypedNodeId::new(native.arena().root().index())),
+                native.arena().iter().map(|(id, node)| {
+                    TypedNode::new("syntax", node.origin().anchor().clone()).with_resolved_node(id)
+                        .with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())
+                }).collect()).unwrap();
+            let mut original = TypedAst::try_new(TypedAstParts {
+                source_id: ast.source_id, module_id: module.clone(), resolved_root: Some(native.arena().root()),
+                source_context: None, source_type: None, source_attribute: None, nodes,
+                contexts: Default::default(), types: Default::default(), facts: Default::default(),
+                coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+            }).unwrap();
+            original.install_source_nodes(&native).unwrap();
+            original
+        };
+        let legacy = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        ).expect("genuine legacy scope must remain constructible");
+        validate_source_proof_occurrences(&native, &symbols, &legacy)
+            .expect("dual provenance validator must retain genuine legacy profiles");
+        assert_eq!(SourceProofLocalDeclarationProducer::build_bindings(
+            &original, &native, &symbols, &legacy,
+        ), Err(SourceProofLocalDeclarationError::DependencyMismatch), "case {index}");
+        let current = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        );
+        if index == 2 {
+            assert_eq!(current, Err(SourceVariableScopeError::DuplicateLocalConstant));
+            continue;
+        }
+        let current = current.unwrap();
+        let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+            &original, &native, &symbols, &current,
+        ).expect("complete current scope builds");
+        if index == 0 {
+            assert_eq!(current.bindings().len(), legacy.bindings().len() + 2);
+            assert!(!legacy.bindings().iter().any(|binding|
+                matches!(binding.spelling(), "t" | "u")));
+        } else {
+            let outer = current.bindings().iter().find(|binding| binding.kind() == Kind::Let).unwrap();
+            let inner = current.bindings().iter().find(|binding| binding.kind() == Kind::Set).unwrap();
+            assert_eq!(legacy.references()[0].binding(), inner.id());
+            assert_eq!(current.references()[0].binding(), outer.id());
+            let captured = handoff.binding_env().bindings().get(BindingId::new(inner.id().index())).unwrap();
+            assert_eq!(captured.captured.identities(), &[BinderIdentity::ResolverLocal {
+                scope: outer.scope().clone(), ordinal: outer.ordinal(), declaration_range: outer.range(),
+            }]);
+        }
+    }
+}
+
+#[test]
+fn task269_native_binding_runtime_captures_reserves_and_excludes_rhs_local_generators() {
+    use mizar_checker::{
+        binding_env::BindingKind,
+        source_proof_local_declaration::SourceProofLocalDeclarationProducer,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts},
+    };
+    use mizar_resolve::{
+        names::{SourceVariableBindingKind as Kind, SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+
+    for (index, (rhs, captured_name)) in [
+        ("r", Some("r")),
+        ("{ z where z is set }", None),
+        ("{ x where z is set }", Some("x")),
+    ].into_iter().enumerate() {
+        let source = format!("reserve r for set; theorem Capture: thesis proof let x be set; set a = {rhs}; thus thesis; end;");
+        let (ast, module, _, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 2_693_200 + index);
+        assert_eq!(diagnostics, 0);
+        let original = super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, &source).unwrap();
+        let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        ).unwrap();
+        let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+            &original, &native, &symbols, &scope,
+        ).unwrap();
+        let env = handoff.binding_env();
+        let declaration = scope.bindings().iter().find(|binding|
+            binding.kind() == Kind::Set && binding.spelling() == "a").unwrap();
+        let entry = env.bindings().iter().find(|(_, entry)|
+            entry.declaration_range == declaration.range()).unwrap().1;
+        let expected = captured_name.map(|name| {
+            let target = scope.bindings().iter().find(|binding| binding.spelling() == name).unwrap();
+            assert_eq!(target.kind(), if name == "r" { Kind::Reserve } else { Kind::Let });
+            env.bindings().iter().find(|(_, entry)| entry.declaration_range == target.range()).unwrap().1.identity.clone()
+        }).into_iter().collect::<Vec<_>>();
+        assert_eq!(entry.captured.identities(), expected);
+        if index > 0 {
+            let generator = scope.bindings().iter().find(|binding|
+                binding.kind() == Kind::ComprehensionGenerator && binding.spelling() == "z").unwrap();
+            let generator_entry = env.bindings().iter().find(|(_, entry)|
+                entry.declaration_range == generator.range()).unwrap().1;
+            assert_eq!(generator_entry.kind, BindingKind::QuantifierBinder);
+            assert_eq!(env.contexts().get(generator_entry.owner_context).unwrap().lexical_scope.as_ref(), Some(generator.scope()));
+            assert!(!entry.captured.identities().contains(&generator_entry.identity));
+        }
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id, module_id: module, resolved_root: None,
+            source_context: None, source_type: None, source_attribute: None,
+            nodes: TypedArena::try_new(None, Vec::new()).unwrap(),
+            contexts: Default::default(), types: Default::default(), facts: Default::default(),
+            coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+        }).unwrap().with_source_proof_local_binding(handoff.clone()).unwrap();
+        let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&typed, Vec::new()).unwrap();
+        assert_eq!(resolved.source_proof_local_binding(), Some(&handoff));
+    }
+}
+
+#[test]
+fn task269_native_binding_runtime_retains_empty_blocks_and_ordered_named_take_lists() {
+    use mizar_checker::{
+        binding_env::{BindingContextLayer, BindingContextOwner},
+        source_proof_local_declaration::SourceProofLocalDeclarationProducer,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts},
+    };
+    use mizar_resolve::{
+        names::{LocalTermScope, SourceVariableBindingKind as Kind, SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    let source = "reserve r for set; theorem EmptyAndList: thesis proof let x be set; take a = x, b = a; now thus thesis; end; thus thesis; end;";
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, 2_693_300);
+    assert_eq!(diagnostics, 0);
+    let original = super::type_elaboration::source_proof_local_syntax_receiver(&ast, &module, source).unwrap();
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+        SourceVariableScopeInput::new(&ast, &module, &symbols),
+    ).unwrap();
+    assert_eq!(scope.references().iter().map(|reference|
+        scope.bindings()[reference.binding().index()].spelling()).collect::<Vec<_>>(), ["x", "a"]);
+    for name in ["a", "b"] {
+        assert!(scope.bindings().iter().any(|binding|
+            binding.spelling() == name && binding.kind() == Kind::NamedWitness));
+    }
+    let now = original.source_node_entries().unwrap().find(|row|
+        matches!(row.kind(), mizar_syntax::SurfaceNodeKind::NowStatement)).unwrap().range();
+    let proof = original.source_node_entries().unwrap().find(|row|
+        matches!(row.kind(), mizar_syntax::SurfaceNodeKind::ProofBlock)).unwrap().range();
+    let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+        &original, &native, &symbols, &scope,
+    ).unwrap();
+    let typed = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id, module_id: module, resolved_root: None,
+        source_context: None, source_type: None, source_attribute: None,
+        nodes: TypedArena::try_new(None, Vec::new()).unwrap(),
+        contexts: Default::default(), types: Default::default(), facts: Default::default(),
+        coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+    }).unwrap().with_source_proof_local_binding(handoff.clone()).unwrap();
+    let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&typed, Vec::new()).unwrap();
+    let replayed = resolved.source_proof_local_binding().unwrap();
+    for env in [handoff.binding_env(), replayed.binding_env()] {
+        let proof_context = env.contexts().iter().find(|(_, context)|
+            context.owner == BindingContextOwner::SourceStatement { source_range: proof }).unwrap().1;
+        let empty_context = env.contexts().iter().find(|(_, context)|
+            context.owner == BindingContextOwner::SourceStatement { source_range: now }).unwrap().1;
+        assert_eq!(proof_context.layer, BindingContextLayer::Proof);
+        assert_eq!(empty_context.parent, Some(proof_context.id));
+        assert_eq!(empty_context.layer, BindingContextLayer::Block);
+        assert_eq!(empty_context.lexical_scope, Some(LocalTermScope::new(vec![4, 3])));
+        assert!(empty_context.bindings.is_empty());
+        assert_eq!(empty_context.visible_bindings, proof_context.visible_bindings);
+        for name in ["a", "b"] {
+            let binding = env.bindings().iter().find(|(_, entry)| entry.spelling == name).unwrap().1;
+            assert!(binding.captured.identities().is_empty());
+        }
+    }
+    assert_eq!(replayed, &handoff);
+    assert!(typed.facts().is_empty());
+    assert!(resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_terminal_goals().is_empty());
 }

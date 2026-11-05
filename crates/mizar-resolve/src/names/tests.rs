@@ -18,6 +18,398 @@ use mizar_syntax::ast::SurfaceNodeKind;
 use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceFormulaPrefixOperator, SurfaceTokenKind};
 use semver::Version;
 
+fn proof_binding_ast(source: SourceId, statements: &[(&str, &str, &str)]) -> SurfaceAst {
+    use mizar_syntax::SurfaceBuilderNodeId as Id;
+    fn term(builder: &mut SurfaceAstBuilder, source: SourceId, start: usize, name: &str) -> Id {
+        let span = range(source, start, start + name.len());
+        let token = builder.add_token(SurfaceTokenKind::Identifier, name, span);
+        let reference = builder.add_node(SurfaceNodeKind::TermReference, span, vec![token]);
+        builder.add_node(SurfaceNodeKind::TermExpression, span, vec![reference])
+    }
+    let mut builder = SurfaceAstBuilder::new(source);
+    let mut blocks = vec![(0, Vec::new())];
+    let mut end = 1;
+    for (index, &(kind, names, values)) in statements.iter().enumerate() {
+        let start = index * 100 + 1;
+        end = start + 99;
+        if kind == "now" {
+            blocks.push((start, Vec::new()));
+            continue;
+        }
+        let (node_kind, children) = match kind {
+            "end" => {
+                let (start, children) = blocks.pop().unwrap();
+                let node = builder.add_node(
+                    SurfaceNodeKind::NowStatement,
+                    range(source, start, end),
+                    children,
+                );
+                blocks.last_mut().unwrap().1.push(node);
+                continue;
+            }
+            "let" | "given" | "consider" => {
+                let segment = source_variable_typed_segment(&mut builder, source, start + 1, names);
+                let mut children = vec![segment];
+                if kind != "let" {
+                    let left = term(&mut builder, source, start + 30, names);
+                    let equals = builder.add_token(
+                        SurfaceTokenKind::ReservedSymbol,
+                        "=",
+                        range(source, start + 32, start + 33),
+                    );
+                    let right = term(&mut builder, source, start + 34, names);
+                    let predicate = builder.add_node(
+                        SurfaceNodeKind::BuiltinPredicateApplication,
+                        range(source, start + 30, start + 35),
+                        vec![left, equals, right],
+                    );
+                    let formula = builder.add_node(
+                        SurfaceNodeKind::FormulaExpression,
+                        range(source, start + 30, start + 35),
+                        vec![predicate],
+                    );
+                    let proposition = builder.add_node(
+                        SurfaceNodeKind::Proposition,
+                        range(source, start + 30, start + 35),
+                        vec![formula],
+                    );
+                    children.push(builder.add_node(
+                        SurfaceNodeKind::ConditionList,
+                        range(source, start + 30, start + 35),
+                        vec![proposition],
+                    ));
+                }
+                (
+                    match kind {
+                        "let" => SurfaceNodeKind::LetStatement,
+                        "given" => SurfaceNodeKind::GivenStatement,
+                        _ => SurfaceNodeKind::ConsiderStatement,
+                    },
+                    children,
+                )
+            }
+            "set" | "take" => {
+                let mut children = Vec::new();
+                for (index, (name, value)) in names.split(',').zip(values.split(',')).enumerate() {
+                    let start = start + index * 20 + 1;
+                    let rhs = term(&mut builder, source, start + 4, value);
+                    let mut parts = Vec::new();
+                    if !name.is_empty() {
+                        parts.push(builder.add_token(
+                            SurfaceTokenKind::Identifier,
+                            name,
+                            range(source, start, start + name.len()),
+                        ));
+                        parts.push(builder.add_token(
+                            SurfaceTokenKind::ReservedSymbol,
+                            "=",
+                            range(source, start + 2, start + 3),
+                        ));
+                    }
+                    parts.push(rhs);
+                    children.push(builder.add_node(
+                        if kind == "set" {
+                            SurfaceNodeKind::Equating
+                        } else {
+                            SurfaceNodeKind::Witness
+                        },
+                        range(source, start, start + 4 + value.len()),
+                        parts,
+                    ));
+                }
+                (
+                    if kind == "set" {
+                        SurfaceNodeKind::SetStatement
+                    } else {
+                        SurfaceNodeKind::TakeStatement
+                    },
+                    children,
+                )
+            }
+            _ => unreachable!(),
+        };
+        let node = builder.add_node(node_kind, range(source, start, end), children);
+        blocks.last_mut().unwrap().1.push(node);
+    }
+    assert_eq!(blocks.len(), 1);
+    let proof = builder.add_node(
+        SurfaceNodeKind::ProofBlock,
+        range(source, 0, end),
+        blocks.pop().unwrap().1,
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source, 0, end), vec![proof]);
+    builder.finish(Some(root), None)
+}
+
+#[test]
+fn proof_bindings_resolve_all_forms_conditions_lists_and_nested_scopes() {
+    let source = source_id();
+    let module = module_id("pkg", "proof_bindings");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let ast = proof_binding_ast(
+        source,
+        &[
+            ("let", "x", ""),
+            ("given", "y", ""),
+            ("consider", "c", ""),
+            ("set", "a,b", "x,a"),
+            ("take", "t,", "b,b"),
+            ("now", "", ""),
+            ("let", "x", ""),
+            ("set", "a", "x"),
+            ("take", "u", "a"),
+            ("end", "", ""),
+            ("take", "", "x"),
+        ],
+    );
+    let scope = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .unwrap();
+    assert_eq!(
+        scope
+            .bindings()
+            .iter()
+            .map(|row| row.spelling())
+            .collect::<Vec<_>>(),
+        ["x", "y", "c", "a", "b", "t", "x", "a", "u"]
+    );
+    assert_eq!(
+        scope.bindings()[5].kind(),
+        SourceVariableBindingKind::NamedWitness
+    );
+    assert_eq!(
+        scope.bindings()[8].kind(),
+        SourceVariableBindingKind::NamedWitness
+    );
+    assert_eq!(
+        scope
+            .references()
+            .iter()
+            .map(|row| row.binding().index())
+            .collect::<Vec<_>>(),
+        [1, 1, 2, 2, 0, 3, 4, 4, 6, 7, 0]
+    );
+    for (index, binding) in scope.bindings().iter().enumerate() {
+        assert_eq!(binding.ordinal(), index);
+        assert!(binding.captures().is_empty());
+    }
+    assert_eq!(scope.bindings()[0].scope().path(), [0]);
+    assert_eq!(scope.bindings()[6].scope().path(), [0, 5]);
+    assert!(scope.thesis().is_none());
+    assert!(scope.statements().is_empty());
+}
+
+#[test]
+fn proof_bindings_exclude_own_rhs_and_duplicates_without_changing_legacy_profiles() {
+    let source = source_id();
+    let module = module_id("pkg", "proof_bindings");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    for kind in ["set", "take"] {
+        let ast = proof_binding_ast(
+            source,
+            &[
+                ("let", "x", ""),
+                ("now", "", ""),
+                (kind, "x", "x"),
+                ("end", "", ""),
+            ],
+        );
+        let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(scope.references()[0].binding().index(), 0);
+        let old = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        assert_eq!(old.bindings().len(), if kind == "set" { 2 } else { 1 });
+        assert_eq!(
+            old.references()[0].binding().index(),
+            if kind == "set" { 1 } else { 0 }
+        );
+        let ast = proof_binding_ast(source, &[(kind, "x", "x")]);
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            )),
+            Err(SourceVariableScopeError::UnresolvedReference)
+        );
+    }
+    for (statements, error) in [
+        (
+            vec![("let", "x", ""), ("take", "a,b", "b,x")],
+            SourceVariableScopeError::ForwardReference,
+        ),
+        (
+            vec![("let", "x", ""), ("set", "a,b", "b,x")],
+            SourceVariableScopeError::ForwardReference,
+        ),
+        (
+            vec![("let", "x", ""), ("set", "x", "x")],
+            SourceVariableScopeError::DuplicateLocalConstant,
+        ),
+        (
+            vec![("let", "x", ""), ("take", "x", "x")],
+            SourceVariableScopeError::DuplicateLocalConstant,
+        ),
+    ] {
+        let ast = proof_binding_ast(source, &statements);
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            )),
+            Err(error)
+        );
+    }
+    let ast = proof_binding_ast(source, &[("let", "x", ""), ("set", "x", "x")]);
+    assert!(
+        SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+            &ast, &module, &symbols
+        ))
+        .is_ok()
+    );
+}
+
+#[test]
+fn proof_bindings_reject_malformed_named_witness_separator() {
+    let source = source_id();
+    let module = module_id("pkg", "proof_bindings");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    for separator in ["=", ":"] {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let let_token =
+            builder.add_token(SurfaceTokenKind::ReservedWord, "let", range(source, 0, 3));
+        let name = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 4, 5));
+        let being = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "being",
+            range(source, 6, 11),
+        );
+        let ty = source_variable_type_expression(&mut builder, source, 12);
+        let segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source, 4, 18),
+            vec![name, being, ty],
+        );
+        let semicolon =
+            builder.add_token(SurfaceTokenKind::ReservedSymbol, ";", range(source, 18, 19));
+        let declaration = builder.add_node(
+            SurfaceNodeKind::LetStatement,
+            range(source, 0, 19),
+            vec![let_token, segment, semicolon],
+        );
+        let take = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "take",
+            range(source, 20, 24),
+        );
+        let name = builder.add_token(SurfaceTokenKind::Identifier, "t", range(source, 25, 26));
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            separator,
+            range(source, 27, 28),
+        );
+        let value = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 29, 30));
+        let reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source, 29, 30),
+            vec![value],
+        );
+        let value = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source, 29, 30),
+            vec![reference],
+        );
+        let witness = builder.add_node(
+            SurfaceNodeKind::Witness,
+            range(source, 25, 30),
+            vec![name, equals, value],
+        );
+        let semicolon =
+            builder.add_token(SurfaceTokenKind::ReservedSymbol, ";", range(source, 30, 31));
+        let take = builder.add_node(
+            SurfaceNodeKind::TakeStatement,
+            range(source, 20, 31),
+            vec![take, witness, semicolon],
+        );
+        let items = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source, 0, 31),
+            vec![declaration, take],
+        );
+        let unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source, 0, 31),
+            vec![items],
+        );
+        let root = builder.add_node(SurfaceNodeKind::Root, range(source, 0, 31), vec![unit]);
+        let ast = builder.finish(Some(root), None);
+        assert!(ast.node_views().all(|node| !node.is_recovered()));
+        let result = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        );
+        if separator == "=" {
+            assert_eq!(result.unwrap().bindings().len(), 2);
+        } else {
+            assert_eq!(result, Err(SourceVariableScopeError::InvalidShape));
+        }
+        assert!(
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            ))
+            .is_ok()
+        );
+    }
+}
+
+#[test]
+fn proof_binding_native_validator_authenticates_both_genuine_profiles() {
+    use crate::{
+        declarations::DeclarationShellCollector,
+        symbols::{
+            SignatureProjectionExtractor, source_proof_scope_maps,
+            validate_source_proof_occurrences,
+        },
+    };
+    let source = source_id();
+    let module = module_id("pkg", "proof_bindings");
+    let ast = proof_binding_ast(source, &[("let", "x", ""), ("take", "t", "x")]);
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let collection = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(collection.diagnostics().is_empty());
+    let symbols = collection.env();
+    let old = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(&ast, &module, symbols),
+    )
+    .unwrap();
+    let new = SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+        &ast, &module, symbols,
+    ))
+    .unwrap();
+    assert_eq!(old.bindings().len(), 1);
+    assert_eq!(new.bindings().len(), 2);
+    for scope in [&old, &new] {
+        validate_source_proof_occurrences(&native, symbols, scope).unwrap();
+        assert!(
+            !source_proof_scope_maps(&native, symbols, scope)
+                .unwrap()
+                .0
+                .is_empty()
+        );
+    }
+    let mut forged = new;
+    forged.bindings[1].spelling.push_str("forged");
+    assert!(validate_source_proof_occurrences(&native, symbols, &forged).is_err());
+}
+
 #[test]
 fn task277r1_collects_exact_template_generator_identity() {
     let source_id = source_id();

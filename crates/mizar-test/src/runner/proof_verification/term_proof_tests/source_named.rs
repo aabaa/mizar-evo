@@ -672,6 +672,38 @@ fn source_named_witness_statement_original_capture_preserves_boundary() -> Resul
     validate_source_proof_occurrences(&source, &symbols, &scope)?;
     let (_, inference, base) =
         TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)?;
+    let binding_scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_bindings(
+        mizar_resolve::names::SourceVariableScopeInput::new(ast, &module, &symbols),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    validate_source_proof_occurrences(&source, &symbols, &binding_scope)?;
+    assert!(binding_scope.bindings().iter().any(|binding| {
+        binding.kind() == mizar_resolve::names::SourceVariableBindingKind::NamedWitness
+    }));
+    let unsupported = "theorems.equality.unsupported_source_types";
+    assert_eq!(
+        TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &binding_scope)
+            .unwrap_err(),
+        unsupported
+    );
+    assert_eq!(
+        TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+            &source,
+            &symbols,
+            &binding_scope
+        )
+        .unwrap_err(),
+        unsupported
+    );
+    assert_eq!(
+        TermFormulaChecker::check_source_theorem_equalities_with_expression_metadata(
+            &source,
+            &symbols,
+            &binding_scope
+        )
+        .unwrap_err(),
+        unsupported
+    );
     let before = (
         source.clone(),
         symbols.clone(),
@@ -696,7 +728,6 @@ fn source_named_witness_statement_original_capture_preserves_boundary() -> Resul
     assert_eq!(witnesses.witnesses().len(), 1);
     assert_eq!(witnesses.names().len(), 1);
     assert!(installed.source_proof_local_declaration().is_none());
-    let unsupported = "theorems.equality.unsupported_source_types";
     // Higher owners remain closed after the genuine native base and installation succeeded.
     assert_eq!(
         SourceVariableSemanticsChecker::source_theorem_binding_env(&source, &symbols, &scope)

@@ -1,5 +1,16 @@
 # Module: harness
 
+## Native proof-local binding metadata
+
+`declaration_symbol` の domain `checker.proof_local_bindings` は
+[checker transaction](../../mizar-checker/ja/source_proof_local_declaration.md#native-proof-local-binding-境界)
+を Typed 設置・Resolved replay まで実行する。既存の frontend・resolver・proof-label
+拒否を先に適用し、共通の admission と sidecar schema を維持する。
+payload は binding の ID/kind/名前/scope/宣言順、capture の owner/target ID、
+参照の ID/target/scope/参照順/RHS owner を保持し、RHS は元の Equating/Witness の祖先から得る。
+型の正当性・witness 充足・置換・証明受理を表明しない。
+
+
 偽 coherence・偽 reducibility の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
 簡約行では `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` と `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` を元の正本参照と共に認証する。
 失敗観測前に、実ソースから再生成した不変の完全な VcSet 同士と `debug_text()` 全体を baseline と比較し、baseline の欠落・破損、metadata・stage の変更を拒否する。

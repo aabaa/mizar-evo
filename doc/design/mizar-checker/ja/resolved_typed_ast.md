@@ -1,5 +1,8 @@
 # Resolved Typed AST
 
+`source_proof_local_binding()` は [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-境界) を保持する。
+assembly は独立に replay し、他の source family payload との混在を拒否する。
+
 > 正本は英語です。英語版:
 > [../en/resolved_typed_ast.md](../en/resolved_typed_ast.md)。
 

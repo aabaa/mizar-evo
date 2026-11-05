@@ -34,6 +34,12 @@ shadow されない chain は leading path を namespace、final segment を qua
 本書は diagnostic class、payload、ordering を仕様化するが、public numeric diagnostic code は
 創作しない。
 
+`resolve_proof_bindings` は native binding metadata 用の opt-in 経路である。
+名前付き Witness の導入・定義 RHS 内の自己参照除外・形式間の同一 scope 重複検査を追加する。
+既存 entry point の出力は維持し、native proof-scope 検証はこの経路の正確な結果も認証する。
+証明結果を推論しない。
+
+
 ## 参照
 
 この設計は、resolver-owned name contract を次から導出する:

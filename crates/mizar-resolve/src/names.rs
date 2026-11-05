@@ -4848,6 +4848,8 @@ pub enum SourceVariableBindingKind {
     DefinitionParameter,
     /// An initialized algorithm-local declaration.
     AlgorithmLocal,
+    /// A local name introduced by a named Take witness in proof-binding mode.
+    NamedWitness,
 }
 
 /// Kind of source variable reference admitted by the variable resolver.
@@ -5814,6 +5816,31 @@ impl SourceVariableScopeResolver {
             statements: Vec::new(),
         })
     }
+
+    /// Resolves proof binding declarations, including named Take witnesses, without proof payloads.
+    pub fn resolve_proof_bindings(
+        input: SourceVariableScopeInput<'_>,
+    ) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        let scopes = validate_variable_surface_with_mode(input.ast, true)?;
+        if input.module_id != input.symbols.module_id() {
+            return Err(SourceVariableScopeError::ModuleMismatch);
+        }
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, true, true);
+        state.proof_bindings = true;
+        state.collect_declarations()?;
+        state.validate_declarations()?;
+        state.validate_application_shapes()?;
+        state.collect_references()?;
+        state.resolve_references()?;
+        Ok(ResolvedVariableScope {
+            source_id: input.ast.source_id,
+            module_id: input.module_id.clone(),
+            bindings: state.bindings,
+            references: state.resolved_references,
+            thesis: None,
+            statements: Vec::new(),
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -5853,6 +5880,7 @@ struct VariableResolveState<'a> {
     thesis_node: Option<SurfaceNodeId>,
     comprehension_scopes: bool,
     proof_organization: bool,
+    proof_bindings: bool,
 }
 
 impl<'a> VariableResolveState<'a> {
@@ -5882,6 +5910,7 @@ impl<'a> VariableResolveState<'a> {
             thesis_node: None,
             comprehension_scopes,
             proof_organization,
+            proof_bindings: false,
         }
     }
 
@@ -5996,6 +6025,49 @@ impl<'a> VariableResolveState<'a> {
                             arity: None,
                         });
                     }
+                }
+                SurfaceNodeKind::Witness if self.proof_bindings => {
+                    let children = view.children();
+                    if self
+                        .parents
+                        .get(&id)
+                        .and_then(|id| self.ast.node(*id))
+                        .is_none_or(|parent| parent.kind != SurfaceNodeKind::TakeStatement)
+                    {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    if children.len() == 1
+                        && self
+                            .ast
+                            .node(children[0])
+                            .is_some_and(|child| child.kind == SurfaceNodeKind::TermExpression)
+                    {
+                        continue;
+                    }
+                    let binder = first_direct_identifier(self.ast, id)
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    if children.len() != 3
+                        || children[0] != binder.id()
+                        || !has_direct_equals(self.ast, id)
+                        || direct_term_child(self.ast, id)
+                            .is_none_or(|term| term.id() != children[2])
+                    {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    self.push_decl(VariableDeclSite {
+                        kind: SourceVariableBindingKind::NamedWitness,
+                        owner: id,
+                        binder: binder.id(),
+                        spelling: binder
+                            .as_token()
+                            .expect("identifier witness name")
+                            .text
+                            .to_string(),
+                        range: binder.range(),
+                        scope: self.scope_of(id),
+                        declared_type: None,
+                        arity: None,
+                    });
                 }
                 SurfaceNodeKind::ReconsiderStatement => {
                     let target = direct_type_expression(self.ast, id)
@@ -6212,14 +6284,17 @@ impl<'a> VariableResolveState<'a> {
                         SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider,
                         SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider
                     )
-                ) || (self.proof_organization
-                    && [left.kind, right.kind].iter().any(|kind| {
-                        matches!(
-                            kind,
-                            SourceVariableBindingKind::GivenWitness
-                                | SourceVariableBindingKind::ConsiderWitness
-                        )
-                    }))
+                ) || (self.proof_bindings
+                    && left.kind != SourceVariableBindingKind::Reserve
+                    && right.kind != SourceVariableBindingKind::Reserve)
+                    || (self.proof_organization
+                        && [left.kind, right.kind].iter().any(|kind| {
+                            matches!(
+                                kind,
+                                SourceVariableBindingKind::GivenWitness
+                                    | SourceVariableBindingKind::ConsiderWitness
+                            )
+                        }))
                 {
                     return Err(SourceVariableScopeError::DuplicateLocalConstant);
                 }
@@ -6533,6 +6608,24 @@ impl<'a> VariableResolveState<'a> {
                         || (binding.kind == SourceVariableBindingKind::ComprehensionGenerator
                             && self.enclosing_comprehension(binding.node)
                                 == self.enclosing_comprehension(reference.node)))
+                    && (!self.proof_bindings
+                        || !matches!(
+                            binding.kind,
+                            SourceVariableBindingKind::Set
+                                | SourceVariableBindingKind::NamedWitness
+                        )
+                        || {
+                            let rhs = direct_term_child(
+                                self.ast,
+                                self.declarations[binding.id.index()].owner,
+                            )
+                            .map(|row| row.id());
+                            let mut current = Some(reference.node);
+                            while current.is_some() && current != rhs {
+                                current = current.and_then(|node| self.parents.get(&node).copied());
+                            }
+                            current.is_none()
+                        })
             })
             .max_by_key(|binding| {
                 (
@@ -7600,6 +7693,7 @@ fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
         SourceVariableBindingKind::ConsiderWitness => 10,
         SourceVariableBindingKind::DefinitionParameter => 11,
         SourceVariableBindingKind::AlgorithmLocal => 12,
+        SourceVariableBindingKind::NamedWitness => 13,
     }
 }
 

@@ -1,5 +1,17 @@
 # Module: harness
 
+## Native proof-local binding metadata
+
+The `declaration_symbol` domain `checker.proof_local_bindings` consumes the
+[checker binding transaction](../../mizar-checker/en/source_proof_local_declaration.md#native-proof-local-binding-boundary)
+through actual Typed installation and Resolved replay. Existing frontend,
+resolver and proof-label refusals run first; admission and sidecar schema stay shared.
+Payloads report binding ID/kind/escaped name/scope/declaration clock, capture
+owner/target IDs, and reference ID/target/scope/reference clock/RHS owner.
+RHS ownership follows original Equating/Witness ancestry. No declaration payload
+asserts type correctness, witness discharge, substitution or proof acceptance.
+
+
 The exact false-coherence and false-reducibility proof rows consume authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy their failure keys.
 The reduction row also authenticates `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` and `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` alongside its original canonical reference.
 Before failure observation, compare immutable complete source-to-VC reruns and their `debug_text()` bytes with the full baseline; missing or corrupt baselines, metadata and cross-stage changes fail closed.

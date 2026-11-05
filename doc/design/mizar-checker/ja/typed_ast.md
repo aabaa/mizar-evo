@@ -1,5 +1,9 @@
 # mizar-checker: TypedAst
 
+native proof-local binding は `source_proof_local_binding()` と
+`with_source_proof_local_binding` を使う。fresh receiver の境界は
+[proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-境界) が所有する。
+
 > 正本は英語です。英語版: [../en/typed_ast.md](../en/typed_ast.md)。
 
 ## 目的

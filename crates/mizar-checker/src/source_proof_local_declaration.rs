@@ -1,16 +1,10 @@
-#[cfg(test)]
-use crate::{
-    binding_env::BindingContextTable,
-    source_statement::SourceStatementWitnessError,
-    source_term::SourcePrimaryTermId,
-    typed_ast::{TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks, TypingState},
-};
 use crate::{
     binding_env::{
         BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
-        BindingContextOwner, BindingContextRecovery, BindingDraft, BindingEnv, BindingEnvParts,
-        BindingId, BindingKind, BindingLookupResult, BindingLookupSite, BindingRecoveryState,
-        BindingStatus, BindingTypeSite, CapturedFreeVariables,
+        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
+        BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingLookupResult,
+        BindingLookupSite, BindingRecoveryState, BindingStatus, BindingTable, BindingTypeSite,
+        CapturedFreeVariables,
     },
     source_statement::{
         SourceStatementHandoff, SourceStatementWitnessHandoff, SourceStatementWitnessId,
@@ -22,15 +16,22 @@ use crate::{
         source_contiguous_child_count, source_unique_child, unique_source_node,
     },
 };
+#[cfg(test)]
+use crate::{
+    source_statement::SourceStatementWitnessError,
+    source_term::SourcePrimaryTermId,
+    typed_ast::{TypedArenaBuilder, TypedNode, TypedNodeId, TypedNodeLinks, TypingState},
+};
 use mizar_resolve::{
-    env::{DefinitionId, SourceContributionId},
-    names::{LocalTermBinding, LocalTermScope, ResolvedVariableScope},
-    resolved_ast::{ModuleId, ResolvedNodeId, SymbolId},
+    env::{DefinitionId, SourceContributionId, SymbolEnv},
+    names::{LocalTermBinding, LocalTermScope, ResolvedVariableScope, SourceVariableBindingKind},
+    resolved_ast::{ModuleId, ResolvedNodeId, SurfaceResolvedArena, SymbolId},
 };
 #[cfg(test)]
 use mizar_session::SourceAnchor;
 use mizar_session::{SourceId, SourceRange};
 use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::{
     error::Error,
@@ -1227,6 +1228,403 @@ fn task258b3m1_canonical_arena(source_id: SourceId) -> TypedArena {
     builder
         .finish(Some(ids[55]))
         .expect("frozen Task258B3M1 arena is valid")
+}
+
+/// Authenticated native proof-local declarations and their lexical binding environment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalBindingHandoff {
+    original: Arc<TypedAst>,
+    native: Arc<SurfaceResolvedArena>,
+    symbols: Arc<SymbolEnv>,
+    scope: Box<ResolvedVariableScope>,
+    binding_env: BindingEnv,
+}
+
+impl SourceProofLocalBindingHandoff {
+    pub fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+    pub fn source(&self) -> &TypedAst {
+        &self.original
+    }
+    pub fn scope(&self) -> &ResolvedVariableScope {
+        &self.scope
+    }
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-proof-local-binding-debug-v1\n{}",
+            self.binding_env.debug_text()
+        )
+    }
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source: SourceId,
+        module: &ModuleId,
+        available: bool,
+    ) -> Result<(), SourceProofLocalDeclarationError> {
+        if self.binding_env.source_id() != source
+            || self.binding_env.module_id() != module
+            || self.original.source_id() != source
+            || self.original.module_id() != module
+        {
+            return Err(SourceProofLocalDeclarationError::InvalidTransaction);
+        }
+        let expected = native_proof_local_binding_env(
+            &self.original,
+            &self.native,
+            &self.symbols,
+            &self.scope,
+        )?;
+        if self.binding_env != expected {
+            return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
+        }
+        if !available {
+            return Err(SourceProofLocalDeclarationError::InvalidInstallation);
+        }
+        Ok(())
+    }
+}
+
+impl SourceProofLocalDeclarationProducer {
+    pub fn build_bindings(
+        original: &TypedAst,
+        native: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<SourceProofLocalBindingHandoff, SourceProofLocalDeclarationError> {
+        let binding_env = native_proof_local_binding_env(original, native, symbols, scope)?;
+        Ok(SourceProofLocalBindingHandoff {
+            original: Arc::new(original.clone()),
+            native: Arc::new(native.clone()),
+            symbols: Arc::new(symbols.clone()),
+            scope: Box::new(scope.clone()),
+            binding_env,
+        })
+    }
+}
+
+fn native_proof_local_binding_env(
+    original: &TypedAst,
+    native: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    scope: &ResolvedVariableScope,
+) -> Result<BindingEnv, SourceProofLocalDeclarationError> {
+    use SourceVariableBindingKind as B;
+    use SurfaceNodeKind as K;
+    let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
+    if native.source_id() != original.source_id()
+        || native.module() != original.module_id()
+        || symbols.module_id() != original.module_id()
+        || scope.source_id() != original.source_id()
+        || scope.module_id() != original.module_id()
+    {
+        return Err(SourceProofLocalDeclarationError::InvalidTransaction);
+    }
+    let rows = original.source_nodes().ok_or_else(invalid)?;
+    if original.source_proof_local_binding().is_some()
+        || !original.has_no_other_proof_local_binding_handoff()
+        || !original.contexts().is_empty()
+        || !original.types().is_empty()
+        || !original.facts().is_empty()
+        || !original.coercions().is_empty()
+        || !original.initial_obligations().is_empty()
+        || !original.diagnostics().is_empty()
+        || scope.thesis().is_some()
+        || !scope.statements().is_empty()
+        || rows.iter().any(|row| {
+            row.recovery() != NodeRecoveryState::Normal
+                || matches!(
+                    row.kind(),
+                    K::InlineFunctorDefinition
+                        | K::InlinePredicateDefinition
+                        | K::ReconsiderStatement
+                )
+        })
+        || crate::type_checker::source_nodes(native, original)
+            .map_err(|_| invalid())?
+            .as_slice()
+            != rows.as_ref()
+    {
+        return Err(invalid());
+    }
+    let (scopes, parents) = mizar_resolve::symbols::source_proof_scope_maps(native, symbols, scope)
+        .map_err(|_| invalid())?;
+    let row_for = |id| {
+        rows.iter()
+            .find(|row| Some(row.site()) == native.resolved_node_for(id))
+    };
+    let root_scope = scopes
+        .iter()
+        .find(|(id, _)| native.resolved_node_for(**id) == Some(native.arena().root()))
+        .map(|(_, scope)| scope.clone())
+        .ok_or_else(invalid)?;
+    let mut boundaries = BTreeMap::from([(
+        root_scope.clone(),
+        (
+            BindingContextOwner::Module,
+            BindingContextLayer::Module,
+            None,
+        ),
+    )]);
+    for (id, local) in &scopes {
+        let Some(parent) = parents.get(id) else {
+            continue;
+        };
+        let parent_scope = scopes.get(parent).ok_or_else(invalid)?;
+        if local == parent_scope {
+            continue;
+        }
+        let row = row_for(*id).ok_or_else(invalid)?;
+        let (owner, layer) = match row.kind() {
+            K::ProofBlock => (
+                BindingContextOwner::SourceStatement {
+                    source_range: row.range(),
+                },
+                BindingContextLayer::Proof,
+            ),
+            K::NowStatement | K::HerebyStatement | K::CaseItem | K::SupposeItem => (
+                BindingContextOwner::SourceStatement {
+                    source_range: row.range(),
+                },
+                BindingContextLayer::Block,
+            ),
+            K::QuantifiedFormula(_) => (
+                BindingContextOwner::SourceFormula {
+                    source_range: row.range(),
+                },
+                BindingContextLayer::Expression,
+            ),
+            K::SetComprehension => (
+                BindingContextOwner::SourceComprehension {
+                    source_range: row.range(),
+                },
+                BindingContextLayer::Expression,
+            ),
+            _ => return Err(invalid()),
+        };
+        if boundaries
+            .insert(local.clone(), (owner, layer, Some(parent_scope.clone())))
+            .is_some()
+        {
+            return Err(invalid());
+        }
+    }
+    if scopes.values().any(|local| !boundaries.contains_key(local)) {
+        return Err(invalid());
+    }
+    let context_ids = boundaries
+        .keys()
+        .enumerate()
+        .map(|(index, local)| (local.clone(), BindingContextId::new(index)))
+        .collect::<BTreeMap<_, _>>();
+
+    // Census every original introduction, including names not referenced later.
+    let mut names = BTreeMap::new();
+    for row in rows.iter() {
+        let (kind, rhs) = match row.kind() {
+            K::ReserveSegment => (B::Reserve, None),
+            K::QuantifierVariableSegment => (B::Quantifier, None),
+            K::ComprehensionVariableSegment => (B::ComprehensionGenerator, None),
+            K::QualifiedVariableSegment => {
+                let parent = rows
+                    .iter()
+                    .find(|p| Some(p.site()) == row.parent())
+                    .ok_or_else(invalid)?;
+                (
+                    match parent.kind() {
+                        K::LetStatement => B::Let,
+                        K::GivenStatement => B::GivenWitness,
+                        K::ConsiderStatement => B::ConsiderWitness,
+                        _ => return Err(invalid()),
+                    },
+                    None,
+                )
+            }
+            K::Equating => {
+                let parent = rows
+                    .iter()
+                    .find(|p| Some(p.site()) == row.parent())
+                    .ok_or_else(invalid)?;
+                if parent.kind() != &K::SetStatement {
+                    return Err(invalid());
+                }
+                let [name, value] = source_equating_roles(rows, row).ok_or_else(invalid)?;
+                if names
+                    .insert(name.site(), (B::Set, Some(value.site())))
+                    .is_some()
+                {
+                    return Err(invalid());
+                }
+                continue;
+            }
+            K::Witness => {
+                let count = source_contiguous_child_count(source_children(rows, row.site()))
+                    .ok_or_else(invalid)?;
+                if count == 1
+                    && source_child_at(rows, row.site(), 0)
+                        .is_some_and(|r| r.kind() == &K::TermExpression)
+                {
+                    continue;
+                }
+                if count != 3 {
+                    return Err(invalid());
+                }
+                let name = source_child_at(rows, row.site(), 0).ok_or_else(invalid)?;
+                let equals = source_child_at(rows, row.site(), 1).ok_or_else(invalid)?;
+                let value =
+                    source_unique_child(rows, row, K::TermExpression).ok_or_else(invalid)?;
+                if !matches!(name.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                    || !matches!(equals.kind(), K::Token(t) if t.text.as_ref() == "=" && t.kind == SurfaceTokenKind::ReservedSymbol)
+                    || value.child_ordinal() != 2
+                    || names
+                        .insert(name.site(), (B::NamedWitness, Some(value.site())))
+                        .is_some()
+                {
+                    return Err(invalid());
+                }
+                continue;
+            }
+            _ => continue,
+        };
+        let mut found = false;
+        for name in source_children(rows, row.site()).filter(
+            |name| matches!(name.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier),
+        ) {
+            found = true;
+            if names.insert(name.site(), (kind, rhs)).is_some() {
+                return Err(invalid());
+            }
+        }
+        if !found {
+            return Err(invalid());
+        }
+    }
+    let mut drafts = Vec::new();
+    let mut introduced = BTreeSet::new();
+    let mut rhs_owners = BTreeMap::new();
+    for binding in scope.bindings() {
+        let name = row_for(binding.node()).ok_or_else(invalid)?;
+        let (kind, rhs) = names.remove(&name.site()).ok_or_else(invalid)?;
+        if binding.kind() != kind
+            || binding.range() != name.range()
+            || binding.spelling() != name.spelling()
+            || scopes.get(&binding.node()) != Some(binding.scope())
+            || (kind != B::Reserve
+                && !introduced.insert((binding.scope().clone(), binding.spelling())))
+        {
+            return Err(invalid());
+        }
+        let local = LocalTermBinding::new(
+            binding.spelling(),
+            binding.scope().clone(),
+            binding.range(),
+            binding.ordinal(),
+        );
+        let mut draft = BindingDraft::from_local_term(
+            *context_ids.get(binding.scope()).ok_or_else(invalid)?,
+            match kind {
+                B::Reserve => BindingKind::ReservedVariable,
+                B::Quantifier | B::ComprehensionGenerator => BindingKind::QuantifierBinder,
+                B::Let => BindingKind::LetBinding,
+                B::GivenWitness | B::ConsiderWitness => BindingKind::GivenWitness,
+                B::Set | B::NamedWitness => BindingKind::LocalAbbreviation,
+                _ => return Err(invalid()),
+            },
+            &local,
+        );
+        if kind == B::Reserve {
+            draft.identity = BinderIdentity::ReservedVariable {
+                spelling: binding.spelling().to_owned(),
+                declaration_range: binding.range(),
+            };
+        }
+        let actual = BindingId::new(drafts.len());
+        drafts.push(draft);
+        if actual.index() != binding.id().index() {
+            return Err(invalid());
+        }
+        if let Some(rhs) = rhs
+            && rhs_owners.insert(rhs, actual).is_some()
+        {
+            return Err(invalid());
+        }
+    }
+    if !names.is_empty() {
+        return Err(invalid());
+    }
+    let mut captures: BTreeMap<BindingId, Vec<BinderIdentity>> = BTreeMap::new();
+    for reference in scope.references() {
+        let target = scope
+            .bindings()
+            .get(reference.binding().index())
+            .ok_or_else(invalid)?;
+        if target.id() != reference.binding() {
+            return Err(invalid());
+        }
+        let mut current = Some(reference.node());
+        while let Some(id) = current {
+            let site = native.resolved_node_for(id).ok_or_else(invalid)?;
+            if let Some(owner) = rhs_owners.get(&site) {
+                if owner.index() == target.id().index() {
+                    return Err(invalid());
+                }
+                let declaration = &scope.bindings()[owner.index()];
+                if declaration.kind() == B::Set
+                    && declaration
+                        .scope()
+                        .path()
+                        .starts_with(target.scope().path())
+                {
+                    captures.entry(*owner).or_default().push(
+                        drafts
+                            .get(target.id().index())
+                            .ok_or_else(invalid)?
+                            .identity
+                            .clone(),
+                    );
+                }
+                break;
+            }
+            current = parents.get(&id).copied();
+        }
+    }
+    let mut bindings = BindingTable::new();
+    for (index, mut draft) in drafts.into_iter().enumerate() {
+        draft.captured =
+            CapturedFreeVariables::new(captures.remove(&BindingId::new(index)).unwrap_or_default());
+        bindings.insert(draft);
+    }
+    let mut contexts = BindingContextTable::new();
+    for (local, (owner, layer, parent)) in boundaries {
+        contexts.insert(BindingContextDraft {
+            owner,
+            layer,
+            parent: parent.map(|p| context_ids[&p]),
+            lexical_scope: Some(local.clone()),
+            bindings: scope
+                .bindings()
+                .iter()
+                .filter(|b| b.scope() == &local)
+                .map(|b| BindingId::new(b.id().index()))
+                .collect(),
+            visible_bindings: scope
+                .bindings()
+                .iter()
+                .filter(|b| local.path().starts_with(b.scope().path()))
+                .map(|b| BindingId::new(b.id().index()))
+                .collect(),
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: original.source_id(),
+        module_id: original.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|_| SourceProofLocalDeclarationError::InvalidBindingEnvironment)
 }
 
 /// Complete syntax-free input for the frozen proof-local `let` binding transaction.
@@ -8257,6 +8655,224 @@ mod task269c_tests {
             base: exact_base(source, module),
             other_definition,
             other_contribution,
+        }
+    }
+
+    fn native_binding_inputs(
+        template: &TypedAst,
+        rename: bool,
+    ) -> (
+        TypedAst,
+        SurfaceResolvedArena,
+        SymbolEnv,
+        ResolvedVariableScope,
+    ) {
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            symbols::SignatureProjectionExtractor,
+        };
+        let mut builder = SurfaceAstBuilder::new(template.source_id());
+        let mut ids = Vec::new();
+        for (_, node) in template.nodes().iter() {
+            let row = template
+                .source_node_entries()
+                .unwrap()
+                .find(|row| Some(row.site()) == node.resolved_node)
+                .unwrap();
+            let id = if let SurfaceNodeKind::Token(token) = row.kind() {
+                builder.add_token(
+                    token.kind,
+                    if rename && token.text.as_ref() == "y" {
+                        "w"
+                    } else {
+                        token.text.as_ref()
+                    },
+                    row.range(),
+                )
+            } else {
+                builder.add_node(
+                    row.kind().clone(),
+                    row.range(),
+                    node.children
+                        .iter()
+                        .map(|child| ids[child.index()])
+                        .collect(),
+                )
+            };
+            ids.push(id);
+        }
+        let ast = builder.finish(Some(ids[template.nodes().root().unwrap().index()]), None);
+        let native = SurfaceResolvedArena::lower(&ast, template.module_id()).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, template.module_id()).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(template.module_id().path().as_str()),
+        )
+        .collect(template.module_id());
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.env().clone();
+        let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+            SourceVariableScopeInput::new(&ast, template.module_id(), &symbols),
+        )
+        .unwrap();
+        let mut original = TypedAst::try_new(TypedAstParts {
+            source_id: template.source_id(),
+            module_id: template.module_id().clone(),
+            resolved_root: template.resolved_root(),
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: template.nodes().clone(),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .unwrap();
+        original.install_source_nodes(&native).unwrap();
+        (original, native, symbols, scope)
+    }
+
+    #[test]
+    fn native_bindings_authenticate_original_scope_and_replay_without_donor_privileges() {
+        let f = task269sdc_fixture();
+        let template = task286_source(f.source, f.module.clone(), 4, 0);
+        let (original, native, symbols, scope) = native_binding_inputs(&template, false);
+        let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+            &original, &native, &symbols, &scope,
+        )
+        .unwrap();
+        assert_eq!(
+            (
+                handoff.binding_env().bindings().len(),
+                handoff.binding_env().contexts().len()
+            ),
+            (4, 3)
+        );
+        let empty = empty_typed(f.source, f.module.clone());
+        let typed = empty
+            .clone()
+            .with_source_proof_local_binding(handoff.clone())
+            .unwrap();
+        let resolved = assemble_empty(&typed).unwrap();
+        assert_eq!(resolved.source_proof_local_binding(), Some(&handoff));
+        assert!(
+            typed.facts().is_empty()
+                && typed.types().is_empty()
+                && typed.initial_obligations().is_empty()
+        );
+        assert!(resolved.checked_proofs().is_empty() && resolved.checked_formulas().is_empty());
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+        let old = SourceProofLocalGivenDescendantBindingProducer::build(f.input, &f.base).unwrap();
+        assert_eq!(
+            typed.with_source_proof_local_given_descendant_binding(old.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        assert_eq!(
+            empty
+                .clone()
+                .with_source_proof_local_given_descendant_binding(old.clone())
+                .unwrap()
+                .with_source_proof_local_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+
+        let (other, other_native, other_symbols, other_scope) =
+            native_binding_inputs(&template, true);
+        for result in [
+            SourceProofLocalDeclarationProducer::build_bindings(&other, &native, &symbols, &scope),
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &other_native,
+                &other_symbols,
+                &other_scope,
+            ),
+            SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &native,
+                &symbols,
+                &other_scope,
+            ),
+        ] {
+            assert_eq!(
+                result,
+                Err(SourceProofLocalDeclarationError::DependencyMismatch)
+            );
+        }
+        // An original graph with a coherent upper transaction is not raw source intake.
+        let mut hybrid = original.clone();
+        hybrid.inject_source_proof_local_given_descendant_binding_for_test(old);
+        assert_eq!(
+            SourceProofLocalDeclarationProducer::build_bindings(&hybrid, &native, &symbols, &scope),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+        let mut bad_capture = handoff.clone();
+        let wrong = bad_capture
+            .binding_env
+            .bindings()
+            .get(BindingId::new(1))
+            .unwrap()
+            .identity
+            .clone();
+        bad_capture
+            .binding_env
+            .binding_mut_for_test(BindingId::new(3))
+            .unwrap()
+            .captured = CapturedFreeVariables::new(vec![wrong]);
+        let mut bad_clock = handoff.clone();
+        let row = bad_clock
+            .binding_env
+            .binding_mut_for_test(BindingId::new(3))
+            .unwrap();
+        row.visible_after_ordinal += 1;
+        if let BinderIdentity::ResolverLocal { ordinal, .. } = &mut row.identity {
+            *ordinal += 1;
+        }
+        let mut bad_origin = handoff.clone();
+        bad_origin.original = Arc::new(other);
+        let mut bad_upper = handoff;
+        bad_upper.original = Arc::new(hybrid);
+        for forged in [bad_capture, bad_clock, bad_origin, bad_upper] {
+            assert!(
+                empty
+                    .clone()
+                    .with_source_proof_local_binding(forged.clone())
+                    .is_err()
+            );
+            let mut injected = empty.clone();
+            injected.inject_source_proof_local_binding_for_test(forged);
+            assert_eq!(
+                assemble_empty(&injected),
+                Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)
+            );
+        }
+        for profile in [0, 1] {
+            let template = task286_source(f.source, f.module.clone(), profile, 0);
+            let (original, native, symbols, scope) = native_binding_inputs(&template, false);
+            let other = SourceProofLocalDeclarationProducer::build_bindings(
+                &original, &native, &symbols, &scope,
+            )
+            .unwrap();
+            assert_eq!(other.binding_env().bindings().len(), 2);
+            assert!(
+                assemble_empty(
+                    &empty
+                        .clone()
+                        .with_source_proof_local_binding(other)
+                        .unwrap()
+                )
+                .is_ok()
+            );
         }
     }
 

@@ -61,18 +61,24 @@ pub fn validate_source_proof_occurrences(
 ) -> Result<(), String> {
     let ast = validated_source_symbol_ast(source, symbols)?;
     let invalid = "source proof occurrences do not match the original source";
-    let actual = crate::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+    let matches = |actual: crate::names::ResolvedVariableScope| {
+        scope.source_id() == actual.source_id()
+            && scope.module_id() == actual.module_id()
+            && scope.bindings() == actual.bindings()
+            && scope.references() == actual.references()
+    };
+    if crate::names::SourceVariableScopeResolver::resolve_proof_occurrences(
         crate::names::SourceVariableScopeInput::new(&ast, source.module(), symbols),
     )
-    .map_err(|_| invalid.to_owned())?;
-    if scope.source_id() != actual.source_id()
-        || scope.module_id() != actual.module_id()
-        || scope.bindings() != actual.bindings()
-        || scope.references() != actual.references()
+    .is_ok_and(matches)
+        || crate::names::SourceVariableScopeResolver::resolve_proof_bindings(
+            crate::names::SourceVariableScopeInput::new(&ast, source.module(), symbols),
+        )
+        .is_ok_and(matches)
     {
-        return Err(invalid.to_owned());
+        return Ok(());
     }
-    Ok(())
+    Err(invalid.to_owned())
 }
 
 /// Returns complete authenticated source-local lexical scopes and structural parents.

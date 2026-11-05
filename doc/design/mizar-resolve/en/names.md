@@ -6,6 +6,11 @@ Source-variable boundary paths are unique within each lexical parent even across
 in the same definition or registration block. It admits builtin-set parameters and checks lexical
 ownership, order and recovery; it creates no new binding or symbol representation.
 
+`resolve_proof_bindings` is the opt-in native binding metadata profile. It adds
+named-Witness introductions, defining-RHS exclusion and cross-form uniqueness;
+legacy entry points retain their existing output. Native proof-scope validation
+also authenticates exact results of this profile, without inferring proof results.
+
 `resolve_proof_occurrences(SourceVariableScopeInput)` returns the existing sealed
 `ResolvedVariableScope`, additionally collecting Given/Consider bindings and their
 condition/descendant uses within the enclosing block. Legacy entry points are unchanged;

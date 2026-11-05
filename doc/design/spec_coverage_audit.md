@@ -37,6 +37,13 @@ remain spec-reserved; this transfer activates no runner or semantic credit. Veri
 - `reference` - the document is a reference, example, or glossary input rather
   than a direct implementation surface.
 
+## Native proof-local binding metadata
+
+`spec.en.04.variables.proof_local.binding_metadata` is covered as source metadata
+by the [checker binding owner](./mizar-checker/en/source_proof_local_declaration.md#native-proof-local-binding-boundary)
+and its [declaration-symbol consumer](./mizar-test/en/harness.md#native-proof-local-binding-metadata).
+Type, substitution, FOL and proof-acceptance obligations retain their existing deferrals.
+
 ## Coverage Matrix
 
 | Spec chapter | Design coverage | Status | Follow-up |

@@ -1,5 +1,9 @@
 # mizar-checker: TypedAst
 
+Native proof-local bindings use `source_proof_local_binding()` and
+`with_source_proof_local_binding`; the fresh receiver boundary is owned by
+[the proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
+
 > Canonical language: English. Japanese companion:
 > [../ja/typed_ast.md](../ja/typed_ast.md).
 

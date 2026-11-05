@@ -1,6 +1,16 @@
 use std::fs;
 use std::path::Path;
 
+use mizar_checker::{
+    source_proof_local_declaration::{
+        SourceProofLocalDeclarationError, SourceProofLocalDeclarationProducer,
+    },
+    typed_ast::{TypedArena, TypedAst, TypedAstParts},
+};
+use mizar_resolve::names::{
+    SourceVariableBindingKind, SourceVariableScopeInput, SourceVariableScopeResolver,
+};
+
 #[cfg(test)]
 use mizar_resolve::env::SourceContributionId;
 use mizar_resolve::env::{
@@ -33,7 +43,8 @@ use crate::harness::TestCase;
 
 use super::shared::{FrontendRun, frontend_detail_keys, resolver_symbol_collection, run_frontend};
 use super::type_elaboration::{
-    authenticated_local_declaration, structural_child_ids,
+    assemble_empty_resolved_typed_ast, authenticated_local_declaration,
+    source_proof_local_syntax_receiver, structural_child_ids,
     subtree_has_recovery_for_parse as subtree_has_recovery,
     surface_nodes_with_kind_for_parse as surface_nodes_with_kind,
 };
@@ -227,6 +238,166 @@ fn declaration_symbol_observation(
         return DeclarationSymbolObservation {
             detail_keys: vec![detail_key.to_owned()],
             payload_keys: Vec::new(),
+        };
+    }
+    if case.expectation.domain == "checker.proof_local_bindings" && resolver.detail_keys.is_empty()
+    {
+        let invalid = || SourceProofLocalDeclarationError::DependencyMismatch.to_string();
+        let projection = (|| -> Result<Vec<String>, String> {
+            let original =
+                source_proof_local_syntax_receiver(&ast, &resolver.module, &output.source_text)
+                    .ok_or_else(invalid)?;
+            let native =
+                SurfaceResolvedArena::lower(&ast, &resolver.module).map_err(|_| invalid())?;
+            let scope = SourceVariableScopeResolver::resolve_proof_bindings(
+                SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env),
+            )
+            .map_err(|error| {
+                error
+                    .detail_key()
+                    .map(str::to_owned)
+                    .unwrap_or_else(invalid)
+            })?;
+            let handoff = SourceProofLocalDeclarationProducer::build_bindings(
+                &original,
+                &native,
+                &resolver.env,
+                &scope,
+            )
+            .map_err(|_| invalid())?;
+            let typed = TypedAst::try_new(TypedAstParts {
+                source_id: ast.source_id,
+                module_id: resolver.module.clone(),
+                resolved_root: None,
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: TypedArena::try_new(None, Vec::new()).map_err(|_| invalid())?,
+                contexts: Default::default(),
+                types: Default::default(),
+                facts: Default::default(),
+                coercions: Default::default(),
+                initial_obligations: Default::default(),
+                diagnostics: Default::default(),
+            })
+            .map_err(|_| invalid())?
+            .with_source_proof_local_binding(handoff)
+            .map_err(|_| invalid())?;
+            let resolved =
+                assemble_empty_resolved_typed_ast(&typed, Vec::new()).map_err(|_| invalid())?;
+            let handoff = resolved.source_proof_local_binding().ok_or_else(invalid)?;
+            let scope = handoff.scope();
+            let rows = handoff
+                .source()
+                .source_node_entries()
+                .ok_or_else(invalid)?
+                .collect::<Vec<_>>();
+            let mut payloads = Vec::new();
+            for binding in scope.bindings() {
+                let path = binding
+                    .scope()
+                    .path()
+                    .iter()
+                    .map(u32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",");
+                payloads.push(format!(
+                    "declaration_symbol.proof_local.binding.{}.{:?}.{}.scope=[{}].ordinal={}",
+                    binding.id().index(),
+                    binding.kind(),
+                    declaration_symbol_payload_component(binding.spelling()),
+                    path,
+                    binding.ordinal()
+                ));
+                let entry = handoff
+                    .binding_env()
+                    .bindings()
+                    .iter()
+                    .find(|(_, entry)| entry.declaration_range == binding.range())
+                    .ok_or_else(invalid)?
+                    .1;
+                for captured in entry.captured.identities() {
+                    let target = handoff
+                        .binding_env()
+                        .bindings()
+                        .iter()
+                        .find(|(_, candidate)| &candidate.identity == captured)
+                        .ok_or_else(invalid)?
+                        .1;
+                    let target = scope
+                        .bindings()
+                        .iter()
+                        .find(|candidate| candidate.range() == target.declaration_range)
+                        .ok_or_else(invalid)?;
+                    payloads.push(format!(
+                        "declaration_symbol.proof_local.capture.{}.{}",
+                        binding.id().index(),
+                        target.id().index()
+                    ));
+                }
+            }
+            for reference in scope.references() {
+                let site = native
+                    .resolved_node_for(reference.node())
+                    .ok_or_else(invalid)?;
+                let mut node = rows
+                    .iter()
+                    .copied()
+                    .find(|row| row.site() == site)
+                    .ok_or_else(invalid)?;
+                let mut owner = None;
+                while let Some(parent) = node.parent() {
+                    node = rows
+                        .iter()
+                        .copied()
+                        .find(|row| row.site() == parent)
+                        .ok_or_else(invalid)?;
+                    if matches!(
+                        node.kind(),
+                        SurfaceNodeKind::Equating | SurfaceNodeKind::Witness
+                    ) {
+                        owner = scope
+                            .bindings()
+                            .iter()
+                            .find(|binding| {
+                                matches!(
+                                    binding.kind(),
+                                    SourceVariableBindingKind::Set
+                                        | SourceVariableBindingKind::NamedWitness
+                                ) && rows.iter().any(|row| {
+                                    row.range() == binding.range()
+                                        && row.parent() == Some(node.site())
+                                })
+                            })
+                            .map(|binding| binding.id().index());
+                        break;
+                    }
+                }
+                let path = reference
+                    .scope()
+                    .path()
+                    .iter()
+                    .map(u32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",");
+                let owner = owner
+                    .map(|id| id.to_string())
+                    .unwrap_or_else(|| "none".to_owned());
+                payloads.push(format!("declaration_symbol.proof_local.reference.{}.target={}.scope=[{}].ordinal={}.rhs={}",
+                    reference.id().index(), reference.binding().index(), path, reference.ordinal(), owner));
+            }
+            payloads.sort();
+            Ok(payloads)
+        })();
+        return match projection {
+            Ok(payload_keys) => DeclarationSymbolObservation {
+                detail_keys: Vec::new(),
+                payload_keys,
+            },
+            Err(detail) => DeclarationSymbolObservation {
+                detail_keys: vec![detail],
+                payload_keys: Vec::new(),
+            },
         };
     }
     let payload_keys = if resolver.detail_keys.is_empty() {

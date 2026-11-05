@@ -33,8 +33,8 @@ use crate::{
     },
     source_predicate_definition::SourcePredicateDefinitionHandoff,
     source_proof_local_declaration::{
-        SourceProofLocalDeclarationHandoff, SourceProofLocalGivenBindingHandoff,
-        SourceProofLocalGivenConditionBindingHandoff,
+        SourceProofLocalBindingHandoff, SourceProofLocalDeclarationHandoff,
+        SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenConditionBindingHandoff,
         SourceProofLocalGivenDescendantBindingHandoff, SourceProofLocalLetBindingHandoff,
     },
     source_property_implementation::SourcePropertyImplementationHandoff,
@@ -186,6 +186,7 @@ pub struct ResolvedTypedAst {
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
     source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
+    source_proof_local_binding: Option<Box<SourceProofLocalBindingHandoff>>,
     source_proof_local_declaration: Option<SourceProofLocalDeclarationHandoff>,
     source_proof_local_let_binding: Option<Box<SourceProofLocalLetBindingHandoff>>,
     source_proof_local_let_type: Option<Box<SourceProofLocalLetTypeHandoff>>,
@@ -342,6 +343,13 @@ impl ResolvedTypedAst {
 
     pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
         self.source_statement_witnesses.as_ref()
+    }
+
+    pub const fn source_proof_local_binding(&self) -> Option<&SourceProofLocalBindingHandoff> {
+        match self.source_proof_local_binding.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
     }
 
     pub const fn source_proof_local_declaration(
@@ -651,6 +659,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
             output.push_str(&source_statement_witnesses.debug_text());
+        }
+        if let Some(source_proof_local_binding) = &self.source_proof_local_binding {
+            output.push_str(&source_proof_local_binding.debug_text());
         }
         if let Some(source_proof_local_declaration) = &self.source_proof_local_declaration {
             output.push_str(&source_proof_local_declaration.debug_text());
@@ -1988,6 +1999,29 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        let source_proof_local_binding = self
+            .inputs
+            .typed_ast
+            .source_proof_local_binding()
+            .cloned()
+            .map(Box::new);
+        if let Some(handoff) = &source_proof_local_binding {
+            let typed_ast = self.inputs.typed_ast;
+            let installation_available = typed_ast.source_node_entries().is_none()
+                && typed_ast.resolved_root().is_none()
+                && typed_ast.has_no_other_proof_local_binding_handoff()
+                && typed_ast.nodes().is_empty()
+                && typed_ast.contexts().is_empty()
+                && typed_ast.types().is_empty()
+                && typed_ast.facts().is_empty()
+                && typed_ast.coercions().is_empty()
+                && typed_ast.initial_obligations().is_empty()
+                && typed_ast.diagnostics().is_empty()
+                && source_nested_fraenkel_capture_identity_inputs_are_syntax_only(&self.inputs);
+            handoff
+                .validate_complete_installation(source_id, &module_id, installation_available)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+        }
         let source_nested_fraenkel_capture_identity_handoff = self
             .inputs
             .typed_ast
@@ -3211,6 +3245,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_statement,
             source_statement_references,
             source_statement_witnesses,
+            source_proof_local_binding,
             source_proof_local_declaration,
             source_proof_local_let_binding,
             source_proof_local_let_type,

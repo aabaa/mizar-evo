@@ -23,8 +23,8 @@ use crate::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
     },
     source_proof_local_declaration::{
-        SourceProofLocalDeclarationHandoff, SourceProofLocalGivenBindingHandoff,
-        SourceProofLocalGivenConditionBindingHandoff,
+        SourceProofLocalBindingHandoff, SourceProofLocalDeclarationHandoff,
+        SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenConditionBindingHandoff,
         SourceProofLocalGivenDescendantBindingHandoff, SourceProofLocalLetBindingHandoff,
     },
     source_property_implementation::{
@@ -277,6 +277,7 @@ pub struct TypedAst {
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
     source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
+    source_proof_local_binding: Option<Box<SourceProofLocalBindingHandoff>>,
     source_proof_local_declaration: Option<SourceProofLocalDeclarationHandoff>,
     source_proof_local_let_binding: Option<Box<SourceProofLocalLetBindingHandoff>>,
     source_proof_local_let_type: Option<Box<SourceProofLocalLetTypeHandoff>>,
@@ -347,6 +348,7 @@ impl TypedAst {
             source_statement: None,
             source_statement_references: None,
             source_statement_witnesses: None,
+            source_proof_local_binding: None,
             source_proof_local_declaration: None,
             source_proof_local_let_binding: None,
             source_proof_local_let_type: None,
@@ -394,7 +396,7 @@ impl TypedAst {
         &mut self,
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
     ) -> Result<(), TypedAstError> {
-        if self.source_nodes().is_some() {
+        if self.source_nodes().is_some() || self.source_proof_local_binding.is_some() {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         let rows = crate::type_checker::source_nodes(source, self)
@@ -508,6 +510,53 @@ impl TypedAst {
 
     pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
         self.source_statement_witnesses.as_ref()
+    }
+
+    pub const fn source_proof_local_binding(&self) -> Option<&SourceProofLocalBindingHandoff> {
+        match self.source_proof_local_binding.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub(crate) fn has_no_other_proof_local_binding_handoff(&self) -> bool {
+        self.source_context.is_none()
+            && self.source_type.is_none()
+            && self.source_attribute.is_none()
+            && self.source_evidence.is_none()
+            && self.source_term.is_none()
+            && self.source_template.is_none()
+            && self.source_application.is_none()
+            && self.source_structure.is_none()
+            && self.source_set_term.is_none()
+            && self.source_atomic_formula.is_none()
+            && self.source_attribute_definition.is_none()
+            && self.source_functor_definition.is_none()
+            && self.source_property_implementation.is_none()
+            && self.source_mode_definition.is_none()
+            && self.source_structure_definition.is_none()
+            && self.source_predicate_definition.is_none()
+            && self.source_composite_formula.is_none()
+            && self.source_formula_composition.is_none()
+            && self.source_nested_fraenkel_capture_identity.is_none()
+            && self.source_condition_formula_composition.is_none()
+            && self.source_predicate_chain_composition.is_none()
+            && self.source_statement.is_none()
+            && self.source_statement_references.is_none()
+            && self.source_statement_witnesses.is_none()
+            && self.source_proof_local_declaration.is_none()
+            && self.source_proof_local_let_binding.is_none()
+            && self.source_proof_local_let_type.is_none()
+            && self.source_proof_local_given_binding.is_none()
+            && self.source_proof_local_given_type.is_none()
+            && self.source_proof_local_given_use_type.is_none()
+            && self.source_proof_local_given_use_term.is_none()
+            && self.source_proof_local_given_condition_binding.is_none()
+            && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
+            && self.source_proof_local_given_descendant_binding.is_none()
+            && self.source_proof_local_given_descendant_type.is_none()
+            && self.source_proof_local_given_descendant_use_term.is_none()
     }
 
     pub const fn source_proof_local_declaration(
@@ -748,6 +797,14 @@ impl TypedAst {
     ) {
         self.source_statement = Some(statement);
         self.source_statement_witnesses = Some(witnesses);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_proof_local_binding_for_test(
+        &mut self,
+        handoff: SourceProofLocalBindingHandoff,
+    ) {
+        self.source_proof_local_binding = Some(Box::new(handoff));
     }
 
     #[cfg(test)]
@@ -1021,6 +1078,7 @@ impl TypedAst {
         handoff: SourceNestedFraenkelCaptureIdentityHandoff,
     ) -> Result<Self, TypedAstError> {
         if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
             || !handoff.validate_typed_owner(&self)
         {
             return Err(TypedAstError::InvalidSourceNestedFraenkelCaptureIdentity);
@@ -1034,7 +1092,9 @@ impl TypedAst {
         mut self,
         handoff: SourceEvidenceHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceEvidence);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1075,7 +1135,9 @@ impl TypedAst {
         mut self,
         handoff: SourcePrimaryTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceTerm);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1105,7 +1167,9 @@ impl TypedAst {
         mut self,
         handoff: SourceTemplateHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceTemplate);
         }
         if self.source_template.is_some() {
@@ -1122,7 +1186,9 @@ impl TypedAst {
         mut self,
         handoff: SourceFunctorApplicationHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceApplication);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1193,7 +1259,9 @@ impl TypedAst {
         mut self,
         handoff: SourceStructureHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStructure);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1259,7 +1327,9 @@ impl TypedAst {
         mut self,
         handoff: SourceSetTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceSetTerm);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1314,7 +1384,9 @@ impl TypedAst {
         mut self,
         handoff: SourceAtomicFormulaHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceAtomicFormula);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1356,7 +1428,9 @@ impl TypedAst {
         mut self,
         projection: SourcePredicateDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourcePredicateDefinition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1418,7 +1492,9 @@ impl TypedAst {
         mut self,
         handoff: SourceAttributeDefinitionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceAttributeDefinition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1476,7 +1552,9 @@ impl TypedAst {
         mut self,
         projection: SourceFunctorDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceFunctorDefinition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1538,7 +1616,9 @@ impl TypedAst {
         mut self,
         projection: SourcePropertyImplementationProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourcePropertyImplementation);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1602,7 +1682,9 @@ impl TypedAst {
         mut self,
         projection: SourceModeDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceModeDefinition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1657,7 +1739,9 @@ impl TypedAst {
         mut self,
         projection: SourceStructureDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStructureDefinition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1709,7 +1793,9 @@ impl TypedAst {
         mut self,
         handoff: SourceCompositeFormulaHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceCompositeFormula);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1746,7 +1832,9 @@ impl TypedAst {
         composite: SourceCompositeFormulaHandoff,
         composition: SourceFormulaCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceFormulaComposition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1820,7 +1908,9 @@ impl TypedAst {
         let universal_statement_profile = (composite.is_task_257b1_profile()
             && statement.is_task_258b4a_profile())
             || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile());
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1903,7 +1993,9 @@ impl TypedAst {
         mut self,
         composition: SourceConditionFormulaCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceConditionFormulaComposition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -1961,7 +2053,9 @@ impl TypedAst {
         mut self,
         composition: SourcePredicateChainCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourcePredicateChainComposition);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -2032,7 +2126,9 @@ impl TypedAst {
         mut self,
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -2104,7 +2200,9 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         references: SourceStatementReferenceHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -2189,7 +2287,9 @@ impl TypedAst {
         {
             return Err(TypedAstError::InvalidSourceStatement);
         }
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -2271,11 +2371,35 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_proof_local_binding(
+        mut self,
+        handoff: SourceProofLocalBindingHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let installation_available = self.source_proof_local_binding.is_none()
+            && self.resolved_root.is_none()
+            && self.source_nodes.is_none()
+            && self.has_no_other_proof_local_binding_handoff()
+            && self.nodes.is_empty()
+            && self.contexts.is_empty()
+            && self.types.is_empty()
+            && self.facts.is_empty()
+            && self.coercions.is_empty()
+            && self.initial_obligations.is_empty()
+            && self.diagnostics.is_empty();
+        handoff
+            .validate_complete_installation(self.source_id, &self.module_id, installation_available)
+            .map_err(|_| TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        self.source_proof_local_binding = Some(Box::new(handoff));
+        Ok(self)
+    }
+
     pub fn with_source_proof_local_declaration(
         mut self,
         handoff: SourceProofLocalDeclarationHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalDeclaration);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -2363,7 +2487,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalLetBindingHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalLetBinding);
         }
         let installation_available = self.source_proof_local_let_binding.is_none()
@@ -2420,7 +2546,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalLetTypeHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalLetType);
         }
         let installation_available = self.source_proof_local_let_type.is_none()
@@ -2481,7 +2609,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenBindingHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenBinding);
         }
         let installation_available = (self.source_proof_local_given_binding.is_none()
@@ -2538,7 +2668,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenTypeHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenType);
         }
         let installation_available = self.source_proof_local_given_type.is_none()
@@ -2599,7 +2731,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenUseTypeHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenUseType);
         }
         let installation_available = self.source_proof_local_given_use_type.is_none()
@@ -2660,7 +2794,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenUseTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenUseTerm);
         }
         let installation_available = self.source_proof_local_given_use_term.is_none()
@@ -2721,7 +2857,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenConditionBindingHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenConditionBinding);
         }
         let installation_available = self.source_proof_local_given_condition_binding.is_none()
@@ -2778,7 +2916,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenConditionTypeHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenConditionType);
         }
         let installation_available = self.source_proof_local_given_condition_type.is_none()
@@ -2839,7 +2979,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenConditionUseTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm);
         }
         let installation_available = self.source_proof_local_given_condition_use_term.is_none()
@@ -2900,7 +3042,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenDescendantBindingHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding);
         }
         let installation_available = self.source_proof_local_given_descendant_binding.is_none()
@@ -2957,7 +3101,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenDescendantTypeHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenDescendantType);
         }
         let installation_available = self.source_proof_local_given_descendant_type.is_none()
@@ -3018,7 +3164,9 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalGivenDescendantUseTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm);
         }
         let installation_available = self.source_proof_local_given_descendant_use_term.is_none()
@@ -3081,7 +3229,9 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -3181,7 +3331,9 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -3288,7 +3440,9 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some() {
+        if self.source_nested_fraenkel_capture_identity.is_some()
+            || self.source_proof_local_binding.is_some()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         if (self.source_proof_local_let_binding.is_some()
@@ -3524,6 +3678,9 @@ impl TypedAst {
         }
         if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
             output.push_str(&source_statement_witnesses.debug_text());
+        }
+        if let Some(source_proof_local_binding) = &self.source_proof_local_binding {
+            output.push_str(&source_proof_local_binding.debug_text());
         }
         if let Some(source_proof_local_declaration) = &self.source_proof_local_declaration {
             output.push_str(&source_proof_local_declaration.debug_text());

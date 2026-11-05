@@ -831,6 +831,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.04.variables.proof_local.binding_metadata"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.6 Scoping and Shadowing"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/variables/pass_declaration_symbol_proof_local_bindings_001.expect.toml",
+  "tests/miz/fail/variables/fail_declaration_symbol_named_take_forward_001.expect.toml",
+]
+notes = "Metadata only: original-source Let/Given/Consider/Set/named Take identities, lexical boundaries, declaration/reference clocks, direct Set captures and RHS associations; no type, fact, substitution, existential discharge or proof-acceptance credit."
+
+[[requirement]]
 id = "spec.en.04.variables.reconsider.narrowing_justification"
 source = "doc/spec/en/04.variables_and_constants.md"
 section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"

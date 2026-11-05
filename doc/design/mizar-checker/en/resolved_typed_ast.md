@@ -1,5 +1,8 @@
 # Resolved Typed AST
 
+`source_proof_local_binding()` retains the [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
+Assembly independently replays it and excludes other source-family payloads.
+
 > Canonical language: English. Japanese companion:
 > [../ja/resolved_typed_ast.md](../ja/resolved_typed_ast.md).
 

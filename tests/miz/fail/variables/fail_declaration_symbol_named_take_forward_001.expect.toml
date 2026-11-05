@@ -1,0 +1,14 @@
+schema_version = 1
+id = "fail_declaration_symbol_named_take_forward_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "checker.proof_local_bindings"
+source = "fail_declaration_symbol_named_take_forward_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "variables.local_constant.forward_reference"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.04.variables.proof_local.binding_metadata"]
+notes = "Metadata only: named witnesses are introduced left to right, so the first RHS cannot refer to a later name in the same Take list. This refusal grants no witness type/property or proof-acceptance credit."

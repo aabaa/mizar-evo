@@ -21574,9 +21574,9 @@ fn projected_binding_kind(kind: SourceVariableBindingKind) -> BindingKind {
         SourceVariableBindingKind::Reserve => BindingKind::ReservedVariable,
         SourceVariableBindingKind::Quantifier => BindingKind::QuantifierBinder,
         SourceVariableBindingKind::Let => BindingKind::LetBinding,
-        SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider => {
-            BindingKind::LocalAbbreviation
-        }
+        SourceVariableBindingKind::Set
+        | SourceVariableBindingKind::Reconsider
+        | SourceVariableBindingKind::NamedWitness => BindingKind::LocalAbbreviation,
         SourceVariableBindingKind::InlineFunctor | SourceVariableBindingKind::InlinePredicate => {
             BindingKind::LocalAbbreviation
         }

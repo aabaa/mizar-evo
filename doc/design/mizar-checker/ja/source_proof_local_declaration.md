@@ -4,7 +4,7 @@
 > [../en/source_proof_local_declaration.md](../en/source_proof_local_declaration.md)。
 
 ## Native named-witness boundary
-historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
+historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。旧 witness-based `build` の native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
 
 ## 認証済み proof-local intake
 
@@ -38,6 +38,24 @@ handoff の `lower_fingerprint()` は version 付き structural receipt fingerpr
 返し、nested binding/type/term fingerprint もその identity を使う。runner の raw lower
 debug と source/surface hash の形式は維持する。receipt は raw bytes や追加の resolver
 symbol provenance を認証せず、source identity は決定的 fingerprint の content と別に照合する。
+
+## Native proof-local binding 境界
+
+元の intake の意味論 table は空でなければならない。
+`SourceProofLocalDeclarationProducer::build_bindings(original: &TypedAst,
+native: &SurfaceResolvedArena, symbols: &SymbolEnv, scope: &ResolvedVariableScope)`
+は `Result<SourceProofLocalBindingHandoff, SourceProofLocalDeclarationError>` を返す。
+opaque handoff は `binding_env()`・`source()`・`scope()`・`debug_text()` を公開する。
+不変の original/native/symbol/scope authority を保持し、元 row と lexical map を再計算し、
+元ソースの全宣言名と sealed binding の全単射を検証する。Set は自由変数の定義時 identity を
+capture し、名前付き Take は名前と RHS の対応を保持するが Set の展開意味論を付与しない。
+Given/Consider の metadata は `GivenWitness` を使い、旧 donor の権限を与えない。
+Typed/Resolved に一つの slot を追加し、fresh empty receiver と既存 family との排他を検査し、
+transaction 全体を独立に replay する。型・fact・存在目標の充足・置換適用・証明受理は生成せず、
+未対応の native binding family は fail closed とする。
+
+resolver の宣言順と参照順は別の clock であり、参照先と参照順を保持し、参照順を
+BindingEnv の宣言可視性 clock として使わない。
 
 ## Descendant Set 名の binding 境界
 
@@ -98,8 +116,7 @@ covered diagnostic-gap trace rowはread-onlyのままにする。これらのrow
 positive proof-local binding semanticsをcreditしない。このfixtureは`let`、
 `given`、`consider`、`set`、`reconsider`を混在させるためindividual
 Task-269 sliceの安全な表現には単独で使えない。completed sliceとlower-only
-SDPをblockする`spec_gap`はない。Ch.4/15の FOL encoding 矛盾は syntax
-transport と直接 capture identity の妨げにはならない。
+SDPをblockする`spec_gap`はない。
 
 historical Task-269A selection inventoryはHEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`、`main`、docs edit前clean、
