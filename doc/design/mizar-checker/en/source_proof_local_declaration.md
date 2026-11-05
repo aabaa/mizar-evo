@@ -52,7 +52,7 @@ The opaque handoff exposes `binding_env()`, `source()`, `scope()` and `debug_tex
 It retains immutable original/native/symbol/scope authority, recomputes original
 rows and resolver lexical maps, and requires every original declaration name to
 have exactly one sealed binding. Set captures use free definition-site identities;
-named Take retains name/RHS association without Set-style expansion semantics.
+named Take retains its source name/RHS association.
 Given/Consider use `GivenWitness` binding metadata without legacy donor privileges.
 One new Typed/Resolved slot accepts a fresh empty receiver and independently
 replays the entire transaction; existing source families remain mutually exclusive.
@@ -110,7 +110,7 @@ alongside the substituted body through terminal. Explicit terminal goals compare
 canonical bound-alpha structure and exact free identities. Independent replay
 checks source, typing, guards and results. These are unproved remaining obligations;
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
-proof effects, later alias uses and general freshening remain deferred.
+proof effects and general freshening remain deferred.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's
@@ -119,6 +119,14 @@ proof and theorem owner; a later Pending source conclusion cannot clear a Blocke
 owner. Rejected or Pending targets provide no usable alias type. Goal inference
 partitions authenticated theorem owners after the whole source census, excluding
 only explicit definition/registration metadata owners without inventing their goals.
+
+Same-proof Set/named-Take variable aliases can resolve through authenticated
+RHS identities to a prior Let value. Native Set captures stay direct; named
+captures stay empty. Original term references retain alias IDs and occurrence
+contexts, while derived type roles use the actual value's guard provenance.
+Take matches the source RHS binding and substitutes its expanded logical value;
+terminal comparison uses that same value. Source-order replay introduces aliases
+after RHS evaluation and records Set Equating as an unchanged-goal step.
 
 ## Descendant Set-name binding boundary
 

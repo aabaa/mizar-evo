@@ -665,7 +665,10 @@ fn formula_statement_detail_keys(
     {
         semantics.extend(
             super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)
-                .and_then(|handoff| super::native_proof_intent_observation(&handoff))
+                .and_then(|handoff| {
+                    super::native_proof_intent_observation(&handoff)?;
+                    super::native_witness_goal_observation(&handoff)
+                })
                 .err(),
         );
     }

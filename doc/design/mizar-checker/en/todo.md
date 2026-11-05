@@ -726,11 +726,13 @@ unchecked row below is one future nonempty logical task and one commit.
   inactive and final proof-state consumption remains with Task 272.
 - [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
   Native source intents ship in A; bounded Set/Object Let/Take replay ships in
-  B1, and B2 prepares the inactive old-AS typed blocked-goal consumer. Broader
-  goals, proof effects and aliases remain open; Task49 retains activation.
+  B1, B2 prepares the inactive old-AS blocked-goal consumer, and B3 replays local
+  variable aliases. Broader goals, proof effects and remaining alias forms stay
+  open; Task49 retains activation.
   - [x] **Task 272A:** [native source intents](../../task_contracts/en/CHECKER272A-NATIVE-PROOF-INTENTS.md); typed witness/goal replay remains 272B.
   - [x] **Task 272B1:** [typed witness goal replay](../../task_contracts/en/CHECKER272B1-WITNESS-GOAL-RESULTS.md); broader B2 goals and final omitted-AS consumption remain open.
   - [x] **Task 272B2:** [typed blocked conversion goals](../../task_contracts/en/CHECKER272B2-BLOCKED-GOAL-RESULTS.md); prepare the inactive old-AS consumer while Task49 retains activation.
+  - [x] **Task 272B3:** [typed local alias goals](../../task_contracts/en/CHECKER272B3-LOCAL-ALIAS-GOALS.md); variable Set/named-Take RHS, type and substitution replay.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);

@@ -58,7 +58,7 @@ a prepared typed-goal/blocked-owner consumer; Task49 retains default activation.
 requests and actual local-label/status observation through the same checker owner
 and [native proof-intent consumer](./mizar-test/en/harness.md#native-proof-intents).
 `spec.en.15.statements.witness_goals.typed_replay.metadata` adds bounded plain
-Set/Object Let/Take typed guard/result replay observation through those owners.
+Set/Object Let/Take and variable local-alias typed guard/value/result replay observation through those owners.
 Broader goal/substitution coverage remains with Task272; the prepared old-AS
 consumer adds no default activation or proof acceptance to either metadata requirement.
 

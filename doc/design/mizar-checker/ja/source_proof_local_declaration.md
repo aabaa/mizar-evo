@@ -48,7 +48,7 @@ native: &SurfaceResolvedArena, symbols: &SymbolEnv, scope: &ResolvedVariableScop
 opaque handoff は `binding_env()`・`source()`・`scope()`・`debug_text()` を公開する。
 不変の original/native/symbol/scope authority を保持し、元 row と lexical map を再計算し、
 元ソースの全宣言名と sealed binding の全単射を検証する。Set は自由変数の定義時 identity を
-capture し、名前付き Take は名前と RHS の対応を保持するが Set の展開意味論を付与しない。
+capture し、名前付き Take の名前と RHS の対応を保持する。
 Given/Consider の metadata は `GivenWitness` を使い、旧 donor の権限を与えない。
 Typed/Resolved に一つの slot を追加し、fresh empty receiver と既存 family との排他を検査し、
 transaction 全体を独立に replay する。binding transaction は checked 型・fact・witness の
@@ -94,7 +94,7 @@ owner/context/event・対応 identity・置換前後の goal・free/retained-bin
 Take は builtin 適合性または Pending narrowing guard を要求する。未解決 guard は置換後の
 body と terminal まで保持する。明示 terminal goal は bound-alpha 正規構造と実 free ID で照合する。
 独立 replay が元ソース・型・guard・結果を検査する。残余 obligation は未証明のままで、
-Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・後続 alias 利用・
+Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・
 一般的な freshening は後続に残す。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
@@ -103,6 +103,12 @@ Task180 checked table・証明受理とは別に保つ。広い goal・入れ子
 owner を解除しない。Rejected/Pending target は利用可能な alias 型を与えない。元ソース全体の
 census 後に認証済み theorem owner で goal 推論を分割し、明示的な definition/registration
 metadata owner のみを除外する。それらの goal は生成しない。
+
+同一 proof 内の Set/named-Take の変数 alias は、認証済み RHS identity を通して先行 Let の
+値へ解決できる。native Set capture は直接依存、named capture は空のまま保持する。元の項参照は
+alias ID と実出現 context を維持し、派生型 role は実際の値の guard 出典を使う。Take の対応は
+元 RHS binding を保持し、論理値を展開して置換する。terminal の照合も同じ値を使う。
+ソース順 replay は RHS 評価後に alias を導入し、Set Equating を不変 goal の step として記録する。
 
 ## Descendant Set 名の binding 境界
 
