@@ -706,9 +706,10 @@ unchecked row below is one future nonempty logical task and one commit.
 - [x] **Task 264:** property-implementation producer; depends on parser Task 48.
   StructureProperty roles and property origin/admission/prefix associations
   come from its original-row rules.
-- [ ] **Task 269:** proof-local declaration/binding producer. Ships the
-  Task 285 element rule blocked on it (Equating, the `set` name) with the
-  producer.
+- [ ] **Task 269:** proof-local declaration/binding producer.
+  Descendant Set names use the Equating original-row rule; remaining forms
+  and closure consumers remain open. Contract:
+  [CHECKER269-SET-BINDINGS](../../task_contracts/en/CHECKER269-SET-BINDINGS.md).
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
   Ships the Task 285 element rules blocked on it (InlineFunctorDefinition,
   InlinePredicateDefinition) with the producer.

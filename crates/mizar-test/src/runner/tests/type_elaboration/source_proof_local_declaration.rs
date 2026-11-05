@@ -1,4 +1,5 @@
 use super::type_elaboration::{
+    source_proof_local_given_descendant_set_binding_output,
     SOURCE_STATEMENT_B3M1_TEXT as TASK269B_SOURCE_TEXT,
     SOURCE_STATEMENT_B3N_TEXT as TASK269A_SOURCE_TEXT,
      source_proof_local_declaration_output,
@@ -11972,4 +11973,135 @@ fn task269sdt_near_miss_neighbor_and_active_routes_remain_isolated() {
     assert_eq!(witnesses.witnesses().len(), 1);
     assert_eq!(witnesses.names().len(), 1);
     assert!(native_named.source_proof_local_declaration().is_none());
+}
+
+
+#[test]
+fn task269_set_bindings_runner_preserves_resolver_authority_and_replays() {
+    use mizar_checker::binding_env::{
+        BinderIdentity, BindingContextId, BindingId, BindingKind, BindingLookupResult,
+        BindingLookupSite, BindingTypeSite,
+    };
+    use mizar_resolve::names::{
+        LocalTermScope, SourceVariableScopeInput, SourceVariableScopeResolver,
+    };
+
+    for (index, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.to_owned(),
+        format!(":: genuine layout\n{}", SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
+            .replace("given y being set", "given y\tbeing\n set")
+            .replace("set z = y", "set\tz\n= y")),
+    ].into_iter().enumerate() {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 2_692_900 + index);
+        assert_eq!(diagnostics, 0);
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        ).expect("authentic proof scope");
+        let output = source_proof_local_given_descendant_set_binding_output(
+            &ast, module.clone(), &shells, &symbols, &source,
+        ).expect("Set binding selector").expect("Set binding installation and replay");
+        let typed = output.typed_ast();
+        let handoff = typed.source_proof_local_given_descendant_binding().unwrap();
+        let env = handoff.binding_env();
+        assert_eq!((env.contexts().len(), env.bindings().len(), handoff.bindings().len()), (3, 4, 1));
+        assert_eq!(env.contexts().get(BindingContextId::new(1)).unwrap().lexical_scope,
+            Some(LocalTermScope::new(vec![4])));
+        let descendant = env.contexts().get(handoff.descendant_context()).unwrap();
+        assert_eq!(descendant.lexical_scope, Some(LocalTermScope::new(vec![4, 2])));
+        assert_eq!(descendant.bindings, vec![BindingId::new(2), BindingId::new(3)]);
+        for (id, spelling, context, kind) in [
+            (1, "y", 1, BindingKind::GivenWitness),
+            (2, "z", 2, BindingKind::LocalAbbreviation),
+            (3, "q", 2, BindingKind::LocalAbbreviation),
+        ] {
+            let original = scope.bindings().iter().find(|row| row.spelling() == spelling).unwrap();
+            let binding = env.bindings().get(BindingId::new(id)).unwrap();
+            assert_eq!(binding.kind, kind);
+            assert_eq!(binding.owner_context, BindingContextId::new(context));
+            assert_eq!(binding.declaration_range, original.range());
+            assert_eq!(binding.visible_after_ordinal, original.ordinal());
+            assert_eq!(binding.identity, BinderIdentity::ResolverLocal {
+                scope: original.scope().clone(), ordinal: original.ordinal(),
+                declaration_range: original.range(),
+            });
+            assert_eq!(binding.type_site, BindingTypeSite::Missing);
+            assert!(binding.captured.identities().is_empty());
+            assert!(binding.diagnostics.is_empty());
+            let lookup = |clock| env.lookup(&BindingLookupSite::new(
+                spelling, handoff.descendant_context(), Some(LocalTermScope::new(vec![4, 2])), clock,
+            )).unwrap();
+            assert!(matches!(lookup(original.ordinal()), BindingLookupResult::ForwardReference { .. }));
+            assert_eq!(lookup(original.ordinal() + 1), BindingLookupResult::Local(BindingId::new(id)));
+        }
+        for (context, lexical_scope) in [(0, vec![]), (1, vec![4]), (2, vec![4, 3])] {
+            for spelling in ["z", "q"] {
+                assert_eq!(env.lookup(&BindingLookupSite::new(
+                    spelling, BindingContextId::new(context), Some(LocalTermScope::new(lexical_scope.clone())), usize::MAX,
+                )).unwrap(), BindingLookupResult::Unresolved);
+            }
+        }
+        let resolved = output.resolved();
+        assert_eq!(resolved.source_proof_local_given_descendant_binding(), Some(handoff));
+        let before = typed.debug_text();
+        assert_eq!(typed.clone().with_source_proof_local_given_descendant_binding(handoff.clone()),
+            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenDescendantBinding));
+        assert_eq!(typed.debug_text(), before);
+        let replay = source_proof_local_given_descendant_set_binding_output(
+            &ast, module.clone(), &shells, &symbols, &source,
+        ).unwrap().unwrap();
+        assert_eq!(replay, output);
+        assert!(typed.nodes().is_empty());
+        assert!(typed.contexts().is_empty());
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(typed.source_type().is_none());
+        assert!(typed.source_term().is_none());
+        assert!(typed.source_statement().is_none());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        let old = source_proof_local_given_descendant_binding_output(
+            &ast, module, &shells, &symbols, &source,
+        ).unwrap().unwrap();
+        assert_eq!(old.typed_ast().source_proof_local_given_descendant_binding().unwrap()
+            .binding_env().bindings().len(), 2);
+    }
+}
+
+#[test]
+fn task269_set_bindings_runner_refuses_stale_and_unrelated_sources() {
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 2_692_910);
+    assert!(source_proof_local_given_descendant_set_binding_output(
+        &ast, module, &shells, &symbols, &format!(":: shifted\n{source}"),
+    ).is_none());
+    for (index, source) in [SOURCE_PROOF_LOCAL_GIVEN_TEXT, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT].into_iter().enumerate() {
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 2_692_911 + index);
+        assert!(source_proof_local_given_descendant_set_binding_output(
+            &ast, module, &shells, &symbols, source,
+        ).is_none());
+    }
+}
+
+
+#[test]
+fn task269_set_bindings_runner_does_not_widen_the_descendant_type_donor() {
+    let source = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT;
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 2_692_920);
+    assert!(source_proof_local_given_descendant_type_output(
+        &ast, module.clone(), &shells, &symbols, source,
+    ).unwrap().is_ok());
+    assert_eq!(source_proof_local_given_descendant_type_output_with_mutation(
+        &ast, module, &shells, &symbols, source,
+        SourceProofLocalGivenDescendantTypeRouteMutation::SetBindingDependency,
+    ).unwrap().unwrap_err(),
+        mizar_checker::source_type::SourceProofLocalGivenDescendantTypeError::InvalidBindingEnvironment.to_string());
 }

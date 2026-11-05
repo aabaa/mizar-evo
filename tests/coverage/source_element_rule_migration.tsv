@@ -4,7 +4,7 @@
 # inherited targets have inherited: notes and do not complete or reclassify a class b kind
 slice	family	predecessor	status	note
 attribute-redefinition	definition	checker-task-279	blocked	AttributeRedefinition
-equating	definition	checker-task-269	blocked	Equating
+equating	definition	mode-property	done	Equating; authenticated descendant Set names in source_proof_local_declaration
 field-argument	definition	mode-property	done	FieldArgument
 field-redefinition	definition	mode-property	done	FieldRedefinition
 functor-redefinition	definition	checker-task-279	blocked	FunctorRedefinition

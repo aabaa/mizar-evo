@@ -53,7 +53,7 @@ ContinueStatement	algorithm	c	ALGDEF-* (spans: VELOCITY-GENERIC-SOURCE-TRANSPORT
 CorrectnessCondition	referenced	referenced	existing source_* producer
 DefinitionBlockItem	referenced	referenced	existing source_* producer
 DefinitionParameter	referenced	referenced	existing source_* producer
-Equating	definition	b	checker Task 279 / Task 270
+Equating	definition	b	source_proof_local_declaration::source_equating_roles
 ErrorRecovery	referenced	referenced	existing source_* producer
 ExistentialRegistration	referenced	referenced	existing source_* producer
 ExportItem	reference-import	a	VELOCITY-GENERIC-SOURCE-TRANSPORT

@@ -36,7 +36,9 @@ use mizar_checker::{
 use mizar_resolve::{
     declarations::DeclarationShellSet,
     env::SymbolEnv,
-    names::{LocalTermBinding, LocalTermScope},
+    names::{
+        LocalTermBinding, LocalTermScope, SourceVariableScopeInput, SourceVariableScopeResolver,
+    },
     resolved_ast::ModuleId,
 };
 use mizar_session::{ModulePath, SourceAnchor, SourceRange};
@@ -1224,6 +1226,25 @@ pub(in crate::runner) enum SourceProofLocalGivenDescendantBindingRouteMutation {
     WrongSourceOrdinal,
 }
 
+#[allow(dead_code)] // Rationale: Task 269 Set bindings remain a private dormant runner consumer.
+pub(in crate::runner) fn source_proof_local_given_descendant_set_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantBindingRouteOutput, String>> {
+    source_proof_local_given_descendant_binding_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenDescendantBindingRouteMutation::None,
+        true,
+    )
+}
+
 #[allow(dead_code)] // Rationale: Task 269SDC is dormant until an active dispatcher is separately frozen.
 pub(in crate::runner) fn source_proof_local_given_descendant_binding_output(
     ast: &SurfaceAst,
@@ -1239,6 +1260,7 @@ pub(in crate::runner) fn source_proof_local_given_descendant_binding_output(
         symbols,
         source_text,
         SourceProofLocalGivenDescendantBindingRouteMutation::None,
+        false,
     )
 }
 
@@ -1258,6 +1280,7 @@ pub(in crate::runner) fn source_proof_local_given_descendant_binding_output_with
         symbols,
         source_text,
         mutation,
+        false,
     )
 }
 
@@ -1268,6 +1291,7 @@ fn source_proof_local_given_descendant_binding_output_impl(
     symbols: &SymbolEnv,
     source_text: &str,
     mutation: SourceProofLocalGivenDescendantBindingRouteMutation,
+    set_bindings: bool,
 ) -> Option<Result<SourceProofLocalGivenDescendantBindingRouteOutput, String>> {
     let lower = source_proof_local_given_descendant_set_lower_output(
         ast,
@@ -1385,27 +1409,35 @@ fn source_proof_local_given_descendant_binding_output_impl(
         } else {
             lower.given_source_ordinal()
         };
-        let handoff = SourceProofLocalGivenDescendantBindingProducer::build(
-            SourceProofLocalGivenDescendantBindingHandoffInput {
-                source_id: lower.source_id(),
-                module_id: lower.module_id().clone(),
-                lower_fingerprint,
-                theorem_symbol: lower.theorem_symbol().clone(),
-                theorem_definition: lower.theorem_definition(),
-                contribution: lower.contribution(),
-                theorem_range,
-                proof_range,
-                given_range,
-                segment_range,
-                name_range,
-                descendant_range,
-                source_ordinal,
-                local,
-                descendant_scope,
-                recovery: SourceProofLocalGivenBindingRecovery::Normal,
-            },
-            &base,
-        )
+        let input = SourceProofLocalGivenDescendantBindingHandoffInput {
+            source_id: lower.source_id(),
+            module_id: lower.module_id().clone(),
+            lower_fingerprint,
+            theorem_symbol: lower.theorem_symbol().clone(),
+            theorem_definition: lower.theorem_definition(),
+            contribution: lower.contribution(),
+            theorem_range,
+            proof_range,
+            given_range,
+            segment_range,
+            name_range,
+            descendant_range,
+            source_ordinal,
+            local,
+            descendant_scope,
+            recovery: SourceProofLocalGivenBindingRecovery::Normal,
+        };
+        let handoff = if set_bindings {
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, &module, symbols),
+            )
+            .map_err(|_| {
+                SourceProofLocalGivenDescendantBindingError::DependencyMismatch.to_string()
+            })?;
+            SourceProofLocalGivenDescendantBindingProducer::build_set_bindings(input, &base, &scope)
+        } else {
+            SourceProofLocalGivenDescendantBindingProducer::build(input, &base)
+        }
         .map_err(|error| error.to_string())?;
         let typed_ast = empty_task269c_typed_ast(ast.source_id, module)?
             .with_source_proof_local_given_descendant_binding(handoff)
@@ -1441,6 +1473,7 @@ impl SourceProofLocalGivenDescendantTypeRouteOutput {
 #[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269SDT corruption seams.
 pub(in crate::runner) enum SourceProofLocalGivenDescendantTypeRouteMutation {
     None,
+    SetBindingDependency,
     WrongDependencyModule,
     WrongTypeRange,
     WrongArenaRoot,
@@ -1492,12 +1525,14 @@ fn source_proof_local_given_descendant_type_output_impl(
     source_text: &str,
     mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
 ) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>> {
-    let dependency = source_proof_local_given_descendant_binding_output(
+    let dependency = source_proof_local_given_descendant_binding_output_impl(
         ast,
         module.clone(),
         shells,
         symbols,
         source_text,
+        SourceProofLocalGivenDescendantBindingRouteMutation::None,
+        mutation == SourceProofLocalGivenDescendantTypeRouteMutation::SetBindingDependency,
     )?;
     Some(dependency.and_then(|dependency| {
         let lower = source_proof_local_given_descendant_set_lower_output(
@@ -1558,6 +1593,7 @@ fn source_proof_local_given_descendant_type_output_impl(
                 input.expressions[1].source_range.end += 1;
             }
             SourceProofLocalGivenDescendantTypeRouteMutation::None
+            | SourceProofLocalGivenDescendantTypeRouteMutation::SetBindingDependency
             | SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaRoot
             | SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaKind => {}
         }

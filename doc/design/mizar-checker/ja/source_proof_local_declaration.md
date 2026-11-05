@@ -39,6 +39,16 @@ handoff の `lower_fingerprint()` は version 付き structural receipt fingerpr
 debug と source/surface hash の形式は維持する。receipt は raw bytes や追加の resolver
 symbol provenance を認証せず、source identity は決定的 fingerprint の content と別に照合する。
 
+## Descendant Set 名の binding 境界
+
+`SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` は元ソースの
+intake receipt と sealed な resolver proof-occurrence scope を受け取る。
+既存 handoff が scope を保持し、設置・replay 時に binding 環境全体を再構築する。
+Given table は Given 宣言のみを保持し、環境には実際の resolver identity・scope・
+宣言順を持つ二つの子孫 Set 名が加わる。既存 `build` の出力は維持する。
+追加経路は名前の transport のみを扱い、型・capture・置換・FOL facts・証明受理は
+後続に残す。既存の型・項 donor は拡張した環境を受け付けない。
+
 ## Generic isolated Let source boundary
 Runner-private CP syntax transportは[harnessの境界](../../mizar-test/ja/harness.md#proof-local-let-leading-layout-transport)に従う。
 

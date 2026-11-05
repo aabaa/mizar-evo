@@ -494,6 +494,7 @@ pub(super) use source_proof_local_declaration::{
     source_proof_local_given_condition_use_term_output_with_mutation,
     source_proof_local_given_descendant_binding_output,
     source_proof_local_given_descendant_binding_output_with_mutation,
+    source_proof_local_given_descendant_set_binding_output,
     source_proof_local_given_descendant_type_output,
     source_proof_local_given_descendant_type_output_with_mutation,
     source_proof_local_given_descendant_use_term_output,

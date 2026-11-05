@@ -684,8 +684,9 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 - [x] **Task 264:** property-implementation producer。parser Task 48に依存。
   StructureProperty の role と property origin/admission/prefix の対応は
   元 row の規則から得る。
-- [ ] **Task 269:** proof-local declaration/binding producer。この task で
-  blocked の Task 285 要素規則 (Equating の `set` 名) を producer と同時に出荷する。
+- [ ] **Task 269:** proof-local declaration/binding producer。
+  子孫 Set 名は Equating の元ソース規則を利用する。残る導入形式と closure は未完了。
+  [契約](../../task_contracts/ja/CHECKER269-SET-BINDINGS.md)。
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
   この task で blocked の Task 285 要素規則 (InlineFunctorDefinition,
   InlinePredicateDefinition) を producer と同時に出荷する。

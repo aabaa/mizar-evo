@@ -42,6 +42,18 @@ lower debug text and its source/surface hashes retain their format. A structural
 receipt does not attest raw bytes or additional resolver symbol provenance;
 source identity is checked separately from deterministic fingerprint content.
 
+## Descendant Set-name binding boundary
+
+`SourceProofLocalGivenDescendantBindingProducer::build_set_bindings` consumes
+an original-source intake receipt and sealed resolver proof-occurrence scope.
+Its existing handoff retains that scope and reconstructs the complete binding
+environment during installation and replay. The Given table still contains
+only the Given declaration; the environment additionally owns both descendant
+Set names with genuine resolver identities, scopes and declaration clocks.
+The original `build` keeps its existing output. This additional path transports
+names only: types, captures, substitution, FOL facts and proof acceptance remain
+deferred. The existing type/term donors do not accept this expanded environment.
+
 ## Generic isolated Let source boundary
 The runner-private CP syntax transport follows the [harness boundary](../../mizar-test/en/harness.md#proof-local-let-leading-layout-transport).
 

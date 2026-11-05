@@ -19,12 +19,12 @@ use crate::{
     source_term::SourcePrimaryTermHandoff,
     typed_ast::{
         NodeRecoveryState, SourceNode, TypedArena, TypedAst, source_child_at, source_children,
-        source_unique_child, unique_source_node,
+        source_contiguous_child_count, source_unique_child, unique_source_node,
     },
 };
 use mizar_resolve::{
     env::{DefinitionId, SourceContributionId},
-    names::{LocalTermBinding, LocalTermScope},
+    names::{LocalTermBinding, LocalTermScope, ResolvedVariableScope},
     resolved_ast::{ModuleId, ResolvedNodeId, SymbolId},
 };
 #[cfg(test)]
@@ -3852,6 +3852,7 @@ pub struct SourceProofLocalGivenDescendantBindingHandoff {
     final_binding_fingerprint: String,
     bindings: SourceProofLocalGivenBindingTable,
     descendant_context: BindingContextId,
+    set_scope: Option<Box<ResolvedVariableScope>>,
 }
 
 impl SourceProofLocalGivenDescendantBindingHandoff {
@@ -3953,7 +3954,7 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
                 "given range={}..{} segment={}..{} name={}..{} source_ordinal={}\n",
                 "base-binding-fingerprint: {:?}\n",
                 "binding#0 binding={} context={} source_ordinal={} visible_after={} recovery={}\n",
-                "descendant range={}..{} context={} parent={} scope=[0,0] recovery={}\n",
+                "descendant range={}..{} context={} parent={} scope=[{}] recovery={}\n",
                 "final-binding-fingerprint: {:?}\n",
             ),
             self.module_id.package().as_str(),
@@ -3983,6 +3984,15 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             self.descendant_range.end,
             descendant.id.index(),
             parent.index(),
+            descendant
+                .lexical_scope
+                .as_ref()
+                .expect("validated descendant scope")
+                .path()
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(","),
             binding_context_recovery_key(descendant.recovery),
             self.final_binding_fingerprint,
         )
@@ -4028,11 +4038,30 @@ impl SourceProofLocalGivenDescendantBindingHandoff {
             SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
         )?;
         if !exact_task269g_output_binding(binding)
-            || !exact_task269_binding(&self.binding_env, self.name_range, None)
+            || (self.set_scope.is_none()
+                && !exact_task269_binding(&self.binding_env, self.name_range, None))
         {
             return Err(
                 SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
             );
+        }
+        if let Some(scope) = &self.set_scope {
+            let expected = source_descendant_set_binding_env(
+                &self.base_binding_env,
+                &self.lower_fingerprint,
+                scope,
+            )?;
+            if Some(self.descendant_range) != self.lower_fingerprint.descendant_range()
+                || self.descendant_context != BindingContextId::new(2)
+            {
+                return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
+            }
+            if self.binding_env != expected
+                || self.final_binding_fingerprint != self.binding_env.debug_text()
+            {
+                return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
+            }
+            return Ok(());
         }
         if Some(self.descendant_range) != self.lower_fingerprint.descendant_range()
             || self.descendant_context != BindingContextId::new(2)
@@ -4158,7 +4187,25 @@ impl SourceProofLocalGivenDescendantBindingProducer {
                 }],
             },
             descendant_context: BindingContextId::new(2),
+            set_scope: None,
         })
+    }
+
+    /// Retains the authenticated descendant Set names without inferring or expanding their values.
+    pub fn build_set_bindings(
+        input: SourceProofLocalGivenDescendantBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        SourceProofLocalGivenDescendantBindingHandoff,
+        SourceProofLocalGivenDescendantBindingError,
+    > {
+        let mut handoff = Self::build(input, base_binding_env)?;
+        handoff.binding_env =
+            source_descendant_set_binding_env(base_binding_env, &handoff.lower_fingerprint, scope)?;
+        handoff.final_binding_fingerprint = handoff.binding_env.debug_text();
+        handoff.set_scope = Some(Box::new(scope.clone()));
+        Ok(handoff)
     }
 }
 
@@ -4368,6 +4415,192 @@ fn exact_task269sdc_lookup_behavior(binding_env: &BindingEnv) -> bool {
         && binding_env.lookup(&descendant) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
+// Equating owns the name/value roles; the enclosing Set statement remains a skeleton rule.
+fn source_equating_roles<'a>(
+    rows: &'a [SourceNode],
+    equating: &SourceNode,
+) -> Option<[&'a SourceNode; 2]> {
+    if equating.kind() != &SurfaceNodeKind::Equating
+        || source_contiguous_child_count(source_children(rows, equating.site())) != Some(3)
+    {
+        return None;
+    }
+    let name = source_child_at(rows, equating.site(), 0)?;
+    let equals = source_child_at(rows, equating.site(), 1)?;
+    let value = source_unique_child(rows, equating, SurfaceNodeKind::TermExpression)?;
+    if !matches!(name.kind(), SurfaceNodeKind::Token(token)
+        if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == name.spelling())
+        || !matches!(equals.kind(), SurfaceNodeKind::Token(token)
+            if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "=")
+        || value.child_ordinal() != 2
+    {
+        return None;
+    }
+    Some([name, value])
+}
+
+fn source_descendant_set_binding_env(
+    base: &BindingEnv,
+    receipt: &SourceProofLocalIntakeReceipt,
+    scope: &ResolvedVariableScope,
+) -> Result<BindingEnv, SourceProofLocalGivenDescendantBindingError> {
+    use SurfaceNodeKind as K;
+    use mizar_resolve::names::{
+        SourceVariableBindingKind as B, SourceVariableReferenceKind as R, SourceVariableTypeRadix,
+    };
+    let invalid = || SourceProofLocalGivenDescendantBindingError::DependencyMismatch;
+    let proof = receipt.role(K::ProofBlock).ok_or_else(invalid)?;
+    let now = receipt.role(K::NowStatement).ok_or_else(invalid)?;
+    let rows = &receipt.original;
+    let sets = [1, 2].map(|ordinal| {
+        let set = source_child_at(rows, now.site(), ordinal)?;
+        let equating = source_unique_child(rows, set, K::Equating)?;
+        source_equating_roles(rows, equating)
+    });
+    let [Some(first), Some(second)] = sets else {
+        return Err(invalid());
+    };
+    let given = source_child_at(
+        rows,
+        receipt
+            .role(K::QualifiedVariableSegment)
+            .ok_or_else(invalid)?
+            .site(),
+        0,
+    )
+    .ok_or_else(invalid)?;
+    let proof_scope = LocalTermScope::new(vec![
+        u32::try_from(proof.child_ordinal()).map_err(|_| invalid())?,
+    ]);
+    let mut descendant_path = proof_scope.path().to_vec();
+    descendant_path.push(u32::try_from(now.child_ordinal()).map_err(|_| invalid())?);
+    let descendant_scope = LocalTermScope::new(descendant_path);
+    if scope.source_id() != receipt.source_id
+        || scope.module_id() != &receipt.module_id
+        || scope.bindings().len() != 4
+        || scope.references().len() != 2
+        || scope.thesis().is_some()
+        || !scope.statements().is_empty()
+    {
+        return Err(invalid());
+    }
+    for (index, ((name, kind), binding)) in [
+        (receipt.reserve_name(), B::Reserve),
+        (given, B::GivenWitness),
+        (first[0], B::Set),
+        (second[0], B::Set),
+    ]
+    .into_iter()
+    .zip(scope.bindings())
+    .enumerate()
+    {
+        let expected_scope = match index {
+            0 => LocalTermScope::default(),
+            1 => proof_scope.clone(),
+            _ => descendant_scope.clone(),
+        };
+        if binding.kind() != kind
+            || binding.range() != name.range()
+            || binding.spelling() != name.spelling()
+            || binding.ordinal() != index
+            || binding.id().index() != index
+            || binding.scope() != &expected_scope
+            || binding.arity().is_some()
+            || !binding.captures().is_empty()
+            || if index < 2 {
+                binding.declared_type().is_none_or(|ty| {
+                    ty.radix() != SourceVariableTypeRadix::Set || !ty.attributes().is_empty()
+                })
+            } else {
+                binding.declared_type().is_some()
+            }
+        {
+            return Err(invalid());
+        }
+    }
+    for (index, (roles, reference)) in [first, second]
+        .into_iter()
+        .zip(scope.references())
+        .enumerate()
+    {
+        let rhs = source_unique_child(rows, roles[1], K::TermReference).ok_or_else(invalid)?;
+        if reference.kind() != R::Term
+            || reference.range() != rhs.range()
+            || reference.spelling() != rhs.spelling()
+            || reference.scope() != &descendant_scope
+            || reference.ordinal() != index
+            || reference.id().index() != index
+            || reference.binding() != scope.bindings()[index + 1].id()
+        {
+            return Err(invalid());
+        }
+    }
+    let mut bindings = base.bindings().clone();
+    for binding in &scope.bindings()[1..] {
+        let context = BindingContextId::new(if binding.kind() == B::GivenWitness {
+            1
+        } else {
+            2
+        });
+        let local = LocalTermBinding::new(
+            binding.spelling(),
+            binding.scope().clone(),
+            binding.range(),
+            binding.ordinal(),
+        );
+        bindings.insert(BindingDraft::from_local_term(
+            context,
+            if binding.kind() == B::GivenWitness {
+                BindingKind::GivenWitness
+            } else {
+                BindingKind::LocalAbbreviation
+            },
+            &local,
+        ));
+    }
+    let mut contexts = base.contexts().clone();
+    for (index, owner, lexical_scope, own, visible) in [
+        (
+            1,
+            proof,
+            proof_scope,
+            vec![BindingId::new(1)],
+            vec![BindingId::new(0), BindingId::new(1)],
+        ),
+        (
+            2,
+            now,
+            descendant_scope,
+            vec![BindingId::new(2), BindingId::new(3)],
+            (0..4).map(BindingId::new).collect(),
+        ),
+    ] {
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: owner.range(),
+            },
+            parent: Some(BindingContextId::new(index - 1)),
+            layer: if index == 1 {
+                BindingContextLayer::Proof
+            } else {
+                BindingContextLayer::Block
+            },
+            lexical_scope: Some(lexical_scope),
+            bindings: own,
+            visible_bindings: visible,
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: base.source_id(),
+        module_id: base.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: base.diagnostics().clone(),
+    })
+    .map_err(|_| SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+}
+
 const fn binding_context_recovery_key(recovery: BindingContextRecovery) -> &'static str {
     match recovery {
         BindingContextRecovery::Normal => "normal",
@@ -4394,7 +4627,6 @@ pub(crate) fn task286_source(
     use SurfaceNodeKind as K;
     use SurfaceTokenKind as T;
     use mizar_resolve::resolved_ast::SurfaceResolvedArena;
-    use mizar_syntax::{SurfaceAstBuilder, SurfaceBuilderNodeId};
     let (name, theorem_formula, declaration, conclusion) = match profile {
         0 => (
             "FormulaStatementLetSmoke",
@@ -4652,6 +4884,9 @@ pub(crate) fn task286_source(
     typed.install_source_nodes(&lowered).unwrap();
     typed
 }
+
+#[cfg(test)]
+use mizar_syntax::{SurfaceAstBuilder, SurfaceBuilderNodeId};
 
 #[cfg(test)]
 pub(crate) fn task286_receipt(
@@ -8015,6 +8250,164 @@ mod task269c_tests {
             other_definition,
             other_contribution,
         }
+    }
+
+    fn task269_set_scope(receipt: &SourceProofLocalIntakeReceipt) -> ResolvedVariableScope {
+        use mizar_resolve::{
+            env::{SymbolEnv, SymbolEnvIndexes},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        };
+        let mut builder = SurfaceAstBuilder::new(receipt.source_id);
+        let mut nodes = std::collections::BTreeMap::new();
+        let mut rows = receipt.original.iter().collect::<Vec<_>>();
+        rows.sort_by_key(|row| std::cmp::Reverse(row.preorder_ordinal()));
+        for row in rows {
+            let node = if let SurfaceNodeKind::Token(token) = row.kind() {
+                builder.add_token(token.kind, token.text.clone(), row.range())
+            } else {
+                builder.add_node(
+                    row.kind().clone(),
+                    row.range(),
+                    source_children(&receipt.original, row.site())
+                        .map(|child| nodes[&child.site()])
+                        .collect(),
+                )
+            };
+            nodes.insert(row.site(), node);
+        }
+        let ast = builder.finish(Some(nodes[&receipt.root_row().site()]), None);
+        let symbols = SymbolEnv::new(receipt.module_id.clone(), SymbolEnvIndexes::default());
+        SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+            &ast,
+            &receipt.module_id,
+            &symbols,
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn source_proof_local_set_bindings_preserve_resolver_identity_and_replay() {
+        let fixture = task269sdc_fixture();
+        let scope = task269_set_scope(&fixture.input.lower_fingerprint);
+        let handoff = SourceProofLocalGivenDescendantBindingProducer::build_set_bindings(
+            fixture.input.clone(),
+            &fixture.base,
+            &scope,
+        )
+        .unwrap();
+        assert_eq!(handoff.bindings().len(), 1);
+        assert_eq!(handoff.binding_env().bindings().len(), 4);
+        for (index, actual) in handoff.binding_env().bindings().iter().skip(1) {
+            let original = &scope.bindings()[index.index()];
+            assert_eq!(
+                actual.identity,
+                BinderIdentity::ResolverLocal {
+                    scope: original.scope().clone(),
+                    ordinal: original.ordinal(),
+                    declaration_range: original.range()
+                }
+            );
+            assert_eq!(actual.type_site, BindingTypeSite::Missing);
+            assert!(actual.captured.identities().is_empty());
+        }
+        assert!(handoff.debug_text().contains("scope=[4,2]"));
+        handoff
+            .validate_installation(fixture.source, &fixture.module)
+            .unwrap();
+        let empty = empty_typed(fixture.source, fixture.module.clone());
+        let typed = empty
+            .clone()
+            .with_source_proof_local_given_descendant_binding(handoff.clone())
+            .unwrap();
+        assert_eq!(
+            assemble_empty(&typed)
+                .unwrap()
+                .source_proof_local_given_descendant_binding(),
+            Some(&handoff)
+        );
+        let mut forged = handoff.clone();
+        let mut parts = BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts: forged.binding_env.contexts().clone(),
+            bindings: fixture.base.bindings().clone(),
+            diagnostics: forged.binding_env.diagnostics().clone(),
+        };
+        for binding in scope.bindings().iter().skip(1) {
+            let local = LocalTermBinding::new(
+                binding.spelling(),
+                binding.scope().clone(),
+                binding.range(),
+                binding.ordinal() + 1,
+            );
+            parts.bindings.insert(BindingDraft::from_local_term(
+                BindingContextId::new(if binding.ordinal() == 1 { 1 } else { 2 }),
+                if binding.ordinal() == 1 {
+                    BindingKind::GivenWitness
+                } else {
+                    BindingKind::LocalAbbreviation
+                },
+                &local,
+            ));
+        }
+        forged.binding_env = BindingEnv::try_new(parts).unwrap();
+        forged.final_binding_fingerprint = forged.binding_env.debug_text();
+        assert_eq!(
+            forged.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+        );
+        assert_eq!(
+            empty
+                .clone()
+                .with_source_proof_local_given_descendant_binding(forged.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        let mut injected = empty;
+        injected.inject_source_proof_local_given_descendant_binding_for_test(forged);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        let mut shifted = fixture.input.lower_fingerprint.clone();
+        for row in Arc::make_mut(&mut shifted.original) {
+            row.range.start += 1;
+            row.range.end += 1;
+        }
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build_set_bindings(
+                fixture.input.clone(),
+                &fixture.base,
+                &task269_set_scope(&shifted)
+            ),
+            Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+        );
+        let mut foreign = fixture.input.lower_fingerprint.clone();
+        foreign.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("foreign"));
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build_set_bindings(
+                fixture.input.clone(),
+                &fixture.base,
+                &task269_set_scope(&foreign)
+            ),
+            Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+        );
+        let mut malformed = fixture.input;
+        let rows = Arc::make_mut(&mut malformed.lower_fingerprint.original);
+        let equating = rows
+            .iter_mut()
+            .find(|row| row.kind() == &SurfaceNodeKind::Equating)
+            .unwrap();
+        equating.kind = SurfaceNodeKind::TermList;
+        malformed.lower_fingerprint.fingerprint =
+            malformed.lower_fingerprint.structural_fingerprint();
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build_set_bindings(
+                malformed,
+                &fixture.base,
+                &scope
+            ),
+            Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+        );
     }
 
     fn task269sdc_empty_base(fixture: &Task269sdcFixture) -> BindingEnv {
