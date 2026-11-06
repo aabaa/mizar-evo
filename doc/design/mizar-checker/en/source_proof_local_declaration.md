@@ -95,7 +95,7 @@ The immutable graph retains Then/body/branch associations; no new graph or slot 
 Checked Task180 tables remain separate from source intents and derived witness goals.
 
 The parameterless `check_witness_goals()` derives plain Set/Object quantified,
-variable equality/membership/conjunction/implication/disjunction/negation goals through proof introductions and terminal Thus/Hence.
+variable equality/membership/conjunction/implication/disjunction/negation/equivalence goals through proof introductions and terminal Thus/Hence.
 `SourceProofGoal` stores actual binding identities and logical bodies; original
 Typed sites are provenance, never generated original formulas. Immutable
 `SourceProofGoalStep` exposes source owner/context/event, matched identities,
@@ -176,6 +176,10 @@ the outer theorem owner and prior frontier, including earlier Pending guards.
 Source hypothesis/citation identity is retained without an assumption/fact store.
 No exhaustiveness, branch conclusion or parent proof is accepted; broader branch
 effects defer. Recursive residual-Imp refusal includes Or children and Not body.
+
+Equivalence also retains its actual ordered source operands through recursive
+substitution and replay. It remains a whole unproved goal; no direction goals
+are synthesized or discharged. Residual-Imp refusal visits both operands.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's

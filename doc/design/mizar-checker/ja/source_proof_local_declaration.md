@@ -84,7 +84,7 @@ Pending は module wrapper・独立した registration proof を含む未処理�
 Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
 Task180 の checked table は source intent・派生 witness goal とは別に保つ。
 
-引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・membership・連言・含意・選言・否定を、
+引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・membership・連言・含意・選言・否定・同値を、
 proof 導入と terminal Thus/Hence に沿って導出する。`SourceProofGoal` は実 binding identity
 と論理 body を保持し、元 Typed site は出典のみとする。不変の `SourceProofGoalStep` は
 owner/context/event・対応 identity・置換前後の goal・free/retained-binder 集合を公開する。
@@ -148,6 +148,9 @@ Consider hypothesis は実 outer Proof context と元の引用 existential を�
 Thus（明示式または thesis）で goal 全体を観測する。実 native Block context でも親 theorem owner と
 先行 frontier・Pending guard を維持する。元仮説と引用の identity を保持し、仮定/fact store を作らない。
 網羅性・分岐結論・親証明は受理せず、広い分岐 effect は後続に残す。残余 Imp の拒否は Or/Not 内も再帰する。
+
+同値も実 source の順序付き両辺を再帰的な置換・replay で保持する。未証明の goal 全体のまま、
+両方向の goal を合成・解消しない。残余 Imp の拒否は両辺を訪れる。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。

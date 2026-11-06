@@ -121,6 +121,11 @@ pub enum SourceProofGoal {
         left: Box<Self>,
         right: Box<Self>,
     },
+    Equivalence {
+        origin: crate::typed_ast::TypedSiteRef,
+        left: Box<Self>,
+        right: Box<Self>,
+    },
     Negation {
         origin: crate::typed_ast::TypedSiteRef,
         body: Box<Self>,
@@ -201,6 +206,7 @@ impl SourceProofGoal {
             }
             Self::Conjunction { left, right, .. }
             | Self::Disjunction { left, right, .. }
+            | Self::Equivalence { left, right, .. }
             | Self::Implication {
                 antecedent: left,
                 consequent: right,
@@ -253,6 +259,15 @@ impl SourceProofGoal {
                 left,
                 right,
             } => Self::Disjunction {
+                origin: origin.clone(),
+                left: Box::new(left.substitute(formal, actual)),
+                right: Box::new(right.substitute(formal, actual)),
+            },
+            Self::Equivalence {
+                origin,
+                left,
+                right,
+            } => Self::Equivalence {
                 origin: origin.clone(),
                 left: Box::new(left.substitute(formal, actual)),
                 right: Box::new(right.substitute(formal, actual)),
@@ -359,6 +374,18 @@ impl SourceProofGoal {
                 },
             )
             | (
+                Self::Equivalence {
+                    origin: a,
+                    left: l,
+                    right: r,
+                },
+                Self::Equivalence {
+                    origin: b,
+                    left,
+                    right,
+                },
+            )
+            | (
                 Self::Implication {
                     origin: a,
                     antecedent: l,
@@ -457,6 +484,14 @@ impl SourceProofGoal {
                     left: a, right: b, ..
                 },
                 Self::Disjunction {
+                    left: c, right: d, ..
+                },
+            )
+            | (
+                Self::Equivalence {
+                    left: a, right: b, ..
+                },
+                Self::Equivalence {
                     left: c, right: d, ..
                 },
             )
@@ -2131,6 +2166,18 @@ impl SourceProofLocalBindingHandoff {
                     right: Box::new(self.witness_goal_formula(parts[2])?),
                 })
             }
+            K::BinaryFormula(op)
+                if op.connective == SurfaceFormulaConnective::Iff
+                    && !op.repeated
+                    && parts.len() == 3
+                    && source_inline_token(&parts, 1, "iff") =>
+            {
+                Ok(SourceProofGoal::Equivalence {
+                    origin,
+                    left: Box::new(self.witness_goal_formula(parts[0])?),
+                    right: Box::new(self.witness_goal_formula(parts[2])?),
+                })
+            }
             K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
                 if parts.len() == 2 && source_inline_token(&parts, 0, "not") =>
             {
@@ -3451,6 +3498,7 @@ impl SourceProofLocalBindingHandoff {
             }
             SourceProofGoal::Conjunction { left, right, .. }
             | SourceProofGoal::Disjunction { left, right, .. }
+            | SourceProofGoal::Equivalence { left, right, .. }
             | SourceProofGoal::Implication {
                 antecedent: left,
                 consequent: right,
@@ -4234,7 +4282,8 @@ impl SourceProofLocalBindingHandoff {
                         match goal {
                             SourceProofGoal::Implication { .. } => return Err(invalid()),
                             SourceProofGoal::Conjunction { left, right, .. }
-                            | SourceProofGoal::Disjunction { left, right, .. } => {
+                            | SourceProofGoal::Disjunction { left, right, .. }
+                            | SourceProofGoal::Equivalence { left, right, .. } => {
                                 pending.extend([left.as_ref(), right.as_ref()])
                             }
                             SourceProofGoal::Universal { body, .. }
@@ -5427,6 +5476,7 @@ fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> 
             | "thus"
             | "hence"
             | "implies"
+            | "iff"
             | "in"
             | "st"
             | "and"
@@ -10502,6 +10552,8 @@ mod task269c_tests {
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
         SourceAnchor,
     };
+
+    use mizar_syntax::ast::SurfaceFormulaBinaryOperator;
 
     #[test]
     fn task286_receipt_origin_grammar_and_fingerprint_are_independent() {
@@ -16976,7 +17028,6 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        use mizar_syntax::ast::SurfaceFormulaBinaryOperator;
         let fixture = |swapped: bool, partial: bool, cases: bool| {
             let source = source_id();
             let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("witness_replay"));
@@ -18934,10 +18985,16 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        let fixture = |source, conditioned, by, given, hereby, now, packet| {
+        let fixture = |source, conditioned, by, given, hereby, now, packet, iff| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if packet {
+            let mut words = if iff {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "set", "holds", "x", "=", "x", "iff",
+                    "x", "=", "x", "proof", "let", "x", "be", "set", ";", "thus", "x", "=", "x",
+                    "iff", "x", "=", "x",
+                ]
+            } else if packet {
                 vec![
                     "theorem", "T", ":", "for", "x", "being", "object", "ex", "u", "being",
                     "object", "st", "u", "=", "x", "proof", "let", "x", "be", "object", ";", "A1",
@@ -19001,7 +19058,9 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if packet {
+            let (h, c, l, a, mut k, mut t, condition_start) = if iff {
+                (8, 12, 17, 22, 26, 22, 21)
+            } else if packet {
                 (12, 28, 17, 50, 36, 60, 47)
             } else if given {
                 (13, 17, 22, 34, 39, 44, 31)
@@ -19080,7 +19139,11 @@ mod task269c_tests {
                 );
             }
             let mut formulas = BTreeMap::new();
-            for i in [h, c, a, k, t] {
+            for i in if iff {
+                vec![h, c, a, k]
+            } else {
+                vec![h, c, a, k, t]
+            } {
                 let mut terms = Vec::new();
                 for j in [i, i + 2] {
                     let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
@@ -19109,7 +19172,25 @@ mod task269c_tests {
             } else {
                 formulas[&h]
             };
-            let forall = if packet {
+            let forall = if iff {
+                let body = node(
+                    &mut builder,
+                    K::BinaryFormula(SurfaceFormulaBinaryOperator {
+                        connective: SurfaceFormulaConnective::Iff,
+                        repeated: false,
+                    }),
+                    h,
+                    c + 2,
+                    vec![formulas[&h], tokens[c - 1], formulas[&c]],
+                );
+                node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    3,
+                    c + 2,
+                    vec![tokens[3], segments[&4], tokens[7], body],
+                )
+            } else if packet {
                 let existential = node(
                     &mut builder,
                     K::QuantifiedFormula(SurfaceQuantifierKind::Existential),
@@ -19147,32 +19228,51 @@ mod task269c_tests {
                 if packet { 14 } else { c + 2 },
                 vec![forall],
             );
-            let proposition = node(
-                &mut builder,
-                K::Proposition,
-                a - 2,
-                a + 2,
-                vec![tokens[a - 2], tokens[a - 1], formulas[&a]],
-            );
-            let condition = node(
-                &mut builder,
-                if conditioned || given || packet {
-                    K::ConditionList
-                } else {
-                    K::AssumptionStatement
-                },
-                condition_start,
-                if conditioned || given || packet {
-                    a + 2
-                } else {
-                    a + 3
-                },
-                if conditioned || given || packet {
-                    vec![tokens[condition_start], proposition]
-                } else {
-                    vec![tokens[condition_start], proposition, tokens[a + 3]]
-                },
-            );
+            let proposition = if iff {
+                let body = node(
+                    &mut builder,
+                    K::BinaryFormula(SurfaceFormulaBinaryOperator {
+                        connective: SurfaceFormulaConnective::Iff,
+                        repeated: false,
+                    }),
+                    a,
+                    k + 2,
+                    vec![formulas[&a], tokens[k - 1], formulas[&k]],
+                );
+                let formula = node(&mut builder, K::FormulaExpression, a, k + 2, vec![body]);
+                node(&mut builder, K::Proposition, a, k + 2, vec![formula])
+            } else {
+                node(
+                    &mut builder,
+                    K::Proposition,
+                    a - 2,
+                    a + 2,
+                    vec![tokens[a - 2], tokens[a - 1], formulas[&a]],
+                )
+            };
+            let condition = if iff {
+                proposition
+            } else {
+                node(
+                    &mut builder,
+                    if conditioned || given || packet {
+                        K::ConditionList
+                    } else {
+                        K::AssumptionStatement
+                    },
+                    condition_start,
+                    if conditioned || given || packet {
+                        a + 2
+                    } else {
+                        a + 3
+                    },
+                    if conditioned || given || packet {
+                        vec![tokens[condition_start], proposition]
+                    } else {
+                        vec![tokens[condition_start], proposition, tokens[a + 3]]
+                    },
+                )
+            };
             let let_row = node(
                 &mut builder,
                 K::LetStatement,
@@ -19231,9 +19331,14 @@ mod task269c_tests {
             } else {
                 condition
             };
-            let linked_proposition =
-                node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]]);
-            let then = if packet {
+            let linked_proposition = if iff {
+                proposition
+            } else {
+                node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]])
+            };
+            let then = if iff {
+                proposition
+            } else if packet {
                 let existential = node(
                     &mut builder,
                     K::QuantifiedFormula(SurfaceQuantifierKind::Existential),
@@ -19324,8 +19429,11 @@ mod task269c_tests {
                     vec![tokens[k - 1], compact],
                 )
             };
-            let terminal_proposition =
-                node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]]);
+            let terminal_proposition = if iff {
+                proposition
+            } else {
+                node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
+            };
             let end = tokens.len() - 1;
             let mut tail = vec![tokens[t - 1], terminal_proposition];
             if by {
@@ -19371,7 +19479,9 @@ mod task269c_tests {
             } else {
                 terminal
             };
-            let proof_children = if packet {
+            let proof_children = if iff {
+                vec![tokens[l - 2], let_row, terminal, tokens[end - 1]]
+            } else if packet {
                 let reference = node(&mut builder, K::TermReference, 57, 57, vec![tokens[57]]);
                 let term = node(&mut builder, K::TermExpression, 57, 57, vec![reference]);
                 let witness = node(&mut builder, K::Witness, 57, 57, vec![term]);
@@ -19477,7 +19587,16 @@ mod task269c_tests {
             (false, false, true, false),
             (false, true, false, true),
         ] {
-            let genuine = fixture(source_id(), conditioned, by, false, hereby, now, false);
+            let genuine = fixture(
+                source_id(),
+                conditioned,
+                by,
+                false,
+                hereby,
+                now,
+                false,
+                false,
+            );
             let (steps, guards, initial, checked, inference) =
                 genuine.check_witness_goals().unwrap();
             let (formal, actual) = steps[1].matched.unwrap();
@@ -19701,6 +19820,7 @@ mod task269c_tests {
                 hereby,
                 now,
                 false,
+                false,
             );
             let products = foreign.check_witness_goals().unwrap();
             assert!(
@@ -19720,7 +19840,136 @@ mod task269c_tests {
                     .is_err()
             );
         }
-        let given = fixture(source_id(), false, true, true, false, false, false);
+        let iff = fixture(source_id(), false, false, false, false, false, false, true);
+        let (trace, guards, initial, checked, inference) = iff.check_witness_goals().unwrap();
+        assert_eq!(trace.len(), 3);
+        assert_eq!(inference.terms().len(), 10);
+        assert_eq!(inference.formulas().len(), 4);
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        let (formal, actual) = trace[1].matched.unwrap();
+        assert!(trace[0].free.is_empty());
+        for step in &trace[1..] {
+            assert_eq!(step.free, vec![actual]);
+            assert_eq!(step.owner, trace[0].owner);
+            assert_eq!(step.context, trace[0].context);
+            assert!(step.avoided.is_empty());
+        }
+        assert_eq!(trace[2].before, trace[1].after);
+        assert_eq!(trace[2].after, trace[1].after);
+        let SourceProofGoal::Universal { body, .. } = &trace[0].before else {
+            panic!("universal")
+        };
+        assert!(trace[1].after.replays_substitution(body, formal, actual));
+        let SourceProofGoal::Equivalence {
+            origin,
+            left,
+            right,
+        } = &trace[1].after
+        else {
+            panic!("equivalence")
+        };
+        for branch in [left, right] {
+            assert!(
+                matches!(branch.as_ref(), SourceProofGoal::Equality {left, right, ..} if *left == actual && *right == actual)
+            );
+        }
+        let renamed = trace[1].after.substitute(actual, formal);
+        assert!(renamed.replays_substitution(&trace[1].after, actual, formal));
+        assert!(renamed.alpha_matches(&trace[1].after, &mut vec![(formal, actual)]));
+        assert!(!renamed.alpha_matches(&trace[1].after, &mut Vec::new()));
+        let other_kind = SourceProofGoal::Disjunction {
+            origin: origin.clone(),
+            left: left.clone(),
+            right: right.clone(),
+        };
+        assert!(!other_kind.alpha_matches(&trace[1].after, &mut Vec::new()));
+        assert!(!other_kind.replays_substitution(&trace[1].after, actual, actual));
+        for mutation in 0..13 {
+            let mut bad = trace.clone();
+            match mutation {
+                0 | 1 => {
+                    let SourceProofGoal::Equivalence { left, right, .. } = &mut bad[1].after else {
+                        unreachable!()
+                    };
+                    let edge = if mutation == 0 { left } else { right };
+                    **edge = edge.substitute(actual, formal);
+                    assert!(!bad[1].after.alpha_matches(&trace[1].after, &mut Vec::new()));
+                    assert!(!bad[1].after.replays_substitution(body, formal, actual));
+                    let mut free = BTreeSet::new();
+                    bad[1]
+                        .after
+                        .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                    bad[1].free = free.into_iter().collect();
+                }
+                2 => {
+                    let SourceProofGoal::Equivalence { origin, .. } = &mut bad[1].after else {
+                        unreachable!()
+                    };
+                    *origin = trace[2].site.clone();
+                }
+                3 => bad[1].after = other_kind.clone(),
+                4 => bad[2].free.clear(),
+                5 => bad[2].avoided = vec![actual],
+                6 => bad[2].owner = trace[2].site.clone(),
+                7 => {
+                    bad[2].context = iff
+                        .binding_env
+                        .bindings()
+                        .get(formal)
+                        .unwrap()
+                        .owner_context
+                }
+                8 => bad[1].matched = Some((actual, formal)),
+                9 => bad[2].site = trace[1].site.clone(),
+                10 => bad.swap(1, 2),
+                11 => {
+                    bad.remove(1);
+                }
+                _ => bad.insert(2, bad[1].clone()),
+            }
+            assert!(
+                iff.replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err(),
+                "Iff mutation{mutation}"
+            );
+        }
+        let (_, _, mut terms, formulas, _) = iff.witness_goal_inputs().unwrap();
+        terms[0].result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&iff.symbols, &iff.binding_env, terms, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .terms()
+                .iter()
+                .all(|(_, t)| t.status == TermStatus::Inferred)
+        );
+        assert!(
+            iff.replay_witness_goals(&trace, &guards, &initial, &checked, &coherent)
+                .is_err()
+        );
+        let foreign = fixture(
+            other_source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+        )
+        .check_witness_goals()
+        .unwrap();
+        assert!(
+            iff.replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)
+                .is_err()
+        );
+        assert!(
+            iff.replay_witness_goals(&trace, &guards, &initial, &checked, &foreign.4)
+                .is_err()
+        );
+        let given = fixture(source_id(), false, true, true, false, false, false, false);
         let (steps, guards, initial, checked, inference) = given.check_witness_goals().unwrap();
         assert_eq!(steps.len(), 6);
         let (formal, witness) = steps[2].matched.unwrap();
@@ -19823,9 +20072,18 @@ mod task269c_tests {
                 .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                 .is_err()
         );
-        let foreign = fixture(other_source_id(), false, true, true, false, false, false)
-            .check_witness_goals()
-            .unwrap();
+        let foreign = fixture(
+            other_source_id(),
+            false,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+        )
+        .check_witness_goals()
+        .unwrap();
         assert!(
             given
                 .replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)
@@ -19867,7 +20125,7 @@ mod task269c_tests {
                 .witness_goal_formation(&object_right, &BTreeSet::from([witness]), &mut Vec::new())
                 .is_err()
         );
-        let packet = fixture(source_id(), false, false, false, false, false, true);
+        let packet = fixture(source_id(), false, false, false, false, false, true, false);
         let (trace, guards, initial, checked, inference) = packet.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 10);
         assert_ne!(trace[8].before, trace[4].after);
@@ -19968,9 +20226,18 @@ mod task269c_tests {
                     .is_err()
             );
         }
-        let foreign = fixture(other_source_id(), false, false, false, false, false, true)
-            .check_witness_goals()
-            .unwrap();
+        let foreign = fixture(
+            other_source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+        )
+        .check_witness_goals()
+        .unwrap();
         assert!(
             packet
                 .replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)

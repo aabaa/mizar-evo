@@ -4936,6 +4936,11 @@ fn task272b1_goal_text(
             task272b1_goal_text(right)
         ),
         G::Negation { body, .. } => format!("not({})", task272b1_goal_text(body)),
+        G::Equivalence { left, right, .. } => format!(
+            "iff({},{})",
+            task272b1_goal_text(left),
+            task272b1_goal_text(right)
+        ),
         G::Conjunction { left, right, .. } => format!(
             "and({},{})",
             task272b1_goal_text(left),
@@ -9243,4 +9248,255 @@ fn task272b11_case_native_gate_controls_actual_fs_result() {
     let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
     assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
     assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
+}
+
+#[test]
+fn task272b12_iff_goals_execute_existing_fs() {
+    use mizar_checker::{binding_env::{BindingContextLayer as L,BindingTypeSite},
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::{FormulaKind,FormulaStatus,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::resolved_ast::LabelKind;
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceFormulaConnective as C};
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_iff_parenthesized_001").unwrap();
+    let result = super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0);
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("genuine existing IffPar1 source");
+    assert_eq!(ast.node_views().filter(|node|matches!(node.kind(),K::BinaryFormula(op) if op.connective==C::Iff && !op.repeated)).count(),2);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::ParenthesizedFormula).count(),2);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::BuiltinPredicateApplication).count(),4);
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    let legacy_marker = super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,false)
+        .expect("genuine legacy C8 formula check with organization=false");
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    assert!(intents.iter().all(|(_,_,status)|*status==S::Pending));
+    println!("Task272B12 test-first: existing FS Passed; legacy C8 organization=false succeeded (returned marker={legacy_marker}); frontend/symbol/native/scope and native A passed; original census 2Iff/2Paren/4Eq");
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals()
+        .expect("actual IffPar1 source must materialize whole unproved equivalence goals");
+    assert_eq!(steps.len(),3);
+    assert_eq!(inference.terms().len(),10);
+    assert_eq!(inference.formulas().len(),4);
+    let (header,local) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    assert_ne!(header,local);
+    assert_eq!(handoff.scope().bindings().len(),2);
+    assert_eq!(handoff.scope().references().iter().map(|reference|
+        task272b1_binding(&handoff,reference.binding().index())).collect::<Vec<_>>(),
+        [header,header,header,header,local,local,local,local]);
+    let g0 = format!("forall({}:Set,iff(eq({0},{0}),eq({0},{0})))",header.index());
+    let gp = format!("iff(eq({0},{0}),eq({0},{0}))",local.index());
+    let expected = [(&g0,&g0),(&g0,&gp),(&gp,&gp)];
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==id).unwrap()
+    };
+    assert_eq!(rows.iter().filter(|row|matches!(row.kind(),K::BinaryFormula(op) if op.connective==C::Iff && !op.repeated)).count(),2);
+    assert_eq!(rows.iter().filter(|row|row.kind()==&K::ParenthesizedFormula).count(),2);
+    let context = steps[0].context();
+    assert_eq!(handoff.binding_env().contexts().get(context).unwrap().layer,L::Proof);
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(task272b1_goal_text(step.before()),*expected[index].0);
+        assert_eq!(task272b1_goal_text(step.after()),*expected[index].1);
+        assert_eq!(step.owner(),steps[0].site());
+        assert_eq!(step.context(),context);
+        assert_eq!(step.matched(),if index==1 {Some((header,local))} else {None});
+        assert_eq!(step.free(),if index==0 {vec![]} else {vec![local]});
+        assert!(step.avoided().is_empty());
+        let row = original(step.site());
+        match index {
+            0=>assert_eq!(row.kind(),&K::TheoremItem),
+            1=>assert_eq!(row.range(),handoff.scope().bindings()[1].range()),
+            2=>assert_eq!(row.kind(),&K::ConclusionStatement),
+            _=>unreachable!(),
+        }
+    }
+    assert_eq!(steps[0].before(),steps[0].after());
+    assert_eq!(steps[2].before(),steps[1].after());
+    assert_eq!(steps[2].after(),steps[1].after());
+    assert!(labels.ids().is_empty());
+    assert_eq!(labels.index().iter().filter(|label|label.kind()==LabelKind::ProofStep).count(),0);
+    assert!(labels.index().iter().any(|label|label.kind()==LabelKind::Theorem));
+    assert!(success.is_empty() && pending.is_empty());
+    assert!(checked.coercions().is_empty() && checked.initial_obligations().is_empty() && checked.facts().is_empty());
+    let header_context = handoff.binding_env().bindings().get(header).unwrap().owner_context;
+    assert_eq!(handoff.binding_env().contexts().get(header_context).unwrap().layer,L::Expression);
+    for (index,reference) in handoff.scope().references().iter().enumerate() {
+        let binding = task272b1_binding(&handoff,reference.binding().index());
+        let occurrence_context = if index<4 {header_context} else {context};
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && original(&term.site).range()==reference.range() && term.context==occurrence_context));
+    }
+    for binding in [header,local] {
+        let entry = handoff.binding_env().bindings().get(binding).unwrap();
+        assert_eq!(entry.type_site,BindingTypeSite::Missing);
+        assert!(entry.captured.identities().is_empty());
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")
+            && original(&term.site).range()==entry.declaration_range && term.context==entry.owner_context));
+    }
+    for (_,term) in inference.terms().iter() {
+        assert_eq!(term.status,TermStatus::Inferred);
+        let ty = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(ty.status,TypeStatus::Known);
+        let TypeEntryActual::Known(id) = ty.actual else {panic!("genuine KnownSet")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinSet);
+    }
+    for (_,formula) in inference.formulas().iter() {
+        assert_eq!(formula.kind,FormulaKind::Equality);
+        assert_eq!(formula.status,FormulaStatus::Checked);
+        assert_eq!(formula.terms.len(),2);
+        assert_eq!(original(&formula.site).range(),formula.source_range);
+        assert_eq!(original(&formula.site).kind(),&K::BuiltinPredicateApplication);
+        assert_eq!(formula.context,if formula.source_range.end<handoff.scope().bindings()[1].range().start {header_context} else {context});
+    }
+    assert!(checked.diagnostics().is_empty() && inference.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty()
+        && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b12_iff_keeps_ordered_edges_original_origins_and_retained_bound_alpha() {
+    use mizar_checker::source_proof_local_declaration::SourceProofGoal as G;
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceFormulaConnective as C};
+    let distinct = "theorem DistinctIff: for a,b being set holds (a=a iff b=b) proof let a,b be set; thus (a=a iff b=b); end;";
+    let handoff = task272b1_witness_source(distinct);
+    let (steps,_,_,_,_) = handoff.check_witness_goals().unwrap();
+    let [h0,h1,p0,p1] = std::array::from_fn::<_,4,_>(|index|task272b1_binding(&handoff,index));
+    assert_eq!(steps.len(),4);
+    assert_eq!(steps[1].free(),[p0]);
+    assert_eq!(steps[1].avoided(),[h1]);
+    assert_eq!(steps[2].free(),[p0,p1]);
+    assert_eq!(steps[1].matched(),Some((h0,p0)));
+    assert_eq!(steps[2].matched(),Some((h1,p1)));
+    assert_eq!(task272b1_goal_text(steps[2].after()),format!("iff(eq({0},{0}),eq({1},{1}))",p0.index(),p1.index()));
+    let G::Equivalence {origin,..} = steps[2].after() else {panic!("primitive Iff retained")};
+    let native = handoff.source().nodes().node(origin.node()).unwrap().resolved_node.unwrap();
+    let row = handoff.source().source_node_entries().unwrap().find(|row|row.site()==native).unwrap();
+    assert!(matches!(row.kind(),K::BinaryFormula(op) if op.connective==C::Iff));
+    assert!(row.range().end<handoff.scope().bindings()[2].range().start);
+    assert_eq!(steps[3].before(),steps[2].after());
+    assert_eq!(steps[3].after(),steps[2].after());
+    let base = include_str!("../../../../tests/miz/pass/formulas/pass_formula_statement_iff_parenthesized_001.miz");
+    for source in [
+        base.replace("X","Value"),
+        format!("\n{}",base.replace(";",";\n")),
+        base.replace("(","((").replace(")","))"),
+        base.replace("thus (X = X iff X = X);","thus thesis;"),
+        "theorem RightEdge: for a,b being set holds (b=b iff a=a) proof let a,b be set; thus (b=b iff a=a); end;".to_owned(),
+        "theorem AlphaIff: for a being set holds ((for x being object holds x=a) iff (for y being set holds y=a)) proof let a be set; thus ((for u being object holds u=a) iff (for v being set holds v=a)); end;".to_owned(),
+        "theorem NestedIff: for a,b,c being set holds ((a=a iff b=b) iff c=c) proof let a,b,c be set; thus ((a=a iff b=b) iff c=c); end;".to_owned(),
+    ] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps,_,_,_,inference) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert_eq!(steps.last().unwrap().before(),steps.last().unwrap().after());
+        if source.contains("thus thesis") {
+            assert_eq!(inference.terms().len(),6);
+            assert_eq!(inference.formulas().len(),2);
+        }
+        if source.contains("theorem RightEdge:") {
+            assert_eq!(steps[1].free(),[task272b1_binding(&handoff,2)]);
+            assert_eq!(task272b1_goal_text(steps[2].after()),format!("iff(eq({1},{1}),eq({0},{0}))",
+                task272b1_binding(&handoff,2).index(),task272b1_binding(&handoff,3).index()));
+        }
+        if source.contains("theorem AlphaIff:") {
+            assert_eq!(steps[1].avoided(),[task272b1_binding(&handoff,1),task272b1_binding(&handoff,2)]);
+            assert_eq!(steps[1].free(),[task272b1_binding(&handoff,3)]);
+        }
+    }
+    for source in [
+        distinct.replace("thus (a=a iff b=b);","thus (b=b iff a=a);"),
+        distinct.replace("thus (a=a iff b=b);","thus (a=a iff a=a);"),
+        distinct.replace("thus (a=a iff b=b);","thus (a=b iff b=b);"),
+        distinct.replace("thus (a=a iff b=b);","thus (a=a or b=b);"),
+    ] {
+        assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b12_iff_carries_existing_effects_real_pending_and_member_typing() {
+    use mizar_checker::{type_checker::{TermReference,TypeHeadRef},typed_ast::{InitialObligationStatus,TypeEntryActual}};
+    for source in [
+        "theorem AssumeIff: for x being set st x=x holds (x=x iff x=x) proof let x be set; assume H:x=x; thus (x=x iff x=x) by H; end;",
+        "theorem GivenIff: for x being object st (ex y being object st y=x) holds (x=x iff x=x) proof let x be object; given g being object such that H:g=x; thus (x=x iff x=x); end;",
+        "theorem NowIff: for x being set holds (x=x iff x=x) proof let x be set; N: now thus (x=x iff x=x); end; thus (x=x iff x=x) by N; end;",
+        "theorem HerebyIff: for x being set holds (x=x iff x=x) proof let x be set; hereby thus (x=x iff x=x); end; end;",
+        "theorem MemberIff: for A being set, x being object holds (x in A iff x=x) proof let A be set; let x be object; thus (x in A iff x=x); end;",
+    ] {
+        let handoff = task272b1_witness_source(source);
+        let (steps,_,_,_,_) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert_eq!(steps.last().unwrap().before(),steps.last().unwrap().after());
+    }
+    let source = "theorem PendingIff: for s being set, o being object ex z being set st (z=s iff o=z) proof let s be set; let o be object; take o; thus (o=s iff o=o); end;";
+    let handoff = task272b1_witness_source(source);
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals().unwrap();
+    assert!(success.is_empty());
+    assert_eq!(pending.len(),1);
+    assert_eq!(pending[0].site,*steps[3].site());
+    let object = task272b1_binding(&handoff,4);
+    let set = task272b1_binding(&handoff,3);
+    assert_eq!(steps[3].matched(),Some((task272b1_binding(&handoff,2),object)));
+    assert_eq!(task272b1_goal_text(steps[3].after()),format!("iff(eq({0},{1}),eq({0},{0}))",object.index(),set.index()));
+    assert_eq!(steps[4].after(),steps[3].after());
+    let obligation = checked.initial_obligations().iter().next().unwrap().1;
+    assert_eq!(obligation.owner,*steps[3].site());
+    assert_eq!(obligation.status,InitialObligationStatus::Pending);
+    for (_,term) in inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(object))) {
+        let TypeEntryActual::Known(id) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual Object unchanged")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinObject);
+    }
+    assert!(super::native_witness_goal_observation(&handoff).unwrap().iter().any(|line|line.starts_with("remaining.")
+        && line.contains(&format!("pending=[{:?}]",obligation.id))));
+    assert!(handoff.source().facts().is_empty() && handoff.source().types().is_empty());
+}
+
+#[test]
+fn task272b12_iff_refuses_hidden_implications_bad_member_right_and_effect_cap_expansion() {
+    for source in [
+        "theorem LeftImp: for x being set holds ((x=x implies x=x) iff x=x) proof let x be set; thus thesis; end;",
+        "theorem RightImp: for x being set holds (x=x iff (x=x implies x=x)) proof let x be set; thus thesis; end;",
+        "theorem QuantImp: for x being set holds ((for y being set holds y=y implies x=x) iff x=x) proof let x be set; thus thesis; end;",
+        "theorem NestedImp: for x being set holds x=x or not (x=x iff (x=x implies x=x)) proof let x be set; thus thesis; end;",
+        "theorem HerebyImp: for x being set holds (x=x iff (x=x implies x=x)) proof let x be set; hereby thus thesis; end; end;",
+        "theorem NowImp: for x being set holds ((x=x implies x=x) iff x=x) proof let x be set; N: now thus thesis; end; thus thesis by N; end;",
+        "theorem BadMemberLeft: for o being object ex A being set st (o in A iff o=o) proof let o be object; take o; thus thesis; end;",
+        "theorem BadMemberRight: for o being object ex A being set st (o=o iff o in A) proof let o be object; take o; thus thesis; end;",
+        "theorem PartialCap: for x being set holds (x=x iff x=x) & x=x proof let x be set; thus (x=x iff x=x); thus x=x; end;",
+        "theorem CompactCap: for x being object holds x=x proof let x be object; A1: (ex y being object st (y=x iff y=x)) proof take x; thus (x=x iff x=x); end; consider z being object such that H:(z=x iff z=x) by A1; thus x=x; end;",
+        "theorem CaseCap: for x being set holds (x=x iff x=x) or not (x=x iff x=x) proof let x be set; per cases; suppose A:(x=x iff x=x); thus (x=x iff x=x) or not (x=x iff x=x) by A; end; suppose B:not (x=x iff x=x); thus (x=x iff x=x) or not (x=x iff x=x) by B; end; end;",
+    ] {
+        assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b12_iff_native_gate_controls_actual_c8_fs_result_on_each_imp_edge() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_iff_parenthesized_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/formulas/pass_formula_statement_iff_parenthesized_001.miz");
+    for formula in ["((X = X implies X = X) iff X = X)","(X = X iff (X = X implies X = X))"] {
+        let source = base.replace("(X = X iff X = X)",formula);
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+        assert!(resolver.detail_keys.is_empty());
+        super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,false)
+            .expect("genuine legacy C8 check succeeds for explicit matching Iff/Imp source");
+        let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+        super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(handoff.check_witness_goals().is_err());
+        let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
+        assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
+        assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
+    }
 }

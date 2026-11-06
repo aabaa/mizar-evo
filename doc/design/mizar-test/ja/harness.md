@@ -47,6 +47,9 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 各分岐は先行する親 Pending guard と未証明の goal 全体を保持し、省略 justification・名前解決から
 網羅性や fact を受理しない。Case keyword/thesis の派生形は native-only control とする。
 
+既存の括弧付き Iff C8 case は legacy formula 検査後に native goal 全体の replay も要求する。
+この観測から同値のいずれの方向も証明しない。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。
