@@ -1184,6 +1184,7 @@ fn validate_baseline(table: &InitialObligationTable) -> Result<(), SourceModeDef
             InitialObligationKind::PredicatePropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         )
     }) {
         return Err(SourceModeDefinitionError::InvalidObligation);
@@ -2078,6 +2079,7 @@ fn validate_obligations(
             InitialObligationKind::PredicatePropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         ) || in_mode_definition_domain(row.goal.as_str())
             || in_mode_definition_domain(row.provenance.as_str())
     }) {

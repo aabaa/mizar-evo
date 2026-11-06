@@ -129,7 +129,9 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
             } else if path == root.join("src/source_proof_local_declaration.rs") {
                 "use mizar_syntax::ast::{\n    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,\n    SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
-            } else if path == root.join("src/source_redefinition.rs") {
+            } else if path == root.join("src/source_redefinition.rs")
+                || path == root.join("src/source_functor_definition.rs")
+            {
                 "use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};"
             } else if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"

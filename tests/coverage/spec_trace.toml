@@ -6901,6 +6901,7 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_guarded_functor_definition_001.expect.toml",
 ]
 notes = "Checker Task 260 covers only immutable syntax-free source transport for the exact two-functor-definition consumer and appends one Pending FunctorExistence plus one Pending FunctorUniqueness obligation. The route authenticates the complete source/Surface/resolver profile and the Task-248/249+249R/252/256 lower bundle, while preserving parameters, guard, return types, equals/means definientia, correctness ownership, justification anchors, and resolver provenance as separate rows. This row grants no composed goal, proof or justification verification, discharge, acceptance or activation, fact or axiom, overload/call semantics, CoreIr, ControlFlowIr, VC, mixed predicate/functor acceptance, or broader functor-definition credit."
 

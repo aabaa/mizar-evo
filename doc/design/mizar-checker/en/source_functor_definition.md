@@ -27,6 +27,20 @@ The handoff shares the immutable table for build replay, typed installation and
 resolved assembly; replay retains its late origin check after body validation.
 Source-free canonical construction is private to tests.
 
+## Guarded term definiens
+
+The guarded profile has one binary functor over two separately declared Set
+parameters, two own-formal equality guards with variable values, a required
+variable-valued otherwise, and a written consistency proof retained as Pending.
+TermCase and Otherwise targets reuse the existing ordered definiens rows; the
+definition points to its first row and replay authenticates the complete owner
+group against original value/if/condition/fallback sites. Case guards remain
+separate from enclosing assumptions. Consistency has its own correctness and
+initial-obligation kinds; means existence/uniqueness retain their original scope.
+No branch is chosen and no equation, fact, accepted definition, proof, VC or
+guarded Core lowering follows. Existing scalar/means and Core profiles remain
+independent; mathematical function-Binder certification is outside this boundary.
+
 ## Frozen Exact Source
 
 The canonical source, including the final LF, is:
@@ -594,8 +608,7 @@ The sidecar is `pass` / `type_elaboration` / `type_check`, has empty public
 diagnostics and payloads, and cites only requirement
 `spec.en.checker.type_elaboration.source_functor_definition_payload`. Passing
 credits successful source transport and pending-obligation intake only, not
-definition correctness or acceptance. One covered trace row backlinks only
-this sidecar.
+definition correctness or acceptance.
 
 The private runner route authenticates the bounded source family, normal AST,
 resolver profile, Task-248/249/252/256 bundle, and `2/2/1/2/2` Task-260
@@ -603,11 +616,6 @@ result. It runs before the generic definition extraction gap but matches no
 other active case. Existing parser fixtures, mixed predicate/functor gap,
 Task-253/255 functor-definiens gap cases, their sidecars, and their trace
 intent remain unchanged.
-
-The active Task-260 result implements this pair and trace relationship exactly:
-the requirement is covered, the sidecar is its sole reciprocal backlink, and
-the fixture/sidecar/trace hashes are recorded in the crate plan and coverage
-audit. No deferred semantic credit is promoted.
 
 ## Frozen Tests And Write Scope (Prerequisite History)
 

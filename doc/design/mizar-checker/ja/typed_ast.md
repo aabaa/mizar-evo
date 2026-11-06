@@ -1595,9 +1595,9 @@ togetherにrejectします。cross-family install-order promiseもTask-259
 compatibility editもありません。Task-260 pathはTask-259 stateをreplaceせず
 fact/type/coercion/diagnostic/proof/acceptanceを作りません。
 
-producer/installerはpre-existing `FunctorExistence` / `FunctorUniqueness`
-baselineもrejectします。handoffありではlinked final row 2件だけを許可し、
-handoffなしではどちらのkindもorphanとしてfinal assemblyがrejectします。
+producer/installerはpre-existing `FunctorExistence` / `FunctorUniqueness` /
+`FunctorConsistency` baselineもrejectします。correctness tableがlinkするfinal row
+だけを許可し、handoffなしではこれらのkindをorphanとしてfinal assemblyがrejectします。
 
 ## Task 249R definition-return ownership addendum
 

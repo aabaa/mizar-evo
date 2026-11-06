@@ -1,0 +1,10 @@
+:: EN10 10.12.3 / EN16 16.6.4: retain guarded values and Pending consistency.
+definition
+  let x be set;
+  let y be set;
+  func GuardedChoice: guarded_choice(x, y) -> set equals
+    x if x = y,
+    y if y = x
+  otherwise x;
+  consistency proof thus thesis; end;
+end;

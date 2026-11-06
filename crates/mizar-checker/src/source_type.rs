@@ -2062,18 +2062,36 @@ impl SourceTypeDefinitionReturnProducer {
         if input.returns.is_empty() {
             return Err(SourceTypeError::EmptyDefinitionReturns);
         }
-        if input.returns.len() != 2 {
+        let singleton = input.returns.len() == 1
+            && arena
+                .iter()
+                .filter(|(_, node)| node.kind.as_str() == "source.definition.functor")
+                .count()
+                == 1;
+        if input.returns.len() != 2 && !singleton {
             return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);
         }
         if input.source_id != base.source_id || input.module_id != base.module_id {
             return Err(SourceTypeError::EnvironmentMismatch);
         }
-        validate_definition_return_base(
-            base,
-            &input.returns[0].definition_site,
-            input.returns[0].definition_range,
-            arena,
-        )?;
+        if singleton {
+            if base.expressions.len() != 2
+                || !base.mode_rhs.is_empty()
+                || !base.structure_members.is_empty()
+                || base
+                    .validate_installation(base.source_id, &base.module_id, arena)
+                    .is_err()
+            {
+                return Err(SourceTypeError::InvalidDefinitionReturnBase);
+            }
+        } else {
+            validate_definition_return_base(
+                base,
+                &input.returns[0].definition_site,
+                input.returns[0].definition_range,
+                arena,
+            )?;
+        }
 
         let mut handoff = base.clone();
         for (index, input) in input.returns.into_iter().enumerate() {
@@ -2565,6 +2583,211 @@ fn validate_definition_return_extension(
     }
     if !handoff.mode_rhs.is_empty() || !handoff.structure_members.is_empty() {
         return Err(SourceTypeError::InvalidDefinitionReturnBase);
+    }
+    if handoff.definition_returns.len() == 1 {
+        let owners = arena
+            .iter()
+            .filter(|(_, node)| node.kind.as_str() == "source.definition.functor")
+            .collect::<Vec<_>>();
+        if owners.len() != 1 || handoff.expressions.len() != 3 {
+            return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);
+        }
+        let invalid_base = || SourceTypeError::InvalidDefinitionReturnBase;
+        let root_id = arena.root().ok_or_else(invalid_base)?;
+        let root = arena.node(root_id).ok_or_else(invalid_base)?;
+        let root_range = source_range(&root.anchor).ok_or_else(invalid_base)?;
+        if root.kind.as_str() != "source.module"
+            || root.recovery != NodeRecoveryState::Normal
+            || root.links.context.map(|context| context.index()) != Some(0)
+            || !valid_range(handoff.source_id, root_range)
+        {
+            return Err(invalid_base());
+        }
+        let mut reached = BTreeSet::new();
+        let mut pending = vec![root_id];
+        while let Some(site) = pending.pop() {
+            if reached.insert(site) {
+                pending.extend(
+                    arena
+                        .node(site)
+                        .ok_or_else(invalid_base)?
+                        .children
+                        .iter()
+                        .copied(),
+                );
+            }
+        }
+        if reached.len() != arena.len() {
+            return Err(invalid_base());
+        }
+        let id = SourceTypeDefinitionReturnId::new(0);
+        let invalid = || SourceTypeError::InvalidDefinitionReturnSite {
+            definition_return: id,
+        };
+        let (owner_id, owner) = owners[0];
+        let definition_return = &handoff.definition_returns.entries[0];
+        if definition_return.id != id
+            || definition_return.source_ordinal != 0
+            || definition_return.root != SourceTypeExpressionId::new(2)
+            || definition_return.definition_site != TypedSiteRef::Node(owner_id)
+            || !valid_range(handoff.source_id, definition_return.definition_range)
+            || source_range(&owner.anchor) != Some(definition_return.definition_range)
+            || owner.recovery != NodeRecoveryState::Normal
+            || owner.links.context.map(|context| context.index()) != Some(1)
+        {
+            return Err(invalid());
+        }
+        let blocks = arena
+            .iter()
+            .filter(|(_, node)| node.kind.as_str() == "source.definition")
+            .collect::<Vec<_>>();
+        let [(_, block)] = blocks.as_slice() else {
+            return Err(SourceTypeError::InvalidDefinitionReturnBase);
+        };
+        let block_range = source_range(&block.anchor).ok_or_else(invalid_base)?;
+        let parameters = block
+            .children
+            .iter()
+            .filter_map(|site| arena.node(*site).map(|node| (*site, node)))
+            .filter(|(_, node)| node.kind.as_str() == "source.definition.functor.parameter")
+            .collect::<Vec<_>>();
+        if block
+            .children
+            .iter()
+            .filter(|site| **site == owner_id)
+            .count()
+            != 1
+            || block.recovery != NodeRecoveryState::Normal
+            || block.links.context != owner.links.context
+            || !valid_range(handoff.source_id, block_range)
+            || !range_contains(root_range, block_range)
+            || !range_contains(block_range, definition_return.definition_range)
+            || parameters.len() != 2
+            || parameters
+                .iter()
+                .map(|(site, _)| *site)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != 2
+            || handoff.applications.len() != 2
+            || !handoff.arguments.is_empty()
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturnBase);
+        }
+        for (kind, expected) in [
+            ("source.definition.functor.parameter", 2),
+            ("source.type.expression", 3),
+            ("source.type.head", 3),
+        ] {
+            if arena
+                .iter()
+                .filter(|(_, node)| node.kind.as_str() == kind)
+                .count()
+                != expected
+            {
+                return Err(SourceTypeError::InvalidDefinitionReturnBase);
+            }
+        }
+        let mut sites = BTreeSet::from([owner_id]);
+        let mut previous_end = None;
+        for (index, expression) in handoff.expressions.entries.iter().enumerate() {
+            let TypedSiteRef::Node(site) = expression.site else {
+                return Err(invalid());
+            };
+            let TypedSiteRef::Node(head_site) = expression.head_site else {
+                return Err(invalid());
+            };
+            let node = arena.node(site).ok_or_else(invalid)?;
+            let head = arena.node(head_site).ok_or_else(invalid)?;
+            if expression.id != SourceTypeExpressionId::new(index)
+                || expression.source_id != handoff.source_id
+                || expression.module_id != handoff.module_id
+                || !valid_range(handoff.source_id, expression.source_range)
+                || expression.head_range != expression.source_range
+                || expression.form != SourceTypeApplicationForm::Bare
+                || expression.head != SourceTypeHead::BuiltinSet
+                || expression.spelling != "set"
+                || expression.head_spelling != "set"
+                || expression.recovery != NodeRecoveryState::Normal
+            {
+                return Err(SourceTypeError::UnsupportedDefinitionReturn {
+                    definition_return: id,
+                });
+            }
+            if node.kind.as_str() != "source.type.expression"
+                || head.kind.as_str() != "source.type.head"
+                || node.children.as_slice() != [head_site]
+                || source_range(&node.anchor) != Some(expression.source_range)
+                || source_range(&head.anchor) != Some(expression.head_range)
+                || node.recovery != NodeRecoveryState::Normal
+                || head.recovery != NodeRecoveryState::Normal
+                || node.links.context != owner.links.context
+                || head.links.context != owner.links.context
+                || !sites.insert(site)
+                || !sites.insert(head_site)
+                || previous_end.is_some_and(|end| end > expression.source_range.start)
+            {
+                return Err(invalid());
+            }
+            let prior_type_end = previous_end;
+            previous_end = Some(expression.source_range.end);
+            if index < 2 {
+                let application = &handoff.applications.entries[index];
+                let (_, parameter) = parameters[index];
+                if application.id != SourceTypeApplicationId::new(index)
+                    || application.binding != BindingId::new(index)
+                    || application.source_ordinal != index
+                    || application.root != expression.id
+                    || parameter.recovery != NodeRecoveryState::Normal
+                    || parameter.links.context != owner.links.context
+                    || !source_range(&parameter.anchor).is_some_and(|range| {
+                        valid_range(handoff.source_id, range)
+                            && range_contains(block_range, range)
+                            && prior_type_end.is_none_or(|end| end <= range.start)
+                            && range.end <= expression.source_range.start
+                    })
+                    || !range_contains(block_range, expression.source_range)
+                    || parameter.children.len() != 3
+                    || !arena.node(parameter.children[1]).is_some_and(|segment| {
+                        let [binder, _, type_site] = segment.children.as_slice() else {
+                            return false;
+                        };
+                        segment.recovery == NodeRecoveryState::Normal
+                            && segment.links.context == owner.links.context
+                            && source_range(&segment.anchor).is_some_and(|range| {
+                                range_contains(block_range, range)
+                                    && range_contains(range, expression.source_range)
+                                    && source_range(&parameter.anchor)
+                                        .is_some_and(|binder| range_contains(range, binder))
+                            })
+                            && *type_site == site
+                            && arena.node(*binder).is_some_and(|binder| {
+                                binder.anchor == parameter.anchor
+                                    && binder.recovery == NodeRecoveryState::Normal
+                                    && binder.links.context == owner.links.context
+                            })
+                    })
+                    || expression.source_range.end > definition_return.definition_range.start
+                {
+                    return Err(SourceTypeError::InvalidDefinitionReturnBase);
+                }
+            } else if !owner.children.contains(&site)
+                || !range_contains(definition_return.definition_range, expression.source_range)
+                || owner
+                    .children
+                    .iter()
+                    .filter(|child| {
+                        arena
+                            .node(**child)
+                            .is_some_and(|node| node.kind.as_str() == "source.type.expression")
+                    })
+                    .count()
+                    != 1
+            {
+                return Err(invalid());
+            }
+        }
+        return Ok(());
     }
     if handoff.definition_returns.len() != 2 || handoff.expressions.len() != 4 {
         return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);

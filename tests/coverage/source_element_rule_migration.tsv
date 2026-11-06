@@ -35,4 +35,4 @@ qua-expression	reconsider	native-consumer	done	QuaExpression; original conversio
 reconsider-item	reconsider	qua-expression	done	ReconsiderItem; original conversion roles in source_proof_local_declaration
 reconsider-statement	reconsider	qua-expression	done	ReconsiderStatement; original conversion roles in source_proof_local_declaration
 binder-expression	expression	checker-task-257B	blocked	BinderExpression
-term-case	expression	checker-task-257B	blocked	TermCase
+term-case	expression	native-consumer	done	TermCase; original guarded functor roles in source_functor_definition

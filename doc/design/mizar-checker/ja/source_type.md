@@ -11,6 +11,15 @@ Chapters 03 §§3.2-3.3、05 §§5.2/5.6、07 §§7.2-7.3/7.6、08 §§8.1/8.3�
 12 §§12.3/12.5/12.6.1/12.7、18 §§18.1/18.2.2、Appendix Aである。
 bounded audit ownerはMC-G014、MC-G016、MC-G020である。
 
+## Guarded functor return transport
+
+既存の definition-return extension は、個別に宣言した2つの Set parameter を持つ
+guarded functor の builtin-Set result も運びます。arena 全体にある単一の functor owner と
+実際の return child を要求し、二 owner の Task249R packet を削った入力は拒否します。
+installation でも関連を再検証します。[functor producer](../en/source_functor_definition.md) が
+元の構文・resolver identity・branch compatibility を認証します。この lower transport は
+証明・accepted definition・semantic typing を供給しません。
+
 ## Standalone structure-member layout
 
 元の Task249S table は fixture oracle として保持します。4 member path は同一 source の

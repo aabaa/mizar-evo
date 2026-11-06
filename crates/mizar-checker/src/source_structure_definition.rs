@@ -2036,6 +2036,7 @@ fn validate_baseline(table: &InitialObligationTable) -> Result<(), SourceStructu
             InitialObligationKind::PredicatePropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         ) || row.goal.as_str().starts_with("source.definition.predicate")
             || row
                 .provenance

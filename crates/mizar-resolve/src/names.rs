@@ -252,6 +252,22 @@ pub fn resolve_template_formal(
         {
             parent.children().last() == Some(&reference)
         }
+        SurfaceNodeKind::FunctorPattern if parent.children().len() == 6 => {
+            matches!(parent.children(), [head, open, left, comma, right, close]
+                if (*left == reference || *right == reference)
+                    && token(*head).zip(token(*left)).zip(token(*right))
+                        .is_some_and(|((head, left), right)| {
+                            matches!(head.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol)
+                                && left.kind == SurfaceTokenKind::Identifier
+                                && right.kind == SurfaceTokenKind::Identifier
+                                && left.text != right.text
+                                && head.text != left.text && head.text != right.text
+                        })
+                    && [(*open, "("), (*comma, ","), (*close, ")")]
+                        .into_iter().all(|(id, spelling)| token(id).is_some_and(|token|
+                            token.kind == SurfaceTokenKind::ReservedSymbol
+                                && token.text.as_ref() == spelling)))
+        }
         SurfaceNodeKind::PredicatePattern
         | SurfaceNodeKind::FunctorPattern
         | SurfaceNodeKind::NotationPattern => {

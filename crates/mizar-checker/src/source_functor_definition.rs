@@ -1,7 +1,7 @@
 use crate::{
     binding_env::{
-        BindingContextId, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
-        BindingTypeSite,
+        BinderIdentity, BindingContextId, BindingId, BindingKind, BindingRecoveryState,
+        BindingStatus, BindingTypeSite,
     },
     source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_atomic_formula::{
@@ -39,7 +39,7 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::ast::{SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};
 use std::{
     error::Error,
     fmt::{self, Write as _},
@@ -159,6 +159,8 @@ pub enum SourceFunctorDefiniensTarget {
     Structure(SourceStructureTermId),
     SetTerm(SourceSetTermId),
     AtomicFormula(SourceAtomicFormulaId),
+    TermCase(SourcePrimaryTermId, SourceAtomicFormulaId),
+    Otherwise(SourcePrimaryTermId),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -166,6 +168,7 @@ pub enum SourceFunctorDefiniensTarget {
 pub enum SourceFunctorCorrectnessKind {
     Existence,
     Uniqueness,
+    Consistency,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -988,6 +991,11 @@ impl SourceFunctorDefinitionProducer {
                     "source.definition.functor.correctness:definition=1:uniqueness",
                     "source.definition.functor:definition=1:correctness=1",
                 ),
+                SourceFunctorCorrectnessKind::Consistency => (
+                    InitialObligationKind::FunctorConsistency,
+                    "source.definition.functor.correctness:definition=0:consistency",
+                    "source.definition.functor:definition=0:correctness=0",
+                ),
             };
             let id = initial_obligations.insert(InitialObligationDraft {
                 kind,
@@ -1227,6 +1235,21 @@ fn validate_input_shape(
     source_context: &SourceBindingContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
 ) -> Result<(usize, usize), SourceFunctorDefinitionError> {
+    if input.definitions.len() == 1
+        && input.parameters.len() == 2
+        && input.guards.is_empty()
+        && input.definientia.len() == 3
+        && input.correctness.len() == 1
+    {
+        let item = source_context
+            .items()
+            .get(crate::source_context::SourceItemId::new(0))
+            .ok_or(SourceFunctorDefinitionError::UnsupportedTaskShape)?;
+        return Ok((
+            item.source_range.start,
+            input.definitions[0].source_range.start,
+        ));
+    }
     if input.definitions.len() != 2
         || input.parameters.len() != 2
         || input.guards.len() != 1
@@ -1278,6 +1301,7 @@ fn validate_baseline(
                 | InitialObligationKind::FunctorPropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         )
     }) {
         return Err(SourceFunctorDefinitionError::InvalidObligation);
@@ -1291,13 +1315,46 @@ fn validate_resolver_definitions(
     geometry: (usize, usize),
     source: Option<&TypedAst>,
 ) -> Result<Vec<SemanticOrigin>, SourceFunctorDefinitionError> {
-    if env.symbols().len() != 2 || env.definitions().len() != 2 || env.contributions().len() != 1 {
+    let guarded = input.definitions.len() == 1;
+    if env.symbols().len() != input.definitions.len()
+        || env.definitions().len() != input.definitions.len()
+        || env.contributions().len() != 1
+    {
         return Err(SourceFunctorDefinitionError::InvalidResolverDefinition { index: 0 });
     }
-    let expected_notations = ["task260_equals ( x )", "task260_means ( y )"];
+    let rows = source.and_then(TypedAst::source_nodes);
+    let guarded_pattern = if guarded {
+        let rows = rows.ok_or(SourceFunctorDefinitionError::UnsupportedTaskShape)?;
+        let declaration = rows
+            .iter()
+            .find(|row| row.kind() == &SurfaceNodeKind::FunctorDefinition)
+            .ok_or(SourceFunctorDefinitionError::UnsupportedTaskShape)?;
+        Some(
+            source_children(rows, declaration.site())
+                .find(|row| row.kind() == &SurfaceNodeKind::FunctorPattern)
+                .ok_or(SourceFunctorDefinitionError::UnsupportedTaskShape)?,
+        )
+    } else {
+        None
+    };
+    let expected_notations = guarded_pattern.map_or_else(
+        || vec!["task260_equals ( x )", "task260_means ( y )"],
+        |pattern| vec![pattern.spelling()],
+    );
     let expected_paths: [&[u32]; 2] = [&[4, 0, 9, 0], &[4, 0, 9, 1]];
     let (m, d) = geometry;
-    let expected_anchor = SourceAnchor::Range(range(input.source_id, m, d + 261));
+    let expected_anchor = if guarded {
+        SourceAnchor::Range(
+            rows.and_then(|rows| {
+                rows.iter()
+                    .find(|row| row.kind() == &SurfaceNodeKind::DefinitionBlockItem)
+            })
+            .ok_or(SourceFunctorDefinitionError::UnsupportedTaskShape)?
+            .range(),
+        )
+    } else {
+        SourceAnchor::Range(range(input.source_id, m, d + 261))
+    };
     let mut origins = Vec::with_capacity(2);
     for (index, row) in input.definitions.iter().enumerate() {
         let symbol = env
@@ -1330,7 +1387,7 @@ fn validate_resolver_definitions(
             || definition.visibility() != Visibility::Public
             || !definition.parameters().is_empty()
             || !definition.binders().is_empty()
-            || definition.arity() != Some(1)
+            || definition.arity() != Some(if guarded { 2 } else { 1 })
             || definition.notation_shape() != Some(expected_notations[index])
             || definition.doc_attachment().is_some()
             || definition.contribution() != row.contribution
@@ -1342,8 +1399,8 @@ fn validate_resolver_definitions(
                     source_id: input.source_id,
                 })
             || contribution.anchor() != &expected_anchor
-            || contribution.effects().symbols().len() != 2
-            || contribution.effects().definitions().len() != 2
+            || contribution.effects().symbols().len() != input.definitions.len()
+            || contribution.effects().definitions().len() != input.definitions.len()
             || !contribution.effects().symbols().contains(&row.symbol)
             || !contribution
                 .effects()
@@ -1447,10 +1504,20 @@ pub(crate) fn ordinary_functor_declaration_rule<'a>(
         return None;
     }
     let pattern = source_children(rows, children[3].site()).collect::<Vec<_>>();
-    if pattern.len() != 4
+    if !matches!(pattern.len(), 4 | 6)
         || source_contiguous_child_count(pattern.iter().copied()) != Some(pattern.len())
         || !matches!(pattern[0].kind(), SurfaceNodeKind::Token(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
         || !matches!(pattern[2].kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+    {
+        return None;
+    }
+    if pattern.len() == 6
+        && (!matches!(pattern[4].kind(), SurfaceNodeKind::Token(token)
+            if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() != pattern[2].spelling()
+                && token.text.as_ref() != pattern[0].spelling())
+            || pattern[0].spelling() == pattern[2].spelling()
+            || !matches!(pattern[3].kind(), SurfaceNodeKind::Token(token)
+            if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ","))
     {
         return None;
     }
@@ -1460,7 +1527,11 @@ pub(crate) fn ordinary_functor_declaration_rule<'a>(
         (children[4], SurfaceTokenKind::ReservedSymbol, "->"),
         (children[8], SurfaceTokenKind::ReservedSymbol, ";"),
         (pattern[1], SurfaceTokenKind::ReservedSymbol, "("),
-        (pattern[3], SurfaceTokenKind::ReservedSymbol, ")"),
+        (
+            pattern[pattern.len() - 1],
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+        ),
     ] {
         if !matches!(row.kind(), SurfaceNodeKind::Token(token) if token.kind == kind && token.text.as_ref() == text)
         {
@@ -1497,6 +1568,495 @@ fn validate_input_rows(
     validate_optional_definiens_targets(input, applications, structures, set_terms, arena)?;
     if applications.is_some() || structures.is_some() || set_terms.is_some() {
         return Err(SourceFunctorDefinitionError::DependencyMismatch);
+    }
+    if input.definitions.len() == 1 {
+        let invalid = || SourceFunctorDefinitionError::UnsupportedTaskShape;
+        let rows = original_source.ok_or_else(invalid)?;
+        let children = |row: &SourceNode| {
+            let children = source_children(rows, row.site()).collect::<Vec<_>>();
+            let mut preceding_end = row.range().start;
+            for child in &children {
+                if child.range().source_id != row.range().source_id
+                    || child.preorder_ordinal() <= row.preorder_ordinal()
+                    || child.range().start < preceding_end
+                    || child.range().start >= child.range().end
+                    || child.range().end > row.range().end
+                {
+                    return Err(invalid());
+                }
+                preceding_end = child.range().end;
+            }
+            if source_contiguous_child_count(children.iter().copied()) != Some(children.len()) {
+                return Err(invalid());
+            }
+            Ok(children)
+        };
+        let one = |row: &SourceNode, kind: SurfaceNodeKind| {
+            let parts = children(row)?;
+            match parts.as_slice() {
+                [child] if child.kind() == &kind => Ok(*child),
+                _ => Err(invalid()),
+            }
+        };
+        let token = |row: &SourceNode, kind, text: &str| matches!(row.kind(), SurfaceNodeKind::Token(t) if t.kind == kind && t.text.as_ref() == text);
+        let normalized = |text: &str| {
+            let preprocessed = mizar_lexer::preprocess_source_for_lexing(text);
+            if !preprocessed.diagnostics.is_empty() {
+                return Err(invalid());
+            }
+            let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).map_err(|_| invalid())?;
+            let environment =
+                mizar_lexer::build_lexical_environment(&[], &[]).map_err(|_| invalid())?;
+            let skeleton = mizar_lexer::build_scope_skeleton(&raw);
+            let tokens = mizar_lexer::disambiguate(
+                &raw,
+                &environment,
+                &mizar_lexer::ParserLexContext::general(),
+                &skeleton,
+            );
+            if !skeleton.diagnostics.is_empty() || !tokens.diagnostics().is_empty() {
+                return Err(invalid());
+            }
+            Ok(tokens
+                .tokens()
+                .iter()
+                .map(|token| token.lexeme.as_str())
+                .collect::<Vec<_>>()
+                .join(" "))
+        };
+        let site = |row: &SourceNode| TypedSiteRef::Node(TypedNodeId::new(row.site().index()));
+        let units = rows
+            .iter()
+            .filter(|row| row.kind() == &SurfaceNodeKind::CompilationUnit)
+            .collect::<Vec<_>>();
+        let [unit] = units.as_slice() else {
+            return Err(invalid());
+        };
+        let list = one(unit, SurfaceNodeKind::ItemList)?;
+        let items = children(list)?;
+        let [block] = items.as_slice() else {
+            return Err(invalid());
+        };
+        let parts = children(block)?;
+        let [begin, first, second, definition, correctness, end, semi] = parts.as_slice() else {
+            return Err(invalid());
+        };
+        if block.kind() != &SurfaceNodeKind::DefinitionBlockItem
+            || !token(begin, SurfaceTokenKind::ReservedWord, "definition")
+            || !token(end, SurfaceTokenKind::ReservedWord, "end")
+            || !token(semi, SurfaceTokenKind::ReservedSymbol, ";")
+            || definition.kind() != &SurfaceNodeKind::FunctorDefinition
+            || correctness.kind() != &SurfaceNodeKind::CorrectnessCondition
+            || rows.iter().any(|row| {
+                row.recovery() != NodeRecoveryState::Normal
+                    || row.range().source_id != input.source_id
+            })
+        {
+            return Err(invalid());
+        }
+        let declaration = children(definition)?;
+        let notation = declaration.get(3).ok_or_else(invalid)?.spelling();
+        if ordinary_functor_declaration_rule(rows, 0, 1, notation).map(SourceNode::site)
+            != Some(definition.site())
+        {
+            return Err(invalid());
+        }
+        let pattern = children(declaration[3])?;
+        if pattern.len() != 6 || declaration[7].kind() != &SurfaceNodeKind::TermDefiniens {
+            return Err(invalid());
+        }
+        let context = BindingContextId::new(1);
+        let local = LocalTypeContextId::new(1);
+        let env = source_context.binding_env();
+        let item = source_context
+            .items()
+            .get(crate::source_context::SourceItemId::new(0))
+            .ok_or_else(invalid)?;
+        if source_context.items().len() != 1
+            || source_context.declarations().len() != 2
+            || source_context.local_contexts().len() != 2
+            || source_context.context_links().len() != 2
+            || env.contexts().len() != 2
+            || env.bindings().len() != 2
+            || !env.diagnostics().is_empty()
+            || item.id.index() != 0
+            || item.shell.index() != 0
+            || item.shell_ordinal != 0
+            || item.role != SourceItemRole::DefinitionBlock
+            || item.source_range != block.range()
+            || item.site != site(block)
+            || item.binding_context != context
+            || item.local_context != local
+            || item.parent.is_some()
+            || item.predecessor.is_some()
+            || item.local_scope.is_none()
+            || item.visibility != SourceItemVisibility::Unspecified
+            || item.recovery != SourceItemRecovery::Normal
+            || !valid_site(&item.site, block.range(), "source.definition", local, arena)
+        {
+            return Err(SourceFunctorDefinitionError::DependencyMismatch);
+        }
+        for (index, (_, link)) in source_context.context_links().iter().enumerate() {
+            if link.binding_context != BindingContextId::new(index)
+                || link.local_context != LocalTypeContextId::new(index)
+                || link.item != if index == 0 { None } else { Some(item.id) }
+            {
+                return Err(SourceFunctorDefinitionError::DependencyMismatch);
+            }
+        }
+        let row = &input.definitions[0];
+        if row.site != site(definition)
+            || row.source_range != definition.range()
+            || row.source_ordinal != 0
+            || row.context != context
+            || row.style != SourceFunctorDefinitionStyle::Equals
+            || row.return_type != SourceTypeDefinitionReturnId::new(0)
+            || row.definiens != SourceFunctorDefiniensId::new(0)
+            || row.recovery != SourceFunctorDefinitionRecovery::Normal
+            || normalized(&row.spelling)? != definition.spelling()
+            || !valid_site(
+                &row.site,
+                row.source_range,
+                "source.definition.functor",
+                local,
+                arena,
+            )
+        {
+            return Err(SourceFunctorDefinitionError::InvalidDefinition { index: 0 });
+        }
+        let mut formals = Vec::new();
+        for (index, parameter) in [*first, *second].into_iter().enumerate() {
+            let parts = children(parameter)?;
+            let [let_word, segment, semi] = parts.as_slice() else {
+                return Err(invalid());
+            };
+            let segment_parts = children(segment)?;
+            let [formal, be, ty] = segment_parts.as_slice() else {
+                return Err(invalid());
+            };
+            if parameter.kind() != &SurfaceNodeKind::DefinitionParameter
+                || segment.kind() != &SurfaceNodeKind::QualifiedVariableSegment
+                || !token(let_word, SurfaceTokenKind::ReservedWord, "let")
+                || !token(be, SurfaceTokenKind::ReservedWord, "be")
+                || !token(semi, SurfaceTokenKind::ReservedSymbol, ";")
+                || !matches!(formal.kind(), SurfaceNodeKind::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                || pattern[2 + 2 * index].spelling() != formal.spelling()
+            {
+                return Err(invalid());
+            }
+            let parameter_row = &input.parameters[index];
+            let binding = env
+                .bindings()
+                .get(BindingId::new(index))
+                .ok_or_else(invalid)?;
+            let source_declaration = source_context
+                .declarations()
+                .get(crate::source_context::SourceDeclarationId::new(index))
+                .ok_or_else(invalid)?;
+            if parameter_row.ordinal != index
+                || parameter_row.binding != BindingId::new(index)
+                || parameter_row.written_type != SourceTypeApplicationId::new(index)
+                || parameter_row.site != site(parameter)
+                || parameter_row.source_range != parameter.range()
+                || parameter_row.declaration_range != formal.range()
+                || parameter_row.context != context
+                || parameter_row.recovery != SourceFunctorDefinitionRecovery::Normal
+                || normalized(&parameter_row.spelling)? != parameter.spelling()
+                || source_declaration.item != item.id
+                || source_declaration.binding != parameter_row.binding
+                || source_declaration.site != parameter_row.site
+                || source_declaration.source_ordinal != index
+                || source_declaration.spelling != formal.spelling()
+                || source_declaration.declaration_range != formal.range()
+                || source_declaration.written_type_range != ty.range()
+                || source_declaration.binding_context != context
+                || source_declaration.local_context != local
+                || source_declaration.shadowed_binding.is_some()
+                || source_declaration.predecessor.map(|id| id.index()) != index.checked_sub(1)
+                || !matches!(&source_declaration.role, SourceBindingSiteRole::DefinitionParameter { local }
+                    if local.spelling() == formal.spelling() && local.declaration_range() == formal.range()
+                        && Some(local.scope()) == item.local_scope.as_ref() && local.visible_after_ordinal() == index)
+                || binding.kind != BindingKind::DefinitionParameter
+                || binding.spelling != formal.spelling()
+                || binding.owner_context != context
+                || binding.declaration_range != formal.range()
+                || binding.identity
+                    != (BinderIdentity::ResolverLocal {
+                        scope: item.local_scope.clone().ok_or_else(invalid)?,
+                        ordinal: index,
+                        declaration_range: formal.range(),
+                    })
+                || binding.visible_after_ordinal != index
+                || binding.type_site != BindingTypeSite::Source(ty.range())
+                || binding.status != BindingStatus::Active
+                || binding.recovery != BindingRecoveryState::Normal
+                || !binding.captured.identities().is_empty()
+                || !binding.diagnostics.is_empty()
+                || !valid_site(
+                    &parameter_row.site,
+                    formal.range(),
+                    "source.definition.functor.parameter",
+                    local,
+                    arena,
+                )
+            {
+                return Err(SourceFunctorDefinitionError::InvalidParameter { index });
+            }
+            formals.push(*formal);
+        }
+        if formals[0].spelling() == formals[1].spelling()
+            || source_type.definition_returns().len() != 1
+        {
+            return Err(SourceFunctorDefinitionError::DependencyMismatch);
+        }
+        for (index, ty) in [children(first)?[1], children(second)?[1]]
+            .into_iter()
+            .map(|segment| children(segment).map(|parts| parts[2]))
+            .chain(std::iter::once(Ok(declaration[5])))
+            .enumerate()
+        {
+            let ty = ty?;
+            let head = one(ty, SurfaceNodeKind::TypeHead)?;
+            let head_parts = children(head)?;
+            if ty.kind() != &SurfaceNodeKind::TypeExpression
+                || head_parts.len() != 1
+                || !token(head_parts[0], SurfaceTokenKind::ReservedWord, "set")
+            {
+                return Err(invalid());
+            }
+            let expression = source_type
+                .expressions()
+                .get(SourceTypeExpressionId::new(index))
+                .ok_or_else(invalid)?;
+            if expression.site() != &site(ty)
+                || expression.source_range() != ty.range()
+                || expression.head_site() != &site(head)
+                || expression.head_range() != head.range()
+            {
+                return Err(SourceFunctorDefinitionError::DependencyMismatch);
+            }
+        }
+        let branch_parts = children(declaration[7])?;
+        let [first_case, comma, second_case, otherwise, fallback] = branch_parts.as_slice() else {
+            return Err(invalid());
+        };
+        if !token(comma, SurfaceTokenKind::ReservedSymbol, ",")
+            || !token(otherwise, SurfaceTokenKind::ReservedWord, "otherwise")
+        {
+            return Err(invalid());
+        }
+        let mut occurrences = Vec::new();
+        let mut guard_rows = Vec::new();
+        for (index, case) in [*first_case, *second_case, *fallback]
+            .into_iter()
+            .enumerate()
+        {
+            let output = &input.definientia[index];
+            let (value, guard) = if index < 2 {
+                let parts = children(case)?;
+                let [value, if_word, formula] = parts.as_slice() else {
+                    return Err(invalid());
+                };
+                if case.kind() != &SurfaceNodeKind::TermCase
+                    || !token(if_word, SurfaceTokenKind::ReservedWord, "if")
+                    || formula.kind() != &SurfaceNodeKind::FormulaExpression
+                {
+                    return Err(invalid());
+                }
+                (*value, Some(*formula))
+            } else {
+                (case, None)
+            };
+            let value_id = SourcePrimaryTermId::new(occurrences.len());
+            occurrences.push(value);
+            let expected_target = if let Some(guard) = guard {
+                let equality = one(guard, SurfaceNodeKind::BuiltinPredicateApplication)?;
+                let parts = children(equality)?;
+                let [left, equals, right] = parts.as_slice() else {
+                    return Err(invalid());
+                };
+                if !token(equals, SurfaceTokenKind::ReservedSymbol, "=") {
+                    return Err(invalid());
+                }
+                occurrences.extend([*left, *right]);
+                guard_rows.push(guard);
+                SourceFunctorDefiniensTarget::TermCase(value_id, SourceAtomicFormulaId::new(index))
+            } else {
+                SourceFunctorDefiniensTarget::Otherwise(value_id)
+            };
+            if output.owner != SourceFunctorDefinitionId::new(0)
+                || output.ordinal != index
+                || output.target != expected_target
+                || output.site != site(case)
+                || output.source_range != case.range()
+                || output.context != context
+                || output.recovery != SourceFunctorDefinitionRecovery::Normal
+                || normalized(&output.spelling)? != case.spelling()
+                || !valid_site(
+                    &output.site,
+                    output.source_range,
+                    "source.definition.functor.definiens",
+                    local,
+                    arena,
+                )
+            {
+                return Err(SourceFunctorDefinitionError::InvalidDefiniens { index });
+            }
+        }
+        if source_term.terms().len() != 7
+            || source_term.references().len() != 7
+            || !source_term.numeric_type_requests().is_empty()
+            || atomic_formulas.formulas().len() != 2
+            || !atomic_formulas.wrappers().is_empty()
+            || !atomic_formulas.predicate_segments().is_empty()
+            || !atomic_formulas.predicate_heads().is_empty()
+            || !atomic_formulas.candidates().is_empty()
+            || !atomic_formulas.type_sites().is_empty()
+            || !atomic_formulas.attributes().is_empty()
+        {
+            return Err(SourceFunctorDefinitionError::DependencyMismatch);
+        }
+        for (index, original) in occurrences.iter().enumerate() {
+            let term = source_term
+                .terms()
+                .get(SourcePrimaryTermId::new(index))
+                .ok_or_else(invalid)?;
+            let reference = source_term
+                .references()
+                .get(SourcePrimaryTermReferenceId::new(index))
+                .ok_or_else(invalid)?;
+            let source_reference = one(original, SurfaceNodeKind::TermReference)?;
+            let token_parts = children(source_reference)?;
+            let [name] = token_parts.as_slice() else {
+                return Err(invalid());
+            };
+            let formal = formals
+                .iter()
+                .position(|formal| formal.spelling() == name.spelling())
+                .ok_or_else(invalid)?;
+            if original.kind() != &SurfaceNodeKind::TermExpression
+                || source_reference.range() != original.range()
+                || name.range() != original.range()
+                || !matches!(name.kind(), SurfaceNodeKind::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+                || term.site() != &site(source_reference)
+                || term.source_range() != original.range()
+                || term.source_ordinal() != index
+                || term.context() != context
+                || term.recovery() != SourcePrimaryTermRecovery::Normal
+                || term.spelling() != original.spelling()
+                || term.spelling() != name.spelling()
+                || term.kind() != SourcePrimaryTermKind::VariableReference
+                || term.role() != SourcePrimaryTermRole::Value
+                || term.parent().is_some()
+                || reference.term() != SourcePrimaryTermId::new(index)
+                || reference.binding() != input.parameters[formal].binding
+                || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                || reference.lexical_scope() != item.local_scope.as_ref()
+                || reference.use_ordinal() != 2
+                || !valid_site(
+                    term.site(),
+                    term.source_range(),
+                    "source.term.variable-reference",
+                    local,
+                    arena,
+                )
+            {
+                return Err(SourceFunctorDefinitionError::DependencyMismatch);
+            }
+        }
+        for (index, original) in guard_rows.iter().enumerate() {
+            let formula = atomic_formulas
+                .formulas()
+                .get(SourceAtomicFormulaId::new(index))
+                .ok_or_else(invalid)?;
+            if formula.site() != &site(original)
+                || formula.source_range() != original.range()
+                || formula.source_ordinal() != index
+                || formula.context() != context
+                || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+                || formula.kind() != SourceAtomicFormulaKind::Equality
+                || formula.spelling() != original.spelling()
+                || !valid_site(
+                    formula.site(),
+                    formula.source_range(),
+                    "source.formula.atomic.equality",
+                    local,
+                    arena,
+                )
+            {
+                return Err(SourceFunctorDefinitionError::DependencyMismatch);
+            }
+        }
+
+        let correctness_parts = children(correctness)?;
+        let [consistency, proof, semi] = correctness_parts.as_slice() else {
+            return Err(invalid());
+        };
+        let proof_parts = children(proof)?;
+        let [begin, terminal, end] = proof_parts.as_slice() else {
+            return Err(invalid());
+        };
+        let terminal_parts = children(terminal)?;
+        let [thus, proposition, semi_thus] = terminal_parts.as_slice() else {
+            return Err(invalid());
+        };
+        let thesis_formula = one(proposition, SurfaceNodeKind::FormulaExpression)?;
+        let thesis = one(
+            thesis_formula,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+        )?;
+        let thesis_parts = children(thesis)?;
+        if !token(consistency, SurfaceTokenKind::ReservedWord, "consistency")
+            || proof.kind() != &SurfaceNodeKind::ProofBlock
+            || !token(semi, SurfaceTokenKind::ReservedSymbol, ";")
+            || !token(begin, SurfaceTokenKind::ReservedWord, "proof")
+            || !token(end, SurfaceTokenKind::ReservedWord, "end")
+            || terminal.kind() != &SurfaceNodeKind::ConclusionStatement
+            || !token(thus, SurfaceTokenKind::ReservedWord, "thus")
+            || proposition.kind() != &SurfaceNodeKind::Proposition
+            || !token(semi_thus, SurfaceTokenKind::ReservedSymbol, ";")
+            || thesis_parts.len() != 1
+            || !token(thesis_parts[0], SurfaceTokenKind::ReservedWord, "thesis")
+        {
+            return Err(invalid());
+        }
+        for (kind, expected) in [
+            (SurfaceNodeKind::FunctorDefinition, 1),
+            (SurfaceNodeKind::DefinitionBlockItem, 1),
+            (SurfaceNodeKind::DefinitionParameter, 2),
+            (SurfaceNodeKind::TermCase, 2),
+            (SurfaceNodeKind::TermExpression, 7),
+            (SurfaceNodeKind::TermReference, 7),
+            (SurfaceNodeKind::FormulaExpression, 3),
+            (SurfaceNodeKind::BuiltinPredicateApplication, 2),
+            (SurfaceNodeKind::CorrectnessCondition, 1),
+            (SurfaceNodeKind::ProofBlock, 1),
+            (SurfaceNodeKind::ConclusionStatement, 1),
+        ] {
+            if rows.iter().filter(|row| row.kind() == &kind).count() != expected {
+                return Err(invalid());
+            }
+        }
+        let output = &input.correctness[0];
+        if output.owner != SourceFunctorDefinitionId::new(0)
+            || output.ordinal != 0
+            || output.kind != SourceFunctorCorrectnessKind::Consistency
+            || output.site != site(correctness)
+            || output.source_range != correctness.range()
+            || output.justification != SourceAnchor::Range(proof.range())
+            || output.recovery != SourceFunctorDefinitionRecovery::Normal
+            || normalized(&output.spelling)? != correctness.spelling()
+            || !valid_site(
+                &output.site,
+                output.source_range,
+                "source.definition.functor.correctness",
+                local,
+                arena,
+            )
+        {
+            return Err(SourceFunctorDefinitionError::InvalidCorrectness { index: 0 });
+        }
+        return Ok(());
     }
     let source = input.source_id;
     let (_, d) = geometry;
@@ -1750,7 +2310,9 @@ fn validate_optional_definiens_targets(
                 Some((row.site(), row.source_range(), row.context(), kind))
             }
             SourceFunctorDefiniensTarget::Primary(_)
-            | SourceFunctorDefiniensTarget::AtomicFormula(_) => None,
+            | SourceFunctorDefiniensTarget::AtomicFormula(_)
+            | SourceFunctorDefiniensTarget::TermCase(_, _)
+            | SourceFunctorDefiniensTarget::Otherwise(_) => None,
         };
         if let Some((site, source_range, context, kind)) = optional_owner {
             if context != definiens.context {
@@ -2218,11 +2780,21 @@ fn validate_handoff_rows(
             .original_source_nodes
             .as_ref()
             .and_then(|rows| {
+                let notation = if handoff.definitions.len() == 1 {
+                    let declaration = rows
+                        .iter()
+                        .find(|row| row.kind() == &SurfaceNodeKind::FunctorDefinition)?;
+                    source_children(rows, declaration.site())
+                        .find(|row| row.kind() == &SurfaceNodeKind::FunctorPattern)?
+                        .spelling()
+                } else {
+                    notation[index]
+                };
                 ordinary_functor_declaration_rule(
                     rows,
                     index,
                     handoff.resolver_identities.len(),
-                    notation[index],
+                    notation,
                 )
             })
             .map(SourceNode::range);
@@ -2282,7 +2854,9 @@ fn validate_handoff_dense_ids(
 fn validate_handoff_resolver_identities(
     handoff: &SourceFunctorDefinitionHandoff,
 ) -> Result<(), SourceFunctorDefinitionError> {
-    if handoff.resolver_identities.len() != 2 {
+    if handoff.resolver_identities.len() != handoff.definitions.len()
+        || !matches!(handoff.definitions.len(), 1 | 2)
+    {
         return Err(SourceFunctorDefinitionError::UnsupportedTaskShape);
     }
     for (index, (definition, identity)) in handoff
@@ -2318,23 +2892,35 @@ fn validate_obligations(
     initial_obligations: &InitialObligationTable,
 ) -> Result<(), SourceFunctorDefinitionError> {
     let base_len = handoff.correctness.rows[0].obligation.index();
-    if initial_obligations.len() != base_len + 2 {
+    if initial_obligations.len() != base_len + handoff.correctness.len() {
         return Err(SourceFunctorDefinitionError::InvalidObligation);
     }
     validate_baseline_prefix(initial_obligations, base_len)?;
-    let kinds = [
-        InitialObligationKind::FunctorExistence,
-        InitialObligationKind::FunctorUniqueness,
-    ];
-    let goals = [
-        "source.definition.functor.correctness:definition=1:existence",
-        "source.definition.functor.correctness:definition=1:uniqueness",
-    ];
-    let provenances = [
-        "source.definition.functor:definition=1:correctness=0",
-        "source.definition.functor:definition=1:correctness=1",
-    ];
-    for index in 0..2 {
+    let kinds: &[InitialObligationKind] = if handoff.definitions.len() == 1 {
+        &[InitialObligationKind::FunctorConsistency]
+    } else {
+        &[
+            InitialObligationKind::FunctorExistence,
+            InitialObligationKind::FunctorUniqueness,
+        ]
+    };
+    let goals: &[&str] = if handoff.definitions.len() == 1 {
+        &["source.definition.functor.correctness:definition=0:consistency"]
+    } else {
+        &[
+            "source.definition.functor.correctness:definition=1:existence",
+            "source.definition.functor.correctness:definition=1:uniqueness",
+        ]
+    };
+    let provenances: &[&str] = if handoff.definitions.len() == 1 {
+        &["source.definition.functor:definition=0:correctness=0"]
+    } else {
+        &[
+            "source.definition.functor:definition=1:correctness=0",
+            "source.definition.functor:definition=1:correctness=1",
+        ]
+    };
+    for index in 0..handoff.correctness.len() {
         let correctness = &handoff.correctness.rows[index];
         let expected_id = InitialObligationId::new(base_len + index);
         let obligation = initial_obligations
@@ -2367,6 +2953,7 @@ fn validate_baseline_prefix(
                 | InitialObligationKind::FunctorPropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         )
     }) {
         return Err(SourceFunctorDefinitionError::InvalidObligation);
@@ -2430,6 +3017,7 @@ const fn correctness_key(kind: SourceFunctorCorrectnessKind) -> &'static str {
     match kind {
         SourceFunctorCorrectnessKind::Existence => "existence",
         SourceFunctorCorrectnessKind::Uniqueness => "uniqueness",
+        SourceFunctorCorrectnessKind::Consistency => "consistency",
     }
 }
 
@@ -2467,6 +3055,12 @@ fn write_target(output: &mut String, target: SourceFunctorDefiniensTarget) {
         }
         SourceFunctorDefiniensTarget::AtomicFormula(id) => {
             let _ = write!(output, "atomic-formula:{}", id.index());
+        }
+        SourceFunctorDefiniensTarget::TermCase(value, guard) => {
+            let _ = write!(output, "term-case:{}:{}", value.index(), guard.index());
+        }
+        SourceFunctorDefiniensTarget::Otherwise(value) => {
+            let _ = write!(output, "otherwise:{}", value.index());
         }
     }
 }

@@ -3620,6 +3620,7 @@ const fn property_family_kind(kind: InitialObligationKind) -> bool {
         InitialObligationKind::PredicatePropertyCorrectness
             | InitialObligationKind::FunctorExistence
             | InitialObligationKind::FunctorUniqueness
+            | InitialObligationKind::FunctorConsistency
             | InitialObligationKind::PropertyImplementationExistence
             | InitialObligationKind::PropertyImplementationUniqueness
     )

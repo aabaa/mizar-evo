@@ -42,6 +42,11 @@ remain spec-reserved; this transfer activates no runner or semantic credit. Veri
 The [source redefinition owner](./mizar-checker/en/source_redefinition.md) covers declaration-owned ordinary roots and inferred or explicit local target/Pending-coherence transport through real type-elaboration consumers.
 Accepted coherence/refinement and broader redefinition, notation and template overload transport remain outside this bounded coverage.
 
+## Guarded functor definiens
+
+The [functor definition owner](./mizar-checker/en/source_functor_definition.md) retains ordered value/guard/fallback source associations and Pending consistency for the bounded explicit-Set profile.
+Branch selection, consistency proof, accepted definitions, guarded Core/VC lowering and mathematical function-Binder certification remain outside this transport boundary.
+
 ## Native proof-local binding metadata
 
 `spec.en.04.variables.proof_local.binding_metadata` is covered as source metadata

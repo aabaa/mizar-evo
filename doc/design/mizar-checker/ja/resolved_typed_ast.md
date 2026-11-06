@@ -1570,9 +1570,9 @@ second final obligation input/getterやresolver reconstructionはありません
 clone/debug orderはdeterministicで、failureはrepair/renumber/partial publish
 できません。
 
-Task 260 absent時の`FunctorExistence` / `FunctorUniqueness`はorphanとして
-rejectします。present時はcorrectness tableがlinkするfinal row 2件だけをrequireし、
-additional functor-kind rowをrejectします。
+functor-definition handoffがない場合、`FunctorExistence` / `FunctorUniqueness` /
+`FunctorConsistency`をorphanとしてrejectします。handoffがある場合はcorrectness tableが
+linkするfinal rowだけを要求し、これらのkindの追加rowをrejectします。
 
 ## Task 249R definition-return clone addendum
 

@@ -1727,9 +1727,9 @@ replace Task-259 state, create facts/types/coercions/diagnostics, or install
 proof/acceptance output.
 
 The producer and installer also reject a baseline already containing
-`FunctorExistence` or `FunctorUniqueness`. With the handoff installed, exactly
-the two final linked functor rows exist; without it, either functor kind is an
-orphan rejected by final assembly.
+`FunctorExistence`, `FunctorUniqueness` or `FunctorConsistency`. Installation
+requires exactly the final rows linked by the correctness table; without the
+handoff, any of these kinds is an orphan rejected by final assembly.
 
 ## Task 249R Definition-Return Ownership Addendum
 

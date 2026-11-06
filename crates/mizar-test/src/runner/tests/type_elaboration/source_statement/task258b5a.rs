@@ -1225,7 +1225,7 @@ fn task258b5a_source_active_fixture_and_visibility_near_misses_stay_isolated() {
             selected.push(case.id.0.clone());
         }
     }
-    assert_eq!(active_count, 272);
+    assert_eq!(active_count, 273);
     assert!(
         selected.is_empty(),
         "private B5A route selected active type cases: {selected:?}"

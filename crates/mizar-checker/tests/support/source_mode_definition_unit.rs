@@ -520,6 +520,7 @@ fn task_262_mode_definition_dependency_and_obligation_corruption_fails_closed() 
         InitialObligationKind::PredicatePropertyCorrectness,
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
     ] {
         let mut forbidden = InitialObligationTable::new();
         let mut row = unrelated_draft(fixture.source, "unrelated", "unrelated");

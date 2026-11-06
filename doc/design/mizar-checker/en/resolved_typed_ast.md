@@ -1634,10 +1634,10 @@ getter for obligations and no resolver-side reconstruction. Clone and debug
 order are deterministic; failure cannot repair, renumber, or partially
 publish either family.
 
-When Task 260 is absent, any `FunctorExistence` or `FunctorUniqueness` row is
-an orphan and final assembly rejects it. When Task 260 is present, final
-assembly requires exactly the two final rows linked by its correctness table
-and rejects any additional row of either functor kind.
+Without a functor-definition handoff, any `FunctorExistence`, `FunctorUniqueness`
+or `FunctorConsistency` row is an orphan and final assembly rejects it. With the
+handoff, assembly requires exactly the final rows linked by its correctness
+table and rejects any additional row of these kinds.
 
 ## Task 249R Definition-Return Clone Addendum
 

@@ -7234,3 +7234,142 @@ const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
         end,
     }
 }
+
+#[test]
+fn task257b4_binary_prefix_formals_authenticate_roles_and_declaration_order() {
+    use mizar_syntax::{SurfaceBuilderNodeId, SurfaceNodeId};
+    const TEXT: &str = "definition\n  let x be set;\n  let y be set;\n  func Binary: guarded_choice(x, y) -> set equals x;\nend;\n";
+    let source = source_id();
+    let module = module_id("pkg", "binary_prefix_formals");
+    let ast = proof_binding_source_ast(source, TEXT);
+    let pattern_children = |ast: &SurfaceAst| {
+        ast.node_views()
+            .find(|row| row.kind() == &SurfaceNodeKind::FunctorPattern)
+            .unwrap()
+            .children()
+            .to_vec()
+    };
+    let children = pattern_children(&ast);
+    assert_eq!(children.len(), 6);
+    assert_eq!(
+        children
+            .iter()
+            .map(|id| match &ast.node(*id).unwrap().kind {
+                SurfaceNodeKind::Token(token) => token.text.as_ref(),
+                _ => panic!("binary prefix loci and punctuation are actual tokens"),
+            })
+            .collect::<Vec<_>>(),
+        ["guarded_choice", "(", "x", ",", "y", ")"]
+    );
+    let mutate = |ast: &SurfaceAst, target: SurfaceNodeId, kind, text: &str| {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let mut ids: Vec<SurfaceBuilderNodeId> = Vec::new();
+        for (index, row) in ast.nodes().iter().enumerate() {
+            ids.push(match &row.kind {
+                SurfaceNodeKind::Token(token) => builder.add_token(
+                    if index == target.index() {
+                        kind
+                    } else {
+                        token.kind
+                    },
+                    if index == target.index() {
+                        text
+                    } else {
+                        token.text.as_ref()
+                    },
+                    row.range,
+                ),
+                node_kind => builder.add_node(
+                    node_kind.clone(),
+                    row.range,
+                    row.children
+                        .iter()
+                        .map(|child| ids[child.index()])
+                        .collect(),
+                ),
+            });
+        }
+        builder.finish(ast.root().map(|root| ids[root.index()]), None)
+    };
+    let lookup = |ast: &SurfaceAst, position: usize| {
+        let native = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        resolve_template_formal(
+            &native,
+            native
+                .resolved_node_for(pattern_children(ast)[position])
+                .unwrap(),
+        )
+    };
+    let binder = |ast: &SurfaceAst, name: &str| {
+        let declaration = ast
+            .node_views()
+            .filter(|row| row.kind() == &SurfaceNodeKind::QualifiedVariableSegment)
+            .find(|row| {
+                matches!(&ast.node(row.children()[0]).unwrap().kind,
+                SurfaceNodeKind::Token(token) if token.text.as_ref() == name)
+            })
+            .unwrap();
+        SurfaceResolvedArena::lower(ast, &module)
+            .unwrap()
+            .resolved_node_for(declaration.children()[0])
+            .unwrap()
+    };
+    for kind in [SurfaceTokenKind::Identifier, SurfaceTokenKind::UserSymbol] {
+        let valid = mutate(&ast, children[0], kind, "guarded_choice");
+        let native = SurfaceResolvedArena::lower(&valid, &module).unwrap();
+        let term = valid
+            .node_views()
+            .find(|row| row.kind() == &SurfaceNodeKind::TermReference)
+            .unwrap();
+        assert_eq!(
+            resolve_template_formal(
+                &native,
+                native.resolved_node_for(term.children()[0]).unwrap()
+            ),
+            Ok(binder(&valid, "x"))
+        );
+        assert!(lookup(&valid, 0).is_err(), "the head is not a formal use");
+        assert_eq!(lookup(&valid, 2), Ok(binder(&valid, "x")));
+        assert_eq!(lookup(&valid, 4), Ok(binder(&valid, "y")));
+    }
+    for (position, spelling, wrong) in [(1, "(", "["), (3, ",", ";"), (5, ")", "]")] {
+        for (kind, text) in [
+            (SurfaceTokenKind::Identifier, spelling),
+            (SurfaceTokenKind::ReservedSymbol, wrong),
+        ] {
+            let invalid = mutate(&ast, children[position], kind, text);
+            assert!(
+                lookup(&invalid, 2).is_err(),
+                "left: {position} {kind:?} {text}"
+            );
+            assert!(
+                lookup(&invalid, 4).is_err(),
+                "right: {position} {kind:?} {text}"
+            );
+        }
+    }
+    for (position, kind, text) in [
+        (0, SurfaceTokenKind::ReservedWord, "guarded_choice"),
+        (0, SurfaceTokenKind::Identifier, "x"),
+        (0, SurfaceTokenKind::Identifier, "y"),
+        (2, SurfaceTokenKind::UserSymbol, "x"),
+        (4, SurfaceTokenKind::UserSymbol, "y"),
+        (4, SurfaceTokenKind::Identifier, "x"),
+    ] {
+        let invalid = mutate(&ast, children[position], kind, text);
+        assert!(lookup(&invalid, 2).is_err());
+        assert!(lookup(&invalid, 4).is_err());
+    }
+    let unbound = mutate(&ast, children[4], SurfaceTokenKind::Identifier, "z");
+    assert_eq!(lookup(&unbound, 2), Ok(binder(&unbound, "x")));
+    assert!(lookup(&unbound, 4).is_err());
+    for text in [
+        TEXT.replace("  let y be set;\n", ""),
+        TEXT.replace("  let y be set;\n", "")
+            .replace("end;", "  let y be set;\nend;"),
+    ] {
+        let invalid = proof_binding_source_ast(source, &text);
+        assert_eq!(lookup(&invalid, 2), Ok(binder(&invalid, "x")));
+        assert!(lookup(&invalid, 4).is_err(), "missing or forward y: {text}");
+    }
+}

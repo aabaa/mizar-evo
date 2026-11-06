@@ -1365,7 +1365,9 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
                 SourceFunctorDefiniensTarget::SetTerm(SourceSetTermId::new(1))
             }
             SourceFunctorDefiniensTarget::Primary(_)
-            | SourceFunctorDefiniensTarget::AtomicFormula(_) => unreachable!(),
+            | SourceFunctorDefiniensTarget::AtomicFormula(_)
+            | SourceFunctorDefiniensTarget::TermCase(_, _)
+            | SourceFunctorDefiniensTarget::Otherwise(_) => unreachable!(),
         };
         let mut invalid_id_input = deferred_input.clone();
         invalid_id_input.definientia[0].target = invalid_id;
@@ -1612,6 +1614,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
     for kind in [
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
     ] {
         let mut rows = drafts.clone();
         let mut extra = unrelated_draft(fixture.source);
@@ -1676,6 +1679,7 @@ fn task_260_dependency_and_obligation_corruption_fails_closed() {
     for kind in [
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
         InitialObligationKind::PredicatePropertyCorrectness,
     ] {
         let mut forbidden = InitialObligationTable::new();
@@ -1936,6 +1940,7 @@ fn task_260_final_clone_debug_determinism_and_predicate_isolation() {
     for kind in [
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
     ] {
         assert_orphan_obligation_rejected(&fixture, kind);
         let mut extra_projection = projection.clone();
@@ -1994,6 +1999,7 @@ fn task_260_final_clone_debug_determinism_and_predicate_isolation() {
     for kind in [
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
     ] {
         let mut orphan_final = fixture.typed_ast(InitialObligationTable::new());
         let mut orphan = unrelated_draft(fixture.source);
@@ -5101,4 +5107,822 @@ fn ordinary_functor_native_replay_rechecks_original_rows_and_sealed_origins() {
         Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition)
     );
     assert!(assemble_empty(&typed).is_ok());
+}
+
+#[test]
+fn task257b4_actual_guarded_owner_private_forgeries_fail_both_installations() {
+    use crate::typed_ast::TypedArenaBuilder;
+    use crate::{source_atomic_formula::*, source_context::*, source_term::*, source_type::*};
+    use mizar_frontend::{
+        lexing::{TokenizeRequest, tokenize},
+        parsing::{MizarParserSeam, ParseRequest, ParserInputs, ParserSeam},
+        preprocess::preprocess,
+        source::{FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit},
+        span_bridge::SpanBridge,
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellKind, names::resolve_template_formal,
+        resolved_ast::SurfaceResolvedArena, symbols::SignatureProjectionExtractor,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+    use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind as K};
+
+    let text = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/types/pass_type_elaboration_guarded_functor_definition_001.miz"
+    ));
+    let root = std::env::temp_dir().join(format!("mizar-task257b4-private-{}", std::process::id()));
+    let path = root.join("src/guarded_private.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, text).unwrap();
+    let source = FrontendSourceLoader::new(DiskSourceLoader::new(&root))
+        .load_source_unit(
+            SourceUnitRequest {
+                snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                    "mizar-session-build-snapshot-v1:{}",
+                    "61".repeat(Hash::BYTE_LEN)
+                ))
+                .unwrap(),
+                input: SourceInput {
+                    package_id: PackageId::new("pkg"),
+                    module_path: ModulePath::new("guarded_private"),
+                    normalized_path: normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
+    assert_eq!(source.source_text.as_ref(), text);
+    let mut bridge = SpanBridge::new();
+    register_source_unit(&mut bridge, &source).unwrap();
+    let preprocessed = preprocess(&source, &mut bridge).unwrap();
+    assert!(preprocessed.import_stubs.is_empty());
+    let lexical = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+    let policy = ParserInputs::from_active_environment(source.edition.clone(), &lexical);
+    let tokens = tokenize(
+        TokenizeRequest::with_plan(
+            &preprocessed,
+            &lexical,
+            policy
+                .string_required_positions
+                .parser_lexing_plan(preprocessed.lexical_text.as_str()),
+        )
+        .with_current_module(mizar_frontend::lexical_env::ModuleId::new(
+            "guarded_private",
+        )),
+        &bridge,
+    )
+    .unwrap();
+    assert!(tokens.diagnostics().is_empty());
+    let parsed = MizarParserSeam.parse(ParseRequest::new(&tokens, policy));
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+    let ast = parsed.ast.unwrap();
+    let module = ModuleId::new(source.package_id, source.module_path);
+    let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    native.validate_against(&ast, &module).unwrap();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(collected.diagnostics().is_empty());
+    let symbols = collected.into_env();
+    mizar_resolve::symbols::validate_source_symbol_env(&native, &symbols).unwrap();
+    let mut syntax = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: Some(native.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(
+            Some(TypedNodeId::new(native.arena().root().index())),
+            native
+                .arena()
+                .iter()
+                .map(|(id, row)| {
+                    TypedNode::new("syntax", row.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            row.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .unwrap(),
+        contexts: Default::default(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .unwrap();
+    syntax.install_source_nodes(&native).unwrap();
+    let rows = syntax.source_node_entries().unwrap().collect::<Vec<_>>();
+    let at = |kind: K, spelling: &str| {
+        let found = rows
+            .iter()
+            .copied()
+            .filter(|row| {
+                row.kind() == &kind
+                    && text.get(row.range().start..row.range().end) == Some(spelling)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(found.len(), 1, "actual {kind:?} {spelling}");
+        found[0]
+    };
+    let typed_site = |row: &SourceNode| TypedSiteRef::Node(TypedNodeId::new(row.site().index()));
+    let definition = at(
+        K::FunctorDefinition,
+        "func GuardedChoice: guarded_choice(x, y) -> set equals\n    x if x = y,\n    y if y = x\n  otherwise x;",
+    );
+    let parameters = [
+        at(K::DefinitionParameter, "let x be set;"),
+        at(K::DefinitionParameter, "let y be set;"),
+    ];
+    let cases = [at(K::TermCase, "x if x = y"), at(K::TermCase, "y if y = x")];
+    let definiens = at(
+        K::TermDefiniens,
+        "x if x = y,\n    y if y = x\n  otherwise x",
+    );
+    let correctness = at(
+        K::CorrectnessCondition,
+        "consistency proof thus thesis; end;",
+    );
+    let proof = at(K::ProofBlock, "proof thus thesis; end");
+    let block = shells
+        .declarations()
+        .iter()
+        .find(|shell| shell.kind() == DeclarationShellKind::DefinitionBlock)
+        .unwrap();
+    let block_row = rows
+        .iter()
+        .copied()
+        .find(|row| row.kind() == &K::DefinitionBlockItem && row.range() == block.range())
+        .unwrap();
+    let mut formals = rows
+        .iter()
+        .copied()
+        .filter(|row| {
+            matches!(row.kind(), K::Token(token)
+        if token.kind == SurfaceTokenKind::Identifier)
+                && rows.iter().any(|parent| {
+                    Some(parent.site()) == row.parent()
+                        && parent.kind() == &K::QualifiedVariableSegment
+                })
+        })
+        .collect::<Vec<_>>();
+    formals.sort_by_key(|row| row.range().start);
+    assert_eq!(formals.len(), 2);
+    let mut types = rows
+        .iter()
+        .copied()
+        .filter(|row| row.kind() == &K::TypeExpression)
+        .collect::<Vec<_>>();
+    types.sort_by_key(|row| row.range().start);
+    assert_eq!(types.len(), 3);
+    let pattern = at(K::FunctorPattern, "guarded_choice(x, y)");
+    for formal in &formals {
+        let locus = rows
+            .iter()
+            .copied()
+            .find(|row| row.parent() == Some(pattern.site()) && row.spelling() == formal.spelling())
+            .unwrap();
+        assert_eq!(
+            resolve_template_formal(&native, locus.site()).unwrap(),
+            formal.site()
+        );
+    }
+    let declaration = symbols.definitions().iter().next().unwrap();
+    assert_eq!(declaration.arity(), Some(2));
+    let mut term_rows = rows
+        .iter()
+        .copied()
+        .filter(|row| row.kind() == &K::TermReference)
+        .collect::<Vec<_>>();
+    term_rows.sort_by_key(|row| row.range().start);
+    assert_eq!(term_rows.len(), 7);
+    let formal_indices = term_rows
+        .iter()
+        .map(|row| {
+            let token = rows
+                .iter()
+                .copied()
+                .find(|child| child.parent() == Some(row.site()))
+                .unwrap();
+            let formal = resolve_template_formal(&native, token.site()).unwrap();
+            formals
+                .iter()
+                .position(|candidate| candidate.site() == formal)
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    let formulas = [
+        at(K::FormulaExpression, "x = y"),
+        at(K::FormulaExpression, "y = x"),
+    ];
+    let fallback = rows
+        .iter()
+        .copied()
+        .find(|row| row.parent() == Some(definiens.site()) && row.kind() == &K::TermExpression)
+        .unwrap();
+    let mut builder = TypedArenaBuilder::new();
+    for (index, surface) in ast.nodes().iter().enumerate() {
+        let site = TypedNodeId::new(index);
+        let kind = if site == typed_site(fallback).node() {
+            "source.definition.functor.definiens"
+        } else {
+            match surface.kind {
+                K::TypeHead => "source.type.head",
+                K::TypeExpression => "source.type.expression",
+                K::DefinitionParameter => "source.definition.functor.parameter",
+                K::TermReference => "source.term.variable-reference",
+                K::FormulaExpression
+                    if formulas.iter().any(|row| typed_site(row).node() == site) =>
+                {
+                    "source.formula.atomic.equality"
+                }
+                K::TermCase => "source.definition.functor.definiens",
+                K::FunctorDefinition => "source.definition.functor",
+                K::CorrectnessCondition => "source.definition.functor.correctness",
+                K::DefinitionBlockItem => "source.definition",
+                K::Token(_) => "source.surface.token",
+                _ if Some(index) == ast.root().map(SurfaceNodeId::index) => "source.module",
+                _ => "source.surface.structural",
+            }
+        };
+        let anchor = parameters
+            .iter()
+            .position(|row| typed_site(row).node() == site)
+            .map_or(surface.range, |index| formals[index].range());
+        builder
+            .push(
+                TypedNode::new(kind, SourceAnchor::Range(anchor))
+                    .with_children(
+                        surface
+                            .children
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                    .with_links(TypedNodeLinks {
+                        context: Some(LocalTypeContextId::new(usize::from(
+                            Some(index) != ast.root().map(SurfaceNodeId::index),
+                        ))),
+                        ..Default::default()
+                    }),
+            )
+            .unwrap();
+    }
+    let arena = builder
+        .finish(ast.root().map(|root| TypedNodeId::new(root.index())))
+        .unwrap();
+    let scope = LocalTermScope::new(vec![0]);
+    let context = SourceBindingContextProducer::build(SourceBindingContextInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        module_site: TypedSiteRef::Node(arena.root().unwrap()),
+        items: vec![SourceItemInput {
+            shell: block.id(),
+            shell_ordinal: block.ordinal(),
+            role: SourceItemRole::DefinitionBlock,
+            module_id: module.clone(),
+            source_range: block.range(),
+            parent: None,
+            visibility: SourceItemVisibility::Unspecified,
+            site: typed_site(block_row),
+            local_scope: Some(scope.clone()),
+            recovery: SourceItemRecovery::Normal,
+        }],
+        bindings: (0..2)
+            .map(|index| SourceBindingSiteInput {
+                shell: block.id(),
+                context_owner: SourceBindingContextOwner::Shell(block.id()),
+                source_ordinal: index,
+                spelling: formals[index].spelling().to_owned(),
+                declaration_range: formals[index].range(),
+                written_type_range: types[index].range(),
+                site: typed_site(parameters[index]),
+                role: SourceBindingSiteRole::DefinitionParameter {
+                    local: LocalTermBinding::new(
+                        formals[index].spelling(),
+                        scope.clone(),
+                        formals[index].range(),
+                        index,
+                    ),
+                },
+                recovery: BindingRecoveryState::Normal,
+            })
+            .collect(),
+    })
+    .unwrap()
+    .into_complete()
+    .expect("real two-formal context")
+    .into_handoff();
+    let type_input = |row: &SourceNode| {
+        let head = rows
+            .iter()
+            .copied()
+            .find(|child| child.parent() == Some(row.site()) && child.kind() == &K::TypeHead)
+            .unwrap();
+        SourceTypeExpressionInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            site: typed_site(row),
+            source_range: row.range(),
+            spelling: row.spelling().to_owned(),
+            head_site: typed_site(head),
+            head_range: head.range(),
+            head_spelling: "set".to_owned(),
+            form: SourceTypeApplicationForm::Bare,
+            head: SourceTypeHead::BuiltinSet,
+            recovery: NodeRecoveryState::Normal,
+        }
+    };
+    let base_type = SourceTypeProducer::build(
+        SourceTypeHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            applications: (0..2)
+                .map(|index| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: types[..2].iter().map(|row| type_input(row)).collect(),
+            arguments: Vec::new(),
+        },
+        context.binding_env(),
+        &symbols,
+        &arena,
+    )
+    .expect("actual parameter Set lower transport");
+    let source_type = SourceTypeDefinitionReturnProducer::extend(
+        &base_type,
+        SourceTypeDefinitionReturnExtensionInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            returns: vec![SourceTypeDefinitionReturnInput {
+                definition_site: typed_site(definition),
+                definition_range: definition.range(),
+                source_ordinal: 0,
+                expression: type_input(types[2]),
+            }],
+        },
+        &arena,
+    )
+    .expect("one actual written return, never a fabricated second definition");
+    let mut term_input = SourcePrimaryTermHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        terms: term_rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| SourcePrimaryTermInput {
+                site: typed_site(row),
+                source_range: row.range(),
+                source_ordinal: index,
+                context: BindingContextId::new(1),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: row.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            })
+            .collect(),
+        references: formal_indices
+            .iter()
+            .enumerate()
+            .map(|(index, binding)| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: BindingId::new(*binding),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
+            .collect(),
+        numeric_type_requests: Vec::new(),
+    };
+    let source_term =
+        SourcePrimaryTermProducer::build(term_input.clone(), context.binding_env(), &arena)
+            .unwrap();
+    let atomic_input = SourceAtomicFormulaHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        formulas: formulas
+            .iter()
+            .enumerate()
+            .map(|(index, row)| SourceAtomicFormulaInput {
+                site: typed_site(row),
+                source_range: row.range(),
+                source_ordinal: index,
+                context: BindingContextId::new(1),
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: row.spelling().to_owned(),
+                kind: SourceAtomicFormulaKind::Equality,
+            })
+            .collect(),
+        wrappers: Vec::new(),
+        predicate_segments: Vec::new(),
+        predicate_heads: Vec::new(),
+        candidates: Vec::new(),
+        type_sites: Vec::new(),
+        attributes: Vec::new(),
+        edges: formulas
+            .iter()
+            .enumerate()
+            .flat_map(|(index, formula)| {
+                let operands = term_rows
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, row)| {
+                        formula.range().start <= row.range().start
+                            && row.range().end <= formula.range().end
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(operands.len(), 2);
+                operands
+                    .into_iter()
+                    .enumerate()
+                    .map(move |(ordinal, (term, _))| SourceAtomicEdgeInput {
+                        formula: SourceAtomicFormulaId::new(index),
+                        ordinal,
+                        role: if ordinal == 0 {
+                            SourceAtomicEdgeRole::BuiltinLeftOperand
+                        } else {
+                            SourceAtomicEdgeRole::BuiltinRightOperand
+                        },
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(term)),
+                    })
+            })
+            .collect(),
+        requests: (0..4)
+            .map(|edge| SourceAtomicRequestInput {
+                formula: SourceAtomicFormulaId::new(edge / 2),
+                ordinal: edge % 2,
+                kind: SourceAtomicRequestKind::OperandExpectedType,
+                edge: Some(SourceAtomicEdgeId::new(edge)),
+                candidate: None,
+                type_site: None,
+                attribute: None,
+            })
+            .collect(),
+    };
+    let atomic_formulas = SourceAtomicFormulaProducer::build(
+        atomic_input.clone(),
+        context.binding_env(),
+        &symbols,
+        &source_term,
+        None,
+        None,
+        None,
+        &arena,
+    )
+    .unwrap();
+    let input = SourceFunctorDefinitionHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        definitions: vec![SourceFunctorDefinitionInput {
+            symbol: declaration.symbol().clone(),
+            definition: declaration.id(),
+            contribution: declaration.contribution(),
+            site: typed_site(definition),
+            source_range: definition.range(),
+            source_ordinal: 0,
+            context: BindingContextId::new(1),
+            recovery: SourceFunctorDefinitionRecovery::Normal,
+            spelling: text[definition.range().start..definition.range().end].to_owned(),
+            style: SourceFunctorDefinitionStyle::Equals,
+            return_type: SourceTypeDefinitionReturnId::new(0),
+            definiens: SourceFunctorDefiniensId::new(0),
+        }],
+        parameters: (0..2)
+            .map(|index| SourceFunctorParameterInput {
+                ordinal: index,
+                binding: BindingId::new(index),
+                written_type: SourceTypeApplicationId::new(index),
+                site: typed_site(parameters[index]),
+                source_range: parameters[index].range(),
+                declaration_range: formals[index].range(),
+                context: BindingContextId::new(1),
+                recovery: SourceFunctorDefinitionRecovery::Normal,
+                spelling: text[parameters[index].range().start..parameters[index].range().end]
+                    .to_owned(),
+            })
+            .collect(),
+        guards: Vec::new(),
+        definientia: [cases[0], cases[1], fallback]
+            .into_iter()
+            .enumerate()
+            .map(|(index, row)| SourceFunctorDefiniensInput {
+                owner: SourceFunctorDefinitionId::new(0),
+                ordinal: index,
+                target: if index < 2 {
+                    let value = term_rows
+                        .iter()
+                        .position(|value| row.range().start == value.range().start)
+                        .unwrap();
+                    let guard = formulas
+                        .iter()
+                        .position(|formula| {
+                            row.range().start < formula.range().start
+                                && formula.range().end == row.range().end
+                        })
+                        .unwrap();
+                    SourceFunctorDefiniensTarget::TermCase(
+                        SourcePrimaryTermId::new(value),
+                        SourceAtomicFormulaId::new(guard),
+                    )
+                } else {
+                    SourceFunctorDefiniensTarget::Otherwise(SourcePrimaryTermId::new(
+                        term_rows
+                            .iter()
+                            .position(|value| value.range() == row.range())
+                            .unwrap(),
+                    ))
+                },
+                site: typed_site(row),
+                source_range: row.range(),
+                context: BindingContextId::new(1),
+                recovery: SourceFunctorDefinitionRecovery::Normal,
+                spelling: row.spelling().to_owned(),
+            })
+            .collect(),
+        correctness: vec![SourceFunctorCorrectnessInput {
+            owner: SourceFunctorDefinitionId::new(0),
+            ordinal: 0,
+            kind: SourceFunctorCorrectnessKind::Consistency,
+            site: typed_site(correctness),
+            source_range: correctness.range(),
+            justification: SourceAnchor::Range(proof.range()),
+            recovery: SourceFunctorDefinitionRecovery::Normal,
+            spelling: text[correctness.range().start..correctness.range().end].to_owned(),
+        }],
+    };
+    let f = Fixture {
+        source: ast.source_id,
+        module,
+        env: symbols,
+        source_context: context,
+        source_type,
+        source_term,
+        atomic_formulas,
+        arena,
+        input,
+    };
+    let mut base = InitialObligationTable::new();
+    base.insert(InitialObligationDraft {
+        kind: InitialObligationKind::Sethood,
+        owner: typed_site(term_rows[0]),
+        source_range: term_rows[0].range(),
+        assumptions: Vec::new(),
+        goal: InitialObligationGoal::new("unrelated:sethood"),
+        provenance: InitialObligationProvenance::new("unrelated:baseline"),
+        status: InitialObligationStatus::Pending,
+    });
+    let lower = f.typed_ast(base.clone());
+    assert!(assemble_empty(&lower).is_ok());
+    let projection = f
+        .build_native(&base, &syntax)
+        .expect("actual guarded source-owned projection");
+    assert_eq!(projection.handoff.definientia.rows.len(), 3);
+    assert_eq!(projection.handoff.correctness.rows.len(), 1);
+    assert_obligation(
+        projection
+            .initial_obligations
+            .get(InitialObligationId::new(1))
+            .unwrap(),
+        InitialObligationId::new(1),
+        InitialObligationKind::FunctorConsistency,
+        typed_site(correctness),
+        correctness.range(),
+        "source.definition.functor.correctness:definition=0:consistency",
+        "source.definition.functor:definition=0:correctness=0",
+    );
+    let installed = lower
+        .clone()
+        .with_source_functor_definition(projection.clone())
+        .unwrap();
+    let resolved = assemble_empty(&installed).expect("genuine guarded Resolved baseline");
+    assert_eq!(
+        resolved.source_functor_definition(),
+        installed.source_functor_definition()
+    );
+    let before = (lower.clone(), installed.clone(), projection.clone());
+    let reject = |label: &str, fixture: &Fixture, forged: SourceFunctorDefinitionProjection| {
+        let fresh = fixture.typed_ast(base.clone());
+        assert!(
+            fresh
+                .clone()
+                .with_source_functor_definition(forged.clone())
+                .is_err(),
+            "TypedAst: {label}"
+        );
+        let mut injected = fresh;
+        injected.inject_source_functor_definition_for_test(forged.handoff);
+        injected.replace_initial_obligations_for_test(forged.initial_obligations);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition),
+            "Resolved: {label}"
+        );
+    };
+    for mutation in 0..18 {
+        let mut forged = projection.clone();
+        let rows = &mut forged.handoff.definientia.rows;
+        let SourceFunctorDefiniensTarget::TermCase(value0, guard0) = rows[0].target else {
+            unreachable!()
+        };
+        let SourceFunctorDefiniensTarget::TermCase(value1, guard1) = rows[1].target else {
+            unreachable!()
+        };
+        match mutation {
+            0 => {
+                rows[0].target = SourceFunctorDefiniensTarget::TermCase(value1, guard0);
+                rows[1].target = SourceFunctorDefiniensTarget::TermCase(value0, guard1);
+            }
+            1 => {
+                rows[0].target = SourceFunctorDefiniensTarget::TermCase(value0, guard1);
+                rows[1].target = SourceFunctorDefiniensTarget::TermCase(value1, guard0);
+            }
+            2 => {
+                rows.swap(0, 1);
+                for (index, row) in rows.iter_mut().enumerate() {
+                    row.id = SourceFunctorDefiniensId::new(index);
+                    row.ordinal = index;
+                }
+            }
+            3 => rows[2].target = SourceFunctorDefiniensTarget::Otherwise(value1),
+            4 => rows[2].target = SourceFunctorDefiniensTarget::Otherwise(value0),
+            5 => {
+                rows.remove(1);
+            }
+            6 => {
+                rows.pop();
+            }
+            7 => {
+                let mut duplicate = rows[0].clone();
+                duplicate.id = SourceFunctorDefiniensId::new(3);
+                duplicate.ordinal = 3;
+                rows.push(duplicate);
+            }
+            8 => rows[0].owner = SourceFunctorDefinitionId::new(1),
+            9 => rows[1].id = SourceFunctorDefiniensId::new(0),
+            10 => forged.handoff.definitions.rows[0].definiens = SourceFunctorDefiniensId::new(1),
+            11 => {
+                rows[0].target =
+                    SourceFunctorDefiniensTarget::TermCase(SourcePrimaryTermId::new(99), guard0)
+            }
+            12 => rows[1].target = SourceFunctorDefiniensTarget::TermCase(value0, guard1),
+            13 => rows[1].target = SourceFunctorDefiniensTarget::TermCase(value1, guard0),
+            14 => {
+                forged.handoff.correctness.rows.clear();
+            }
+            15 => forged.handoff.correctness.rows[0].owner = SourceFunctorDefinitionId::new(1),
+            16 => {
+                let duplicate = forged.handoff.correctness.rows[0].clone();
+                forged.handoff.correctness.rows.push(duplicate);
+            }
+            _ => {
+                rows[0].target =
+                    SourceFunctorDefiniensTarget::TermCase(value0, SourceAtomicFormulaId::new(99))
+            }
+        }
+        reject(&format!("owner association {mutation}"), &f, forged);
+    }
+    for mutation in 0..8 {
+        let mut forged = projection.clone();
+        let original = Arc::make_mut(forged.handoff.original_source_nodes.as_mut().unwrap());
+        let row = match mutation {
+            0 => original
+                .iter_mut()
+                .find(|row| row.site == cases[0].site())
+                .unwrap(),
+            1 => original
+                .iter_mut()
+                .find(|row| row.site == formulas[0].site())
+                .unwrap(),
+            2 => original
+                .iter_mut()
+                .find(|row| row.spelling == "if")
+                .unwrap(),
+            3 => original
+                .iter_mut()
+                .find(|row| row.spelling == "otherwise")
+                .unwrap(),
+            4 => original
+                .iter_mut()
+                .find(|row| matches!(row.kind, K::FormulaConstant(_)))
+                .unwrap(),
+            5 => original
+                .iter_mut()
+                .find(|row| row.spelling == "thesis")
+                .unwrap(),
+            6 => original
+                .iter_mut()
+                .find(|row| row.site == proof.site())
+                .unwrap(),
+            _ => original
+                .iter_mut()
+                .find(|row| row.site == term_rows[0].site())
+                .unwrap(),
+        };
+        if mutation == 7 {
+            row.range.start += 1;
+            row.range.end += 1;
+        } else if let K::Token(token) = &mut row.kind {
+            token.kind = SurfaceTokenKind::Identifier;
+            token.text = Arc::from("forged");
+            row.spelling = "forged".to_owned();
+        } else if mutation == 4 {
+            row.kind = K::FormulaConstant(mizar_syntax::ast::SurfaceFormulaConstant::Contradiction);
+        } else {
+            row.kind = K::TermList;
+        }
+        reject(&format!("original role/token {mutation}"), &f, forged);
+    }
+    // A genuine rebuilt lower packet and its matching fingerprint cannot authorize a different source association.
+    let mut coherent = f.clone();
+    term_input.terms[0].spelling = formals[1].spelling().to_owned();
+    term_input.references[0].binding = BindingId::new(1);
+    coherent.source_term = SourcePrimaryTermProducer::build(
+        term_input,
+        coherent.source_context.binding_env(),
+        &coherent.arena,
+    )
+    .expect("same-Set alternative formal is a valid lower association");
+    coherent.atomic_formulas = SourceAtomicFormulaProducer::build(
+        atomic_input,
+        coherent.source_context.binding_env(),
+        &coherent.env,
+        &coherent.source_term,
+        None,
+        None,
+        None,
+        &coherent.arena,
+    )
+    .unwrap();
+    let coherent_lower = coherent.typed_ast(base.clone());
+    assert!(assemble_empty(&coherent_lower).is_ok());
+    let mut forged = projection.clone();
+    forged.handoff.source_term_fingerprint = coherent.source_term.debug_text();
+    forged.handoff.atomic_formula_fingerprint = Some(coherent.atomic_formulas.debug_text());
+    reject(
+        "coherent same-Set lower value fingerprints",
+        &coherent,
+        forged,
+    );
+    for mutation in 0..9 {
+        let mut forged = projection.clone();
+        let mut drafts = obligation_drafts(&forged.initial_obligations);
+        match mutation {
+            0 => drafts[1].kind = InitialObligationKind::FunctorExistence,
+            1 => drafts[1].owner = typed_site(definition),
+            2 => drafts[1].status = InitialObligationStatus::Blocked,
+            3 => drafts[1].status = InitialObligationStatus::Invalidated,
+            4 => drafts[0].kind = InitialObligationKind::FunctorConsistency,
+            5 => drafts[1].source_range = proof.range(),
+            6 => drafts[1].assumptions.push(TypeFactId::new(0)),
+            7 => drafts[1].goal = InitialObligationGoal::new("foreign:consistency"),
+            _ => drafts[1].provenance = InitialObligationProvenance::new("foreign:owner"),
+        }
+        forged.initial_obligations = table_from_drafts(drafts);
+        reject(&format!("Pending transaction {mutation}"), &f, forged);
+    }
+    for foreign in [true, false] {
+        let mut forged = projection.clone();
+        if foreign {
+            forged.handoff.source_id = other_source_id();
+        } else {
+            forged.handoff.module_id =
+                ModuleId::new(PackageId::new("pkg"), ModulePath::new("foreign"));
+        }
+        reject("foreign transaction", &f, forged);
+    }
+    assert!(
+        installed
+            .clone()
+            .with_source_functor_definition(projection.clone())
+            .is_err()
+    );
+    let mut overlap = projection.clone();
+    overlap.base_initial_obligations = projection.initial_obligations.clone();
+    assert!(
+        installed
+            .clone()
+            .with_source_functor_definition(overlap)
+            .is_err()
+    );
+    assert_eq!((lower, installed.clone(), projection), before);
+    assert!(assemble_empty(&installed).is_ok());
+    std::fs::remove_dir_all(root).unwrap();
 }

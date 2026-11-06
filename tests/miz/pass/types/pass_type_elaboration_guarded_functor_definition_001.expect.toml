@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_guarded_functor_definition_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_guarded_functor_definition_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.checker.type_elaboration.source_functor_definition_payload"]
+notes = "Task257B4 ordered guarded-definiens source/type transport and Pending consistency only. No selected branch, defining fact/equation, accepted proof/definition, Core/ControlFlow lowering, VC or function-Binder certification."

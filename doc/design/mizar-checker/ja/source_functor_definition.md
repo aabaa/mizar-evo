@@ -23,6 +23,17 @@ axiom、FOL goal、discharge、VC、Core/ControlFlow IRは作りません。
 で共有し、replay の origin 検査は body 検証後の位置を保つ。元ソースを伴わない canonical
 construction は private test に限定する。
 
+## 条件付き term definiens
+
+条件付き profile は、別々に宣言した二つの Set parameter を明示引数に持つ一つの二項 functor、
+自身の formal の等式 guard を持つ二つの変数値、必須の変数値 otherwise、
+Pending のまま保持する記述済み consistency proof に限定する。
+TermCase と Otherwise target は既存の順序付き definiens row を利用し、definition は先頭 row を指す。
+replay は owner group 全体を元の value・if・condition・fallback site と照合し、case guard を外側の assume と区別する。
+Consistency は専用の correctness／initial-obligation kind を持ち、means の existence／uniqueness は元の範囲を維持する。
+枝の選択・等式・fact・定義受理・proof・VC・条件付き Core lowering は生成しない。
+既存 scalar／means と Core profile は独立に維持し、数学的 function-Binder の認証は対象外とする。
+
 ## Frozen Exact Source
 
 canonical sourceはfinal LF込みで次です。
@@ -220,12 +231,7 @@ active pairは
 `pass_type_elaboration_functor_definition_payload_001.miz` / `.expect.toml`です。
 sidecarはpass/type_elaboration/type_check、empty diagnostics/payloadで
 `spec.en.checker.type_elaboration.source_functor_definition_payload`だけをciteします。
-pass creditはtransport/pending-obligation intakeだけです。one covered trace rowは
-このsidecarだけをbacklinkします。
-
-active Task-260 resultはこのpair/trace関係をexactに実装しました。requirementは
-coveredで、sidecarはsole reciprocal backlinkです。fixture/sidecar/trace hashは
-crate plan/coverage auditに記録し、deferred semantic creditをpromoteしません。
+pass creditはtransport/pending-obligation intakeだけです。
 
 ## Frozen Tests And Write Scope（prerequisite history）
 

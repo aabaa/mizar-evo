@@ -615,6 +615,7 @@ unchecked row below is one future nonempty logical task and one commit.
       implicit reserved-binder shadowing, and six scoped uses after Tasks
       257B1/B2. The frozen source-to-final-handoff transport is implemented
       without semantic truth, closure, capture-result, or theorem credit.
+    - [x] **Task 257B4:** [guarded functor definientia](../../task_contracts/en/CHECKER257B4-GUARDED-FUNCTOR-DEFINIENTIA.md); ordered TermCase/fallback rows and Pending consistency; function Binder remains separate.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,

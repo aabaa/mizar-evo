@@ -4499,6 +4499,7 @@ pub enum InitialObligationKind {
     FunctorPropertyCorrectness,
     FunctorExistence,
     FunctorUniqueness,
+    FunctorConsistency,
     PropertyImplementationExistence,
     PropertyImplementationUniqueness,
 }
@@ -5104,6 +5105,7 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
             InitialObligationKind::FunctorPropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
+                | InitialObligationKind::FunctorConsistency
         )
     }) {
         return Err(TypedAstError::InvalidSourceFunctorDefinition);
@@ -6454,6 +6456,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",
+        InitialObligationKind::FunctorConsistency => "functor_consistency",
         InitialObligationKind::PropertyImplementationExistence => {
             "property_implementation_existence"
         }

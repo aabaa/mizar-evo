@@ -11,6 +11,16 @@ authority is Chapters 03 §§3.2-3.3, 05 §§5.2/5.6, 07 §§7.2-7.3/7.6, 08
 §§8.1/8.3, 12 §§12.3/12.5/12.6.1/12.7, 18 §§18.1/18.2.2, and Appendix A.
 The bounded audit owners are MC-G014, MC-G016, and MC-G020.
 
+## Guarded functor return transport
+
+The existing definition-return extension also transports one ordinary guarded
+functor's builtin-Set result with two separately declared Set parameters.
+The arena must contain the complete single functor owner and its actual return
+child; a truncated two-owner Task249R packet remains invalid. Installation
+rechecks the same associations. The [functor producer](./source_functor_definition.md)
+authenticates original syntax, resolver identity and branch compatibility;
+this lower transport supplies no proof, accepted definition or semantic typing.
+
 ## Standalone structure-member layout
 
 The original Task249S table remains a fixture oracle. Its four-member path checks

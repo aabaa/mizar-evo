@@ -551,6 +551,7 @@ impl ResolvedTypedAst {
                     row.kind,
                     InitialObligationKind::FunctorExistence
                         | InitialObligationKind::FunctorUniqueness
+                        | InitialObligationKind::FunctorConsistency
                 ))
         );
         debug_assert!(
@@ -2736,7 +2737,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         } else if initial_obligations.iter().any(|(_, row)| {
             matches!(
                 row.kind,
-                InitialObligationKind::FunctorExistence | InitialObligationKind::FunctorUniqueness
+                InitialObligationKind::FunctorExistence
+                    | InitialObligationKind::FunctorUniqueness
+                    | InitialObligationKind::FunctorConsistency
             )
         }) {
             return Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition);

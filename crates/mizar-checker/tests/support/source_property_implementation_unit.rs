@@ -1185,6 +1185,7 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
         InitialObligationKind::PredicatePropertyCorrectness,
         InitialObligationKind::FunctorExistence,
         InitialObligationKind::FunctorUniqueness,
+        InitialObligationKind::FunctorConsistency,
         InitialObligationKind::PropertyImplementationExistence,
         InitialObligationKind::PropertyImplementationUniqueness,
     ] {

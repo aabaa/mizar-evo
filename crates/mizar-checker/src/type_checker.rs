@@ -17127,6 +17127,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",
+        InitialObligationKind::FunctorConsistency => "functor_consistency",
         InitialObligationKind::PropertyImplementationExistence => {
             "property_implementation_existence"
         }

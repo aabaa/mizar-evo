@@ -888,6 +888,36 @@ fn exact_functor_definition(
     module: &ModuleId,
     source_text: &str,
 ) -> Option<ExactFunctorDefinition> {
+    if !surface_nodes_with_kind(ast, SurfaceNodeKind::TermCase).is_empty() {
+        let blocks = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem);
+        let [(definition_block, block)] = blocks.as_slice() else {
+            return None;
+        };
+        let definitions = structural_child_ids(ast, block)
+            .into_iter()
+            .filter(|id| {
+                ast.node(*id)
+                    .is_some_and(|node| node.kind == SurfaceNodeKind::FunctorDefinition)
+            })
+            .collect::<Vec<_>>();
+        let [definition] = definitions.as_slice() else {
+            return None;
+        };
+        let guarded = structural_child_ids(ast, ast.node(*definition)?)
+            .into_iter()
+            .any(|id| {
+                ast.node(id).is_some_and(|body| {
+                    body.kind == SurfaceNodeKind::TermDefiniens
+                        && structural_child_ids(ast, body).into_iter().any(|case| {
+                            ast.node(case)
+                                .is_some_and(|node| node.kind == SurfaceNodeKind::TermCase)
+                        })
+                })
+            });
+        return guarded.then_some(ExactFunctorDefinition {
+            definition_block: *definition_block,
+        });
+    }
     if ast.root().map(SurfaceNodeId::index) != Some(107) || ast.expression_root().is_some() {
         return None;
     }
@@ -1853,6 +1883,10 @@ fn build_output(
     exact: ExactFunctorDefinition,
     mutation: SourceFunctorDefinitionRouteMutation,
 ) -> Result<SourceFunctorDefinitionRouteOutput, String> {
+    let guarded = !surface_nodes_with_kind(ast, SurfaceNodeKind::TermCase).is_empty();
+    if guarded && mutation != SourceFunctorDefinitionRouteMutation::None {
+        return Err("Task257B4 does not use the exact260 corruption profile".to_owned());
+    }
     let corrupted_symbols = matches!(
         mutation,
         SourceFunctorDefinitionRouteMutation::WrongResolverEntry
@@ -1861,13 +1895,558 @@ fn build_output(
     )
     .then(|| resolver_env_with_mutation(symbols, mutation));
     let symbols = corrupted_symbols.as_ref().unwrap_or(symbols);
-    let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
     let syntax = source_syntax_receiver(ast, &module)?;
-    let arena = task260_arena(ast)?;
-    let source_context =
-        task248_context(ast, module.clone(), shells, source_text, exact, mutation)?;
-
-    let mut type_input = task249_input(ast, source_text, module.clone());
+    let (
+        arena,
+        source_context,
+        mut type_input,
+        mut return_input,
+        mut term_input,
+        mut atomic_input,
+        mut functor_input,
+    ) = if guarded {
+        use mizar_resolve::{names::resolve_template_formal, resolved_ast::SurfaceResolvedArena};
+        use mizar_syntax::SurfaceNodeKind as K;
+        let invalid = || "Task257B4 actual guarded source inputs are incomplete".to_owned();
+        let rows = syntax
+            .source_node_entries()
+            .ok_or_else(invalid)?
+            .collect::<Vec<_>>();
+        let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+        if !preprocessed.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        let raw_tokens =
+            mizar_lexer::scan_raw(&preprocessed.lexical_text).map_err(|_| invalid())?;
+        let environment =
+            mizar_lexer::build_lexical_environment(&[], &[]).map_err(|_| invalid())?;
+        let locals = mizar_lexer::collect_local_lexical_declarations(
+            &raw_tokens,
+            mizar_lexer::ModuleId::new(module.path().as_str()),
+        );
+        let scopes = mizar_lexer::build_scope_skeleton(&raw_tokens);
+        if !scopes.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        let lexical = mizar_lexer::disambiguate_with_local_declarations(
+            &raw_tokens,
+            &environment,
+            &locals,
+            &mizar_lexer::ParserLexContext::general(),
+            &scopes,
+        );
+        let mut original_tokens = rows
+            .iter()
+            .filter_map(|row| match row.kind() {
+                K::Token(token) => Some((row.range(), token)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        original_tokens.sort_by_key(|(range, _)| (range.start, range.end));
+        if !lexical.diagnostics().is_empty() || lexical.tokens().len() != original_tokens.len() {
+            return Err(invalid());
+        }
+        for (actual, (range, expected)) in lexical.tokens().iter().zip(original_tokens) {
+            let kind = match actual.kind() {
+                mizar_lexer::TokenKind::ReservedWord => SurfaceTokenKind::ReservedWord,
+                mizar_lexer::TokenKind::ReservedSymbol => SurfaceTokenKind::ReservedSymbol,
+                mizar_lexer::TokenKind::Identifier => SurfaceTokenKind::Identifier,
+                mizar_lexer::TokenKind::Numeral => SurfaceTokenKind::Numeral,
+                _ => return Err(invalid()),
+            };
+            let fragments = preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(actual.span())
+                .ok_or_else(invalid)?;
+            let [span] = fragments.as_slice() else {
+                return Err(invalid());
+            };
+            if kind != expected.kind
+                || actual.lexeme() != expected.text.as_ref()
+                || (span.start, span.end) != (range.start, range.end)
+                || source_text.get(span.start..span.end) != Some(actual.lexeme())
+            {
+                return Err(invalid());
+            }
+        }
+        let one = |kind: K| {
+            let found = rows
+                .iter()
+                .copied()
+                .filter(|row| row.kind() == &kind)
+                .collect::<Vec<_>>();
+            if let [row] = found.as_slice() {
+                Ok(*row)
+            } else {
+                Err(invalid())
+            }
+        };
+        let children = |parent| {
+            rows.iter()
+                .copied()
+                .filter(|row| row.parent() == Some(parent))
+                .collect::<Vec<_>>()
+        };
+        let site = |row: &mizar_checker::typed_ast::SourceNode| {
+            TypedSiteRef::Node(TypedNodeId::new(row.site().index()))
+        };
+        let raw = |row: &mizar_checker::typed_ast::SourceNode| {
+            source_text
+                .get(row.range().start..row.range().end)
+                .map(str::to_owned)
+                .ok_or_else(invalid)
+        };
+        let definition = one(K::FunctorDefinition)?;
+        let block_row = one(K::DefinitionBlockItem)?;
+        let block = shells
+            .declarations()
+            .iter()
+            .find(|shell| {
+                shell.kind() == DeclarationShellKind::DefinitionBlock
+                    && shell.range() == block_row.range()
+            })
+            .ok_or_else(invalid)?;
+        let declaration = symbols
+            .definitions()
+            .iter()
+            .find(|row| row.origin().anchor() == &SourceAnchor::Range(definition.range()))
+            .ok_or_else(invalid)?;
+        let parameters = rows
+            .iter()
+            .copied()
+            .filter(|row| row.kind() == &K::DefinitionParameter)
+            .collect::<Vec<_>>();
+        let mut formals = Vec::new();
+        let mut types = Vec::new();
+        for parameter in &parameters {
+            let segment = children(parameter.site())
+                .into_iter()
+                .find(|row| row.kind() == &K::QualifiedVariableSegment)
+                .ok_or_else(invalid)?;
+            formals.push(
+                children(segment.site())
+                    .into_iter()
+                    .find(|row| {
+                        matches!(row.kind(), K::Token(token)
+                if token.kind == SurfaceTokenKind::Identifier)
+                    })
+                    .ok_or_else(invalid)?,
+            );
+            types.push(
+                children(segment.site())
+                    .into_iter()
+                    .find(|row| row.kind() == &K::TypeExpression)
+                    .ok_or_else(invalid)?,
+            );
+        }
+        let result = children(definition.site())
+            .into_iter()
+            .find(|row| row.kind() == &K::TypeExpression)
+            .ok_or_else(invalid)?;
+        let cases = rows
+            .iter()
+            .copied()
+            .filter(|row| row.kind() == &K::TermCase)
+            .collect::<Vec<_>>();
+        let body = one(K::TermDefiniens)?;
+        let fallback = children(body.site())
+            .into_iter()
+            .find(|row| row.kind() == &K::TermExpression)
+            .ok_or_else(invalid)?;
+        let formulas = cases
+            .iter()
+            .map(|row| {
+                children(row.site())
+                    .into_iter()
+                    .find(|row| row.kind() == &K::FormulaExpression)
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let correctness = one(K::CorrectnessCondition)?;
+        let proof = children(correctness.site())
+            .into_iter()
+            .find(|row| row.kind() == &K::ProofBlock)
+            .ok_or_else(invalid)?;
+        let mut term_rows = rows
+            .iter()
+            .copied()
+            .filter(|row| row.kind() == &K::TermReference)
+            .collect::<Vec<_>>();
+        term_rows.sort_by_key(|row| row.range().start);
+        let native = SurfaceResolvedArena::lower(ast, &module).map_err(|_| invalid())?;
+        native
+            .validate_against(ast, &module)
+            .map_err(|_| invalid())?;
+        let pattern = children(definition.site())
+            .into_iter()
+            .find(|row| row.kind() == &K::FunctorPattern)
+            .ok_or_else(invalid)?;
+        let loci = children(pattern.site());
+        let [_, _, left, _, right, _] = loci.as_slice() else {
+            return Err(invalid());
+        };
+        for (index, locus) in [left, right].into_iter().enumerate() {
+            if resolve_template_formal(&native, locus.site()).map_err(|_| invalid())?
+                != formals.get(index).ok_or_else(invalid)?.site()
+            {
+                return Err(invalid());
+            }
+        }
+        let bindings = term_rows
+            .iter()
+            .map(|row| {
+                let token = children(row.site())
+                    .into_iter()
+                    .next()
+                    .ok_or_else(invalid)?;
+                let formal =
+                    resolve_template_formal(&native, token.site()).map_err(|_| invalid())?;
+                formals
+                    .iter()
+                    .position(|row| row.site() == formal)
+                    .map(BindingId::new)
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut builder = TypedArenaBuilder::new();
+        for (index, row) in ast.nodes().iter().enumerate() {
+            let kind = match &row.kind {
+                K::TypeHead => "source.type.head",
+                K::TypeExpression => "source.type.expression",
+                K::DefinitionParameter => "source.definition.functor.parameter",
+                K::TermReference => "source.term.variable-reference",
+                K::FormulaExpression if formulas.iter().any(|row| row.site().index() == index) => {
+                    "source.formula.atomic.equality"
+                }
+                K::TermCase => "source.definition.functor.definiens",
+                K::TermExpression if fallback.site().index() == index => {
+                    "source.definition.functor.definiens"
+                }
+                K::FunctorDefinition => "source.definition.functor",
+                K::CorrectnessCondition => "source.definition.functor.correctness",
+                K::DefinitionBlockItem => "source.definition",
+                K::Root => "source.module",
+                K::Token(_) => "source.surface.token",
+                _ => "source.surface.structural",
+            };
+            let anchor = parameters
+                .iter()
+                .position(|parameter| parameter.site().index() == index)
+                .map_or(row.range, |index| formals[index].range());
+            builder
+                .push(
+                    TypedNode::new(kind, SourceAnchor::Range(anchor))
+                        .with_children(
+                            row.children
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                        .with_typing(TypingState::Unknown)
+                        .with_recovery(if row.recovered {
+                            NodeRecoveryState::Recovered
+                        } else {
+                            NodeRecoveryState::Normal
+                        })
+                        .with_links(TypedNodeLinks {
+                            context: Some(LocalTypeContextId::new(usize::from(
+                                row.kind != K::Root,
+                            ))),
+                            ..Default::default()
+                        }),
+                )
+                .map_err(|_| invalid())?;
+        }
+        let arena = builder
+            .finish(ast.root().map(|root| TypedNodeId::new(root.index())))
+            .map_err(|_| invalid())?;
+        let scope = LocalTermScope::new(vec![0]);
+        let source_context = SourceBindingContextProducer::build(SourceBindingContextInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            module_site: TypedSiteRef::Node(arena.root().ok_or_else(invalid)?),
+            items: vec![SourceItemInput {
+                shell: block.id(),
+                shell_ordinal: block.ordinal(),
+                role: SourceItemRole::DefinitionBlock,
+                module_id: module.clone(),
+                source_range: block.range(),
+                parent: None,
+                visibility: SourceItemVisibility::Unspecified,
+                site: site(block_row),
+                local_scope: Some(scope.clone()),
+                recovery: SourceItemRecovery::Normal,
+            }],
+            bindings: formals
+                .iter()
+                .enumerate()
+                .map(|(index, formal)| SourceBindingSiteInput {
+                    shell: block.id(),
+                    context_owner: SourceBindingContextOwner::Shell(block.id()),
+                    source_ordinal: index,
+                    spelling: formal.spelling().to_owned(),
+                    declaration_range: formal.range(),
+                    written_type_range: types[index].range(),
+                    site: site(parameters[index]),
+                    role: SourceBindingSiteRole::DefinitionParameter {
+                        local: LocalTermBinding::new(
+                            formal.spelling(),
+                            scope.clone(),
+                            formal.range(),
+                            index,
+                        ),
+                    },
+                    recovery: BindingRecoveryState::Normal,
+                })
+                .collect(),
+        })
+        .map_err(|_| invalid())?
+        .into_complete()
+        .map_err(|_| invalid())?
+        .into_handoff();
+        let type_expression = |row: &mizar_checker::typed_ast::SourceNode| {
+            let head = children(row.site())
+                .into_iter()
+                .find(|row| row.kind() == &K::TypeHead)
+                .ok_or_else(invalid)?;
+            if row.spelling() != "set" || head.spelling() != "set" {
+                return Err(invalid());
+            }
+            raw(row)?;
+            raw(head)?;
+            Ok::<_, String>(bare_set_type(
+                ast,
+                source_text,
+                module.clone(),
+                row.site().index(),
+                head.site().index(),
+            ))
+        };
+        let type_input = SourceTypeHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            applications: formals
+                .iter()
+                .enumerate()
+                .map(|(index, _)| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: types
+                .iter()
+                .map(|row| type_expression(row))
+                .collect::<Result<Vec<_>, _>>()?,
+            arguments: Vec::new(),
+        };
+        let return_input = SourceTypeDefinitionReturnExtensionInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            returns: vec![SourceTypeDefinitionReturnInput {
+                definition_site: site(definition),
+                definition_range: definition.range(),
+                source_ordinal: 0,
+                expression: type_expression(result)?,
+            }],
+        };
+        let term_input = SourcePrimaryTermHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            terms: term_rows
+                .iter()
+                .enumerate()
+                .map(|(index, row)| SourcePrimaryTermInput {
+                    site: site(row),
+                    source_range: row.range(),
+                    source_ordinal: index,
+                    context: BindingContextId::new(1),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: row.spelling().to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                })
+                .collect(),
+            references: bindings
+                .iter()
+                .enumerate()
+                .map(|(index, binding)| SourcePrimaryTermReferenceInput {
+                    term: SourcePrimaryTermId::new(index),
+                    binding: *binding,
+                    role: SourcePrimaryTermReferenceRole::Variable,
+                })
+                .collect(),
+            numeric_type_requests: Vec::new(),
+        };
+        let term_id = |range| {
+            term_rows
+                .iter()
+                .position(|row| row.range() == range)
+                .map(SourcePrimaryTermId::new)
+                .ok_or_else(invalid)
+        };
+        let mut edges = Vec::new();
+        for (index, formula) in formulas.iter().enumerate() {
+            let equality = children(formula.site())
+                .into_iter()
+                .find(|row| row.kind() == &K::BuiltinPredicateApplication)
+                .ok_or_else(invalid)?;
+            for (ordinal, operand) in children(equality.site())
+                .into_iter()
+                .filter(|row| row.kind() == &K::TermExpression)
+                .enumerate()
+            {
+                edges.push(SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(index),
+                    ordinal,
+                    role: if ordinal == 0 {
+                        SourceAtomicEdgeRole::BuiltinLeftOperand
+                    } else {
+                        SourceAtomicEdgeRole::BuiltinRightOperand
+                    },
+                    target: SourceAtomicTermTarget::Primary(term_id(operand.range())?),
+                });
+            }
+        }
+        let atomic_input = SourceAtomicFormulaHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            formulas: formulas
+                .iter()
+                .enumerate()
+                .map(|(index, row)| SourceAtomicFormulaInput {
+                    site: site(row),
+                    source_range: row.range(),
+                    source_ordinal: index,
+                    context: BindingContextId::new(1),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling: row.spelling().to_owned(),
+                    kind: SourceAtomicFormulaKind::Equality,
+                })
+                .collect(),
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            requests: edges
+                .iter()
+                .enumerate()
+                .map(|(index, edge)| SourceAtomicRequestInput {
+                    formula: edge.formula,
+                    ordinal: edge.ordinal,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(SourceAtomicEdgeId::new(index)),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                })
+                .collect(),
+            edges,
+        };
+        let mut definientia = cases
+            .iter()
+            .enumerate()
+            .map(|(index, row)| {
+                let value = children(row.site())
+                    .into_iter()
+                    .find(|row| row.kind() == &K::TermExpression)
+                    .ok_or_else(invalid)?;
+                Ok(SourceFunctorDefiniensInput {
+                    owner: SourceFunctorDefinitionId::new(0),
+                    ordinal: index,
+                    target: SourceFunctorDefiniensTarget::TermCase(
+                        term_id(value.range())?,
+                        SourceAtomicFormulaId::new(index),
+                    ),
+                    site: site(row),
+                    source_range: row.range(),
+                    context: BindingContextId::new(1),
+                    recovery: SourceFunctorDefinitionRecovery::Normal,
+                    spelling: row.spelling().to_owned(),
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        definientia.push(SourceFunctorDefiniensInput {
+            owner: SourceFunctorDefinitionId::new(0),
+            ordinal: definientia.len(),
+            target: SourceFunctorDefiniensTarget::Otherwise(term_id(fallback.range())?),
+            site: site(fallback),
+            source_range: fallback.range(),
+            context: BindingContextId::new(1),
+            recovery: SourceFunctorDefinitionRecovery::Normal,
+            spelling: fallback.spelling().to_owned(),
+        });
+        let functor_input = SourceFunctorDefinitionHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            definitions: vec![SourceFunctorDefinitionInput {
+                symbol: declaration.symbol().clone(),
+                definition: declaration.id(),
+                contribution: declaration.contribution(),
+                site: site(definition),
+                source_range: definition.range(),
+                source_ordinal: 0,
+                context: BindingContextId::new(1),
+                recovery: SourceFunctorDefinitionRecovery::Normal,
+                spelling: raw(definition)?,
+                style: SourceFunctorDefinitionStyle::Equals,
+                return_type: SourceTypeDefinitionReturnId::new(0),
+                definiens: SourceFunctorDefiniensId::new(0),
+            }],
+            parameters: parameters
+                .iter()
+                .enumerate()
+                .map(|(index, row)| {
+                    Ok(SourceFunctorParameterInput {
+                        ordinal: index,
+                        binding: BindingId::new(index),
+                        written_type: SourceTypeApplicationId::new(index),
+                        site: site(row),
+                        source_range: row.range(),
+                        declaration_range: formals[index].range(),
+                        context: BindingContextId::new(1),
+                        recovery: SourceFunctorDefinitionRecovery::Normal,
+                        spelling: raw(row)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
+            guards: Vec::new(),
+            definientia,
+            correctness: vec![SourceFunctorCorrectnessInput {
+                owner: SourceFunctorDefinitionId::new(0),
+                ordinal: 0,
+                kind: SourceFunctorCorrectnessKind::Consistency,
+                site: site(correctness),
+                source_range: correctness.range(),
+                justification: SourceAnchor::Range(proof.range()),
+                recovery: SourceFunctorDefinitionRecovery::Normal,
+                spelling: raw(correctness)?,
+            }],
+        };
+        (
+            arena,
+            source_context,
+            type_input,
+            return_input,
+            term_input,
+            atomic_input,
+            functor_input,
+        )
+    } else {
+        let resolver = exact_resolver_profile(ast, &module, shells, symbols, mutation)?;
+        (
+            task260_arena(ast)?,
+            task248_context(ast, module.clone(), shells, source_text, exact, mutation)?,
+            task249_input(ast, source_text, module.clone()),
+            task249r_input(ast, source_text, module.clone()),
+            task252_input(ast, source_text, module.clone()),
+            task256_input(ast, source_text, module.clone()),
+            task260_input(ast, source_text, module.clone(), resolver),
+        )
+    };
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveTypeExpression {
         type_input.expressions.pop();
     }
@@ -1884,7 +2463,6 @@ fn build_output(
     let base_type =
         SourceTypeProducer::build(type_input, source_context.binding_env(), symbols, &arena)
             .map_err(|error| format!("Task249 source type: {error}"))?;
-    let mut return_input = task249r_input(ast, source_text, module.clone());
     if mutation == SourceFunctorDefinitionRouteMutation::WrongReturnType {
         return_input.returns[1].definition_site = TypedSiteRef::Node(TypedNodeId::new(84));
     }
@@ -1916,7 +2494,6 @@ fn build_output(
     })
     .map_err(|error| format!("Task249R typed installation: {error}"))?;
 
-    let mut term_input = task252_input(ast, source_text, module.clone());
     if let SourceFunctorDefinitionRouteMutation::WrongTermBinding(index) = mutation {
         term_input.references[index].binding = if index == 4 {
             BindingId::new(0)
@@ -1941,7 +2518,6 @@ fn build_output(
         .with_source_term(source_term)
         .map_err(|error| format!("Task252 typed installation: {error}"))?;
 
-    let mut atomic_input = task256_input(ast, source_text, module.clone());
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveAtomicFormula {
         atomic_input.formulas.pop();
     }
@@ -1979,7 +2555,6 @@ fn build_output(
         .with_source_atomic_formula(source_atomic_formula)
         .map_err(|error| format!("Task256 typed installation: {error}"))?;
 
-    let mut functor_input = task260_input(ast, source_text, module, resolver);
     if mutation == SourceFunctorDefinitionRouteMutation::RemoveFunctorGuard {
         functor_input.guards.clear();
     }
@@ -2048,6 +2623,20 @@ fn route_output_is_exact(output: &SourceFunctorDefinitionRouteOutput) -> bool {
     let Some(functor) = typed.source_functor_definition() else {
         return false;
     };
+    let guarded = functor.definitions().len() == 1;
+    let (
+        expression_count,
+        return_count,
+        term_count,
+        definition_count,
+        guard_count,
+        definiens_count,
+        correctness_count,
+    ) = if guarded {
+        (3, 1, 7, 1, 0, 3, 1)
+    } else {
+        (4, 2, 5, 2, 1, 2, 2)
+    };
     context.items().len() == 1
         && context.declarations().len() == 2
         && context.binding_env().bindings().len() == 2
@@ -2056,11 +2645,11 @@ fn route_output_is_exact(output: &SourceFunctorDefinitionRouteOutput) -> bool {
         && context.context_links().len() == 2
         && context.binding_env().diagnostics().is_empty()
         && source_type.applications().len() == 2
-        && source_type.expressions().len() == 4
+        && source_type.expressions().len() == expression_count
         && source_type.arguments().is_empty()
-        && source_type.definition_returns().len() == 2
-        && source_term.terms().len() == 5
-        && source_term.references().len() == 5
+        && source_type.definition_returns().len() == return_count
+        && source_term.terms().len() == term_count
+        && source_term.references().len() == term_count
         && source_term.numeric_type_requests().is_empty()
         && atomic.formulas().len() == 2
         && atomic.wrappers().is_empty()
@@ -2071,17 +2660,26 @@ fn route_output_is_exact(output: &SourceFunctorDefinitionRouteOutput) -> bool {
         && atomic.attributes().is_empty()
         && atomic.edges().len() == 4
         && atomic.requests().len() == 4
-        && functor.definitions().len() == 2
+        && functor.definitions().len() == definition_count
         && functor.parameters().len() == 2
-        && functor.guards().len() == 1
-        && functor.definientia().len() == 2
-        && functor.correctness().len() == 2
+        && functor.guards().len() == guard_count
+        && functor.definientia().len() == definiens_count
+        && functor.correctness().len() == correctness_count
         && typed.source_functor_definition() == resolved.source_functor_definition()
         && typed.source_context() == resolved.source_context()
         && typed.source_type() == resolved.source_type()
         && typed.source_term() == resolved.source_term()
         && typed.source_atomic_formula() == resolved.source_atomic_formula()
-        && typed.initial_obligations().len() == 2
+        && typed.initial_obligations().len() == correctness_count
+        && (!guarded
+            || (functor
+                .correctness()
+                .iter()
+                .all(|(_, row)| row.kind() == SourceFunctorCorrectnessKind::Consistency)
+                && typed.initial_obligations().iter().all(|(_, row)| {
+                    row.kind == mizar_checker::typed_ast::InitialObligationKind::FunctorConsistency
+                        && row.status == mizar_checker::typed_ast::InitialObligationStatus::Pending
+                })))
         && typed.types().is_empty()
         && typed.facts().is_empty()
         && typed.coercions().is_empty()
