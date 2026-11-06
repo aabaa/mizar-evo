@@ -2286,7 +2286,7 @@ fn native_witness_goal_observation(
 ) -> Result<Vec<String>, String> {
     use mizar_checker::{
         source_proof_local_declaration::SourceProofGoal,
-        type_checker::{FormulaStatus, TermReference, TermStatus},
+        type_checker::{FormulaStatus, TermKind, TermReference, TermStatus, TypeHeadRef},
         typed_ast::{
             CoercionStatus, FactProvenance, FactStatus, InitialObligationStatus, TypeEntryActual,
             TypeStatus,
@@ -2307,9 +2307,6 @@ fn native_witness_goal_observation(
     }
     let mut observations = Vec::new();
     for (_, term) in inference.terms().iter() {
-        let Some(TermReference::Binding(binding)) = term.reference else {
-            return Err(invalid());
-        };
         let entry = inference
             .type_entries()
             .get(term.type_entry)
@@ -2321,12 +2318,21 @@ fn native_witness_goal_observation(
         if term.status != TermStatus::Inferred || entry.status != TypeStatus::Known {
             return Err(invalid());
         }
-        observations.push(format!(
-            "typed.binding={}.head={:?}.site={:?}",
-            binding.index(),
-            normalized.head,
-            term.site
-        ));
+        observations.push(match (&term.kind, &term.reference) {
+            (TermKind::Variable, Some(TermReference::Binding(binding))) => format!(
+                "typed.binding={}.head={:?}.site={:?}",
+                binding.index(),
+                normalized.head,
+                term.site
+            ),
+            (TermKind::SetEnumeration, None) if normalized.head == TypeHeadRef::BuiltinSet => {
+                format!(
+                    "typed.singleton.head={:?}.site={:?}",
+                    normalized.head, term.site
+                )
+            }
+            _ => return Err(invalid()),
+        });
     }
     for (ordinal, step) in steps.iter().enumerate() {
         observations.push(format!("step.{ordinal}.owner={:?}.context={:?}.site={:?}.matched={:?}.before={:?}.after={:?}.free={:?}.avoided={:?}", step.owner(), step.context(), step.site(), step.matched(), step.before(), step.after(), step.free(), step.avoided()));

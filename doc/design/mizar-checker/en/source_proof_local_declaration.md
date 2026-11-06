@@ -95,7 +95,7 @@ The immutable graph retains Then/body/branch associations; no new graph or slot 
 Checked Task180 tables remain separate from source intents and derived witness goals.
 
 The parameterless `check_witness_goals()` derives plain Set/Object quantified,
-variable equality/membership/conjunction/implication/disjunction/negation/equivalence goals through proof introductions and terminal Thus/Hence.
+variable/singleton equality/membership/conjunction/implication/disjunction/negation/equivalence goals through proof introductions and terminal Thus/Hence.
 `SourceProofGoal` stores actual binding identities and logical bodies; original
 Typed sites are provenance, never generated original formulas. Immutable
 `SourceProofGoalStep` exposes source owner/context/event, matched identities,
@@ -111,6 +111,15 @@ canonical bound-alpha structure and exact free identities. Independent replay
 checks source, typing, guards and results. These are unproved remaining obligations;
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
 general proof effects and freshening remain deferred.
+
+Equality/Membership operands are `SourceProofTerm` Binding or Singleton(origin,element) values.
+Singletons admit one actual variable child; their root type is Set without upgrading the element.
+Root inference sites remain original outer TermExpressions; value origins are original inner enumerations.
+Substitution changes derived element identities, preserving original provenance and typed child inputs.
+Take/Set/Named/Reconsider remain variable-only; partial-conjunction/compact/case caps still require Binding operands.
+A labelled direct chain with one omitted-justification step immediately before final Thus may retain the whole goal
+through authentic chain/step checkpoints and its own prior label. Replay joins endpoints and every prior-frontier element.
+Original source/typed terms retain adjacency; this trace supplies no checked adjacent equations or transitivity proof.
 
 Restricted universals retain the type guard and an implication body. A single
 source Assume matching its antecedent leaves the unproved consequent; the ordered
@@ -742,6 +751,7 @@ parent-owned.
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofTerm` | `#[non_exhaustive]`; callers must handle later explicitly frozen derived atom terms. |
 | `SourceProofGoal` | `#[non_exhaustive]`; callers must handle later derived logical forms. |
 | `SourceProofIntentStatus` | `#[non_exhaustive]`; callers must handle later source-request states. |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-local declaration forms. |

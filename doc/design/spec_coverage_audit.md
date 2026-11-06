@@ -68,6 +68,8 @@ Bounded homogeneous Case/Suppose branches add Or/Not projection and authentic
 branch-local citation while retaining outer Pending; omitted exhaustiveness
 intent and branch claims remain unproved.
 Primitive equivalence additionally preserves whole unproved goals; its two-direction proof skeleton remains Task272-owned.
+Singleton atom values and a bounded iterative chain additionally retain typed endpoints and unproved whole-goal/citation checkpoints.
+They provide no checked adjacent equations or transitivity result; broader equality reasoning remains Task272-owned.
 Broader goal/substitution coverage remains with Task272; the prepared old-AS
 consumer adds no default activation or proof acceptance. The separate
 `spec.en.16.theorems.proof_skeleton.conjunction.metadata` requirement observes

@@ -61,6 +61,11 @@ Case-keyword and thesis alternatives are native-only controls of this boundary.
 The existing parenthesized-Iff C8 case additionally requires native whole-goal
 replay after its legacy formula check; neither direction is thereby proved.
 
+The existing IterEq1 C9 case also requires native singleton values and unproved chain/step checkpoints.
+Its actual singleton-root SetEnumeration results have no Binding reference and are observed at their genuine sites;
+Variable/Binding observations and owner/prior-guard joins stay unchanged. One prior whole-chain label associates
+the complete goal with source endpoints; neither adjacent equations nor transitivity are proved.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

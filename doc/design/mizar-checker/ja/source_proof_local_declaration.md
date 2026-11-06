@@ -84,7 +84,7 @@ Pending は module wrapper・独立した registration proof を含む未処理�
 Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
 Task180 の checked table は source intent・派生 witness goal とは別に保つ。
 
-引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・membership・連言・含意・選言・否定・同値を、
+引数なしの `check_witness_goals()` は plain Set/Object の量化・変数/singleton 等式・membership・連言・含意・選言・否定・同値を、
 proof 導入と terminal Thus/Hence に沿って導出する。`SourceProofGoal` は実 binding identity
 と論理 body を保持し、元 Typed site は出典のみとする。不変の `SourceProofGoalStep` は
 owner/context/event・対応 identity・置換前後の goal・free/retained-binder 集合を公開する。
@@ -96,6 +96,14 @@ body と terminal まで保持する。明示 terminal goal は bound-alpha 正�
 独立 replay が元ソース・型・guard・結果を検査する。残余 obligation は未証明のままで、
 Task180 checked table・証明受理とは別に保つ。広い goal・入れ子 proof・
 一般的な freshening は後続に残す。
+
+Equality/Membership の operand は `SourceProofTerm` の Binding または Singleton(origin,element) とする。
+Singleton は実変数の子一つを扱い、root の Set 型から要素の型を昇格させない。元の外側 TermExpression を
+推論 site、内側 enumeration を値の出典とし、置換は出典と元の型付き子入力を保って派生 element ID を変える。
+Take/Set/Named/Reconsider は変数のみ、部分連言・compact・case の既存上限も Binding operand のみを維持する。
+末尾 Thus 直前の単一 step・省略 justification・label 付き直接連鎖は、実 chain/step checkpoint と自分の
+先行 label を通じて goal 全体を保持できる。replay は endpoint と全要素の先行 frontier を照合する。
+元ソースと型付き項が隣接関係を保ち、この trace は隣接等式の checked 結果や推移律の証明を与えない。
 
 制限付き全称は型 guard と含意 body を保持する。単一の Assume が前件に一致すると、
 残余は未証明の後件となり、順序付き step と元の label 付きソースが仮定の出典を保つ。
@@ -654,6 +662,7 @@ SHA-256
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceProofTerm` | `#[non_exhaustive]`。caller は別途 frozen された派生 atom term への拡張を扱う。 |
 | `SourceProofGoal` | `#[non_exhaustive]`。caller は後続の派生論理形式を扱う。 |
 | `SourceProofIntentStatus` | `#[non_exhaustive]`。caller は後続の source-request state を扱う。 |
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-local declaration formを許容する。 |

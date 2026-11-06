@@ -4923,13 +4923,24 @@ fn task272b1_binding(
         .0
 }
 
+fn task272b13_term_text(
+    term: &mizar_checker::source_proof_local_declaration::SourceProofTerm,
+) -> String {
+    use mizar_checker::source_proof_local_declaration::SourceProofTerm as T;
+    match term {
+        T::Binding(binding) => binding.index().to_string(),
+        T::Singleton { element, .. } => format!("singleton({})", element.index()),
+        _ => panic!("unsupported derived term"),
+    }
+}
+
 fn task272b1_goal_text(
     goal: &mizar_checker::source_proof_local_declaration::SourceProofGoal,
 ) -> String {
     use mizar_checker::source_proof_local_declaration::SourceProofGoal as G;
     match goal {
-        G::Equality { left, right, .. } => format!("eq({},{})", left.index(), right.index()),
-        G::Membership { left, right, .. } => format!("member({},{})", left.index(), right.index()),
+        G::Equality { left, right, .. } => format!("eq({},{})", task272b13_term_text(left), task272b13_term_text(right)),
+        G::Membership { left, right, .. } => format!("member({},{})", task272b13_term_text(left), task272b13_term_text(right)),
         G::Disjunction { left, right, .. } => format!(
             "or({},{})",
             task272b1_goal_text(left),
@@ -6845,7 +6856,8 @@ fn task272b4_implication_goals_execute_existing_then_hence_fs() {
             panic!("remaining equality")
         };
         assert_eq!(origin, consequent_origin);
-        assert_eq!((*left, *right), (local, local));
+        use mizar_checker::source_proof_local_declaration::SourceProofTerm::Binding;
+        assert_eq!((left, right), (&Binding(local), &Binding(local)));
     }
     let (intents, _) = handoff.check_proof_intents().unwrap();
     for (index, step) in steps.iter().enumerate() {
@@ -9499,4 +9511,371 @@ fn task272b12_iff_native_gate_controls_actual_c8_fs_result_on_each_imp_edge() {
         assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
         assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
     }
+}
+
+#[test]
+fn task272b13_singleton_chain_goals_execute_existing_fs() {
+    use mizar_checker::{binding_env::{BindingContextLayer as L,BindingTypeSite},
+        source_proof_local_declaration::{SourceProofGoal as G,SourceProofIntentStatus as S},
+        type_checker::{FormulaKind,FormulaStatus,TermKind,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::resolved_ast::{LabelKind,LabelResolution};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_iterative_equality_001").unwrap();
+    let result = super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0);
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("genuine existing IterEq1 source");
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::TermExpression).count(),10);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::SetEnumeration).count(),5);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::BuiltinPredicateApplication).count(),1);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::IterativeEqualityStatement).count(),1);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::IterativeEqualityStep).count(),1);
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    assert_eq!(super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,true),Ok(true));
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    assert_eq!(intents.len(),6);
+    assert!(intents.iter().all(|(_,_,status)|*status==S::Pending));
+    println!("Task272B13 test-first: existing FS Passed; legacy C9 organization=true Ok(true); frontend/symbol/native/scope and A all6Pending passed; original census10TermExpression/5SetEnumeration/1Eq/1chain/1step");
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals()
+        .expect("actual IterEq1 source must materialize singleton values and unproved whole-goal chain checkpoints");
+    assert_eq!(steps.len(),5);
+    assert_eq!(inference.terms().len(),12);
+    assert_eq!(inference.formulas().len(),1);
+    let (header,local) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    assert_ne!(header,local);
+    assert_eq!(handoff.scope().bindings().len(),2);
+    assert_eq!(handoff.scope().references().iter().map(|reference|
+        task272b1_binding(&handoff,reference.binding().index())).collect::<Vec<_>>(),
+        [header,header,local,local,local]);
+    let g0 = format!("forall({}:Set,eq(singleton({0}),singleton({0})))",header.index());
+    let gp = format!("eq(singleton({0}),singleton({0}))",local.index());
+    let expected = [(&g0,&g0),(&g0,&gp),(&gp,&gp),(&gp,&gp),(&gp,&gp)];
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==id).unwrap()
+    };
+    assert_eq!(rows.iter().filter(|row|row.kind()==&K::TermExpression).count(),10);
+    assert_eq!(rows.iter().filter(|row|row.kind()==&K::SetEnumeration).count(),5);
+    let context = steps[0].context();
+    let proof = handoff.binding_env().contexts().get(context).unwrap();
+    assert_eq!(proof.layer,L::Proof);
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(task272b1_goal_text(step.before()),*expected[index].0);
+        assert_eq!(task272b1_goal_text(step.after()),*expected[index].1);
+        assert_eq!(step.owner(),steps[0].site());
+        assert_eq!(step.context(),context);
+        assert_eq!(step.matched(),if index==1 {Some((header,local))} else {None});
+        assert_eq!(step.free(),if index==0 {vec![]} else {vec![local]});
+        assert!(step.avoided().is_empty());
+        let row = original(step.site());
+        match index {
+            0=>assert_eq!(row.kind(),&K::TheoremItem),
+            1=>assert_eq!(row.range(),handoff.scope().bindings()[1].range()),
+            2=>assert_eq!(row.kind(),&K::IterativeEqualityStatement),
+            3=>assert_eq!(row.kind(),&K::IterativeEqualityStep),
+            4=>assert_eq!(row.kind(),&K::ConclusionStatement),
+            _=>unreachable!(),
+        }
+        assert!(intents.iter().any(|(site,_,status)|*status==S::Pending && if index==1 {
+            let statement = original(site);
+            statement.kind()==&K::LetStatement && statement.range().start<=row.range().start
+                && row.range().end<=statement.range().end
+        } else {site==step.site()}));
+    }
+    let chain = original(steps[2].site());
+    let chain_step = original(steps[3].site());
+    let terminal = original(steps[4].site());
+    assert_eq!(chain_step.parent(),Some(chain.site()));
+    assert_eq!(chain.parent(),terminal.parent());
+    let outer = rows.iter().copied().find(|row|Some(row.site())==chain.parent()).unwrap();
+    assert_eq!(outer.kind(),&K::ProofBlock);
+    assert_eq!(outer.parent(),Some(original(steps[0].site()).site()));
+    assert!(chain.range().start < chain_step.range().start && chain_step.range().end <= chain.range().end);
+    assert!(chain.range().end <= terminal.range().start);
+    let G::Universal {body,..} = steps[0].before() else {panic!("original quantified whole goal")};
+    let G::Equality {origin:header_origin,..} = body.as_ref() else {panic!("original header equality")};
+    for step in &steps[1..] {
+        let G::Equality {origin,..} = step.after() else {panic!("unchanged unproved whole equality")};
+        assert_eq!(origin,header_origin);
+    }
+    assert_eq!(original(header_origin).kind(),&K::BuiltinPredicateApplication);
+    for step in &steps[2..] {
+        assert_eq!(step.before(),steps[1].after());
+        assert_eq!(step.after(),steps[1].after());
+    }
+    assert_eq!(labels.index().iter().filter(|label|label.kind()==LabelKind::ProofStep).count(),1);
+    assert!(labels.index().iter().any(|label|label.kind()==LabelKind::Theorem));
+    let [id] = labels.ids() else {panic!("one genuine own-chain By reference")};
+    let LabelResolution::Resolved(label) = labels.table().get(*id).unwrap().resolution()
+        else {panic!("actual resolved chain ProofStep")};
+    assert_eq!(label.kind(),LabelKind::ProofStep);
+    let declaration = labels.index().get(label.origin()).unwrap();
+    assert_eq!(declaration.primary_spelling(),"A1");
+    let mizar_session::SourceAnchor::Range(range) = declaration.origin().anchor()
+        else {panic!("genuine declaration label anchor")};
+    assert_eq!(range.start,chain.range().start);
+    assert!(chain.range().end <= label.range().start);
+    assert!(rows.iter().any(|row|row.kind()==&K::Reference && row.range()==label.range()));
+    assert_eq!(declaration.origin().source_id(),labels.table().get(*id).unwrap().origin().source_id());
+    assert!(success.is_empty() && pending.is_empty());
+    assert!(checked.coercions().is_empty() && checked.initial_obligations().is_empty() && checked.facts().is_empty());
+    let header_context = handoff.binding_env().bindings().get(header).unwrap().owner_context;
+    assert_eq!(handoff.binding_env().contexts().get(header_context).unwrap().layer,L::Expression);
+    assert_eq!(handoff.binding_env().bindings().get(local).unwrap().owner_context,context);
+    for (index,reference) in handoff.scope().references().iter().enumerate() {
+        let binding = task272b1_binding(&handoff,reference.binding().index());
+        let occurrence_context = if index<2 {header_context} else {context};
+        assert!(inference.terms().iter().any(|(_,term)|term.kind==TermKind::Variable
+            && term.reference==Some(TermReference::Binding(binding))
+            && original(&term.site).range()==reference.range() && term.context==occurrence_context));
+    }
+    for binding in [header,local] {
+        let entry = handoff.binding_env().bindings().get(binding).unwrap();
+        assert_eq!(entry.type_site,BindingTypeSite::Missing);
+        assert!(entry.captured.identities().is_empty());
+        assert!(inference.terms().iter().any(|(_,term)|term.kind==TermKind::Variable
+            && term.reference==Some(TermReference::Binding(binding))
+            && matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")
+            && original(&term.site).range()==entry.declaration_range && term.context==entry.owner_context));
+    }
+    assert_eq!(inference.terms().iter().filter(|(_,term)|term.kind==TermKind::Variable).count(),7);
+    assert_eq!(inference.terms().iter().filter(|(_,term)|term.kind==TermKind::SetEnumeration).count(),5);
+    for (_,term) in inference.terms().iter() {
+        assert_eq!(term.status,TermStatus::Inferred);
+        let ty = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(ty.status,TypeStatus::Known);
+        let TypeEntryActual::Known(id) = ty.actual else {panic!("genuine KnownSet")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinSet);
+        if term.kind==TermKind::SetEnumeration {
+            assert!(term.reference.is_none());
+            let root = original(&term.site);
+            assert_eq!(root.kind(),&K::TermExpression);
+            let enumeration = rows.iter().copied().find(|row|row.kind()==&K::SetEnumeration && row.parent()==Some(root.site())).unwrap();
+            let child = rows.iter().copied().find(|row|row.kind()==&K::TermExpression && row.parent()==Some(enumeration.site())).unwrap();
+            assert_eq!(rows.iter().filter(|row|row.kind()==&K::TermExpression && row.parent()==Some(enumeration.site())).count(),1);
+            assert!(inference.terms().iter().any(|(_,child_term)|original(&child_term.site).site()==child.site()
+                && child_term.kind==TermKind::Variable && child_term.context==term.context));
+            assert_eq!(term.context,if root.range().end<handoff.scope().bindings()[1].range().start {header_context} else {context});
+        }
+    }
+    for (_,formula) in inference.formulas().iter() {
+        assert_eq!(formula.kind,FormulaKind::Equality);
+        assert_eq!(formula.status,FormulaStatus::Checked);
+        assert_eq!(&formula.site,header_origin);
+        assert_eq!(formula.context,header_context);
+        assert_eq!(formula.terms.len(),2);
+        assert!(formula.terms.iter().all(|site|inference.terms().iter().any(|(_,term)|&term.site==site && term.kind==TermKind::SetEnumeration)));
+    }
+    let observations = super::native_witness_goal_observation(&handoff).unwrap();
+    assert_eq!(observations.iter().filter(|line|line.starts_with("typed.binding=")).count(),7);
+    assert_eq!(observations.iter().filter(|line|line.starts_with("typed.singleton.")).count(),5);
+    assert!(checked.diagnostics().is_empty() && inference.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty()
+        && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b13_singleton_values_keep_constructor_origins_and_bound_alpha() {
+    use mizar_checker::source_proof_local_declaration::{SourceProofGoal as G,SourceProofTerm as T};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let source = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz");
+    let handoff = task272b1_witness_source(source);
+    let (steps,_,_,_,inference) = handoff.check_witness_goals().unwrap();
+    let (h,p) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    let G::Universal {body,..} = steps[0].before() else {panic!("original universal")};
+    let G::Equality {left:T::Singleton {origin:e0,element:l},right:T::Singleton {origin:e1,element:r},..} = body.as_ref()
+        else {panic!("two original singleton operands")};
+    assert_eq!((*l,*r),(h,h));
+    assert_ne!(e0,e1);
+    for step in &steps[1..] {
+        let G::Equality {left:T::Singleton {origin:left,element:l},right:T::Singleton {origin:right,element:r},..} = step.after()
+            else {panic!("both derived singleton constructors retained")};
+        assert_eq!((left,right),(e0,e1));
+        assert_eq!((*l,*r),(p,p));
+    }
+    for origin in [e0,e1] {
+        let native = handoff.source().nodes().node(origin.node()).unwrap().resolved_node.unwrap();
+        let enumeration = handoff.source().source_node_entries().unwrap().find(|row|row.site()==native).unwrap();
+        assert_eq!(enumeration.kind(),&K::SetEnumeration);
+        assert!(inference.terms().iter().any(|(_,term)| {
+            let original = handoff.source().nodes().node(term.site.node()).unwrap().resolved_node.unwrap();
+            Some(original)==enumeration.parent() && term.kind==mizar_checker::type_checker::TermKind::SetEnumeration
+        }));
+    }
+    for source in [
+        source.replace("X","Value"),
+        source.replace(";",";\n"),
+        source.replace("thus thesis by A1;","thus {X} = {X} by A1;"),
+        "theorem MixedOperands: for a,b being set holds {a}=b proof let a,b be set; thus {a}=b; end;".to_owned(),
+        "theorem ReverseOperands: for a,b being set holds a={b} proof let a,b be set; thus a={b}; end;".to_owned(),
+        "theorem BoundAlpha: for a being set holds (for x being object holds {x}={a}) proof let a be set; thus (for y being object holds {y}={a}); end;".to_owned(),
+        "theorem GenericSingleton: for a being set holds ({a}={a} iff not (a in {a})) proof let a be set; thus ({a}={a} iff not (a in {a})); end;".to_owned(),
+        "theorem HerebySingleton: for a being object holds a in {a} proof let a be object; hereby thus a in {a}; end; end;".to_owned(),
+    ] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps,_,_,_,_) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert_eq!(steps.last().unwrap().before(),steps.last().unwrap().after());
+    }
+    for source in [
+        "theorem WrongConstructor: for a being set holds {a}={a} proof let a be set; thus {a}=a; end;",
+        "theorem WrongElement: for a,b being set holds {a}={b} proof let a,b be set; thus {a}={a}; end;",
+        "theorem WrongOrder: for a,b being set holds {a}=b proof let a,b be set; thus b={a}; end;",
+        "theorem WrongAlpha: for a being set holds (for x being object holds {x}={a}) proof let a be set; thus (for y being object holds {a}={a}); end;",
+    ] {
+        assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b13_chain_validates_middle_frontier_endpoints_and_own_label() {
+    let distinct = "theorem MiddleValue: for a,b being set holds {a}={a} proof let a,b be set; C: {a}={b} .= {a}; thus thesis by C; end;";
+    let handoff = task272b1_witness_source(distinct);
+    let (steps,_,_,_,_) = handoff.check_witness_goals().unwrap();
+    let (a,b) = (task272b1_binding(&handoff,2),task272b1_binding(&handoff,3));
+    assert_eq!(steps.len(),6);
+    for step in &steps[3..] {
+        assert_eq!(step.free(),[a]);
+        assert!(!step.free().contains(&b));
+        assert!(step.matched().is_none());
+        assert_eq!(step.before(),step.after());
+    }
+    let alias = "theorem AliasMiddle: for a,b being set holds {a}={a} proof let a,b be set; set alias=b; C: {a}={alias} .= {a}; thus thesis by C; end;";
+    assert!(task272b1_witness_source(alias).check_witness_goals().is_ok());
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz");
+    for source in [
+        base.replace(".= {X};",".= {X}\n    .= {X};"),
+        base.replace(".= {X};",".= X;"),
+        base.replace("{X} = {X}\n    .=", "{X} = X\n    .="),
+        base.replace("by A1;","by IterEq1;"),
+        base.replace("by A1;","by A1, A1;"),
+        base.replace("thus thesis by A1;","thus X = X by A1;"),
+        base.replace("thus thesis by A1;","hence thesis by A1;"),
+        base.replace("A1: {X}","{X}"),
+        distinct.replace("C: {a}={b} .= {a};","C: {b}={a} .= {a};"),
+        distinct.replace("C: {a}={b} .= {a};","C: {a}={b} .= {b};"),
+        "theorem WrongNowLabel: for a being set holds {a}={a} proof let a be set; N: now thus {a}={a}; end; C: {a}={a} .= {a}; thus thesis by N; end;".to_owned(),
+        "theorem EarlyChain: for a being set holds {a}={a} proof let a be set; C: {a}={a} .= {a}; N: now thus {a}={a}; end; thus thesis by C; end;".to_owned(),
+        "theorem ChildChain: for a being set holds {a}={a} proof let a be set; N: now C: {a}={a} .= {a}; thus thesis by C; end; thus thesis by N; end;".to_owned(),
+        "theorem ForeignChain: for a being set holds {a}={a} proof let a be set; C: {a}={a} .= {a}; thus thesis by C; end; theorem BorrowedChain: for a being set holds {a}={a} proof let a be set; D: {a}={a} .= {a}; thus thesis by C; end;".to_owned(),
+    ] {
+        assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}");
+    }
+    // A header identity is not introduced by lexical presence or occurrence in the middle.
+    let unavailable = "theorem UnintroducedMiddle: for a,b being set holds {a}={a} proof let a be set; C: {a}={b} .= {a}; thus thesis by C; end;";
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0==super::NATIVE_WITNESS_GOAL_ID).unwrap();
+    let frontend = metamorphic_guard::with_source(case,unavailable,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(super::native_conversion_handoff(&ast,&resolver.module,&resolver.env)
+        .and_then(|handoff|handoff.check_witness_goals().map(|_|()).map_err(|error|format!("{error:?}"))).is_err());
+}
+
+#[test]
+fn task272b13_singleton_set_roots_preserve_object_children_and_real_pending_guard() {
+    use mizar_checker::{type_checker::{TermKind,TermReference,TypeHeadRef},typed_ast::{FactProvenance,FactStatus,InitialObligationStatus,TypeEntryActual}};
+    for source in [
+        "theorem SingletonMember: for x being object holds x in {x} proof let x be object; thus x in {x}; end;",
+        "theorem SingletonBothMember: for x being object holds {x} in {x} proof let x be object; thus {x} in {x}; end;",
+    ] {
+        let handoff = task272b1_witness_source(source);
+        let (_,success,pending,checked,inference) = handoff.check_witness_goals().unwrap();
+        assert!(success.is_empty() && pending.is_empty() && checked.facts().is_empty());
+        for (_,term) in inference.terms().iter() {
+            let TypeEntryActual::Known(id) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual type")};
+            assert_eq!(inference.normalized_types().get(id).unwrap().head,
+                if term.kind==TermKind::SetEnumeration {TypeHeadRef::BuiltinSet} else {TypeHeadRef::BuiltinObject});
+        }
+    }
+    let source = "theorem PendingSingleton: for o being object ex z being set st {z}={z} proof let o be object; take o; C: {o}={o} .= {o}; thus thesis by C; end;";
+    let handoff = task272b1_witness_source(source);
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(),6);
+    assert!(success.is_empty());
+    assert_eq!(pending.len(),1);
+    assert_eq!(pending[0].site,*steps[2].site());
+    let object = task272b1_binding(&handoff,2);
+    assert_eq!(steps[2].matched(),Some((task272b1_binding(&handoff,1),object)));
+    let guard = checked.initial_obligations().iter().next().unwrap().1;
+    assert_eq!(guard.owner,*steps[2].site());
+    assert_eq!(guard.status,InitialObligationStatus::Pending);
+    assert_eq!(checked.facts().len(),1);
+    assert!(checked.facts().iter().all(|(_,fact)|fact.subject==pending[0].site
+        && fact.status==FactStatus::PendingObligation && !fact.status.is_unconditionally_consumable()
+        && fact.provenance==FactProvenance::Obligation(guard.id)));
+    for (_,term) in inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(object))) {
+        let TypeEntryActual::Known(id) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual Object")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinObject);
+    }
+    assert!(super::native_witness_goal_observation(&handoff).unwrap().iter().any(|line|line.starts_with("remaining.")
+        && line.contains(&format!("pending=[{:?}]",guard.id))));
+    let foreign = "theorem ForeignPending: for o being object ex z being set st z=o proof let o be object; take o; thus o=o; end;";
+    let local = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz");
+    let isolated = task272b1_witness_source(&format!("{foreign}\n{local}"));
+    let (steps,_,pending,checked,_) = isolated.check_witness_goals().unwrap();
+    assert_eq!(pending.len(),1);
+    assert_eq!(checked.initial_obligations().len(),1);
+    let observations = super::native_witness_goal_observation(&isolated).unwrap();
+    assert!(observations.iter().any(|line|line.starts_with("remaining.")
+        && line.contains(&format!("terminal={:?}",steps.last().unwrap().site())) && line.ends_with("pending=[]")));
+    for source in [
+        "theorem ObjectMemberRight: for x being object holds {x} in x proof let x be object; thus thesis; end;",
+        "theorem PendingMemberRight: for x being object ex z being set st {x} in z proof let x be object; take x; thus thesis; end;",
+    ] {
+        assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b13_compound_census_scalar_effects_and_old_atomic_caps_stay_bounded() {
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz");
+    for middle in ["{}","{X,X}","{{X}}"] {
+        let source = base.replace("{X} = {X}\n",&format!("{{X}} = {middle}\n"));
+        assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}");
+    }
+    for source in [
+        "theorem CompoundTake: for x being set ex z being set st z=x proof let x be set; take {x}; thus thesis; end;",
+        "theorem CompoundNamed: for x being set ex z being set st z=x proof let x be set; take alias={x}; thus thesis; end;",
+        "theorem CompoundSet: for x being set holds x=x proof let x be set; set alias={x}; thus x=x; end;",
+        "theorem CompoundReconsider: for x being set holds x=x proof let x be set; reconsider alias={x} as set; thus x=x; end;",
+        "theorem CompoundPartial: for x being set holds {x}={x} & x=x proof let x be set; thus {x}={x}; thus x=x; end;",
+        "theorem CompoundCompact: for x being object holds x=x proof let x be object; A1: (ex y being object st {y}={x}) proof take x; thus {x}={x}; end; consider z being object such that H:{z}={x} by A1; thus x=x; end;",
+        "theorem CompoundCase: for x being set holds ({x}={x}) or not ({x}={x}) proof let x be set; per cases; suppose A:({x}={x}); thus ({x}={x}) or not ({x}={x}) by A; end; suppose B:not ({x}={x}); thus ({x}={x}) or not ({x}={x}) by B; end; end;",
+    ] {
+        assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b13_chain_native_gate_controls_actual_c9_fs_result() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_iterative_equality_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz");
+    let source = base.replace(".= {X};",".= {X}\n    .= {X};");
+    let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty());
+    assert_eq!(super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,true),Ok(true));
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,_) = handoff.check_proof_intents().unwrap();
+    assert!(intents.iter().all(|(_,_,status)|*status==mizar_checker::source_proof_local_declaration::SourceProofIntentStatus::Pending));
+    assert!(handoff.check_witness_goals().is_err());
+    let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
+    assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
 }

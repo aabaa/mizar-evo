@@ -50,6 +50,10 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 既存の括弧付き Iff C8 case は legacy formula 検査後に native goal 全体の replay も要求する。
 この観測から同値のいずれの方向も証明しない。
 
+既存 IterEq1 C9 case は native singleton 値と未証明の chain/step checkpoint も要求する。
+実 singleton root は Binding 参照を持たず元 site で観測し、Variable/Binding 観測と owner/先行 guard の対応は維持する。
+先行する連鎖全体の label と元 endpoint を goal 全体に対応付けるだけで、隣接等式・推移律を証明しない。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。
