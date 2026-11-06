@@ -116,6 +116,12 @@ Given は現在の存在前件を、厳密に型が一致する fresh な proof 
 この経路では元・派生 goal とも右辺に実 plain KnownSet を要求する。条件付き Object 右辺は
 後続に残す。左の witness の Pending narrowing は body と保持し、KnownSet や membership fact を作らない。
 
+末尾の Hereby に justification のない単一 Thus がある場合、外側 Proof 直下の実 Block
+context に現在の未証明 goal 全体と先行 frontier を継承する。元 Hereby checkpoint と
+Conclusion 子は theorem owner と変更のない goal を保持する。子の項は実 Block/Expression
+context を維持する。証明の closure、内部宣言、連言の部分 discharge、継承 By、
+一般の Now/入れ子 block の goal export はこの経路の対象外とする。
+
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
 実 item・proof・theorem owner を対応付け、後続 conclusion の source Pending が Blocked

@@ -2521,6 +2521,52 @@ impl SourceProofLocalBindingHandoff {
             }
             for (index, statement) in body.iter().enumerate().take(body.len() - 1).skip(1) {
                 used.insert(statement.site());
+                let terminal = index == body.len() - 2;
+                let (statement, context) = if statement.kind() == &K::HerebyStatement {
+                    let children = source_hereby_roles(rows, statement).ok_or_else(invalid)?;
+                    let [child] = children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let parts = source_proof_frame(rows, child).ok_or_else(invalid)?;
+                    if !terminal
+                        || child.kind() != &K::ConclusionStatement
+                        || child.parent() != Some(statement.site())
+                        || parts.len() != 3
+                        || !source_inline_token(&parts, 0, "thus")
+                        || parts[1].kind() != &K::Proposition
+                        || !source_inline_token(&parts, 2, ";")
+                    {
+                        return Err(invalid());
+                    }
+                    let child_context = *contexts.get(&statement.site()).ok_or_else(invalid)?;
+                    if self
+                        .binding_env
+                        .contexts()
+                        .get(child_context)
+                        .is_none_or(|c| {
+                            c.layer != BindingContextLayer::Block
+                                || c.parent != Some(context)
+                                || c.owner
+                                    != (BindingContextOwner::SourceStatement {
+                                        source_range: statement.range(),
+                                    })
+                                || c.recovery != BindingContextRecovery::Normal
+                                || !c.bindings.is_empty()
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    events.push((
+                        owner.clone(),
+                        child_context,
+                        self.witness_goal_site(statement)?,
+                        None,
+                    ));
+                    used.insert(child.site());
+                    (*child, child_context)
+                } else {
+                    (*statement, context)
+                };
                 let linked = statement.kind() == &K::ThenStatement;
                 let statement = if linked {
                     if !intents.iter().any(|(site, _, status)| {
@@ -2543,7 +2589,6 @@ impl SourceProofLocalBindingHandoff {
                 {
                     return Err(invalid());
                 }
-                let terminal = index == body.len() - 2;
                 if terminal
                     || matches!(
                         statement.kind(),
@@ -3380,7 +3425,43 @@ impl SourceProofLocalBindingHandoff {
                 if step.matched.is_some() || step.before != step.after {
                     return Err(invalid());
                 }
-                if row.kind() == &SurfaceNodeKind::Equating {
+                if row.kind() == &SurfaceNodeKind::HerebyStatement {
+                    let block = self
+                        .binding_env
+                        .contexts()
+                        .get(context)
+                        .ok_or_else(invalid)?;
+                    let parent = self
+                        .binding_env
+                        .contexts()
+                        .get(block.parent.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?;
+                    let proof = self
+                        .original
+                        .source_node_entries()
+                        .and_then(|mut rows| rows.find(|r| Some(r.site()) == row.parent()))
+                        .ok_or_else(invalid)?;
+                    if block.layer != BindingContextLayer::Block
+                        || block.recovery != BindingContextRecovery::Normal
+                        || block.owner
+                            != (BindingContextOwner::SourceStatement {
+                                source_range: row.range(),
+                            })
+                        || !block.bindings.is_empty()
+                        || proof.kind() != &SurfaceNodeKind::ProofBlock
+                        || parent.layer != BindingContextLayer::Proof
+                        || parent.recovery != BindingContextRecovery::Normal
+                        || parent.owner
+                            != (BindingContextOwner::SourceStatement {
+                                source_range: proof.range(),
+                            })
+                        || frontier
+                            .iter()
+                            .any(|id| !block.visible_bindings.contains(id))
+                    {
+                        return Err(invalid());
+                    }
+                } else if row.kind() == &SurfaceNodeKind::Equating {
                     let rows = self.original.source_nodes().ok_or_else(invalid)?;
                     let [name, rhs] = source_equating_roles(rows, row).ok_or_else(invalid)?;
                     let alias = self.witness_goal_binding(name.site())?;
@@ -17649,7 +17730,7 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        let fixture = |source, conditioned: bool, by: bool, given: bool| {
+        let fixture = |source, conditioned: bool, by: bool, given: bool, hereby: bool| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
             let mut words = if given {
@@ -17700,16 +17781,23 @@ mod task269c_tests {
                     "x",
                 ]
             };
-            words.extend_from_slice(if by {
+            words.extend_from_slice(if hereby {
+                &[";", "end", ";", "end", ";"]
+            } else if by {
                 &["by", "A1", ";", "end", ";"]
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, k, t, condition_start) = if given {
+            let (h, c, l, a, k, mut t, condition_start) = if given {
                 (13, 17, 22, 34, 39, 44, 31)
             } else {
                 (8, 12, 17, 24, 29, 34, 21)
             };
+            if hereby {
+                words[t - 1] = "thus";
+                words.insert(t - 1, "hereby");
+                t += 1;
+            }
             let mut builder = SurfaceAstBuilder::new(source);
             let mut spans = Vec::new();
             let mut tokens = Vec::new();
@@ -17903,8 +17991,26 @@ mod task269c_tests {
                     vec![tokens[t + 3], list],
                 ));
             }
-            tail.push(tokens[end - 2]);
-            let terminal = node(&mut builder, K::ConclusionStatement, t - 1, end - 2, tail);
+            let terminal_end = if hereby { t + 3 } else { end - 2 };
+            tail.push(tokens[terminal_end]);
+            let terminal = node(
+                &mut builder,
+                K::ConclusionStatement,
+                t - 1,
+                terminal_end,
+                tail,
+            );
+            let terminal = if hereby {
+                node(
+                    &mut builder,
+                    K::HerebyStatement,
+                    t - 2,
+                    end - 2,
+                    vec![tokens[t - 2], terminal, tokens[t + 4], tokens[t + 5]],
+                )
+            } else {
+                terminal
+            };
             let proof = node(
                 &mut builder,
                 K::ProofBlock,
@@ -17989,8 +18095,13 @@ mod task269c_tests {
             )
             .unwrap()
         };
-        for (conditioned, by) in [(false, false), (false, true), (true, true)] {
-            let genuine = fixture(source_id(), conditioned, by, false);
+        for (conditioned, by, hereby) in [
+            (false, false, false),
+            (false, true, false),
+            (true, true, false),
+            (false, false, true),
+        ] {
+            let genuine = fixture(source_id(), conditioned, by, false, hereby);
             let (steps, guards, initial, checked, inference) =
                 genuine.check_witness_goals().unwrap();
             let (formal, actual) = steps[1].matched.unwrap();
@@ -18094,6 +18205,95 @@ mod task269c_tests {
                     "mutation{mutation}"
                 );
             }
+            if hereby {
+                assert_eq!(steps[4].context, steps[5].context);
+                assert_ne!(steps[4].context, steps[1].context);
+                for mutation in 0..10 {
+                    let mut bad = steps.clone();
+                    match mutation {
+                        0 => bad[4].context = steps[1].context,
+                        1 => bad[5].context = steps[1].context,
+                        2 => bad[4].site = steps[5].site.clone(),
+                        3 => bad[4].owner = steps[3].site.clone(),
+                        4 => bad[4].matched = Some((formal, actual)),
+                        5 => bad[4].avoided = vec![actual],
+                        6 => bad[4].free.clear(),
+                        7 => bad[4].before = steps[0].before.clone(),
+                        8 => bad[4].after = steps[0].before.clone(),
+                        _ => bad.swap(4, 5),
+                    }
+                    assert!(
+                        genuine
+                            .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                            .is_err(),
+                        "Hereby mutation{mutation}"
+                    );
+                }
+                for mutation in 0..5 {
+                    let mut bad = genuine.clone();
+                    let mut contexts = BindingContextTable::new();
+                    for (id, entry) in genuine.binding_env.contexts().iter() {
+                        let mut draft = BindingContextDraft {
+                            owner: entry.owner.clone(),
+                            parent: entry.parent,
+                            layer: entry.layer,
+                            lexical_scope: entry.lexical_scope.clone(),
+                            bindings: entry.bindings.clone(),
+                            visible_bindings: entry.visible_bindings.clone(),
+                            recovery: entry.recovery,
+                        };
+                        if id == steps[4].context {
+                            match mutation {
+                                0 => draft.layer = BindingContextLayer::Proof,
+                                1 => draft.parent = Some(BindingContextId::new(0)),
+                                2 => {
+                                    draft.owner = genuine
+                                        .binding_env
+                                        .contexts()
+                                        .get(steps[1].context)
+                                        .unwrap()
+                                        .owner
+                                        .clone()
+                                }
+                                3 => draft.visible_bindings.retain(|id| *id != actual),
+                                _ => draft.recovery = BindingContextRecovery::Recovered,
+                            }
+                        }
+                        contexts.insert(draft);
+                    }
+                    if let Ok(env) = BindingEnv::try_new(BindingEnvParts {
+                        source_id: genuine.binding_env.source_id(),
+                        module_id: genuine.binding_env.module_id().clone(),
+                        contexts,
+                        bindings: genuine.binding_env.bindings().clone(),
+                        diagnostics: genuine.binding_env.diagnostics().clone(),
+                    }) {
+                        bad.binding_env = env;
+                        assert!(
+                            bad.replay_witness_goals(
+                                &steps, &guards, &initial, &checked, &inference
+                            )
+                            .is_err(),
+                            "Hereby context mutation{mutation}"
+                        );
+                    }
+                }
+                let (_, _, mut terms, formulas, _) = genuine.witness_goal_inputs().unwrap();
+                let child = terms
+                    .iter_mut()
+                    .find(|t| t.context == steps[4].context)
+                    .unwrap();
+                child.context = steps[1].context;
+                let coherent = TermFormulaChecker::default()
+                    .try_infer(&genuine.symbols, &genuine.binding_env, terms, formulas)
+                    .unwrap();
+                assert!(coherent.diagnostics().is_empty());
+                assert!(
+                    genuine
+                        .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
+                        .is_err()
+                );
+            }
             // Recompute internally valid inference; source-result equality still rejects it.
             let (_, _, mut terms, formulas, _) = genuine.witness_goal_inputs().unwrap();
             let ty = terms[0].result_type.as_mut().unwrap();
@@ -18113,7 +18313,7 @@ mod task269c_tests {
                     .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                     .is_err()
             );
-            let foreign = fixture(other_source_id(), conditioned, by, false);
+            let foreign = fixture(other_source_id(), conditioned, by, false, hereby);
             let products = foreign.check_witness_goals().unwrap();
             assert!(
                 genuine
@@ -18132,7 +18332,7 @@ mod task269c_tests {
                     .is_err()
             );
         }
-        let given = fixture(source_id(), false, true, true);
+        let given = fixture(source_id(), false, true, true, false);
         let (steps, guards, initial, checked, inference) = given.check_witness_goals().unwrap();
         assert_eq!(steps.len(), 6);
         let (formal, witness) = steps[2].matched.unwrap();
@@ -18235,7 +18435,7 @@ mod task269c_tests {
                 .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                 .is_err()
         );
-        let foreign = fixture(other_source_id(), false, true, true)
+        let foreign = fixture(other_source_id(), false, true, true, false)
             .check_witness_goals()
             .unwrap();
         assert!(

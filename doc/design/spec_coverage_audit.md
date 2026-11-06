@@ -59,7 +59,8 @@ requests and actual local-label/status observation through the same checker owne
 and [native proof-intent consumer](./mizar-test/en/harness.md#native-proof-intents).
 `spec.en.15.statements.witness_goals.typed_replay.metadata` adds bounded plain
 Set/Object Let/Take/Given, variable aliases and equality/membership/implication/condition residual replay
-and source-only terminal local citation intent through those owners.
+and source-only terminal local citation intent through those owners; a final single-Thus
+Hereby also observes inherited unproved goals in its authentic child Block context.
 Broader goal/substitution coverage remains with Task272; the prepared old-AS
 consumer adds no default activation or proof acceptance to either metadata requirement.
 

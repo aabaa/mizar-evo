@@ -110,7 +110,7 @@ alongside the substituted body through terminal. Explicit terminal goals compare
 canonical bound-alpha structure and exact free identities. Independent replay
 checks source, typing, guards and results. These are unproved remaining obligations;
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
-proof effects and general freshening remain deferred.
+general proof effects and freshening remain deferred.
 
 Restricted universals retain the type guard and an implication body. A single
 source Assume matching its antecedent leaves the unproved consequent; the ordered
@@ -133,6 +133,13 @@ Membership is a typed, unproved atom with two variable values. This bounded path
 requires an actual plain KnownSet right operand in original and derived goals.
 Conditional Object right operands defer; Pending narrowing on a left witness
 retains its owning body without a KnownSet upgrade or membership fact.
+
+A final Hereby with a single unjustified Thus inherits the whole current unproved
+goal and prior frontier in its actual Block context, directly below the outer Proof.
+The original Hereby checkpoint and Conclusion child retain the theorem owner and
+unchanged goal. Child term occurrences keep authentic Block/Expression contexts.
+No proof closure, inner declaration, partial conjunction discharge, inherited By
+or general Now/nested-block goal export is provided by this bounded path.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's

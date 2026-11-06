@@ -33,7 +33,7 @@ conversion rejection/Missing/diagnostic plus the same blocked theorem ancestry.
 The separate `checker.native_witness_goals` AS observation consumes actual
 source-order Let/Take typing, guard requests and materialized goal replay after
 the same native installation. Existing FS multi-witness, local Set/Take and
-Then/Hence, conditioned-Let and Given cases keep their semantic checkers and additionally
+Then/Hence, conditioned-Let, Given and final Hereby cases keep their semantic checkers and additionally
 consume derived goals and source-only terminal local citation intents.
 Pass observes unproved remaining goals; each unresolved type guard stays joined
 to its actual Witness and owning body through terminal. It supplies no proof

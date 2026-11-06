@@ -609,6 +609,7 @@ fn formula_statement_detail_keys(
                 "pass_formula_statement_existential_multi_witness_001"
                     | "pass_formula_statement_then_hence_linking_001"
                     | "pass_formula_statement_given_existential_assumption_001"
+                    | "pass_formula_statement_hereby_diffuse_conclusion_001"
             )
         {
             semantics.extend(
