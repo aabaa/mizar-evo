@@ -97,7 +97,7 @@ pub enum SourceProofIntentStatus {
     Blocked,
 }
 
-/// A derived atom operand; singleton provenance names the original enumeration.
+/// A derived atom operand; enumeration provenance names the original construction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SourceProofTerm {
@@ -106,23 +106,31 @@ pub enum SourceProofTerm {
         origin: crate::typed_ast::TypedSiteRef,
         element: BindingId,
     },
+    Enumeration {
+        origin: crate::typed_ast::TypedSiteRef,
+        elements: Vec<BindingId>,
+    },
 }
 
 impl SourceProofTerm {
-    fn binding(&self) -> BindingId {
+    fn bindings(&self) -> &[BindingId] {
         match self {
-            Self::Binding(id) | Self::Singleton { element: id, .. } => *id,
+            Self::Binding(id) | Self::Singleton { element: id, .. } => std::slice::from_ref(id),
+            Self::Enumeration { elements, .. } => elements,
         }
     }
 
     fn substitute(&self, formal: BindingId, actual: BindingId) -> Self {
-        let id = self.binding();
-        let replaced = if id == formal { actual } else { id };
+        let replace = |id| if id == formal { actual } else { id };
         match self {
-            Self::Binding(_) => Self::Binding(replaced),
-            Self::Singleton { origin, .. } => Self::Singleton {
+            Self::Binding(id) => Self::Binding(replace(*id)),
+            Self::Singleton { origin, element } => Self::Singleton {
                 origin: origin.clone(),
-                element: replaced,
+                element: replace(*element),
+            },
+            Self::Enumeration { origin, elements } => Self::Enumeration {
+                origin: origin.clone(),
+                elements: elements.iter().copied().map(replace).collect(),
             },
         }
     }
@@ -131,31 +139,42 @@ impl SourceProofTerm {
         match (before, self) {
             (Self::Binding(_), Self::Binding(_)) => {}
             (Self::Singleton { origin: a, .. }, Self::Singleton { origin: b, .. }) if a == b => {}
+            (Self::Enumeration { origin: a, .. }, Self::Enumeration { origin: b, .. })
+                if a == b => {}
             _ => return false,
         }
-        self.binding()
-            == if before.binding() == formal {
-                actual
-            } else {
-                before.binding()
-            }
+        self.bindings().len() == before.bindings().len()
+            && self
+                .bindings()
+                .iter()
+                .zip(before.bindings())
+                .all(|(&after, &before)| after == if before == formal { actual } else { before })
     }
 
     fn alpha_matches(&self, other: &Self, pairs: &[(BindingId, BindingId)]) -> bool {
         if !matches!(
             (self, other),
-            (Self::Binding(_), Self::Binding(_)) | (Self::Singleton { .. }, Self::Singleton { .. })
+            (Self::Binding(_), Self::Binding(_))
+                | (Self::Singleton { .. }, Self::Singleton { .. })
+                | (Self::Enumeration { .. }, Self::Enumeration { .. })
         ) {
             return false;
         }
-        match (
-            pairs.iter().rposition(|(a, _)| *a == self.binding()),
-            pairs.iter().rposition(|(_, b)| *b == other.binding()),
-        ) {
-            (Some(a), Some(b)) => a == b,
-            (None, None) => self.binding() == other.binding(),
-            _ => false,
-        }
+        self.bindings().len() == other.bindings().len()
+            && self
+                .bindings()
+                .iter()
+                .zip(other.bindings())
+                .all(|(&left, &right)| {
+                    match (
+                        pairs.iter().rposition(|(a, _)| *a == left),
+                        pairs.iter().rposition(|(_, b)| *b == right),
+                    ) {
+                        (Some(a), Some(b)) => a == b,
+                        (None, None) => left == right,
+                        _ => false,
+                    }
+                })
     }
 }
 
@@ -281,16 +300,18 @@ impl SourceProofGoal {
         match self {
             Self::Equality { left, right, .. } | Self::Membership { left, right, .. } => {
                 for term in [left, right] {
-                    let id = term.binding();
-                    if !bound.contains(&id) {
-                        free.insert(id);
+                    for &id in term.bindings() {
+                        if !bound.contains(&id) {
+                            free.insert(id);
+                        }
                     }
                 }
             }
             Self::TypeAssertion { subject, .. } => {
-                let id = subject.binding();
-                if !bound.contains(&id) {
-                    free.insert(id);
+                for &id in subject.bindings() {
+                    if !bound.contains(&id) {
+                        free.insert(id);
+                    }
                 }
             }
             Self::Conjunction { left, right, .. }
@@ -2215,15 +2236,33 @@ impl SourceProofLocalBindingHandoff {
             ));
         }
         let elements = source_proof_frame(rows, parts[0]).ok_or_else(invalid)?;
-        if elements.len() != 3
+        if elements.len() < 3
+            || elements.len() % 2 != 1
             || !source_inline_token(&elements, 0, "{")
-            || !source_inline_token(&elements, 2, "}")
+            || !source_inline_token(&elements, elements.len() - 1, "}")
         {
             return Err(invalid());
         }
-        Ok(SourceProofTerm::Singleton {
-            origin: self.witness_goal_site(parts[0])?,
-            element: self.witness_goal_alias_value(self.witness_goal_value(elements[1])?)?,
+        let mut bindings = Vec::new();
+        for (index, element) in elements.iter().enumerate().take(elements.len() - 1).skip(1) {
+            if index % 2 == 0 {
+                if !source_inline_token(&elements, index, ",") {
+                    return Err(invalid());
+                }
+            } else {
+                bindings.push(self.witness_goal_alias_value(self.witness_goal_value(element)?)?);
+            }
+        }
+        let origin = self.witness_goal_site(parts[0])?;
+        Ok(match bindings.as_slice() {
+            [element] => SourceProofTerm::Singleton {
+                origin,
+                element: *element,
+            },
+            _ => SourceProofTerm::Enumeration {
+                origin,
+                elements: bindings,
+            },
         })
     }
 
@@ -2874,10 +2913,16 @@ impl SourceProofLocalBindingHandoff {
                                 "occurrence-result",
                             )?)
                     }
-                    SourceProofTerm::Singleton { origin, .. } => {
+                    SourceProofTerm::Singleton { origin, .. }
+                    | SourceProofTerm::Enumeration { origin, .. } => {
                         let enumeration = self.witness_goal_source(&origin)?;
                         let parts = source_proof_frame(rows, enumeration).ok_or_else(invalid)?;
-                        if contexts.get(&parts[1].site()) != Some(&context) {
+                        if parts
+                            .iter()
+                            .skip(1)
+                            .step_by(2)
+                            .any(|element| contexts.get(&element.site()) != Some(&context))
+                        {
                             return Err(invalid());
                         }
                         TermInput::new(site.clone(), context, row.range(), TermKind::SetEnumeration)
@@ -3726,23 +3771,31 @@ impl SourceProofLocalBindingHandoff {
     ) -> Result<bool, SourceProofLocalDeclarationError> {
         use crate::type_checker::TypeHeadInput;
         let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
-        let binding = term.binding();
-        if self.witness_goal_alias_value(binding)? != binding
-            || !bound.contains(&binding) && !frontier.contains(&binding)
-        {
-            return Err(invalid());
+        let mut set = false;
+        for &binding in term.bindings() {
+            if self.witness_goal_alias_value(binding)? != binding
+                || !bound.contains(&binding) && !frontier.contains(&binding)
+            {
+                return Err(invalid());
+            }
+            set = self.witness_goal_guard(binding, request, "formation")?.head
+                == TypeHeadInput::BuiltinSet;
         }
-        let ty = self.witness_goal_guard(binding, request, "formation")?;
-        if let SourceProofTerm::Singleton { origin, .. } = term {
+        if let SourceProofTerm::Singleton { origin, .. }
+        | SourceProofTerm::Enumeration { origin, .. } = term
+        {
             let enumeration = self.witness_goal_source(origin)?;
+            let original = self.witness_goal_term(self.witness_goal_parent(enumeration)?)?;
             if enumeration.kind() != &SurfaceNodeKind::SetEnumeration
-                || !matches!(self.witness_goal_term(self.witness_goal_parent(enumeration)?)?, SourceProofTerm::Singleton { origin: source, .. } if source == *origin)
+                || std::mem::discriminant(term) != std::mem::discriminant(&original)
+                || term.bindings().len() != original.bindings().len()
+                || !matches!(&original, SourceProofTerm::Singleton { origin: source, .. } | SourceProofTerm::Enumeration { origin: source, .. } if source == origin)
             {
                 return Err(invalid());
             }
             Ok(true)
         } else {
-            Ok(ty.head == TypeHeadInput::BuiltinSet)
+            Ok(set)
         }
     }
 
@@ -19345,7 +19398,13 @@ mod task269c_tests {
         let fixture = |source, conditioned, by, given, hereby, now, packet, iff, chain, is_type| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if is_type != 0 {
+            let mut words = if is_type == 3 {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "object", "holds", "{", "x", ",",
+                    "x", "}", "is", "set", "proof", "let", "x", "be", "object", ";", "thus", "{",
+                    "x", ",", "x", "}", "is", "set",
+                ]
+            } else if is_type != 0 {
                 let asserted = if is_type == 2 { "object" } else { "set" };
                 vec![
                     "theorem", "T", ":", "for", "x", "being", "set", "holds", "x", "is", asserted,
@@ -19427,7 +19486,9 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if is_type != 0 {
+            let (h, c, l, a, mut k, mut t, condition_start) = if is_type == 3 {
+                (8, 12, 17, 22, 22, 22, 21)
+            } else if is_type != 0 {
                 (8, 8, 13, 18, 18, 18, 17)
             } else if chain {
                 (8, 12, 17, 36, 23, 36, 21)
@@ -19464,7 +19525,7 @@ mod task269c_tests {
                 cursor += word.len() + 1;
                 let kind = if matches!(word, "T" | "x" | "y" | "w" | "u" | "A1" | "A2" | "N") {
                     SurfaceTokenKind::Identifier
-                } else if matches!(word, ":" | "=" | ";" | "{" | "}" | ".=") {
+                } else if matches!(word, ":" | "=" | ";" | "{" | "}" | ".=" | ",") {
                     SurfaceTokenKind::ReservedSymbol
                 } else {
                     SurfaceTokenKind::ReservedWord
@@ -19552,10 +19613,28 @@ mod task269c_tests {
                 vec![h, c, a, k, t]
             } {
                 let mut terms = Vec::new();
-                if chain {
+                if is_type == 3 {
+                    let mut children = vec![tokens[i]];
+                    for j in [i + 1, i + 3] {
+                        let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
+                        children.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
+                        if j == i + 1 {
+                            children.push(tokens[i + 2]);
+                        }
+                    }
+                    children.push(tokens[i + 4]);
+                    let enumeration = node(&mut builder, K::SetEnumeration, i, i + 4, children);
+                    terms.push(node(
+                        &mut builder,
+                        K::TermExpression,
+                        i,
+                        i + 4,
+                        vec![enumeration],
+                    ));
+                } else if chain {
                     terms.extend([singleton_terms[&h], singleton_terms[&c]]);
                 }
-                for j in if chain {
+                for j in if chain || is_type == 3 {
                     Vec::new()
                 } else if is_type != 0 {
                     vec![i]
@@ -19566,14 +19645,27 @@ mod task269c_tests {
                     terms.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
                 }
                 let eq = if is_type != 0 {
-                    let head = node(&mut builder, K::TypeHead, i + 2, i + 2, vec![tokens[i + 2]]);
-                    let target = node(&mut builder, K::TypeExpression, i + 2, i + 2, vec![head]);
+                    let target_index = i + if is_type == 3 { 6 } else { 2 };
+                    let head = node(
+                        &mut builder,
+                        K::TypeHead,
+                        target_index,
+                        target_index,
+                        vec![tokens[target_index]],
+                    );
+                    let target = node(
+                        &mut builder,
+                        K::TypeExpression,
+                        target_index,
+                        target_index,
+                        vec![head],
+                    );
                     node(
                         &mut builder,
                         K::IsAssertion,
                         i,
-                        i + 2,
-                        vec![terms[0], tokens[i + 1], target],
+                        target_index,
+                        vec![terms[0], tokens[target_index - 1], target],
                     )
                 } else {
                     node(
@@ -19590,7 +19682,7 @@ mod task269c_tests {
                         &mut builder,
                         K::FormulaExpression,
                         i,
-                        if chain { i + 6 } else { i + 2 },
+                        if chain || is_type == 3 { i + 6 } else { i + 2 },
                         vec![eq],
                     ),
                 );
@@ -19671,7 +19763,13 @@ mod task269c_tests {
                 vec![forall],
             );
             let proposition = if is_type != 0 {
-                node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
+                node(
+                    &mut builder,
+                    K::Proposition,
+                    t,
+                    t + if is_type == 3 { 6 } else { 2 },
+                    vec![formulas[&t]],
+                )
             } else if chain {
                 let thesis = node(
                     &mut builder,
@@ -20627,6 +20725,192 @@ mod task269c_tests {
                 .replay_witness_goals(&changed, &guards, &initial, &checked, &inference)
                 .is_err()
         );
+        let enumeration = fixture(
+            source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            3,
+        );
+        let (trace, guards, initial, checked, inference) =
+            enumeration.check_witness_goals().unwrap();
+        assert_eq!(
+            (
+                trace.len(),
+                inference.terms().len(),
+                inference.formulas().len()
+            ),
+            (3, 8, 2)
+        );
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        let (formal, actual) = trace[1].matched.unwrap();
+        let SourceProofGoal::Universal { body, .. } = &trace[0].before else {
+            unreachable!()
+        };
+        let SourceProofGoal::TypeAssertion { subject, .. } = &trace[1].after else {
+            unreachable!()
+        };
+        let SourceProofTerm::Enumeration { origin, elements } = subject else {
+            panic!("finite enumeration")
+        };
+        assert_eq!(elements, &[actual, actual]);
+        assert!(trace[1].after.replays_substitution(body, formal, actual));
+        assert_eq!(trace[2].before, trace[1].after);
+        assert_eq!(trace[2].after, trace[1].after);
+        assert_eq!(trace[1].free, [actual]);
+        assert!(trace.iter().all(|s| s.avoided.is_empty()));
+        let rows = enumeration.original.source_nodes().unwrap();
+        let source_enumerations = rows
+            .iter()
+            .filter(|r| r.kind() == &K::SetEnumeration)
+            .count();
+        assert_eq!(source_enumerations, 2);
+        let (_, _, terms, formulas, _) = enumeration.witness_goal_inputs().unwrap();
+        assert_eq!(
+            terms
+                .iter()
+                .filter(|t| t.kind == crate::type_checker::TermKind::Variable)
+                .count(),
+            6
+        );
+        assert!(inference.formulas().iter().all(|(_, f)| f.status
+            == crate::type_checker::FormulaStatus::Checked
+            && f.facts.is_empty()));
+        let frontier = BTreeSet::from([actual]);
+        let request = &trace[1].site;
+        let replay =
+            |steps: &[SourceProofGoalStep],
+             output: &crate::type_checker::TermFormulaInferenceOutput| {
+                enumeration.replay_witness_goals(steps, &guards, &initial, &checked, output)
+            };
+        replay(&trace, &inference).unwrap();
+        assert!(
+            enumeration
+                .witness_goal_term_formation(subject, request, &frontier, &[])
+                .unwrap()
+        );
+        let renamed = subject.substitute(actual, formal);
+        assert!(renamed.replays_substitution(subject, actual, formal));
+        assert!(renamed.alpha_matches(subject, &[(formal, actual)]));
+        assert!(!renamed.alpha_matches(subject, &[]));
+        let mut mixed = subject.clone();
+        let SourceProofTerm::Enumeration { elements, .. } = &mut mixed else {
+            unreachable!()
+        };
+        elements[1] = formal;
+        let mut reversed = mixed.clone();
+        let SourceProofTerm::Enumeration { elements, .. } = &mut reversed else {
+            unreachable!()
+        };
+        elements.reverse();
+        assert!(!mixed.alpha_matches(&reversed, &[]));
+        assert!(!mixed.replays_substitution(&reversed, actual, actual));
+        for mutation in 0..8 {
+            let mut bad = trace.clone();
+            let SourceProofGoal::TypeAssertion { subject, .. } = &mut bad[1].after else {
+                unreachable!()
+            };
+            let SourceProofTerm::Enumeration {
+                elements,
+                origin: value_origin,
+            } = subject
+            else {
+                unreachable!()
+            };
+            match mutation {
+                0 => elements.clear(),
+                1 => {
+                    elements.pop();
+                }
+                2 => elements.push(actual),
+                3 | 4 => elements[mutation - 3] = formal,
+                5 => *value_origin = trace[2].site.clone(),
+                6 => {
+                    *subject = SourceProofTerm::Singleton {
+                        origin: origin.clone(),
+                        element: actual,
+                    }
+                }
+                _ => *subject = SourceProofTerm::Binding(actual),
+            }
+            if mutation < 6 {
+                assert!(
+                    enumeration
+                        .witness_goal_term_formation(subject, request, &frontier, &[])
+                        .is_err(),
+                    "formation{mutation}"
+                );
+            }
+            assert!(!bad[1].after.replays_substitution(body, formal, actual));
+            bad[2].before = bad[1].after.clone();
+            bad[2].after = bad[1].after.clone();
+            for step in &mut bad[1..] {
+                let mut free = BTreeSet::new();
+                step.after
+                    .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                step.free = free.into_iter().collect();
+            }
+            assert!(
+                replay(&bad, &inference).is_err(),
+                "enumeration mutation{mutation}"
+            );
+        }
+        let symbols = &enumeration.symbols;
+        let bindings = &enumeration.binding_env;
+        for mutation in 0..3 {
+            let mut forged_terms = terms.clone();
+            let mut forged_formulas = formulas.clone();
+            if mutation == 2 {
+                let leaf = forged_terms
+                    .iter()
+                    .position(|t| {
+                        t.kind == crate::type_checker::TermKind::Variable
+                            && matches!(&t.site, crate::typed_ast::TypedSiteRef::Node(_))
+                    })
+                    .unwrap();
+                forged_terms.remove(leaf);
+            } else {
+                for term in &mut forged_terms {
+                    if (term.kind == crate::type_checker::TermKind::Variable) == (mutation == 0) {
+                        term.result_type.as_mut().unwrap().head = if mutation == 0 {
+                            TypeHeadInput::BuiltinSet
+                        } else {
+                            TypeHeadInput::BuiltinObject
+                        };
+                    }
+                }
+                if mutation == 1 {
+                    for formula in &mut forged_formulas {
+                        formula.asserted_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+                    }
+                }
+            }
+            let coherent = TermFormulaChecker::default()
+                .try_infer(symbols, bindings, forged_terms, forged_formulas)
+                .unwrap();
+            assert!(coherent.diagnostics().is_empty());
+            assert!(
+                coherent
+                    .terms()
+                    .iter()
+                    .all(|(_, t)| t.status == TermStatus::Inferred)
+            );
+            assert!(
+                coherent
+                    .formulas()
+                    .iter()
+                    .all(|(_, f)| f.status == crate::type_checker::FormulaStatus::Checked)
+            );
+            assert!(
+                replay(&trace, &coherent).is_err(),
+                "clean counterfeit{mutation}"
+            );
+        }
         let chain = fixture(
             source_id(),
             false,

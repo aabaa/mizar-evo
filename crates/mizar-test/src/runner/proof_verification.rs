@@ -1562,6 +1562,11 @@ pub(super) fn run_proof_verification_case(
             if first != 2 || second != first {
                 return Err("membership obligations not discharged deterministically".to_owned());
             }
+            if case.id.0 == "pass_proof_verification_term_set_enumeration_membership_001" {
+                super::native_conversion_handoff(&ast, &resolver.module, &resolver.env)?
+                    .check_witness_goals()
+                    .map_err(|_| "native enumeration goal does not match source".to_owned())?;
+            }
             Ok(())
         };
         let failure = check().err();

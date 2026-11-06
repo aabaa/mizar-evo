@@ -71,6 +71,9 @@ Equal builtin heads and intrinsic Set-to-Object assertions use authentic actual/
 this supplies no proposition proof, type refinement or guard discharge. Broader admissibility stays deferred.
 The existing reconsider_builtin_widening FS case additionally consumes native goals after its strict native conversion checks; conversion facts remain separate from witness guards.
 
+The existing Step5C7 enumeration-membership PV case additionally requires native finite-enumeration whole-goal replay after both unchanged normalization checks.
+Its ordered Object leaves and Set roots remain authentic; normalization and unproved goal observation provide no theorem VC or accepted proof.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

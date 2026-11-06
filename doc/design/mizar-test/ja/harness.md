@@ -59,6 +59,9 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 guard 解消を与えない。広い admissibility は後続に残す。
 既存 reconsider_builtin_widening FS case は厳密な native conversion 検査後に native goal も消費し、変換 fact と witness guard は分離する。
 
+既存 Step5C7 enumeration-membership PV case は元の二回の正規化検査後に、有限列挙の native whole-goal replay も要求する。
+元の順序付き Object 要素と Set root を保ち、正規化と未証明 goal の観測から theorem VC・証明受理は与えない。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。

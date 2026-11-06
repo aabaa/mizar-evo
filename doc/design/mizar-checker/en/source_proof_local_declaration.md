@@ -95,7 +95,7 @@ The immutable graph retains Then/body/branch associations; no new graph or slot 
 Checked Task180 tables remain separate from source intents and derived witness goals.
 
 The parameterless `check_witness_goals()` derives plain Set/Object quantified,
-variable/singleton equality/membership/type-assertion/conjunction/implication/disjunction/negation/equivalence goals through proof introductions and terminal Thus/Hence.
+variable/finite-enumeration equality/membership/type-assertion/conjunction/implication/disjunction/negation/equivalence goals through proof introductions and terminal Thus/Hence.
 `SourceProofGoal` stores actual binding identities and logical bodies; original
 Typed sites are provenance, never generated original formulas. Immutable
 `SourceProofGoalStep` exposes source owner/context/event, matched identities,
@@ -112,13 +112,14 @@ checks source, typing, guards and results. These are unproved remaining obligati
 Task180 checked tables and proof acceptance stay separate. Broader goals, nested
 general proof effects and freshening remain deferred.
 
-Equality/Membership operands and TypeAssertion subjects use `SourceProofTerm` Binding or Singleton(origin,element) values.
-Singletons admit one actual variable child; their root type is Set without upgrading the element.
+Equality/Membership operands and TypeAssertion subjects use `SourceProofTerm` Binding, Singleton(origin,element), or Enumeration(origin,elements) values.
+Enumeration retains two or more ordered variable children, including repetitions; Singleton retains one. Every leaf participates in substitution, free sets, alpha matching and formation.
+Both enumeration shapes have Set roots without upgrading their elements; empty and nested values remain deferred.
 Root inference sites remain original outer TermExpressions; value origins are original inner enumerations.
 Substitution changes derived element identities, preserving original provenance and typed child inputs.
 Take/Set/Named/Reconsider remain variable-only; partial-conjunction/compact/case caps still require Binding operands.
 A labelled direct chain with one omitted-justification step immediately before final Thus may retain the whole goal
-through authentic chain/step checkpoints and its own prior label. Replay joins endpoints and every prior-frontier element.
+through authentic singleton-only chain/step checkpoints and its own prior label. Replay joins endpoints and every prior-frontier element.
 Original source/typed terms retain adjacency; this trace supplies no checked adjacent equations or transitivity proof.
 
 TypeAssertion retains its actual IsAssertion origin, term subject and written builtin Set/Object target.
