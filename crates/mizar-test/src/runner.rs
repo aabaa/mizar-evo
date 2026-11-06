@@ -2382,7 +2382,7 @@ fn native_witness_goal_observation(
             observations.push(format!("guard.{ordinal}.owner={:?}.context={:?}.site={:?}.from={from:?}.to={:?}.status=Pending.id={:?}", step.owner(), step.context(), step.site(), input.target_type.head, result.id));
         }
     }
-    for terminal in steps.iter().filter(|step| {
+    for (terminal_index, terminal) in steps.iter().enumerate().filter(|(_, step)| {
         step.matched().is_none()
             && handoff
                 .source()
@@ -2402,8 +2402,12 @@ fn native_witness_goal_observation(
                         })
                 })
     }) {
-        let pending = witnesses
+        let pending = steps[..terminal_index]
             .iter()
+            .filter(|step| {
+                step.matched().is_some()
+                    && matches!(step.before(), SourceProofGoal::Existential { .. })
+            })
             .filter(|step| step.owner() == terminal.owner())
             .filter_map(|step| {
                 checked

@@ -122,6 +122,12 @@ Conclusion 子は theorem owner と変更のない goal を保持する。子の
 context を維持する。証明の closure、内部宣言、連言の部分 discharge、継承 By、
 一般の Now/入れ子 block の goal export はこの経路の対象外とする。
 
+label 付き非末尾 Now の単一で justification のない Thus は、現在 goal 全体を未証明の
+局所 candidate として記録できる。wrapper と子は実 Block を使い、親 proof は元 context と
+変更のない goal/frontier で続く。terminal By は実 index・完了済み先行 block・Block から
+Proof への親関係・checkpoint/子の対応を通してその label を引用できる。candidate を受理済み
+fact にしない。内部 By/宣言と一般の collected goal は後続に残す。
+
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
 実 item・proof・theorem owner を対応付け、後続 conclusion の source Pending が Blocked

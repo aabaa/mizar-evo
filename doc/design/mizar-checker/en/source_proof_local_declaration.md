@@ -141,6 +141,13 @@ unchanged goal. Child term occurrences keep authentic Block/Expression contexts.
 No proof closure, inner declaration, partial conjunction discharge, inherited By
 or general Now/nested-block goal export is provided by this bounded path.
 
+A labelled non-final Now with one unjustified Thus may record the whole current
+goal as an unproved local candidate. Wrapper and child use its authentic Block;
+parent proof steps resume their original context without changing goal/frontier.
+Terminal By may cite its actual label through the real index, complete prior
+source block, Block-to-Proof parent and checkpoint/child association. The candidate
+is never an accepted fact. Inner By/declarations and general collected goals defer.
+
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's
 source states stay separate from witness guards. Checkpoints join the actual item,
