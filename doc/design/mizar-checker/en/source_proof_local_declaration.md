@@ -155,6 +155,17 @@ Both remain unproved. Both tails are unlabelled and unjustified; partial block
 conclusions, first thesis and nested conjunction splitting remain unsupported.
 Prior frontier/type guards survive a binding's disappearance from the residual.
 
+Goal owners may be actual Theorem, labelled CompactStatement or ConsiderStatement
+sites. A compact candidate uses its genuine child Proof context; its bounded Take
+and Thus trace retains inherited prior parent Let values. A Consider hypothesis
+uses the actual outer Proof context and original cited existential, then exposes
+the fresh name substitution and matching source condition. Saved parent goals
+resume independently; fresh Consider values enter the parent frontier only at
+the actual name. Source roles distinguish Given/Consider despite their shared
+native binding kind. Exact declared Set/Object compatibility supplies a real
+name-site guard, never existence evidence. Child Pending guards stay with their
+local owner and the complete unproved dependency trace.
+
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's
 source states stay separate from witness guards. Checkpoints join the actual item,
@@ -164,7 +175,7 @@ partitions authenticated theorem owners after the whole source census, excluding
 only explicit definition/registration metadata owners without inventing their goals.
 
 Same-proof Set/named-Take variable aliases can resolve through authenticated
-RHS identities to a prior Let or Given value. Native Set captures stay direct; named
+RHS identities to a prior Let, Given or Consider value. Native Set captures stay direct; named
 captures stay empty. Original term references retain alias IDs and occurrence
 contexts, while derived type roles use the actual value's guard provenance.
 Take matches the source RHS binding and substitutes its expanded logical value;

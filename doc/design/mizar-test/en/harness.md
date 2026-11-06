@@ -46,6 +46,12 @@ for a two-Thus atomic conjunction trace. Its metadata-only Pass observes the
 unproved left claim and right residual; it adds no legacy FS or proof acceptance.
 Each native goal source/sidecar identity has its own exact admission and inventory.
 
+The existing Consider-choice FS case additionally consumes compact and Consider
+hypothesis goal owners after its unchanged semantic/A checks. Real Take and
+Consider-name compatibility requests remain distinct from existence evidence;
+owner-local remaining observations retain child Pending without transferring it
+to the saved parent goal. All claims remain unproved by this native observation.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

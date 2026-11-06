@@ -1659,6 +1659,32 @@ impl SourceProofLocalBindingHandoff {
         Ok(crate::typed_ast::TypedSiteRef::Node(id))
     }
 
+    fn witness_goal_source(
+        &self,
+        site: &crate::typed_ast::TypedSiteRef,
+    ) -> Result<&SourceNode, SourceProofLocalDeclarationError> {
+        self.original
+            .nodes()
+            .node(site.node())
+            .and_then(|n| n.resolved_node)
+            .and_then(|id| {
+                self.original
+                    .source_node_entries()?
+                    .find(|r| r.site() == id)
+            })
+            .ok_or(SourceProofLocalDeclarationError::DependencyMismatch)
+    }
+
+    fn witness_goal_parent(
+        &self,
+        row: &SourceNode,
+    ) -> Result<&SourceNode, SourceProofLocalDeclarationError> {
+        self.original
+            .source_node_entries()
+            .and_then(|mut rows| rows.find(|r| Some(r.site()) == row.parent()))
+            .ok_or(SourceProofLocalDeclarationError::DependencyMismatch)
+    }
+
     fn witness_goal_binding(
         &self,
         name: ResolvedNodeId,
@@ -1724,7 +1750,9 @@ impl SourceProofLocalBindingHandoff {
                 .ok_or_else(invalid)?;
             if matches!(
                 source.kind(),
-                SourceVariableBindingKind::Let | SourceVariableBindingKind::GivenWitness
+                SourceVariableBindingKind::Let
+                    | SourceVariableBindingKind::GivenWitness
+                    | SourceVariableBindingKind::ConsiderWitness
             ) || source.kind() == SourceVariableBindingKind::Quantifier && current == binding
             {
                 return Ok(current);
@@ -1858,6 +1886,7 @@ impl SourceProofLocalBindingHandoff {
             SourceVariableBindingKind::Let
                 | SourceVariableBindingKind::Quantifier
                 | SourceVariableBindingKind::GivenWitness
+                | SourceVariableBindingKind::ConsiderWitness
         ) || entry.type_site != BindingTypeSite::Missing
         {
             return Err(invalid());
@@ -2260,6 +2289,90 @@ impl SourceProofLocalBindingHandoff {
         Ok(checkpoints)
     }
 
+    fn witness_goal_cited_label(
+        &self,
+        justification: &SourceNode,
+        labels: &mizar_resolve::labels::LabelResolutionResult,
+    ) -> Result<&SourceNode, SourceProofLocalDeclarationError> {
+        use SurfaceNodeKind as K;
+        use mizar_resolve::resolved_ast::{LabelKind, LabelResolution, RecoveryState};
+        let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
+        let rows = self.original.source_nodes().ok_or_else(invalid)?;
+        let clause = source_proof_frame(rows, justification).ok_or_else(invalid)?;
+        if clause.len() != 2
+            || !source_inline_token(&clause, 0, "by")
+            || clause[1].kind() != &K::ReferenceList
+        {
+            return Err(invalid());
+        }
+        let references = source_proof_frame(rows, clause[1]).ok_or_else(invalid)?;
+        let [reference] = references.as_slice() else {
+            return Err(invalid());
+        };
+        let name = source_proof_frame(rows, reference).ok_or_else(invalid)?;
+        if reference.kind() != &K::Reference
+            || name.len() != 1
+            || !matches!(name[0].kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
+        {
+            return Err(invalid());
+        }
+        let entry = labels
+            .table()
+            .iter()
+            .map(|(_, e)| e)
+            .find(|e| e.site().node() == reference.site())
+            .ok_or_else(invalid)?;
+        let LabelResolution::Resolved(resolved) = entry.resolution() else {
+            return Err(invalid());
+        };
+        let declaration = labels.index().get(resolved.origin()).ok_or_else(invalid)?;
+        if resolved.kind() != LabelKind::ProofStep
+            || declaration.kind() != LabelKind::ProofStep
+            || entry.recovery() != RecoveryState::Normal
+            || declaration.recovery() != RecoveryState::Normal
+            || entry.site().range() != reference.range()
+            || resolved.range() != reference.range()
+            || entry.site().spelling() != name[0].spelling()
+            || declaration.primary_spelling() != name[0].spelling()
+            || declaration.origin().source_id() != self.original.source_id()
+            || declaration.origin().module_id() != self.original.module_id()
+        {
+            return Err(invalid());
+        }
+        let mizar_session::SourceAnchor::Range(range) = declaration.origin().anchor() else {
+            return Err(invalid());
+        };
+        let label = rows.iter().find(|r| r.range() == *range && matches!(r.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier && t.text.as_ref() == declaration.primary_spelling())).ok_or_else(invalid)?;
+        Ok(label)
+    }
+
+    fn witness_goal_introduction_kind(
+        &self,
+        row: &SourceNode,
+    ) -> Option<SourceVariableBindingKind> {
+        use SourceVariableBindingKind as B;
+        use SurfaceNodeKind as K;
+        if !matches!(row.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier) {
+            return None;
+        }
+        let segment = self.witness_goal_parent(row).ok()?;
+        if segment.kind() != &K::QualifiedVariableSegment {
+            return None;
+        }
+        let statement = self.witness_goal_parent(segment).ok()?;
+        let binding = self
+            .scope
+            .bindings()
+            .iter()
+            .find(|b| self.native.resolved_node_for(b.node()) == Some(row.site()))?;
+        match (statement.kind(), binding.kind()) {
+            (K::GivenStatement, B::GivenWitness) | (K::ConsiderStatement, B::ConsiderWitness) => {
+                Some(binding.kind())
+            }
+            _ => None,
+        }
+    }
+
     // Rationale: shared source census is used by construction, independent replay and corruption tests.
     #[allow(clippy::type_complexity)]
     fn witness_goal_inputs(
@@ -2284,7 +2397,6 @@ impl SourceProofLocalBindingHandoff {
             typed_ast::{TypeRole, TypedSiteRef},
         };
         use SurfaceNodeKind as K;
-        use mizar_resolve::resolved_ast::{LabelKind, LabelResolution, RecoveryState};
         let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
         let (intents, labels) = self.check_proof_intents()?;
         let (conversions, conversion_output, queries) = self.check_conversions()?;
@@ -2395,6 +2507,7 @@ impl SourceProofLocalBindingHandoff {
                 SourceVariableBindingKind::Let
                     | SourceVariableBindingKind::Quantifier
                     | SourceVariableBindingKind::GivenWitness
+                    | SourceVariableBindingKind::ConsiderWitness
                     | SourceVariableBindingKind::NamedWitness
                     | SourceVariableBindingKind::Set
                     | SourceVariableBindingKind::Reconsider
@@ -2521,6 +2634,181 @@ impl SourceProofLocalBindingHandoff {
             }
             for (index, statement) in body.iter().enumerate().take(body.len() - 1).skip(1) {
                 used.insert(statement.site());
+                if statement.kind() == &K::CompactStatement
+                    && !source_children(rows, statement.site()).all(|r| r.kind() != &K::ProofBlock)
+                {
+                    let [proposition, child, witness, terminal] =
+                        source_compact_goal_roles(rows, statement).ok_or_else(invalid)?;
+                    if index == body.len() - 2
+                        || body
+                            .iter()
+                            .filter(|r| r.kind() == &K::CompactStatement)
+                            .count()
+                            != 1
+                    {
+                        return Err(invalid());
+                    }
+                    for row in [*statement, child] {
+                        let site = self.witness_goal_site(row)?;
+                        if !intents.iter().any(|(s, _, status)| {
+                            *s == site && *status != SourceProofIntentStatus::Blocked
+                        }) {
+                            return Err(invalid());
+                        }
+                    }
+                    let child_context = *contexts.get(&child.site()).ok_or_else(invalid)?;
+                    if self
+                        .binding_env
+                        .contexts()
+                        .get(child_context)
+                        .is_none_or(|c| {
+                            c.layer != BindingContextLayer::Proof
+                                || c.parent != Some(context)
+                                || c.recovery != BindingContextRecovery::Normal
+                                || c.owner
+                                    != (BindingContextOwner::SourceStatement {
+                                        source_range: child.range(),
+                                    })
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    let formula = source_unique_child(rows, proposition, K::FormulaExpression)
+                        .ok_or_else(invalid)?;
+                    let goal = self.witness_goal_formula(formula)?;
+                    if !matches!(&goal, SourceProofGoal::Existential { body, .. } if matches!(body.as_ref(), SourceProofGoal::Equality { .. } | SourceProofGoal::Membership { .. }))
+                    {
+                        return Err(invalid());
+                    }
+                    let value = source_proof_frame(rows, witness).ok_or_else(invalid)?[0];
+                    let actual = self.witness_goal_value(value)?;
+                    let base = self.witness_goal_alias_value(actual)?;
+                    if self
+                        .binding_env
+                        .bindings()
+                        .get(actual)
+                        .is_none_or(|b| b.owner_context != context)
+                        || self.binding_env.bindings().get(base).is_none_or(|b| {
+                            b.kind != BindingKind::LetBinding || b.owner_context != context
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    let compact = self.witness_goal_site(statement)?;
+                    goals.insert(compact.clone(), goal);
+                    let tail = source_proof_frame(rows, terminal).ok_or_else(invalid)?;
+                    let formula = source_unique_child(rows, tail[1], K::FormulaExpression)
+                        .ok_or_else(invalid)?;
+                    let content = source_proof_frame(rows, formula).ok_or_else(invalid)?;
+                    let thesis = matches!(content.as_slice(), [constant] if constant.kind() == &K::FormulaConstant(SurfaceFormulaConstant::Thesis) && matches!(source_proof_frame(rows, constant).as_deref(), Some([word]) if matches!(word.kind(), K::Token(t) if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == "thesis")));
+                    let terminal_site = self.witness_goal_site(terminal)?;
+                    if !thesis {
+                        goals.insert(terminal_site.clone(), self.witness_goal_formula(formula)?);
+                    }
+                    for (site, actual) in [
+                        (*statement, None),
+                        (witness, Some(actual)),
+                        (terminal, None),
+                    ] {
+                        events.push((
+                            compact.clone(),
+                            child_context,
+                            self.witness_goal_site(site)?,
+                            actual,
+                        ));
+                    }
+                    used.extend([
+                        child.site(),
+                        witness.parent().ok_or_else(invalid)?,
+                        terminal.site(),
+                    ]);
+                    continue;
+                }
+                if statement.kind() == &K::ConsiderStatement {
+                    let roles = source_consider_roles(rows, statement).ok_or_else(invalid)?;
+                    let [segment, condition, justification] = roles.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let names = source_children(rows, segment.site()).filter(|r| matches!(r.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)).collect::<Vec<_>>();
+                    let [name] = names.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let parts = source_proof_frame(rows, condition).ok_or_else(invalid)?;
+                    if index == body.len() - 2
+                        || body
+                            .iter()
+                            .filter(|r| r.kind() == &K::ConsiderStatement)
+                            .count()
+                            != 1
+                        || segment.kind() != &K::QualifiedVariableSegment
+                        || condition.kind() != &K::ConditionList
+                        || parts.len() != 2
+                        || !source_inline_token(&parts, 0, "that")
+                        || parts[1].kind() != &K::Proposition
+                        || justification.kind() != &K::JustificationClause
+                    {
+                        return Err(invalid());
+                    }
+                    let site = self.witness_goal_site(statement)?;
+                    if !intents.iter().any(|(s, _, status)| {
+                        *s == site && *status != SourceProofIntentStatus::Blocked
+                    }) {
+                        return Err(invalid());
+                    }
+                    let label = self.witness_goal_cited_label(justification, &labels)?;
+                    let proposition = self.witness_goal_parent(label)?;
+                    let compact = self.witness_goal_parent(proposition)?;
+                    let [actual_proposition, child, witness, terminal] =
+                        source_compact_goal_roles(rows, compact).ok_or_else(invalid)?;
+                    let declaration =
+                        source_proof_frame(rows, actual_proposition).ok_or_else(invalid)?;
+                    let compact_site = self.witness_goal_site(compact)?;
+                    let child_context = *contexts.get(&child.site()).ok_or_else(invalid)?;
+                    if declaration[0].site() != label.site()
+                        || compact.parent() != Some(proof.site())
+                        || compact.range().end > statement.range().start
+                        || contexts.get(&compact.site()) != Some(&context)
+                        || !events.windows(3).any(|p| {
+                            p.iter()
+                                .all(|(o, c, _, _)| *o == compact_site && *c == child_context)
+                                && p[0].2 == compact_site
+                                && self.witness_goal_site(witness).as_ref() == Ok(&p[1].2)
+                                && self.witness_goal_site(terminal).as_ref() == Ok(&p[2].2)
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    let actual = self.witness_goal_binding(name.site())?;
+                    if self.witness_goal_introduction_kind(name)
+                        != Some(SourceVariableBindingKind::ConsiderWitness)
+                        || self.binding_env.bindings().get(actual).is_none_or(|b| {
+                            b.kind != BindingKind::GivenWitness || b.owner_context != context
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    let formula = source_unique_child(rows, parts[1], K::FormulaExpression)
+                        .ok_or_else(invalid)?;
+                    goals.insert(
+                        site.clone(),
+                        goals.get(&compact_site).ok_or_else(invalid)?.clone(),
+                    );
+                    let condition_site = self.witness_goal_site(condition)?;
+                    goals.insert(condition_site.clone(), self.witness_goal_formula(formula)?);
+                    for (source, binding) in [
+                        (*statement, None),
+                        (*name, Some(actual)),
+                        (*condition, None),
+                    ] {
+                        events.push((
+                            site.clone(),
+                            context,
+                            self.witness_goal_site(source)?,
+                            binding,
+                        ));
+                    }
+                    continue;
+                }
                 let partial = source_conjunction_conclusion_roles(rows, statement).is_some();
                 let terminal = index == body.len() - 2;
                 let block = matches!(statement.kind(), K::HerebyStatement | K::NowStatement);
@@ -2642,55 +2930,7 @@ impl SourceProofLocalBindingHandoff {
                         return Err(invalid());
                     }
                     if by {
-                        let clause =
-                            source_proof_frame(rows, tail[start + 1]).ok_or_else(invalid)?;
-                        if clause.len() != 2
-                            || !source_inline_token(&clause, 0, "by")
-                            || clause[1].kind() != &K::ReferenceList
-                        {
-                            return Err(invalid());
-                        }
-                        let references = source_proof_frame(rows, clause[1]).ok_or_else(invalid)?;
-                        let [reference] = references.as_slice() else {
-                            return Err(invalid());
-                        };
-                        let name = source_proof_frame(rows, reference).ok_or_else(invalid)?;
-                        if reference.kind() != &K::Reference
-                            || name.len() != 1
-                            || !matches!(name[0].kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)
-                        {
-                            return Err(invalid());
-                        }
-                        let entry = labels
-                            .table()
-                            .iter()
-                            .map(|(_, e)| e)
-                            .find(|e| e.site().node() == reference.site())
-                            .ok_or_else(invalid)?;
-                        let LabelResolution::Resolved(resolved) = entry.resolution() else {
-                            return Err(invalid());
-                        };
-                        let declaration =
-                            labels.index().get(resolved.origin()).ok_or_else(invalid)?;
-                        if resolved.kind() != LabelKind::ProofStep
-                            || declaration.kind() != LabelKind::ProofStep
-                            || entry.recovery() != RecoveryState::Normal
-                            || declaration.recovery() != RecoveryState::Normal
-                            || entry.site().range() != reference.range()
-                            || resolved.range() != reference.range()
-                            || entry.site().spelling() != name[0].spelling()
-                            || declaration.primary_spelling() != name[0].spelling()
-                            || declaration.origin().source_id() != self.original.source_id()
-                            || declaration.origin().module_id() != self.original.module_id()
-                        {
-                            return Err(invalid());
-                        }
-                        let mizar_session::SourceAnchor::Range(range) =
-                            declaration.origin().anchor()
-                        else {
-                            return Err(invalid());
-                        };
-                        let label = rows.iter().find(|r| r.range() == *range && matches!(r.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier && t.text.as_ref() == declaration.primary_spelling())).ok_or_else(invalid)?;
+                        let label = self.witness_goal_cited_label(tail[start + 1], &labels)?;
                         let proposition = rows
                             .iter()
                             .find(|r| Some(r.site()) == label.parent())
@@ -2925,22 +3165,19 @@ impl SourceProofLocalBindingHandoff {
             typed_ast::{InitialObligationGoal, InitialObligationProvenance},
         };
         let invalid = || SourceProofLocalDeclarationError::DependencyMismatch;
-        let row = self
-            .original
-            .nodes()
-            .node(site.node())
-            .and_then(|n| n.resolved_node)
-            .and_then(|id| {
-                self.original
-                    .source_node_entries()?
-                    .find(|r| r.site() == id)
-            })
-            .ok_or_else(invalid)?;
-        if row.kind() != &SurfaceNodeKind::Witness {
+        let row = self.witness_goal_source(site)?;
+        let consider = self.witness_goal_introduction_kind(row)
+            == Some(SourceVariableBindingKind::ConsiderWitness);
+        if row.kind() != &SurfaceNodeKind::Witness
+            && (!consider || self.witness_goal_binding(row.site())? != actual)
+        {
             return Err(invalid());
         }
         let from = self.witness_goal_guard(actual, site, "guard-source")?;
         let to = self.witness_goal_guard(formal, site, "guard-target")?;
+        if consider && from.head != to.head {
+            return Err(invalid());
+        }
         if matches!(
             (&from.head, &to.head),
             (
@@ -3092,34 +3329,27 @@ impl SourceProofLocalBindingHandoff {
             .try_infer(&self.symbols, &self.binding_env, terms, formulas)
             .map_err(|_| invalid())?;
         let mut steps = Vec::new();
-        let mut current = None;
+        let mut current = BTreeMap::new();
         let mut inputs = Vec::new();
         let mut obligations = Vec::new();
         for (owner, context, site, actual) in events {
-            if site == owner {
-                current = Some(goals.get(&owner).ok_or_else(invalid)?.clone());
+            if site == owner
+                && current
+                    .insert(
+                        owner.clone(),
+                        goals.get(&owner).ok_or_else(invalid)?.clone(),
+                    )
+                    .is_some()
+            {
+                return Err(invalid());
             }
-            let before = current.clone().ok_or_else(invalid)?;
+            let before = current.get(&owner).ok_or_else(invalid)?.clone();
             let mut avoided = BTreeSet::new();
-            let row = self
-                .original
-                .nodes()
-                .node(site.node())
-                .and_then(|n| n.resolved_node)
-                .and_then(|id| {
-                    self.original
-                        .source_node_entries()?
-                        .find(|r| r.site() == id)
-                })
-                .ok_or_else(invalid)?;
-            let (matched, after) = if let Some(actual) = actual.filter(|id| {
-                matches!(row.kind(), SurfaceNodeKind::Token(_))
-                    && self
-                        .binding_env
-                        .bindings()
-                        .get(*id)
-                        .is_some_and(|b| b.kind == BindingKind::GivenWitness)
-            }) {
+            let row = self.witness_goal_source(&site)?;
+            let introduction = self.witness_goal_introduction_kind(row);
+            let (matched, after) = if let Some(actual) =
+                actual.filter(|_| introduction == Some(SourceVariableBindingKind::GivenWitness))
+            {
                 let SourceProofGoal::Implication {
                     origin,
                     antecedent,
@@ -3150,10 +3380,18 @@ impl SourceProofLocalBindingHandoff {
                         SourceProofGoal::Existential { binding, body, .. },
                         SurfaceNodeKind::Witness,
                     ) => (*binding, body),
+                    (
+                        SourceProofGoal::Existential { binding, body, .. },
+                        SurfaceNodeKind::Token(_),
+                    ) if introduction == Some(SourceVariableBindingKind::ConsiderWitness) => {
+                        (*binding, body)
+                    }
                     _ => return Err(invalid()),
                 };
                 body.binding_sets(&mut Vec::new(), &mut BTreeSet::new(), &mut avoided);
-                if row.kind() == &SurfaceNodeKind::Witness {
+                if row.kind() == &SurfaceNodeKind::Witness
+                    || introduction == Some(SourceVariableBindingKind::ConsiderWitness)
+                {
                     let (input, obligation) =
                         self.witness_goal_guard_request(&owner, &site, formal, actual)?;
                     inputs.extend(input);
@@ -3183,6 +3421,15 @@ impl SourceProofLocalBindingHandoff {
                     return Err(invalid());
                 }
                 (None, right.as_ref().clone())
+            } else if row.kind() == &SurfaceNodeKind::ConditionList
+                && self.original.source_node_entries().is_some_and(|mut rows| {
+                    rows.any(|r| {
+                        Some(r.site()) == row.parent()
+                            && r.kind() == &SurfaceNodeKind::ConsiderStatement
+                    })
+                })
+            {
+                (None, before.clone())
             } else if matches!(
                 row.kind(),
                 SurfaceNodeKind::AssumptionStatement | SurfaceNodeKind::ConditionList
@@ -3206,7 +3453,7 @@ impl SourceProofLocalBindingHandoff {
             let mut free = BTreeSet::new();
             after.binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
             steps.push(SourceProofGoalStep {
-                owner,
+                owner: owner.clone(),
                 context,
                 site,
                 matched,
@@ -3215,7 +3462,7 @@ impl SourceProofLocalBindingHandoff {
                 free: free.into_iter().collect(),
                 avoided: avoided.into_iter().collect(),
             });
-            current = Some(after);
+            current.insert(owner, after);
         }
         let checked = CoercionObligationChecker::default().check(
             &self.symbols,
@@ -3305,42 +3552,118 @@ impl SourceProofLocalBindingHandoff {
                 return Err(invalid());
             }
         }
-        let mut current = None;
-        let mut frontier = BTreeSet::new();
+        let rows = self.original.source_nodes().ok_or_else(invalid)?;
+        let mut current = BTreeMap::new();
+        let mut frontiers: BTreeMap<crate::typed_ast::TypedSiteRef, BTreeSet<BindingId>> =
+            BTreeMap::new();
         let mut expected_inputs = Vec::new();
         let mut expected_obligations = Vec::new();
         for (step, (owner, context, site, actual)) in steps.iter().zip(events) {
             if step.owner != owner || step.context != context || step.site != site {
                 return Err(invalid());
             }
-            let row = self
-                .original
-                .nodes()
-                .node(site.node())
-                .and_then(|n| n.resolved_node)
-                .and_then(|id| {
-                    self.original
-                        .source_node_entries()?
-                        .find(|r| r.site() == id)
-                })
-                .ok_or_else(invalid)?;
+            let row = self.witness_goal_source(&site)?;
+            let owner_row = self.witness_goal_source(&owner)?;
             if site == owner {
-                current = Some(goals.get(&owner).ok_or_else(invalid)?.clone());
-                frontier.clear();
+                let initial = goals.get(&owner).ok_or_else(invalid)?.clone();
+                let mut inherited = BTreeSet::new();
+                if matches!(
+                    owner_row.kind(),
+                    SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConsiderStatement
+                ) {
+                    let outer = self.witness_goal_parent(owner_row)?;
+                    let parent = self.witness_goal_parent(outer)?;
+                    if outer.kind() != &SurfaceNodeKind::ProofBlock
+                        || parent.kind() != &SurfaceNodeKind::TheoremItem
+                    {
+                        return Err(invalid());
+                    }
+                    let parent_owner = self.witness_goal_site(parent)?;
+                    inherited = frontiers.get(&parent_owner).ok_or_else(invalid)?.clone();
+                    let (parent_context, _) = self
+                        .binding_env
+                        .contexts()
+                        .iter()
+                        .find(|(_, c)| {
+                            c.layer == BindingContextLayer::Proof
+                                && c.owner
+                                    == (BindingContextOwner::SourceStatement {
+                                        source_range: outer.range(),
+                                    })
+                        })
+                        .ok_or_else(invalid)?;
+                    let context_entry = self
+                        .binding_env
+                        .contexts()
+                        .get(context)
+                        .ok_or_else(invalid)?;
+                    if inherited
+                        .iter()
+                        .any(|id| !context_entry.visible_bindings.contains(id))
+                    {
+                        return Err(invalid());
+                    }
+                    if owner_row.kind() == &SurfaceNodeKind::CompactStatement {
+                        let [_, child, _, _] =
+                            source_compact_goal_roles(rows, owner_row).ok_or_else(invalid)?;
+                        if context_entry.parent != Some(parent_context)
+                            || context_entry.owner
+                                != (BindingContextOwner::SourceStatement {
+                                    source_range: child.range(),
+                                })
+                            || context_entry.layer != BindingContextLayer::Proof
+                            || context_entry.recovery != BindingContextRecovery::Normal
+                        {
+                            return Err(invalid());
+                        }
+                    } else {
+                        let roles = source_consider_roles(rows, owner_row).ok_or_else(invalid)?;
+                        let (_, labels) = self.check_proof_intents()?;
+                        let label = self
+                            .witness_goal_cited_label(roles.last().ok_or_else(invalid)?, &labels)?;
+                        let proposition = self.witness_goal_parent(label)?;
+                        let compact = self.witness_goal_parent(proposition)?;
+                        source_compact_goal_roles(rows, compact).ok_or_else(invalid)?;
+                        let cited = self.witness_goal_site(compact)?;
+                        if context != parent_context
+                            || !current.contains_key(&cited)
+                            || initial != *goals.get(&cited).ok_or_else(invalid)?
+                        {
+                            return Err(invalid());
+                        }
+                    }
+                    let mut captured = BTreeSet::new();
+                    initial.binding_sets(&mut Vec::new(), &mut captured, &mut BTreeSet::new());
+                    for id in captured {
+                        let base = self.witness_goal_alias_value(id)?;
+                        if !inherited.contains(&id)
+                            || self.binding_env.bindings().get(base).is_none_or(|b| {
+                                b.kind != BindingKind::LetBinding
+                                    || b.owner_context != parent_context
+                            })
+                        {
+                            return Err(invalid());
+                        }
+                    }
+                } else if owner_row.kind() != &SurfaceNodeKind::TheoremItem {
+                    return Err(invalid());
+                }
+                if current.insert(owner.clone(), initial).is_some()
+                    || frontiers.insert(owner.clone(), inherited).is_some()
+                {
+                    return Err(invalid());
+                }
             }
-            let before = current.as_ref().ok_or_else(invalid)?;
+            let before = current.get(&owner).ok_or_else(invalid)?;
+            let mut frontier = frontiers.remove(&owner).ok_or_else(invalid)?;
             if step.before != *before {
                 return Err(invalid());
             }
             let mut avoided = BTreeSet::new();
-            if let Some(actual) = actual.filter(|id| {
-                matches!(row.kind(), SurfaceNodeKind::Token(_))
-                    && self
-                        .binding_env
-                        .bindings()
-                        .get(*id)
-                        .is_some_and(|b| b.kind == BindingKind::GivenWitness)
-            }) {
+            let introduction = self.witness_goal_introduction_kind(row);
+            if let Some(actual) =
+                actual.filter(|_| introduction == Some(SourceVariableBindingKind::GivenWitness))
+            {
                 let SourceProofGoal::Implication {
                     origin,
                     antecedent,
@@ -3427,10 +3750,61 @@ impl SourceProofLocalBindingHandoff {
                         if !frontier.contains(&actual) {
                             return Err(invalid());
                         }
+                        if owner_row.kind() == &SurfaceNodeKind::CompactStatement {
+                            let base = self.witness_goal_alias_value(actual)?;
+                            let parent_context = self
+                                .binding_env
+                                .contexts()
+                                .get(context)
+                                .and_then(|c| c.parent)
+                                .ok_or_else(invalid)?;
+                            if self.binding_env.bindings().get(base).is_none_or(|b| {
+                                b.kind != BindingKind::LetBinding
+                                    || b.owner_context != parent_context
+                            }) {
+                                return Err(invalid());
+                            }
+                        }
                         let (input, obligation) =
                             self.witness_goal_guard_request(&owner, &site, *binding, actual)?;
                         expected_inputs.extend(input);
                         expected_obligations.extend(obligation);
+                        (*binding, *radix, body)
+                    }
+                    (
+                        SourceProofGoal::Existential {
+                            binding,
+                            radix,
+                            body,
+                            ..
+                        },
+                        SurfaceNodeKind::Token(_),
+                    ) if introduction == Some(SourceVariableBindingKind::ConsiderWitness)
+                        && owner_row.kind() == &SurfaceNodeKind::ConsiderStatement =>
+                    {
+                        let outer = self.witness_goal_parent(owner_row)?;
+                        let parent = self.witness_goal_parent(outer)?;
+                        let parent_owner = self.witness_goal_site(parent)?;
+                        let parent_goal = current.get(&parent_owner).ok_or_else(invalid)?;
+                        let mut free = BTreeSet::new();
+                        let mut retained = BTreeSet::new();
+                        before.binding_sets(&mut Vec::new(), &mut free, &mut retained);
+                        parent_goal.binding_sets(&mut Vec::new(), &mut free, &mut retained);
+                        let parent_frontier =
+                            frontiers.get_mut(&parent_owner).ok_or_else(invalid)?;
+                        if free.contains(&actual)
+                            || retained.contains(&actual)
+                            || frontier.contains(&actual)
+                            || parent_frontier.contains(&actual)
+                        {
+                            return Err(invalid());
+                        }
+                        let (input, obligation) =
+                            self.witness_goal_guard_request(&owner, &site, *binding, actual)?;
+                        expected_inputs.extend(input);
+                        expected_obligations.extend(obligation);
+                        frontier.insert(actual);
+                        parent_frontier.insert(actual);
                         (*binding, *radix, body)
                     }
                     _ => return Err(invalid()),
@@ -3489,6 +3863,16 @@ impl SourceProofLocalBindingHandoff {
                 ) || !left.alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
                     || step.matched.is_some()
                     || step.after != **right
+                {
+                    return Err(invalid());
+                }
+            } else if row.kind() == &SurfaceNodeKind::ConditionList
+                && owner_row.kind() == &SurfaceNodeKind::ConsiderStatement
+            {
+                if row.parent() != Some(owner_row.site())
+                    || step.matched.is_some()
+                    || step.after != *before
+                    || !before.alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
                 {
                     return Err(invalid());
                 }
@@ -3609,7 +3993,8 @@ impl SourceProofLocalBindingHandoff {
             {
                 return Err(invalid());
             }
-            current = Some(step.after.clone());
+            current.insert(owner.clone(), step.after.clone());
+            frontiers.insert(owner, frontier);
         }
         if inputs != expected_inputs
             || obligations != expected_obligations
@@ -5106,6 +5491,66 @@ fn source_conjunction_conclusion_roles<'a>(
         }
     }
     Some(last)
+}
+
+fn source_compact_goal_roles<'a>(
+    rows: &'a [SourceNode],
+    compact: &SourceNode,
+) -> Option<[&'a SourceNode; 4]> {
+    use SurfaceNodeKind as K;
+    if compact.kind() != &K::CompactStatement {
+        return None;
+    }
+    let outer = rows
+        .iter()
+        .find(|r| Some(r.site()) == compact.parent() && r.kind() == &K::ProofBlock)?;
+    rows.iter()
+        .find(|r| Some(r.site()) == outer.parent() && r.kind() == &K::TheoremItem)?;
+    let parts = source_proof_frame(rows, compact)?;
+    if parts.len() != 3
+        || parts[0].kind() != &K::Proposition
+        || parts[1].kind() != &K::ProofBlock
+        || !source_inline_token(&parts, 2, ";")
+    {
+        return None;
+    }
+    let proposition = source_proof_frame(rows, parts[0])?;
+    if !matches!(proposition.as_slice(), [label, _, formula] if matches!(label.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier) && formula.kind() == &K::FormulaExpression)
+        || !source_inline_token(&proposition, 1, ":")
+    {
+        return None;
+    }
+    let body = source_proof_frame(rows, parts[1])?;
+    if body.len() != 4
+        || !source_inline_token(&body, 0, "proof")
+        || !source_inline_token(&body, 3, "end")
+        || body[1].kind() != &K::TakeStatement
+        || body[2].kind() != &K::ConclusionStatement
+    {
+        return None;
+    }
+    let take = source_proof_frame(rows, body[1])?;
+    if take.len() != 3
+        || !source_inline_token(&take, 0, "take")
+        || take[1].kind() != &K::Witness
+        || !source_inline_token(&take, 2, ";")
+    {
+        return None;
+    }
+    if !matches!(source_proof_frame(rows, take[1])?.as_slice(), [value] if value.kind() == &K::TermExpression)
+    {
+        return None;
+    }
+    let terminal = source_proof_frame(rows, body[2])?;
+    if terminal.len() != 3
+        || !source_inline_token(&terminal, 0, "thus")
+        || terminal[1].kind() != &K::Proposition
+        || !source_inline_token(&terminal, 2, ";")
+        || !matches!(source_proof_frame(rows, terminal[1])?.as_slice(), [formula] if formula.kind() == &K::FormulaExpression)
+    {
+        return None;
+    }
+    Some([parts[0], parts[1], take[1], body[2]])
 }
 
 fn source_proof_statement_kind(kind: &SurfaceNodeKind) -> bool {
@@ -17967,10 +18412,19 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        let fixture = |source, conditioned: bool, by: bool, given: bool, hereby: bool, now| {
+        let fixture = |source, conditioned, by, given, hereby, now, packet| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if given {
+            let mut words = if packet {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "object", "ex", "u", "being",
+                    "object", "st", "u", "=", "x", "proof", "let", "x", "be", "object", ";", "A1",
+                    ":", "ex", "y", "being", "object", "st", "y", "=", "x", "proof", "take", "x",
+                    ";", "thus", "x", "=", "x", ";", "end", ";", "consider", "w", "being",
+                    "object", "such", "that", "A2", ":", "w", "=", "x", "by", "A1", ";", "take",
+                    "w", ";", "thus", "w", "=", "x",
+                ]
+            } else if given {
                 vec![
                     "theorem", "T", ":", "for", "x", "being", "set", "st", "ex", "y", "being",
                     "object", "st", "y", "=", "y", "holds", "x", "=", "x", "proof", "let", "x",
@@ -18025,7 +18479,9 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if given {
+            let (h, c, l, a, mut k, mut t, condition_start) = if packet {
+                (12, 28, 17, 50, 36, 60, 47)
+            } else if given {
                 (13, 17, 22, 34, 39, 44, 31)
             } else {
                 (8, 12, 17, 24, 29, 34, 21)
@@ -18052,7 +18508,7 @@ mod task269c_tests {
             for word in words {
                 let span = range(source, cursor, cursor + word.len());
                 cursor += word.len() + 1;
-                let kind = if matches!(word, "T" | "x" | "y" | "w" | "A1" | "N") {
+                let kind = if matches!(word, "T" | "x" | "y" | "w" | "u" | "A1" | "A2" | "N") {
                     SurfaceTokenKind::Identifier
                 } else if matches!(word, ":" | "=" | ";") {
                     SurfaceTokenKind::ReservedSymbol
@@ -18073,6 +18529,13 @@ mod task269c_tests {
                 (4, K::QuantifierVariableSegment),
                 (l, K::QualifiedVariableSegment),
             ];
+            if packet {
+                declarations.extend([
+                    (8, K::QuantifierVariableSegment),
+                    (24, K::QuantifierVariableSegment),
+                    (43, K::QualifiedVariableSegment),
+                ]);
+            }
             if given {
                 declarations.extend([
                     (9, K::QuantifierVariableSegment),
@@ -18124,21 +18587,44 @@ mod task269c_tests {
             } else {
                 formulas[&h]
             };
-            let forall = node(
+            let forall = if packet {
+                let existential = node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Existential),
+                    7,
+                    14,
+                    vec![tokens[7], segments[&8], tokens[11], hypothesis],
+                );
+                node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    3,
+                    14,
+                    vec![tokens[3], segments[&4], existential],
+                )
+            } else {
+                node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    3,
+                    c + 2,
+                    vec![
+                        tokens[3],
+                        segments[&4],
+                        tokens[7],
+                        hypothesis,
+                        tokens[c - 1],
+                        formulas[&c],
+                    ],
+                )
+            };
+            let header = node(
                 &mut builder,
-                K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                K::FormulaExpression,
                 3,
-                c + 2,
-                vec![
-                    tokens[3],
-                    segments[&4],
-                    tokens[7],
-                    hypothesis,
-                    tokens[c - 1],
-                    formulas[&c],
-                ],
+                if packet { 14 } else { c + 2 },
+                vec![forall],
             );
-            let header = node(&mut builder, K::FormulaExpression, 3, c + 2, vec![forall]);
             let proposition = node(
                 &mut builder,
                 K::Proposition,
@@ -18148,14 +18634,18 @@ mod task269c_tests {
             );
             let condition = node(
                 &mut builder,
-                if conditioned || given {
+                if conditioned || given || packet {
                     K::ConditionList
                 } else {
                     K::AssumptionStatement
                 },
                 condition_start,
-                if conditioned || given { a + 2 } else { a + 3 },
-                if conditioned || given {
+                if conditioned || given || packet {
+                    a + 2
+                } else {
+                    a + 3
+                },
+                if conditioned || given || packet {
                     vec![tokens[condition_start], proposition]
                 } else {
                     vec![tokens[condition_start], proposition, tokens[a + 3]]
@@ -18178,7 +18668,31 @@ mod task269c_tests {
                     vec![tokens[l - 1], segments[&l], tokens[l + 3]]
                 },
             );
-            let assumption = if given {
+            let assumption = if packet {
+                let reference = node(&mut builder, K::Reference, 54, 54, vec![tokens[54]]);
+                let list = node(&mut builder, K::ReferenceList, 54, 54, vec![reference]);
+                let by = node(
+                    &mut builder,
+                    K::JustificationClause,
+                    53,
+                    54,
+                    vec![tokens[53], list],
+                );
+                node(
+                    &mut builder,
+                    K::ConsiderStatement,
+                    42,
+                    55,
+                    vec![
+                        tokens[42],
+                        segments[&43],
+                        tokens[46],
+                        condition,
+                        by,
+                        tokens[55],
+                    ],
+                )
+            } else if given {
                 node(
                     &mut builder,
                     K::GivenStatement,
@@ -18197,7 +18711,60 @@ mod task269c_tests {
             };
             let linked_proposition =
                 node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]]);
-            let then = if now {
+            let then = if packet {
+                let existential = node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Existential),
+                    23,
+                    30,
+                    vec![tokens[23], segments[&24], tokens[27], formulas[&c]],
+                );
+                let formula = node(
+                    &mut builder,
+                    K::FormulaExpression,
+                    23,
+                    30,
+                    vec![existential],
+                );
+                let proposition = node(
+                    &mut builder,
+                    K::Proposition,
+                    21,
+                    30,
+                    vec![tokens[21], tokens[22], formula],
+                );
+                let reference = node(&mut builder, K::TermReference, 33, 33, vec![tokens[33]]);
+                let term = node(&mut builder, K::TermExpression, 33, 33, vec![reference]);
+                let witness = node(&mut builder, K::Witness, 33, 33, vec![term]);
+                let take = node(
+                    &mut builder,
+                    K::TakeStatement,
+                    32,
+                    34,
+                    vec![tokens[32], witness, tokens[34]],
+                );
+                let conclusion = node(
+                    &mut builder,
+                    K::ConclusionStatement,
+                    35,
+                    39,
+                    vec![tokens[35], linked_proposition, tokens[39]],
+                );
+                let proof = node(
+                    &mut builder,
+                    K::ProofBlock,
+                    31,
+                    40,
+                    vec![tokens[31], take, conclusion, tokens[40]],
+                );
+                node(
+                    &mut builder,
+                    K::CompactStatement,
+                    21,
+                    41,
+                    vec![proposition, proof, tokens[41]],
+                )
+            } else if now {
                 let child = node(
                     &mut builder,
                     K::ConclusionStatement,
@@ -18282,24 +18849,39 @@ mod task269c_tests {
             } else {
                 terminal
             };
-            let proof = node(
-                &mut builder,
-                K::ProofBlock,
-                l - 2,
-                end - 1,
-                if conditioned {
-                    vec![tokens[l - 2], let_row, then, terminal, tokens[end - 1]]
-                } else {
-                    vec![
-                        tokens[l - 2],
-                        let_row,
-                        assumption,
-                        then,
-                        terminal,
-                        tokens[end - 1],
-                    ]
-                },
-            );
+            let proof_children = if packet {
+                let reference = node(&mut builder, K::TermReference, 57, 57, vec![tokens[57]]);
+                let term = node(&mut builder, K::TermExpression, 57, 57, vec![reference]);
+                let witness = node(&mut builder, K::Witness, 57, 57, vec![term]);
+                let take = node(
+                    &mut builder,
+                    K::TakeStatement,
+                    56,
+                    58,
+                    vec![tokens[56], witness, tokens[58]],
+                );
+                vec![
+                    tokens[l - 2],
+                    let_row,
+                    then,
+                    assumption,
+                    take,
+                    terminal,
+                    tokens[end - 1],
+                ]
+            } else if conditioned {
+                vec![tokens[l - 2], let_row, then, terminal, tokens[end - 1]]
+            } else {
+                vec![
+                    tokens[l - 2],
+                    let_row,
+                    assumption,
+                    then,
+                    terminal,
+                    tokens[end - 1],
+                ]
+            };
+            let proof = node(&mut builder, K::ProofBlock, l - 2, end - 1, proof_children);
             let theorem = node(
                 &mut builder,
                 K::TheoremItem,
@@ -18373,7 +18955,7 @@ mod task269c_tests {
             (false, false, true, false),
             (false, true, false, true),
         ] {
-            let genuine = fixture(source_id(), conditioned, by, false, hereby, now);
+            let genuine = fixture(source_id(), conditioned, by, false, hereby, now, false);
             let (steps, guards, initial, checked, inference) =
                 genuine.check_witness_goals().unwrap();
             let (formal, actual) = steps[1].matched.unwrap();
@@ -18589,7 +19171,15 @@ mod task269c_tests {
                     .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                     .is_err()
             );
-            let foreign = fixture(other_source_id(), conditioned, by, false, hereby, now);
+            let foreign = fixture(
+                other_source_id(),
+                conditioned,
+                by,
+                false,
+                hereby,
+                now,
+                false,
+            );
             let products = foreign.check_witness_goals().unwrap();
             assert!(
                 genuine
@@ -18608,7 +19198,7 @@ mod task269c_tests {
                     .is_err()
             );
         }
-        let given = fixture(source_id(), false, true, true, false, false);
+        let given = fixture(source_id(), false, true, true, false, false, false);
         let (steps, guards, initial, checked, inference) = given.check_witness_goals().unwrap();
         assert_eq!(steps.len(), 6);
         let (formal, witness) = steps[2].matched.unwrap();
@@ -18711,7 +19301,7 @@ mod task269c_tests {
                 .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                 .is_err()
         );
-        let foreign = fixture(other_source_id(), false, true, true, false, false)
+        let foreign = fixture(other_source_id(), false, true, true, false, false, false)
             .check_witness_goals()
             .unwrap();
         assert!(
@@ -18753,6 +19343,115 @@ mod task269c_tests {
         assert!(
             given
                 .witness_goal_formation(&object_right, &BTreeSet::from([witness]), &mut Vec::new())
+                .is_err()
+        );
+        let packet = fixture(source_id(), false, false, false, false, false, true);
+        let (trace, guards, initial, checked, inference) = packet.check_witness_goals().unwrap();
+        assert_eq!(trace.len(), 10);
+        assert_ne!(trace[8].before, trace[4].after);
+        assert_eq!(trace[8].before, trace[1].after);
+        assert_eq!(trace[5].before, trace[2].before);
+        assert_eq!(trace[8].matched.unwrap().1, trace[6].matched.unwrap().1);
+        assert_eq!(guards.len(), 3);
+        assert!(initial.is_empty());
+        for mutation in 0..15 {
+            let mut bad = trace.clone();
+            match mutation {
+                0 => bad[8].before = trace[4].after.clone(),
+                1 => bad[5].before = trace[4].after.clone(),
+                2 => bad[6].after = trace[4].after.clone(),
+                3 => bad[6].matched.as_mut().unwrap().0 = trace[8].matched.unwrap().0,
+                4 => bad[6].matched.as_mut().unwrap().1 = trace[1].matched.unwrap().1,
+                5 => bad[7].after = trace[8].before.clone(),
+                6 => bad[3].owner = trace[0].owner.clone(),
+                7 => bad[6].owner = trace[0].owner.clone(),
+                8 => bad[2].context = trace[1].context,
+                9 => bad[6].context = trace[3].context,
+                10 => bad[6].avoided = vec![trace[6].matched.unwrap().1],
+                11 => bad[6].free.clear(),
+                12 => bad.swap(5, 8),
+                13 => {
+                    bad.remove(6);
+                }
+                _ => bad[5].site = trace[2].site.clone(),
+            }
+            if matches!(mutation, 2 | 5) {
+                let at = if mutation == 2 { 6 } else { 7 };
+                let mut free = BTreeSet::new();
+                bad[at]
+                    .after
+                    .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                bad[at].free = free.into_iter().collect();
+            }
+            assert!(
+                packet
+                    .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err(),
+                "packet mutation{mutation}"
+            );
+        }
+        let mut changed = guards.clone();
+        changed[1].from_type.as_mut().unwrap().head = TypeHeadInput::BuiltinSet;
+        changed[1].to_type.head = TypeHeadInput::BuiltinSet;
+        let coherent = crate::type_checker::CoercionObligationChecker::default().check(
+            &packet.symbols,
+            &TypeFactTable::new(),
+            changed.clone(),
+            initial.clone(),
+        );
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .coercions()
+                .iter()
+                .all(|(_, guard)| guard.status == crate::typed_ast::CoercionStatus::Candidate)
+        );
+        assert!(
+            packet
+                .replay_witness_goals(&trace, &changed, &initial, &coherent, &inference)
+                .is_err()
+        );
+        for declaration in [false, true] {
+            let (_, _, mut terms, formulas, _) = packet.witness_goal_inputs().unwrap();
+            if declaration {
+                let witness = trace[6].matched.unwrap().1;
+                let term = terms
+                    .iter_mut()
+                    .find(|t| {
+                        t.reference == Some(crate::type_checker::TermReference::Binding(witness))
+                            && matches!(t.site, crate::typed_ast::TypedSiteRef::Role { .. })
+                    })
+                    .unwrap();
+                term.result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinSet;
+            } else {
+                let term = terms
+                    .iter_mut()
+                    .find(|t| t.context == trace[3].context)
+                    .unwrap();
+                term.context = trace[1].context;
+            }
+            let coherent = TermFormulaChecker::default()
+                .try_infer(&packet.symbols, &packet.binding_env, terms, formulas)
+                .unwrap();
+            assert!(coherent.diagnostics().is_empty());
+            assert!(
+                coherent
+                    .terms()
+                    .iter()
+                    .all(|(_, t)| t.status == TermStatus::Inferred)
+            );
+            assert!(
+                packet
+                    .replay_witness_goals(&trace, &guards, &initial, &checked, &coherent)
+                    .is_err()
+            );
+        }
+        let foreign = fixture(other_source_id(), false, false, false, false, false, true)
+            .check_witness_goals()
+            .unwrap();
+        assert!(
+            packet
+                .replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)
                 .is_err()
         );
     }

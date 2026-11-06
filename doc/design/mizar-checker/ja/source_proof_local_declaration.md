@@ -134,6 +134,14 @@ fact にしない。内部 By/宣言と一般の collected goal は後続に残�
 持たず、block の部分結論・最初の thesis・入れ子連言の分解は対象外とする。
 残余から binding が消えても、先行 frontier と型 guard は保持する。
 
+goal owner は実 Theorem・label 付き CompactStatement・ConsiderStatement の site を取る。
+compact candidate は実 child Proof context で、先行する親 Let の値を継承した Take/Thus を記録する。
+Consider hypothesis は実 outer Proof context と元の引用 existential を使い、fresh name の置換と
+元 condition の照合を記録する。保存した親 goal は独立に再開し、Consider 値は実 name でのみ
+親 frontier に入る。共有 native binding kind ではなくソース role で Given/Consider を区別する。
+宣言された Set/Object の厳密な互換性による実 name-site guard は存在の evidence を与えない。
+子 Pending は局所 owner と未証明の依存 trace に残る。
+
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
 実 item・proof・theorem owner を対応付け、後続 conclusion の source Pending が Blocked
@@ -141,8 +149,8 @@ owner を解除しない。Rejected/Pending target は利用可能な alias 型�
 census 後に認証済み theorem owner で goal 推論を分割し、明示的な definition/registration
 metadata owner のみを除外する。それらの goal は生成しない。
 
-同一 proof 内の Set/named-Take の変数 alias は、認証済み RHS identity を通して先行 Let または
-Given の値へ解決できる。native Set capture は直接依存、named capture は空のまま保持する。元の項参照は
+同一 proof 内の Set/named-Take の変数 alias は、認証済み RHS identity を通して先行 Let・Given・
+Consider の値へ解決できる。native Set capture は直接依存、named capture は空のまま保持する。元の項参照は
 alias ID と実出現 context を維持し、派生型 role は実際の値の guard 出典を使う。Take の対応は
 元 RHS binding を保持し、論理値を展開して置換する。terminal の照合も同じ値を使う。
 ソース順 replay は RHS 評価後に alias を導入し、Set Equating を不変 goal の step として記録する。

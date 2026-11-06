@@ -39,6 +39,10 @@ Task272 に残す。
 原子的連言の trace を観測する。metadata の Pass は未証明の左 claim と右残余のみを観測し、
 legacy FS・証明受理を追加しない。各 native goal source/sidecar identity は個別に厳密照合する。
 
+既存 Consider-choice FS は意味論/A 検査後に compact と Consider hypothesis の goal owner も消費する。
+実 Take/Consider-name の互換性 request は存在の evidence と区別し、子 Pending は元 owner に残す。
+保存した親 goal に移さず、この native 観測では全 claim を未証明のまま保持する。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。
