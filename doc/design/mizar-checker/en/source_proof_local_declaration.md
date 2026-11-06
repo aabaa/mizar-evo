@@ -170,7 +170,7 @@ Both remain unproved. Both tails are unlabelled and unjustified; partial block
 conclusions, first thesis and nested conjunction splitting remain unsupported.
 Prior frontier/type guards survive a binding's disappearance from the residual.
 
-Goal owners may be actual Theorem, labelled CompactStatement or ConsiderStatement
+Goal owners may be actual Theorem, labelled CompactStatement, ConsiderStatement, or bounded Iff-direction ConclusionStatement
 sites. A compact candidate uses its genuine child Proof context; its bounded Take
 and Thus trace retains inherited prior parent Let values. A Consider hypothesis
 uses the actual outer Proof context and original cited existential, then exposes
@@ -195,6 +195,14 @@ effects defer. Recursive residual-Imp refusal includes Or children and Not body.
 Equivalence also retains its actual ordered source operands through recursive
 substitution and replay. It remains a whole unproved goal; no direction goals
 are synthesized or discharged. Residual-Imp refusal visits both operands.
+
+An outer plain single-variable Set/Object Let and exactly two directional Conclusion/Proofs may retain local goals from their actual written implications with atomic Equality/Membership/TypeAssertion sides.
+Each Conclusion owns its genuine child Proof context; written implication inputs remain in the outer Proof context.
+Replay matches forward/reverse sides against the saved current parent Iff after Let and inherits only prior authentic Let values.
+Each child has one unlabelled Assume and an unjustified Thus of its whole consequent (explicit or thesis).
+Only authenticated owner initialization retains an Imp; actual child terminals keep residual-Imp refusal.
+The parent Iff remains unproved; its frontier stays separate from both local residuals, with no return or discharge event.
+Earlier Take/alias, child declarations/citations/Then/Hence and deeper proofs are outside this bounded direction profile.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's

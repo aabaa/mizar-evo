@@ -60,6 +60,8 @@ Case-keyword and thesis alternatives are native-only controls of this boundary.
 
 The existing parenthesized-Iff C8 case additionally requires native whole-goal
 replay after its legacy formula check; neither direction is thereby proved.
+The inactive Iff-direction FS fixture directly tests native actual-written-Imp owners in their real child Proof contexts.
+Syntax-smoke includes its source; native observations keep the parent and both directions unproved without semantic FS activation.
 
 The existing IterEq1 C9 case also requires native singleton values and unproved chain/step checkpoints.
 Its actual singleton-root SetEnumeration results have no Binding reference and are observed at their genuine sites;

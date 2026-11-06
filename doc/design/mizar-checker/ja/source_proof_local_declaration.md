@@ -148,7 +148,7 @@ fact にしない。内部 By/宣言と一般の collected goal は後続に残�
 持たず、block の部分結論・最初の thesis・入れ子連言の分解は対象外とする。
 残余から binding が消えても、先行 frontier と型 guard は保持する。
 
-goal owner は実 Theorem・label 付き CompactStatement・ConsiderStatement の site を取る。
+goal owner は実 Theorem・label 付き CompactStatement・ConsiderStatement、または制限付き Iff 方向の ConclusionStatement の site を取る。
 compact candidate は実 child Proof context で、先行する親 Let の値を継承した Take/Thus を記録する。
 Consider hypothesis は実 outer Proof context と元の引用 existential を使い、fresh name の置換と
 元 condition の照合を記録する。保存した親 goal は独立に再開し、Consider 値は実 name でのみ
@@ -165,6 +165,14 @@ Thus（明示式または thesis）で goal 全体を観測する。実 native B
 
 同値も実 source の順序付き両辺を再帰的な置換・replay で保持する。未証明の goal 全体のまま、
 両方向の goal を合成・解消しない。残余 Imp の拒否は両辺を訪れる。
+
+外側の単純な単一変数 Set/Object Let とちょうど二つの方向 Conclusion/Proof は、実際に書かれた含意（両辺は atomic Equality/Membership/TypeAssertion）から局所 goal を保持できる。
+各 Conclusion は実 child Proof context を所有し、元の含意入力は outer Proof context を維持する。
+replay は Let 後の保存した親 Iff と正逆の両辺を照合し、実際の先行 Let 値だけを継承する。
+子は label のない単一 Assume と、consequent 全体の unjustified Thus（明示式または thesis）を持つ。
+認証済み owner の初期化だけが Imp を保持し、実際の子 terminal は残余 Imp の拒否を維持する。
+親 Iff は未証明のまま、frontier と両局所 residual を分離し、return や discharge event を作らない。
+先行 Take/alias・子の宣言/引用/Then/Hence・深い proof は、この方向 profile の対象外とする。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。

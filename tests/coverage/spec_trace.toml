@@ -3650,6 +3650,7 @@ tests = [
   "tests/miz/fail/theorems/fail_formula_statement_assume_without_antecedent_001.expect.toml",
   "tests/miz/fail/theorems/fail_formula_statement_conclusion_mismatch_001.expect.toml",
   "tests/miz/fail/theorems/fail_formula_statement_incomplete_proof_001.expect.toml",
+  "tests/miz/pass/theorems/pass_formula_statement_iff_direction_goals_001.expect.toml",
 ]
 
 [[requirement]]

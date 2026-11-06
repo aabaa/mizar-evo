@@ -1,0 +1,11 @@
+schema_version = 1
+id = "pass_formula_statement_iff_direction_goals_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "statements.iff_directions"
+source = "pass_formula_statement_iff_direction_goals_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = ["spec.en.16.theorems.skeleton.thesis_tracking"]
+notes = "Inactive test-first EN16 section 16.3.3(6) oracle. Direct native-goal tests may associate the written forward and reverse implications with their real child Proof contexts while preserving an unproved parent equivalence. No active tag, semantic FS execution credit, proved direction, accepted theorem, generated VC or Task49 activation follows. Generic syntax-smoke still includes this source."

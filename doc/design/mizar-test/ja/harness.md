@@ -49,6 +49,8 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 
 既存の括弧付き Iff C8 case は legacy formula 検査後に native goal 全体の replay も要求する。
 この観測から同値のいずれの方向も証明しない。
+inactive な Iff 方向 FS fixture は、実際に書かれた含意 owner と実 child Proof context を native API で直接検査する。
+syntax-smoke はこのソースを含むが、親と両方向は未証明のままで、意味論 FS を有効化しない。
 
 既存 IterEq1 C9 case は native singleton 値と未証明の chain/step checkpoint も要求する。
 実 singleton root は Binding 参照を持たず元 site で観測し、Variable/Binding 観測と owner/先行 guard の対応は維持する。

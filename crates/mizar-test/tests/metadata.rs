@@ -3896,8 +3896,8 @@ fn syntax_smoke_passes_non_syntax_diagnostics_and_retains_their_order() {
 fn syntax_smoke_repository_has_exactly_360_cases_353_passed_7_expected_and_no_failures() {
     let report = run_syntax_smoke_corpus(&repository_config()).unwrap();
 
-    assert_eq!(report.results.len(), 368);
-    assert_eq!(report.passed_count(), 361);
+    assert_eq!(report.results.len(), 369);
+    assert_eq!(report.passed_count(), 362);
     assert_eq!(report.expected_rejection_count(), 7);
     assert_eq!(report.failed_count(), 0);
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
@@ -10670,8 +10670,8 @@ fn syntax_smoke_cli_reports_repository_360_353_7_0_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("syntax-smoke cases: 368"));
-    assert!(stdout.contains("passed: 361"));
+    assert!(stdout.contains("syntax-smoke cases: 369"));
+    assert!(stdout.contains("passed: 362"));
     assert!(stdout.contains("expected syntax rejections: 7"));
     assert!(stdout.contains("failed: 0"));
     assert!(stdout.contains("errors: 0"));

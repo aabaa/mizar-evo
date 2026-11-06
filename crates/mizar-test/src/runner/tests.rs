@@ -11524,3 +11524,320 @@ fn task272b18_empty_constants_preserve_real_pending_object_guards_and_effect_cap
         "theorem EmptyMismatch: for o being object holds {}={o} proof let o be object; thus {}={}; end;",
     ] { assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}"); }
 }
+
+#[test]
+fn task272b19_iff_directions_use_actual_written_implications_and_child_proof_owners() {
+    use mizar_checker::{binding_env::{BindingContextLayer as L,BindingContextOwner,BindingContextRecovery,BindingTypeSite},
+        source_proof_local_declaration::{SourceProofGoal as G,SourceProofIntentStatus as S,SourceProofTerm as T},
+        type_checker::{FormulaKind,FormulaStatus,NormalizedTypeStatus,TermKind,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::{names::SourceVariableTypeRadix as R,resolved_ast::{LabelKind,SurfaceResolvedArena}};
+    use mizar_syntax::{SurfaceFormulaConnective as C,SurfaceNodeKind as K,SurfaceQuantifierKind as Q,SurfaceTokenKind as TK};
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|c|c.id.0=="pass_formula_statement_iff_direction_goals_001").unwrap();
+    assert!(case.expectation.tags.is_empty());
+    assert!(!super::is_active_proof_verification(case));
+    assert!(!super::formula_statement::is_active_formula_statement(&config.workspace_root,case));
+    assert_eq!(super::active_proof_verification_cases(&plan).count(),23);
+    assert_eq!(super::active_formula_statement_cases(&config.workspace_root,&plan).count(),23);
+    assert!(super::syntax_smoke_cases(&plan).any(|c|c.id==case.id));
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("actual inactive IffDirections source");
+    for (kind,count) in [(K::TermExpression,15),(K::BuiltinPredicateApplication,5),(K::IsAssertion,5),
+        (K::TypeExpression,7),(K::TypeHead,7),(K::ProofBlock,3),(K::ConclusionStatement,4),
+        (K::AssumptionStatement,2),(K::LetStatement,1),(K::TheoremItem,1),(K::QuantifiedFormula(Q::Universal),1)] {
+        assert_eq!(ast.node_views().filter(|n|n.kind()==&kind).count(),count,"{kind:?}");
+    }
+    assert_eq!(ast.node_views().filter(|n|matches!(n.kind(),K::BinaryFormula(op) if op.connective==C::Iff && !op.repeated)).count(),1);
+    assert_eq!(ast.node_views().filter(|n|matches!(n.kind(),K::BinaryFormula(op) if op.connective==C::Implies && !op.repeated)).count(),2);
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    assert_eq!(intents.len(),11); assert!(intents.iter().all(|(_,_,s)|*s==S::Pending));
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|r|r.site()==id).unwrap()
+    };
+    let typed_site = |row:&mizar_checker::typed_ast::SourceNode| TypedSiteRef::Node(
+        handoff.source().nodes().iter().find(|(_,n)|n.resolved_node==Some(row.site())).unwrap().0);
+    assert_eq!(intents.iter().map(|(site,_,_)|original(site).kind()).collect::<Vec<_>>(),
+        [&K::TheoremItem,&K::ProofBlock,&K::LetStatement,&K::ConclusionStatement,&K::ProofBlock,
+            &K::AssumptionStatement,&K::ConclusionStatement,&K::ConclusionStatement,&K::ProofBlock,
+            &K::AssumptionStatement,&K::ConclusionStatement]);
+    let (h,p) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    assert_eq!(handoff.scope().bindings().iter().map(|b|b.spelling()).collect::<Vec<_>>(),["x","x"]);
+    assert_eq!(handoff.scope().references().iter().map(|r|task272b1_binding(&handoff,r.binding().index())).collect::<Vec<_>>(),
+        [h,h,h,p,p,p,p,p,p,p,p,p,p,p,p]);
+    let theorem = rows.iter().copied().find(|r|r.kind()==&K::TheoremItem).unwrap();
+    let quantifier = rows.iter().copied().find(|r|r.kind()==&K::QuantifiedFormula(Q::Universal)).unwrap();
+    let iff = rows.iter().copied().find(|r|matches!(r.kind(),K::BinaryFormula(op) if op.connective==C::Iff)).unwrap();
+    let mut proofs = rows.iter().copied().filter(|r|r.kind()==&K::ProofBlock).collect::<Vec<_>>();
+    proofs.sort_by_key(|r|r.range().start); assert_eq!(proofs[0].parent(),Some(theorem.site()));
+    let mut directions = rows.iter().copied().filter(|r|r.kind()==&K::ConclusionStatement && r.parent()==Some(proofs[0].site())).collect::<Vec<_>>();
+    directions.sort_by_key(|r|r.range().start); assert_eq!(directions.len(),2);
+    let mut implications = rows.iter().copied().filter(|r|matches!(r.kind(),K::BinaryFormula(op) if op.connective==C::Implies)).collect::<Vec<_>>();
+    implications.sort_by_key(|r|r.range().start);
+    let mut assumptions = rows.iter().copied().filter(|r|r.kind()==&K::AssumptionStatement).collect::<Vec<_>>();
+    assumptions.sort_by_key(|r|r.range().start);
+    let native = SurfaceResolvedArena::lower(&ast,&resolver.module).unwrap();
+    let (scopes,_) = mizar_resolve::symbols::source_proof_scope_maps(&native,&resolver.env,handoff.scope()).unwrap();
+    let context_for = |row:&mizar_checker::typed_ast::SourceNode| {
+        let surface = ast.node_views().find(|n|native.resolved_node_for(n.id())==Some(row.site())).unwrap();
+        let scope = scopes.get(&surface.id()).unwrap();
+        let matches = handoff.binding_env().contexts().iter().filter(|(_,c)|c.lexical_scope.as_ref()==Some(scope)).collect::<Vec<_>>();
+        assert_eq!(matches.len(),1); matches[0].0
+    };
+    let (header_context,outer) = (context_for(quantifier),context_for(proofs[0]));
+    assert_eq!(handoff.binding_env().contexts().len(),5);
+    assert_eq!(handoff.binding_env().contexts().get(header_context).unwrap().layer,L::Expression);
+    assert_eq!(handoff.binding_env().contexts().get(outer).unwrap().layer,L::Proof);
+    assert_eq!(handoff.binding_env().bindings().get(h).unwrap().owner_context,header_context);
+    assert_eq!(handoff.binding_env().bindings().get(p).unwrap().owner_context,outer);
+    let child_contexts = [context_for(proofs[1]),context_for(proofs[2])];
+    assert_ne!(child_contexts[0],child_contexts[1]);
+    let mut terminals = Vec::new();
+    for index in 0..2 {
+        assert_eq!(proofs[index+1].parent(),Some(directions[index].site()));
+        let child = handoff.binding_env().contexts().get(child_contexts[index]).unwrap();
+        assert_eq!((child.layer,child.parent,child.recovery),(L::Proof,Some(outer),BindingContextRecovery::Normal));
+        assert_eq!(child.owner,BindingContextOwner::SourceStatement {source_range:proofs[index+1].range()});
+        assert!(child.bindings.is_empty()); assert_eq!(child.visible_bindings,[p]);
+        assert_eq!(context_for(directions[index]),outer);
+        assert_eq!(context_for(implications[index]),outer);
+        assert!(directions[index].range().start<implications[index].range().start && implications[index].range().end<proofs[index+1].range().start);
+        let mut frame = rows.iter().copied().filter(|r|r.parent()==Some(directions[index].site())).collect::<Vec<_>>();
+        frame.sort_by_key(|r|r.child_ordinal()); assert_eq!(frame.len(),4);
+        assert_eq!([frame[0].spelling(),frame[3].spelling()],["thus",";"]);
+        assert_eq!(frame[1].kind(),&K::Proposition); assert_eq!(frame[2].site(),proofs[index+1].site());
+        assert_eq!(assumptions[index].parent(),Some(proofs[index+1].site()));
+        assert_eq!(context_for(assumptions[index]),child_contexts[index]);
+        let terminal = rows.iter().copied().find(|r|r.kind()==&K::ConclusionStatement && r.parent()==Some(proofs[index+1].site())).unwrap();
+        assert_eq!(context_for(terminal),child_contexts[index]); terminals.push(terminal);
+    }
+    for binding in [h,p] {
+        let entry = handoff.binding_env().bindings().get(binding).unwrap();
+        assert_eq!(entry.type_site,BindingTypeSite::Missing); assert!(entry.captured.identities().is_empty());
+    }
+    let mut atoms = rows.iter().copied().filter(|r|matches!(r.kind(),K::BuiltinPredicateApplication|K::IsAssertion)).collect::<Vec<_>>();
+    atoms.sort_by_key(|r|r.range().start);
+    let is_assertion = [false,true,false,true,false,true,true,false,true,false];
+    assert_eq!(atoms.iter().map(|r|r.kind()==&K::IsAssertion).collect::<Vec<_>>(),is_assertion);
+    let (requests,conversion,queries) = handoff.check_conversions().unwrap();
+    assert!(requests.is_empty() && queries.is_empty() && conversion.coercions().is_empty()
+        && conversion.initial_obligations().is_empty() && conversion.facts().is_empty() && conversion.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty() && handoff.source().initial_obligations().is_empty());
+    println!("Task272B19 test-first prerequisites: actual new inactive IffDirections excluded from unchanged FS23/PV23; frontend/resolver/native-A/base succeeded; 11 Pending intents; H/P bindings15refs; 3 authentic Proof scopes including two sibling children inheriting only prior P; original 5Eq/5Is/2writtenImp/1Iff/7types; no requests/facts");
+    let (steps,success,pending,guards,inference) = handoff.check_witness_goals()
+        .expect("actual IffDirections must retain saved parent Iff and independent actual written-Imp goals in real child Proof contexts");
+    assert_eq!((steps.len(),inference.terms().len(),inference.formulas().len()),(8,17,10));
+    let atom_goal = |index:usize,binding| if is_assertion[index] {
+        G::TypeAssertion {origin:typed_site(atoms[index]),subject:T::Binding(binding),radix:R::Object}
+    } else {G::Equality {origin:typed_site(atoms[index]),left:T::Binding(binding),right:T::Binding(binding)}};
+    let parent = G::Equivalence {origin:typed_site(iff),left:Box::new(atom_goal(0,p)),right:Box::new(atom_goal(1,p))};
+    let initial = G::Universal {origin:typed_site(quantifier),binding:h,radix:R::Object,
+        body:Box::new(G::Equivalence {origin:typed_site(iff),left:Box::new(atom_goal(0,h)),right:Box::new(atom_goal(1,h))})};
+    let forward = G::Implication {origin:typed_site(implications[0]),antecedent:Box::new(atom_goal(2,p)),consequent:Box::new(atom_goal(3,p))};
+    let reverse = G::Implication {origin:typed_site(implications[1]),antecedent:Box::new(atom_goal(6,p)),consequent:Box::new(atom_goal(7,p))};
+    let (forward_residual,reverse_residual) = (atom_goal(3,p),atom_goal(7,p));
+    let expected = [(&initial,&initial),(&initial,&parent),(&forward,&forward),(&forward,&forward_residual),
+        (&forward_residual,&forward_residual),(&reverse,&reverse),(&reverse,&reverse_residual),(&reverse_residual,&reverse_residual)];
+    let let_site = rows.iter().copied().find(|r|r.range()==handoff.scope().bindings()[1].range() && matches!(r.kind(),K::Token(_))).unwrap();
+    let sites = [theorem,let_site,directions[0],assumptions[0],terminals[0],directions[1],assumptions[1],terminals[1]];
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(step.site(),&typed_site(sites[index]));
+        assert_eq!(step.owner(),&typed_site(if index<2 {theorem} else if index<5 {directions[0]} else {directions[1]}));
+        assert_eq!(step.context(),if index<2 {outer} else if index<5 {child_contexts[0]} else {child_contexts[1]});
+        assert_eq!((step.before(),step.after()),expected[index]);
+        assert_eq!(step.matched(),if index==1 {Some((h,p))} else {None});
+        assert_eq!(step.free(),if index==0 {vec![]} else {vec![p]}); assert!(step.avoided().is_empty());
+        if [1,3,4,6,7].contains(&index) {assert_eq!(step.before(),steps[index-1].after());}
+    }
+    assert_eq!(steps[1].after(),&parent);
+    assert_eq!(steps.iter().filter(|s|s.owner()==&typed_site(theorem)).count(),2);
+    assert_eq!(steps.iter().filter(|s|s.owner()==&typed_site(directions[0])).count(),3);
+    assert_eq!(steps.iter().filter(|s|s.owner()==&typed_site(directions[1])).count(),3);
+    assert!(success.is_empty() && pending.is_empty() && guards.coercions().is_empty()
+        && guards.initial_obligations().is_empty() && guards.facts().is_empty() && guards.diagnostics().is_empty());
+    for (_,term) in inference.terms().iter() {
+        assert_eq!((term.kind,term.status),(TermKind::Variable,TermStatus::Inferred)); assert!(term.deferred.is_empty());
+        let Some(TermReference::Binding(binding)) = term.reference else {panic!("genuine source binding")};
+        assert!([h,p].contains(&binding));
+        let entry = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!((&entry.owner,entry.status),(&term.site,TypeStatus::Known));
+        let TypeEntryActual::Known(id) = entry.actual else {panic!("actual Known Object")};
+        let ty = inference.normalized_types().get(id).unwrap();
+        assert_eq!((ty.head.clone(),ty.status),(TypeHeadRef::BuiltinObject,NormalizedTypeStatus::Known));
+        assert!(ty.args.is_empty() && ty.attributes.positive().is_empty() && ty.attributes.negative().is_empty());
+        let row = original(&term.site);
+        if matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value") {
+            let declaration = handoff.binding_env().bindings().get(binding).unwrap();
+            assert_eq!((row.range(),term.context),(declaration.declaration_range,declaration.owner_context));
+        } else {
+            assert_eq!(row.kind(),&K::TermExpression); assert_eq!(term.context,context_for(row));
+            assert!(handoff.scope().references().iter().any(|r|r.range()==row.range()
+                && task272b1_binding(&handoff,r.binding().index())==binding));
+        }
+    }
+    for binding in [h,p] {
+        assert_eq!(inference.terms().iter().filter(|(_,t)|t.reference==Some(TermReference::Binding(binding))
+            && matches!(&t.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")).count(),1);
+    }
+    for reference in handoff.scope().references() {
+        assert_eq!(inference.terms().iter().filter(|(_,t)|t.reference==Some(TermReference::Binding(task272b1_binding(&handoff,reference.binding().index())))
+            && original(&t.site).range()==reference.range()).count(),1);
+    }
+    for row in rows.iter().filter(|r|r.kind()==&K::TermExpression) {
+        assert_eq!(inference.terms().iter().filter(|(_,t)|original(&t.site).site()==row.site()).count(),1);
+    }
+    let mut formula_sites = Vec::new(); let mut targets = Vec::new();
+    for (_,formula) in inference.formulas().iter() {
+        let row = original(&formula.site); formula_sites.push(row.site());
+        assert_eq!(formula.status,FormulaStatus::Checked);
+        assert!(formula.facts.is_empty() && formula.deferred.is_empty());
+        assert_eq!((formula.source_range,formula.context),(row.range(),context_for(row)));
+        let mut frame = rows.iter().copied().filter(|r|r.parent()==Some(row.site())).collect::<Vec<_>>();
+        frame.sort_by_key(|r|r.child_ordinal()); assert_eq!(frame.len(),3);
+        assert_eq!(frame[0].kind(),&K::TermExpression);
+        let assertion = row.kind()==&K::IsAssertion;
+        assert_eq!(formula.kind,if assertion {FormulaKind::TypeAssertion} else {FormulaKind::Equality});
+        assert_eq!(frame[1].spelling(),if assertion {"is"} else {"="});
+        assert_eq!(formula.terms.iter().map(|s|original(s).site()).collect::<Vec<_>>(),
+            if assertion {vec![frame[0].site()]} else {vec![frame[0].site(),frame[2].site()]});
+        for site in &formula.terms {
+            let term = inference.terms().iter().find(|(_,t)|&t.site==site).unwrap().1;
+            assert_eq!(term.context,formula.context);
+        }
+        if assertion {
+            assert_eq!((frame[2].kind(),frame[2].spelling()),(&K::TypeExpression,"object")); targets.push(frame[2].site());
+            let heads = rows.iter().copied().filter(|r|r.parent()==Some(frame[2].site())).collect::<Vec<_>>();
+            assert_eq!(heads.len(),1); assert_eq!(heads[0].kind(),&K::TypeHead);
+            let keywords = rows.iter().copied().filter(|r|r.parent()==Some(heads[0].site())).collect::<Vec<_>>();
+            assert_eq!(keywords.len(),1); assert_eq!(keywords[0].spelling(),"object");
+            assert!(matches!(keywords[0].kind(),K::Token(t) if t.kind==TK::ReservedWord));
+            let id = formula.asserted_type.expect("real asserted Object target");
+            assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinObject);
+            assert!(inference.type_entries().iter().any(|(_,e)|original(&e.owner).site()==frame[2].site()
+                && e.status==TypeStatus::Known && e.actual==TypeEntryActual::Known(id)));
+            for part in [frame[2],heads[0],keywords[0]] {assert_eq!(context_for(part),formula.context);}
+        } else {assert!(formula.asserted_type.is_none());}
+    }
+    formula_sites.sort(); let mut source_atoms = atoms.iter().map(|r|r.site()).collect::<Vec<_>>(); source_atoms.sort();
+    assert_eq!(formula_sites,source_atoms); assert_eq!(targets.len(),5);
+    assert_eq!(inference.formulas().iter().filter(|(_,f)|f.kind==FormulaKind::Equality).count(),5);
+    assert_eq!(inference.formulas().iter().filter(|(_,f)|f.kind==FormulaKind::TypeAssertion).count(),5);
+    assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
+    assert!(labels.ids().is_empty());
+    assert_eq!(labels.index().iter().filter(|l|l.kind()==LabelKind::Theorem).count(),1);
+    assert_eq!(labels.index().iter().filter(|l|l.kind()==LabelKind::ProofStep).count(),0);
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty() && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b19_direction_variants_keep_own_written_residuals_types_and_unproved_parent() {
+    use mizar_checker::{binding_env::BindingContextLayer as L,
+        source_proof_local_declaration::{SourceProofGoal as G,SourceProofIntentStatus as S},
+        type_checker::TypeHeadRef,typed_ast::TypeEntryActual};
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|c|c.id.0=="pass_formula_statement_iff_direction_goals_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iff_direction_goals_001.miz");
+    for source in [base.replace("x","Value").replace("IffDirections","RenamedDirections"),base.replace(';',";\n"),
+        base.replace("x = x","(x = x)").replace("x is object","(x is object)"),
+        base.replace("    thus x is object;","    thus thesis;").replace("    thus x = x;","    thus thesis;"),
+        base.replace("being object","being set").replace("be object","be set"),
+        base.replace("being object","being set").replace("be object","be set").replace("x = x","x in x")] {
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(frontend.diagnostics.is_empty()); let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast); assert!(resolver.detail_keys.is_empty());
+        let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+        super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(handoff.check_proof_intents().unwrap().0.iter().all(|(_,_,s)|*s==S::Pending));
+        let (steps,success,pending,guards,inference) = handoff.check_witness_goals().unwrap_or_else(|e|panic!("{source}: {e:?}"));
+        assert_eq!(steps.len(),8);
+        assert_eq!((inference.terms().len(),inference.formulas().len()),if source.contains("thus thesis") {(14,8)} else {(17,10)});
+        assert!(matches!(steps[1].after(),G::Equivalence {..}));
+        assert_eq!(steps.iter().filter(|s|s.owner()==steps[0].site()).count(),2);
+        assert_ne!(steps[2].owner(),steps[5].owner()); assert_ne!(steps[2].context(),steps[5].context());
+        for index in [2,5] {
+            let G::Implication {consequent,..} = steps[index].before() else {panic!("actual own written implication")};
+            assert_eq!(steps[index].before(),steps[index].after());
+            assert_eq!(steps[index+1].before(),steps[index].after());
+            assert_eq!(steps[index+1].after(),consequent.as_ref());
+            assert_eq!(steps[index+2].before(),consequent.as_ref()); assert_eq!(steps[index+2].after(),consequent.as_ref());
+            let context = handoff.binding_env().contexts().get(steps[index].context()).unwrap();
+            assert_eq!((context.layer,context.parent),(L::Proof,Some(steps[0].context())));
+            assert!(context.bindings.is_empty()); assert_eq!(context.visible_bindings,[task272b1_binding(&handoff,1)]);
+        }
+        for (_,term) in inference.terms().iter() {
+            let TypeEntryActual::Known(id) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("original actual type")};
+            assert_eq!(inference.normalized_types().get(id).unwrap().head,
+                if source.contains("being set") {TypeHeadRef::BuiltinSet} else {TypeHeadRef::BuiltinObject});
+        }
+        assert!(success.is_empty() && pending.is_empty() && guards.coercions().is_empty() && guards.initial_obligations().is_empty()
+            && guards.facts().is_empty() && inference.facts().is_empty() && inference.formulas().iter().all(|(_,f)|f.facts.is_empty()));
+    }
+}
+
+#[test]
+fn task272b19_wrong_direction_associations_refuse_after_genuine_native_a_and_base() {
+    use mizar_checker::source_proof_local_declaration::SourceProofIntentStatus as S;
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|c|c.id.0=="pass_formula_statement_iff_direction_goals_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iff_direction_goals_001.miz");
+    let forward = "  thus x = x implies x is object\n  proof\n    assume x = x;\n    thus x is object;\n  end;\n";
+    let reverse = "  thus x is object implies x = x\n  proof\n    assume x is object;\n    thus x = x;\n  end;\n";
+    assert!(base.contains(forward) && base.contains(reverse));
+    for (name,source) in [
+        ("duplicate forward",base.replacen(reverse,forward,1)),
+        ("duplicate reverse",base.replacen(forward,reverse,1)),
+        ("swapped directions",base.replacen(forward,"",1).replacen(reverse,&format!("{reverse}{forward}"),1)),
+        ("missing reverse",base.replacen(reverse,"",1)),
+        ("one direction plus whole parent",base.replacen(reverse,"  thus (x = x iff x is object);\n",1)),
+        ("foreign owner",format!("{}\n{}",base.replacen(reverse,"",1),base.replace("IffDirections","ForeignDirections"))),
+        ("wrong own Assume",base.replacen("    assume x = x;","    assume x is object;",1)),
+        ("wrong own terminal",base.replacen("    thus x is object;","    thus x = x;",1)),
+    ] {
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(frontend.diagnostics.is_empty(),"{name}: {:?}",frontend.diagnostics); let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast); assert!(resolver.detail_keys.is_empty(),"{name}");
+        let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+        super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(handoff.check_proof_intents().unwrap().0.iter().all(|(_,_,s)|*s==S::Pending),"{name}");
+        let (requests,conversion,queries) = handoff.check_conversions().unwrap();
+        assert!(requests.is_empty() && queries.is_empty() && conversion.coercions().is_empty() && conversion.initial_obligations().is_empty()
+            && conversion.facts().is_empty() && conversion.diagnostics().is_empty(),"{name}");
+        println!("Task272B19 direction refusal prerequisites: genuine actual source frontend/resolver/native-A Pending/base positive for {name}");
+        assert!(handoff.check_witness_goals().is_err(),"{name}");
+    }
+}
+
+#[test]
+fn task272b19_direction_profile_keeps_prior_effect_child_citation_and_residual_caps() {
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|c|c.id.0=="pass_formula_statement_iff_direction_goals_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_iff_direction_goals_001.miz");
+    for (name,source) in [
+        ("prior alias",base.replacen("  let x be object;","  let x be object;\n  set alias=x;",1)),
+        ("prior Take",base.replacen("  let x be object;","  let x be object;\n  take x;",1)),
+        ("extra outer Let",base.replacen("  let x be object;","  let x be object;\n  let y be object;",1)),
+        ("mismatched Let guard",base.replacen("  let x be object;","  let x be set;",1)),
+        ("child declaration",base.replacen("    assume x = x;","    let y be object;\n    assume x = x;",1)),
+        ("child witness",base.replacen("    assume x = x;","    take x;\n    assume x = x;",1)),
+        ("child extra condition",base.replacen("    assume x = x;","    assume x = x;\n    assume x = x;",1)),
+        ("child By",base.replacen("    thus x is object;","    thus x is object by IffDirections;",1)),
+        ("child Then",base.replacen("    thus x is object;","    then x is object;",1)),
+        ("child Hence",base.replacen("    thus x is object;","    hence x is object;",1)),
+        ("child nesting",base.replacen("    thus x is object;","    thus x is object proof thus x is object; end;",1)),
+        ("terminal implication",base.replacen("    thus x is object;","    thus x = x implies x is object;",1)),
+    ] {
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(frontend.diagnostics.is_empty(),"{name}: {:?}",frontend.diagnostics); let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+        assert!(resolver.detail_keys.is_empty(),"{name}: {:?}",resolver.detail_keys);
+        assert!(super::native_conversion_handoff(&ast,&resolver.module,&resolver.env)
+            .and_then(|h|h.check_witness_goals().map(|_|()).map_err(|e|format!("{e:?}"))).is_err(),"{name}");
+    }
+}

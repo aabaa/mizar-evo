@@ -1,0 +1,15 @@
+:: EN16 16.3.3(6): retain the two independent directional proof obligations.
+theorem IffDirections: for x being object holds (x = x iff x is object)
+proof
+  let x be object;
+  thus x = x implies x is object
+  proof
+    assume x = x;
+    thus x is object;
+  end;
+  thus x is object implies x = x
+  proof
+    assume x is object;
+    thus x = x;
+  end;
+end;
