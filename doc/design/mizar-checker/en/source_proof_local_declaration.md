@@ -95,7 +95,7 @@ The immutable graph retains Then/body/branch associations; no new graph or slot 
 Checked Task180 tables remain separate from source intents and derived witness goals.
 
 The parameterless `check_witness_goals()` derives plain Set/Object quantified,
-variable-equality/conjunction/implication goals through Let/Take/Assume and terminal Thus/Hence.
+variable equality/membership/conjunction/implication goals through proof introductions and terminal Thus/Hence.
 `SourceProofGoal` stores actual binding identities and logical bodies; original
 Typed sites are provenance, never generated original formulas. Immutable
 `SourceProofGoalStep` exposes source owner/context/event, matched identities,
@@ -120,10 +120,19 @@ must be unblocked after adjacency validation. Terminal residuals containing impl
 and collective assumptions remain unsupported.
 
 A single Let condition emits an original ConditionList assumption step after its
-Let names. Terminal Thus/Hence may cite one prior local Assume/condition label,
+Let names. Terminal Thus/Hence may cite one prior local Assume/Let/Given condition label,
 using real resolved ProofStep and index declaration/source provenance. The original
 justification is retained as intent only; every remaining goal stays unproved.
 Let type-constraint By, Compact By and non-local or multiple citations remain deferred.
+
+Given opens a current existential antecedent with an exact-typed fresh proof witness.
+Its actual name first instantiates only that hypothesis; its ConditionList then
+leaves the unchanged consequent. Both are internal events of one source statement.
+The frontier retains the witness for later use; source context prevents export escape.
+Membership is a typed, unproved atom with two variable values. This bounded path
+requires an actual plain KnownSet right operand in original and derived goals.
+Conditional Object right operands defer; Pending narrowing on a left witness
+retains its owning body without a KnownSet upgrade or membership fact.
 
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's
@@ -134,7 +143,7 @@ partitions authenticated theorem owners after the whole source census, excluding
 only explicit definition/registration metadata owners without inventing their goals.
 
 Same-proof Set/named-Take variable aliases can resolve through authenticated
-RHS identities to a prior Let value. Native Set captures stay direct; named
+RHS identities to a prior Let or Given value. Native Set captures stay direct; named
 captures stay empty. Original term references retain alias IDs and occurrence
 contexts, while derived type roles use the actual value's guard provenance.
 Take matches the source RHS binding and substitutes its expanded logical value;

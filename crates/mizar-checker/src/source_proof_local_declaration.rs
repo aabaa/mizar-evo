@@ -106,6 +106,11 @@ pub enum SourceProofGoal {
         left: BindingId,
         right: BindingId,
     },
+    Membership {
+        origin: crate::typed_ast::TypedSiteRef,
+        left: BindingId,
+        right: BindingId,
+    },
     Conjunction {
         origin: crate::typed_ast::TypedSiteRef,
         left: Box<Self>,
@@ -178,7 +183,7 @@ impl SourceProofGoal {
         retained: &mut BTreeSet<BindingId>,
     ) {
         match self {
-            Self::Equality { left, right, .. } => {
+            Self::Equality { left, right, .. } | Self::Membership { left, right, .. } => {
                 for id in [left, right] {
                     if !bound.contains(id) {
                         free.insert(*id);
@@ -210,6 +215,15 @@ impl SourceProofGoal {
                 left,
                 right,
             } => Self::Equality {
+                origin: origin.clone(),
+                left: if *left == formal { actual } else { *left },
+                right: if *right == formal { actual } else { *right },
+            },
+            Self::Membership {
+                origin,
+                left,
+                right,
+            } => Self::Membership {
                 origin: origin.clone(),
                 left: if *left == formal { actual } else { *left },
                 right: if *right == formal { actual } else { *right },
@@ -275,6 +289,18 @@ impl SourceProofGoal {
                     right: r,
                 },
                 Self::Equality {
+                    origin: b,
+                    left,
+                    right,
+                },
+            )
+            | (
+                Self::Membership {
+                    origin: a,
+                    left: l,
+                    right: r,
+                },
+                Self::Membership {
                     origin: b,
                     left,
                     right,
@@ -368,6 +394,14 @@ impl SourceProofGoal {
                     left: a, right: b, ..
                 },
                 Self::Equality {
+                    left: c, right: d, ..
+                },
+            )
+            | (
+                Self::Membership {
+                    left: a, right: b, ..
+                },
+                Self::Membership {
                     left: c, right: d, ..
                 },
             ) => same(*a, *c, binders) && same(*b, *d, binders),
@@ -1688,8 +1722,10 @@ impl SourceProofLocalBindingHandoff {
                         })
                 })
                 .ok_or_else(invalid)?;
-            if source.kind() == SourceVariableBindingKind::Let
-                || source.kind() == SourceVariableBindingKind::Quantifier && current == binding
+            if matches!(
+                source.kind(),
+                SourceVariableBindingKind::Let | SourceVariableBindingKind::GivenWitness
+            ) || source.kind() == SourceVariableBindingKind::Quantifier && current == binding
             {
                 return Ok(current);
             }
@@ -1819,7 +1855,9 @@ impl SourceProofLocalBindingHandoff {
             .ok_or_else(invalid)?;
         if !matches!(
             source.kind(),
-            SourceVariableBindingKind::Let | SourceVariableBindingKind::Quantifier
+            SourceVariableBindingKind::Let
+                | SourceVariableBindingKind::Quantifier
+                | SourceVariableBindingKind::GivenWitness
         ) || entry.type_site != BindingTypeSite::Missing
         {
             return Err(invalid());
@@ -1959,6 +1997,23 @@ impl SourceProofLocalBindingHandoff {
                     origin,
                     left: self.witness_goal_alias_value(self.witness_goal_value(parts[0])?)?,
                     right: self.witness_goal_alias_value(self.witness_goal_value(parts[2])?)?,
+                })
+            }
+            K::BuiltinPredicateApplication
+                if parts.len() == 3 && source_inline_token(&parts, 1, "in") =>
+            {
+                let right = self.witness_goal_alias_value(self.witness_goal_value(parts[2])?)?;
+                if self
+                    .witness_goal_guard(right, &origin, "membership-right")?
+                    .head
+                    != TypeHeadInput::BuiltinSet
+                {
+                    return Err(invalid());
+                }
+                Ok(SourceProofGoal::Membership {
+                    origin,
+                    left: self.witness_goal_alias_value(self.witness_goal_value(parts[0])?)?,
+                    right,
                 })
             }
             K::BinaryFormula(op)
@@ -2339,6 +2394,7 @@ impl SourceProofLocalBindingHandoff {
                 binding.kind(),
                 SourceVariableBindingKind::Let
                     | SourceVariableBindingKind::Quantifier
+                    | SourceVariableBindingKind::GivenWitness
                     | SourceVariableBindingKind::NamedWitness
                     | SourceVariableBindingKind::Set
                     | SourceVariableBindingKind::Reconsider
@@ -2398,16 +2454,23 @@ impl SourceProofLocalBindingHandoff {
             }
             if row.kind() == &K::BuiltinPredicateApplication {
                 let parts = source_proof_frame(rows, row).ok_or_else(invalid)?;
-                if parts.len() != 3 || !source_inline_token(&parts, 1, "=") {
+                if parts.len() != 3 {
                     return Err(invalid());
                 }
+                let kind = if source_inline_token(&parts, 1, "=") {
+                    FormulaKind::Equality
+                } else if source_inline_token(&parts, 1, "in") {
+                    FormulaKind::Membership
+                } else {
+                    return Err(invalid());
+                };
                 let _ = self.witness_goal_formula(row)?;
                 formulas.push(
                     FormulaInput::new(
                         self.witness_goal_site(row)?,
                         *contexts.get(&row.site()).ok_or_else(invalid)?,
                         row.range(),
-                        FormulaKind::Equality,
+                        kind,
                     )
                     .with_terms(vec![
                         self.witness_goal_site(parts[0])?,
@@ -2587,7 +2650,7 @@ impl SourceProofLocalBindingHandoff {
                                 .iter()
                                 .find(|r| Some(r.site()) == hypothesis.parent())
                                 .ok_or_else(invalid)?;
-                            if parent.kind() != &K::LetStatement {
+                            if !matches!(parent.kind(), K::LetStatement | K::GivenStatement) {
                                 return Err(invalid());
                             }
                             parent
@@ -2623,11 +2686,22 @@ impl SourceProofLocalBindingHandoff {
                         goals.insert(site.clone(), self.witness_goal_formula(formula)?);
                     }
                     events.push((owner.clone(), context, site, None));
-                } else if statement.kind() == &K::LetStatement {
-                    for segment in
+                } else if matches!(statement.kind(), K::LetStatement | K::GivenStatement) {
+                    let given = statement.kind() == &K::GivenStatement;
+                    let roles = if given {
+                        source_given_roles(rows, statement)
+                    } else {
                         source_proof_introduction_roles(rows, statement, "let", false, false)
-                            .ok_or_else(invalid)?
+                    }
+                    .ok_or_else(invalid)?;
+                    if given
+                        && (roles.len() != 2
+                            || roles[0].kind() != &K::QualifiedVariableSegment
+                            || roles[1].kind() != &K::ConditionList)
                     {
+                        return Err(invalid());
+                    }
+                    for segment in roles {
                         if segment.kind() == &K::ConditionList {
                             let parts = source_proof_frame(rows, segment).ok_or_else(invalid)?;
                             if parts.len() != 2
@@ -2646,9 +2720,10 @@ impl SourceProofLocalBindingHandoff {
                         if segment.kind() != &K::QualifiedVariableSegment {
                             return Err(invalid());
                         }
+                        if given && source_children(rows, segment.site()).filter(|r| matches!(r.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)).count() != 1 { return Err(invalid()); }
                         for name in source_children(rows, segment.site()).filter(|r| matches!(r.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier)) {
                             let binding = self.witness_goal_binding(name.site())?;
-                            if self.binding_env.bindings().get(binding).is_none_or(|b| b.kind != BindingKind::LetBinding || b.owner_context != context) { return Err(invalid()); }
+                            if self.binding_env.bindings().get(binding).is_none_or(|b| b.kind != if given { BindingKind::GivenWitness } else { BindingKind::LetBinding } || b.owner_context != context) { return Err(invalid()); }
                             events.push((owner.clone(), context, self.witness_goal_site(name)?, Some(binding)));
                         }
                     }
@@ -2697,7 +2772,10 @@ impl SourceProofLocalBindingHandoff {
                             .get(binding)
                             .is_none_or(|b| b.owner_context != context)
                             || self.binding_env.bindings().get(expanded).is_none_or(|b| {
-                                b.kind != BindingKind::LetBinding || b.owner_context != context
+                                !matches!(
+                                    b.kind,
+                                    BindingKind::LetBinding | BindingKind::GivenWitness
+                                ) || b.owner_context != context
                             })
                         {
                             return Err(invalid());
@@ -2832,6 +2910,11 @@ impl SourceProofLocalBindingHandoff {
                 origin,
                 left,
                 right,
+            }
+            | SourceProofGoal::Membership {
+                origin,
+                left,
+                right,
             } => {
                 for binding in [left, right] {
                     if self.witness_goal_alias_value(*binding)? != *binding
@@ -2840,6 +2923,14 @@ impl SourceProofLocalBindingHandoff {
                         return Err(invalid());
                     }
                     self.witness_goal_guard(*binding, origin, "formation")?;
+                }
+                if matches!(goal, SourceProofGoal::Membership { .. })
+                    && self
+                        .witness_goal_guard(*right, origin, "membership-right")?
+                        .head
+                        != TypeHeadInput::BuiltinSet
+                {
+                    return Err(invalid());
                 }
             }
             SourceProofGoal::Conjunction { left, right, .. }
@@ -2927,7 +3018,35 @@ impl SourceProofLocalBindingHandoff {
                         .find(|r| r.site() == id)
                 })
                 .ok_or_else(invalid)?;
-            let (matched, after) = if let Some(actual) = actual {
+            let (matched, after) = if let Some(actual) = actual.filter(|id| {
+                matches!(row.kind(), SurfaceNodeKind::Token(_))
+                    && self
+                        .binding_env
+                        .bindings()
+                        .get(*id)
+                        .is_some_and(|b| b.kind == BindingKind::GivenWitness)
+            }) {
+                let SourceProofGoal::Implication {
+                    origin,
+                    antecedent,
+                    consequent,
+                } = &before
+                else {
+                    return Err(invalid());
+                };
+                let SourceProofGoal::Existential { binding, body, .. } = antecedent.as_ref() else {
+                    return Err(invalid());
+                };
+                body.binding_sets(&mut Vec::new(), &mut BTreeSet::new(), &mut avoided);
+                (
+                    Some((*binding, actual)),
+                    SourceProofGoal::Implication {
+                        origin: origin.clone(),
+                        antecedent: Box::new(body.substitute(*binding, actual)),
+                        consequent: consequent.clone(),
+                    },
+                )
+            } else if let Some(actual) = actual {
                 let (formal, body) = match (&before, row.kind()) {
                     (
                         SourceProofGoal::Universal { binding, body, .. },
@@ -3100,7 +3219,68 @@ impl SourceProofLocalBindingHandoff {
                 return Err(invalid());
             }
             let mut avoided = BTreeSet::new();
-            if let Some(actual) = actual {
+            if let Some(actual) = actual.filter(|id| {
+                matches!(row.kind(), SurfaceNodeKind::Token(_))
+                    && self
+                        .binding_env
+                        .bindings()
+                        .get(*id)
+                        .is_some_and(|b| b.kind == BindingKind::GivenWitness)
+            }) {
+                let SourceProofGoal::Implication {
+                    origin,
+                    antecedent,
+                    consequent,
+                } = before
+                else {
+                    return Err(invalid());
+                };
+                let SourceProofGoal::Existential {
+                    binding: formal,
+                    radix,
+                    body,
+                    ..
+                } = antecedent.as_ref()
+                else {
+                    return Err(invalid());
+                };
+                let SourceProofGoal::Implication {
+                    origin: after_origin,
+                    antecedent: hypothesis,
+                    consequent: after_consequent,
+                } = &step.after
+                else {
+                    return Err(invalid());
+                };
+                let formal_guard = self.witness_goal_guard(*formal, &site, "given-formal")?;
+                let actual_guard = self.witness_goal_guard(actual, &site, "given-actual")?;
+                let mut free_before = BTreeSet::new();
+                let mut retained_before = BTreeSet::new();
+                before.binding_sets(&mut Vec::new(), &mut free_before, &mut retained_before);
+                body.binding_sets(&mut Vec::new(), &mut BTreeSet::new(), &mut avoided);
+                if formal_guard.head != actual_guard.head
+                    || !matches!(
+                        (&formal_guard.head, radix),
+                        (
+                            TypeHeadInput::BuiltinSet,
+                            mizar_resolve::names::SourceVariableTypeRadix::Set
+                        ) | (
+                            TypeHeadInput::BuiltinObject,
+                            mizar_resolve::names::SourceVariableTypeRadix::Object
+                        )
+                    )
+                    || self.witness_goal_alias_value(actual)? != actual
+                    || free_before.contains(&actual)
+                    || retained_before.contains(&actual)
+                    || !frontier.insert(actual)
+                    || step.matched != Some((*formal, actual))
+                    || after_origin != origin
+                    || after_consequent != consequent
+                    || !hypothesis.replays_substitution(body, *formal, actual)
+                {
+                    return Err(invalid());
+                }
+            } else if let Some(actual) = actual {
                 let (formal, radix, body) = match (before, row.kind()) {
                     (
                         SourceProofGoal::Universal {
@@ -3240,7 +3420,8 @@ impl SourceProofLocalBindingHandoff {
                             }
                             SourceProofGoal::Universal { body, .. }
                             | SourceProofGoal::Existential { body, .. } => pending.push(body),
-                            SourceProofGoal::Equality { .. } => {}
+                            SourceProofGoal::Equality { .. }
+                            | SourceProofGoal::Membership { .. } => {}
                         }
                     }
                 }
@@ -4425,6 +4606,7 @@ fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> 
             | "thus"
             | "hence"
             | "implies"
+            | "in"
             | "st"
             | "and"
     ) {
@@ -17467,53 +17649,67 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        let fixture = |source, conditioned: bool, by: bool| {
+        let fixture = |source, conditioned: bool, by: bool, given: bool| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = vec![
-                "theorem",
-                "T",
-                ":",
-                "for",
-                "x",
-                "being",
-                "set",
-                "st",
-                "x",
-                "=",
-                "x",
-                "holds",
-                "x",
-                "=",
-                "x",
-                "proof",
-                "let",
-                "x",
-                "be",
-                "set",
-                if conditioned { "such" } else { ";" },
-                if conditioned { "that" } else { "assume" },
-                "A1",
-                ":",
-                "x",
-                "=",
-                "x",
-                ";",
-                "then",
-                "x",
-                "=",
-                "x",
-                ";",
-                "hence",
-                "x",
-                "=",
-                "x",
-            ];
+            let mut words = if given {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "set", "st", "ex", "y", "being",
+                    "object", "st", "y", "=", "y", "holds", "x", "=", "x", "proof", "let", "x",
+                    "be", "set", ";", "given", "w", "be", "object", "such", "that", "A1", ":", "w",
+                    "=", "w", ";", "then", "x", "=", "x", ";", "hence", "x", "=", "x",
+                ]
+            } else {
+                vec![
+                    "theorem",
+                    "T",
+                    ":",
+                    "for",
+                    "x",
+                    "being",
+                    "set",
+                    "st",
+                    "x",
+                    "=",
+                    "x",
+                    "holds",
+                    "x",
+                    "=",
+                    "x",
+                    "proof",
+                    "let",
+                    "x",
+                    "be",
+                    "set",
+                    if conditioned { "such" } else { ";" },
+                    if conditioned { "that" } else { "assume" },
+                    "A1",
+                    ":",
+                    "x",
+                    "=",
+                    "x",
+                    ";",
+                    "then",
+                    "x",
+                    "=",
+                    "x",
+                    ";",
+                    "hence",
+                    "x",
+                    "=",
+                    "x",
+                ]
+            };
             words.extend_from_slice(if by {
                 &["by", "A1", ";", "end", ";"]
             } else {
                 &[";", "end", ";"]
             });
+            let (h, c, l, a, k, t, condition_start) = if given {
+                (13, 17, 22, 34, 39, 44, 31)
+            } else {
+                (8, 12, 17, 24, 29, 34, 21)
+            };
             let mut builder = SurfaceAstBuilder::new(source);
             let mut spans = Vec::new();
             let mut tokens = Vec::new();
@@ -17521,7 +17717,7 @@ mod task269c_tests {
             for word in words {
                 let span = range(source, cursor, cursor + word.len());
                 cursor += word.len() + 1;
-                let kind = if matches!(word, "T" | "x" | "A1") {
+                let kind = if matches!(word, "T" | "x" | "y" | "w" | "A1") {
                     SurfaceTokenKind::Identifier
                 } else if matches!(word, ":" | "=" | ";") {
                     SurfaceTokenKind::ReservedSymbol
@@ -17538,11 +17734,18 @@ mod task269c_tests {
                     children,
                 )
             };
-            let mut segments = BTreeMap::new();
-            for (i, kind) in [
+            let mut declarations = vec![
                 (4, K::QuantifierVariableSegment),
-                (17, K::QualifiedVariableSegment),
-            ] {
+                (l, K::QualifiedVariableSegment),
+            ];
+            if given {
+                declarations.extend([
+                    (9, K::QuantifierVariableSegment),
+                    (27, K::QualifiedVariableSegment),
+                ]);
+            }
+            let mut segments = BTreeMap::new();
+            for (i, kind) in declarations {
                 let head = node(&mut builder, K::TypeHead, i + 2, i + 2, vec![tokens[i + 2]]);
                 let ty = node(&mut builder, K::TypeExpression, i + 2, i + 2, vec![head]);
                 segments.insert(
@@ -17557,7 +17760,7 @@ mod task269c_tests {
                 );
             }
             let mut formulas = BTreeMap::new();
-            for i in [8, 12, 24, 29, 34] {
+            for i in [h, c, a, k, t] {
                 let mut terms = Vec::new();
                 for j in [i, i + 2] {
                     let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
@@ -17575,96 +17778,149 @@ mod task269c_tests {
                     node(&mut builder, K::FormulaExpression, i, i + 2, vec![eq]),
                 );
             }
+            let hypothesis = if given {
+                node(
+                    &mut builder,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Existential),
+                    8,
+                    15,
+                    vec![tokens[8], segments[&9], tokens[12], formulas[&h]],
+                )
+            } else {
+                formulas[&h]
+            };
             let forall = node(
                 &mut builder,
                 K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
                 3,
-                14,
+                c + 2,
                 vec![
                     tokens[3],
                     segments[&4],
                     tokens[7],
-                    formulas[&8],
-                    tokens[11],
-                    formulas[&12],
+                    hypothesis,
+                    tokens[c - 1],
+                    formulas[&c],
                 ],
             );
-            let header = node(&mut builder, K::FormulaExpression, 3, 14, vec![forall]);
-            let assume_proposition = node(
+            let header = node(&mut builder, K::FormulaExpression, 3, c + 2, vec![forall]);
+            let proposition = node(
                 &mut builder,
                 K::Proposition,
-                22,
-                26,
-                vec![tokens[22], tokens[23], formulas[&24]],
+                a - 2,
+                a + 2,
+                vec![tokens[a - 2], tokens[a - 1], formulas[&a]],
             );
-            let assume = node(
+            let condition = node(
                 &mut builder,
-                if conditioned {
+                if conditioned || given {
                     K::ConditionList
                 } else {
                     K::AssumptionStatement
                 },
-                21,
-                if conditioned { 26 } else { 27 },
-                if conditioned {
-                    vec![tokens[21], assume_proposition]
+                condition_start,
+                if conditioned || given { a + 2 } else { a + 3 },
+                if conditioned || given {
+                    vec![tokens[condition_start], proposition]
                 } else {
-                    vec![tokens[21], assume_proposition, tokens[27]]
+                    vec![tokens[condition_start], proposition, tokens[a + 3]]
                 },
             );
             let let_row = node(
                 &mut builder,
                 K::LetStatement,
-                16,
-                if conditioned { 27 } else { 20 },
+                l - 1,
+                if conditioned { a + 3 } else { l + 3 },
                 if conditioned {
-                    vec![tokens[16], segments[&17], tokens[20], assume, tokens[27]]
+                    vec![
+                        tokens[l - 1],
+                        segments[&l],
+                        tokens[l + 3],
+                        condition,
+                        tokens[a + 3],
+                    ]
                 } else {
-                    vec![tokens[16], segments[&17], tokens[20]]
+                    vec![tokens[l - 1], segments[&l], tokens[l + 3]]
                 },
             );
+            let assumption = if given {
+                node(
+                    &mut builder,
+                    K::GivenStatement,
+                    26,
+                    a + 3,
+                    vec![
+                        tokens[26],
+                        segments[&27],
+                        tokens[30],
+                        condition,
+                        tokens[a + 3],
+                    ],
+                )
+            } else {
+                condition
+            };
             let linked_proposition =
-                node(&mut builder, K::Proposition, 29, 31, vec![formulas[&29]]);
+                node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]]);
             let compact = node(
                 &mut builder,
                 K::CompactStatement,
-                29,
-                32,
-                vec![linked_proposition, tokens[32]],
+                k,
+                k + 3,
+                vec![linked_proposition, tokens[k + 3]],
             );
             let then = node(
                 &mut builder,
                 K::ThenStatement,
-                28,
-                32,
-                vec![tokens[28], compact],
+                k - 1,
+                k + 3,
+                vec![tokens[k - 1], compact],
             );
             let terminal_proposition =
-                node(&mut builder, K::Proposition, 34, 36, vec![formulas[&34]]);
+                node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]]);
             let end = tokens.len() - 1;
-            let mut tail = vec![tokens[33], terminal_proposition];
+            let mut tail = vec![tokens[t - 1], terminal_proposition];
             if by {
-                let reference = node(&mut builder, K::Reference, 38, 38, vec![tokens[38]]);
-                let list = node(&mut builder, K::ReferenceList, 38, 38, vec![reference]);
+                let reference = node(
+                    &mut builder,
+                    K::Reference,
+                    t + 4,
+                    t + 4,
+                    vec![tokens[t + 4]],
+                );
+                let list = node(
+                    &mut builder,
+                    K::ReferenceList,
+                    t + 4,
+                    t + 4,
+                    vec![reference],
+                );
                 tail.push(node(
                     &mut builder,
                     K::JustificationClause,
-                    37,
-                    38,
-                    vec![tokens[37], list],
+                    t + 3,
+                    t + 4,
+                    vec![tokens[t + 3], list],
                 ));
             }
             tail.push(tokens[end - 2]);
-            let terminal = node(&mut builder, K::ConclusionStatement, 33, end - 2, tail);
+            let terminal = node(&mut builder, K::ConclusionStatement, t - 1, end - 2, tail);
             let proof = node(
                 &mut builder,
                 K::ProofBlock,
-                15,
+                l - 2,
                 end - 1,
                 if conditioned {
-                    vec![tokens[15], let_row, then, terminal, tokens[end - 1]]
+                    vec![tokens[l - 2], let_row, then, terminal, tokens[end - 1]]
                 } else {
-                    vec![tokens[15], let_row, assume, then, terminal, tokens[end - 1]]
+                    vec![
+                        tokens[l - 2],
+                        let_row,
+                        assumption,
+                        then,
+                        terminal,
+                        tokens[end - 1],
+                    ]
                 },
             );
             let theorem = node(
@@ -17734,7 +17990,7 @@ mod task269c_tests {
             .unwrap()
         };
         for (conditioned, by) in [(false, false), (false, true), (true, true)] {
-            let genuine = fixture(source_id(), conditioned, by);
+            let genuine = fixture(source_id(), conditioned, by, false);
             let (steps, guards, initial, checked, inference) =
                 genuine.check_witness_goals().unwrap();
             let (formal, actual) = steps[1].matched.unwrap();
@@ -17857,7 +18113,7 @@ mod task269c_tests {
                     .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
                     .is_err()
             );
-            let foreign = fixture(other_source_id(), conditioned, by);
+            let foreign = fixture(other_source_id(), conditioned, by, false);
             let products = foreign.check_witness_goals().unwrap();
             assert!(
                 genuine
@@ -17876,5 +18132,152 @@ mod task269c_tests {
                     .is_err()
             );
         }
+        let given = fixture(source_id(), false, true, true);
+        let (steps, guards, initial, checked, inference) = given.check_witness_goals().unwrap();
+        assert_eq!(steps.len(), 6);
+        let (formal, witness) = steps[2].matched.unwrap();
+        let outer = steps[1].matched.unwrap().1;
+        let SourceProofGoal::Implication {
+            antecedent,
+            consequent,
+            ..
+        } = &steps[2].before
+        else {
+            panic!("Given before")
+        };
+        let SourceProofGoal::Existential { body, .. } = antecedent.as_ref() else {
+            panic!("existential hypothesis")
+        };
+        let SourceProofGoal::Implication {
+            antecedent: opened,
+            consequent: retained,
+            ..
+        } = &steps[2].after
+        else {
+            panic!("Given after")
+        };
+        assert!(opened.replays_substitution(body, formal, witness));
+        assert_eq!(retained, consequent);
+        assert_eq!(steps[3].after, **consequent);
+        assert_eq!(
+            steps[2].free,
+            BTreeSet::from([outer, witness])
+                .into_iter()
+                .collect::<Vec<_>>()
+        );
+        assert!(steps[2].avoided.is_empty() && guards.is_empty() && initial.is_empty());
+        for mutation in 0..13 {
+            let mut bad = steps.clone();
+            match mutation {
+                0 => {
+                    let SourceProofGoal::Implication { consequent, .. } = &mut bad[2].after else {
+                        unreachable!()
+                    };
+                    **consequent = consequent.substitute(outer, witness);
+                }
+                1 => {
+                    let SourceProofGoal::Implication { antecedent, .. } = &mut bad[2].after else {
+                        unreachable!()
+                    };
+                    **antecedent = body.as_ref().clone();
+                }
+                2 => {
+                    let SourceProofGoal::Implication { origin, .. } = &mut bad[2].after else {
+                        unreachable!()
+                    };
+                    *origin = steps[3].site.clone();
+                }
+                3 => bad[2].matched = Some((outer, witness)),
+                4 => bad[2].matched = Some((formal, outer)),
+                5 => bad[2].avoided = vec![witness],
+                6 => bad[2].owner = steps[4].site.clone(),
+                7 => {
+                    bad[2].context = given
+                        .binding_env
+                        .bindings()
+                        .get(formal)
+                        .unwrap()
+                        .owner_context
+                }
+                8 => bad[2].site = steps[3].site.clone(),
+                9 => bad.swap(2, 3),
+                10 => {
+                    bad.remove(2);
+                }
+                11 => bad[2].matched = Some((formal, formal)),
+                _ => bad[3].after = steps[2].after.clone(),
+            }
+            for step in &mut bad {
+                let mut free = BTreeSet::new();
+                step.after
+                    .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                step.free = free.into_iter().collect();
+            }
+            assert!(
+                given
+                    .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err(),
+                "Given mutation{mutation}"
+            );
+        }
+        let (_, _, mut terms, formulas, _) = given.witness_goal_inputs().unwrap();
+        let declaration = terms
+            .iter_mut()
+            .find(|t| t.reference == Some(crate::type_checker::TermReference::Binding(witness)))
+            .unwrap();
+        declaration.result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinSet;
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&given.symbols, &given.binding_env, terms, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            given
+                .replay_witness_goals(&steps, &guards, &initial, &checked, &coherent)
+                .is_err()
+        );
+        let foreign = fixture(other_source_id(), false, true, true)
+            .check_witness_goals()
+            .unwrap();
+        assert!(
+            given
+                .replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)
+                .is_err()
+        );
+        let member = SourceProofGoal::Membership {
+            origin: steps[3].site.clone(),
+            left: witness,
+            right: outer,
+        };
+        assert!(
+            given
+                .witness_goal_formation(&member, &BTreeSet::from([outer, witness]), &mut Vec::new())
+                .is_ok()
+        );
+        let replaced = member.substitute(witness, formal);
+        assert!(replaced.replays_substitution(&member, witness, formal));
+        assert!(member.alpha_matches(&replaced, &mut vec![(witness, formal)]));
+        assert!(!member.alpha_matches(&replaced, &mut Vec::new()));
+        let mut free = BTreeSet::new();
+        member.binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+        assert_eq!(free, BTreeSet::from([witness, outer]));
+        let equality = SourceProofGoal::Equality {
+            origin: steps[3].site.clone(),
+            left: witness,
+            right: outer,
+        };
+        assert!(!member.alpha_matches(&equality, &mut Vec::new()));
+        assert!(!member.replays_substitution(&equality, witness, witness));
+        assert!(!equality.replays_substitution(&member, witness, witness));
+        let mut wrong_origin = replaced.clone();
+        if let SourceProofGoal::Membership { origin, .. } = &mut wrong_origin {
+            *origin = steps[4].site.clone();
+        }
+        assert!(!wrong_origin.replays_substitution(&member, witness, formal));
+        let object_right = member.substitute(outer, witness);
+        assert!(
+            given
+                .witness_goal_formation(&object_right, &BTreeSet::from([witness]), &mut Vec::new())
+                .is_err()
+        );
     }
 }

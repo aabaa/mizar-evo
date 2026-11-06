@@ -28,7 +28,7 @@ Set-Take の意味論検査を維持し、native 経路も要求する。旧 omi
 まま、全ソース control は実変換の拒否/Missing/diagnostic と同じ theorem の Blocked 祖先を
 要求する。別の AS 観測 `checker.native_witness_goals` は同じ native 設置後に、
 実ソース順の Let/Take 型検査・guard request・具体化した goal replay を消費する。
-既存 FS multi-witness・局所 Set/Take・Then/Hence・条件付き Let の意味論 checker を維持し、
+既存 FS multi-witness・局所 Set/Take・Then/Hence・条件付き Let・Given の意味論 checker を維持し、
 派生 goal とソースに基づく terminal 局所 citation intent の消費も要求する。
 Pass は未証明の残余 goal の観測であり、未解決型 guard は実 Witness・owner body と
 terminal まで対応を保持する。証明受理・discharge は与えない。広い proof effect は

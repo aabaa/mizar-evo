@@ -84,8 +84,8 @@ Pending は module wrapper・独立した registration proof を含む未処理�
 Then/body/branch の対応は不変の元 graph が保持し、追加 graph/slot を設けない。
 Task180 の checked table は source intent・派生 witness goal とは別に保つ。
 
-引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・連言・含意を、
-Let/Take/Assume と terminal Thus/Hence に沿って導出する。`SourceProofGoal` は実 binding identity
+引数なしの `check_witness_goals()` は plain Set/Object の量化・変数等式・membership・連言・含意を、
+proof 導入と terminal Thus/Hence に沿って導出する。`SourceProofGoal` は実 binding identity
 と論理 body を保持し、元 Typed site は出典のみとする。不変の `SourceProofGoalStep` は
 owner/context/event・対応 identity・置換前後の goal・free/retained-binder 集合を公開する。
 既存 handoff/slot のまま、実 coercion/直接 initial-obligation 入力と検査・項式推論出力を返す。
@@ -104,10 +104,17 @@ Task180 checked table・証明受理とは別に保つ。広い goal・入れ子
 集合的仮定は未対応とする。
 
 単一の Let 条件は、Let 名の導入後に元の ConditionList を仮定 step として記録する。
-terminal Thus/Hence は先行する局所 Assume/条件 label を一つ引用でき、実解決済み
+terminal Thus/Hence は先行する局所 Assume/Let/Given 条件 label を一つ引用でき、実解決済み
 ProofStep と index の宣言・ソース出典を照合する。元 justification は intent として
 保持し、残余 goal はすべて未証明のままとする。Let の型制約 By、Compact By、
 非局所・複数 citation は後続に残す。
+
+Given は現在の存在前件を、厳密に型が一致する fresh な proof witness で開く。
+元の名前はその仮定だけを具体化し、ConditionList が変更のない後件を残す。
+両者は一つのソース文の内部イベントであり、witness は frontier に保持する。
+元の context が外部への escape を防ぐ。Membership は二つの変数値を持つ未証明の atom で、
+この経路では元・派生 goal とも右辺に実 plain KnownSet を要求する。条件付き Object 右辺は
+後続に残す。左の witness の Pending narrowing は body と保持し、KnownSet や membership fact を作らない。
 
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
@@ -116,8 +123,8 @@ owner を解除しない。Rejected/Pending target は利用可能な alias 型�
 census 後に認証済み theorem owner で goal 推論を分割し、明示的な definition/registration
 metadata owner のみを除外する。それらの goal は生成しない。
 
-同一 proof 内の Set/named-Take の変数 alias は、認証済み RHS identity を通して先行 Let の
-値へ解決できる。native Set capture は直接依存、named capture は空のまま保持する。元の項参照は
+同一 proof 内の Set/named-Take の変数 alias は、認証済み RHS identity を通して先行 Let または
+Given の値へ解決できる。native Set capture は直接依存、named capture は空のまま保持する。元の項参照は
 alias ID と実出現 context を維持し、派生型 role は実際の値の guard 出典を使う。Take の対応は
 元 RHS binding を保持し、論理値を展開して置換する。terminal の照合も同じ値を使う。
 ソース順 replay は RHS 評価後に alias を導入し、Set Equating を不変 goal の step として記録する。

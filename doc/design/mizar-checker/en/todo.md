@@ -734,6 +734,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B3:** [typed local alias goals](../../task_contracts/en/CHECKER272B3-LOCAL-ALIAS-GOALS.md); variable Set/named-Take RHS, type and substitution replay.
   - [x] **Task 272B4:** [typed assumption goal replay](../../task_contracts/en/CHECKER272B4-IMPLICATION-GOALS.md); implication residuals and authenticated linked claims.
   - [x] **Task 272B5:** [conditioned Let goal replay](../../task_contracts/en/CHECKER272B5-CONDITIONED-LET-GOALS.md); single Let hypothesis and terminal local citation intent.
+  - [x] **Task 272B6:** [typed Given goal replay](../../task_contracts/en/CHECKER272B6-GIVEN-GOALS.md); fresh existential antecedent witness, conditions and membership.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
