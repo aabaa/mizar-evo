@@ -66,6 +66,10 @@ Its actual singleton-root SetEnumeration results have no Binding reference and a
 Variable/Binding observations and owner/prior-guard joins stay unchanged. One prior whole-chain label associates
 the complete goal with source endpoints; neither adjacent equations nor transitivity are proved.
 
+The existing IsType1 C8 case additionally consumes native type-assertion goals after its legacy checker.
+Only equal actual/asserted builtin Set/Object heads are formed from authentic written targets;
+this supplies no proposition proof, type refinement or guard discharge. Broader admissibility stays deferred.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

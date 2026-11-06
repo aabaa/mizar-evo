@@ -615,6 +615,7 @@ fn formula_statement_detail_keys(
                     | "pass_formula_statement_per_cases_suppose_001"
                     | "pass_formula_statement_iff_parenthesized_001"
                     | "pass_formula_statement_iterative_equality_001"
+                    | "pass_formula_statement_is_type_assertion_001"
             )
         {
             semantics.extend(

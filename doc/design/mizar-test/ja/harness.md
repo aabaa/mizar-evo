@@ -54,6 +54,10 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 実 singleton root は Binding 参照を持たず元 site で観測し、Variable/Binding 観測と owner/先行 guard の対応は維持する。
 先行する連鎖全体の label と元 endpoint を goal 全体に対応付けるだけで、隣接等式・推移律を証明しない。
 
+既存 IsType1 C8 case は legacy checker 後に native type-assertion goal も消費する。
+元の target に基づく同じ actual/asserted builtin Set/Object head のみを形成し、命題の証明・型 refinement・
+guard 解消を与えない。広い admissibility は後続に残す。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。

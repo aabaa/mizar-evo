@@ -742,6 +742,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B11:** [case branch goals](../../task_contracts/en/CHECKER272B11-CASE-GOALS.md); unproved Or/Not and same-owner branch/citation replay.
   - [x] **Task 272B12:** [equivalence goals](../../task_contracts/en/CHECKER272B12-IFF-GOALS.md); primitive whole-Iff projection and recursive replay; direction proofs remain open.
   - [x] **Task 272B13:** [singleton/chain goals](../../task_contracts/en/CHECKER272B13-SINGLETON-CHAIN-GOALS.md); derived atom values and unproved whole-chain checkpoints; adjacent equality proofs stay open.
+  - [x] **Task 272B14:** [builtin assertion goals](../../task_contracts/en/CHECKER272B14-TYPE-ASSERTION-GOALS.md); matched-head type-assertion projection; broader admissibility/proof stays open.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);

@@ -173,6 +173,11 @@ pub enum SourceProofGoal {
         left: SourceProofTerm,
         right: SourceProofTerm,
     },
+    TypeAssertion {
+        origin: crate::typed_ast::TypedSiteRef,
+        subject: SourceProofTerm,
+        radix: mizar_resolve::names::SourceVariableTypeRadix,
+    },
     Conjunction {
         origin: crate::typed_ast::TypedSiteRef,
         left: Box<Self>,
@@ -282,6 +287,12 @@ impl SourceProofGoal {
                     }
                 }
             }
+            Self::TypeAssertion { subject, .. } => {
+                let id = subject.binding();
+                if !bound.contains(&id) {
+                    free.insert(id);
+                }
+            }
             Self::Conjunction { left, right, .. }
             | Self::Disjunction { left, right, .. }
             | Self::Equivalence { left, right, .. }
@@ -322,6 +333,15 @@ impl SourceProofGoal {
                 origin: origin.clone(),
                 left: left.substitute(formal, actual),
                 right: right.substitute(formal, actual),
+            },
+            Self::TypeAssertion {
+                origin,
+                subject,
+                radix,
+            } => Self::TypeAssertion {
+                origin: origin.clone(),
+                subject: subject.substitute(formal, actual),
+                radix: *radix,
             },
             Self::Conjunction {
                 origin,
@@ -427,6 +447,18 @@ impl SourceProofGoal {
                     && left.replays_substitution(l, formal, actual)
                     && right.replays_substitution(r, formal, actual)
             }
+            (
+                Self::TypeAssertion {
+                    origin: a,
+                    subject: p,
+                    radix: t,
+                },
+                Self::TypeAssertion {
+                    origin: b,
+                    subject: q,
+                    radix: u,
+                },
+            ) => a == b && t == u && q.replays_substitution(p, formal, actual),
             (
                 Self::Conjunction {
                     origin: a,
@@ -541,6 +573,18 @@ impl SourceProofGoal {
                     left: c, right: d, ..
                 },
             ) => a.alpha_matches(c, binders) && b.alpha_matches(d, binders),
+            (
+                Self::TypeAssertion {
+                    subject: p,
+                    radix: t,
+                    ..
+                },
+                Self::TypeAssertion {
+                    subject: q,
+                    radix: u,
+                    ..
+                },
+            ) => t == u && p.alpha_matches(q, binders),
             (
                 Self::Conjunction {
                     left: a, right: b, ..
@@ -2226,6 +2270,39 @@ impl SourceProofLocalBindingHandoff {
                     right,
                 })
             }
+            K::IsAssertion if parts.len() == 3 && source_inline_token(&parts, 1, "is") => {
+                let target = parts[2];
+                let target_parts = source_proof_frame(rows, target).ok_or_else(invalid)?;
+                let [head] = target_parts.as_slice() else {
+                    return Err(invalid());
+                };
+                if target.kind() != &K::TypeExpression || head.kind() != &K::TypeHead {
+                    return Err(invalid());
+                }
+                let words = source_proof_frame(rows, head).ok_or_else(invalid)?;
+                let [token] = words.as_slice() else {
+                    return Err(invalid());
+                };
+                let radix = match token.kind() {
+                    K::Token(t)
+                        if t.kind == SurfaceTokenKind::ReservedWord && t.text.as_ref() == "set" =>
+                    {
+                        R::Set
+                    }
+                    K::Token(t)
+                        if t.kind == SurfaceTokenKind::ReservedWord
+                            && t.text.as_ref() == "object" =>
+                    {
+                        R::Object
+                    }
+                    _ => return Err(invalid()),
+                };
+                Ok(SourceProofGoal::TypeAssertion {
+                    origin,
+                    subject: self.witness_goal_term(parts[0])?,
+                    radix,
+                })
+            }
             K::BinaryFormula(op)
                 if op.connective == SurfaceFormulaConnective::And
                     && !op.repeated
@@ -2817,31 +2894,47 @@ impl SourceProofLocalBindingHandoff {
                 };
                 terms.push(input);
             }
-            if row.kind() == &K::BuiltinPredicateApplication {
+            if matches!(row.kind(), K::BuiltinPredicateApplication | K::IsAssertion) {
                 let parts = source_proof_frame(rows, row).ok_or_else(invalid)?;
                 if parts.len() != 3 {
                     return Err(invalid());
                 }
-                let kind = if source_inline_token(&parts, 1, "=") {
+                let goal = self.witness_goal_formula(row)?;
+                let kind = if row.kind() == &K::IsAssertion {
+                    FormulaKind::TypeAssertion
+                } else if source_inline_token(&parts, 1, "=") {
                     FormulaKind::Equality
                 } else if source_inline_token(&parts, 1, "in") {
                     FormulaKind::Membership
                 } else {
                     return Err(invalid());
                 };
-                let _ = self.witness_goal_formula(row)?;
-                formulas.push(
-                    FormulaInput::new(
-                        self.witness_goal_site(row)?,
-                        *contexts.get(&row.site()).ok_or_else(invalid)?,
-                        row.range(),
-                        kind,
-                    )
-                    .with_terms(vec![
-                        self.witness_goal_site(parts[0])?,
-                        self.witness_goal_site(parts[2])?,
-                    ]),
-                );
+                let mut input = FormulaInput::new(
+                    self.witness_goal_site(row)?,
+                    *contexts.get(&row.site()).ok_or_else(invalid)?,
+                    row.range(),
+                    kind,
+                )
+                .with_terms(vec![self.witness_goal_site(parts[0])?]);
+                if let SourceProofGoal::TypeAssertion { radix, .. } = goal {
+                    let target = parts[2];
+                    if contexts.get(&target.site()) != contexts.get(&row.site()) {
+                        return Err(invalid());
+                    }
+                    input = input.with_asserted_type(TypeExpressionInput::new(
+                        self.witness_goal_site(target)?,
+                        target.range(),
+                        target.spelling(),
+                        if radix == mizar_resolve::names::SourceVariableTypeRadix::Set {
+                            TypeHeadInput::BuiltinSet
+                        } else {
+                            TypeHeadInput::BuiltinObject
+                        },
+                    ));
+                } else {
+                    input.terms.push(self.witness_goal_site(parts[2])?);
+                }
+                formulas.push(input);
             }
         }
         let mut events = Vec::new();
@@ -3679,6 +3772,16 @@ impl SourceProofLocalBindingHandoff {
                     return Err(invalid());
                 }
             }
+            SourceProofGoal::TypeAssertion {
+                origin,
+                subject,
+                radix,
+            } => {
+                let set = self.witness_goal_term_formation(subject, origin, frontier, bound)?;
+                if set != (*radix == R::Set) {
+                    return Err(invalid());
+                }
+            }
             SourceProofGoal::Conjunction { left, right, .. }
             | SourceProofGoal::Disjunction { left, right, .. }
             | SourceProofGoal::Equivalence { left, right, .. }
@@ -4501,7 +4604,8 @@ impl SourceProofLocalBindingHandoff {
                             | SourceProofGoal::Existential { body, .. }
                             | SourceProofGoal::Negation { body, .. } => pending.push(body),
                             SourceProofGoal::Equality { .. }
-                            | SourceProofGoal::Membership { .. } => {}
+                            | SourceProofGoal::Membership { .. }
+                            | SourceProofGoal::TypeAssertion { .. } => {}
                         }
                     }
                 }
@@ -5688,6 +5792,7 @@ fn source_inline_token(children: &[&SourceNode], ordinal: usize, text: &str) -> 
             | "hence"
             | "implies"
             | "iff"
+            | "is"
             | "in"
             | "st"
             | "and"
@@ -19236,10 +19341,15 @@ mod task269c_tests {
             names::{SourceVariableScopeInput, SourceVariableScopeResolver},
             symbols::SignatureProjectionExtractor,
         };
-        let fixture = |source, conditioned, by, given, hereby, now, packet, iff, chain| {
+        let fixture = |source, conditioned, by, given, hereby, now, packet, iff, chain, is_type| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if chain {
+            let mut words = if is_type {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "set", "holds", "x", "is", "set",
+                    "proof", "let", "x", "be", "set", ";", "thus", "x", "is", "set",
+                ]
+            } else if chain {
                 vec![
                     "theorem", "T", ":", "for", "x", "being", "set", "holds", "{", "x", "}", "=",
                     "{", "x", "}", "proof", "let", "x", "be", "set", ";", "A1", ":", "{", "x", "}",
@@ -19315,7 +19425,9 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if chain {
+            let (h, c, l, a, mut k, mut t, condition_start) = if is_type {
+                (8, 8, 13, 18, 18, 18, 17)
+            } else if chain {
                 (8, 12, 17, 36, 23, 36, 21)
             } else if iff {
                 (8, 12, 17, 22, 26, 22, 21)
@@ -19428,7 +19540,9 @@ mod task269c_tests {
                 }
             }
             let mut formulas = BTreeMap::new();
-            for i in if chain {
+            for i in if is_type {
+                vec![h, t]
+            } else if chain {
                 vec![h]
             } else if iff {
                 vec![h, c, a, k]
@@ -19439,17 +19553,35 @@ mod task269c_tests {
                 if chain {
                     terms.extend([singleton_terms[&h], singleton_terms[&c]]);
                 }
-                for j in if chain { Vec::new() } else { vec![i, i + 2] } {
+                for j in if chain {
+                    Vec::new()
+                } else if is_type {
+                    vec![i]
+                } else {
+                    vec![i, i + 2]
+                } {
                     let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
                     terms.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
                 }
-                let eq = node(
-                    &mut builder,
-                    K::BuiltinPredicateApplication,
-                    i,
-                    if chain { i + 6 } else { i + 2 },
-                    vec![terms[0], tokens[i + if chain { 3 } else { 1 }], terms[1]],
-                );
+                let eq = if is_type {
+                    let head = node(&mut builder, K::TypeHead, i + 2, i + 2, vec![tokens[i + 2]]);
+                    let target = node(&mut builder, K::TypeExpression, i + 2, i + 2, vec![head]);
+                    node(
+                        &mut builder,
+                        K::IsAssertion,
+                        i,
+                        i + 2,
+                        vec![terms[0], tokens[i + 1], target],
+                    )
+                } else {
+                    node(
+                        &mut builder,
+                        K::BuiltinPredicateApplication,
+                        i,
+                        if chain { i + 6 } else { i + 2 },
+                        vec![terms[0], tokens[i + if chain { 3 } else { 1 }], terms[1]],
+                    )
+                };
                 formulas.insert(
                     i,
                     node(
@@ -19472,7 +19604,7 @@ mod task269c_tests {
             } else {
                 formulas[&h]
             };
-            let forall = if chain {
+            let forall = if chain || is_type {
                 node(
                     &mut builder,
                     K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
@@ -19536,7 +19668,9 @@ mod task269c_tests {
                 if packet { 14 } else { c + 2 },
                 vec![forall],
             );
-            let proposition = if chain {
+            let proposition = if is_type {
+                node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
+            } else if chain {
                 let thesis = node(
                     &mut builder,
                     K::FormulaConstant(SurfaceFormulaConstant::Thesis),
@@ -19568,7 +19702,7 @@ mod task269c_tests {
                     vec![tokens[a - 2], tokens[a - 1], formulas[&a]],
                 )
             };
-            let condition = if iff || chain {
+            let condition = if iff || chain || is_type {
                 proposition
             } else {
                 node(
@@ -19649,7 +19783,7 @@ mod task269c_tests {
             } else {
                 condition
             };
-            let linked_proposition = if iff || chain {
+            let linked_proposition = if iff || chain || is_type {
                 proposition
             } else {
                 node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]])
@@ -19677,7 +19811,7 @@ mod task269c_tests {
                         tokens[34],
                     ],
                 )
-            } else if iff {
+            } else if iff || is_type {
                 proposition
             } else if packet {
                 let existential = node(
@@ -19770,7 +19904,7 @@ mod task269c_tests {
                     vec![tokens[k - 1], compact],
                 )
             };
-            let terminal_proposition = if iff || chain {
+            let terminal_proposition = if iff || chain || is_type {
                 proposition
             } else {
                 node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
@@ -19821,7 +19955,7 @@ mod task269c_tests {
             } else {
                 terminal
             };
-            let proof_children = if iff {
+            let proof_children = if iff || is_type {
                 vec![tokens[l - 2], let_row, terminal, tokens[end - 1]]
             } else if packet {
                 let reference = node(&mut builder, K::TermReference, 57, 57, vec![tokens[57]]);
@@ -19936,6 +20070,7 @@ mod task269c_tests {
                 false,
                 hereby,
                 now,
+                false,
                 false,
                 false,
                 false,
@@ -20165,6 +20300,7 @@ mod task269c_tests {
                 false,
                 false,
                 false,
+                false,
             );
             let products = foreign.check_witness_goals().unwrap();
             assert!(
@@ -20184,6 +20320,203 @@ mod task269c_tests {
                     .is_err()
             );
         }
+        let assertion = fixture(
+            source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+        );
+        let (trace, guards, initial, checked, inference) = assertion.check_witness_goals().unwrap();
+        assert_eq!(trace.len(), 3);
+        assert_eq!(inference.terms().len(), 4);
+        assert_eq!(inference.formulas().len(), 2);
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        let (formal, actual) = trace[1].matched.unwrap();
+        assert!(trace[0].free.is_empty());
+        for step in &trace[1..] {
+            assert_eq!(step.free, vec![actual]);
+            assert!(step.avoided.is_empty());
+            assert_eq!(step.owner, trace[0].owner);
+            assert_eq!(step.context, trace[0].context);
+        }
+        assert!(trace[2].matched.is_none());
+        assert_eq!(trace[2].before, trace[1].after);
+        assert_eq!(trace[2].after, trace[1].after);
+        let SourceProofGoal::Universal { body, .. } = &trace[0].before else {
+            panic!("assertion universal")
+        };
+        assert!(trace[1].after.replays_substitution(body, formal, actual));
+        let renamed = trace[1].after.substitute(actual, formal);
+        assert!(renamed.replays_substitution(&trace[1].after, actual, formal));
+        assert!(!renamed.alpha_matches(&trace[1].after, &mut Vec::new()));
+        assert!(renamed.alpha_matches(&trace[1].after, &mut vec![(formal, actual)]));
+        let (_, _, terms, formulas, _) = assertion.witness_goal_inputs().unwrap();
+        assert_ne!(
+            formulas[0].asserted_type.as_ref().unwrap().site,
+            formulas[1].asserted_type.as_ref().unwrap().site
+        );
+        for input in &formulas {
+            assert_eq!(input.kind, crate::type_checker::FormulaKind::TypeAssertion);
+            let row = assertion.witness_goal_source(&input.site).unwrap();
+            assert_eq!(row.kind(), &K::IsAssertion);
+            let parts =
+                source_proof_frame(assertion.original.source_nodes().unwrap(), row).unwrap();
+            assert_eq!(
+                input.terms,
+                vec![assertion.witness_goal_site(parts[0]).unwrap()]
+            );
+            assert_eq!(
+                terms
+                    .iter()
+                    .find(|t| t.site == input.terms[0])
+                    .unwrap()
+                    .context,
+                input.context
+            );
+            let target = input.asserted_type.as_ref().unwrap();
+            assert_eq!(parts[2].kind(), &K::TypeExpression);
+            assert_eq!(target.site, assertion.witness_goal_site(parts[2]).unwrap());
+            assert_eq!(target.source_range, parts[2].range());
+            assert_eq!(target.spelling, parts[2].spelling());
+            assert_eq!(target.head, TypeHeadInput::BuiltinSet);
+            let head = source_unique_child(
+                assertion.original.source_nodes().unwrap(),
+                parts[2],
+                K::TypeHead,
+            )
+            .unwrap();
+            let words =
+                source_proof_frame(assertion.original.source_nodes().unwrap(), head).unwrap();
+            assert_eq!(words.len(), 1);
+            assert!(source_inline_token(&words, 0, "set"));
+        }
+        for mutation in 0..15 {
+            let mut bad = trace.clone();
+            match mutation {
+                0..=3 => {
+                    let SourceProofGoal::TypeAssertion {
+                        origin,
+                        subject,
+                        radix,
+                    } = &mut bad[1].after
+                    else {
+                        unreachable!()
+                    };
+                    match mutation {
+                        0 => *subject = SourceProofTerm::Binding(formal),
+                        1 => *radix = mizar_resolve::names::SourceVariableTypeRadix::Object,
+                        2 => *origin = trace[2].site.clone(),
+                        _ => {
+                            *subject = SourceProofTerm::Singleton {
+                                origin: trace[2].site.clone(),
+                                element: actual,
+                            }
+                        }
+                    }
+                    assert!(!bad[1].after.replays_substitution(body, formal, actual));
+                    if mutation == 1 {
+                        assert!(!bad[1].after.alpha_matches(&trace[1].after, &mut Vec::new()));
+                    }
+                    let mut free = BTreeSet::new();
+                    bad[1]
+                        .after
+                        .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                    bad[1].free = free.into_iter().collect();
+                }
+                4 => bad[2].owner = trace[2].site.clone(),
+                5 => {
+                    bad[2].context = assertion
+                        .binding_env
+                        .bindings()
+                        .get(formal)
+                        .unwrap()
+                        .owner_context
+                }
+                6 => bad[2].matched = Some((formal, actual)),
+                7 => bad[2].avoided = vec![actual],
+                8 => bad[2].free.clear(),
+                9 => bad[2].before = trace[0].before.clone(),
+                10 => bad[2].site = trace[1].site.clone(),
+                11 => bad.swap(1, 2),
+                12 => {
+                    bad.remove(1);
+                }
+                13 => bad.insert(2, bad[1].clone()),
+                _ => {
+                    bad[1].after = SourceProofGoal::Equality {
+                        origin: trace[1].site.clone(),
+                        left: SourceProofTerm::Binding(actual),
+                        right: SourceProofTerm::Binding(actual),
+                    }
+                }
+            }
+            assert!(
+                assertion
+                    .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err(),
+                "assertion mutation{mutation}"
+            );
+        }
+        let mut terms = terms;
+        let mut formulas = formulas;
+        for term in &mut terms {
+            term.result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+        }
+        for input in &mut formulas {
+            input.asserted_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+        }
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&assertion.symbols, &assertion.binding_env, terms, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .terms()
+                .iter()
+                .all(|(_, t)| t.status == TermStatus::Inferred)
+        );
+        assert!(
+            coherent
+                .formulas()
+                .iter()
+                .all(|(_, f)| f.status == crate::type_checker::FormulaStatus::Checked)
+        );
+        assert_ne!(coherent, inference);
+        assert!(
+            assertion
+                .replay_witness_goals(&trace, &guards, &initial, &checked, &coherent)
+                .is_err()
+        );
+        let foreign = fixture(
+            other_source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+        )
+        .check_witness_goals()
+        .unwrap();
+        assert!(
+            assertion
+                .replay_witness_goals(&foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4)
+                .is_err()
+        );
+        assert!(
+            assertion
+                .replay_witness_goals(&trace, &guards, &initial, &checked, &foreign.4)
+                .is_err()
+        );
         let chain = fixture(
             source_id(),
             false,
@@ -20194,6 +20527,7 @@ mod task269c_tests {
             false,
             false,
             true,
+            false,
         );
         let (trace, guards, initial, checked, inference) = chain.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 5);
@@ -20373,6 +20707,7 @@ mod task269c_tests {
             false,
             false,
             true,
+            false,
         )
         .check_witness_goals()
         .unwrap();
@@ -20395,6 +20730,7 @@ mod task269c_tests {
             false,
             false,
             true,
+            false,
             false,
         );
         let (trace, guards, initial, checked, inference) = iff.check_witness_goals().unwrap();
@@ -20515,6 +20851,7 @@ mod task269c_tests {
             false,
             true,
             false,
+            false,
         )
         .check_witness_goals()
         .unwrap();
@@ -20531,6 +20868,7 @@ mod task269c_tests {
             false,
             true,
             true,
+            false,
             false,
             false,
             false,
@@ -20649,6 +20987,7 @@ mod task269c_tests {
             false,
             false,
             false,
+            false,
         )
         .check_witness_goals()
         .unwrap();
@@ -20701,6 +21040,7 @@ mod task269c_tests {
             false,
             false,
             true,
+            false,
             false,
             false,
         );
@@ -20812,6 +21152,7 @@ mod task269c_tests {
             false,
             false,
             true,
+            false,
             false,
             false,
         )
