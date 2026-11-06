@@ -148,6 +148,13 @@ Terminal By may cite its actual label through the real index, complete prior
 source block, Block-to-Proof parent and checkpoint/child association. The candidate
 is never an accepted fact. Inner By/declarations and general collected goals defer.
 
+Two consecutive final direct Proof Thus statements may trace an atomic binary
+conjunction in source order. The explicit first claim matches its left leaf;
+the residual is the exact original right subtree, which the final claim observes.
+Both remain unproved. Both tails are unlabelled and unjustified; partial block
+conclusions, first thesis and nested conjunction splitting remain unsupported.
+Prior frontier/type guards survive a binding's disappearance from the residual.
+
 Named Reconsider items with a prior Let RHS can retain an unchanged goal
 checkpoint when the alias is unused. Ordinary conversion requests/results and A's
 source states stay separate from witness guards. Checkpoints join the actual item,

@@ -8204,3 +8204,289 @@ fn task272b8_now_native_gate_controls_actual_fs_result() {
     assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
     assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
 }
+
+#[test]
+fn task272b9_conjunction_goals_execute_new_source() {
+    use mizar_checker::{source_proof_local_declaration::{SourceProofGoal as G,SourceProofIntentStatus as S},
+        type_checker::{FormulaKind,FormulaStatus,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|
+        case.id.0 == "pass_advanced_semantics_native_conjunction_goals_001").unwrap();
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("genuine new conjunction source");
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    println!("Task272B9 test-first: genuine frontend/symbol/native/scope and native A succeed before goal replay; no admission failure used as RED");
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals()
+        .expect("new conjunction source must materialize sequential unproved goals");
+    assert_eq!(steps.len(),5);
+    assert_eq!(inference.terms().len(),12);
+    assert_eq!(inference.formulas().len(),4);
+    let [h0,h1,p0,p1] = std::array::from_fn::<_,4,_>(|index|task272b1_binding(&handoff,index));
+    assert_eq!(handoff.scope().bindings().len(),4);
+    assert_ne!(h0,p0);
+    assert_ne!(h1,p1);
+    assert_eq!(handoff.scope().references().iter().map(|reference|
+        task272b1_binding(&handoff,reference.binding().index())).collect::<Vec<_>>(),
+        [h0,h0,h1,h1,p0,p0,p1,p1]);
+    let g0 = format!("forall({}:Set,forall({}:Set,and(eq({0},{0}),eq({1},{1}))))",h0.index(),h1.index());
+    let g1 = format!("forall({}:Set,and(eq({1},{1}),eq({0},{0})))",h1.index(),p0.index());
+    let g2 = format!("and(eq({0},{0}),eq({1},{1}))",p0.index(),p1.index());
+    let g3 = format!("eq({0},{0})",p1.index());
+    let expected = [(&g0,&g0),(&g0,&g1),(&g1,&g2),(&g2,&g3),(&g3,&g3)];
+    let matched = [None,Some((h0,p0)),Some((h1,p1)),None,None];
+    let free = [vec![],vec![p0],vec![p0,p1],vec![p1],vec![p1]];
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==id).unwrap()
+    };
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(task272b1_goal_text(step.before()),*expected[index].0);
+        assert_eq!(task272b1_goal_text(step.after()),*expected[index].1);
+        assert_eq!(step.owner(),steps[0].site());
+        assert_eq!(step.context(),steps[0].context());
+        assert_eq!(step.matched(),matched[index]);
+        assert_eq!(step.free(),free[index]);
+        assert_eq!(step.avoided(),if index==1 {vec![h1]} else {vec![]});
+        let row = original(step.site());
+        match index {
+            0 => assert_eq!(row.kind(),&K::TheoremItem),
+            1|2 => assert_eq!(row.range(),handoff.scope().bindings()[index+1].range()),
+            3|4 => assert_eq!(row.kind(),&K::ConclusionStatement),
+            _ => unreachable!(),
+        }
+    }
+    assert_eq!(handoff.binding_env().contexts().get(steps[0].context()).unwrap().layer,
+        mizar_checker::binding_env::BindingContextLayer::Proof);
+    assert_eq!(original(steps[3].site()).parent(),original(steps[4].site()).parent());
+    assert!(rows.iter().any(|row|Some(row.site())==original(steps[3].site()).parent() && row.kind()==&K::ProofBlock));
+    let G::Conjunction {right,..} = steps[3].before() else {panic!("whole conjunction before first Thus")};
+    assert_eq!(steps[3].after(),right.as_ref());
+    assert_eq!(steps[4].before(),right.as_ref());
+    assert_eq!(steps[4].after(),right.as_ref());
+    let G::Equality {origin,..} = right.as_ref() else {panic!("original typed right leaf")};
+    assert_eq!(original(origin).kind(),&K::BuiltinPredicateApplication);
+    assert!(original(origin).range().end < original(steps[3].site()).range().start);
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    assert!(labels.ids().is_empty());
+    for step in &steps[3..] {
+        assert!(intents.iter().any(|(site,_,status)|site==step.site() && *status==S::Pending));
+    }
+    assert!(success.is_empty() && pending.is_empty());
+    assert!(checked.coercions().is_empty() && checked.initial_obligations().is_empty() && checked.facts().is_empty());
+    for (_,term) in inference.terms().iter() {
+        assert_eq!(term.status,TermStatus::Inferred);
+        let ty = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(ty.status,TypeStatus::Known);
+        let TypeEntryActual::Known(id) = ty.actual else {panic!("actual known Set")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinSet);
+    }
+    for reference in handoff.scope().references() {
+        let binding = task272b1_binding(&handoff,reference.binding().index());
+        let context = handoff.binding_env().bindings().get(binding).unwrap().owner_context;
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && original(&term.site).range()==reference.range() && term.context==context));
+    }
+    for binding in [h0,h1,p0,p1] {
+        let entry = handoff.binding_env().bindings().get(binding).unwrap();
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")
+            && original(&term.site).range()==entry.declaration_range && term.context==entry.owner_context));
+    }
+    for (_,formula) in inference.formulas().iter() {
+        assert_eq!(formula.kind,FormulaKind::Equality);
+        assert_eq!(formula.status,FormulaStatus::Checked);
+        assert_eq!(formula.terms.len(),2);
+        assert_eq!(original(&formula.site).range(),formula.source_range);
+    }
+    assert!(checked.diagnostics().is_empty() && inference.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty()
+        && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b9_exact_admission_inventory_and_actual_selected_as_reject_crossed_pairs() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_advanced_semantics_native_conjunction_goals_001").unwrap();
+    let old = plan.cases.iter().find(|case|case.id.0==super::NATIVE_WITNESS_GOAL_ID).unwrap();
+    assert!(super::native_witness_goals_admitted(&config.workspace_root,case));
+    assert!(super::native_witness_goals_admitted(&config.workspace_root,old));
+    let result = super::run_advanced_semantics_case(&config.workspace_root,case,0);
+    assert_eq!(result.status,super::TypeElaborationCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    let report = super::run_advanced_semantics_corpus(&config).unwrap();
+    assert_eq!(report.error_count(),0,"{:?}",report.diagnostics);
+    for selected in [case,old] {
+        let matches = report.results.iter().filter(|result|result.id==selected.id).collect::<Vec<_>>();
+        assert_eq!(matches.len(),1);
+        assert_eq!(matches[0].status,super::TypeElaborationCaseStatus::Passed);
+    }
+    for mutation in 0..14 {
+        let mut bad = case.clone();
+        match mutation {
+            0 => bad.expectation.domain=old.expectation.domain.clone(),
+            1 => bad.expectation.spec_refs=old.expectation.spec_refs.clone(),
+            2 => bad.source_path=old.source_path.clone(),
+            3 => bad.expectation_path=old.expectation_path.clone(),
+            4 => bad.expectation.id=old.id.clone(),
+            5 => bad.id=old.id.clone(),
+            6 => bad.expectation.tags.clear(),
+            7 => bad.expectation.tags.push("extra".into()),
+            8 => bad.expectation.stage=crate::Stage::FormulaStatement,
+            9 => bad.expectation.expected_phase=Some(crate::expectation::PipelinePhase::StatementCheck),
+            10 => bad.expectation.profiles.push("other".into()),
+            11 => bad.expectation.source="other.miz".into(),
+            12|13 => {
+                bad.id.0="counterfeit_native_conjunction".into();
+                bad.expectation.id=bad.id.clone();
+                bad.expectation.tags.clear();
+                if mutation==12 {bad.expectation_path=config.workspace_root.join("other.expect.toml");}
+                else {bad.source_path=config.workspace_root.join("other.miz");}
+            }
+            _ => unreachable!(),
+        }
+        assert!(!super::native_witness_goals_admitted(&config.workspace_root,&bad));
+        let mut invalid = plan.clone();
+        invalid.cases.push(bad);
+        assert!(super::validate_step5c11_registration_inventory(&config.workspace_root,&invalid).iter()
+            .any(|diagnostic|diagnostic.code.0=="E-ADVANCED-SEMANTICS-ADMISSION"));
+    }
+    for selected in [case,old] {
+        let mut missing = plan.clone();
+        missing.cases.retain(|candidate|candidate.id!=selected.id);
+        let mut duplicate = plan.clone();
+        duplicate.cases.push(selected.clone());
+        for invalid in [missing,duplicate] {
+            assert!(super::validate_step5c11_registration_inventory(&config.workspace_root,&invalid).iter()
+                .any(|diagnostic|diagnostic.detail_key==format!("advanced_semantics.inventory.{}",selected.id.0)));
+        }
+    }
+    let mut pooled = plan.clone();
+    pooled.cases.retain(|candidate|candidate.id!=case.id);
+    pooled.cases.push(old.clone());
+    let diagnostics = super::validate_step5c11_registration_inventory(&config.workspace_root,&pooled);
+    for selected in [case,old] {
+        assert!(diagnostics.iter().any(|diagnostic|diagnostic.detail_key==format!("advanced_semantics.inventory.{}",selected.id.0)));
+    }
+    let source = include_str!("../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_conjunction_goals_001.miz")
+        .replace("thus a=a;","thus b=b;");
+    let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty());
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    assert!(handoff.check_witness_goals().is_err());
+    let result = metamorphic_guard::with_source(case,&source,||super::run_advanced_semantics_case(&config.workspace_root,case,0));
+    assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed);
+    assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
+    let mut error_key = case.clone();
+    error_key.expectation.stable_detail_key=Some("advanced_semantics.invalid_prepared_case".into());
+    let result = super::run_advanced_semantics_case(&config.workspace_root,&error_key,0);
+    assert_eq!(result.actual_detail_keys,["advanced_semantics.invalid_prepared_case"]);
+    assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed);
+}
+
+#[test]
+fn task272b9_sequential_claims_keep_equal_leaves_membership_aliases_and_pending_guards() {
+    use mizar_checker::type_checker::TypeHeadRef;
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_conjunction_goals_001.miz");
+    for source in [
+        base.replace("b=b","a=a"),
+        base.replace("a,b","AlphaValue,BetaValue").replace("a=a","AlphaValue=AlphaValue").replace("b=b","BetaValue=BetaValue"),
+        format!("\n{}",base.replace(";",";\n")),
+        base.replace("thus b=b;","thus thesis;"),
+        base.replace("let a,b be set;","let a,b be set; set alias=a;").replace("thus a=a;","thus alias=a;"),
+        base.replace("thus a=a;\n  thus b=b;","thus a=a & b=b;"),
+        "theorem Mixed: for A being set, x being object holds x in A & A=A proof let A be set; let x be object; thus x in A; thus A=A; end;".to_owned(),
+        "theorem MixedRight: for A being set, x being object holds A=A & x in A proof let A be set; let x be object; thus A=A; thus x in A; end;".to_owned(),
+    ] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps,_,_,checked,inference) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert_eq!(steps.last().unwrap().before(),steps.last().unwrap().after());
+        assert!(checked.facts().is_empty());
+        if source.contains("set alias") {
+            task272b3_assert_alias_type(&handoff,&inference,4,TypeHeadRef::BuiltinSet);
+        }
+    }
+    let pending = "theorem Pending: for o being object, s being set ex z being set st z=o & s=s proof let o be object; let s be set; take o; thus o=o; thus s=s; end;";
+    for source in [pending.to_owned(),format!("{pending}\n{}",base.replace("NativeConjunctionGoals","Other"))] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps,success,pending,checked,_) = handoff.check_witness_goals().unwrap();
+        assert!(success.is_empty());
+        assert_eq!(pending.len(),1);
+        assert_eq!(pending[0].site,*steps[3].site());
+        let obligation = checked.initial_obligations().iter().next().unwrap().1;
+        assert_eq!(obligation.owner,*steps[3].site());
+        assert_eq!(obligation.status,mizar_checker::typed_ast::InitialObligationStatus::Pending);
+        let object = task272b1_binding(&handoff,3);
+        assert!(steps[3].free().contains(&object));
+        assert!(!steps[4].free().contains(&object));
+        let observed = super::native_witness_goal_observation(&handoff).unwrap();
+        for index in [4,5] {
+            let line = observed.iter().find(|line|line.starts_with("remaining.")
+                && line.contains(&format!("terminal={:?}",steps[index].site()))).unwrap();
+            assert!(line.ends_with(&format!("pending=[{:?}]",obligation.id)),"{line}");
+        }
+        if steps.len()>6 {
+            assert_ne!(steps[5].owner(),steps[9].owner());
+            for index in [9,10] {
+                let line = observed.iter().find(|line|line.starts_with("remaining.")
+                    && line.contains(&format!("terminal={:?}",steps[index].site()))).unwrap();
+                assert!(line.ends_with("pending=[]"),"{line}");
+            }
+        }
+    }
+}
+
+#[test]
+fn task272b9_sequential_claims_refuse_wrong_order_frames_and_partial_blocks() {
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_advanced_semantics_native_conjunction_goals_001.miz");
+    let claims = "thus a=a;\n  thus b=b;";
+    for source in [
+        base.replace(claims,"thus b=b; thus a=a;"),
+        base.replace(claims,"thus a=a; thus a=a;"),
+        base.replace("thus a=a;",""),
+        base.replace("thus b=b;",""),
+        base.replace(claims,"thus a=a; thus b=b; thus b=b;"),
+        base.replace(claims,"thus a=a; set unused=a; thus b=b;"),
+        base.replace("thus a=a;","thus thesis;"),
+        base.replace("thus a=a;","thus a=a & b=b;"),
+        base.replace("thus a=a;","thus L:a=a;"),
+        base.replace("thus b=b;","thus R:b=b;"),
+        base.replace("thus a=a;","hence a=a;"),
+        base.replace("thus b=b;","hence b=b;"),
+        base.replace("thus a=a;","then a=a;"),
+        base.replace("thus b=b;","then b=b;"),
+        base.replace(claims,"hereby thus a=a; end;"),
+        base.replace(claims,"N:now thus a=a; end; thus b=b by N;"),
+        "theorem Nested: for a,b being set holds (a=a & b=b) & a=a proof let a,b be set; thus a=a & b=b; thus a=a; end;".to_owned(),
+        "theorem NestedRight: for a,b being set holds a=a & (b=b & a=a) proof let a,b be set; thus a=a; thus b=b & a=a; end;".to_owned(),
+    ] {
+        assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}");
+    }
+    let by = "theorem By: for a,b being set st a=a holds a=a & b=b proof let a,b be set; assume H:a=a; thus a=a; thus b=b; end;";
+    for source in [by.replace("thus a=a;","thus a=a by H;"),by.replace("thus b=b;","thus b=b by H;")] {
+        let handoff = task272b1_witness_source(&source);
+        super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(handoff.check_witness_goals().is_err());
+    }
+    let two = format!("{}\n{}",base.replace("NativeConjunctionGoals","First"),base.replace("NativeConjunctionGoals","Second"));
+    let handoff = task272b1_witness_source(&two);
+    let (steps,_,_,_,inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(),10);
+    assert_eq!(inference.terms().len(),24);
+    assert_eq!(inference.formulas().len(),8);
+    assert_ne!(steps[0].owner(),steps[5].owner());
+    assert_ne!(steps[0].context(),steps[5].context());
+    assert!(task272b1_witness_source(&two.replacen("thus a=a;","thus b=b;",1)).check_witness_goals().is_err());
+}

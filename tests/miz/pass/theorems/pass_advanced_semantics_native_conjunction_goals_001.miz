@@ -1,0 +1,6 @@
+theorem NativeConjunctionGoals: for a,b being set holds a=a & b=b
+proof
+  let a,b be set;
+  thus a=a;
+  thus b=b;
+end;

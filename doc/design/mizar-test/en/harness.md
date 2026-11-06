@@ -41,6 +41,11 @@ same-owner Pending guards from preceding Take steps, so earlier Now claims canno
 a future guard. It supplies no proof
 acceptance or discharge. Broader proof effects remain with Task272.
 
+The exact `checker.native_conjunction_goals` AS pair reuses that native consumer
+for a two-Thus atomic conjunction trace. Its metadata-only Pass observes the
+unproved left claim and right residual; it adds no legacy FS or proof acceptance.
+Each native goal source/sidecar identity has its own exact admission and inventory.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

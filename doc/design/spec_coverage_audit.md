@@ -63,7 +63,10 @@ and source-only terminal local citation intent through those owners; a final sin
 Hereby and a single-claim labelled Now also observe unproved goals in their authentic
 child Block contexts; Now citations retain candidate status and source-order guard joins.
 Broader goal/substitution coverage remains with Task272; the prepared old-AS
-consumer adds no default activation or proof acceptance to either metadata requirement.
+consumer adds no default activation or proof acceptance. The separate
+`spec.en.16.theorems.proof_skeleton.conjunction.metadata` requirement observes
+unproved atomic left-to-right residuals through the same owners; semantic proof
+acceptance and broader conjunction effects remain deferred.
 
 ## Coverage Matrix
 

@@ -128,6 +128,12 @@ label 付き非末尾 Now の単一で justification のない Thus は、現在
 Proof への親関係・checkpoint/子の対応を通してその label を引用できる。candidate を受理済み
 fact にしない。内部 By/宣言と一般の collected goal は後続に残す。
 
+直接の Proof の末尾に連続する二つの Thus は、原子的な二項連言をソース順に記録できる。
+最初の明示 claim は左辺と照合し、残余は出典を保持した元の右 subtree とする。
+最後の claim はその残余を観測し、両者は未証明のまま残る。両末尾は label と justification を
+持たず、block の部分結論・最初の thesis・入れ子連言の分解は対象外とする。
+残余から binding が消えても、先行 frontier と型 guard は保持する。
+
 先行 Let を RHS とする名前付き Reconsider は、alias が未使用なら不変の goal checkpoint
 を保持できる。通常の変換 request/結果と A の source state は witness guard と別に保つ。
 実 item・proof・theorem owner を対応付け、後続 conclusion の source Pending が Blocked

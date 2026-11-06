@@ -3602,6 +3602,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.16.theorems.proof_skeleton.conjunction.metadata"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.3.2 The thesis Keyword; 16.3.3 Skeleton Decomposition Rules"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_advanced_semantics_native_conjunction_goals_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.16.theorems.reference.lemma_citation"
 source = "doc/spec/en/16.theorems_and_proofs.md"
 section = "16.5 Proof Justification (by)"

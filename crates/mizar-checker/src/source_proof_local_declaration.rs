@@ -2521,6 +2521,7 @@ impl SourceProofLocalBindingHandoff {
             }
             for (index, statement) in body.iter().enumerate().take(body.len() - 1).skip(1) {
                 used.insert(statement.site());
+                let partial = source_conjunction_conclusion_roles(rows, statement).is_some();
                 let terminal = index == body.len() - 2;
                 let block = matches!(statement.kind(), K::HerebyStatement | K::NowStatement);
                 let (statement, context) = if block {
@@ -2597,6 +2598,7 @@ impl SourceProofLocalBindingHandoff {
                     return Err(invalid());
                 }
                 if terminal
+                    || partial
                     || matches!(
                         statement.kind(),
                         K::AssumptionStatement | K::CompactStatement
@@ -3161,6 +3163,26 @@ impl SourceProofLocalBindingHandoff {
                     Some((formal, actual)),
                     body.substitute(formal, self.witness_goal_alias_value(actual)?),
                 )
+            } else if source_conjunction_conclusion_roles(
+                self.original.source_nodes().ok_or_else(invalid)?,
+                row,
+            )
+            .is_some()
+            {
+                let SourceProofGoal::Conjunction { left, right, .. } = &before else {
+                    return Err(invalid());
+                };
+                if !matches!(
+                    left.as_ref(),
+                    SourceProofGoal::Equality { .. } | SourceProofGoal::Membership { .. }
+                ) || !matches!(
+                    right.as_ref(),
+                    SourceProofGoal::Equality { .. } | SourceProofGoal::Membership { .. }
+                ) || !left.alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
+                {
+                    return Err(invalid());
+                }
+                (None, right.as_ref().clone())
             } else if matches!(
                 row.kind(),
                 SurfaceNodeKind::AssumptionStatement | SurfaceNodeKind::ConditionList
@@ -3448,6 +3470,27 @@ impl SourceProofLocalBindingHandoff {
                             return Err(invalid());
                         }
                     }
+                }
+            } else if source_conjunction_conclusion_roles(
+                self.original.source_nodes().ok_or_else(invalid)?,
+                row,
+            )
+            .is_some()
+            {
+                let SourceProofGoal::Conjunction { left, right, .. } = before else {
+                    return Err(invalid());
+                };
+                if !matches!(
+                    left.as_ref(),
+                    SourceProofGoal::Equality { .. } | SourceProofGoal::Membership { .. }
+                ) || !matches!(
+                    right.as_ref(),
+                    SourceProofGoal::Equality { .. } | SourceProofGoal::Membership { .. }
+                ) || !left.alpha_matches(goals.get(&site).ok_or_else(invalid)?, &mut Vec::new())
+                    || step.matched.is_some()
+                    || step.after != **right
+                {
+                    return Err(invalid());
                 }
             } else if matches!(
                 row.kind(),
@@ -5018,6 +5061,51 @@ fn source_proof_frame<'a>(
     let children = source_children(rows, owner.site()).collect::<Vec<_>>();
     (source_contiguous_child_count(children.iter().copied()) == Some(children.len()))
         .then_some(children)
+}
+
+fn source_conjunction_conclusion_roles<'a>(
+    rows: &'a [SourceNode],
+    first: &SourceNode,
+) -> Option<&'a SourceNode> {
+    use SurfaceNodeKind as K;
+    if first.kind() != &K::ConclusionStatement {
+        return None;
+    }
+    let proof = rows
+        .iter()
+        .find(|r| Some(r.site()) == first.parent() && r.kind() == &K::ProofBlock)?;
+    rows.iter()
+        .find(|r| Some(r.site()) == proof.parent() && r.kind() == &K::TheoremItem)?;
+    let body = source_proof_frame(rows, proof)?;
+    if body.len() < 4
+        || body[body.len() - 3].site() != first.site()
+        || !source_inline_token(&body, 0, "proof")
+        || !source_inline_token(&body, body.len() - 1, "end")
+    {
+        return None;
+    }
+    let last = body[body.len() - 2];
+    if last.parent() != Some(proof.site())
+        || last.kind() != &K::ConclusionStatement
+        || first.range().end > last.range().start
+    {
+        return None;
+    }
+    for statement in [first, last] {
+        let parts = source_proof_frame(rows, statement)?;
+        if parts.len() != 3
+            || !source_inline_token(&parts, 0, "thus")
+            || parts[1].kind() != &K::Proposition
+            || !source_inline_token(&parts, 2, ";")
+        {
+            return None;
+        }
+        let proposition = source_proof_frame(rows, parts[1])?;
+        if !matches!(proposition.as_slice(), [formula] if formula.kind() == &K::FormulaExpression) {
+            return None;
+        }
+    }
+    Some(last)
 }
 
 fn source_proof_statement_kind(kind: &SurfaceNodeKind) -> bool {
@@ -16180,10 +16268,10 @@ mod task269c_tests {
             symbols::SignatureProjectionExtractor,
         };
         use mizar_syntax::ast::SurfaceFormulaBinaryOperator;
-        let fixture = |swapped: bool| {
+        let fixture = |swapped: bool, partial: bool| {
             let source = source_id();
             let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("witness_replay"));
-            let words = [
+            let mut words = vec![
                 "theorem",
                 "T",
                 ":",
@@ -16235,6 +16323,12 @@ mod task269c_tests {
                 "end",
                 ";",
             ];
+            if partial {
+                words.splice(
+                    45..45,
+                    ["thus", if swapped { "o" } else { "s" }, "=", "s", ";"],
+                );
+            }
             let mut builder = SurfaceAstBuilder::new(source);
             let mut spans = Vec::new();
             let mut tokens = Vec::new();
@@ -16282,7 +16376,11 @@ mod task269c_tests {
                 );
             }
             let mut values = BTreeMap::new();
-            for i in [20, 22, 24, 26, 41, 43] {
+            let mut value_sites = vec![20, 22, 24, 26, 41, 43];
+            if partial {
+                value_sites.extend([46, 48]);
+            }
+            for i in value_sites {
                 let reference = node(&mut builder, K::TermReference, i, i, vec![tokens[i]]);
                 values.insert(
                     i,
@@ -16364,41 +16462,63 @@ mod task269c_tests {
                 44,
                 vec![tokens[38], first, tokens[42], second, tokens[44]],
             );
+            let mut proof_children = vec![tokens[27], let1, let2, take];
+            if partial {
+                let atom = node(
+                    &mut builder,
+                    K::BuiltinPredicateApplication,
+                    46,
+                    48,
+                    vec![values[&46], tokens[47], values[&48]],
+                );
+                let formula = node(&mut builder, K::FormulaExpression, 46, 48, vec![atom]);
+                let proposition = node(&mut builder, K::Proposition, 46, 48, vec![formula]);
+                proof_children.push(node(
+                    &mut builder,
+                    K::ConclusionStatement,
+                    45,
+                    49,
+                    vec![tokens[45], proposition, tokens[49]],
+                ));
+            }
+            let t = 45 + 5 * usize::from(partial);
+            let end = tokens.len() - 1;
             let thesis = node(
                 &mut builder,
                 K::FormulaConstant(SurfaceFormulaConstant::Thesis),
-                46,
-                46,
-                vec![tokens[46]],
+                t + 1,
+                t + 1,
+                vec![tokens[t + 1]],
             );
-            let terminal = node(&mut builder, K::FormulaExpression, 46, 46, vec![thesis]);
-            let proposition = node(&mut builder, K::Proposition, 46, 46, vec![terminal]);
+            let terminal = node(
+                &mut builder,
+                K::FormulaExpression,
+                t + 1,
+                t + 1,
+                vec![thesis],
+            );
+            let proposition = node(&mut builder, K::Proposition, t + 1, t + 1, vec![terminal]);
             let conclusion = node(
                 &mut builder,
                 K::ConclusionStatement,
-                45,
-                47,
-                vec![tokens[45], proposition, tokens[47]],
+                t,
+                t + 2,
+                vec![tokens[t], proposition, tokens[t + 2]],
             );
-            let proof = node(
-                &mut builder,
-                K::ProofBlock,
-                27,
-                48,
-                vec![tokens[27], let1, let2, take, conclusion, tokens[48]],
-            );
+            proof_children.extend([conclusion, tokens[end - 1]]);
+            let proof = node(&mut builder, K::ProofBlock, 27, end - 1, proof_children);
             let theorem = node(
                 &mut builder,
                 K::TheoremItem,
                 0,
-                49,
-                vec![tokens[0], tokens[1], tokens[2], header, proof, tokens[49]],
+                end,
+                vec![tokens[0], tokens[1], tokens[2], header, proof, tokens[end]],
             );
-            let items = node(&mut builder, K::ItemList, 0, 49, vec![theorem]);
-            let compilation = node(&mut builder, K::CompilationUnit, 0, 49, vec![items]);
+            let items = node(&mut builder, K::ItemList, 0, end, vec![theorem]);
+            let compilation = node(&mut builder, K::CompilationUnit, 0, end, vec![items]);
             let mut root_children = tokens;
             root_children.push(compilation);
-            let root = node(&mut builder, K::Root, 0, 49, root_children);
+            let root = node(&mut builder, K::Root, 0, end, root_children);
             let ast = builder.finish(Some(root), None);
             let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
             let shells = DeclarationShellCollector::new(&ast, &module).collect();
@@ -16453,7 +16573,7 @@ mod task269c_tests {
             )
             .unwrap()
         };
-        let genuine = fixture(false);
+        let genuine = fixture(false, false);
         let (steps, inputs, initial, checked, inference) = genuine.check_witness_goals().unwrap();
         assert_eq!(steps.len(), 6);
         assert_eq!(inputs.len(), 2);
@@ -16615,7 +16735,7 @@ mod task269c_tests {
                     .is_err()
             );
         }
-        let swapped = fixture(true);
+        let swapped = fixture(true, false);
         let (pending, pinputs, pinitial, pchecked, pinference) =
             swapped.check_witness_goals().unwrap();
         assert_eq!(pinputs.len(), 1);
@@ -16687,6 +16807,73 @@ mod task269c_tests {
                 .replay_witness_goals(&pending, &pinputs, &pinitial, &pchecked, &pinference)
                 .is_err()
         );
+        for swapped in [false, true] {
+            let partial = fixture(swapped, true);
+            let (trace, guards, initial, checked, inference) =
+                partial.check_witness_goals().unwrap();
+            assert_eq!(trace.len(), 7);
+            let SourceProofGoal::Conjunction { left, right, .. } = &trace[5].before else {
+                panic!("partial conjunction")
+            };
+            assert_eq!(trace[5].after, **right);
+            assert_eq!(trace[6].before, **right);
+            assert_eq!(trace[6].after, **right);
+            assert_eq!(
+                trace[5].free,
+                if swapped {
+                    vec![values, other]
+                } else {
+                    vec![other]
+                }
+            );
+            assert!(trace[5].matched.is_none() && trace[5].avoided.is_empty());
+            assert_eq!(initial.len(), usize::from(swapped));
+            for mutation in 0..12 {
+                let mut bad = trace.clone();
+                match mutation {
+                    0 => bad[5].after = left.as_ref().clone(),
+                    1 => bad[5].after = trace[5].before.clone(),
+                    2 => {
+                        let SourceProofGoal::Equality { origin, .. } = &mut bad[5].after else {
+                            unreachable!()
+                        };
+                        *origin = trace[5].site.clone();
+                    }
+                    3 => bad[5].owner = trace[1].site.clone(),
+                    4 => bad[5].context = BindingContextId::new(0),
+                    5 => bad[5].site = trace[6].site.clone(),
+                    6 => bad[5].matched = Some((values, other)),
+                    7 => bad[5].avoided = vec![other],
+                    8 => bad[5].free.clear(),
+                    9 => bad.swap(5, 6),
+                    10 => {
+                        bad.remove(5);
+                    }
+                    _ => bad.insert(6, bad[5].clone()),
+                }
+                if mutation < 3 {
+                    let mut free = BTreeSet::new();
+                    bad[5]
+                        .after
+                        .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                    bad[5].free = free.into_iter().collect();
+                }
+                assert!(
+                    partial
+                        .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                        .is_err(),
+                    "partial mutation{mutation}"
+                );
+            }
+            let foreign = fixture(!swapped, true).check_witness_goals().unwrap();
+            assert!(
+                partial
+                    .replay_witness_goals(
+                        &foreign.0, &foreign.1, &foreign.2, &foreign.3, &foreign.4
+                    )
+                    .is_err()
+            );
+        }
         let installed = empty_typed(
             genuine.original.source_id(),
             genuine.original.module_id().clone(),

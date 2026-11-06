@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_native_conjunction_goals_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "checker.native_conjunction_goals"
+source = "pass_advanced_semantics_native_conjunction_goals_001.miz"
+expected_outcome = "pass"
+expected_phase = "elaboration"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.16.theorems.proof_skeleton.conjunction.metadata"]
+notes = "Source-only observation of typed sequential conjunction goals. Both claims and the residual remain unproved. Pass accepts no theorem or proof, discharges no guard, and adds no Task49 activation or formula-statement semantic credit."

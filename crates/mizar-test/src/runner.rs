@@ -1810,19 +1810,38 @@ const NATIVE_PROOF_INTENT_ID: &str = "pass_advanced_semantics_native_proof_inten
 
 const NATIVE_WITNESS_GOAL_ID: &str = "pass_advanced_semantics_native_witness_goals_001";
 
+const NATIVE_WITNESS_GOAL_CASES: [(&str, &str, &str); 2] = [
+    (
+        NATIVE_WITNESS_GOAL_ID,
+        "checker.native_witness_goals",
+        "spec.en.15.statements.witness_goals.typed_replay.metadata",
+    ),
+    (
+        "pass_advanced_semantics_native_conjunction_goals_001",
+        "checker.native_conjunction_goals",
+        "spec.en.16.theorems.proof_skeleton.conjunction.metadata",
+    ),
+];
+
 fn native_witness_goals_admitted(root: &Path, case: &TestCase) -> bool {
-    let path = format!("tests/miz/pass/theorems/{NATIVE_WITNESS_GOAL_ID}.miz");
-    case.id.0 == NATIVE_WITNESS_GOAL_ID
-        && case.expectation.id == case.id
+    let Some((id, domain, reference)) = NATIVE_WITNESS_GOAL_CASES
+        .iter()
+        .copied()
+        .find(|(id, _, _)| case.id.0 == *id)
+    else {
+        return false;
+    };
+    let path = format!("tests/miz/pass/theorems/{id}.miz");
+    case.expectation.id == case.id
         && case.expectation.schema_version == 1
-        && case.expectation.domain == "checker.native_witness_goals"
+        && case.expectation.domain == domain
         && case.expectation.profiles.as_slice() == ["fast"]
         && case
             .expectation
             .spec_refs
             .iter()
             .map(|id| id.0.as_str())
-            .eq(["spec.en.15.statements.witness_goals.typed_replay.metadata"])
+            .eq([reference])
         && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
         && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
             Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
@@ -2950,20 +2969,22 @@ fn validate_step5c11_registration_inventory(
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
-    if plan
-        .cases
-        .iter()
-        .filter(|case| native_witness_goals_admitted(root, case))
-        .count()
-        != 1
-    {
-        diagnostics.push(ValidationDiagnostic::error(
-            root,
-            "advanced_semantics",
-            "E-ADVANCED-SEMANTICS-INVENTORY",
-            format!("advanced_semantics.inventory.{NATIVE_WITNESS_GOAL_ID}"),
-            "native witness goals require exactly one admitted source/sidecar pair",
-        ));
+    for (id, _, _) in NATIVE_WITNESS_GOAL_CASES {
+        if plan
+            .cases
+            .iter()
+            .filter(|case| case.id.0 == id && native_witness_goals_admitted(root, case))
+            .count()
+            != 1
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                root,
+                "advanced_semantics",
+                "E-ADVANCED-SEMANTICS-INVENTORY",
+                format!("advanced_semantics.inventory.{id}"),
+                "native witness goals require exactly one admitted source/sidecar pair",
+            ));
+        }
     }
     if plan
         .cases
@@ -3049,14 +3070,14 @@ fn validate_step5c11_registration_inventory(
             || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
             || case.id.0 == INLINE_CLOSURE_REQUEST_ID
             || case.expectation.id.0 == INLINE_CLOSURE_REQUEST_ID
-            || case.id.0 == NATIVE_WITNESS_GOAL_ID
-            || case.expectation.id.0 == NATIVE_WITNESS_GOAL_ID
-            || case
-                .source_path
-                .file_stem()
-                .is_some_and(|name| name == NATIVE_WITNESS_GOAL_ID)
-            || case.expectation_path.file_name().is_some_and(|name| {
-                name == format!("{NATIVE_WITNESS_GOAL_ID}.expect.toml").as_str()
+            || NATIVE_WITNESS_GOAL_CASES.iter().any(|(id, _, _)| {
+                case.id.0 == *id
+                    || case.expectation.id.0 == *id
+                    || case.source_path.file_stem().is_some_and(|name| name == *id)
+                    || case
+                        .expectation_path
+                        .file_name()
+                        .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
             })
             || case.id.0 == NATIVE_PROOF_INTENT_ID
             || case.expectation.id.0 == NATIVE_PROOF_INTENT_ID
