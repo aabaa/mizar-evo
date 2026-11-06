@@ -4048,6 +4048,259 @@ fn type_elaboration_detail_keys(
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if let Some((declaration_kind, redefinition_kind, coherence_kind)) = {
+        use mizar_checker::{
+            overload_resolution::CandidateDeclarationKind as D,
+            typed_ast::InitialObligationKind as O,
+        };
+        use mizar_syntax::SurfaceNodeKind as K;
+        match case.expectation.domain.as_str() {
+            "redefinition.intrinsic.attribute" => Some((
+                D::Attribute,
+                K::AttributeRedefinition,
+                O::AttributeRedefinitionCoherence,
+            )),
+            "redefinition.intrinsic.predicate" => Some((
+                D::Predicate,
+                K::PredicateRedefinition,
+                O::PredicateRedefinitionCoherence,
+            )),
+            "redefinition.intrinsic.functor" => Some((
+                D::Functor,
+                K::FunctorRedefinition,
+                O::FunctorRedefinitionCoherence,
+            )),
+            _ => None,
+        }
+    } {
+        let checked = (|| -> Result<(), String> {
+            use mizar_checker::{
+                source_redefinition::{SourceOrdinaryRootHandoff, SourceRedefinitionHandoff},
+                type_checker::NormalizedTypeStatus,
+                typed_ast::{InitialObligationStatus, TypeEntryActual, TypeStatus},
+            };
+            use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+            use mizar_syntax::SurfaceNodeKind as K;
+            use std::sync::Arc;
+            let invalid = || "source.redefinition.invalid_installed_case".to_owned();
+            if !is_active_type_elaboration(case) || !resolver.detail_keys.is_empty() {
+                return Err(invalid());
+            }
+            let original = Arc::new(type_elaboration::source_syntax_receiver(
+                &ast,
+                &resolver.module,
+            )?);
+            let native = Arc::new(
+                SurfaceResolvedArena::lower(&ast, &resolver.module).map_err(|e| e.to_string())?,
+            );
+            let roots = Arc::new(SourceOrdinaryRootHandoff::build(
+                Arc::clone(&original),
+                native,
+                Arc::new(resolver.env.clone()),
+            )?);
+            let expected = SourceRedefinitionHandoff::build(roots)?;
+            let installed = original
+                .as_ref()
+                .clone()
+                .with_source_redefinition(expected.clone())
+                .map_err(|e| e.to_string())?;
+            let typed = installed.source_redefinition().ok_or_else(invalid)?;
+            if typed != &expected
+                || !installed.facts().is_empty()
+                || !installed.coercions().is_empty()
+                || !installed.diagnostics().is_empty()
+                || !typed.inference().facts().is_empty()
+                || !typed.inference().diagnostics().is_empty()
+                || !typed.roots().normalization().diagnostics().is_empty()
+            {
+                return Err(invalid());
+            }
+            let source = installed
+                .source_node_entries()
+                .ok_or_else(invalid)?
+                .collect::<Vec<_>>();
+            let row_for = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+                installed
+                    .nodes()
+                    .node(site.node())
+                    .and_then(|n| n.resolved_node)
+                    .and_then(|id| source.iter().copied().find(|r| r.site() == id))
+            };
+            let mut root_sites = Vec::new();
+            for (symbol, site, kind, parameters, result) in typed.roots().roots() {
+                use mizar_checker::overload_resolution::CandidateDeclarationKind as D;
+                use mizar_resolve::env::SymbolKind as S;
+                let (source_kind, symbol_kind, arity) = match kind {
+                    D::Attribute => (K::AttributeDefinition, S::Attribute, 1),
+                    D::Predicate => (K::PredicateDefinition, S::Predicate, 2),
+                    D::Functor => (K::FunctorDefinition, S::Functor, 1),
+                    _ => return Err(invalid()),
+                };
+                let declaration = row_for(site).ok_or_else(invalid)?;
+                let actual = resolver.env.symbols().get(symbol).ok_or_else(invalid)?;
+                if declaration.kind() != &source_kind
+                    || actual.kind() != symbol_kind
+                    || parameters.len() != arity
+                    || actual.origin().anchor()
+                        != &mizar_session::SourceAnchor::Range(declaration.range())
+                    || result.is_some() != (symbol_kind == S::Functor)
+                {
+                    return Err(invalid());
+                }
+                root_sites.push(declaration.site());
+                for (ty, returned) in parameters
+                    .iter()
+                    .copied()
+                    .map(|id| (id, false))
+                    .chain(result.map(|id| (id, true)))
+                {
+                    if !typed
+                        .roots()
+                        .normalization()
+                        .type_entries()
+                        .iter()
+                        .any(|(_, entry)| {
+                            entry.actual == TypeEntryActual::Known(ty)
+                                && row_for(&entry.owner).is_some_and(|row| {
+                                    row.kind() == &K::TypeExpression
+                                        && if returned {
+                                            row.parent() == Some(declaration.site())
+                                        } else {
+                                            row.range().end <= declaration.range().start
+                                                && source.iter().any(|block| {
+                                                    Some(block.site()) == declaration.parent()
+                                                        && block.range().start <= row.range().start
+                                                        && row.range().end <= block.range().end
+                                                })
+                                        }
+                                })
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                }
+            }
+            let mut ordinary_sites = source
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.kind(),
+                        K::AttributeDefinition | K::PredicateDefinition | K::FunctorDefinition
+                    )
+                })
+                .map(|r| r.site())
+                .collect::<Vec<_>>();
+            root_sites.sort();
+            ordinary_sites.sort();
+            if root_sites != ordinary_sites {
+                return Err(invalid());
+            }
+            let targets = typed.targets().collect::<Vec<_>>();
+            if targets.len() != 1 || installed.initial_obligations().len() != targets.len() {
+                return Err(invalid());
+            }
+            for (symbol, root, site, obligation) in targets {
+                let request = installed
+                    .initial_obligations()
+                    .get(obligation)
+                    .ok_or_else(invalid)?;
+                let coherence = row_for(site).ok_or_else(invalid)?;
+                let declaration = source
+                    .iter()
+                    .copied()
+                    .find(|r| Some(r.site()) == coherence.parent())
+                    .ok_or_else(invalid)?;
+                let actual = resolver.env.symbols().get(symbol).ok_or_else(invalid)?;
+                if coherence.kind() != &K::CoherenceCondition
+                    || declaration.kind() != &redefinition_kind
+                    || actual.origin().anchor()
+                        != &mizar_session::SourceAnchor::Range(declaration.range())
+                    || request.kind != coherence_kind
+                    || request.status != InitialObligationStatus::Pending
+                    || request.owner != *site
+                    || request.source_range != coherence.range()
+                    || !request.assumptions.is_empty()
+                    || !typed.roots().roots().any(|(ordinary, _, kind, _, _)| {
+                        ordinary == root && kind == declaration_kind
+                    })
+                {
+                    return Err(invalid());
+                }
+            }
+            let source_types = source
+                .iter()
+                .filter(|r| matches!(r.kind(), K::TypeExpression | K::TermExpression))
+                .count();
+            if installed.types().len() != source_types {
+                return Err(invalid());
+            }
+            for (id, entry) in installed.types().iter() {
+                let TypeEntryActual::Known(actual) = entry.actual else {
+                    return Err(invalid());
+                };
+                let ty = typed
+                    .roots()
+                    .normalization()
+                    .normalized_types()
+                    .get(actual)
+                    .ok_or_else(invalid)?;
+                let node = installed
+                    .nodes()
+                    .node(entry.owner.node())
+                    .ok_or_else(invalid)?;
+                if entry.status != TypeStatus::Known
+                    || ty.status != NormalizedTypeStatus::Known
+                    || node.links.type_entry != Some(id)
+                    || !ty.args.is_empty()
+                    || !ty.attributes.positive().is_empty()
+                    || !ty.attributes.negative().is_empty()
+                {
+                    return Err(invalid());
+                }
+            }
+            let resolved =
+                type_elaboration::assemble_empty_resolved_typed_ast(&installed, Vec::new())?;
+            if resolved.source_redefinition() != Some(typed)
+                || resolved.nodes().len() != installed.nodes().len()
+                || !resolved.collection_candidates().is_empty()
+                || !resolved.expanded_candidates().is_empty()
+                || !resolved.template_expansions().is_empty()
+                || !resolved.viable_candidates().is_empty()
+                || !resolved.viability_decisions().is_empty()
+                || !resolved.specificity_graphs().is_empty()
+                || !resolved.resolved_overloads().is_empty()
+                || !resolved.inserted_coercions().is_empty()
+                || !resolved.cluster_facts().is_empty()
+                || !resolved.checked_proofs().is_empty()
+                || !resolved.checked_proof_nodes().is_empty()
+                || !resolved.checked_terminal_goals().is_empty()
+                || !resolved.diagnostics().is_empty()
+            {
+                return Err(invalid());
+            }
+            for (_, node) in resolved.nodes().iter() {
+                let original = installed
+                    .nodes()
+                    .node(node.typed_node)
+                    .ok_or_else(invalid)?;
+                let expected = original
+                    .links
+                    .type_entry
+                    .map(|id| installed.types().get(id).map(|e| e.actual));
+                if !matches!(
+                    (node.final_type, expected),
+                    (None, None) | (Some(_), Some(Some(TypeEntryActual::Known(_))))
+                ) || node
+                    .final_type
+                    .is_some_and(|id| expected != Some(Some(TypeEntryActual::Known(id))))
+                {
+                    return Err(invalid());
+                }
+            }
+            Ok(())
+        })();
+        return checked.err().into_iter().collect();
+    }
     if type_elaboration::is_step5c6_alias_candidate(case) {
         return declaration_symbol::step5c6_synonym_detail_keys(
             &ast,

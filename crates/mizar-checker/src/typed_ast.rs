@@ -30,6 +30,7 @@ use crate::{
     source_property_implementation::{
         SourcePropertyImplementationHandoff, SourcePropertyImplementationProjection,
     },
+    source_redefinition::SourceRedefinitionHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -269,6 +270,7 @@ pub struct TypedAst {
     source_mode_definition: Option<SourceModeDefinitionHandoff>,
     source_structure_definition: Option<SourceStructureDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
+    source_redefinition: Option<Box<SourceRedefinitionHandoff>>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_nested_fraenkel_capture_identity: Option<InstalledSourceNestedFraenkelCaptureIdentity>,
@@ -340,6 +342,7 @@ impl TypedAst {
             source_mode_definition: None,
             source_structure_definition: None,
             source_predicate_definition: None,
+            source_redefinition: None,
             source_composite_formula: None,
             source_formula_composition: None,
             source_nested_fraenkel_capture_identity: None,
@@ -447,6 +450,24 @@ impl TypedAst {
 
     pub const fn source_attribute_definition(&self) -> Option<&SourceAttributeDefinitionHandoff> {
         self.source_attribute_definition.as_ref()
+    }
+
+    pub const fn source_redefinition(&self) -> Option<&SourceRedefinitionHandoff> {
+        match self.source_redefinition.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub fn with_source_redefinition(
+        self,
+        handoff: SourceRedefinitionHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let mut candidate = handoff
+            .install(&self)
+            .map_err(|_| TypedAstError::InvalidSourceRedefinition)?;
+        candidate.source_redefinition = Some(Box::new(handoff));
+        Ok(candidate)
     }
 
     pub const fn source_predicate_definition(&self) -> Option<&SourcePredicateDefinitionHandoff> {
@@ -721,6 +742,14 @@ impl TypedAst {
         handoff: SourceAttributeDefinitionHandoff,
     ) {
         self.source_attribute_definition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_redefinition_for_test(
+        &mut self,
+        handoff: SourceRedefinitionHandoff,
+    ) {
+        self.source_redefinition = Some(Box::new(handoff));
     }
 
     #[cfg(test)]
@@ -1428,7 +1457,8 @@ impl TypedAst {
         mut self,
         projection: SourcePredicateDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some()
+        if self.source_redefinition.is_some()
+            || self.source_nested_fraenkel_capture_identity.is_some()
             || self.source_proof_local_binding.is_some()
         {
             return Err(TypedAstError::InvalidSourcePredicateDefinition);
@@ -1492,7 +1522,8 @@ impl TypedAst {
         mut self,
         handoff: SourceAttributeDefinitionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some()
+        if self.source_redefinition.is_some()
+            || self.source_nested_fraenkel_capture_identity.is_some()
             || self.source_proof_local_binding.is_some()
         {
             return Err(TypedAstError::InvalidSourceAttributeDefinition);
@@ -1552,7 +1583,8 @@ impl TypedAst {
         mut self,
         projection: SourceFunctorDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_nested_fraenkel_capture_identity.is_some()
+        if self.source_redefinition.is_some()
+            || self.source_nested_fraenkel_capture_identity.is_some()
             || self.source_proof_local_binding.is_some()
         {
             return Err(TypedAstError::InvalidSourceFunctorDefinition);
@@ -4462,6 +4494,8 @@ pub enum InitialObligationKind {
     RegistrationCorrectness,
     PredicatePropertyCorrectness,
     PredicateRedefinitionCoherence,
+    AttributeRedefinitionCoherence,
+    FunctorRedefinitionCoherence,
     FunctorPropertyCorrectness,
     FunctorExistence,
     FunctorUniqueness,
@@ -4633,6 +4667,7 @@ pub enum TypedAstError {
     InvalidSourceModeDefinition,
     InvalidSourceStructureDefinition,
     InvalidSourcePredicateDefinition,
+    InvalidSourceRedefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceNestedFraenkelCaptureIdentity,
@@ -4802,6 +4837,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceStructureDefinition => {
                 formatter.write_str("typed AST source structure-definition handoff is inconsistent")
+            }
+            Self::InvalidSourceRedefinition => {
+                formatter.write_str("typed AST source redefinition handoff is inconsistent")
             }
             Self::InvalidSourcePredicateDefinition => {
                 formatter.write_str("typed AST source predicate-definition handoff is inconsistent")
@@ -5626,14 +5664,18 @@ fn validate_initial_obligations(parts: &TypedAstParts) -> Result<(), TypedAstErr
                 obligation: obligation_id,
             }
         })?;
-        if obligation.kind == InitialObligationKind::PredicateRedefinitionCoherence
-            && parts
-                .nodes
-                .node(obligation.owner.node())
-                .is_none_or(|node| {
-                    node.kind.as_str() != "CoherenceCondition"
-                        || node.anchor != SourceAnchor::Range(obligation.source_range)
-                })
+        if matches!(
+            obligation.kind,
+            InitialObligationKind::PredicateRedefinitionCoherence
+                | InitialObligationKind::AttributeRedefinitionCoherence
+                | InitialObligationKind::FunctorRedefinitionCoherence
+        ) && parts
+            .nodes
+            .node(obligation.owner.node())
+            .is_none_or(|node| {
+                node.kind.as_str() != "CoherenceCondition"
+                    || node.anchor != SourceAnchor::Range(obligation.source_range)
+            })
         {
             return Err(TypedAstError::InvalidObligationOwner {
                 obligation: obligation_id,
@@ -6407,6 +6449,8 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
         InitialObligationKind::PredicateRedefinitionCoherence => "predicate_redefinition_coherence",
+        InitialObligationKind::AttributeRedefinitionCoherence => "attribute_redefinition_coherence",
+        InitialObligationKind::FunctorRedefinitionCoherence => "functor_redefinition_coherence",
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",

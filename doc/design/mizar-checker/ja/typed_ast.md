@@ -4,6 +4,9 @@ native proof-local binding は `source_proof_local_binding()` と
 `with_source_proof_local_binding` を使う。fresh receiver の境界は
 [proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-境界) が所有する。
 
+`with_source_redefinition` は [宣言 root transaction](./source_redefinition.md#transaction-と境界) を原子的に install し、`source_redefinition()` が typed root/target の対応を公開する。
+`InvalidSourceRedefinition` は不整合または競合する transport を拒否する。
+
 > 正本は英語です。英語版: [../en/typed_ast.md](../en/typed_ast.md)。
 
 ## 目的
@@ -422,7 +425,9 @@ obligation にだけ公開する。`Blocked` と `Invalidated` obligation は、
 
 `FunctorPropertyCorrectness` は checker-local な未証明関手 property request であり、owner/range と goal/provenance key が実宣言と property を識別する。PredicatePropertyCorrectness と区別し、canonical VC goal・証明・受理済 property・汎用 TypedAst installation 権限を与えない。
 
-`PredicateRedefinitionCoherence` は実際の限定 parameter guard 下の宣言同値性を求める pending request であり、owner/range と goal/provenance key が両定義の同一性・source 本体・宣言と出現の置換対応を結ぶ。property・narrowing cast・登録証明・canonical VC ではなく、accepted refinement を与えない。
+`PredicateRedefinitionCoherence` は実際の限定 parameter guard 下の宣言同値性を求める pending request とする。保護対象の先行実装は owner/range と goal/provenance key で両定義の同一性・source 本体・宣言と出現の置換対応を結び、共通 source-redefinition handoff は sealed な target・binding・inference data にその対応を保持する。property・narrowing cast・登録証明・canonical VC ではなく、accepted refinement を与えない。
+
+`AttributeRedefinitionCoherence` と `FunctorRedefinitionCoherence` は対応する実 CoherenceCondition owner の Pending request を保持し、accepted refinement を与えない。
 
 必須 obligation kind:
 

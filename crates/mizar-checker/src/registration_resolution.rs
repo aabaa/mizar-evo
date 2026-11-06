@@ -5312,6 +5312,8 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
         InitialObligationKind::PredicateRedefinitionCoherence => "predicate_redefinition_coherence",
+        InitialObligationKind::AttributeRedefinitionCoherence => "attribute_redefinition_coherence",
+        InitialObligationKind::FunctorRedefinitionCoherence => "functor_redefinition_coherence",
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",

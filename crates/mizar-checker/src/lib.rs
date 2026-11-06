@@ -38,6 +38,7 @@ pub mod source_mode_definition;
 pub mod source_predicate_definition;
 pub mod source_proof_local_declaration;
 pub mod source_property_implementation;
+pub mod source_redefinition;
 pub mod source_set_term;
 pub mod source_statement;
 pub mod source_structure;

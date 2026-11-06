@@ -193,6 +193,10 @@ sidecar, pin every slot/delimiter diagnostic message/range and preserve the
 definition's outer `end;` plus the following theorem. No new runner phase,
 diagnostic vocabulary, or production harness path is introduced.
 
+## Intrinsic redefinition targets
+
+Intrinsic redefinition type-elaboration Cases inspect source-owned ordinary roots, typed targets and Pending requests in both AST containers; they produce no active refinement.
+
 > Canonical language: English. Japanese companion: [../ja/harness.md](../ja/harness.md).
 
 ## Purpose

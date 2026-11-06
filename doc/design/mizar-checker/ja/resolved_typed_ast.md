@@ -3,6 +3,9 @@
 `source_proof_local_binding()` は [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-境界) を保持する。
 assembly は独立に replay し、他の source family payload との混在を拒否する。
 
+`source_redefinition()` は [宣言 root transaction](./source_redefinition.md#transaction-と境界) を保持する。
+assembly は射影を検証し、追加の selection/fact/proof payload を排除する。不整合な入力は `InvalidSourceRedefinition` で拒否する。
+
 > 正本は英語です。英語版:
 > [../en/resolved_typed_ast.md](../en/resolved_typed_ast.md)。
 

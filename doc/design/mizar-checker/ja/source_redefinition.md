@@ -1,0 +1,32 @@
+# ソース再定義の target
+
+正本は [English](../en/source_redefinition.md)。
+
+## API と責任
+
+`source_redefinition` は intrinsic な attribute・二項 predicate・単項 equals-functor の
+宣言時 target を認証する。
+`SourceOrdinaryRootHandoff` は Task278 が所有する宣言 root の前提入力であり、
+`SourceRedefinitionHandoff` の三つの Task279 source-kind 規則がこれを消費する。
+両者は元ソース graph・resolver identity・binding context・型正規化を利用する
+immutable な sealed value とし、別の構文木を追加しない。
+
+## Root identity と Pending request
+
+候補 root は、source kind・notation・arity が一致する可視の先行 ordinary 宣言すべてとする。
+順序付き intrinsic guard を Set parameter が厳密に狭化することを要求する。
+attribute subject の semantic guard と resolver の明示 pattern arity は区別する。
+functor の戻り型適合性は独立に検査し、使用箇所の選択結果・戻り型・宣言順で target を選ばない。
+実際の symbol と source site で root 関係を保持する。
+coherence request は実 owner に属する Pending のままとし、active refinement・使用可能な fact・
+checked proof・等式・受理済み同値を生成しない。
+
+## Transaction と境界
+
+共通 handoff 一つを TypedAst に原子的に install し、ResolvedTypedAst で replay する。
+型 ID は所有元の正規化 universe を保持し、宣言だけのソースに overload application や selected root を作らない。
+import・template・nominal/attributed・明示 target・refinement chain は初期境界の対象外とする。
+既存の marked-Set/registration consumer は独立した前提を維持する。
+実 type-elaboration Case が install 済み root・target・body/type・Pending request の対応を観測する。
+受け付ける各 definition block は parameter 宣言に続く ordinary 宣言または再定義を
+ちょうど一つ含み、宣言 label は互いに異なるものとする。

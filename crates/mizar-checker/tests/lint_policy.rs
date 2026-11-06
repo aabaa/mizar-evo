@@ -68,15 +68,21 @@ fn checker_manifest_dependency_boundary_is_step5c11_scoped() {
 
     assert_eq!(
         dependency_sections,
-        [(
-            "dependencies".to_owned(),
-            vec![
-                "mizar-lexer = { path = \"../mizar-lexer\" }",
-                "mizar-resolve = { path = \"../mizar-resolve\" }",
-                "mizar-session = { path = \"../mizar-session\" }",
-                "mizar-syntax = { path = \"../mizar-syntax\" }",
-            ]
-        )],
+        [
+            (
+                "dependencies".to_owned(),
+                vec![
+                    "mizar-lexer = { path = \"../mizar-lexer\" }",
+                    "mizar-resolve = { path = \"../mizar-resolve\" }",
+                    "mizar-session = { path = \"../mizar-session\" }",
+                    "mizar-syntax = { path = \"../mizar-syntax\" }",
+                ]
+            ),
+            (
+                "dev-dependencies".to_owned(),
+                vec!["mizar-frontend = { path = \"../mizar-frontend\" }"],
+            )
+        ],
         "{} must keep the Step 5C.11 authenticated registration intake dependency boundary",
         manifest_path.display()
     );
@@ -117,11 +123,14 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             || path == root.join("src/source_structure_definition.rs")
             || path == root.join("src/source_structure.rs")
             || path == root.join("src/source_proof_local_declaration.rs")
+            || path == root.join("src/source_redefinition.rs")
         {
             let permitted = if path == root.join("src/source_property_implementation.rs") {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
             } else if path == root.join("src/source_proof_local_declaration.rs") {
                 "use mizar_syntax::ast::{\n    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,\n    SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
+            } else if path == root.join("src/source_redefinition.rs") {
+                "use mizar_syntax::ast::{SurfaceFormulaConstant, SurfaceNodeKind, SurfaceTokenKind};"
             } else if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"
             } else {
@@ -927,6 +936,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_set_term.rs")
             || path == Path::new("src/source_statement.rs")
             || path == Path::new("src/source_proof_local_declaration.rs")
+            || path == Path::new("src/source_redefinition.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
             || path == Path::new("src/source_structure_semantics.rs")
@@ -962,6 +972,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_set_term;"
                 | "pub mod source_statement;"
                 | "pub mod source_proof_local_declaration;"
+                | "pub mod source_redefinition;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
                 | "pub mod source_structure_semantics;"

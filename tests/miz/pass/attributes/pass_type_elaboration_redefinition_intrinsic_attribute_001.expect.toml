@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_type_elaboration_redefinition_intrinsic_attribute_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "redefinition.intrinsic.attribute"
+source = "pass_type_elaboration_redefinition_intrinsic_attribute_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = ["spec.en.06.attributes.redefine.coherence"]
+tags = ["active_type_elaboration"]
+notes = "Task279A source-derived ordinary declaration root and typed target formation with Pending coherence. No accepted equivalence/value equation, proof, active refinement, overload selection or Task49 credit."

@@ -762,6 +762,7 @@ unchecked row below is one future nonempty logical task and one commit.
   consumes Task 278 ordinary-root results without a dependency cycle. Ships
   the Task 285 element rules blocked on it (AttributeRedefinition,
   FunctorRedefinition) with the producer.
+  - [x] **Task 279A:** [intrinsic declaration targets](../../task_contracts/en/CHECKER279A-INTRINSIC-REDEFINITION-TARGETS.md); joint attribute/predicate/functor roots and Pending coherence.
 
 Every task projects its family transactionally through applicable `TypedAst`
 and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10

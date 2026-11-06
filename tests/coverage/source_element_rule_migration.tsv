@@ -3,11 +3,11 @@
 # family: definition (Tasks 279/270) | proof-skeleton (Tasks 272/269) | reconsider (Task 271) | expression (Task 257)
 # inherited targets have inherited: notes and do not complete or reclassify a class b kind
 slice	family	predecessor	status	note
-attribute-redefinition	definition	checker-task-279	blocked	AttributeRedefinition
+attribute-redefinition	definition	mode-property	done	AttributeRedefinition; original intrinsic roles in source_redefinition
 equating	definition	mode-property	done	Equating; authenticated descendant Set names in source_proof_local_declaration
 field-argument	definition	mode-property	done	FieldArgument
 field-redefinition	definition	mode-property	done	FieldRedefinition
-functor-redefinition	definition	checker-task-279	blocked	FunctorRedefinition
+functor-redefinition	definition	mode-property	done	FunctorRedefinition; original intrinsic roles in source_redefinition
 inheritance-definition	definition	mode-property	done	InheritanceDefinition
 inheritance-target	definition	mode-property	done	InheritanceTarget
 inline-functor-definition	definition	mode-property	done	InlineFunctorDefinition; original inline roles in source_proof_local_declaration

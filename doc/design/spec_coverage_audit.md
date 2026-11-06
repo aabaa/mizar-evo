@@ -37,6 +37,11 @@ remain spec-reserved; this transfer activates no runner or semantic credit. Veri
 - `reference` - the document is a reference, example, or glossary input rather
   than a direct implementation surface.
 
+## Intrinsic redefinition targets
+
+The [source redefinition owner](./mizar-checker/en/source_redefinition.md) covers declaration-owned ordinary roots and typed target/Pending-coherence transport through real type-elaboration consumers.
+Accepted coherence/refinement and broader redefinition, notation and template overload transport remain outside this bounded coverage.
+
 ## Native proof-local binding metadata
 
 `spec.en.04.variables.proof_local.binding_metadata` is covered as source metadata

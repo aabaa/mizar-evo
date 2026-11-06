@@ -166,6 +166,10 @@ parser unit testが各slot/delimiter diagnosticのmessage/range、definitionのo
 following theoremをpinする。new runner phase、diagnostic vocabulary、production harness
 pathは追加しない。
 
+## Intrinsic redefinition targets
+
+intrinsic redefinition の type-elaboration Case は、両 AST container の source 所有 ordinary root・typed target・Pending request を観測し、active refinement を生成しない。
+
 > Canonical language: English. English canonical version: [../en/harness.md](../en/harness.md).
 
 ## 目的

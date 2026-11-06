@@ -3,6 +3,9 @@
 `source_proof_local_binding()` retains the [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
 Assembly independently replays it and excludes other source-family payloads.
 
+`source_redefinition()` retains the [declaration-root transaction](./source_redefinition.md#transaction-and-boundaries).
+Assembly validates its projection and excludes supplemental selection/fact/proof payloads; `InvalidSourceRedefinition` rejects incompatible input.
+
 > Canonical language: English. Japanese companion:
 > [../ja/resolved_typed_ast.md](../ja/resolved_typed_ast.md).
 

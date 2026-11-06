@@ -4,6 +4,9 @@ Native proof-local bindings use `source_proof_local_binding()` and
 `with_source_proof_local_binding`; the fresh receiver boundary is owned by
 [the proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
 
+`with_source_redefinition` atomically installs the [declaration-root transaction](./source_redefinition.md#transaction-and-boundaries); `source_redefinition()` exposes its typed root/target joins.
+`InvalidSourceRedefinition` rejects inconsistent or overlapping transport.
+
 > Canonical language: English. Japanese companion:
 > [../ja/typed_ast.md](../ja/typed_ast.md).
 
@@ -435,7 +438,9 @@ diagnostic state until the owning later task changes them.
 
 `FunctorPropertyCorrectness` is a checker-local pending functor-property request; its owner/range and goal/provenance keys identify the actual declaration and property. It is distinct from PredicatePropertyCorrectness and grants no canonical VC goal, proof, accepted property or generic TypedAst installation authority.
 
-`PredicateRedefinitionCoherence` identifies a pending declaration-equivalence request under the actual narrower parameter guards; owner/range and goal/provenance keys bind both definition identities, source bodies and declaration-to-occurrence substitution. It is not a property, narrowing cast, registration proof or canonical VC; no accepted refinement follows.
+`PredicateRedefinitionCoherence` identifies a pending declaration-equivalence request under the actual narrower parameter guards. The protected predecessor binds both definition identities, source bodies and declaration-to-occurrence substitution through owner/range and goal/provenance keys; the common source-redefinition handoff retains those joins in its sealed target, binding and inference data. It is not a property, narrowing cast, registration proof or canonical VC; no accepted refinement follows.
+
+`AttributeRedefinitionCoherence` and `FunctorRedefinitionCoherence` retain the corresponding Pending requests at actual CoherenceCondition owners; they grant no accepted refinement.
 
 Required obligation kinds include:
 

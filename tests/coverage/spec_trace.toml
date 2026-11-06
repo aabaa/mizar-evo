@@ -1489,6 +1489,7 @@ status = "covered"
 required = true
 coverage = "pass"
 tests = [
+  "tests/miz/pass/attributes/pass_type_elaboration_redefinition_intrinsic_attribute_001.expect.toml",
   "tests/miz/pass/attributes/pass_type_elaboration_attr_redefine_narrower_subject_001.expect.toml",
 ]
 
@@ -1871,6 +1872,7 @@ status = "covered"
 required = true
 coverage = "pass"
 tests = [
+  "tests/miz/pass/predicates/pass_type_elaboration_redefinition_intrinsic_predicate_001.expect.toml",
   "tests/miz/pass/predicates/pass_type_elaboration_pred_redefine_narrower_loci_001.expect.toml",
 ]
 
@@ -4318,6 +4320,7 @@ depends_on = [
   "spec.en.syntax.redefinition_notation.parser",
 ]
 tests = [
+  "tests/miz/pass/functors/pass_type_elaboration_redefinition_intrinsic_functor_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
 ]
 
