@@ -73,6 +73,7 @@ The existing reconsider_builtin_widening FS case additionally consumes native go
 
 The existing Step5C7 enumeration-membership PV case additionally requires native finite-enumeration whole-goal replay after both unchanged normalization checks.
 Its ordered Object leaves and Set roots remain authentic; normalization and unproved goal observation provide no theorem VC or accepted proof.
+The inactive empty-enumeration PV fixture is a direct native-API source oracle. Generic syntax-smoke includes it; semantic PV selection and proof/VC activation remain unchanged.
 
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into

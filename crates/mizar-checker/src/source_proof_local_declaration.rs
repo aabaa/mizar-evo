@@ -2236,8 +2236,8 @@ impl SourceProofLocalBindingHandoff {
             ));
         }
         let elements = source_proof_frame(rows, parts[0]).ok_or_else(invalid)?;
-        if elements.len() < 3
-            || elements.len() % 2 != 1
+        if elements.len() < 2
+            || elements.len() != 2 && elements.len() % 2 != 1
             || !source_inline_token(&elements, 0, "{")
             || !source_inline_token(&elements, elements.len() - 1, "}")
         {
@@ -2919,6 +2919,7 @@ impl SourceProofLocalBindingHandoff {
                         let parts = source_proof_frame(rows, enumeration).ok_or_else(invalid)?;
                         if parts
                             .iter()
+                            .take(parts.len() - 1)
                             .skip(1)
                             .step_by(2)
                             .any(|element| contexts.get(&element.site()) != Some(&context))
@@ -19398,7 +19399,12 @@ mod task269c_tests {
         let fixture = |source, conditioned, by, given, hereby, now, packet, iff, chain, is_type| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if is_type == 3 {
+            let mut words = if is_type == 4 {
+                vec![
+                    "theorem", "T", ":", "for", "x", "being", "object", "holds", "{", "}", "is",
+                    "set", "proof", "let", "x", "be", "object", ";", "thus", "{", "}", "is", "set",
+                ]
+            } else if is_type == 3 {
                 vec![
                     "theorem", "T", ":", "for", "x", "being", "object", "holds", "{", "x", ",",
                     "x", "}", "is", "set", "proof", "let", "x", "be", "object", ";", "thus", "{",
@@ -19486,7 +19492,9 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if is_type == 3 {
+            let (h, c, l, a, mut k, mut t, condition_start) = if is_type == 4 {
+                (8, 9, 14, 19, 19, 19, 18)
+            } else if is_type == 3 {
                 (8, 12, 17, 22, 22, 22, 21)
             } else if is_type != 0 {
                 (8, 8, 13, 18, 18, 18, 17)
@@ -19613,7 +19621,16 @@ mod task269c_tests {
                 vec![h, c, a, k, t]
             } {
                 let mut terms = Vec::new();
-                if is_type == 3 {
+                if is_type == 4 {
+                    let value = node(
+                        &mut builder,
+                        K::SetEnumeration,
+                        i,
+                        i + 1,
+                        vec![tokens[i], tokens[i + 1]],
+                    );
+                    terms.push(node(&mut builder, K::TermExpression, i, i + 1, vec![value]));
+                } else if is_type == 3 {
                     let mut children = vec![tokens[i]];
                     for j in [i + 1, i + 3] {
                         let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
@@ -19634,7 +19651,7 @@ mod task269c_tests {
                 } else if chain {
                     terms.extend([singleton_terms[&h], singleton_terms[&c]]);
                 }
-                for j in if chain || is_type == 3 {
+                for j in if chain || is_type >= 3 {
                     Vec::new()
                 } else if is_type != 0 {
                     vec![i]
@@ -19645,7 +19662,13 @@ mod task269c_tests {
                     terms.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
                 }
                 let eq = if is_type != 0 {
-                    let target_index = i + if is_type == 3 { 6 } else { 2 };
+                    let target_index = i + if is_type == 4 {
+                        3
+                    } else if is_type == 3 {
+                        6
+                    } else {
+                        2
+                    };
                     let head = node(
                         &mut builder,
                         K::TypeHead,
@@ -19682,7 +19705,13 @@ mod task269c_tests {
                         &mut builder,
                         K::FormulaExpression,
                         i,
-                        if chain || is_type == 3 { i + 6 } else { i + 2 },
+                        if is_type == 4 {
+                            i + 3
+                        } else if chain || is_type == 3 {
+                            i + 6
+                        } else {
+                            i + 2
+                        },
                         vec![eq],
                     ),
                 );
@@ -19767,7 +19796,13 @@ mod task269c_tests {
                     &mut builder,
                     K::Proposition,
                     t,
-                    t + if is_type == 3 { 6 } else { 2 },
+                    t + if is_type == 4 {
+                        3
+                    } else if is_type == 3 {
+                        6
+                    } else {
+                        2
+                    },
                     vec![formulas[&t]],
                 )
             } else if chain {
@@ -20723,6 +20758,157 @@ mod task269c_tests {
         assert!(
             widening
                 .replay_witness_goals(&changed, &guards, &initial, &checked, &inference)
+                .is_err()
+        );
+        let empty = fixture(
+            source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            4,
+        );
+        let (trace, guards, initial, checked, inference) = empty.check_witness_goals().unwrap();
+        assert_eq!(
+            (
+                trace.len(),
+                inference.terms().len(),
+                inference.formulas().len()
+            ),
+            (3, 4, 2)
+        );
+        assert!(empty.scope.references().is_empty());
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        let (formal, actual) = trace[1].matched.unwrap();
+        let SourceProofGoal::Universal { body, .. } = &trace[0].before else {
+            unreachable!()
+        };
+        let SourceProofGoal::TypeAssertion { subject, .. } = &trace[1].after else {
+            unreachable!()
+        };
+        let SourceProofTerm::Enumeration { origin, elements } = subject else {
+            panic!("empty enumeration")
+        };
+        assert!(elements.is_empty() && subject.bindings().is_empty());
+        assert_eq!(subject.substitute(formal, actual), *subject);
+        assert!(trace[1].after.replays_substitution(body, formal, actual));
+        assert!(
+            trace
+                .iter()
+                .all(|s| s.free.is_empty() && s.avoided.is_empty())
+        );
+        assert_eq!(trace[2].before, trace[1].after);
+        assert_eq!(trace[2].after, trace[1].after);
+        assert!(
+            empty
+                .witness_goal_term_formation(subject, &trace[1].site, &BTreeSet::new(), &[])
+                .unwrap()
+        );
+        let (_, _, terms, mut formulas, _) = empty.witness_goal_inputs().unwrap();
+        let terminal = empty
+            .witness_goal_formula(empty.witness_goal_source(&formulas[1].site).unwrap())
+            .unwrap();
+        let SourceProofGoal::TypeAssertion { subject: other, .. } = terminal else {
+            unreachable!()
+        };
+        assert_ne!(*subject, other);
+        assert!(subject.alpha_matches(&other, &[]));
+        assert!(!subject.replays_substitution(&other, formal, actual));
+        for input in terms
+            .iter()
+            .filter(|t| t.kind == crate::type_checker::TermKind::SetEnumeration)
+        {
+            let row = empty.witness_goal_source(&input.site).unwrap();
+            let frame = source_proof_frame(empty.original.source_nodes().unwrap(), row).unwrap();
+            let braces =
+                source_proof_frame(empty.original.source_nodes().unwrap(), frame[0]).unwrap();
+            assert_eq!(braces.len(), 2);
+            assert!(source_inline_token(&braces, 0, "{") && source_inline_token(&braces, 1, "}"));
+            assert!(input.reference.is_none());
+            assert_eq!(
+                input.result_type.as_ref().unwrap().head,
+                TypeHeadInput::BuiltinSet
+            );
+        }
+        for mutation in 0..4 {
+            let mut bad = trace.clone();
+            let SourceProofGoal::TypeAssertion { subject, .. } = &mut bad[1].after else {
+                unreachable!()
+            };
+            *subject = match mutation {
+                0 => SourceProofTerm::Enumeration {
+                    origin: origin.clone(),
+                    elements: vec![actual],
+                },
+                1 => SourceProofTerm::Enumeration {
+                    origin: trace[2].site.clone(),
+                    elements: vec![],
+                },
+                2 => SourceProofTerm::Singleton {
+                    origin: origin.clone(),
+                    element: actual,
+                },
+                _ => SourceProofTerm::Binding(actual),
+            };
+            if mutation < 3 {
+                assert!(
+                    empty
+                        .witness_goal_term_formation(
+                            subject,
+                            &trace[1].site,
+                            &BTreeSet::from([actual]),
+                            &[]
+                        )
+                        .is_err()
+                );
+            }
+            assert!(!bad[1].after.replays_substitution(body, formal, actual));
+            bad[2].before = bad[1].after.clone();
+            bad[2].after = bad[1].after.clone();
+            for step in &mut bad[1..] {
+                let mut free = BTreeSet::new();
+                step.after
+                    .binding_sets(&mut Vec::new(), &mut free, &mut BTreeSet::new());
+                step.free = free.into_iter().collect();
+            }
+            assert!(
+                empty
+                    .replay_witness_goals(&bad, &guards, &initial, &checked, &inference)
+                    .is_err()
+            );
+        }
+        let mut forged = terms;
+        for input in &mut forged {
+            if input.kind == crate::type_checker::TermKind::SetEnumeration {
+                input.result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+            }
+        }
+        for formula in &mut formulas {
+            formula.asserted_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+        }
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&empty.symbols, &empty.binding_env, forged, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .terms()
+                .iter()
+                .all(|(_, t)| t.status == TermStatus::Inferred)
+        );
+        assert!(
+            coherent
+                .formulas()
+                .iter()
+                .all(|(_, f)| f.status == crate::type_checker::FormulaStatus::Checked)
+        );
+        assert!(
+            empty
+                .replay_witness_goals(&trace, &guards, &initial, &checked, &coherent)
                 .is_err()
         );
         let enumeration = fixture(

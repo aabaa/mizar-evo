@@ -98,8 +98,8 @@ Task180 checked table・証明受理とは別に保つ。広い goal・入れ子
 一般的な freshening は後続に残す。
 
 Equality/Membership の operand と TypeAssertion の subject は `SourceProofTerm` の Binding、Singleton(origin,element)、Enumeration(origin,elements) とする。
-Enumeration は重複を含む実変数の子二つ以上を元の順で保ち、Singleton は一つを保つ。置換・free set・alpha 照合・formation は全要素を走査する。
-両列挙の root は Set でも要素を昇格させず、空・入れ子の値は後続に残す。元の外側 TermExpression を
+Enumeration は子が空、または重複を含む実変数の子二つ以上を元の順で保ち、Singleton は一つを保つ。置換・free set・alpha 照合・formation は全要素を走査する。
+両列挙の root は Set でも要素を昇格させず、空のソースに架空の子や binding は与えない。入れ子の値は後続に残す。元の外側 TermExpression を
 推論 site、内側 enumeration を値の出典とし、置換は出典と元の型付き子入力を保って派生 element ID を変える。
 Take/Set/Named/Reconsider は変数のみ、部分連言・compact・case の既存上限も Binding operand のみを維持する。
 末尾 Thus 直前の単一 step・省略 justification・label 付き singleton のみの直接連鎖は、実 chain/step checkpoint と自分の

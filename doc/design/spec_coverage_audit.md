@@ -68,7 +68,7 @@ Bounded homogeneous Case/Suppose branches add Or/Not projection and authentic
 branch-local citation while retaining outer Pending; omitted exhaustiveness
 intent and branch claims remain unproved.
 Primitive equivalence additionally preserves whole unproved goals; its two-direction proof skeleton remains Task272-owned.
-Nonempty variable-enumeration atom values retain every original leaf and typed Set root; singleton-only iterative chains retain unproved whole-goal/citation checkpoints.
+Variable/empty enumeration atom values retain every original leaf and typed Set root; singleton-only iterative chains retain unproved whole-goal/citation checkpoints.
 They provide no checked adjacent equations or transitivity result; broader equality reasoning remains Task272-owned.
 Builtin type assertions retain actual subject/target admissibility under the [intrinsic relation](./mizar-checker/en/type_checker.md#intrinsic-type-assertion-admissibility) and unproved goals, without type refinement or proof.
 Broader assertion reachability and goal/substitution coverage remain with Task272; the prepared old-AS

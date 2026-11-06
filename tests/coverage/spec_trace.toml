@@ -3024,6 +3024,7 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/terms/pass_proof_verification_term_set_enumeration_membership_001.expect.toml",
+  "tests/miz/pass/terms/pass_proof_verification_term_empty_enumeration_goal_001.expect.toml",
 ]
 
 [[requirement]]

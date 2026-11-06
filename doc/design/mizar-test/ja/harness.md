@@ -61,6 +61,7 @@ guard 解消を与えない。広い admissibility は後続に残す。
 
 既存 Step5C7 enumeration-membership PV case は元の二回の正規化検査後に、有限列挙の native whole-goal replay も要求する。
 元の順序付き Object 要素と Set root を保ち、正規化と未証明 goal の観測から theorem VC・証明受理は与えない。
+inactive な空列挙 PV fixture は native API を直接検査するソース oracle とする。通常の syntax-smoke には含むが、意味論 PV 選択と proof/VC 有効化は変えない。
 
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、

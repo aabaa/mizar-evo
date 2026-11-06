@@ -113,8 +113,8 @@ Task180 checked tables and proof acceptance stay separate. Broader goals, nested
 general proof effects and freshening remain deferred.
 
 Equality/Membership operands and TypeAssertion subjects use `SourceProofTerm` Binding, Singleton(origin,element), or Enumeration(origin,elements) values.
-Enumeration retains two or more ordered variable children, including repetitions; Singleton retains one. Every leaf participates in substitution, free sets, alpha matching and formation.
-Both enumeration shapes have Set roots without upgrading their elements; empty and nested values remain deferred.
+Enumeration retains zero or at least two ordered variable children, including repetitions; Singleton retains one. Every leaf participates in substitution, free sets, alpha matching and formation.
+Both enumeration shapes have Set roots without upgrading their elements; an empty source has no fabricated leaf or binding. Nested values remain deferred.
 Root inference sites remain original outer TermExpressions; value origins are original inner enumerations.
 Substitution changes derived element identities, preserving original provenance and typed child inputs.
 Take/Set/Named/Reconsider remain variable-only; partial-conjunction/compact/case caps still require Binding operands.

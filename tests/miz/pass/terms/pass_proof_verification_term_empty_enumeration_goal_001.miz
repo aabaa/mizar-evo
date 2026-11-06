@@ -1,0 +1,5 @@
+:: EN13 13.4.1: the empty enumeration constructs a set.
+theorem EmptyGoal: {} is set
+proof
+  thus {} is set;
+end;
