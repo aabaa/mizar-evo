@@ -4930,6 +4930,12 @@ fn task272b1_goal_text(
     match goal {
         G::Equality { left, right, .. } => format!("eq({},{})", left.index(), right.index()),
         G::Membership { left, right, .. } => format!("member({},{})", left.index(), right.index()),
+        G::Disjunction { left, right, .. } => format!(
+            "or({},{})",
+            task272b1_goal_text(left),
+            task272b1_goal_text(right)
+        ),
+        G::Negation { body, .. } => format!("not({})", task272b1_goal_text(body)),
         G::Conjunction { left, right, .. } => format!(
             "and({},{})",
             task272b1_goal_text(left),
@@ -8856,6 +8862,375 @@ fn task272b10_compact_consider_native_gate_controls_actual_fs_result() {
         .replace("for x being object holds x = x","for x being object st x = x holds x = x")
         .replace("let x be object;","let x be object; assume Premise:x = x;")
         .replace("    thus x = x;","    thus x = x by Premise;");
+    let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty());
+    assert_eq!(super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,true),Ok(true));
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    assert!(handoff.check_witness_goals().is_err());
+    let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
+    assert!(result.actual_detail_keys.iter().any(|key|key.contains("native witness goal")));
+}
+
+#[test]
+fn task272b11_case_goals_execute_existing_fs() {
+    use mizar_checker::{binding_env::{BindingContextLayer as L,BindingContextOwner,BindingContextRecovery,BindingTypeSite},
+        source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::{FormulaKind,FormulaStatus,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::resolved_ast::{LabelKind,LabelResolution};
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceFormulaConnective as C,SurfaceFormulaPrefixOperator as N};
+    let source = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz");
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_per_cases_suppose_001").unwrap();
+    let result = super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0);
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("genuine existing PerCases1 source");
+    assert_eq!(ast.node_views().filter(|node|matches!(node.kind(),K::BinaryFormula(op) if op.connective==C::Or)).count(),3);
+    assert_eq!(ast.node_views().filter(|node|matches!(node.kind(),K::PrefixFormula(N::Not))).count(),4);
+    assert_eq!(ast.node_views().filter(|node|node.kind()==&K::BuiltinPredicateApplication).count(),8);
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    assert_eq!(super::formula_statement::check_formula_ast_with_organization(&ast,&resolver.module,&resolver.env,true),Ok(true));
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    assert!(intents.iter().all(|(_,_,status)|*status==S::Pending));
+    println!("Task272B11 test-first: existing FS/legacy organization/native A and genuine frontend/symbol/native/scope pass; original source has 3 Or/4 Not/8 Eq before goal replay");
+    let (steps,success,pending,checked,inference) = handoff.check_witness_goals()
+        .expect("actual PerCases1 source must materialize unproved whole-goal branches");
+    assert_eq!(steps.len(),7);
+    assert_eq!(inference.terms().len(),18);
+    assert_eq!(inference.formulas().len(),8);
+    let (header,local) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    assert_ne!(header,local);
+    assert_eq!(handoff.scope().bindings().len(),2);
+    assert_eq!(handoff.scope().references().iter().map(|reference|
+        task272b1_binding(&handoff,reference.binding().index())).collect::<Vec<_>>(),
+        [header,header,header,header,local,local,local,local,local,local,local,local,local,local,local,local]);
+    let g0 = format!("forall({}:Set,or(eq({0},{0}),not(eq({0},{0}))))",header.index());
+    let gp = format!("or(eq({0},{0}),not(eq({0},{0})))",local.index());
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==id).unwrap()
+    };
+    assert_eq!(rows.iter().filter(|row|matches!(row.kind(),K::BinaryFormula(op) if op.connective==C::Or)).count(),3);
+    assert_eq!(rows.iter().filter(|row|matches!(row.kind(),K::PrefixFormula(N::Not))).count(),4);
+    let outer = steps[0].context();
+    let branches = [steps[3].context(),steps[5].context()];
+    assert_ne!(branches[0],branches[1]);
+    assert_eq!(handoff.binding_env().contexts().get(outer).unwrap().layer,L::Proof);
+    let cases = original(steps[2].site());
+    assert_eq!(cases.kind(),&K::CaseReasoningStatement);
+    let proof = rows.iter().copied().find(|row|Some(row.site())==cases.parent()).unwrap();
+    assert_eq!(proof.kind(),&K::ProofBlock);
+    assert_eq!(proof.parent(),Some(original(steps[0].site()).site()));
+    let native = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast,&resolver.module).unwrap();
+    let (scopes,_) = mizar_resolve::symbols::source_proof_scope_maps(&native,&resolver.env,handoff.scope()).unwrap();
+    let cases_node = ast.node_views().find(|node|node.kind()==&K::CaseReasoningStatement).unwrap();
+    assert_eq!(scopes.get(&cases_node.id()),handoff.binding_env().contexts().get(outer).unwrap().lexical_scope.as_ref());
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(step.owner(),steps[0].site());
+        assert_eq!(step.context(),match index {0..=2=>outer,3|4=>branches[0],_=>branches[1]});
+        assert_eq!(task272b1_goal_text(step.before()),if index<2 {g0.clone()} else {gp.clone()});
+        assert_eq!(task272b1_goal_text(step.after()),if index==0 {g0.clone()} else {gp.clone()});
+        assert_eq!(step.matched(),if index==1 {Some((header,local))} else {None});
+        assert_eq!(step.free(),if index==0 {vec![]} else {vec![local]});
+        assert!(step.avoided().is_empty());
+        if index>=2 {
+            assert_eq!(step.before(),steps[1].after());
+            assert_eq!(step.after(),steps[1].after());
+        }
+        let row = original(step.site());
+        match index {
+            0=>assert_eq!(row.kind(),&K::TheoremItem),
+            1=>assert_eq!(row.range(),handoff.scope().bindings()[1].range()),
+            2=>assert_eq!(row.kind(),&K::CaseReasoningStatement),
+            3|5=>assert_eq!(row.kind(),&K::SupposeItem),
+            4|6=>assert_eq!(row.kind(),&K::ConclusionStatement),
+            _=>unreachable!(),
+        }
+    }
+    for (branch,conclusion,context,spelling) in [(3,4,branches[0],"A1"),(5,6,branches[1],"A2")] {
+        let row = original(steps[branch].site());
+        assert_eq!(row.parent(),Some(cases.site()));
+        assert_eq!(original(steps[conclusion].site()).parent(),Some(row.site()));
+        let block = handoff.binding_env().contexts().get(context).unwrap();
+        assert_ne!(context,outer);
+        assert_eq!(block.layer,L::Block);
+        assert_eq!(block.parent,Some(outer));
+        assert_eq!(block.owner,BindingContextOwner::SourceStatement {source_range:row.range()});
+        assert_eq!(block.recovery,BindingContextRecovery::Normal);
+        assert!(block.bindings.is_empty() && block.visible_bindings.contains(&local));
+        let node = ast.node_views().find(|node|node.kind()==&K::SupposeItem && node.range()==row.range()).unwrap();
+        assert_eq!(block.lexical_scope.as_ref(),scopes.get(&node.id()));
+        assert_eq!(handoff.binding_env().contexts().iter().filter(|(_,candidate)|candidate.lexical_scope==block.lexical_scope).count(),1);
+        let declaration = labels.index().iter().find(|label|label.kind()==LabelKind::ProofStep && label.primary_spelling()==spelling).unwrap();
+        let mizar_session::SourceAnchor::Range(anchor) = declaration.origin().anchor() else {panic!("original hypothesis label token")};
+        assert_eq!(&source[anchor.start..anchor.end],spelling);
+        let hypothesis = rows.iter().copied().find(|candidate|candidate.kind()==&K::Proposition && candidate.parent()==Some(row.site())).unwrap();
+        assert!(hypothesis.range().start<=anchor.start && anchor.end<=hypothesis.range().end);
+        let references = labels.ids().iter().map(|id|labels.table().get(*id).unwrap()).filter_map(|entry|
+            match entry.resolution() {LabelResolution::Resolved(label) if label.origin()==declaration.origin_path()=>Some(label),_=>None}).collect::<Vec<_>>();
+        let [reference] = references.as_slice() else {panic!("one real own-branch By")};
+        assert_eq!(reference.kind(),LabelKind::ProofStep);
+        assert_ne!(*anchor,reference.range());
+        assert!(hypothesis.range().end<=reference.range().start);
+        assert_eq!(&source[reference.range().start..reference.range().end],spelling);
+        let use_row = rows.iter().copied().find(|candidate|candidate.kind()==&K::Reference && candidate.range()==reference.range()).unwrap();
+        let list = rows.iter().copied().find(|candidate|Some(candidate.site())==use_row.parent()).unwrap();
+        let by = rows.iter().copied().find(|candidate|Some(candidate.site())==list.parent()).unwrap();
+        assert_eq!(list.kind(),&K::ReferenceList);
+        assert_eq!(by.kind(),&K::JustificationClause);
+        assert_eq!(by.parent(),Some(original(steps[conclusion].site()).site()));
+    }
+    assert_eq!(labels.index().iter().filter(|label|label.kind()==LabelKind::ProofStep).count(),2);
+    assert!(labels.index().iter().any(|label|label.kind()==LabelKind::Theorem));
+    assert_eq!(labels.ids().len(),2);
+    assert!(success.is_empty() && pending.is_empty());
+    assert!(checked.coercions().is_empty() && checked.initial_obligations().is_empty() && checked.facts().is_empty());
+    let header_context = handoff.binding_env().bindings().get(header).unwrap().owner_context;
+    assert_eq!(handoff.binding_env().contexts().get(header_context).unwrap().layer,L::Expression);
+    for (index,reference) in handoff.scope().references().iter().enumerate() {
+        let binding = task272b1_binding(&handoff,reference.binding().index());
+        let context = if index<4 {header_context} else if index<10 {branches[0]} else {branches[1]};
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && original(&term.site).range()==reference.range() && term.context==context));
+    }
+    for binding in [header,local] {
+        let entry = handoff.binding_env().bindings().get(binding).unwrap();
+        assert_eq!(entry.type_site,BindingTypeSite::Missing);
+        assert!(inference.terms().iter().any(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")
+            && original(&term.site).range()==entry.declaration_range && term.context==entry.owner_context));
+    }
+    for (_,term) in inference.terms().iter() {
+        assert_eq!(term.status,TermStatus::Inferred);
+        let ty = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(ty.status,TypeStatus::Known);
+        let TypeEntryActual::Known(id) = ty.actual else {panic!("actual known Set")};
+        assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinSet);
+    }
+    for (_,formula) in inference.formulas().iter() {
+        assert_eq!(formula.kind,FormulaKind::Equality);
+        assert_eq!(formula.status,FormulaStatus::Checked);
+        assert_eq!(formula.terms.len(),2);
+        assert_eq!(original(&formula.site).range(),formula.source_range);
+        assert_eq!(original(&formula.site).kind(),&K::BuiltinPredicateApplication);
+        let context = if original(steps[3].site()).range().start<=formula.source_range.start
+            && formula.source_range.end<=original(steps[3].site()).range().end {branches[0]}
+            else if original(steps[5].site()).range().start<=formula.source_range.start
+            && formula.source_range.end<=original(steps[5].site()).range().end {branches[1]} else {header_context};
+        assert_eq!(formula.context,context);
+    }
+    assert!(checked.diagnostics().is_empty() && inference.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty()
+        && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b11_cases_keep_actual_thesis_inputs_own_label_identity_and_member_types() {
+    use mizar_checker::type_checker::{FormulaKind,TypeHeadRef};
+    use mizar_resolve::resolved_ast::LabelResolution;
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceFormulaConnective as C,SurfaceFormulaPrefixOperator as N};
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz");
+    for source in [
+        base.replace("suppose","case"),
+        base.replace("X","Value").replace("A1","FirstHyp").replace("A2","SecondHyp"),
+        format!("\n{}",base.replace(";",";\n")),
+        base.replace("X = X or not X = X","(X = X) or (not (X = X))"),
+        base.replace("A2","A1"),
+        base.replace("thus X = X or not X = X by","thus thesis by"),
+        base.replace("let X be set;","let X be set; set Alias=X;")
+            .replace("thus X = X or not X = X","thus Alias = X or not Alias = X")
+            .replace("suppose A1: X = X","suppose A1: Alias = X")
+            .replace("suppose A2: not X = X","suppose A2: not Alias = X"),
+        "theorem MemberCases: for A being set, x being object holds x in A or not x in A proof let A be set; let x be object; per cases; suppose H1: x in A; thus x in A or not x in A by H1; end; suppose H2: not x in A; thus x in A or not x in A by H2; end; end;".to_owned(),
+    ] {
+        let handoff = task272b1_witness_source(&source);
+        super::native_proof_intent_observation(&handoff).unwrap();
+        let (steps,success,pending,checked,inference) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert!(steps.iter().all(|step|step.owner()==steps[0].site()));
+        assert!(success.is_empty() && pending.is_empty() && checked.facts().is_empty());
+        if source.contains("thus thesis") {
+            assert_eq!(steps.len(),7);
+            assert_eq!(inference.terms().len(),10);
+            assert_eq!(inference.formulas().len(),4);
+            let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+            assert_eq!(rows.iter().filter(|row|matches!(row.kind(),K::BinaryFormula(op) if op.connective==C::Or)).count(),1);
+            assert_eq!(rows.iter().filter(|row|matches!(row.kind(),K::PrefixFormula(N::Not))).count(),2);
+            assert_eq!(steps[4].after(),steps[1].after());
+            assert_eq!(steps[6].after(),steps[1].after());
+        }
+        if source.contains("set Alias") {
+            task272b3_assert_alias_type(&handoff,&inference,2,TypeHeadRef::BuiltinSet);
+        }
+        if source.contains("theorem MemberCases:") {
+            assert_eq!(inference.formulas().len(),8);
+            assert!(inference.formulas().iter().all(|(_,formula)|formula.kind==FormulaKind::Membership));
+        }
+        let (_,labels) = handoff.check_proof_intents().unwrap();
+        let origins = labels.ids().iter().map(|id| {
+            let LabelResolution::Resolved(label) = labels.table().get(*id).unwrap().resolution() else {panic!("real own hypothesis")};
+            label.origin()
+        }).collect::<Vec<_>>();
+        assert_eq!(origins.len(),2);
+        assert_ne!(origins[0],origins[1]);
+        assert!(handoff.source().facts().is_empty() && handoff.source().types().is_empty());
+    }
+}
+
+#[test]
+fn task272b11_or_not_projection_reuses_existing_effects_and_preserves_closed_caps() {
+    for source in [
+        "theorem Whole: for x being set holds x=x or not x=x proof let x be set; thus x=x or not x=x; end;",
+        "theorem Negative: for x being set holds not x=x proof let x be set; thus not x=x; end;",
+        "theorem Double: for x being set holds not not x=x proof let x be set; thus not not x=x; end;",
+        "theorem Alpha: for x being set holds for y being object holds y=x or not y=x proof let x be set; thus for z being object holds z=x or not z=x; end;",
+        "theorem BothEdges: for x,y being set holds y=y or not x=x proof let x,y be set; thus y=y or not x=x; end;",
+        "theorem Take: for o being object ex z being object st z=o or not z=o proof let o be object; take o; thus o=o or not o=o; end;",
+        "theorem Assume: for x being set st x=x holds x=x or not x=x proof let x be set; assume H:x=x; thus x=x or not x=x by H; end;",
+        "theorem NowBool: for x being set holds x=x or not x=x proof let x be set; N: now thus x=x or not x=x; end; thus x=x or not x=x by N; end;",
+        "theorem HerebyBool: for x being set holds x=x or not x=x proof let x be set; hereby thus x=x or not x=x; end; end;",
+    ] {
+        let handoff = task272b1_witness_source(source);
+        let (steps,_,_,_,_) = handoff.check_witness_goals().unwrap_or_else(|error|panic!("{source}: {error:?}"));
+        assert_eq!(steps.last().unwrap().before(),steps.last().unwrap().after());
+        if source.contains("theorem BothEdges:") {
+            assert_eq!(steps[1].free(),[task272b1_binding(&handoff,2)]);
+            assert_eq!(steps[2].free(),[task272b1_binding(&handoff,2),task272b1_binding(&handoff,3)]);
+            assert_eq!(task272b1_goal_text(steps[2].after()),format!("or(eq({1},{1}),not(eq({0},{0})))",
+                task272b1_binding(&handoff,2).index(),task272b1_binding(&handoff,3).index()));
+        }
+        if source.contains("theorem Alpha:") {
+            assert_eq!(steps[1].avoided(),[task272b1_binding(&handoff,1)]);
+        }
+    }
+    for source in [
+        "theorem LeftImp: for x being set holds (x=x implies x=x) or x=x proof let x be set; thus thesis; end;",
+        "theorem RightImp: for x being set holds x=x or (x=x implies x=x) proof let x be set; thus thesis; end;",
+        "theorem NotImp: for x being set holds not (x=x implies x=x) proof let x be set; thus thesis; end;",
+        "theorem QuantImp: for x being set holds for y being set holds x=x or not (y=y implies x=x) proof let x be set; thus thesis; end;",
+        "theorem NotQuantImp: for x being set holds not (for y being set holds y=y implies x=x) proof let x be set; thus thesis; end;",
+        "theorem HerebyImp: for x being set holds x=x or not (x=x implies x=x) proof let x be set; hereby thus thesis; end; end;",
+        "theorem NowImp: for x being set holds x=x or not (x=x implies x=x) proof let x be set; N: now thus thesis; end; thus thesis by N; end;",
+        "theorem PartialCap: for x being set holds (x=x or not x=x) & x=x proof let x be set; thus x=x or not x=x; thus x=x; end;",
+        "theorem CompactCap: for x being object holds x=x proof let x be object; A1: (ex y being object st y=x or not y=x) proof take x; thus x=x or not x=x; end; consider z being object such that A2:z=x or not z=x by A1; thus x=x; end;",
+        "theorem BadRight: for o being object ex A being set st o=o or not (o in A) proof let o be object; take o; thus thesis; end;",
+    ] {
+        assert!(task272b1_witness_source(source).check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b11_case_conclusions_keep_prior_pending_and_theorem_isolation() {
+    use mizar_checker::{type_checker::{TermReference,TypeHeadRef},typed_ast::{InitialObligationStatus,TypeEntryActual}};
+    let pending = "theorem PendingCases: for o being object ex z being set st z=o or not z=o proof let o be object; take o; per cases; suppose A1:o=o; thus o=o or not o=o by A1; end; suppose A2:not o=o; thus o=o or not o=o by A2; end; end;";
+    let other = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz").replace("PerCases1","OtherCases");
+    for source in [pending.to_owned(),format!("{pending}\n{other}")] {
+        let handoff = task272b1_witness_source(&source);
+        let (steps,success,pending,checked,inference) = handoff.check_witness_goals().unwrap();
+        assert!(success.is_empty());
+        assert_eq!(pending.len(),1);
+        assert_eq!(pending[0].site,*steps[2].site());
+        assert_eq!(checked.initial_obligations().len(),1);
+        let obligation = checked.initial_obligations().iter().next().unwrap().1;
+        assert_eq!(obligation.owner,*steps[2].site());
+        assert_eq!(obligation.status,InitialObligationStatus::Pending);
+        let observed = super::native_witness_goal_observation(&handoff).unwrap();
+        for index in [5,7] {
+            assert_eq!(steps[index].owner(),steps[2].owner());
+            assert_ne!(steps[index].context(),steps[2].context());
+            let line = observed.iter().find(|line|line.starts_with("remaining.")
+                && line.contains(&format!("terminal={:?}",steps[index].site()))).unwrap();
+            assert!(line.ends_with(&format!("pending=[{:?}]",obligation.id)),"{line}");
+        }
+        if steps.len()>8 {
+            assert_eq!(steps.len(),15);
+            assert_ne!(steps[12].owner(),steps[2].owner());
+            for index in [12,14] {
+                let line = observed.iter().find(|line|line.starts_with("remaining.")
+                    && line.contains(&format!("terminal={:?}",steps[index].site()))).unwrap();
+                assert!(line.ends_with("pending=[]"),"{line}");
+            }
+        }
+        let object = task272b1_binding(&handoff,2);
+        for (_,term) in inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(object))) {
+            let TypeEntryActual::Known(id) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual Object retained")};
+            assert_eq!(inference.normalized_types().get(id).unwrap().head,TypeHeadRef::BuiltinObject);
+        }
+        assert!(handoff.source().facts().is_empty() && handoff.source().types().is_empty());
+    }
+}
+
+#[test]
+fn task272b11_case_profile_refuses_other_hypotheses_citations_and_source_effects() {
+    let base = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz");
+    for source in [
+        base.replace(" by A1",""),
+        base.replace(" by A2",""),
+        base.replace("by A1","by A2"),
+        base.replace("by A2","by A1"),
+        base.replace("by A1","by Missing"),
+        base.replace("by A1","by PerCases1"),
+        base.replace("by A1","by A1, A1"),
+        base.replace("by A1","by Imported.A1"),
+        base.replace("suppose A1: X = X;","suppose A1: not X = X;"),
+        base.replace("suppose A2: not X = X;","suppose A2: X = X;"),
+        base.replace("thus X = X or not X = X by A1;","thus X = X by A1;"),
+        base.replace("thus X = X or not X = X by A1;","hence X = X or not X = X by A1;"),
+        base.replace("thus X = X or not X = X by A1;","then X = X or not X = X by A1;"),
+        base.replace("thus X = X or not X = X by A1;","thus Inner:X = X or not X = X by A1;"),
+        base.replace("suppose A1: X = X;","suppose A1: X = X; let Y be set;"),
+        base.replace("suppose A1: X = X;","suppose A1: X = X; take X;"),
+        base.replace("suppose A1: X = X;","suppose A1: X = X; set Alias=X;"),
+        base.replace("thus X = X or not X = X by A1;","hereby thus X = X or not X = X by A1; end;"),
+        base.replace("thus X = X or not X = X by A1;","thus X = X or not X = X by A1; thus thesis by A1;"),
+        base.replace("suppose A1: X = X;","suppose that A1: X = X and Extra: X = X;"),
+        base.replace("per cases;","then per cases;"),
+        base.replace("  end;\nend;","  end;\n  thus X = X or not X = X;\nend;"),
+        base.replace("  suppose A2: not X = X;\n    thus X = X or not X = X by A2;\n  end;\n",""),
+        base.replace("  end;\nend;","  end;\n  suppose A3: X = X; thus X = X or not X = X by A3; end;\nend;"),
+        "theorem WrongUID: for X,Y being set holds X=Y or not X=Y proof let X,Y be set; per cases; suppose A:Y=X; thus X=Y or not X=Y by A; end; suppose B:not X=Y; thus X=Y or not X=Y by B; end; end;".to_owned(),
+        "theorem ObjectRight: for A,x being object holds x in A or not x in A proof let A,x be object; per cases; suppose H1:x in A; thus x in A or not x in A by H1; end; suppose H2:not x in A; thus x in A or not x in A by H2; end; end;".to_owned(),
+    ] {
+        assert!(task272b1_witness_source(&source).check_witness_goals().is_err(),"{source}");
+    }
+    let mixed = super::formula_statement::step5c8_test_frontend(&base.replacen("suppose","case",1));
+    assert!(mixed.diagnostics.iter().any(|diagnostic|diagnostic.message.contains("must not mix")));
+    let outer = base.replace("for X being set holds","for X being set st X = X holds")
+        .replace("let X be set;","let X be set; assume Outer: X = X;")
+        .replace("by A1","by Outer");
+    let handoff = task272b1_witness_source(&outer);
+    super::native_proof_intent_observation(&handoff).unwrap();
+    assert!(handoff.check_witness_goals().is_err());
+    let two = format!("{}\n{}",base.replace("PerCases1","First"),base.replace("PerCases1","Second"));
+    let handoff = task272b1_witness_source(&two);
+    let (steps,_,_,_,inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(),14);
+    assert_eq!(inference.terms().len(),36);
+    assert_eq!(inference.formulas().len(),16);
+    assert_ne!(steps[0].owner(),steps[7].owner());
+    assert_ne!(steps[3].context(),steps[10].context());
+    assert!(task272b1_witness_source(&two.replacen("by A1","by A2",1)).check_witness_goals().is_err());
+}
+
+#[test]
+fn task272b11_case_native_gate_controls_actual_fs_result() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_per_cases_suppose_001").unwrap();
+    let source = include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz")
+        .replacen(" by A1","",1);
     let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
     assert!(frontend.diagnostics.is_empty());
     let ast = frontend.ast.unwrap();

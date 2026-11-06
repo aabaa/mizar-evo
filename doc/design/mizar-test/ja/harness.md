@@ -43,6 +43,10 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 実 Take/Consider-name の互換性 request は存在の evidence と区別し、子 Pending は元 owner に残す。
 保存した親 goal に移さず、この native 観測では全 claim を未証明のまま保持する。
 
+既存 per-cases/suppose FS は意味論/A 検査後に Or/Not goal と同一 owner の分岐・引用 replay も消費する。
+各分岐は先行する親 Pending guard と未証明の goal 全体を保持し、省略 justification・名前解決から
+網羅性や fact を受理しない。Case keyword/thesis の派生形は native-only control とする。
+
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、
 残る前提の完了後の有効化は Task49 が所有する。基盤エラーは期待失敗 key を満たさない。

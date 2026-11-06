@@ -64,6 +64,9 @@ Hereby and a single-claim labelled Now also observe unproved goals in their auth
 child Block contexts; Now citations retain candidate status and source-order guard joins.
 Explicit compact candidates and Consider hypotheses additionally retain separate
 unproved source-goal owners and parent frontiers through those same owners.
+Bounded homogeneous Case/Suppose branches add Or/Not projection and authentic
+branch-local citation while retaining outer Pending; omitted exhaustiveness
+intent and branch claims remain unproved.
 Broader goal/substitution coverage remains with Task272; the prepared old-AS
 consumer adds no default activation or proof acceptance. The separate
 `spec.en.16.theorems.proof_skeleton.conjunction.metadata` requirement observes

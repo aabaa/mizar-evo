@@ -52,6 +52,12 @@ Consider-name compatibility requests remain distinct from existence evidence;
 owner-local remaining observations retain child Pending without transferring it
 to the saved parent goal. All claims remain unproved by this native observation.
 
+The existing per-cases/suppose FS case also consumes Or/Not goal projection and
+same-owner branch/citation replay after unchanged legacy/A checks. Each branch
+retains prior outer Pending guards and an unproved whole goal; omitted case
+justification and label resolution provide no exhaustiveness or accepted facts.
+Case-keyword and thesis alternatives are native-only controls of this boundary.
+
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into
 the existing case result. Its tags, default selection and expectations stay fixed;

@@ -121,7 +121,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             let permitted = if path == root.join("src/source_property_implementation.rs") {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind as T};"
             } else if path == root.join("src/source_proof_local_declaration.rs") {
-                "use mizar_syntax::ast::{\n    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceNodeKind, SurfaceQuantifierKind,\n    SurfaceTokenKind,\n};"
+                "use mizar_syntax::ast::{\n    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,\n    SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
             } else if path == root.join("src/typed_ast.rs") {
                 "use mizar_syntax::ast::SurfaceNodeKind;"
             } else {

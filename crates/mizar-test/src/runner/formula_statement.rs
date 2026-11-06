@@ -612,6 +612,7 @@ fn formula_statement_detail_keys(
                     | "pass_formula_statement_hereby_diffuse_conclusion_001"
                     | "pass_formula_statement_now_diffuse_statement_001"
                     | "pass_formula_statement_consider_choice_001"
+                    | "pass_formula_statement_per_cases_suppose_001"
             )
         {
             semantics.extend(

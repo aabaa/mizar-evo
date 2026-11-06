@@ -739,6 +739,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B8:** [single-claim Now goals](../../task_contracts/en/CHECKER272B8-NOW-GOALS.md); unproved local claim and source-ordered citation/guard joins.
   - [x] **Task 272B9:** [sequential conjunction trace](../../task_contracts/en/CHECKER272B9-CONJUNCTION-GOALS.md); unproved left-to-right residual and exact native AS consumption.
   - [x] **Task 272B10:** [compact/Consider hypotheses](../../task_contracts/en/CHECKER272B10-COMPACT-CONSIDER-GOALS.md); actual local goal owners and inherited parent state.
+  - [x] **Task 272B11:** [case branch goals](../../task_contracts/en/CHECKER272B11-CASE-GOALS.md); unproved Or/Not and same-owner branch/citation replay.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
