@@ -18,6 +18,8 @@ immutable な sealed value とし、別の構文木を追加しない。
 attribute subject の semantic guard と resolver の明示 pattern arity は区別する。
 functor の戻り型適合性は独立に検査し、使用箇所の選択結果・戻り型・宣言順で target を選ばない。
 実際の symbol と source site で root 関係を保持する。
+明示的な非修飾ローカル宣言 label は適格な ordinary root を指定する。
+省略時は適格 root が一意であることを要求し、不正な label では省略時の推論に戻らない。
 coherence request は実 owner に属する Pending のままとし、active refinement・使用可能な fact・
 checked proof・等式・受理済み同値を生成しない。
 
@@ -25,7 +27,7 @@ checked proof・等式・受理済み同値を生成しない。
 
 共通 handoff 一つを TypedAst に原子的に install し、ResolvedTypedAst で replay する。
 型 ID は所有元の正規化 universe を保持し、宣言だけのソースに overload application や selected root を作らない。
-import・template・nominal/attributed・明示 target・refinement chain は初期境界の対象外とする。
+import・template・nominal/attributed・修飾 target・refinement chain は初期境界の対象外とする。
 既存の marked-Set/registration consumer は独立した前提を維持する。
 実 type-elaboration Case が install 済み root・target・body/type・Pending request の対応を観測する。
 受け付ける各 definition block は parameter 宣言に続く ordinary 宣言または再定義を

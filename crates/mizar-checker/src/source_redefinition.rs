@@ -143,8 +143,15 @@ fn coherence(rows: &[SourceNode], row: &SourceNode) -> Result<(), String> {
         return Err(invalid());
     }
     let parts = children(rows, row)?;
-    let [word, proof, semi] = parts.as_slice() else {
-        return Err(invalid());
+    let (word, proof, semi) = match parts.as_slice() {
+        [word, proof, semi] => (*word, *proof, *semi),
+        [word, with, label, proof, semi]
+            if token(with, "with")
+                && matches!(label.kind(), K::Token(t) if t.kind == T::Identifier && !t.text.is_empty()) =>
+        {
+            (*word, *proof, *semi)
+        }
+        _ => return Err(invalid()),
     };
     if !token(word, "coherence") || !token(semi, ";") || proof.kind() != &K::ProofBlock {
         return Err(invalid());
@@ -539,6 +546,10 @@ fn target(roots: &SourceOrdinaryRootHandoff, d: &Roles<'_>) -> Result<SymbolId, 
         }
     }
     let declarations = intake(roots)?;
+    let rows = roots.original.source_nodes().ok_or_else(invalid)?;
+    let declaration = children(rows, d.1)?;
+    let clause = children(rows, declaration.last().ok_or_else(invalid)?)?;
+    let explicit = (clause.len() == 5).then(|| clause[2].spelling());
     let mut found = Vec::new();
     for root in roots.roots() {
         let original = declarations
@@ -551,6 +562,12 @@ fn target(roots: &SourceOrdinaryRootHandoff, d: &Roles<'_>) -> Result<SymbolId, 
             || original.1.range().end >= d.1.range().start
         {
             continue;
+        }
+        if let Some(label) = explicit {
+            let frame = children(rows, original.1)?;
+            if frame[1].spelling() != label {
+                continue;
+            }
         }
         let mut strict = false;
         for id in root.3 {
@@ -1066,8 +1083,13 @@ mod tests {
             "predicate" => "predicates",
             _ => "functors",
         };
+        let family = if variant == 3 {
+            "explicit"
+        } else {
+            "intrinsic"
+        };
         let source = root.join(format!(
-            "tests/miz/pass/{directory}/pass_type_elaboration_redefinition_intrinsic_{form}_001.miz"
+            "tests/miz/pass/{directory}/pass_type_elaboration_redefinition_{family}_{form}_001.miz"
         ));
         let root =
             std::env::temp_dir().join(format!("checker279-private-{}-{form}", std::process::id()));
@@ -1441,6 +1463,56 @@ mod tests {
             let plain = valid.install(original).unwrap();
             assert!(resolve(&plain, hints.clone()).is_ok());
             assert!(resolve(&installed, hints).is_err());
+            let explicit = fixture(form, 3).unwrap();
+            let rows = explicit.roots.original.source_nodes().unwrap();
+            let clause = rows
+                .iter()
+                .find(|r| r.kind() == &K::CoherenceCondition)
+                .unwrap();
+            for ordinal in [1, 2] {
+                let mut bad = rows.to_vec();
+                let row = bad
+                    .iter_mut()
+                    .find(|r| r.parent() == Some(clause.site()) && r.child_ordinal() == ordinal)
+                    .unwrap();
+                if let K::Token(t) = &mut row.kind {
+                    t.kind = T::ReservedSymbol;
+                }
+                let owner = bad.iter().find(|r| r.site() == clause.site()).unwrap();
+                assert!(coherence(&bad, owner).is_err());
+            }
+            if form == "predicate" {
+                assert_eq!(explicit.roots.roots.len(), 2);
+                assert_eq!(explicit.targets[0].1, explicit.roots.roots[1].0);
+                for root in &explicit.roots.roots {
+                    let heads = root
+                        .3
+                        .iter()
+                        .map(|id| {
+                            explicit
+                                .roots
+                                .normalization
+                                .normalized_types()
+                                .get(*id)
+                                .unwrap()
+                                .head
+                                .clone()
+                        })
+                        .collect::<Vec<_>>();
+                    assert!(
+                        heads == [TypeHeadRef::BuiltinObject, TypeHeadRef::BuiltinSet]
+                            || heads == [TypeHeadRef::BuiltinSet, TypeHeadRef::BuiltinObject]
+                    );
+                }
+                let mut bad = explicit.clone();
+                bad.targets[0].1 = explicit.roots.roots[0].0.clone();
+                let base = explicit.roots.original.as_ref();
+                assert!(base.clone().with_source_redefinition(bad.clone()).is_err());
+                let mut forged = base.clone().with_source_redefinition(explicit).unwrap();
+                assert!(resolve(&forged, vec![]).is_ok());
+                forged.inject_source_redefinition_for_test(bad);
+                assert!(resolve(&forged, vec![]).is_err());
+            }
             let foreign = fixture(
                 if form == "attribute" {
                     "predicate"

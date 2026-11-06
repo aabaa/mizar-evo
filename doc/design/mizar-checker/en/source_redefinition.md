@@ -19,6 +19,8 @@ sharpened by the Set parameters; an attribute subject is a separate semantic
 guard from its explicit resolver pattern arity. Functor return compatibility is
 checked separately. Use-site selection, result types and declaration order do
 not choose a target. Actual symbols and source sites retain the root relation.
+An explicit unqualified local declaration label selects its eligible ordinary
+root; omission requires a unique eligible root and an invalid label never falls back.
 Coherence requests retain their actual owners and remain Pending, with no active
 refinement, usable fact, checked proof, equation or accepted equivalence.
 
@@ -27,7 +29,7 @@ refinement, usable fact, checked proof, equation or accepted equivalence.
 One common handoff is installed atomically in TypedAst and replayed by
 ResolvedTypedAst; all type IDs retain their owning normalization universe.
 Declaration-only sources introduce no overload application or selected root.
-Imported, template, nominal/attributed, explicit-target and refinement-chain
+Imported, template, nominal/attributed, qualified-target and refinement-chain
 profiles remain outside this initial boundary. Existing marked-Set/registration
 consumers retain their independent prerequisites. Real type-elaboration Cases
 inspect the installed root, target, body/type and Pending request associations.

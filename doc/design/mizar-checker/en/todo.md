@@ -763,6 +763,7 @@ unchecked row below is one future nonempty logical task and one commit.
   the Task 285 element rules blocked on it (AttributeRedefinition,
   FunctorRedefinition) with the producer.
   - [x] **Task 279A:** [intrinsic declaration targets](../../task_contracts/en/CHECKER279A-INTRINSIC-REDEFINITION-TARGETS.md); joint attribute/predicate/functor roots and Pending coherence.
+  - [x] **Task 279B:** [explicit local targets](../../task_contracts/en/CHECKER279B-EXPLICIT-LOCAL-TARGETS.md); actual ordinary labels and Pending-only target disambiguation.
 
 Every task projects its family transactionally through applicable `TypedAst`
 and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10

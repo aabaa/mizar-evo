@@ -1,0 +1,10 @@
+:: EN19 19.4.1 / 19.5: an explicit local target retains Pending coherence.
+definition
+  let x be object;
+  func FBase: ident x -> object equals x;
+end;
+definition
+  let x be set;
+  redefine func FRefined: ident x -> set equals x;
+  coherence with FBase proof thus thesis; end;
+end;

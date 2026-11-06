@@ -1,0 +1,16 @@
+:: EN09 9.6 / EN19 19.4.1: an explicit label chooses the second eligible root.
+definition
+  let x be object;
+  let y be set;
+  pred PLeft: x eqv y means x = x;
+end;
+definition
+  let x be set;
+  let y be object;
+  pred PRight: x eqv y means y = y;
+end;
+definition
+  let x, y be set;
+  redefine pred PRefined: x eqv y means x = y;
+  coherence with PRight proof thus thesis; end;
+end;

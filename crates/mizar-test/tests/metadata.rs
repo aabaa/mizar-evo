@@ -3896,8 +3896,8 @@ fn syntax_smoke_passes_non_syntax_diagnostics_and_retains_their_order() {
 fn syntax_smoke_repository_has_exactly_360_cases_353_passed_7_expected_and_no_failures() {
     let report = run_syntax_smoke_corpus(&repository_config()).unwrap();
 
-    assert_eq!(report.results.len(), 372);
-    assert_eq!(report.passed_count(), 365);
+    assert_eq!(report.results.len(), 375);
+    assert_eq!(report.passed_count(), 368);
     assert_eq!(report.expected_rejection_count(), 7);
     assert_eq!(report.failed_count(), 0);
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
@@ -5726,8 +5726,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 269);
-    assert_eq!(report.passed_count(), 269);
+    assert_eq!(report.results.len(), 272);
+    assert_eq!(report.passed_count(), 272);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -10670,8 +10670,8 @@ fn syntax_smoke_cli_reports_repository_360_353_7_0_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("syntax-smoke cases: 372"));
-    assert!(stdout.contains("passed: 365"));
+    assert!(stdout.contains("syntax-smoke cases: 375"));
+    assert!(stdout.contains("passed: 368"));
     assert!(stdout.contains("expected syntax rejections: 7"));
     assert!(stdout.contains("failed: 0"));
     assert!(stdout.contains("errors: 0"));
@@ -10737,8 +10737,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 269"));
-    assert!(stdout.contains("passed: 269"));
+    assert!(stdout.contains("type-elaboration cases: 272"));
+    assert!(stdout.contains("passed: 272"));
     assert!(stdout.contains("failed: 0"));
 }
 

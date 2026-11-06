@@ -1,0 +1,10 @@
+:: EN19 19.4.1 / 19.5: an explicit local target retains Pending coherence.
+definition
+  let x be object;
+  attr ABase: x is rmarked means x = x;
+end;
+definition
+  let x be set;
+  redefine attr ARefined: x is rmarked means x = x;
+  coherence with ABase proof thus thesis; end;
+end;

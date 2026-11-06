@@ -12237,7 +12237,6 @@ fn task279a_unsupported_source_profiles_do_not_publish_partial_targets_or_cases(
         ("reverse guards",base.replacen("object","set",1).replace("let x be set;\n  redefine","let x be object;\n  redefine")),
         ("unsupported body",base.replacen("means x = x;","means x in x;",1)),
         ("coherence proof body",base.replace("coherence proof thus thesis; end;","coherence proof thus contradiction; end;")),
-        ("explicit target",base.replace("coherence proof","coherence with ABase proof")),
         ("extra chained refinement",format!("{base}\ndefinition\n{}",refined.replace("ARefined","AChained").replace("coherence proof","coherence with ARefined proof"))),
         ("imported source",format!("import parser.type_fixtures;\n{base}")),
         ("attributed guard",format!("{flag}{}",base.replace("let x be set;","let x be marked set;"))),
@@ -12269,5 +12268,410 @@ fn task279a_unsupported_source_profiles_do_not_publish_partial_targets_or_cases(
         if let Ok(roots) = SourceOrdinaryRootHandoff::build(original,native,symbols) {assert!(SourceRedefinitionHandoff::build(Arc::new(roots)).is_err(),"{name}");}
         let result = metamorphic_guard::with_source(case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0));
         assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed,"{name}");
+    }
+}
+
+#[test]
+fn task279b_explicit_local_targets_preserve_written_roots_and_installed_transactions() {
+    use std::sync::Arc;
+    use mizar_checker::{binding_env::{BinderIdentity,BindingContextLayer as L,BindingContextOwner,BindingContextRecovery,BindingKind,BindingRecoveryState,BindingStatus,BindingTypeSite},
+        overload_resolution::CandidateDeclarationKind as D,
+        source_redefinition::{SourceOrdinaryRootHandoff,SourceRedefinitionHandoff},
+        type_checker::{FormulaKind,FormulaStatus,NormalizedTypeStatus,TermKind,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{ContextRecoveryState,InitialObligationKind as O,InitialObligationStatus,NodeRecoveryState,
+            TypeContextLayer,TypeEntryActual,TypeStatus,TypedSiteRef,TypingState}};
+    use mizar_resolve::{declarations::DeclarationShellKind,env::SymbolKind,
+        names::{LocalTermScope,resolve_template_formal},symbols::source_declaration_shells};
+    use mizar_session::SourceAnchor;
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceTokenKind as TK};
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    let mut prepared = Vec::new();
+    for (form,id,legacy) in [(0,"pass_type_elaboration_redefinition_explicit_attribute_001",false),
+        (1,"pass_type_elaboration_redefinition_explicit_predicate_001",false),
+        (2,"pass_type_elaboration_redefinition_explicit_functor_001",false),
+        (0,"pass_type_elaboration_redefinition_intrinsic_attribute_001",true)] {
+        let case = plan.cases.iter().find(|c|c.id.0==id).unwrap();
+        assert!(super::active_type_elaboration_cases(&plan).any(|c|c.id==case.id));
+        assert_eq!(case.expectation.tags,["active_type_elaboration"]);
+        let base = std::fs::read_to_string(&case.source_path).unwrap();
+        let source = if legacy {base.replace("coherence proof", "coherence with ABase proof")} else {base};
+        let (original,native,symbols) = task279a_intrinsic_source_inputs(case,&source);
+        assert_eq!(original.resolved_root(),Some(native.arena().root()));
+        assert!(original.source_redefinition().is_none());
+        assert!(original.contexts().is_empty() && original.types().is_empty() && original.initial_obligations().is_empty()
+            && original.facts().is_empty() && original.coercions().is_empty() && original.diagnostics().is_empty());
+        let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+        let (ordinary_kind,refined_kind,symbol_kind,arity,body_count,formal_count,type_count) = match form {
+            0=>(K::AttributeDefinition,K::AttributeRedefinition,SymbolKind::Attribute,0,4,2,2),
+            1=>(K::PredicateDefinition,K::PredicateRedefinition,SymbolKind::Predicate,2,6,6,5),
+            _=>(K::FunctorDefinition,K::FunctorRedefinition,SymbolKind::Functor,1,2,2,4),
+        };
+        for (kind,count) in [(K::DefinitionBlockItem,if form==1 {3} else {2}),(K::DefinitionParameter,if form==1 {5} else {2}),(K::TermExpression,body_count),
+            (K::TermReference,body_count),(K::BuiltinPredicateApplication,if form==2 {0} else if form==1 {3} else {2}),
+            (K::TypeExpression,type_count),(K::CoherenceCondition,1),(K::ProofBlock,1),(K::ConclusionStatement,1)] {
+            assert_eq!(rows.iter().filter(|r|r.kind()==&kind).count(),count,"{id}: {kind:?}");
+        }
+        let mut declarations = rows.iter().copied().filter(|r|r.kind()==&ordinary_kind || r.kind()==&refined_kind).collect::<Vec<_>>();
+        declarations.sort_by_key(|r|r.range().start); assert_eq!(declarations.len(),if form==1 {3} else {2});
+        let actual_symbols = declarations.iter().map(|row| {
+            let kind = if row.kind()==&refined_kind {SymbolKind::Redefinition} else {symbol_kind};
+            let found = symbols.symbols().iter().filter(|s|s.kind()==kind && s.origin().anchor()==&SourceAnchor::Range(row.range())).collect::<Vec<_>>();
+            assert_eq!(found.len(),1); let symbol = found[0];
+            assert_eq!(symbol.origin().source_id(),original.source_id()); assert_eq!(symbol.symbol().module(),original.module_id());
+            let definitions = symbols.definitions().iter().filter(|d|d.symbol()==symbol.symbol() && d.origin()==symbol.origin()).collect::<Vec<_>>();
+            assert_eq!(definitions.len(),1); assert_eq!(definitions[0].arity(),if kind==SymbolKind::Redefinition {None} else {Some(arity)});
+            symbol.symbol().clone()
+        }).collect::<Vec<_>>();
+        for (index,symbol) in actual_symbols.iter().enumerate() {assert!(!actual_symbols[..index].contains(symbol));}
+        let mut formals = rows.iter().copied().filter(|r|matches!(r.kind(),K::Token(t) if t.kind==TK::Identifier)
+            && rows.iter().any(|p|Some(p.site())==r.parent() && p.kind()==&K::QualifiedVariableSegment)).collect::<Vec<_>>();
+        formals.sort_by_key(|r|r.range().start); assert_eq!(formals.len(),formal_count);
+        assert_eq!(formals.iter().map(|r|r.spelling()).collect::<Vec<_>>(),if form==1 {vec!["x","y","x","y","x","y"]} else {vec!["x","x"]});
+        let mut bodies = rows.iter().copied().filter(|r|r.kind()==&K::TermExpression).collect::<Vec<_>>(); bodies.sort_by_key(|r|r.range().start);
+        let expected_formals = match form {0=>vec![0,0,1,1],1=>vec![0,0,3,3,4,5],_=>vec![0,1]};
+        for (root,index) in bodies.iter().zip(expected_formals) {
+            let refs = rows.iter().copied().filter(|r|r.parent()==Some(root.site())).collect::<Vec<_>>();
+            assert_eq!(refs.len(),1); assert_eq!(refs[0].kind(),&K::TermReference);
+            let tokens = rows.iter().copied().filter(|r|r.parent()==Some(refs[0].site())).collect::<Vec<_>>();
+            assert_eq!(tokens.len(),1); assert_eq!(resolve_template_formal(&native,tokens[0].site()).unwrap(),formals[index].site());
+        }
+        let mut declaration_labels = Vec::new();
+        for (index,declaration) in declarations.iter().enumerate() {
+            let mut parts = rows.iter().copied().filter(|r|r.parent()==Some(declaration.site())).collect::<Vec<_>>(); parts.sort_by_key(|r|r.child_ordinal());
+            let label = parts[if declaration.kind()==&refined_kind {2} else {1}]; assert!(matches!(label.kind(),K::Token(t) if t.kind==TK::Identifier)); declaration_labels.push(label.spelling());
+            if form==0 {
+                let subject = parts[if declaration.kind()==&refined_kind {4} else {3}];
+                assert!(matches!(subject.kind(),K::Token(t) if t.kind==TK::Identifier)); assert_eq!(subject.spelling(),"x");
+                let parameter = rows.iter().copied().find(|r|r.kind()==&K::DefinitionParameter
+                    && r.range().start<formals[index].range().start && formals[index].range().end<r.range().end).unwrap();
+                assert_eq!(declaration.parent(),parameter.parent()); assert!(parameter.range().end<declaration.range().start);
+            } else {
+                let pattern = parts.iter().copied().find(|r|r.kind()==if form==1 {&K::PredicatePattern} else {&K::FunctorPattern}).unwrap();
+                let mut loci = rows.iter().copied().filter(|r|r.parent()==Some(pattern.site())).collect::<Vec<_>>(); loci.sort_by_key(|r|r.child_ordinal());
+                for (position,formal) in if form==1 {vec![(0,index*2),(2,index*2+1)]} else {vec![(1,index)]} {
+                    assert_eq!(resolve_template_formal(&native,loci[position].site()).unwrap(),formals[formal].site());
+                }
+            }
+        }
+        assert_eq!(declaration_labels,match form {0=>vec!["ABase","ARefined"],1=>vec!["PLeft","PRight","PRefined"],_=>vec!["FBase","FRefined"]});
+        let shells = source_declaration_shells(&native,&symbols).unwrap();
+        assert_eq!(shells.declarations().iter().filter(|s|s.kind()==DeclarationShellKind::DefinitionBlock).count(),declarations.len());
+        let coherence = rows.iter().copied().find(|r|r.kind()==&K::CoherenceCondition).unwrap(); assert_eq!(coherence.parent(),Some(declarations.last().unwrap().site()));
+        let mut frame = rows.iter().copied().filter(|r|r.parent()==Some(coherence.site())).collect::<Vec<_>>(); frame.sort_by_key(|r|r.child_ordinal());
+        assert_eq!(frame.len(),5);
+        for (index,text,kind) in [(0,"coherence",TK::ReservedWord),(1,"with",TK::ReservedWord),(4,";",TK::ReservedSymbol)] {
+            assert!(matches!(frame[index].kind(),K::Token(t) if t.kind==kind && t.text.as_ref()==text));
+        }
+        assert!(matches!(frame[2].kind(),K::Token(t) if t.kind==TK::Identifier));
+        let chosen = usize::from(form==1); assert_eq!(frame[2].spelling(),declaration_labels[chosen]);
+        assert!(declarations[chosen].range().end<frame[2].range().start);
+        assert_eq!(frame[3].kind(),&K::ProofBlock);
+        let proof = rows.iter().copied().find(|r|r.kind()==&K::ProofBlock).unwrap(); assert_eq!(proof.site(),frame[3].site());
+        assert!(rows.iter().any(|r|r.kind()==&K::ConclusionStatement && r.parent()==Some(proof.site()) && r.spelling()=="thus thesis ;"));
+        prepared.push((form,case.clone(),source,original,native,symbols));
+    }
+    assert_eq!(prepared.len(),4);
+    println!("Task279B test-first prerequisites: ALL THREE actual active explicit Cases and exact old attribute mutation passed clean frontend/resolver/generic/native/formal/label prerequisites before FIRST root build; genuine predicate two-root cross-vectors and second written PRight are source-grounded");
+    for (form,case,source,original,native,symbols) in prepared {
+        let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+        let typed_site = |row:&mizar_checker::typed_ast::SourceNode| TypedSiteRef::Node(
+            original.nodes().iter().find(|(_,n)|n.resolved_node==Some(row.site())).unwrap().0);
+        let original_row = |site:&TypedSiteRef| {
+            let id = original.nodes().node(site.node()).unwrap().resolved_node.unwrap(); rows.iter().copied().find(|r|r.site()==id).unwrap()
+        };
+        let (ordinary_kind,refined_kind,symbol_kind,declaration_kind,obligation_kind,arity) = match form {
+            0=>(K::AttributeDefinition,K::AttributeRedefinition,SymbolKind::Attribute,D::Attribute,O::AttributeRedefinitionCoherence,1),
+            1=>(K::PredicateDefinition,K::PredicateRedefinition,SymbolKind::Predicate,D::Predicate,O::PredicateRedefinitionCoherence,2),
+            _=>(K::FunctorDefinition,K::FunctorRedefinition,SymbolKind::Functor,D::Functor,O::FunctorRedefinitionCoherence,1),
+        };
+        let mut declarations = rows.iter().copied().filter(|r|r.kind()==&ordinary_kind || r.kind()==&refined_kind).collect::<Vec<_>>(); declarations.sort_by_key(|r|r.range().start);
+        let actual_symbols = declarations.iter().map(|row| {
+            let kind = if row.kind()==&refined_kind {SymbolKind::Redefinition} else {symbol_kind};
+            symbols.symbols().iter().find(|s|s.kind()==kind && s.origin().anchor()==&SourceAnchor::Range(row.range())).unwrap().symbol().clone()
+        }).collect::<Vec<_>>();
+        let declaration_count = declarations.len(); let selected = usize::from(form==1);
+        let roots = Arc::new(SourceOrdinaryRootHandoff::build(Arc::clone(&original),Arc::clone(&native),Arc::clone(&symbols))
+            .expect("genuine mixed source must materialize ordinary declaration-owned intrinsic root evidence"));
+        let normalization = roots.normalization();
+        assert_eq!(normalization.normalized_types().len(),2);
+        assert!(normalization.diagnostics().is_empty());
+        for head in [TypeHeadRef::BuiltinObject,TypeHeadRef::BuiltinSet] {
+            assert_eq!(normalization.normalized_types().iter().filter(|(_,t)|t.head==head && t.status==NormalizedTypeStatus::Known
+                && t.args.is_empty() && t.attributes.positive().is_empty() && t.attributes.negative().is_empty()).count(),1);
+        }
+        let written = rows.iter().copied().filter(|r|r.kind()==&K::TypeExpression).collect::<Vec<_>>();
+        assert_eq!(normalization.type_entries().len(),written.len());
+        for row in &written {
+            let entries = normalization.type_entries().iter().filter(|(_,e)|original_row(&e.owner).site()==row.site()).collect::<Vec<_>>();
+            assert_eq!(entries.len(),1); assert_eq!(entries[0].1.status,TypeStatus::Known);
+            let TypeEntryActual::Known(id) = entries[0].1.actual else {panic!("actual normalized written type")};
+            assert_eq!(normalization.normalized_types().get(id).unwrap().head,if row.spelling()=="object" {TypeHeadRef::BuiltinObject} else {assert_eq!(row.spelling(),"set");TypeHeadRef::BuiltinSet});
+        }
+        let root_rows = roots.roots().collect::<Vec<_>>(); assert_eq!(root_rows.len(),declaration_count-1);
+        for (index,(symbol,site,kind,parameters,result)) in root_rows.iter().enumerate() {
+            assert_eq!((*symbol,*site,kind),(&actual_symbols[index],&typed_site(declarations[index]),&declaration_kind));
+            assert_eq!(parameters.len(),arity);
+            let expected = if form==1 {
+                if index==0 {vec![TypeHeadRef::BuiltinObject,TypeHeadRef::BuiltinSet]} else {vec![TypeHeadRef::BuiltinSet,TypeHeadRef::BuiltinObject]}
+            } else {vec![TypeHeadRef::BuiltinObject]};
+            assert_eq!(parameters.iter().map(|id|normalization.normalized_types().get(*id).unwrap().head.clone()).collect::<Vec<_>>(),expected);
+            assert_eq!(result.is_some(),form==2);
+            if let Some(id) = result {assert_eq!(normalization.normalized_types().get(*id).unwrap().head,TypeHeadRef::BuiltinObject);}
+        }
+        let handoff = SourceRedefinitionHandoff::build(Arc::clone(&roots)).expect("written actual local label must select its eligible earlier ordinary root and retain Pending coherence");
+        assert_eq!(handoff.roots(),roots.as_ref());
+        let env = handoff.binding_env(); assert_eq!(env.contexts().len(),declaration_count+1); assert_eq!(env.bindings().len(),arity*declaration_count); assert!(env.diagnostics().is_empty());
+        let module_context = env.contexts().iter().find(|(_,c)|c.owner==BindingContextOwner::Module).unwrap().0;
+        assert_eq!(env.contexts().get(module_context).unwrap().layer,L::Module);
+        let module = env.contexts().get(module_context).unwrap();
+        assert!(module.lexical_scope.is_none() && module.parent.is_none() && module.bindings.is_empty() && module.visible_bindings.is_empty());
+        assert_eq!(module.recovery,BindingContextRecovery::Normal);
+        let shells = source_declaration_shells(&native,&symbols).unwrap();
+        let mut blocks = shells.declarations().iter().filter(|s|s.kind()==DeclarationShellKind::DefinitionBlock).collect::<Vec<_>>(); blocks.sort_by_key(|s|s.range().start);
+        let scopes = blocks.iter().map(|block| {
+            let row = rows.iter().copied().find(|r|r.kind()==&K::DefinitionBlockItem && r.range()==block.range()).unwrap();
+            LocalTermScope::new(vec![u32::try_from(row.site().index()).unwrap()])
+        }).collect::<Vec<_>>();
+        let contexts = blocks.iter().enumerate().map(|(index,block)| {
+            let found = env.contexts().iter().filter(|(_,c)|c.owner==BindingContextOwner::DeclarationShell(block.id())).collect::<Vec<_>>(); assert_eq!(found.len(),1);
+            let (id,context) = found[0]; assert_eq!((context.layer,context.parent),(L::Declaration,Some(module_context))); assert_eq!(context.bindings.len(),arity);
+            assert_eq!(context.lexical_scope.as_ref(),Some(&scopes[index])); assert_eq!(context.recovery,BindingContextRecovery::Normal);
+            assert_eq!(context.visible_bindings,context.bindings); id
+        }).collect::<Vec<_>>();
+        let mut formals = rows.iter().copied().filter(|r|matches!(r.kind(),K::Token(t) if t.kind==TK::Identifier)
+            && rows.iter().any(|p|Some(p.site())==r.parent() && p.kind()==&K::QualifiedVariableSegment)).collect::<Vec<_>>(); formals.sort_by_key(|r|r.range().start);
+        let bindings = env.bindings().iter().map(|(id,b)| {
+            assert_eq!(id.index(),formals.iter().position(|r|r.range()==b.declaration_range).unwrap());
+            let formal = formals[id.index()];
+            assert_eq!(b.identity,BinderIdentity::ResolverLocal {scope:scopes[id.index()/arity].clone(),ordinal:formal.preorder_ordinal(),declaration_range:formal.range()});
+            assert_eq!((b.spelling.as_str(),b.visible_after_ordinal,b.status,b.recovery),(formal.spelling(),formal.preorder_ordinal(),BindingStatus::Active,BindingRecoveryState::Normal));
+            assert!(b.diagnostics.is_empty() && b.captured.identities().is_empty());
+            assert_eq!(b.kind,BindingKind::DefinitionParameter); assert_eq!(b.owner_context,contexts[id.index()/arity]);
+            let guard = written.iter().copied().find(|r|r.parent()==formals[id.index()].parent()).unwrap(); assert_eq!(b.type_site,BindingTypeSite::Source(guard.range())); id
+        }).collect::<Vec<_>>();
+        let inference = handoff.inference(); assert_eq!(inference.terms().len(),if form==2 {2} else if form==1 {6} else {4}); assert_eq!(inference.formulas().len(),if form==2 {0} else if form==1 {3} else {2});
+        assert!(inference.facts().is_empty() && inference.candidate_sets().is_empty() && inference.diagnostics().is_empty());
+        let mut bodies = rows.iter().copied().filter(|r|r.kind()==&K::TermExpression).collect::<Vec<_>>(); bodies.sort_by_key(|r|r.range().start);
+        let expected_formals = match form {0=>vec![0,0,1,1],1=>vec![0,0,3,3,4,5],_=>vec![0,1]};
+        for (row,index) in bodies.iter().zip(expected_formals) {
+            let found = inference.terms().iter().filter(|(_,t)|original_row(&t.site).site()==row.site()).collect::<Vec<_>>(); assert_eq!(found.len(),1); let term = found[0].1;
+            assert_eq!((term.kind,term.status),(TermKind::Variable,TermStatus::Inferred)); assert_eq!(term.reference,Some(TermReference::Binding(bindings[index])));
+            assert_eq!(term.context,contexts[index/arity]); assert!(term.deferred.is_empty());
+            let entry = inference.type_entries().get(term.type_entry).unwrap(); assert_eq!((&entry.owner,entry.status),(&term.site,TypeStatus::Known));
+            let TypeEntryActual::Known(id) = entry.actual else {panic!("genuine body variable type")};
+            let ty = inference.normalized_types().get(id).unwrap();
+            let guard = written.iter().copied().find(|r|r.parent()==formals[index].parent()).unwrap();
+            assert_eq!((ty.head.clone(),ty.status),(if guard.spelling()=="object" {TypeHeadRef::BuiltinObject} else {assert_eq!(guard.spelling(),"set");TypeHeadRef::BuiltinSet},NormalizedTypeStatus::Known));
+            assert!(ty.args.is_empty() && ty.attributes.positive().is_empty() && ty.attributes.negative().is_empty());
+            assert!(row.preorder_ordinal()>formals[index].preorder_ordinal());
+        }
+        let mut actual_formula_sites = inference.formulas().iter().map(|(_,f)|original_row(&f.site).site()).collect::<Vec<_>>(); actual_formula_sites.sort();
+        let mut source_formula_sites = rows.iter().filter(|r|r.kind()==&K::BuiltinPredicateApplication).map(|r|r.site()).collect::<Vec<_>>(); source_formula_sites.sort();
+        assert_eq!(actual_formula_sites,source_formula_sites);
+        for (_,formula) in inference.formulas().iter() {
+            let row = original_row(&formula.site); assert_eq!(row.kind(),&K::BuiltinPredicateApplication); assert_eq!(formula.source_range,row.range());
+            assert_eq!((formula.kind,formula.status),(FormulaKind::Equality,FormulaStatus::Checked)); assert!(formula.facts.is_empty() && formula.deferred.is_empty());
+            let mut frame = rows.iter().copied().filter(|r|r.parent()==Some(row.site())).collect::<Vec<_>>(); frame.sort_by_key(|r|r.child_ordinal()); assert_eq!(frame.len(),3); assert_eq!(frame[1].spelling(),"=");
+            assert_eq!(formula.terms.iter().map(|s|original_row(s).site()).collect::<Vec<_>>(),[frame[0].site(),frame[2].site()]);
+            assert_eq!(formula.context,contexts[blocks.iter().position(|b|b.range().start<row.range().start && row.range().end<b.range().end).unwrap()]);
+        }
+        let coherence = rows.iter().copied().find(|r|r.kind()==&K::CoherenceCondition).unwrap();
+        let targets = handoff.targets().collect::<Vec<_>>(); assert_eq!(targets.len(),1);
+        assert_eq!((targets[0].0,targets[0].1,targets[0].2),(&actual_symbols[declaration_count-1],&actual_symbols[selected],&typed_site(coherence))); let obligation_id = targets[0].3;
+        let mut clause = rows.iter().copied().filter(|r|r.parent()==Some(coherence.site())).collect::<Vec<_>>(); clause.sort_by_key(|r|r.child_ordinal());
+        let label = clause[2]; let mut original_parts = rows.iter().copied().filter(|r|r.parent()==Some(declarations[selected].site())).collect::<Vec<_>>(); original_parts.sort_by_key(|r|r.child_ordinal());
+        assert_eq!(label.spelling(),original_parts[1].spelling()); assert_ne!(label.site(),original_parts[1].site());
+        assert_eq!(root_rows[selected].0,targets[0].1); assert_eq!(root_rows[selected].1,&typed_site(declarations[selected]));
+        let expected_handoff = handoff.clone();
+        let installed = original.as_ref().clone().with_source_redefinition(handoff).expect("real declaration transaction must install atomically in its original TypedAst");
+        assert!(original.types().is_empty() && original.contexts().is_empty() && original.initial_obligations().is_empty() && original.source_redefinition().is_none());
+        assert_eq!((installed.contexts().len(),installed.types().len(),installed.initial_obligations().len()),(declaration_count+1,written.len()+bodies.len(),1));
+        assert!(installed.facts().is_empty() && installed.coercions().is_empty() && installed.diagnostics().is_empty());
+        let transport = installed.source_redefinition().expect("installed typed target transport");
+        assert_eq!(transport, &expected_handoff);
+        let obligation = installed.initial_obligations().get(obligation_id).unwrap();
+        assert_eq!((obligation.kind,obligation.status), (obligation_kind,InitialObligationStatus::Pending));
+        assert_eq!((&obligation.owner,obligation.source_range),(&typed_site(coherence),coherence.range())); assert!(obligation.assumptions.is_empty());
+        assert_eq!(installed.nodes().node(obligation.owner.node()).unwrap().kind.as_str(),"CoherenceCondition");
+        assert_eq!(installed.nodes().node(obligation.owner.node()).unwrap().links.initial_obligations,[obligation_id]);
+        let local_module = installed.contexts().iter().find(|(_,c)|c.layer==TypeContextLayer::Module).unwrap().0;
+        for (_,context) in installed.contexts().iter() {
+            assert_eq!(context.recovery,ContextRecoveryState::Normal); assert!(context.introduced_assumptions.is_empty() && context.visible_facts.is_empty());
+            if context.id==local_module {assert!(context.parent.is_none() && context.bindings.is_empty()); assert_eq!(context.owner.node(),installed.nodes().root().unwrap());} else {
+                assert_eq!((context.layer,context.parent),(TypeContextLayer::Declaration,Some(local_module)));
+                assert!(blocks.iter().any(|b|original_row(&context.owner).range()==b.range())); assert_eq!(context.bindings.len(),arity);
+                let block_index = blocks.iter().position(|b|original_row(&context.owner).range()==b.range()).unwrap();
+                assert_eq!(context.bindings.iter().map(|b|match b {mizar_checker::typed_ast::BindingTypeRef::Site(s)=>s.node(),_=>panic!("real formal source-site binding")}).collect::<Vec<_>>(),
+                    formals[block_index*arity..(block_index+1)*arity].iter().map(|r|typed_site(r).node()).collect::<Vec<_>>());
+            }
+        }
+        let expected_type_owners = written.iter().chain(bodies.iter()).map(|r|r.site()).collect::<Vec<_>>();
+        for row in written.iter().chain(bodies.iter()) {
+            let entries = installed.types().iter().filter(|(_,e)|original_row(&e.owner).site()==row.site()).collect::<Vec<_>>(); assert_eq!(entries.len(),1); let (id,entry) = entries[0];
+            assert_eq!(entry.status,TypeStatus::Known); let TypeEntryActual::Known(actual) = entry.actual else {panic!("installed original-site type")};
+            let type_word = if row.kind()==&K::TypeExpression {row.spelling()} else {
+                let index = bodies.iter().position(|body|body.site()==row.site()).unwrap();
+                let formal = formals[match form {0=>vec![0,0,1,1],1=>vec![0,0,3,3,4,5],_=>vec![0,1]}[index]];
+                written.iter().find(|r|r.parent()==formal.parent()).unwrap().spelling()
+            };
+            let expected = if type_word=="object" {TypeHeadRef::BuiltinObject} else {assert_eq!(type_word,"set");TypeHeadRef::BuiltinSet};
+            assert_eq!(transport.roots().normalization().normalized_types().get(actual).unwrap().head,expected);
+            let node = installed.nodes().node(typed_site(row).node()).unwrap(); assert_eq!(node.links.type_entry,Some(id)); assert_eq!(node.typing,TypingState::Successful);
+            let context = installed.contexts().get(node.links.context.unwrap()).unwrap(); assert_eq!(context.layer,TypeContextLayer::Declaration);
+            assert_eq!(original_row(&context.owner).range(),blocks[blocks.iter().position(|b|b.range().start<row.range().start && row.range().end<b.range().end).unwrap()].range());
+        }
+        let mut actual_type_owners = installed.types().iter().map(|(_,e)|original_row(&e.owner).site()).collect::<Vec<_>>(); actual_type_owners.sort();
+        let mut expected_type_owners = expected_type_owners; expected_type_owners.sort(); assert_eq!(actual_type_owners,expected_type_owners);
+        let heads = installed.types().iter().map(|(_,e)|match e.actual {TypeEntryActual::Known(id)=>transport.roots().normalization().normalized_types().get(id).unwrap().head.clone(),_=>panic!("known installed type")}).collect::<Vec<_>>();
+        assert_eq!(heads.iter().filter(|h|**h==TypeHeadRef::BuiltinObject).count(),if form==1 {6} else {3});
+        assert_eq!(heads.iter().filter(|h|**h==TypeHeadRef::BuiltinSet).count(),if form==1 {5} else {3});
+        assert_eq!((installed.source_id(),installed.module_id(),installed.resolved_root()),(original.source_id(),original.module_id(),original.resolved_root()));
+        assert_eq!(installed.nodes().len(),original.nodes().len());
+        assert_eq!(installed.source_node_entries().unwrap().collect::<Vec<_>>(),original.source_node_entries().unwrap().collect::<Vec<_>>());
+        for (id,before) in original.nodes().iter() {
+            let after = installed.nodes().node(id).unwrap(); assert_eq!((&after.anchor,&after.children,after.resolved_node,after.recovery),(&before.anchor,&before.children,before.resolved_node,NodeRecoveryState::Normal));
+        }
+        let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&installed,Vec::new()).expect("ResolvedTypedAst must fresh-replay the same actual declaration transaction");
+        let resolved_transport = resolved.source_redefinition().expect("resolved typed target transport");
+        assert_eq!(resolved_transport,&expected_handoff);
+        assert_eq!(resolved_transport.targets().collect::<Vec<_>>(),transport.targets().collect::<Vec<_>>());
+        assert_eq!(resolved_transport.roots().roots().collect::<Vec<_>>(),transport.roots().roots().collect::<Vec<_>>());
+        assert_eq!(resolved_transport.binding_env(),transport.binding_env()); assert_eq!(resolved_transport.inference(),transport.inference());
+        assert_eq!(resolved_transport.roots().normalization(),transport.roots().normalization());
+        assert_eq!(resolved.nodes().len(),installed.nodes().len());
+        for (_,node) in resolved.nodes().iter() {
+            let typed = installed.nodes().node(node.typed_node).unwrap(); assert_eq!(node.source_range,match typed.anchor {SourceAnchor::Range(r)=>r,_=>panic!("actual source range")});
+            assert_eq!(node.final_type,typed.links.type_entry.map(|id|match installed.types().get(id).unwrap().actual {TypeEntryActual::Known(id)=>id,_=>panic!("known installed final type")}));
+            assert_eq!(node.children.iter().map(|id|resolved.nodes().node(*id).unwrap().typed_node).collect::<Vec<_>>(),typed.children);
+        }
+        assert!(resolved.collection_candidates().is_empty() && resolved.expanded_candidates().is_empty() && resolved.template_expansions().is_empty()
+            && resolved.viable_candidates().is_empty() && resolved.viability_decisions().is_empty() && resolved.specificity_graphs().is_empty()
+            && resolved.resolved_overloads().is_empty() && resolved.inserted_coercions().is_empty() && resolved.cluster_facts().is_empty()
+            && resolved.checked_proofs().is_empty() && resolved.checked_proof_nodes().is_empty() && resolved.checked_terminal_goals().is_empty() && resolved.diagnostics().is_empty());
+        let result = metamorphic_guard::with_source(&case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),&case,0));
+        assert_eq!(result.status,super::TypeElaborationCaseStatus::Passed,"{}: {:?}",case.id.0,result.actual_detail_keys);
+        assert!(result.actual_detail_keys.is_empty() && result.snapshot_failure.is_none());
+    }
+}
+
+#[test]
+fn task279b_written_labels_survive_choice_order_alpha_layout_and_receiver_replay() {
+    use std::sync::Arc;
+    use mizar_checker::{source_redefinition::{SourceOrdinaryRootHandoff,SourceRedefinitionHandoff},
+        typed_ast::{InitialObligationStatus,TypedSiteRef}};
+    use mizar_session::SourceAnchor;
+    use mizar_syntax::{SurfaceNodeKind as K,SurfaceTokenKind as TK};
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    for (form,id,base_label,refined_label,notation) in [
+        (0,"pass_type_elaboration_redefinition_explicit_attribute_001","ABase","ARefined","rmarked"),
+        (1,"pass_type_elaboration_redefinition_explicit_predicate_001","PRight","PRefined","eqv"),
+        (2,"pass_type_elaboration_redefinition_explicit_functor_001","FBase","FRefined","ident"),
+    ] {
+        let case = plan.cases.iter().find(|c|c.id.0==id).unwrap(); let base = std::fs::read_to_string(&case.source_path).unwrap();
+        let renamed = base.replace("x","leftValue").replace("y","rightValue").replace(notation,"renamedHead")
+            .replace(base_label,"ChosenOriginal").replace(refined_label,"ChosenRefinement").replace("PLeft","OtherOriginal");
+        let (comment,code) = base.split_once('\n').unwrap();
+        let layout = format!("{comment}\n{}",code.replace("let ","let\t").replace(" means "," means\n ").replace(" with "," with\n ").replace(';',";\n"));
+        let mut sources = vec![("original",base.clone(),base_label),("alpha",renamed,"ChosenOriginal"),("layout",layout,base_label)];
+        if form==1 {
+            let (first,rest) = base.split_once("\nend;\ndefinition\n").unwrap();
+            let (second,third) = rest.split_once("\nend;\ndefinition\n").unwrap();
+            let swapped = format!("definition\n{second}\nend;\n{first}\nend;\ndefinition\n{third}");
+            sources.extend([("other label",base.replace("with PRight","with PLeft"),"PLeft"),
+                ("swapped written first",swapped.clone(),"PRight"),
+                ("swapped written second",swapped.replace("with PRight","with PLeft"),"PLeft")]);
+        }
+        let mut previous: Option<(Arc<mizar_checker::typed_ast::TypedAst>,SourceRedefinitionHandoff)> = None;
+        for (name,source,written_label) in sources {
+            let (original,native,symbols) = task279a_intrinsic_source_inputs(case,&source);
+            let roots = Arc::new(SourceOrdinaryRootHandoff::build(Arc::clone(&original),Arc::clone(&native),Arc::clone(&symbols)).unwrap());
+            assert_eq!(roots.roots().count(),if form==1 {2} else {1}); assert!(roots.normalization().diagnostics().is_empty());
+            let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+            let coherence = rows.iter().copied().find(|r|r.kind()==&K::CoherenceCondition).unwrap();
+            let label = rows.iter().copied().find(|r|r.parent()==Some(coherence.site()) && matches!(r.kind(),K::Token(t) if t.kind==TK::Identifier)).unwrap();
+            assert_eq!(label.spelling(),written_label);
+            let declaration_label = rows.iter().copied().find(|r|r.spelling()==written_label && r.site()!=label.site()
+                && rows.iter().any(|d|Some(d.site())==r.parent() && matches!(d.kind(),K::AttributeDefinition|K::PredicateDefinition|K::FunctorDefinition))).unwrap();
+            let declaration = rows.iter().copied().find(|r|Some(r.site())==declaration_label.parent()).unwrap();
+            let symbol = symbols.symbols().iter().find(|s|s.origin().anchor()==&SourceAnchor::Range(declaration.range())).unwrap().symbol();
+            let root = roots.roots().find(|(s,_,_,_,_)|*s==symbol).unwrap();
+            assert_eq!(original.nodes().node(root.1.node()).unwrap().resolved_node,Some(declaration.site()));
+            let handoff = SourceRedefinitionHandoff::build(Arc::clone(&roots)).unwrap();
+            let targets = handoff.targets().collect::<Vec<_>>(); assert_eq!(targets.len(),1); assert_eq!(targets[0].1,symbol);
+            assert_eq!(targets[0].2,&TypedSiteRef::Node(original.nodes().iter().find(|(_,n)|n.resolved_node==Some(coherence.site())).unwrap().0));
+            let expected = handoff.clone();
+            let installed = original.as_ref().clone().with_source_redefinition(handoff).unwrap();
+            assert_eq!(installed.source_redefinition(),Some(&expected)); assert_eq!(installed.initial_obligations().len(),1);
+            assert!(installed.initial_obligations().iter().all(|(_,o)|o.status==InitialObligationStatus::Pending));
+            assert!(installed.clone().with_source_redefinition(expected.clone()).is_err());
+            assert!(SourceOrdinaryRootHandoff::build(Arc::new(installed.clone()),Arc::clone(&native),Arc::clone(&symbols)).is_err());
+            let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&installed,Vec::new()).unwrap();
+            assert_eq!(resolved.source_redefinition(),Some(&expected));
+            assert!(resolved.resolved_overloads().is_empty() && resolved.checked_proofs().is_empty() && resolved.cluster_facts().is_empty());
+            if let Some((prior_original,prior_handoff)) = &previous {
+                assert!(original.as_ref().clone().with_source_redefinition(prior_handoff.clone()).is_err());
+                assert!(prior_original.as_ref().clone().with_source_redefinition(expected.clone()).is_err());
+            }
+            let result = metamorphic_guard::with_source(case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0));
+            assert_eq!(result.status,super::TypeElaborationCaseStatus::Passed,"{id}: {name}: {:?}",result.actual_detail_keys);
+            assert!(result.actual_detail_keys.is_empty() && result.snapshot_failure.is_none());
+            println!("Task279B authentic explicit Case passed: {id}/{name}, written {written_label}");
+            previous = Some((original,expected));
+        }
+        if form==1 {
+            let source = base.replace("coherence with PRight proof","coherence proof");
+            let (original,native,symbols) = task279a_intrinsic_source_inputs(case,&source);
+            let roots = Arc::new(SourceOrdinaryRootHandoff::build(original,native,symbols).unwrap());
+            assert_eq!(roots.roots().count(),2); assert!(roots.normalization().diagnostics().is_empty());
+            assert!(SourceRedefinitionHandoff::build(roots).is_err());
+            let result = metamorphic_guard::with_source(case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0));
+            assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed); assert!(!result.actual_detail_keys.is_empty());
+            println!("Task279B omitted ambiguity refused after authentic two-root normalization; both written-label positives passed");
+        }
+    }
+}
+
+#[test]
+fn task279b_invalid_explicit_labels_never_fall_back_to_an_eligible_omitted_root() {
+    use std::sync::Arc;
+    use mizar_checker::source_redefinition::{SourceOrdinaryRootHandoff,SourceRedefinitionHandoff};
+    let config = step5c11_config(); let plan = crate::harness::build_test_plan(&config).unwrap();
+    for (form,id,base_label,refined_label,notation) in [
+        (0,"pass_type_elaboration_redefinition_intrinsic_attribute_001","ABase","ARefined","rmarked"),
+        (1,"pass_type_elaboration_redefinition_intrinsic_predicate_001","PBase","PRefined","eqv"),
+        (2,"pass_type_elaboration_redefinition_intrinsic_functor_001","FBase","FRefined","ident"),
+    ] {
+        let case = plan.cases.iter().find(|c|c.id.0==id).unwrap(); let omitted = std::fs::read_to_string(&case.source_path).unwrap();
+        let (original,native,symbols) = task279a_intrinsic_source_inputs(case,&omitted);
+        let roots = Arc::new(SourceOrdinaryRootHandoff::build(original,native,symbols).unwrap());
+        assert_eq!(roots.roots().count(),1); SourceRedefinitionHandoff::build(roots).unwrap();
+        let result = super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0);
+        assert_eq!(result.status,super::TypeElaborationCaseStatus::Passed); assert!(result.actual_detail_keys.is_empty());
+        let explicit = omitted.replace("coherence proof",&format!("coherence with {base_label} proof"));
+        let (ordinary,refined) = explicit.split_once("\nend;\ndefinition\n").unwrap();
+        let unrelated = if form==2 {"definition let z be object; attr WrongKind: z is auxiliary means z=z; end;\n"}
+            else {"definition let z be object; func WrongKind: auxiliary z -> object equals z; end;\n"};
+        for (name,source,root_count) in [
+            ("unknown",explicit.replace(&format!("with {base_label}"),"with UnknownOriginal"),1),
+            ("self/redefinition",explicit.replace(&format!("with {base_label}"),&format!("with {refined_label}")),1),
+            ("future ordinary",format!("definition\n{refined}\n{ordinary}\nend;\n"),1),
+            ("wrong source kind",format!("{unrelated}{}",explicit.replace(&format!("with {base_label}"),"with WrongKind")),2),
+            ("wrong notation",format!("{}\nend;\ndefinition\n{refined}",ordinary.replace(notation,"unmatchedHead")),1),
+            ("non-strict",explicit.replacen("be object;","be set;",1),1),
+        ] {
+            let (original,native,symbols) = task279a_intrinsic_source_inputs(case,&source);
+            let roots = Arc::new(SourceOrdinaryRootHandoff::build(original,native,symbols).expect("target refusal must follow genuine ordinary-root success"));
+            assert_eq!(roots.roots().count(),root_count); assert!(roots.normalization().diagnostics().is_empty());
+            assert!(SourceRedefinitionHandoff::build(roots).is_err(),"{id}: {name}");
+            let result = metamorphic_guard::with_source(case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0));
+            assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed,"{id}: {name}"); assert!(!result.actual_detail_keys.is_empty());
+            println!("Task279B {id}/{name}: authentic ordinary roots/normalization succeeded before explicit target and real Case refusal");
+        }
+        let source = explicit.replace(&format!("with {base_label} proof"),"with proof");
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(!frontend.diagnostics.is_empty(),"missing explicit label must be a recovered frontend refusal");
+        let result = metamorphic_guard::with_source(case,&source,||super::run_type_elaboration_case(&config.workspace_root,&config.workspace_root.join("tests"),case,0));
+        assert_eq!(result.status,super::TypeElaborationCaseStatus::Failed);
+        println!("Task279B {id}/missing label refused at recovered frontend; no ordinary-root or target causality claimed");
     }
 }
