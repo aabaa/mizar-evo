@@ -55,8 +55,9 @@ legacy FS・証明受理を追加しない。各 native goal source/sidecar iden
 先行する連鎖全体の label と元 endpoint を goal 全体に対応付けるだけで、隣接等式・推移律を証明しない。
 
 既存 IsType1 C8 case は legacy checker 後に native type-assertion goal も消費する。
-元の target に基づく同じ actual/asserted builtin Set/Object head のみを形成し、命題の証明・型 refinement・
+元の actual/asserted target に基づく同じ builtin head と組込み Set-to-Object 断言を形成し、命題の証明・型 refinement・
 guard 解消を与えない。広い admissibility は後続に残す。
+既存 reconsider_builtin_widening FS case は厳密な native conversion 検査後に native goal も消費し、変換 fact と witness guard は分離する。
 
 正確な inactive omitted-reconsider case の直接実行は、型付き残余 goal・source owner state・
 実変換の拒否を既存 case result に消費する。tag・default selection・期待値は維持し、

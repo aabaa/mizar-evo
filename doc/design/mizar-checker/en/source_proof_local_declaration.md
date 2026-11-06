@@ -122,7 +122,7 @@ through authentic chain/step checkpoints and its own prior label. Replay joins e
 Original source/typed terms retain adjacency; this trace supplies no checked adjacent equations or transitivity proof.
 
 TypeAssertion retains its actual IsAssertion origin, term subject and written builtin Set/Object target.
-Original FormulaInputs use authentic subject and asserted-type sites; only equal normalized builtin heads are formed.
+Original FormulaInputs use authentic subject and asserted-type sites, admitting equal builtin heads and the [intrinsic Set-to-Object relation](./type_checker.md#intrinsic-type-assertion-admissibility).
 Derived substitution rechecks that admissibility; Known/Checked formation supplies no truth, refinement or guard discharge.
 Broader reachability/views/nominal/attribute assertions defer; original Binding type sites and installed tables stay unchanged.
 

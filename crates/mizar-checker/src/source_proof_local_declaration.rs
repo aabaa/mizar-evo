@@ -3778,7 +3778,7 @@ impl SourceProofLocalBindingHandoff {
                 radix,
             } => {
                 let set = self.witness_goal_term_formation(subject, origin, frontier, bound)?;
-                if set != (*radix == R::Set) {
+                if !(*radix == R::Object || set && *radix == R::Set) {
                     return Err(invalid());
                 }
             }
@@ -19333,7 +19333,8 @@ mod task269c_tests {
     }
     #[test]
     fn task272b4_implication_edges_replay_source_and_coherent_tampering() {
-        use crate::type_checker::{TermFormulaChecker, TermStatus, TypeHeadInput};
+        use crate::type_checker::{TermFormulaChecker, TermStatus, TypeHeadInput, TypeHeadRef};
+        use crate::typed_ast::TypeEntryActual;
         use SurfaceNodeKind as K;
         use mizar_resolve::{
             declarations::DeclarationShellCollector,
@@ -19344,10 +19345,11 @@ mod task269c_tests {
         let fixture = |source, conditioned, by, given, hereby, now, packet, iff, chain, is_type| {
             let module =
                 ModuleId::new(PackageId::new("pkg"), ModulePath::new("implication_replay"));
-            let mut words = if is_type {
+            let mut words = if is_type != 0 {
+                let asserted = if is_type == 2 { "object" } else { "set" };
                 vec![
-                    "theorem", "T", ":", "for", "x", "being", "set", "holds", "x", "is", "set",
-                    "proof", "let", "x", "be", "set", ";", "thus", "x", "is", "set",
+                    "theorem", "T", ":", "for", "x", "being", "set", "holds", "x", "is", asserted,
+                    "proof", "let", "x", "be", "set", ";", "thus", "x", "is", asserted,
                 ]
             } else if chain {
                 vec![
@@ -19425,7 +19427,7 @@ mod task269c_tests {
             } else {
                 &[";", "end", ";"]
             });
-            let (h, c, l, a, mut k, mut t, condition_start) = if is_type {
+            let (h, c, l, a, mut k, mut t, condition_start) = if is_type != 0 {
                 (8, 8, 13, 18, 18, 18, 17)
             } else if chain {
                 (8, 12, 17, 36, 23, 36, 21)
@@ -19540,7 +19542,7 @@ mod task269c_tests {
                 }
             }
             let mut formulas = BTreeMap::new();
-            for i in if is_type {
+            for i in if is_type != 0 {
                 vec![h, t]
             } else if chain {
                 vec![h]
@@ -19555,7 +19557,7 @@ mod task269c_tests {
                 }
                 for j in if chain {
                     Vec::new()
-                } else if is_type {
+                } else if is_type != 0 {
                     vec![i]
                 } else {
                     vec![i, i + 2]
@@ -19563,7 +19565,7 @@ mod task269c_tests {
                     let reference = node(&mut builder, K::TermReference, j, j, vec![tokens[j]]);
                     terms.push(node(&mut builder, K::TermExpression, j, j, vec![reference]));
                 }
-                let eq = if is_type {
+                let eq = if is_type != 0 {
                     let head = node(&mut builder, K::TypeHead, i + 2, i + 2, vec![tokens[i + 2]]);
                     let target = node(&mut builder, K::TypeExpression, i + 2, i + 2, vec![head]);
                     node(
@@ -19604,7 +19606,7 @@ mod task269c_tests {
             } else {
                 formulas[&h]
             };
-            let forall = if chain || is_type {
+            let forall = if chain || is_type != 0 {
                 node(
                     &mut builder,
                     K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
@@ -19668,7 +19670,7 @@ mod task269c_tests {
                 if packet { 14 } else { c + 2 },
                 vec![forall],
             );
-            let proposition = if is_type {
+            let proposition = if is_type != 0 {
                 node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
             } else if chain {
                 let thesis = node(
@@ -19702,7 +19704,7 @@ mod task269c_tests {
                     vec![tokens[a - 2], tokens[a - 1], formulas[&a]],
                 )
             };
-            let condition = if iff || chain || is_type {
+            let condition = if iff || chain || is_type != 0 {
                 proposition
             } else {
                 node(
@@ -19783,7 +19785,7 @@ mod task269c_tests {
             } else {
                 condition
             };
-            let linked_proposition = if iff || chain || is_type {
+            let linked_proposition = if iff || chain || is_type != 0 {
                 proposition
             } else {
                 node(&mut builder, K::Proposition, k, k + 2, vec![formulas[&k]])
@@ -19811,7 +19813,7 @@ mod task269c_tests {
                         tokens[34],
                     ],
                 )
-            } else if iff || is_type {
+            } else if iff || is_type != 0 {
                 proposition
             } else if packet {
                 let existential = node(
@@ -19904,7 +19906,7 @@ mod task269c_tests {
                     vec![tokens[k - 1], compact],
                 )
             };
-            let terminal_proposition = if iff || chain || is_type {
+            let terminal_proposition = if iff || chain || is_type != 0 {
                 proposition
             } else {
                 node(&mut builder, K::Proposition, t, t + 2, vec![formulas[&t]])
@@ -19955,7 +19957,7 @@ mod task269c_tests {
             } else {
                 terminal
             };
-            let proof_children = if iff || is_type {
+            let proof_children = if iff || is_type != 0 {
                 vec![tokens[l - 2], let_row, terminal, tokens[end - 1]]
             } else if packet {
                 let reference = node(&mut builder, K::TermReference, 57, 57, vec![tokens[57]]);
@@ -20073,7 +20075,7 @@ mod task269c_tests {
                 false,
                 false,
                 false,
-                false,
+                0,
             );
             let (steps, guards, initial, checked, inference) =
                 genuine.check_witness_goals().unwrap();
@@ -20300,7 +20302,7 @@ mod task269c_tests {
                 false,
                 false,
                 false,
-                false,
+                0,
             );
             let products = foreign.check_witness_goals().unwrap();
             assert!(
@@ -20330,7 +20332,7 @@ mod task269c_tests {
             false,
             false,
             false,
-            true,
+            1,
         );
         let (trace, guards, initial, checked, inference) = assertion.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 3);
@@ -20503,7 +20505,7 @@ mod task269c_tests {
             false,
             false,
             false,
-            true,
+            1,
         )
         .check_witness_goals()
         .unwrap();
@@ -20517,6 +20519,114 @@ mod task269c_tests {
                 .replay_witness_goals(&trace, &guards, &initial, &checked, &foreign.4)
                 .is_err()
         );
+        let widening = fixture(
+            source_id(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            2_u8,
+        );
+        let (trace, guards, initial, checked, inference) = widening.check_witness_goals().unwrap();
+        assert_eq!(
+            (
+                trace.len(),
+                inference.terms().len(),
+                inference.formulas().len()
+            ),
+            (3, 4, 2)
+        );
+        assert!(guards.is_empty() && initial.is_empty() && checked.facts().is_empty());
+        let (_, _, mut terms, formulas, _) = widening.witness_goal_inputs().unwrap();
+        assert!(
+            terms
+                .iter()
+                .all(|term| term.result_type.as_ref().unwrap().head == TypeHeadInput::BuiltinSet)
+        );
+        for input in &formulas {
+            let target = input.asserted_type.as_ref().unwrap();
+            assert_eq!(target.head, TypeHeadInput::BuiltinObject);
+            let row = widening.witness_goal_source(&input.site).unwrap();
+            let parts = source_proof_frame(widening.original.source_nodes().unwrap(), row).unwrap();
+            assert_eq!(target.site, widening.witness_goal_site(parts[2]).unwrap());
+            assert_eq!(target.source_range, parts[2].range());
+            assert_eq!(target.spelling, "object");
+            assert_eq!(parts[2].kind(), &K::TypeExpression);
+        }
+        for (_, formula) in inference.formulas().iter() {
+            assert_eq!(formula.status, crate::type_checker::FormulaStatus::Checked);
+            assert!(formula.facts.is_empty());
+            let subject = inference
+                .terms()
+                .iter()
+                .find(|(_, t)| t.site == formula.terms[0])
+                .unwrap()
+                .1;
+            let TypeEntryActual::Known(actual) = inference
+                .type_entries()
+                .get(subject.type_entry)
+                .unwrap()
+                .actual
+            else {
+                panic!("genuine actual Set")
+            };
+            let asserted = formula.asserted_type.unwrap();
+            assert_ne!(actual, asserted);
+            assert_eq!(
+                inference.normalized_types().get(actual).unwrap().head,
+                TypeHeadRef::BuiltinSet
+            );
+            assert_eq!(
+                inference.normalized_types().get(asserted).unwrap().head,
+                TypeHeadRef::BuiltinObject
+            );
+        }
+        for term in &mut terms {
+            term.result_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject;
+        }
+        let coherent = TermFormulaChecker::default()
+            .try_infer(&widening.symbols, &widening.binding_env, terms, formulas)
+            .unwrap();
+        assert!(coherent.diagnostics().is_empty());
+        assert!(
+            coherent
+                .terms()
+                .iter()
+                .all(|(_, t)| t.status == TermStatus::Inferred)
+        );
+        assert!(
+            coherent
+                .formulas()
+                .iter()
+                .all(|(_, f)| f.status == crate::type_checker::FormulaStatus::Checked)
+        );
+        assert_ne!(coherent, inference);
+        assert!(
+            widening
+                .replay_witness_goals(&trace, &guards, &initial, &checked, &coherent)
+                .is_err()
+        );
+        let mut changed = trace.clone();
+        let SourceProofGoal::TypeAssertion { radix, .. } = &mut changed[1].after else {
+            panic!("Object target")
+        };
+        *radix = mizar_resolve::names::SourceVariableTypeRadix::Set;
+        changed[2].before = changed[1].after.clone();
+        changed[2].after = changed[1].after.clone();
+        let SourceProofGoal::Universal { body, .. } = &trace[0].before else {
+            panic!("source universal")
+        };
+        let (formal, actual) = trace[1].matched.unwrap();
+        assert!(!changed[1].after.replays_substitution(body, formal, actual));
+        assert!(
+            widening
+                .replay_witness_goals(&changed, &guards, &initial, &checked, &inference)
+                .is_err()
+        );
         let chain = fixture(
             source_id(),
             false,
@@ -20527,7 +20637,7 @@ mod task269c_tests {
             false,
             false,
             true,
-            false,
+            0,
         );
         let (trace, guards, initial, checked, inference) = chain.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 5);
@@ -20707,7 +20817,7 @@ mod task269c_tests {
             false,
             false,
             true,
-            false,
+            0,
         )
         .check_witness_goals()
         .unwrap();
@@ -20731,7 +20841,7 @@ mod task269c_tests {
             false,
             true,
             false,
-            false,
+            0,
         );
         let (trace, guards, initial, checked, inference) = iff.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 3);
@@ -20851,7 +20961,7 @@ mod task269c_tests {
             false,
             true,
             false,
-            false,
+            0,
         )
         .check_witness_goals()
         .unwrap();
@@ -20873,7 +20983,7 @@ mod task269c_tests {
             false,
             false,
             false,
-            false,
+            0,
         );
         let (steps, guards, initial, checked, inference) = given.check_witness_goals().unwrap();
         assert_eq!(steps.len(), 6);
@@ -20987,7 +21097,7 @@ mod task269c_tests {
             false,
             false,
             false,
-            false,
+            0,
         )
         .check_witness_goals()
         .unwrap();
@@ -21042,7 +21152,7 @@ mod task269c_tests {
             true,
             false,
             false,
-            false,
+            0,
         );
         let (trace, guards, initial, checked, inference) = packet.check_witness_goals().unwrap();
         assert_eq!(trace.len(), 10);
@@ -21154,7 +21264,7 @@ mod task269c_tests {
             true,
             false,
             false,
-            false,
+            0,
         )
         .check_witness_goals()
         .unwrap();

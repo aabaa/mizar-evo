@@ -106,7 +106,7 @@ Take/Set/Named/Reconsider は変数のみ、部分連言・compact・case の既
 元ソースと型付き項が隣接関係を保ち、この trace は隣接等式の checked 結果や推移律の証明を与えない。
 
 TypeAssertion は実 IsAssertion の出典・項 subject・元の builtin Set/Object target を保持する。
-元 FormulaInput は実 subject/asserted-type site を使い、同じ normalized builtin head のみを形成する。
+元 FormulaInput は実 subject/asserted-type site を使い、同じ builtin head と [組込み Set-to-Object 関係](./type_checker.md#intrinsic-type-assertion-admissibility) を形成する。
 派生置換後も admissibility を再検証し、Known/Checked formation から真偽・型 refinement・guard 解消を与えない。
 広い reachability/view/nominal/attribute は後続とし、元 Binding type site・設置済み table は変えない。
 

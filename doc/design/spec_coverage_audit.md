@@ -70,7 +70,7 @@ intent and branch claims remain unproved.
 Primitive equivalence additionally preserves whole unproved goals; its two-direction proof skeleton remains Task272-owned.
 Singleton atom values and a bounded iterative chain additionally retain typed endpoints and unproved whole-goal/citation checkpoints.
 They provide no checked adjacent equations or transitivity result; broader equality reasoning remains Task272-owned.
-Matched-builtin type assertions additionally retain actual subject/target admissibility and unproved goals, without type refinement or proof.
+Builtin type assertions retain actual subject/target admissibility under the [intrinsic relation](./mizar-checker/en/type_checker.md#intrinsic-type-assertion-admissibility) and unproved goals, without type refinement or proof.
 Broader assertion reachability and goal/substitution coverage remain with Task272; the prepared old-AS
 consumer adds no default activation or proof acceptance. The separate
 `spec.en.16.theorems.proof_skeleton.conjunction.metadata` requirement observes
@@ -164,11 +164,9 @@ extraction remain deferred.
 Task122 current-state override for chapters 03, 04, 13, 14, and 16: the exact
 `reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
 pass combines task 119's real reserve lookup/result producer with task 109's
-formula-side asserted builtin-`set` source node. `TermFormulaChecker` now
-requires one ready subject and one asserted type, accepts normalized semantic
-identity as the reflexive admissibility case, and keeps known non-identical
-types `Partial` on the external reachability payload gap instead of inventing
-widening. Production invariants independently preserve the two
+formula-side asserted builtin-`set` source node. `TermFormulaChecker` follows its
+[current assertion admissibility](./mizar-checker/en/type_checker.md#intrinsic-type-assertion-admissibility); this exact case remains normalized-reflexive.
+Production invariants independently preserve the two
 pre-normalization source anchors and require one `Inferred` variable plus one
 fact-free `Checked` type assertion. General reachability/widening/`qua`,
 attributes, truth/facts, implicit closure, theorem acceptance, proof, CoreIr,

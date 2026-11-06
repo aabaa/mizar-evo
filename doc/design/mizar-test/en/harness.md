@@ -67,8 +67,9 @@ Variable/Binding observations and owner/prior-guard joins stay unchanged. One pr
 the complete goal with source endpoints; neither adjacent equations nor transitivity are proved.
 
 The existing IsType1 C8 case additionally consumes native type-assertion goals after its legacy checker.
-Only equal actual/asserted builtin Set/Object heads are formed from authentic written targets;
+Equal builtin heads and intrinsic Set-to-Object assertions use authentic actual/written targets;
 this supplies no proposition proof, type refinement or guard discharge. Broader admissibility stays deferred.
+The existing reconsider_builtin_widening FS case additionally consumes native goals after its strict native conversion checks; conversion facts remain separate from witness guards.
 
 Direct execution of the exact inactive omitted-reconsider case consumes
 the typed remaining goal, source owner states and real conversion failure into

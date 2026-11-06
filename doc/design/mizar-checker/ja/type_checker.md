@@ -33,6 +33,12 @@ arena は元の node ID・子辺・構造ノードの `SurfaceAst` kind 名を�
 > 正本は英語です。英語版:
 > [../en/type_checker.md](../en/type_checker.md)。
 
+## Intrinsic Type-Assertion Admissibility
+
+`TermFormulaChecker` は正規化後の同一型を維持し、引数・属性が空の Known な normalized BuiltinSet から BuiltinObject への断言も認める。
+subject の実型と元の asserted type の identity は区別し、認証済み正規化による builtin normal form に新たな nominal reachability 計算を加えない。
+他の組は既存動作を維持する。新規挿入する呼出元 fact は Checked/Known と Partial/Degraded の既存方針に従い、fact identity・interning を変えない。native formula request は fact を、組込み admissibility は証明・refinement・guard 解消を与えない。
+
 ## 目的
 
 `type_checker` は resolver の名前解決と binding environment 構築の後に走る

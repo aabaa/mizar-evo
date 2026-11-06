@@ -3946,19 +3946,26 @@ fn formula_inference_records_expected_constraints_facts_and_open_candidates() {
 }
 
 #[test]
-fn type_assertion_requires_reflexive_or_external_reachability_payload() {
+fn type_assertion_checks_reflexive_intrinsic_and_external_reachability() {
     let source = source_id();
     let symbols = symbol_env(Vec::new());
     let binding_env = binding_env_for_declarations(
         source,
-        vec![binding_spec(
-            "let_x",
-            BindingKind::LetBinding,
-            BindingStatus::Active,
-        )],
+        vec![
+            binding_spec("let_x", BindingKind::LetBinding, BindingStatus::Active),
+            binding_spec("let_o", BindingKind::LetBinding, BindingStatus::Active),
+        ],
     );
     let subject = term_with_type(source, 10, TermKind::Variable, 100)
         .with_reference(TermReference::Binding(BindingId::new(0)));
+    let object_subject = term_with_type(source, 11, TermKind::Variable, 101)
+        .with_reference(TermReference::Binding(BindingId::new(1)))
+        .with_result_type(TypeExpressionInput::new(
+            site(101),
+            range(source, 505, 511),
+            "object",
+            TypeHeadInput::BuiltinObject,
+        ));
     let compatible = FormulaInput::new(
         site(30),
         BindingContextId::new(1),
@@ -3967,7 +3974,7 @@ fn type_assertion_requires_reflexive_or_external_reachability_payload() {
     )
     .with_terms(vec![site(10)])
     .with_asserted_type(type_expression(source, 200, TypeHeadInput::BuiltinSet));
-    let incompatible = FormulaInput::new(
+    let widened = FormulaInput::new(
         site(31),
         BindingContextId::new(1),
         range(source, 155, 160),
@@ -4002,7 +4009,7 @@ fn type_assertion_requires_reflexive_or_external_reachability_payload() {
     )
     .with_terms(vec![site(10), site(10)])
     .with_asserted_type(type_expression(source, 203, TypeHeadInput::BuiltinSet));
-    let incompatible_with_other_deferred = FormulaInput::new(
+    let widened_with_other_deferred = FormulaInput::new(
         site(35),
         BindingContextId::new(1),
         range(source, 180, 185),
@@ -4017,17 +4024,26 @@ fn type_assertion_requires_reflexive_or_external_reachability_payload() {
     ))
     .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]);
 
+    let reverse = FormulaInput::new(
+        site(36),
+        BindingContextId::new(1),
+        range(source, 190, 195),
+        FormulaKind::TypeAssertion,
+    )
+    .with_terms(vec![site(11)])
+    .with_asserted_type(type_expression(source, 205, TypeHeadInput::BuiltinSet));
     let output = TermFormulaChecker::default().infer(
         &symbols,
         &binding_env,
-        [subject],
+        [subject, object_subject],
         [
             compatible,
-            incompatible,
+            widened,
             missing_asserted,
             missing_subject,
             multiple_subjects,
-            incompatible_with_other_deferred,
+            widened_with_other_deferred,
+            reverse,
         ],
     );
 
@@ -4036,18 +4052,40 @@ fn type_assertion_requires_reflexive_or_external_reachability_payload() {
     assert!(compatible.deferred.is_empty());
     assert!(compatible.facts.is_empty());
 
-    let incompatible = formula_by_site(&output, site(31));
-    assert_eq!(incompatible.status, FormulaStatus::Partial);
+    let widened = formula_by_site(&output, site(31));
+    assert_eq!(widened.status, FormulaStatus::Checked);
+    assert!(widened.deferred.is_empty() && widened.facts.is_empty());
+    let subject = term_by_site(&output, site(10));
+    let TypeEntryActual::Known(actual) = output
+        .type_entries()
+        .get(subject.type_entry)
+        .unwrap()
+        .actual
+    else {
+        panic!("known actual Set")
+    };
+    let asserted = widened.asserted_type.unwrap();
+    assert_ne!(actual, asserted);
     assert_eq!(
-        incompatible.deferred,
-        vec![FormulaDeferredReason::MissingTypeAssertionReachabilityPayload]
+        output.normalized_types().get(actual).unwrap().head,
+        TypeHeadRef::BuiltinSet
+    );
+    assert_eq!(
+        output.normalized_types().get(asserted).unwrap().head,
+        TypeHeadRef::BuiltinObject
+    );
+    let reverse = formula_by_site(&output, site(36));
+    assert_eq!(reverse.status, FormulaStatus::Partial);
+    assert_eq!(
+        reverse.deferred,
+        [FormulaDeferredReason::MissingTypeAssertionReachabilityPayload]
     );
     assert_eq!(
         diagnostic_ranges(
             &output,
             "checker.formula.external.type_assertion_reachability_payload"
         ),
-        vec![(155, 160), (180, 185)]
+        vec![(190, 195)]
     );
 
     assert_eq!(
@@ -4070,16 +4108,185 @@ fn type_assertion_requires_reflexive_or_external_reachability_payload() {
     );
     assert_eq!(
         formula_by_site(&output, site(35)).deferred,
-        vec![
-            FormulaDeferredReason::MissingTypeAssertionReachabilityPayload,
-            FormulaDeferredReason::MissingFormulaPayload,
-        ]
+        vec![FormulaDeferredReason::MissingFormulaPayload]
     );
+    assert_eq!(
+        formula_by_site(&output, site(35)).status,
+        FormulaStatus::Partial
+    );
+    assert!(formula_by_site(&output, site(35)).facts.is_empty());
     assert!(
         output
             .debug_text()
             .contains("missing_type_assertion_reachability_payload")
     );
+}
+
+#[test]
+fn type_assertion_intrinsic_pair_preserves_plain_types_and_fact_policy() {
+    let source = source_id();
+    let attr = symbol_id("Attr/1", "pkg::main::Attr/1");
+    let symbols = symbol_env(vec![symbol_entry(attr.clone(), SymbolKind::Attribute)]);
+    let bindings = binding_env_for_declarations(
+        source,
+        vec![
+            binding_spec("set_value", BindingKind::LetBinding, BindingStatus::Active),
+            binding_spec(
+                "object_value",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            ),
+            binding_spec(
+                "attributed_value",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            ),
+        ],
+    );
+    let terms = [
+        term_with_type(source, 10, TermKind::Variable, 100)
+            .with_reference(TermReference::Binding(BindingId::new(0))),
+        term_with_type(source, 11, TermKind::Variable, 101)
+            .with_reference(TermReference::Binding(BindingId::new(1)))
+            .with_result_type(TypeExpressionInput::new(
+                site(101),
+                range(source, 505, 511),
+                "object",
+                TypeHeadInput::BuiltinObject,
+            )),
+        term_with_type(source, 12, TermKind::Variable, 102)
+            .with_reference(TermReference::Binding(BindingId::new(2)))
+            .with_result_type(
+                type_expression(source, 102, TypeHeadInput::BuiltinSet).with_attributes(vec![
+                    AttributeInput::new(
+                        attr.clone(),
+                        AttributePolarity::Positive,
+                        range(source, 510, 511),
+                        "Attr",
+                    ),
+                ]),
+            ),
+    ];
+    let mut formulas = Vec::new();
+    for (index, subject, head) in [
+        (0, 10, TypeHeadInput::BuiltinObject),
+        (1, 10, TypeHeadInput::BuiltinObject),
+        (2, 11, TypeHeadInput::BuiltinSet),
+        (3, 12, TypeHeadInput::BuiltinObject),
+        (4, 10, TypeHeadInput::BuiltinObject),
+    ] {
+        let mut asserted = TypeExpressionInput::new(
+            site(200 + index),
+            range(source, 600 + index * 10, 606 + index * 10),
+            if head == TypeHeadInput::BuiltinSet {
+                "set"
+            } else {
+                "object"
+            },
+            head,
+        );
+        if index == 4 {
+            asserted = asserted.with_attributes(vec![AttributeInput::new(
+                attr.clone(),
+                AttributePolarity::Positive,
+                range(source, 640, 641),
+                "Attr",
+            )]);
+        }
+        let mut input = FormulaInput::new(
+            site(30 + index),
+            BindingContextId::new(1),
+            range(source, 150 + index * 10, 155 + index * 10),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(subject)])
+        .with_asserted_type(asserted)
+        .with_facts(vec![FormulaFactInput::new(
+            site(subject),
+            TypePredicateRef::new(format!("asserted_domain_{index}")),
+            Polarity::Positive,
+            range(source, 150 + index * 10, 155 + index * 10),
+        )]);
+        if index == 1 {
+            input = input.with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]);
+        }
+        formulas.push(input);
+    }
+    let output = TermFormulaChecker::default().infer(&symbols, &bindings, terms, formulas);
+    assert!(
+        output
+            .terms()
+            .iter()
+            .all(|(_, t)| t.status == TermStatus::Inferred)
+    );
+    assert_eq!(output.facts().len(), 5);
+    for (index, subject) in [(0, 10), (1, 10), (2, 11), (3, 12), (4, 10)] {
+        let formula = formula_by_site(&output, site(30 + index));
+        assert_eq!(
+            formula.status,
+            if index == 0 {
+                FormulaStatus::Checked
+            } else {
+                FormulaStatus::Partial
+            }
+        );
+        assert_eq!(
+            formula.deferred,
+            match index {
+                0 => vec![],
+                1 => vec![FormulaDeferredReason::MissingFormulaPayload],
+                _ => vec![FormulaDeferredReason::MissingTypeAssertionReachabilityPayload],
+            }
+        );
+        let term = term_by_site(&output, site(subject));
+        let entry = output.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(entry.status, TypeStatus::Known);
+        let TypeEntryActual::Known(actual) = entry.actual else {
+            panic!("real known actual type")
+        };
+        let asserted = formula.asserted_type.unwrap();
+        assert_ne!(actual, asserted);
+        let actual = output.normalized_types().get(actual).unwrap();
+        let asserted = output.normalized_types().get(asserted).unwrap();
+        assert_eq!(
+            (actual.status, asserted.status),
+            (NormalizedTypeStatus::Known, NormalizedTypeStatus::Known)
+        );
+        assert_eq!(
+            actual.head,
+            if index == 2 {
+                TypeHeadRef::BuiltinObject
+            } else {
+                TypeHeadRef::BuiltinSet
+            }
+        );
+        assert_eq!(
+            asserted.head,
+            if index == 2 {
+                TypeHeadRef::BuiltinSet
+            } else {
+                TypeHeadRef::BuiltinObject
+            }
+        );
+        assert_eq!(!actual.attributes.is_empty(), index == 3);
+        assert_eq!(!asserted.attributes.is_empty(), index == 4);
+        assert_eq!(formula.facts.len(), 1);
+        let fact = output.facts().get(formula.facts[0]).unwrap();
+        assert_eq!(fact.subject, site(subject));
+        assert_eq!(fact.predicate.as_str(), format!("asserted_domain_{index}"));
+        assert_eq!(fact.polarity, Polarity::Positive);
+        assert_eq!(
+            fact.status,
+            if index == 0 {
+                FactStatus::Known
+            } else {
+                FactStatus::Degraded
+            }
+        );
+        assert!(
+            matches!(&fact.provenance,FactProvenance::Inferred(rule) if rule.as_str()=="formula-type_assertion")
+        );
+    }
 }
 
 #[test]

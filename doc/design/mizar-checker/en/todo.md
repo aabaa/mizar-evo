@@ -744,6 +744,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B13:** [singleton/chain goals](../../task_contracts/en/CHECKER272B13-SINGLETON-CHAIN-GOALS.md); derived atom values and unproved whole-chain checkpoints; adjacent equality proofs stay open.
   - [x] **Task 272B14:** [builtin assertion goals](../../task_contracts/en/CHECKER272B14-TYPE-ASSERTION-GOALS.md); matched-head type-assertion projection; broader admissibility/proof stays open.
   - [x] **Task 272B15:** [existing C8 composition oracles](../../task_contracts/en/CHECKER272B15-C8-COMPOSITION-ORACLES.md); test-only native regression coverage; observer routing remains deferred.
+  - [x] **Task 272B16:** [intrinsic assertion widening](../../task_contracts/en/CHECKER272B16-BUILTIN-ASSERTION-WIDENING.md); normalized Set-to-Object admissibility and native reconsider consumer.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
 - [ ] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);

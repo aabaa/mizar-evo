@@ -667,7 +667,7 @@ fn formula_statement_detail_keys(
             {
                 return Err("native reconsider widening classification mismatch".to_owned());
             }
-            Ok(())
+            super::native_witness_goal_observation(&handoff).map(|_| ())
         })();
         semantics.extend(checked.err());
     }

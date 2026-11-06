@@ -13264,6 +13264,21 @@ impl TermFormulaCheckingState<'_> {
             return;
         }
 
+        if let (Some(actual), Some(asserted)) = (
+            self.normalized_types.get(actual_type),
+            self.normalized_types.get(asserted_type),
+        ) && actual.status == NormalizedTypeStatus::Known
+            && asserted.status == NormalizedTypeStatus::Known
+            && actual.head == TypeHeadRef::BuiltinSet
+            && asserted.head == TypeHeadRef::BuiltinObject
+            && actual.args.is_empty()
+            && asserted.args.is_empty()
+            && actual.attributes.is_empty()
+            && asserted.attributes.is_empty()
+        {
+            return;
+        }
+
         let reason = FormulaDeferredReason::MissingTypeAssertionReachabilityPayload;
         deferred.insert(reason);
         *recovery = Some(self.formula_deferred_diagnostic(input, reason));

@@ -10149,7 +10149,6 @@ fn task272b14_singleton_assertions_preserve_object_types_and_pending_take() {
 fn task272b14_assertion_targets_census_free_ids_and_old_atomic_caps_stay_bounded() {
     for source in [
         "theorem ObjectSet: for x being object holds x is set proof let x be object; thus thesis; end;",
-        "theorem SetObject: for x being set holds x is object proof let x be set; thus thesis; end;",
         "theorem InlineNot: for x being set holds x is not set proof let x be set; thus thesis; end;",
         "definition let e be set; attr EmptyLabel: e is empty means thesis; end; theorem AttributedTarget: for x being set holds x is non empty set proof let x be set; thus thesis; end;",
         "definition mode ThingLabel: Thing is set; end; theorem NominalTarget: for x being set holds x is Thing proof let x be set; thus thesis; end;",
@@ -10498,5 +10497,388 @@ fn task272b15_composition_variants_preserve_association_free_ids_and_conditions(
         super::native_proof_intent_observation(&handoff).unwrap();
         handoff.check_proof_intents().unwrap();
         assert!(handoff.check_witness_goals().is_err(),"{source}");
+    }
+}
+
+#[test]
+fn task272b16_builtin_assertion_widening_executes_actual_fs() {
+    use mizar_checker::{binding_env::{BindingContextLayer as L,BindingTypeSite},
+        source_proof_local_declaration::{SourceProofGoal as G,SourceProofIntentStatus as S,SourceProofTerm as T},
+        type_checker::{CoercionEvidence,CoercionRequestKind as C,FormulaKind,FormulaStatus,NormalizedTypeStatus,
+            TermKind,TermReference,TermStatus,TypeFactQueryEngine,TypeFactQueryStatus as Q,TypeHeadInput as H,TypeHeadRef},
+        typed_ast::{CoercionStatus,FactProvenance,FactStatus,Polarity,TypeEntryActual,TypeRole,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::{names::SourceVariableTypeRadix as R,resolved_ast::{LabelKind,SurfaceResolvedArena}};
+    use mizar_syntax::{SurfaceQuantifierKind as QuantifierKind,SurfaceNodeKind as K,SurfaceTokenKind as TK};
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_reconsider_builtin_widening_001").unwrap();
+    let result = super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0);
+    assert_eq!(result.status,super::FormulaStatementCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    let frontend = super::run_frontend(&config.workspace_root,case,0).unwrap();
+    assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+    let ast = frontend.ast.expect("actual unchanged Reconsider1 source");
+    for (kind,count) in [(K::IsAssertion,2),(K::TermExpression,3),(K::TypeExpression,5),(K::TypeHead,5),
+        (K::LetStatement,1),(K::ReconsiderStatement,1),(K::ReconsiderItem,1),(K::ConclusionStatement,1)] {
+        assert_eq!(ast.node_views().filter(|node|node.kind()==&kind).count(),count,"{kind:?}");
+    }
+    let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+    assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+    assert!(super::formula_statement::source_variable_semantics_detail_keys(&ast,&resolver.module,&resolver.env).is_empty());
+    let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (intents,labels) = handoff.check_proof_intents().unwrap();
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let id = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==id).unwrap()
+    };
+    let typed_node = |row:&mizar_checker::typed_ast::SourceNode| {
+        handoff.source().nodes().iter().find(|(_,node)|node.resolved_node==Some(row.site())).unwrap().0
+    };
+    assert_eq!(intents.iter().map(|(site,_,_)|original(site).kind()).collect::<Vec<_>>(),
+        [&K::TheoremItem,&K::ProofBlock,&K::LetStatement,&K::ReconsiderStatement,&K::ReconsiderItem,&K::ConclusionStatement]);
+    assert!(intents.iter().all(|(_,_,status)|*status==S::Pending));
+    let (h,p,y) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1),task272b1_binding(&handoff,2));
+    assert_eq!(handoff.scope().bindings().iter().map(|b|b.spelling()).collect::<Vec<_>>(),["X","X","Y"]);
+    assert_ne!(h,p); assert_ne!(p,y); assert_ne!(h,y);
+    assert_eq!(handoff.scope().references().iter().map(|r|task272b1_binding(&handoff,r.binding().index())).collect::<Vec<_>>(),[h,p,p]);
+    let header_context = handoff.binding_env().bindings().get(h).unwrap().owner_context;
+    let context = handoff.binding_env().bindings().get(p).unwrap().owner_context;
+    assert_eq!(handoff.binding_env().contexts().get(header_context).unwrap().layer,L::Expression);
+    assert_eq!(handoff.binding_env().contexts().get(context).unwrap().layer,L::Proof);
+    assert_eq!(handoff.binding_env().bindings().get(y).unwrap().owner_context,context);
+    for binding in [h,p,y] {
+        let declaration = handoff.binding_env().bindings().get(binding).unwrap();
+        if binding!=y {assert_eq!(declaration.type_site,BindingTypeSite::Missing);}
+        assert!(declaration.captured.identities().is_empty());
+    }
+    let item = rows.iter().copied().find(|row|row.kind()==&K::ReconsiderItem).unwrap();
+    let statement = rows.iter().copied().find(|row|Some(row.site())==item.parent()).unwrap();
+    assert_eq!(statement.kind(),&K::ReconsiderStatement);
+    assert!(item.range().start<=handoff.scope().bindings()[2].range().start
+        && handoff.scope().bindings()[2].range().end<=item.range().end);
+    let target = rows.iter().copied().find(|row|row.parent()==item.parent() && row.kind()==&K::TypeExpression).unwrap();
+    assert_eq!(target.spelling(),"object");
+    assert_eq!(handoff.binding_env().bindings().get(y).unwrap().type_site,BindingTypeSite::Source(target.range()));
+    let let_statement = rows.iter().copied().find(|row|row.kind()==&K::LetStatement).unwrap();
+    let declaration = rows.iter().copied().find(|row|row.range()==handoff.scope().bindings()[1].range() && matches!(row.kind(),K::Token(_))).unwrap();
+    let from = rows.iter().copied().find(|row|row.parent()==declaration.parent() && row.kind()==&K::TypeExpression).unwrap();
+    assert!(let_statement.range().start<=declaration.range().start && declaration.range().end<=let_statement.range().end);
+    assert!(let_statement.range().end<=item.range().start);
+    let (requests,conversion,queries) = handoff.check_conversions().unwrap();
+    assert_eq!((requests.len(),conversion.coercions().len(),conversion.facts().len(),queries.len()),(1,1,1,1));
+    let request = &requests[0];
+    assert_eq!(request.site,TypedSiteRef::Node(typed_node(item)));
+    assert_eq!(request.source_range,item.range());
+    assert_eq!((request.kind,request.evidence),(C::Widening,CoercionEvidence::BuiltinRadix));
+    assert!(request.obligation.is_none() && request.supporting_facts.is_empty() && request.deferred.is_empty());
+    for (input,row,head,role) in [(request.from_type.as_ref().unwrap(),from,H::BuiltinSet,"from"),
+        (&request.to_type,target,H::BuiltinObject,"to")] {
+        assert_eq!(input.head,head);
+        assert!(input.args.is_empty() && input.attributes.is_empty());
+        assert_eq!(input.source_range,row.range());
+        assert_eq!(input.site,TypedSiteRef::Role {node:typed_node(row),
+            role:TypeRole::new(format!("conversion.{}.{role}",typed_node(item).index()))});
+    }
+    let coercion = conversion.coercions().iter().next().unwrap().1;
+    assert_eq!(coercion.site,request.site);
+    assert_eq!(coercion.status,CoercionStatus::Candidate);
+    assert!(coercion.obligation.is_none());
+    let fact = conversion.facts().iter().next().unwrap().1;
+    assert_eq!(fact.subject,request.site);
+    assert_eq!(fact.predicate.as_str(),"coercion.widening.builtin_radix");
+    assert_eq!(fact.polarity,Polarity::Positive);
+    assert_eq!(fact.status,FactStatus::Known);
+    assert!(matches!(&fact.provenance,FactProvenance::Builtin(rule) if rule.as_str()=="coercion-widening-builtin-radix"));
+    assert_eq!(coercion.supporting_facts,[fact.id]);
+    let query = &queries[0];
+    assert_eq!(query.status(),Q::Satisfied);
+    assert_eq!(query.query().subject,request.site);
+    assert_eq!(query.query().source_range,item.range());
+    assert_eq!(query.query().predicate.as_str(),fact.predicate.as_str());
+    assert_eq!(query.query().polarity,Polarity::Positive);
+    assert_eq!(query.matched_facts(),[fact.id]);
+    assert_eq!(TypeFactQueryEngine::new(conversion.facts()).query(query.query().clone()),*query);
+    assert!(conversion.initial_obligations().is_empty() && conversion.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty() && handoff.source().initial_obligations().is_empty());
+    println!("Task272B16 test-first prerequisites: actual FS Passed; frontend/resolver/source-variable legacy empty; native A/checkProofIntents SIX Pending; H/P/Y refs[H,P,P]; source 2Is/3Term/5Type/5Head; strict real Set->Object Candidate + Known builtin fact + Satisfied query passed");
+    let (steps,success,pending,guards,inference) = handoff.check_witness_goals()
+        .expect("actual Reconsider1 must admit intrinsic Set-to-Object assertions and retain whole unproved goals");
+    assert_eq!((steps.len(),inference.terms().len(),inference.formulas().len()),(4,5,2));
+    let g0 = format!("forall({}:Set,is({0},Object))",h.index());
+    let gp = format!("is({},Object)",p.index());
+    let source_header = rows.iter().copied().find(|row|row.kind()==&K::IsAssertion && row.range().end<let_statement.range().start).unwrap();
+    let source_quantifier = rows.iter().copied().find(|row|row.kind()==&K::QuantifiedFormula(QuantifierKind::Universal)).unwrap();
+    let G::Universal {origin,binding,radix:R::Set,body} = steps[0].before() else {panic!("original universal Set header")};
+    assert_eq!(*binding,h);
+    assert_eq!(original(origin).site(),source_quantifier.site());
+    let G::TypeAssertion {origin:assertion_origin,subject:T::Binding(subject),radix:R::Object} = body.as_ref()
+        else {panic!("original Object assertion on genuine Set binding")};
+    assert_eq!(*subject,h);
+    assert_eq!(original(assertion_origin).site(),source_header.site());
+    for (index,step) in steps.iter().enumerate() {
+        assert_eq!(task272b1_goal_text(step.before()),if index<=1 {g0.as_str()} else {gp.as_str()});
+        assert_eq!(task272b1_goal_text(step.after()),if index==0 {g0.as_str()} else {gp.as_str()});
+        assert_eq!(step.owner(),steps[0].site());
+        assert_eq!(original(step.owner()).kind(),&K::TheoremItem);
+        assert_eq!(step.context(),context);
+        assert_eq!(step.matched(),if index==1 {Some((h,p))} else {None});
+        assert_eq!(step.free(),if index==0 {vec![]} else {vec![p]});
+        assert!(step.avoided().is_empty());
+        let row = original(step.site());
+        match index {
+            0=>assert_eq!(row.kind(),&K::TheoremItem),
+            1=>assert_eq!(row.range(),handoff.scope().bindings()[1].range()),
+            2=>assert_eq!(row.site(),item.site()),
+            3=>assert_eq!(row.kind(),&K::ConclusionStatement),
+            _=>unreachable!(),
+        }
+        if index>0 {
+            assert_eq!(step.before(),steps[index-1].after());
+            let G::TypeAssertion {origin,subject:T::Binding(subject),radix:R::Object} = step.after()
+                else {panic!("derived whole Object assertion")};
+            assert_eq!(origin,assertion_origin);
+            assert_eq!(*subject,p);
+        }
+        if index!=1 {assert_eq!(step.before(),step.after());}
+    }
+    assert!(labels.ids().is_empty());
+    assert_eq!(labels.index().iter().filter(|l|l.kind()==LabelKind::Theorem).count(),1);
+    assert_eq!(labels.index().iter().filter(|l|l.kind()==LabelKind::ProofStep).count(),0);
+    assert!(success.is_empty() && pending.is_empty() && guards.coercions().is_empty()
+        && guards.initial_obligations().is_empty() && guards.facts().is_empty() && guards.diagnostics().is_empty());
+    let native = SurfaceResolvedArena::lower(&ast,&resolver.module).unwrap();
+    let (scopes,_) = mizar_resolve::symbols::source_proof_scope_maps(&native,&resolver.env,handoff.scope()).unwrap();
+    for (_,term) in inference.terms().iter() {
+        assert_eq!((term.kind,term.status),(TermKind::Variable,TermStatus::Inferred));
+        let Some(TermReference::Binding(binding)) = term.reference else {panic!("actual variable binding")};
+        assert!([h,p].contains(&binding));
+        let entry = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!(entry.owner,term.site);
+        assert_eq!(entry.status,TypeStatus::Known);
+        let TypeEntryActual::Known(id) = entry.actual else {panic!("actual Known Set")};
+        let ty = inference.normalized_types().get(id).unwrap();
+        assert_eq!((ty.head.clone(),ty.status),(TypeHeadRef::BuiltinSet,NormalizedTypeStatus::Known));
+        assert!(ty.args.is_empty() && ty.attributes.positive().is_empty() && ty.attributes.negative().is_empty());
+        let row = original(&term.site);
+        let binding_entry = handoff.binding_env().bindings().get(binding).unwrap();
+        if matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value") {
+            assert_eq!(row.range(),binding_entry.declaration_range);
+            assert_eq!(term.context,binding_entry.owner_context);
+        } else {
+            assert!(handoff.scope().references().iter().any(|r|r.range()==row.range()
+                && task272b1_binding(&handoff,r.binding().index())==binding));
+            let surface = ast.node_views().find(|node|native.resolved_node_for(node.id())==Some(row.site())).unwrap();
+            assert_eq!(scopes.get(&surface.id()),handoff.binding_env().contexts().get(term.context).unwrap().lexical_scope.as_ref());
+            assert_eq!(term.context,if binding==h {header_context} else {context});
+        }
+    }
+    for binding in [h,p,y] {
+        assert_eq!(inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(binding))
+            && matches!(&term.site,TypedSiteRef::Role {role,..} if role.as_str()=="witness-goal.declaration-value")).count(),usize::from(binding!=y));
+    }
+    for reference in handoff.scope().references() {
+        assert_eq!(inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(task272b1_binding(&handoff,reference.binding().index())))
+            && original(&term.site).range()==reference.range()).count(),1);
+    }
+    let mut formula_sites = Vec::new();
+    for (_,formula) in inference.formulas().iter() {
+        assert_eq!((formula.kind,formula.status),(FormulaKind::TypeAssertion,FormulaStatus::Checked));
+        assert!(formula.facts.is_empty() && formula.deferred.is_empty());
+        let row = original(&formula.site);
+        formula_sites.push(row.site());
+        assert_eq!(row.kind(),&K::IsAssertion);
+        assert_eq!(formula.source_range,row.range());
+        let mut frame = rows.iter().copied().filter(|r|r.parent()==Some(row.site())).collect::<Vec<_>>();
+        frame.sort_by_key(|r|r.child_ordinal());
+        assert_eq!(frame.len(),3);
+        assert_eq!(frame[0].kind(),&K::TermExpression);
+        assert!(matches!(frame[1].kind(),K::Token(token) if token.kind==TK::ReservedWord));
+        assert_eq!(frame[1].spelling(),"is");
+        assert_eq!((frame[2].kind(),frame[2].spelling()),(&K::TypeExpression,"object"));
+        let head = rows.iter().copied().filter(|r|r.parent()==Some(frame[2].site())).collect::<Vec<_>>();
+        assert_eq!(head.len(),1);
+        assert_eq!(head[0].kind(),&K::TypeHead);
+        let keywords = rows.iter().copied().filter(|r|r.parent()==Some(head[0].site())).collect::<Vec<_>>();
+        assert_eq!(keywords.len(),1);
+        assert!(matches!(keywords[0].kind(),K::Token(token) if token.kind==TK::ReservedWord));
+        assert_eq!(keywords[0].spelling(),"object");
+        let [subject] = formula.terms.as_slice() else {panic!("one actual assertion subject")};
+        assert_eq!(original(subject).site(),frame[0].site());
+        let term = inference.terms().iter().find(|(_,t)|&t.site==subject).unwrap().1;
+        let TypeEntryActual::Known(actual) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual Set ID")};
+        let asserted = formula.asserted_type.expect("genuine asserted Object ID");
+        assert_ne!(actual,asserted);
+        let ty = inference.normalized_types().get(asserted).unwrap();
+        assert_eq!((ty.head.clone(),ty.status),(TypeHeadRef::BuiltinObject,NormalizedTypeStatus::Known));
+        assert!(ty.args.is_empty() && ty.attributes.positive().is_empty() && ty.attributes.negative().is_empty());
+        assert!(inference.type_entries().iter().any(|(_,entry)|original(&entry.owner).site()==frame[2].site()
+            && entry.status==TypeStatus::Known && entry.actual==TypeEntryActual::Known(asserted)));
+        let occurrence_context = if row.site()==source_header.site() {header_context} else {context};
+        assert_eq!((formula.context,term.context),(occurrence_context,occurrence_context));
+        for part in [frame[0],frame[2],head[0],keywords[0]] {
+            let surface = ast.node_views().find(|node|native.resolved_node_for(node.id())==Some(part.site())).unwrap();
+            assert_eq!(scopes.get(&surface.id()),handoff.binding_env().contexts().get(occurrence_context).unwrap().lexical_scope.as_ref());
+        }
+    }
+    let mut original_assertions = rows.iter().filter(|r|r.kind()==&K::IsAssertion).map(|r|r.site()).collect::<Vec<_>>();
+    formula_sites.sort(); original_assertions.sort();
+    assert_eq!(formula_sites,original_assertions);
+    assert!(inference.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty() && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b16_unchanged_set_object_thesis_preserves_actual_and_target_types() {
+    use mizar_checker::{source_proof_local_declaration::{SourceProofGoal as G,SourceProofTerm as T},
+        type_checker::{FormulaKind,FormulaStatus,TermKind,TermReference,TermStatus,TypeHeadRef},
+        typed_ast::{TypeEntryActual,TypeStatus,TypedSiteRef}};
+    use mizar_resolve::names::SourceVariableTypeRadix as R;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let source = "theorem SetObject: for x being set holds x is object proof let x be set; thus thesis; end;";
+    let handoff = task272b1_witness_source(source);
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (steps,success,pending,guards,inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!((steps.len(),inference.terms().len(),inference.formulas().len()),(3,3,1));
+    let (h,p) = (task272b1_binding(&handoff,0),task272b1_binding(&handoff,1));
+    assert_eq!(handoff.scope().references().iter().map(|r|task272b1_binding(&handoff,r.binding().index())).collect::<Vec<_>>(),[h]);
+    let rows = handoff.source().source_node_entries().unwrap().collect::<Vec<_>>();
+    let original = |site:&TypedSiteRef| {
+        let resolved = handoff.source().nodes().node(site.node()).unwrap().resolved_node.unwrap();
+        rows.iter().copied().find(|row|row.site()==resolved).unwrap()
+    };
+    let assertion = rows.iter().copied().filter(|r|r.kind()==&K::IsAssertion).collect::<Vec<_>>();
+    assert_eq!(assertion.len(),1);
+    let target = rows.iter().copied().find(|r|r.parent()==Some(assertion[0].site()) && r.kind()==&K::TypeExpression).unwrap();
+    assert_eq!(target.spelling(),"object");
+    let G::Universal {binding,body,..} = steps[0].before() else {panic!("original quantified assertion")};
+    assert_eq!(*binding,h);
+    let G::TypeAssertion {origin,subject:T::Binding(subject),radix:R::Object} = body.as_ref() else {panic!("original Object target")};
+    assert_eq!((*subject,original(origin).site()),(h,assertion[0].site()));
+    assert_eq!(steps[0].before(),steps[0].after());
+    assert_eq!(steps[1].matched(),Some((h,p)));
+    for step in &steps[1..] {
+        let G::TypeAssertion {origin:retained,subject:T::Binding(subject),radix:R::Object} = step.after() else {panic!("whole unproved Object goal")};
+        assert_eq!((retained,*subject),(origin,p));
+        assert_eq!(step.free(),[p]);
+    }
+    assert_eq!(steps[2].before(),steps[1].after());
+    assert_eq!(steps[2].before(),steps[2].after());
+    let formula = inference.formulas().iter().next().unwrap().1;
+    assert_eq!((formula.kind,formula.status),(FormulaKind::TypeAssertion,FormulaStatus::Checked));
+    assert_eq!(original(&formula.site).site(),assertion[0].site());
+    let asserted = formula.asserted_type.unwrap();
+    assert_eq!(inference.normalized_types().get(asserted).unwrap().head,TypeHeadRef::BuiltinObject);
+    assert!(inference.type_entries().iter().any(|(_,entry)|original(&entry.owner).site()==target.site()
+        && entry.status==TypeStatus::Known && entry.actual==TypeEntryActual::Known(asserted)));
+    for (_,term) in inference.terms().iter() {
+        assert_eq!((term.kind,term.status),(TermKind::Variable,TermStatus::Inferred));
+        assert!(matches!(term.reference,Some(TermReference::Binding(b)) if b==h || b==p));
+        let entry = inference.type_entries().get(term.type_entry).unwrap();
+        assert_eq!((entry.owner.clone(),entry.status),(term.site.clone(),TypeStatus::Known));
+        let TypeEntryActual::Known(actual) = entry.actual else {panic!("actual Set")};
+        assert_ne!(actual,asserted);
+        assert_eq!(inference.normalized_types().get(actual).unwrap().head,TypeHeadRef::BuiltinSet);
+    }
+    assert!(success.is_empty() && pending.is_empty() && formula.facts.is_empty() && inference.diagnostics().is_empty());
+    assert!(guards.coercions().is_empty() && guards.initial_obligations().is_empty() && guards.facts().is_empty() && guards.diagnostics().is_empty());
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty() && handoff.source().initial_obligations().is_empty());
+}
+
+#[test]
+fn task272b16_object_take_keeps_pending_set_guard_under_object_assertion() {
+    use mizar_checker::{source_proof_local_declaration::{SourceProofGoal as G,SourceProofTerm as T},
+        type_checker::{FormulaKind,FormulaStatus,TermReference,TypeHeadRef},
+        typed_ast::{FactProvenance,FactStatus,InitialObligationStatus,TypeEntryActual}};
+    use mizar_resolve::names::SourceVariableTypeRadix as R;
+    let source = "theorem PendingObjectAssertion: for o being object ex z being set st z is object proof let o be object; take o; thus o is object; end;";
+    let handoff = task272b1_witness_source(source);
+    super::native_proof_intent_observation(&handoff).unwrap();
+    let (steps,success,pending,guards,inference) = handoff.check_witness_goals().unwrap();
+    assert_eq!(steps.len(),4);
+    assert!(success.is_empty());
+    assert_eq!(pending.len(),1);
+    assert_eq!(pending[0].site,*steps[2].site());
+    let (formal,object) = (task272b1_binding(&handoff,1),task272b1_binding(&handoff,2));
+    assert_eq!(steps[2].matched(),Some((formal,object)));
+    let G::Existential {binding,radix:R::Set,body,..} = steps[2].before() else {panic!("real formal Set guard")};
+    assert_eq!(*binding,formal);
+    let G::TypeAssertion {origin,subject:T::Binding(subject),radix:R::Object} = body.as_ref() else {panic!("original admissible Object assertion")};
+    assert_eq!(*subject,formal);
+    let G::TypeAssertion {origin:retained,subject:T::Binding(subject),radix:R::Object} = steps[2].after() else {panic!("Object actual under retained Object target")};
+    assert_eq!((retained,*subject),(origin,object));
+    assert_eq!(steps[3].before(),steps[2].after());
+    assert_eq!(steps[3].after(),steps[2].after());
+    assert_eq!(guards.initial_obligations().len(),1);
+    let guard = guards.initial_obligations().iter().next().unwrap().1;
+    assert_eq!((guard.status,guard.owner.clone()),(InitialObligationStatus::Pending,steps[2].site().clone()));
+    assert_eq!(guards.facts().len(),1);
+    let fact = guards.facts().iter().next().unwrap().1;
+    assert_eq!((fact.subject.clone(),fact.status,fact.provenance.clone()),
+        (pending[0].site.clone(),FactStatus::PendingObligation,FactProvenance::Obligation(guard.id)));
+    assert!(!fact.status.is_unconditionally_consumable());
+    let mut object_terms = 0;
+    for (_,term) in inference.terms().iter().filter(|(_,term)|term.reference==Some(TermReference::Binding(object))) {
+        object_terms += 1;
+        let TypeEntryActual::Known(actual) = inference.type_entries().get(term.type_entry).unwrap().actual else {panic!("actual Object unchanged")};
+        assert_eq!(inference.normalized_types().get(actual).unwrap().head,TypeHeadRef::BuiltinObject);
+    }
+    assert!(object_terms>0);
+    assert_eq!(inference.formulas().len(),2);
+    assert!(inference.formulas().iter().all(|(_,formula)|formula.kind==FormulaKind::TypeAssertion
+        && formula.status==FormulaStatus::Checked && formula.facts.is_empty()));
+    assert!(inference.diagnostics().is_empty() && guards.diagnostics().is_empty());
+    assert!(handoff.check_conversions().unwrap().1.facts().is_empty());
+    assert!(super::native_witness_goal_observation(&handoff).unwrap().iter().any(|line|line.starts_with("remaining.")
+        && line.contains(&format!("pending=[{:?}]",guard.id))));
+    assert!(handoff.source().types().is_empty() && handoff.source().facts().is_empty());
+}
+
+#[test]
+fn task272b16_actual_fs_goal_gate_and_conversion_alias_boundary() {
+    use mizar_checker::{source_proof_local_declaration::SourceProofIntentStatus as S,
+        type_checker::{CoercionRequestKind as C,TypeFactQueryEngine,TypeFactQueryStatus as Q,TypeHeadInput as H},
+        typed_ast::{CoercionStatus,FactStatus}};
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan.cases.iter().find(|case|case.id.0=="pass_formula_statement_reconsider_builtin_widening_001").unwrap();
+    let base = include_str!("../../../../tests/miz/pass/variables/pass_formula_statement_reconsider_builtin_widening_001.miz");
+    for source in [base.replacen("thus X is object;","thus Y is object;",1),
+        base.replacen("reconsider Y = X","set alias = X;\n  reconsider Y = alias",1)] {
+        let frontend = metamorphic_guard::with_source(case,&source,||super::run_frontend(&config.workspace_root,case,0)).unwrap();
+        assert!(frontend.diagnostics.is_empty(),"{:?}",frontend.diagnostics);
+        let ast = frontend.ast.unwrap();
+        let resolver = super::resolver_symbol_collection(&config.workspace_root,case,&ast);
+        assert!(resolver.detail_keys.is_empty(),"{:?}",resolver.detail_keys);
+        assert!(super::formula_statement::source_variable_semantics_detail_keys(&ast,&resolver.module,&resolver.env).is_empty());
+        let handoff = super::native_conversion_handoff(&ast,&resolver.module,&resolver.env).unwrap();
+        if source.contains("set alias") {
+            assert!(handoff.check_conversions().is_err());
+            assert!(handoff.check_witness_goals().is_err());
+            let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
+            assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
+            assert!(result.actual_detail_keys.iter().any(|key|key.contains("native reconsider")));
+            println!("Task272B16 existing conversion boundary: genuine source-variable legacy passed; Set-alias RHS refused before native goal gating");
+            continue;
+        }
+        super::native_proof_intent_observation(&handoff).unwrap();
+        assert!(handoff.check_proof_intents().unwrap().0.iter().all(|(_,_,status)|*status==S::Pending));
+        let (requests,conversion,queries) = handoff.check_conversions().unwrap();
+        assert_eq!((requests.len(),conversion.coercions().len(),conversion.facts().len(),queries.len()),(1,1,1,1));
+        assert_eq!(requests[0].kind,C::Widening);
+        assert_eq!(requests[0].from_type.as_ref().unwrap().head,H::BuiltinSet);
+        assert_eq!(requests[0].to_type.head,H::BuiltinObject);
+        assert!(conversion.coercions().iter().all(|(_,row)|row.site==requests[0].site && row.status==CoercionStatus::Candidate));
+        assert!(conversion.facts().iter().all(|(_,fact)|fact.subject==requests[0].site && fact.status==FactStatus::Known));
+        assert_eq!(queries[0].status(),Q::Satisfied);
+        assert_eq!(queries[0].query().subject,requests[0].site);
+        assert_eq!(TypeFactQueryEngine::new(conversion.facts()).query(queries[0].query().clone()),queries[0]);
+        assert!(conversion.initial_obligations().is_empty() && conversion.diagnostics().is_empty());
+        println!("Task272B16 gate prerequisites: actual source-variable legacy, native A and real Set->Object conversion all passed for referenced Y");
+        assert!(handoff.check_witness_goals().is_err());
+        let result = metamorphic_guard::with_source(case,&source,||super::formula_statement::run_formula_statement_case(&config.workspace_root,case,0));
+        assert_eq!(result.status,super::FormulaStatementCaseStatus::Failed);
+        assert!(result.actual_detail_keys.iter().any(|key|key.contains("native") && key.contains("goal")),"{:?}",result.actual_detail_keys);
     }
 }

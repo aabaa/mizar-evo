@@ -45,6 +45,12 @@ Bare set -> local structure earns invalid narrowing only from its normalized pai
 > Canonical language: English. Japanese companion:
 > [../ja/type_checker.md](../ja/type_checker.md).
 
+## Intrinsic Type-Assertion Admissibility
+
+`TermFormulaChecker` preserves normalized-reflexive assertions and additionally admits Known plain normalized BuiltinSet to BuiltinObject with empty arguments and attributes.
+Actual subject types and written asserted types retain distinct identities; authenticated normalization may supply a builtin normal form without a new nominal reachability computation.
+Other pairs keep existing behavior. Newly inserted caller facts follow the existing Checked/Known versus Partial/Degraded policy; fact identity and interning stay unchanged. Native formula requests supply no facts; intrinsic admissibility supplies no proof, refinement or guard discharge.
+
 ## Purpose
 
 `type_checker` specifies phase-6 type checking and inference after resolver name
