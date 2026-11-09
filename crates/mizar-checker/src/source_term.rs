@@ -1377,6 +1377,7 @@ enum SourcePrimaryTermBindingProfile {
     ProofLocalGivenConditionUse,
     ProofLocalGivenDescendantUse,
     NestedFraenkelMapperPrimary,
+    ScopedTheoremOccurrences,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -1539,7 +1540,12 @@ impl SourcePrimaryTermProducer {
         if binding_env != &authentic {
             return Err(SourcePrimaryTermError::InvalidTransaction);
         }
-        let mut handoff = Self::build(input, binding_env, arena)?;
+        let mut handoff = Self::build_with_profile(
+            input,
+            binding_env,
+            arena,
+            SourcePrimaryTermBindingProfile::ScopedTheoremOccurrences,
+        )?;
         for (id, term) in handoff.terms.iter() {
             if term.recovery != SourcePrimaryTermRecovery::Normal
                 || term.kind != SourcePrimaryTermKind::VariableReference
@@ -2093,6 +2099,10 @@ fn valid_binding_role(
     role: SourcePrimaryTermReferenceRole,
     binding_profile: SourcePrimaryTermBindingProfile,
 ) -> bool {
+    if kind == BindingKind::FunctionBinder {
+        return role == SourcePrimaryTermReferenceRole::Variable
+            && binding_profile == SourcePrimaryTermBindingProfile::ScopedTheoremOccurrences;
+    }
     match role {
         SourcePrimaryTermReferenceRole::Variable => {
             matches!(

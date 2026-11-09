@@ -7777,6 +7777,194 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                         );
                     }
                     assert!(different_clocks);
+                    use mizar_checker::{
+                        source_term::{
+                            SourcePrimaryTermError as PrimaryError, SourcePrimaryTermHandoffInput,
+                            SourcePrimaryTermId, SourcePrimaryTermInput,
+                            SourcePrimaryTermProducer as Primary, SourcePrimaryTermReferenceId,
+                            SourcePrimaryTermReferenceInput,
+                        },
+                        typed_ast::{TypedNode, TypedNodeId, TypingState},
+                    };
+                    // These caller-owned leaves are untrusted inputs, not a typed phase.
+                    let arena = TypedArena::try_new(
+                        None,
+                        references
+                            .iter()
+                            .map(|(node, _, _)| {
+                                TypedNode::new(
+                                    "source.term.variable-reference",
+                                    SourceAnchor::Range(ast.node_view(*node).unwrap().range()),
+                                )
+                                .with_resolved_node(source.resolved_node_for(*node).unwrap())
+                            })
+                            .collect(),
+                    )
+                    .unwrap();
+                    let input = SourcePrimaryTermHandoffInput {
+                        source_id: source.source_id(),
+                        module_id: source.module().clone(),
+                        terms: references
+                            .iter()
+                            .enumerate()
+                            .map(|(index, (node, binding, local))| SourcePrimaryTermInput {
+                                site: TypedSiteRef::Node(TypedNodeId::new(index)),
+                                source_range: ast.node_view(*node).unwrap().range(),
+                                source_ordinal: index,
+                                context: context_ids[&LocalTermScope::new(local.clone())],
+                                recovery: SourcePrimaryTermRecovery::Normal,
+                                spelling: declarations[*binding].2.clone(),
+                                kind: SourcePrimaryTermKind::VariableReference,
+                                role: SourcePrimaryTermRole::Value,
+                                parent: None,
+                            })
+                            .collect(),
+                        references: references
+                            .iter()
+                            .enumerate()
+                            .map(|(index, (_, binding, _))| SourcePrimaryTermReferenceInput {
+                                term: SourcePrimaryTermId::new(index),
+                                binding: BindingId::new(*binding),
+                                role: SourcePrimaryTermReferenceRole::Variable,
+                            })
+                            .collect(),
+                        numeric_type_requests: Vec::new(),
+                    };
+                    let primary_before = (arena.clone(), scoped.clone());
+                    let selects_fresh = references
+                        .iter()
+                        .any(|(_, binding, _)| declarations[*binding].1 == FunctionBinder);
+                    let generic = Primary::build(input.clone(), &scoped, &arena);
+                    assert_eq!(
+                        generic.is_err(),
+                        selects_fresh,
+                        "Generic admission case {case}"
+                    );
+                    let primary_build = Primary::build_from_scoped_theorem_occurrences;
+                    if header_binder {
+                        // Active Reserve identity remains outside the scoped primary profile.
+                        assert_eq!(
+                            primary_build(input.clone(), &scoped, &arena, source, symbols, scope)
+                                .unwrap_err(),
+                            PrimaryError::InvalidReference {
+                                reference: SourcePrimaryTermReferenceId::new(1)
+                            }
+                        );
+                    } else {
+                        let primary = primary_build(
+                            input.clone(),
+                            &scoped,
+                            &arena,
+                            source,
+                            symbols,
+                            scope,
+                        )
+                        .unwrap_or_else(|error| {
+                            panic!(
+                                "RED scoped primary Binder case {case} variant {variant}: {error:?}"
+                            )
+                        });
+                        assert_eq!(primary.source_id(), source.source_id());
+                        assert_eq!(primary.module_id(), source.module());
+                        assert_eq!(primary.terms().len(), references.len());
+                        assert_eq!(primary.references().len(), references.len());
+                        assert!(primary.numeric_type_requests().is_empty());
+                        for (index, (node, binding, local)) in references.iter().enumerate() {
+                            let term = primary
+                                .terms()
+                                .get(SourcePrimaryTermId::new(index))
+                                .unwrap();
+                            assert_eq!(term.site(), &TypedSiteRef::Node(TypedNodeId::new(index)));
+                            assert_eq!(term.source_range(), ast.node_view(*node).unwrap().range());
+                            assert_eq!(term.source_ordinal(), index);
+                            assert_eq!(
+                                term.context(),
+                                context_ids[&LocalTermScope::new(local.clone())]
+                            );
+                            assert_eq!(term.recovery(), SourcePrimaryTermRecovery::Normal);
+                            assert_eq!(term.spelling(), declarations[*binding].2);
+                            assert_eq!(term.kind(), SourcePrimaryTermKind::VariableReference);
+                            assert_eq!(term.role(), SourcePrimaryTermRole::Value);
+                            assert!(term.parent().is_none());
+                            let (_, reference) = primary.references().iter().nth(index).unwrap();
+                            assert_eq!(reference.term(), SourcePrimaryTermId::new(index));
+                            assert_eq!(reference.binding(), BindingId::new(*binding));
+                            assert_eq!(reference.role(), SourcePrimaryTermReferenceRole::Variable);
+                            assert_eq!(
+                                reference.lexical_scope(),
+                                Some(&LocalTermScope::new(local.clone()))
+                            );
+                            assert_eq!(reference.use_ordinal(), index);
+                        }
+                        assert_eq!(
+                            primary_build(input.clone(), &scoped, &arena, source, symbols, scope)
+                                .unwrap(),
+                            primary
+                        );
+                        if case == binder_cases {
+                            for mutation in 0..6 {
+                                let mut changed = input.clone();
+                                let mut nodes = arena
+                                    .iter()
+                                    .map(|(_, node)| node.clone())
+                                    .collect::<Vec<_>>();
+                                match mutation {
+                                    0 => {
+                                        changed.terms.pop();
+                                        changed.references.pop();
+                                    }
+                                    1 => changed.references.push(changed.references[2].clone()),
+                                    2 => changed.references[2].binding = BindingId::new(let_id),
+                                    3 => nodes[2].resolved_node = nodes[3].resolved_node,
+                                    4 => {
+                                        changed.terms[2].context =
+                                            context_ids[&LocalTermScope::new(vec![4])]
+                                    }
+                                    _ => changed.terms[2].site = changed.terms[3].site.clone(),
+                                }
+                                let changed_arena = TypedArena::try_new(None, nodes).unwrap();
+                                assert!(
+                                    primary_build(
+                                        changed,
+                                        &scoped,
+                                        &changed_arena,
+                                        source,
+                                        symbols,
+                                        scope
+                                    )
+                                    .is_err(),
+                                    "primary mutation {mutation}"
+                                );
+                            }
+                            let mut ancestor = input.clone();
+                            ancestor.terms[2].context = context_ids[&LocalTermScope::new(vec![4])];
+                            ancestor.references[2].binding = BindingId::new(let_id);
+                            assert!(Primary::build(ancestor.clone(), &scoped, &arena).is_ok());
+                            assert!(
+                                primary_build(ancestor, &scoped, &arena, source, symbols, scope)
+                                    .is_err()
+                            );
+                            assert!(
+                                primary_build(input.clone(), &flat, &arena, source, symbols, scope)
+                                    .is_err()
+                            );
+                        }
+                    }
+                    assert_eq!((arena.clone(), scoped.clone()), primary_before);
+                    assert!(
+                        arena
+                            .iter()
+                            .all(|(_, node)| node.typing == TypingState::Unknown
+                                && node.recovery == NodeRecoveryState::Normal
+                                && node.children.is_empty()
+                                && node.links.context.is_none()
+                                && node.links.type_entry.is_none()
+                                && node.links.facts.is_empty()
+                                && node.links.coercions.is_empty()
+                                && node.links.initial_obligations.is_empty()
+                                && node.links.diagnostics.is_empty())
+                    );
+
                     // Upstream replay errors win over metadata-only admission.
                     let (_, other_source, other_symbols, other_scope) = &prepared[0];
                     let empty = mizar_resolve::env::SymbolEnv::new(
@@ -7789,6 +7977,17 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                         (source, other_symbols, scope),
                         (source, symbols, other_scope),
                     ] {
+                        assert!(
+                            primary_build(
+                                input.clone(),
+                                &scoped,
+                                &arena,
+                                candidate,
+                                environment,
+                                occurrences
+                            )
+                            .is_err()
+                        );
                         assert_eq!(
                             build(candidate, environment, occurrences).unwrap_err(),
                             source_proof_scope_maps(candidate, environment, occurrences)

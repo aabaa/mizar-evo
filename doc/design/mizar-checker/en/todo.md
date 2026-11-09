@@ -625,6 +625,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Native Reserve placement](../../task_contracts/en/CHECKER257-NATIVE-RESERVE-PLACEMENT.md); distinct hints in quantified modules with prior-default provenance.
     - [x] [Fresh function-Binder resolver prerequisite](../../task_contracts/en/RESOLVE257-FRESH-FUNCTION-BINDERS.md); lexical identities before certified formation.
     - [x] [Fresh function-Binder BindingEnv](../../task_contracts/en/CHECKER257-FRESH-FUNCTION-BINDING-CONTEXTS.md); flat identity repair and lexical metadata before typing.
+    - [x] [Scoped function-Binder primary references](../../task_contracts/en/CHECKER257-SCOPED-FUNCTION-REFERENCES.md); authenticated variable leaves before function formation.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,
