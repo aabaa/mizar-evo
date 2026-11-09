@@ -13587,6 +13587,36 @@ pub(crate) mod tests {
         assert_eq!(typed.debug_text(), before);
     }
 
+    #[test]
+    fn native_implicit_quantifier_bound_use_clock_requires_replay() {
+        use crate::typed_ast::tests::{task257b5_native_case, task257b5_native_replay};
+        let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
+        task257b5_native_case(fixture, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            let original = baseline.source_formula_composition().unwrap();
+            assert_eq!(original.bound_uses.rows.len(), 2);
+            for fault in 0..3 {
+                let mut changed = baseline.clone();
+                let mut composition = original.clone();
+                match fault {
+                    0 => composition.bound_uses.rows[0].ordinal = 1,
+                    1 => composition.bound_uses.rows.swap(0, 1),
+                    _ => composition.bound_uses.rows[0].term = SourcePrimaryTermId::new(2),
+                }
+                changed.inject_source_formula_composition_for_test(composition);
+                assert!(
+                    task257b5_native_replay(&changed, expressions.clone()).is_err(),
+                    "bound-use fault {fault}"
+                );
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
+    }
+
     const EXPECTED_DEBUG: &str = r###"source-formula-composition-debug-v1
 module: pkg::composition.fixture
 primary-term-fingerprint: "source-primary-term-debug-v1\nmodule: composition.fixture\nterm#0 ordinal=0 kind=variable-reference role=value range=72..73 site=5 context=1 recovery=normal spelling=\"x\" parent=-\nterm#1 ordinal=1 kind=variable-reference role=value range=76..77 site=6 context=1 recovery=normal spelling=\"x\" parent=-\nreference#0 term=0 binding=0 role=variable use_ordinal=1 scope=[0]\nreference#1 term=1 binding=0 role=variable use_ordinal=1 scope=[0]\n"

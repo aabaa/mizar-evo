@@ -621,6 +621,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] **Task 257B7:** [native explicit quantifiers](../../task_contracts/en/CHECKER257B7-NATIVE-QUANTIFIER-COMPOSITION.md); genuine restricted/universal/existential structure with unchanged proof boundaries.
     - [x] [Native grouped quantifier roots](../../task_contracts/en/CHECKER257-NATIVE-GROUPED-ROOTS.md); transparent header wrappers through genuine lower and original replay.
     - [x] [Native fixed-connective roots](../../task_contracts/en/CHECKER257-NATIVE-CONNECTIVE-ROOTS.md); existing operators at theorem/lemma header roots.
+    - [x] [Native implicit quantifiers](../../task_contracts/en/CHECKER257-NATIVE-IMPLICIT-QUANTIFIERS.md); authenticated Reserve type provenance through genuine lower/context/type and original replay.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,

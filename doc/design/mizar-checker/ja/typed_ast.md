@@ -2004,6 +2004,7 @@ original空集合・単元集合・bare-set choiceのstatement/witness pairも�
 combined raw set/statement/witness setterの旧B3B/C admissionはCheckerのtest compilationだけに限定する。native-node/root guardは常に維持し、productionのoriginal-source構築と他raw-set familyの既存境界を保つ。
 
 ## Original-source universal composition
+暗黙量化子が共有するReserve type/head nodeは実module contextを保つ。宣言local contextとの一致例外は、元の省略構文・一意な先行Reserve owner・完全なdefault/type application対応でaliasを認証した場合だけ認める。明示経路は正確に保ち、Set型の等しさや任意の祖先contextだけで例外を認めない。
 `with_source_formula_composition_from_original(self, source, symbols, scope)` は実 native theorem-equality の source/type/context base を再導出し、既存 generic original node table を内部で組み込む。node slot を分離した canonical base と receiver 全体を比較し、original table と既存 composite/composition handoff の両方を原子的に公開する。enriched・foreign・partial・反復・重複 receiver は InvalidSourceFormulaComposition で拒否する。
 primitive node/context/type と lower output をすべて保持する。raw setter の source-context 排他は維持し、detached native handoff を組み込めない。statement/input-fact、proof-local binding slot、theorem/proof acceptance、Core、VC の権限は追加しない。
 

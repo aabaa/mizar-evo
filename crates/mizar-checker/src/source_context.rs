@@ -524,6 +524,7 @@ impl SourceBindingContextProducer {
         let mut items = SourceItemTable::default();
         for shell in shells.declarations() {
             let role = match shell.kind() {
+                DeclarationShellKind::Reserve => SourceItemRole::Reserve,
                 DeclarationShellKind::Theorem => SourceItemRole::Theorem,
                 DeclarationShellKind::Lemma => SourceItemRole::Lemma,
                 _ => return Err(invalid()),
@@ -554,6 +555,7 @@ impl SourceBindingContextProducer {
             if node.anchor != SourceAnchor::Range(shell.range())
                 || node.kind.as_str()
                     != match role {
+                        SourceItemRole::Reserve => "ReserveItem",
                         SourceItemRole::Theorem => "TheoremItem",
                         SourceItemRole::Lemma => "LemmaItem",
                         _ => return Err(invalid()),
@@ -616,19 +618,21 @@ impl SourceBindingContextProducer {
         let mut seen_bindings = BTreeSet::new();
         for original in scope.bindings() {
             let role = match original.kind() {
+                SourceVariableBindingKind::Reserve => SourceBindingSiteRole::ReserveDefault,
                 SourceVariableBindingKind::Quantifier => SourceBindingSiteRole::QuantifierBinder,
                 SourceVariableBindingKind::Let => SourceBindingSiteRole::ProofLet,
                 _ => return Err(invalid()),
             };
             let mut matching = bindings.bindings().iter().filter(|(_, entry)| {
                 entry.kind == match role {
+                    SourceBindingSiteRole::ReserveDefault => BindingKind::ReservedVariable,
                     SourceBindingSiteRole::QuantifierBinder => BindingKind::QuantifierBinder,
                     _ => BindingKind::LetBinding,
                 } && entry.spelling == original.spelling()
                     && entry.declaration_range == original.range()
                     && entry.visible_after_ordinal == original.ordinal()
-                    && matches!(&entry.identity, BinderIdentity::ResolverLocal { scope, ordinal, declaration_range }
-                        if scope == original.scope() && *ordinal == original.ordinal() && *declaration_range == original.range())
+                    && (matches!(&entry.identity, BinderIdentity::ResolverLocal { scope, ordinal, declaration_range }
+                        if scope == original.scope() && *ordinal == original.ordinal() && *declaration_range == original.range()) || matches!(&entry.identity, BinderIdentity::ReservedVariable { spelling, declaration_range } if role == SourceBindingSiteRole::ReserveDefault && spelling == original.spelling() && *declaration_range == original.range()))
             });
             let (binding, entry) = matching.next().ok_or_else(invalid)?;
             if matching.next().is_some() || !seen_bindings.insert(binding) {
@@ -654,7 +658,7 @@ impl SourceBindingContextProducer {
                 || context_links
                     .get(entry.owner_context)
                     .and_then(|link| link.item)
-                    != Some(item)
+                    != (role != SourceBindingSiteRole::ReserveDefault).then_some(item)
             {
                 return Err(invalid());
             }
@@ -665,14 +669,31 @@ impl SourceBindingContextProducer {
                     .map(|row| row.kind.as_str());
                 matches!(
                     kind,
-                    Some("QuantifierVariableSegment" | "QualifiedVariableSegment")
+                    Some(
+                        "ReserveSegment" | "QuantifierVariableSegment" | "QualifiedVariableSegment"
+                    )
                 ) && row.children().contains(&resolved)
             });
             let (_, segment) = segments.next().ok_or_else(invalid)?;
             if segments.next().is_some() {
                 return Err(invalid());
             }
-            let type_node = *segment.children().last().ok_or_else(invalid)?;
+            let type_node = if let BindingTypeSite::Source(range) = entry.type_site {
+                let mut matching = source.arena().iter().filter(|(id, row)| {
+                    row.origin().anchor() == &SourceAnchor::Range(range)
+                        && typed_for
+                            .get(id)
+                            .and_then(|id| typed.nodes().node(*id))
+                            .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+                });
+                let (id, _) = matching.next().ok_or_else(invalid)?;
+                if matching.next().is_some() {
+                    return Err(invalid());
+                }
+                id
+            } else {
+                *segment.children().last().ok_or_else(invalid)?
+            };
             let type_row = source.arena().node(type_node).ok_or_else(invalid)?;
             if typed_for
                 .get(&type_node)
@@ -2124,6 +2145,46 @@ pub(crate) mod tests {
             }),
             Err(SourceContextError::MissingItems)
         );
+    }
+
+    #[test]
+    fn native_implicit_quantifier_default_declarations_require_replay() {
+        use crate::typed_ast::tests::{
+            task257b5_native_case, task257b5_native_forged_replay, task257b5_native_replay,
+        };
+        let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
+        task257b5_native_case(fixture, |installed, parts, primary, expressions, _| {
+            let baseline = installed.unwrap();
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            for fault in 0..4 {
+                let mut changed = parts.clone();
+                let context = changed.source_context.as_mut().unwrap();
+                assert_eq!(context.declarations.entries.len(), 3);
+                match fault {
+                    0 => {
+                        context.declarations.entries[1].written_type_range =
+                            context.declarations.entries[2].written_type_range
+                    }
+                    1 => {
+                        context.declarations.entries[1].shadowed_binding =
+                            Some(context.declarations.entries[2].binding)
+                    }
+                    2 => context.declarations.entries.swap(0, 1),
+                    _ => context.declarations.entries[1].source_ordinal = 0,
+                }
+                let (_, result) = task257b5_native_forged_replay(
+                    baseline.clone(),
+                    changed,
+                    primary.clone(),
+                    expressions.clone(),
+                );
+                assert!(result.is_err(), "declaration fault {fault}");
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
     }
 
     #[test]

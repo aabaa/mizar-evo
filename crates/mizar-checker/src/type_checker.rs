@@ -5867,29 +5867,32 @@ impl DeclarationChecker {
                 .get(application.root())
                 .ok_or_else(invalid)?;
             let kind = match declaration.role {
+                SourceBindingSiteRole::ReserveDefault => DeclarationKind::ReservedVariable,
                 SourceBindingSiteRole::QuantifierBinder => DeclarationKind::QuantifiedVariable,
                 SourceBindingSiteRole::ProofLet => DeclarationKind::Let,
                 _ => return Err(invalid()),
             };
-            declarations.push(
-                DeclarationInput::new(
-                    declaration.binding,
-                    declaration.binding_context,
-                    declaration.site.clone(),
-                    declaration.declaration_range,
-                    kind,
-                )
-                .with_type_expression(TypeExpressionInput::new(
-                    TypedSiteRef::Role {
-                        node: written.site().node(),
-                        role: format!("theorem.declaration.type:{}", declaration.binding.index())
-                            .into(),
-                    },
-                    written.source_range(),
-                    written.spelling(),
-                    TypeHeadInput::BuiltinSet,
-                )),
-            );
+            let type_site = TypedSiteRef::Role {
+                node: written.site().node(),
+                role: format!("theorem.declaration.type:{}", declaration.binding.index()).into(),
+            };
+            let mut input = DeclarationInput::new(
+                declaration.binding,
+                declaration.binding_context,
+                declaration.site.clone(),
+                declaration.declaration_range,
+                kind,
+            )
+            .with_type_expression(TypeExpressionInput::new(
+                type_site.clone(),
+                written.source_range(),
+                written.spelling(),
+                TypeHeadInput::BuiltinSet,
+            ));
+            if kind == DeclarationKind::ReservedVariable {
+                input = input.with_reserved_default(ReservedDefaultPayload::new(type_site, false));
+            }
+            declarations.push(input);
         }
         let checked = Self::default().check(
             symbols,
@@ -6335,6 +6338,16 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
+        let implicit = rows.iter().any(|original| {
+            original.kind == K::QuantifierVariableSegment
+                && !children(original)
+                    .iter()
+                    .any(|child| child.kind == K::TypeExpression)
+        });
+        let has_reserve = rows.iter().any(|row| row.kind == K::ReserveItem);
+        if has_reserve != implicit {
+            return Err(invalid());
+        }
         let mut headers = BTreeSet::new();
         for owner in rows
             .iter()
@@ -6537,6 +6550,7 @@ impl TermFormulaChecker {
                                     "proof", "let", "thus", "end", "by",
                                 ]
                                 .contains(&token.text.as_ref())
+                                    || (implicit && token.text.as_ref() == "reserve")
                                     || (header_nodes.contains(&current.site)
                                         && ["ex", "st", "or", "implies", "iff", "not"]
                                             .contains(&token.text.as_ref()))
@@ -6557,9 +6571,10 @@ impl TermFormulaChecker {
                 (K::CompilationUnit, ["ItemList"]) => true,
                 (K::ItemList, owners) => {
                     !owners.is_empty()
-                        && owners
-                            .iter()
-                            .all(|kind| matches!(*kind, "TheoremItem" | "LemmaItem"))
+                        && owners.iter().all(|kind| {
+                            matches!(*kind, "TheoremItem" | "LemmaItem")
+                                || (implicit && *kind == "ReserveItem")
+                        })
                 }
                 (
                     K::TheoremItem,
@@ -6594,6 +6609,15 @@ impl TermFormulaChecker {
                 | (K::ReferenceList, ["Reference"])
                 | (K::Reference, ["identifier"])
                 | (K::BuiltinPredicateApplication, ["TermExpression", "=", "TermExpression"]) => {
+                    true
+                }
+                (K::ReserveItem, ["reserve", "ReserveSegment", ";"]) if implicit => true,
+                (K::ReserveSegment, [names @ .., "for", "TypeExpression"]) if implicit => {
+                    separated(names, "identifier")
+                }
+                (K::QuantifierVariableSegment, names)
+                    if implicit && separated(names, "identifier") =>
+                {
                     true
                 }
                 (K::ProofBlock, ["proof", statements @ .., "end"]) => {
@@ -6844,20 +6868,38 @@ impl TermFormulaChecker {
             .filter(|row| matches!(row.kind, K::TheoremItem | K::LemmaItem))
             .collect::<Vec<_>>();
         owners.sort_by_key(|row| (row.range.start, row.range.end, row.site));
-        if owners.len() != context.items().len() || owners.is_empty() {
+        let mut items = rows
+            .iter()
+            .filter(|row| matches!(row.kind, K::ReserveItem | K::TheoremItem | K::LemmaItem))
+            .collect::<Vec<_>>();
+        items.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if items.len() != context.items().len()
+            || owners.is_empty()
+            || (implicit
+                && items
+                    .iter()
+                    .filter(|row| row.kind == K::ReserveItem)
+                    .any(|hint| hint.range.end > owners[0].range.start))
+        {
             return Err(invalid());
         }
         for ((ordinal, original), (id, item)) in
-            owners.iter().enumerate().zip(context.items().iter())
+            items.iter().enumerate().zip(context.items().iter())
         {
             let parts = children(original);
-            let header = row(*effective_for.get(&parts[3].site).ok_or_else(invalid)?)?;
-            if !(matches!(
-                header.kind,
-                K::QuantifiedFormula(
-                    SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
-                ) | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
-            ) || matches!(header.kind, K::BinaryFormula(operator) if !operator.repeated))
+            let header = if original.kind == K::ReserveItem {
+                original
+            } else {
+                row(*effective_for.get(&parts[3].site).ok_or_else(invalid)?)?
+            };
+            if !(original.kind == K::ReserveItem
+                || matches!(
+                    header.kind,
+                    K::QuantifiedFormula(
+                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                    ) | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+                )
+                || matches!(header.kind, K::BinaryFormula(operator) if !operator.repeated))
                 || item.site != site(original)
                 || item.source_range != original.range
                 || id.index() != ordinal
@@ -6869,7 +6911,9 @@ impl TermFormulaChecker {
                 || item.recovery != SourceItemRecovery::Normal
                 || item.binding_context != binding_context(original)?
                 || item.role
-                    != if original.kind == K::TheoremItem {
+                    != if original.kind == K::ReserveItem {
+                        SourceItemRole::Reserve
+                    } else if original.kind == K::TheoremItem {
                         SourceItemRole::Theorem
                     } else {
                         SourceItemRole::Lemma
@@ -6884,7 +6928,7 @@ impl TermFormulaChecker {
         }
         let mut declarations = rows.iter().filter(|original| {
             matches!(&original.kind, K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
-                && original.parent.and_then(|id| by_site.get(&id)).is_some_and(|parent| matches!(parent.kind, K::QuantifierVariableSegment | K::QualifiedVariableSegment))
+                && original.parent.and_then(|id| by_site.get(&id)).is_some_and(|parent| matches!(parent.kind, K::ReserveSegment | K::QuantifierVariableSegment | K::QualifiedVariableSegment))
         }).collect::<Vec<_>>();
         declarations.sort_by_key(|row| (row.range.start, row.range.end, row.site));
         if declarations.len() != context.declarations().len()
@@ -6892,6 +6936,7 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
+        let mut hint_names = BTreeSet::new();
         let mut declaration_for = BTreeMap::new();
         for (((ordinal, original), (id, declaration)), (binding_id, binding)) in declarations
             .iter()
@@ -6900,9 +6945,37 @@ impl TermFormulaChecker {
             .zip(env.bindings().iter())
         {
             let segment = row(original.parent.ok_or_else(invalid)?)?;
-            let written = *children(segment).last().ok_or_else(invalid)?;
+            let last = *children(segment).last().ok_or_else(invalid)?;
+            let default = last.kind != K::TypeExpression;
+            let written = if default {
+                let mut hints = declarations.iter().filter(|hint| {
+                    hint.spelling == original.spelling
+                        && hint.range.end < original.range.start
+                        && hint
+                            .parent
+                            .and_then(|id| by_site.get(&id))
+                            .is_some_and(|row| row.kind == K::ReserveSegment)
+                });
+                let hint = hints.next().ok_or_else(invalid)?;
+                if hints.next().is_some() || segment.kind != K::QuantifierVariableSegment {
+                    return Err(invalid());
+                }
+                *children(row(hint.parent.ok_or_else(invalid)?)?)
+                    .last()
+                    .ok_or_else(invalid)?
+            } else {
+                last
+            };
             let scope = scopes.get(&original.site).ok_or_else(invalid)?;
-            let (kind, role) = if segment.kind == K::QuantifierVariableSegment {
+            let (kind, role) = if segment.kind == K::ReserveSegment {
+                if !hint_names.insert(original.spelling.as_str()) {
+                    return Err(invalid());
+                }
+                (
+                    BindingKind::ReservedVariable,
+                    SourceBindingSiteRole::ReserveDefault,
+                )
+            } else if segment.kind == K::QuantifierVariableSegment {
                 (
                     BindingKind::QuantifierBinder,
                     SourceBindingSiteRole::QuantifierBinder,
@@ -6910,7 +6983,7 @@ impl TermFormulaChecker {
             } else {
                 (BindingKind::LetBinding, SourceBindingSiteRole::ProofLet)
             };
-            let item = owners
+            let item = items
                 .iter()
                 .position(|owner| {
                     owner.range.start <= original.range.start
@@ -6934,10 +7007,17 @@ impl TermFormulaChecker {
                         .find(|(_, row)| row.site == site(prior))
                 })
                 .map(|(_, row)| row.binding);
-            let expected_identity = BinderIdentity::ResolverLocal {
-                scope: scope.clone(),
-                ordinal,
-                declaration_range: original.range,
+            let expected_identity = if kind == BindingKind::ReservedVariable {
+                BinderIdentity::ReservedVariable {
+                    spelling: original.spelling.clone(),
+                    declaration_range: original.range,
+                }
+            } else {
+                BinderIdentity::ResolverLocal {
+                    scope: scope.clone(),
+                    ordinal,
+                    declaration_range: original.range,
+                }
             };
             if id.index() != ordinal
                 || declaration.binding != binding_id
@@ -6960,7 +7040,12 @@ impl TermFormulaChecker {
                 || binding.declaration_range != original.range
                 || binding.owner_context != declaration.binding_context
                 || binding.visible_after_ordinal != ordinal
-                || binding.type_site != BindingTypeSite::Missing
+                || binding.type_site
+                    != if kind == BindingKind::ReservedVariable || default {
+                        BindingTypeSite::Source(written.range)
+                    } else {
+                        BindingTypeSite::Missing
+                    }
                 || binding.status != BindingStatus::Active
                 || !binding.captured.identities().is_empty()
                 || !binding.diagnostics.is_empty()
@@ -7254,15 +7339,18 @@ impl TermFormulaChecker {
                 .filter(|row| row.kind == K::QuantifierVariableSegment)
             {
                 let segment_parts = children(segment);
-                let written = *segment_parts.last().ok_or_else(invalid)?;
-                let head = *children(written).first().ok_or_else(invalid)?;
-                let descriptor = segment_parts[..segment_parts.len() - 1]
+                let explicit = segment_parts
+                    .last()
+                    .is_some_and(|row| row.kind == K::TypeExpression);
+                let descriptor = segment_parts[..segment_parts.len() - usize::from(explicit)]
                     .iter()
                     .map(|row| row.spelling.as_str())
                     .collect::<Vec<_>>()
                     .join(" ");
                 for name in segment_parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if token.kind == SurfaceTokenKind::Identifier)) {
                     let declaration = declaration_for.get(&name.site).ok_or_else(invalid)?;
+                    let written = rows.iter().find(|row| row.kind == K::TypeExpression && row.range == declaration.written_type_range).ok_or_else(invalid)?;
+                    let head = *children(written).first().ok_or_else(invalid)?;
                     let binder = SourceQuantifierBinderId::new(input.binders.len());
                     let type_site = SourceBinderTypeSiteId::new(input.type_sites.len());
                     input.binders.push(SourceQuantifierBinderInput { formula, ordinal, segment_site: site(segment), segment_range: segment.range, segment_spelling: descriptor.clone(),
@@ -7270,7 +7358,7 @@ impl TermFormulaChecker {
                         local: LocalTermBinding::new(&name.spelling, scopes.get(&name.site).cloned().ok_or_else(invalid)?, name.range, declaration.source_ordinal),
                         binding: declaration.binding, body_context, type_site, recovery: SourceCompositeFormulaRecovery::Normal });
                     input.type_sites.push(SourceBinderTypeSiteInput { binder, site: site(written), source_range: written.range, spelling: written.spelling.clone(), head_site: site(head), head_range: head.range,
-                        head_spelling: head.spelling.clone(), context: incoming, recovery: SourceCompositeFormulaRecovery::Normal, head: SourceBinderTypeHead::BuiltinSet });
+                        head_spelling: head.spelling.clone(), context: if explicit { incoming } else { binding_context(written)? }, recovery: SourceCompositeFormulaRecovery::Normal, head: SourceBinderTypeHead::BuiltinSet });
                     input.requests.push(SourceFormulaRequestInput { formula, ordinal: 1 + ordinal, kind: SourceFormulaRequestKind::BinderType, binder: Some(binder), type_site: Some(type_site) });
                     binder_for.insert(declaration.binding, binder); ordinal += 1;
                 }
@@ -8989,10 +9077,13 @@ impl TermFormulaChecker {
         if node(root)?.kind() != &K::Root {
             return Err(invalid());
         }
-        let reserved = source
-            .arena()
-            .iter()
-            .any(|(_, current)| current.kind() == &K::ReserveItem);
+        let default_types = source_theorem_implicit_type_sites(source, scope)?;
+        let implicit = !default_types.is_empty();
+        let reserved = !implicit
+            && source
+                .arena()
+                .iter()
+                .any(|(_, current)| current.kind() == &K::ReserveItem);
         let nested_reserved = reserved
             && source
                 .arena()
@@ -9253,7 +9344,7 @@ impl TermFormulaChecker {
                         "thus", "end", "by", "public", "private",
                     ]
                     .contains(&token.text.as_ref())
-                        || (reserved && token.text.as_ref() == "reserve")
+                        || ((reserved || implicit) && token.text.as_ref() == "reserve")
                         || (assumption_reserved && token.text.as_ref() == "assume")
                         || (witness_reserved && token.text.as_ref() == "take")
                         || (witness_choice.is_some() && token.text.as_ref() == "the")
@@ -9364,6 +9455,13 @@ impl TermFormulaChecker {
                 {
                     true
                 }
+                (K::ReserveItem, ["reserve", "ReserveSegment", ";"]) if implicit => true,
+                (K::ReserveSegment, [names @ .., "for", "TypeExpression"]) if implicit => {
+                    separated(names, "identifier")
+                }
+                (K::ItemList, items) if implicit => items
+                    .iter()
+                    .all(|item| matches!(*item, "ReserveItem" | "TheoremItem" | "LemmaItem")),
                 (K::ItemList, items) => {
                     !items.is_empty()
                         && items.iter().all(|item| {
@@ -9393,6 +9491,11 @@ impl TermFormulaChecker {
                     K::QuantifierVariableSegment | K::QualifiedVariableSegment,
                     [names @ .., "be" | "being", "TypeExpression"],
                 ) => separated(names, "identifier"),
+                (K::QuantifierVariableSegment, names)
+                    if implicit && separated(names, "identifier") =>
+                {
+                    true
+                }
                 (K::TypeExpression, ["TypeHead"])
                 | (K::TypeHead, ["set"])
                 | (K::TermExpression, ["TermReference"])
@@ -9946,20 +10049,31 @@ impl TermFormulaChecker {
             let declaration = source
                 .resolved_node_for(scope.bindings()[reference.binding().index()].node())
                 .ok_or_else(invalid)?;
-            let ty = source
-                .arena()
-                .iter()
-                .find(|(_, current)| {
-                    matches!(
-                        current.kind(),
-                        K::QuantifierVariableSegment
-                            | K::QualifiedVariableSegment
-                            | K::ReserveSegment
-                    ) && current.children().contains(&declaration)
-                })
-                .and_then(|(_, current)| current.children().last())
-                .copied()
-                .ok_or_else(invalid)?;
+            if implicit
+                && header_nodes.contains(&id)
+                && scope.bindings()[reference.binding().index()].kind()
+                    != SourceVariableBindingKind::Quantifier
+            {
+                return Err(invalid());
+            }
+            let ty = if let Some(ty) = default_types.get(&declaration) {
+                *ty
+            } else {
+                source
+                    .arena()
+                    .iter()
+                    .find(|(_, current)| {
+                        matches!(
+                            current.kind(),
+                            K::QuantifierVariableSegment
+                                | K::QualifiedVariableSegment
+                                | K::ReserveSegment
+                        ) && current.children().contains(&declaration)
+                    })
+                    .and_then(|(_, current)| current.children().last())
+                    .copied()
+                    .ok_or_else(invalid)?
+            };
             let ordinal = terms.len();
             let context = match &native_primary {
                 Some(primary) => primary
@@ -10419,10 +10533,11 @@ impl TermFormulaChecker {
         use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypingState};
         let (bindings, inference, original) =
             Self::check_source_theorem_equalities(source, symbols, scope)?;
-        if scope
-            .bindings()
-            .iter()
-            .any(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+        if source_theorem_implicit_type_sites(source, scope)?.is_empty()
+            && scope
+                .bindings()
+                .iter()
+                .any(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
             && source
                 .arena()
                 .iter()
@@ -10638,14 +10753,13 @@ impl TermFormulaChecker {
             let mut own = Vec::new();
             for id in &context.bindings {
                 let binding = lexical.bindings().get(*id).ok_or_else(invalid)?;
-                let BinderIdentity::ResolverLocal {
-                    scope: declaration_scope,
-                    ordinal,
-                    declaration_range,
-                } = &binding.identity
-                else {
-                    return Err(invalid());
+                let declaration_scope = match &binding.identity {
+                    BinderIdentity::ResolverLocal { scope, .. } => scope,
+                    BinderIdentity::ReservedVariable { .. } => root_scope,
+                    _ => return Err(invalid()),
                 };
+                let ordinal = &binding.visible_after_ordinal;
+                let declaration_range = &binding.declaration_range;
                 let mut matching = scope.bindings().iter().filter(|declaration| {
                     declaration.scope() == declaration_scope
                         && declaration.range() == *declaration_range
@@ -10817,6 +10931,7 @@ impl TermFormulaChecker {
             scope,
         )
         .map_err(|error| error.to_string())?;
+        let default_types = source_theorem_implicit_type_sites(source, scope)?;
         let mut terms = Vec::new();
         for (_, reference) in primary.references().iter() {
             let term = primary.terms().get(reference.term()).ok_or_else(invalid)?;
@@ -10837,18 +10952,22 @@ impl TermFormulaChecker {
             let declaration_node = source
                 .resolved_node_for(declaration.node())
                 .ok_or_else(invalid)?;
-            let ty = source
-                .arena()
-                .iter()
-                .find(|(_, node)| {
-                    matches!(
-                        node.kind(),
-                        K::QuantifierVariableSegment | K::QualifiedVariableSegment
-                    ) && node.children().contains(&declaration_node)
-                })
-                .and_then(|(_, node)| node.children().last())
-                .copied()
-                .ok_or_else(invalid)?;
+            let ty = if let Some(ty) = default_types.get(&declaration_node) {
+                *ty
+            } else {
+                source
+                    .arena()
+                    .iter()
+                    .find(|(_, node)| {
+                        matches!(
+                            node.kind(),
+                            K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                        ) && node.children().contains(&declaration_node)
+                    })
+                    .and_then(|(_, node)| node.children().last())
+                    .copied()
+                    .ok_or_else(invalid)?
+            };
             let type_node = source.arena().node(ty).ok_or_else(invalid)?;
             let SourceAnchor::Range(type_range) = type_node.origin().anchor() else {
                 return Err(invalid());
@@ -20670,9 +20789,12 @@ impl SourceVariableSemanticsChecker {
     ) -> Result<BindingEnv, String> {
         let (original, _, _) =
             TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)?;
-        if scope.bindings().iter().any(|binding| {
-            binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Reserve
-        }) {
+        let default_types = source_theorem_implicit_type_sites(source, scope)?;
+        if default_types.is_empty()
+            && scope.bindings().iter().any(|binding| {
+                binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Reserve
+            })
+        {
             return Err("theorems.equality.unsupported_source_types".to_owned());
         }
         let (scopes, parents) =
@@ -20739,21 +20861,18 @@ impl SourceVariableSemanticsChecker {
             .collect::<BTreeMap<_, _>>();
         let mut bindings = BindingTable::new();
         for (id, entry) in original.bindings().iter() {
-            let BinderIdentity::ResolverLocal {
-                scope: local,
-                ordinal,
-                declaration_range,
-            } = &entry.identity
-            else {
+            let declaration = scope.bindings().get(id.index()).ok_or_else(invalid)?;
+            let local = declaration.scope();
+            if entry.declaration_range != declaration.range()
+                || entry.visible_after_ordinal != declaration.ordinal()
+            {
                 return Err(invalid());
-            };
-            let declaration = scope
-                .bindings()
-                .iter()
-                .find(|binding| {
-                    binding.range() == *declaration_range && binding.ordinal() == *ordinal
-                })
-                .ok_or_else(invalid)?;
+            }
+            if !matches!(&entry.identity, BinderIdentity::ResolverLocal { scope, ordinal, declaration_range } if scope == local && *ordinal == declaration.ordinal() && *declaration_range == declaration.range())
+                && !matches!(&entry.identity, BinderIdentity::ReservedVariable { spelling, declaration_range } if declaration.kind() == SourceVariableBindingKind::Reserve && spelling == declaration.spelling() && *declaration_range == declaration.range())
+            {
+                return Err(invalid());
+            }
             if scopes.get(&declaration.node()) != Some(local) {
                 return Err(invalid());
             }
@@ -20765,7 +20884,24 @@ impl SourceVariableSemanticsChecker {
                 owner_context,
                 declaration_range: entry.declaration_range,
                 visible_after_ordinal: entry.visible_after_ordinal,
-                type_site: entry.type_site.clone(),
+                type_site: if let Some(ty) = default_types.get(
+                    &source
+                        .resolved_node_for(declaration.node())
+                        .ok_or_else(invalid)?,
+                ) {
+                    let SourceAnchor::Range(range) = source
+                        .arena()
+                        .node(*ty)
+                        .ok_or_else(invalid)?
+                        .origin()
+                        .anchor()
+                    else {
+                        return Err(invalid());
+                    };
+                    BindingTypeSite::Source(*range)
+                } else {
+                    entry.type_site.clone()
+                },
                 status: entry.status,
                 captured: entry.captured.clone(),
                 diagnostics: entry.diagnostics.clone(),
@@ -23377,6 +23513,86 @@ fn existential_body(
         } if *thesis_binding == binding => Some((**body).clone()),
         _ => None,
     }
+}
+
+// A default is an original source type site, independently of lexical shadowing.
+fn source_theorem_implicit_type_sites(
+    source: &SurfaceResolvedArena,
+    scope: &ResolvedVariableScope,
+) -> Result<BTreeMap<ResolvedNodeId, ResolvedNodeId>, String> {
+    let invalid = || "theorems.equality.unsupported_source_types".to_owned();
+    if !scope.bindings().iter().any(|binding| {
+        binding.kind() == SourceVariableBindingKind::Quantifier && binding.declared_type().is_none()
+    }) {
+        return Ok(BTreeMap::new());
+    }
+    let hints = scope
+        .bindings()
+        .iter()
+        .filter(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+        .collect::<Vec<_>>();
+    if hints.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let first_owner = source
+        .arena()
+        .iter()
+        .filter(|(_, row)| matches!(row.kind(), K::TheoremItem | K::LemmaItem))
+        .filter_map(|(_, row)| match row.origin().anchor() {
+            SourceAnchor::Range(range) => Some(range.start),
+            _ => None,
+        })
+        .min()
+        .ok_or_else(invalid)?;
+    let mut names = BTreeSet::new();
+    let mut types = BTreeMap::new();
+    for hint in &hints {
+        if !names.insert(hint.spelling())
+            || !hint.scope().path().is_empty()
+            || !hint.declared_type().is_some_and(|ty| {
+                ty.radix() == mizar_resolve::names::SourceVariableTypeRadix::Set
+                    && ty.attributes().is_empty()
+            })
+        {
+            return Err(invalid());
+        }
+        let name = source.resolved_node_for(hint.node()).ok_or_else(invalid)?;
+        let mut segments = source
+            .arena()
+            .iter()
+            .filter(|(_, row)| row.kind() == &K::ReserveSegment && row.children().contains(&name));
+        let (_, segment) = segments.next().ok_or_else(invalid)?;
+        if segments.next().is_some() {
+            return Err(invalid());
+        }
+        let ty = *segment.children().last().ok_or_else(invalid)?;
+        let row = source.arena().node(ty).ok_or_else(invalid)?;
+        if row.kind() != &K::TypeExpression
+            || !matches!(row.origin().anchor(), SourceAnchor::Range(range) if range.end < first_owner)
+        {
+            return Err(invalid());
+        }
+        types.insert(name, ty);
+    }
+    for binder in scope.bindings().iter().filter(|binding| {
+        binding.kind() == SourceVariableBindingKind::Quantifier && binding.declared_type().is_none()
+    }) {
+        let mut matching = hints.iter().filter(|hint| {
+            hint.spelling() == binder.spelling() && hint.range().end < binder.range().start
+        });
+        let hint = matching.next().ok_or_else(invalid)?;
+        if matching.next().is_some() {
+            return Err(invalid());
+        }
+        let ty = types[&source.resolved_node_for(hint.node()).ok_or_else(invalid)?];
+        types.insert(
+            source
+                .resolved_node_for(binder.node())
+                .ok_or_else(invalid)?,
+            ty,
+        );
+    }
+    Ok(types)
 }
 
 fn project_binding_env(

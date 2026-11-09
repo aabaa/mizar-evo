@@ -5224,6 +5224,89 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 .nodes
                 .node(head_site)
                 .ok_or(TypedAstError::InvalidSourceType)?;
+            let type_context = if declaration.role
+                == crate::source_context::SourceBindingSiteRole::QuantifierBinder
+                && parts.nodes.iter().any(|(_, segment)| {
+                    segment.kind.as_str() == "QuantifierVariableSegment"
+                        && segment.children.contains(&declaration.site.node())
+                        && !segment.children.iter().any(|id| {
+                            parts
+                                .nodes
+                                .node(*id)
+                                .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+                        })
+                }) {
+                let mut defaults = context.declarations().iter().filter(|(_, hint)| {
+                    hint.role == crate::source_context::SourceBindingSiteRole::ReserveDefault
+                        && hint.spelling == declaration.spelling
+                });
+                let (_, hint) = defaults.next().ok_or(TypedAstError::InvalidSourceType)?;
+                let item = context
+                    .items()
+                    .get(hint.item)
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                let binding = context
+                    .binding_env()
+                    .bindings()
+                    .get(declaration.binding)
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                let hint_context = context
+                    .binding_env()
+                    .contexts()
+                    .get(hint.binding_context)
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                let local = parts
+                    .contexts
+                    .get(hint.local_context)
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                let item_node = parts
+                    .nodes
+                    .node(item.site.node())
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                let hint_binding = context
+                    .binding_env()
+                    .bindings()
+                    .get(hint.binding)
+                    .ok_or(TypedAstError::InvalidSourceType)?;
+                if defaults.next().is_some()
+                    || hint.source_ordinal >= declaration.source_ordinal
+                    || item.source_range.end > declaration.declaration_range.start
+                    || hint.declaration_range.end > hint.written_type_range.start
+                    || item_node.kind.as_str() != "ReserveItem"
+                    || hint_binding.kind != crate::binding_env::BindingKind::ReservedVariable
+                    || hint_binding.owner_context != hint.binding_context
+                    || hint_binding.type_site
+                        != crate::binding_env::BindingTypeSite::Source(hint.written_type_range)
+                    || hint_context.owner != crate::binding_env::BindingContextOwner::Module
+                    || hint_context.parent.is_some()
+                    || context
+                        .context_links()
+                        .get(hint.binding_context)
+                        .is_none_or(|link| {
+                            link.local_context != hint.local_context || link.item.is_some()
+                        })
+                    || local.layer != TypeContextLayer::Module
+                    || Some(local.owner.node()) != parts.nodes.root()
+                    || item.role != crate::source_context::SourceItemRole::Reserve
+                    || hint.written_type_range != declaration.written_type_range
+                    || binding.type_site
+                        != crate::binding_env::BindingTypeSite::Source(hint.written_type_range)
+                    || !handoff.applications().iter().any(|(_, row)| {
+                        row.binding() == hint.binding && row.root() == application.root()
+                    })
+                    || !parts.nodes.iter().any(|(segment_id, segment)| {
+                        item_node.children.contains(&segment_id)
+                            && segment.kind.as_str() == "ReserveSegment"
+                            && segment.children.contains(&hint.site.node())
+                            && segment.children.last() == Some(&site)
+                    })
+                {
+                    return Err(invalid);
+                }
+                hint.local_context
+            } else {
+                declaration.local_context
+            };
             if application.binding() != declaration.binding
                 || application.source_ordinal() != declaration.source_ordinal
                 || expression.source_range() != declaration.written_type_range
@@ -5241,8 +5324,8 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 || node.anchor != SourceAnchor::Range(expression.source_range())
                 || head.anchor != SourceAnchor::Range(expression.head_range())
                 || node.children != [head_site]
-                || node.links.context != Some(declaration.local_context)
-                || head.links.context != Some(declaration.local_context)
+                || node.links.context != Some(type_context)
+                || head.links.context != Some(type_context)
             {
                 return Err(invalid);
             }

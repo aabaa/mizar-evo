@@ -2148,6 +2148,7 @@ The original empty-set, singleton-enumeration and bare-set choice statement/witn
 The combined raw set/statement/witness setter admits historical B3B and C only in Checker test compilation. Its native-node/root guards stay unconditional; production original-source construction and every other raw-set family keep their existing boundaries.
 
 ## Original-source universal composition
+For an implicit quantifier, shared Reserve type/head nodes retain their physical module context; declaration-local context equality may differ only when original omitted syntax, unique preceding Reserve ownership and the complete default/type application join authenticate that alias. Keep the explicit path exact; equal Set types or arbitrary ancestor contexts alone never authorize an exception.
 `with_source_formula_composition_from_original(self, source, symbols, scope)` rederives the genuine native theorem-equality source/type/context base, installs its existing generic original node table internally, and compares the complete receiver with that canonical base after separating the node slot. It publishes the original table and both existing composite/composition handoffs atomically; enriched, foreign, partial, repeated or overlapping receivers refuse with InvalidSourceFormulaComposition.
 Preserve every primitive node/context/type and lower output. Raw setters keep their original source-context exclusions and cannot install detached native handoffs. The native pair adds no statement/input-fact, proof-local binding slot, theorem/proof acceptance, Core or VC authority.
 

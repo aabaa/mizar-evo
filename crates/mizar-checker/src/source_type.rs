@@ -6068,6 +6068,86 @@ mod tests {
     }
 
     #[test]
+    fn native_implicit_quantifier_shared_type_expression_is_authenticated() {
+        use crate::typed_ast::{
+            TypedArena, TypedAstError,
+            tests::{
+                task257b5_native_case, task257b5_native_forged_replay, task257b5_native_replay,
+            },
+        };
+        let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
+        task257b5_native_case(fixture, |installed, parts, primary, expressions, _| {
+            let baseline = installed.unwrap();
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            for fault in 0..4 {
+                let mut changed = parts.clone();
+                let types = changed.source_type.as_mut().unwrap();
+                assert_eq!(types.expressions.entries.len(), 2);
+                assert_eq!(
+                    types
+                        .applications
+                        .entries
+                        .iter()
+                        .map(|row| row.root.index())
+                        .collect::<Vec<_>>(),
+                    vec![0, 0, 1]
+                );
+                match fault {
+                    0 => types.applications.entries[1].root = SourceTypeExpressionId::new(1),
+                    1 => {
+                        let mut duplicate = types.expressions.entries[0].clone();
+                        duplicate.id = SourceTypeExpressionId::new(1);
+                        types.expressions.entries[1].id = SourceTypeExpressionId::new(2);
+                        types.expressions.entries.insert(1, duplicate);
+                        types.applications.entries[1].root = SourceTypeExpressionId::new(1);
+                        types.applications.entries[2].root = SourceTypeExpressionId::new(2);
+                    }
+                    _ => {
+                        let default = &types.expressions.entries[0];
+                        let context = parts
+                            .contexts
+                            .iter()
+                            .find(|(_, row)| {
+                                row.layer
+                                    == if fault == 2 {
+                                        crate::typed_ast::TypeContextLayer::Expression
+                                    } else {
+                                        crate::typed_ast::TypeContextLayer::Proof
+                                    }
+                            })
+                            .unwrap()
+                            .0;
+                        let mut nodes = parts
+                            .nodes
+                            .iter()
+                            .map(|(_, row)| row.clone())
+                            .collect::<Vec<_>>();
+                        nodes[default.site.node().index()].links.context = Some(context);
+                        nodes[default.head_site.node().index()].links.context = Some(context);
+                        changed.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                    }
+                }
+                let (lower, final_result) = task257b5_native_forged_replay(
+                    baseline.clone(),
+                    changed,
+                    primary.clone(),
+                    expressions.clone(),
+                );
+                assert_eq!(
+                    lower.unwrap_err(),
+                    TypedAstError::InvalidSourceType,
+                    "shared type fault {fault}"
+                );
+                assert!(final_result.is_err());
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
+    }
+
+    #[test]
     fn task257b5_native_type_associations_are_revalidated_at_final_replay() {
         use crate::typed_ast::tests::*;
         for mutation in 0..3 {

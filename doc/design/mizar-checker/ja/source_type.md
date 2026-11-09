@@ -1599,6 +1599,7 @@ exact checker tests:
 型が適合する compound value でも、満たされた application obligation と不足/失敗 obligation を区別する。変更/欠落 expression child、actual の並べ替え、binder/nested source range の不一致を拒否する。現在の source-shape test は provenance の基礎であり、一般 constructor coverage ではない。
 
 ## Original-source theorem written types
+native Reserveと暗黙量化子のapplicationは、元siteで一意化した同じ実Reserve型式を共有できる。宣言順と各binding/application対応は保持し、省略された量化子segmentに型式を合成しない。
 `SourceTypeProducer::build_source_theorem_equalities(source: &SurfaceResolvedArena, symbols: &SymbolEnv, scope: &ResolvedVariableScope)` は既存の所有 tuple `(BindingEnv, TermFormulaInferenceOutput, TypedAst, Vec<ExpressionMetadataInput>)` または `String` を返す。最初に真正な [theorem context producer](source_context.md#original-source-theorem-context-handoff) を呼び、正確な失敗と上流の全フィールドを保持する。既存の全ソース検査が未使用宣言も含め bare builtin `set` のみを認証する。綴りだけでは型を認証しない。
 実在する source-context 宣言の binding、source ordinal、written type range と、型付き resolved-node link を通した元の一意な TypeExpression および唯一の TypeHead を結ぶ。元の typed node site、range、normal recovery を保持する。異なる実在 TypeExpression ごとに既存 expression row を最初の宣言順で、宣言ごとに application row を宣言順で作る。グループの binding は実在する同じ式を共有し、別の出現、同名の入れ子、未使用宣言はそれぞれ保持する。元の全 written type node を網羅する。argument と拡張 table は空、head/form は既存検査済み BuiltinSet/Bare、綴りは元の `set` とする。
 既存の private table builder を使い、generic producer を緩めず BindingTypeSite::Source、ordinal、identity を捏造しない。既存 TypedAstParts に source_type を取り付け、source context、他の全 table、推論所有の normalized types、metadata を保持し、真正な primary/atomic handoff を再取り付けする。失敗時は部分結果を返さず、下位 producer は独立して呼べる。

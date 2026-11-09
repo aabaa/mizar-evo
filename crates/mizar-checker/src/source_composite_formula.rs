@@ -2468,6 +2468,77 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn native_implicit_quantifier_default_type_sites_require_replay() {
+        use crate::{
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
+        task257b5_native_case(fixture, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            let original = baseline.source_composite_formula().unwrap();
+            for fault in 0..4 {
+                let mut composite = original.clone();
+                let body = composite.binders.rows[0].body_context;
+                match fault {
+                    0 => composite.type_sites.rows[0].context = body,
+                    1 => composite.binders.rows[0].binding = BindingId::new(0),
+                    2 => composite.binders.rows[0].body_context = BindingContextId::new(2),
+                    _ => {
+                        let ty = baseline
+                            .source_type()
+                            .unwrap()
+                            .expressions()
+                            .iter()
+                            .last()
+                            .unwrap()
+                            .1;
+                        composite.type_sites.rows[0].site = ty.site().clone();
+                        composite.type_sites.rows[0].source_range = ty.source_range();
+                        composite.type_sites.rows[0].head_site = ty.head_site().clone();
+                        composite.type_sites.rows[0].head_range = ty.head_range();
+                        composite.type_sites.rows[0].context = BindingContextId::new(2);
+                    }
+                }
+                let old = baseline.source_formula_composition().unwrap();
+                let composition = SourceFormulaCompositionHandoff::from_original_input(
+                    SourceFormulaCompositionHandoffInput {
+                        source_id: old.source_id(),
+                        module_id: old.module_id().clone(),
+                        atomic_edges: old
+                            .atomic_edges()
+                            .iter()
+                            .map(|(_, row)| row.into())
+                            .collect(),
+                        bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                    },
+                    baseline.source_term().unwrap(),
+                    baseline.source_atomic_formula().unwrap(),
+                    &composite,
+                );
+                assert_eq!(
+                    composition.composite_formula_fingerprint(),
+                    composite.debug_text()
+                );
+                let mut changed = baseline.clone();
+                changed.inject_source_composite_formula_for_test(composite);
+                changed.inject_source_formula_composition_for_test(composition);
+                assert!(
+                    task257b5_native_replay(&changed, expressions.clone()).is_err(),
+                    "default fault {fault}"
+                );
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
+    }
+
+    #[test]
     fn task257b7_native_quantifier_associations_require_original_replay() {
         use crate::{
             resolved_typed_ast::ResolvedTypedAstError,
