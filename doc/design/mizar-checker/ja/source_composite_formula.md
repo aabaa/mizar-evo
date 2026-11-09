@@ -182,6 +182,7 @@ A/B-after-C3とC3-after-A/Bをexerciseする。
 ## Original-source universal composition
 Universal/Existential rootは任意のuniversal restrictionとexistential bodyをsource構造として保持し、assumption・witness・truthの達成を与えない。
 wrapper spellingはowner formulaのdescriptorを再帰的に括弧で包み、実際に書かれたsubtree全体はoriginal node tableが保持する。
+header外側の有限な括弧は、実quantified formulaをrootとして保ち、各実outer wrapperをincoming contextで外側から内側の順に保持する。native statement入口は引き続き直接のuniversal headerを要求する。
 header内の固定And/Or/Implies/Iff/Notと透過的括弧も同じtableを使う。入れ子の明示Set quantifierは実incoming/condition/body scopeを保ち、結合式と括弧はscopeを増やさない。ConjunctionLeft/Rightでcomposite childを区別し、atomic括弧はatomic ownerに残す。
 original-source 入口は既存 native theorem-equality lower の完全な source context・type application・BindingEnv を用いる。通常のローカル theorem/lemma の明示的 builtin-Set quantified header を、複数名・入れ子の binder とともに保持する。primitive grammar と typing は既存 lower が所有する。
 既存七テーブルで実際の root/body/binder/type/request の対応を保持する。各quantified formulaとtype-siteはincoming context、そのcondition/bodyは実native expression contextを使う。他のformulaとwrapperは実lexical contextを使う。複数名は実在する segment/type/head/context だけを共有し、declaration/application は個別に結ぶ。operator/segment descriptor の意味を保ち、subtree 全体の spelling は original node table が所有する。

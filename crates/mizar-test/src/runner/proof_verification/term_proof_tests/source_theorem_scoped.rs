@@ -6912,6 +6912,10 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         theorem("for x being set holds (ex y being set st y = x) & x = x"),
         theorem("for x being set st not x = x holds ex y being set st ((y = x implies y = y) iff (not y = x or y = x))"),
         format!("{}\n{}", theorem("for x being set st x = x holds x = x").replace("Shape", "First"), theorem("ex x being set st x = x").replace("theorem Shape", "lemma Second")),
+        theorem("(for x being set holds x = x)"),
+        theorem("(ex x being set st x = x)"),
+        fixture.replace(": ", ": (((").replace("\nproof", ")))\nproof"),
+        format!("\n:: grouped lemma\n{}", fixture.replace("theorem NativeQuantifiers", "lemma Grouped").replace(": ", ": ((").replace("\nproof", "))\nproof").replace("being set", "being\tset")),
     ];
     // Manual (variable terms, equalities including proof, declarations, contexts).
     let counts = [
@@ -6932,11 +6936,15 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         (6, 3, 3, 4),
         (12, 6, 3, 4),
         (10, 5, 4, 5),
+        (4, 2, 2, 3),
+        (4, 2, 2, 3),
+        (12, 6, 5, 6),
+        (12, 6, 5, 6),
     ];
     let positive_count = cases.len();
     cases.extend([
-        theorem("(for x being set holds x = x)"),
         "reserve x for set; theorem Implicit: for x holds x = x proof let x be set; thus x = x; end;".into(),
+        theorem("not (for x being set holds x = x)"),
         theorem("ex x being object st x = x").replace("let x be set", "let x be object"),
         theorem("ex x being set st 1 = 1"),
         theorem("ex x being set st x = x & ... & x = x"),
@@ -7687,6 +7695,10 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
         ("theorem Unused: ex x, spare being set, idle being set st ((x = x)) proof let x, unused be set, idle be set; thus x = x; end;".into(), vec![C::Existential], vec![], vec![(0,0,A::ExistentialBody,0)], (0,2)),
         (theorem("for x being set holds (ex y being set st y = x) & x = x"), vec![C::Universal,C::Conjunction,C::Existential], vec![(0,0,E::UniversalBody,1),(1,0,E::ConjunctionLeft,2)], vec![(1,1,A::ConjunctionRight,1),(2,0,A::ExistentialBody,0)], (1,0)),
         (theorem("for x being set st not x = x holds ex y being set st ((y = x implies y = y) iff (not y = x or y = x))"), vec![C::Universal,C::Negation,C::Existential,C::Biconditional,C::Implication,C::Disjunction,C::Negation], vec![(0,0,E::UniversalRestriction,1),(0,1,E::UniversalBody,2),(2,0,E::ExistentialBody,3),(3,0,E::BiconditionalLeft,4),(3,1,E::BiconditionalRight,5),(5,0,E::DisjunctionLeft,6)], vec![(1,0,A::NegatedFormula,0),(4,0,A::ImplicationLeft,1),(4,1,A::ImplicationRight,2),(5,1,A::DisjunctionRight,4),(6,0,A::NegatedFormula,3)], (3,0)),
+        (theorem("(for x being set holds x = x)"), vec![C::Universal], vec![], vec![(0,0,A::UniversalBody,0)], (1,0)),
+        (theorem("(ex x being set st x = x)"), vec![C::Existential], vec![], vec![(0,0,A::ExistentialBody,0)], (1,0)),
+        (fixture.replace(": ", ": (((").replace("\nproof", ")))\nproof"), fk.clone(), fe.clone(), fa.clone(), (7,1)),
+        (format!("\n:: grouped lemma\n{}", fixture.replace("theorem NativeQuantifiers", "lemma Grouped").replace(": ", ": ((").replace("\nproof", "))\nproof").replace("being set", "being\tset")), fk, fe, fa, (6,1)),
     ]);
     let temporary = std::process::Command::new("mktemp")
         .arg("-d")
@@ -8531,7 +8543,12 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
             .node_views()
             .find(|view| matches!(view.kind(), K::TheoremItem | K::LemmaItem))
             .unwrap();
-        let statement_admitted = kinds[0] == C::Universal && theorem.kind() == &K::TheoremItem;
+        let statement_admitted = kinds[0] == C::Universal
+            && theorem.kind() == &K::TheoremItem
+            && !expected
+                .wrappers
+                .iter()
+                .any(|row| row.formula == SourceCompositeFormulaId::new(0));
         let installed = if statement_admitted {
             // Native258 retains precisely two propositions. Quantifier guards stay
             // inside the header graph; only actual proof Let declarations add facts.

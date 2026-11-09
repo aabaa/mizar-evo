@@ -2289,6 +2289,98 @@ pub(crate) mod tests {
     };
 
     #[test]
+    fn native_grouped_quantifier_roots_require_original_replay() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        let fixture = include_str!("../tests/testdata/native_quantifier_statement.miz")
+            .replace(": ", ": (((")
+            .replace("\nproof", ")))\nproof");
+        task257b5_native_case(&fixture, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            let original = baseline.source_composite_formula().unwrap();
+            let root = original.roots.rows[0].formula;
+            assert_eq!(root, SourceCompositeFormulaId::new(0));
+            let wrappers = original
+                .wrappers
+                .rows
+                .iter()
+                .enumerate()
+                .filter(|(_, row)| row.formula == root)
+                .map(|(index, _)| index)
+                .collect::<Vec<_>>();
+            assert_eq!(wrappers.len(), 3);
+            let body_context = original.binders.rows[0].body_context;
+            assert_ne!(original.wrappers.rows[wrappers[0]].context, body_context);
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            for mutation in 0..7 {
+                let mut composite = original.clone();
+                match mutation {
+                    0 => composite.wrappers.rows[wrappers[0]].context = body_context,
+                    1 => {
+                        composite.wrappers.rows[wrappers[0]].formula =
+                            SourceCompositeFormulaId::new(2)
+                    }
+                    2 => composite.wrappers.rows[wrappers[0]].ordinal = 1,
+                    3 => {
+                        composite.wrappers.rows[wrappers[0]].source_range =
+                            original.wrappers.rows[wrappers[1]].source_range
+                    }
+                    4 => composite.wrappers.rows.swap(wrappers[0], wrappers[1]),
+                    5 => composite.roots.rows[0].formula = SourceCompositeFormulaId::new(2),
+                    _ => composite.roots.rows[0].ordinal = 1,
+                }
+                assert_ne!(&composite, original);
+                let old = baseline.source_formula_composition().unwrap();
+                let primary = baseline.source_term().unwrap();
+                let atomic = baseline.source_atomic_formula().unwrap();
+                let composition = SourceFormulaCompositionHandoff::from_original_input(
+                    SourceFormulaCompositionHandoffInput {
+                        source_id: old.source_id(),
+                        module_id: old.module_id().clone(),
+                        atomic_edges: old
+                            .atomic_edges()
+                            .iter()
+                            .map(|(_, row)| row.into())
+                            .collect(),
+                        bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                    },
+                    primary,
+                    atomic,
+                    &composite,
+                );
+                assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!(
+                    composition.atomic_formula_fingerprint(),
+                    atomic.debug_text()
+                );
+                assert_eq!(
+                    composition.composite_formula_fingerprint(),
+                    composite.debug_text()
+                );
+                let mut changed = baseline.clone();
+                changed.inject_source_composite_formula_for_test(composite);
+                changed.inject_source_formula_composition_for_test(composition);
+                let before = changed.debug_text();
+                assert_eq!(
+                    task257b5_native_replay(&changed, expressions.clone()),
+                    Err(ResolvedTypedAstError::InvalidSourceFormulaComposition),
+                    "{mutation}"
+                );
+                assert_eq!(changed.debug_text(), before);
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
+    }
+
+    #[test]
     fn task257b7_native_quantifier_associations_require_original_replay() {
         use crate::{
             resolved_typed_ast::ResolvedTypedAstError,

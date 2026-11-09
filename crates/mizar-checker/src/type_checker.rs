@@ -6342,15 +6342,8 @@ impl TermFormulaChecker {
         {
             if let Some(header) = children(owner).get(3)
                 && header.kind == K::FormulaExpression
-                && let [formula] = children(header).as_slice()
-                && matches!(
-                    formula.kind,
-                    K::QuantifiedFormula(
-                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
-                    )
-                )
             {
-                headers.insert(formula.site);
+                headers.insert(header.site);
             }
         }
         let mut header_nodes = BTreeSet::new();
@@ -6392,6 +6385,10 @@ impl TermFormulaChecker {
                 formula_sites.insert(original.site);
             }
         }
+        let headers = headers
+            .into_iter()
+            .map(|header| effective_for.get(&header).copied().ok_or_else(invalid))
+            .collect::<Result<BTreeSet<_>, _>>()?;
         let mut reachable = BTreeSet::new();
         let mut parents = BTreeMap::new();
         let mut pending = vec![root];
@@ -6854,7 +6851,7 @@ impl TermFormulaChecker {
             owners.iter().enumerate().zip(context.items().iter())
         {
             let parts = children(original);
-            let header = *children(parts[3]).first().ok_or_else(invalid)?;
+            let header = row(*effective_for.get(&parts[3].site).ok_or_else(invalid)?)?;
             if !matches!(
                 header.kind,
                 K::QuantifiedFormula(
@@ -9206,15 +9203,26 @@ impl TermFormulaChecker {
                 && matches!(current.kind(), K::TheoremItem | K::LemmaItem)
                 && let [_, _, _, header, _, _] = current.children()
                 && node(*header)?.kind() == &K::FormulaExpression
-                && let [formula] = node(*header)?.children()
-                && matches!(
-                    node(*formula)?.kind(),
-                    K::QuantifiedFormula(
-                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
-                    )
-                )
             {
-                headers.insert(*formula);
+                let mut cursor = *header;
+                for _ in 0..source.arena().len() {
+                    let current = node(cursor)?;
+                    cursor = match (current.kind(), current.children()) {
+                        (K::FormulaExpression, [child])
+                        | (K::ParenthesizedFormula, [_, child, _]) => *child,
+                        (
+                            K::QuantifiedFormula(
+                                SurfaceQuantifierKind::Universal
+                                | SurfaceQuantifierKind::Existential,
+                            ),
+                            _,
+                        ) => {
+                            headers.insert(*header);
+                            break;
+                        }
+                        _ => return Err(invalid()),
+                    };
+                }
             }
         }
         let mut header_nodes = BTreeSet::new();
@@ -9370,15 +9378,7 @@ impl TermFormulaChecker {
                                 "lemma"
                             }
                         && rest == ["identifier", ":", "FormulaExpression", "ProofBlock", ";"]
-                        && node(current.children()[3])?.children().iter().all(|child| {
-                            part(*child).is_ok_and(|kind| {
-                                matches!(
-                                    kind.as_str(),
-                                    "QuantifiedFormula(Universal)"
-                                        | "QuantifiedFormula(Existential)"
-                                )
-                            })
-                        })
+                        && headers.contains(&current.children()[3])
                 }
                 (K::ProofBlock, ["proof", statements @ .., "end"]) => statements
                     .iter()
