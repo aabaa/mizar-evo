@@ -398,6 +398,7 @@ fn original_source_witness_draft_preserves_errors() -> Result<(), String> {
         original.replace("thus X = X;", "thus X = X by Missing;"),
         original.replace("thus X = X;", "thus X = Missing;"),
         "theorem T: for X being set holds X = ;".into(),
+        original.replacen("thus X = X;", "thus X = 0;", 1),
     ]
     .into_iter()
     .enumerate()
@@ -416,14 +417,14 @@ fn original_source_witness_draft_preserves_errors() -> Result<(), String> {
         let before = (source.clone(), symbols.clone(), ast.snapshot_text());
         let expected = match source_proof_inputs(&source, symbols) {
             Err(error) => {
-                assert!(index >= 5);
+                assert!(matches!(index, 5 | 6));
                 error
             }
             Ok((scope, labels, resolved)) => {
                 match TermFormulaChecker::check_source_theorem_equalities(&source, symbols, &scope)
                 {
                     Err(error) => {
-                        assert_eq!(index, 3);
+                        assert_eq!(index, 7);
                         error
                     }
                     Ok((_, inference, typed)) => {
@@ -432,7 +433,7 @@ fn original_source_witness_draft_preserves_errors() -> Result<(), String> {
                             &source, &typed, &scope, symbols, &labels, &resolved, None,
                         ) {
                             Err(error) => {
-                                assert!(index == 2 || index == 4);
+                                assert!(matches!(index, 2..=4));
                                 error
                             }
                             Ok(check) => {

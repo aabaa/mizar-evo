@@ -370,7 +370,7 @@ fn source_theorem_final_metadata_preserves_upstream_errors() {
     let ids = InMemorySessionIdAllocator::new();
     for (ordinal, text) in [
         text.to_owned(),
-        text.replace("set", "object"),
+        format!("reserve spare for object; {text}"),
         format!("{text}\n{registration}"),
     ]
     .into_iter()

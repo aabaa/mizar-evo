@@ -1202,7 +1202,7 @@ fn native_theorem_discharge_storage_preserves_refusals() {
     );
     for (text, is_none) in [
         (format!("{private}\nreserve Y for set;\n"), true),
-        (private.replace("set", "object"), false),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), false),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let (_, _, adapter, frontend, _) =

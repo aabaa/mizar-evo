@@ -283,7 +283,7 @@ fn source_theorem_registration_closure_preserves_upstream_errors() {
     let private_control = controls.len();
     for (case, text) in [
         include_str!("../../../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz").to_owned(),
-        text.replace("set", "object"),
+        format!("reserve spare for object; {text}"),
         format!("{text}\n{}", include_str!("../../../../../../tests/miz/pass/clusters/pass_advanced_semantics_existential_registration_001.miz")),
     ].into_iter().enumerate() {
         let ast = parse(&text);

@@ -643,7 +643,7 @@ fn source_theorem_context_handoff_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let unsupported_shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let unsupported_collected = SignatureProjectionExtractor::new(

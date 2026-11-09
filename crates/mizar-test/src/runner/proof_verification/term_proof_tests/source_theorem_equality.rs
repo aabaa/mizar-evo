@@ -1420,20 +1420,23 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
         }
     }
     let unused_object = text.replace("Unused being set", "Unused being object");
+    let all_object = text.replace("set", "object");
+    let private_object = text
+        .replace("theorem T", "private theorem T")
+        .replace("set", "object");
     let unresolved = text.replace("holds X = X", "holds X = Y");
     let conjunction = text.replace("holds X = X", "holds X = X & X = X");
     let unused_reserve = format!("reserve Z for set; {text}");
     for changed in [
         unused_object.clone(),
-        text.replace("set", "object"),
+        all_object.clone(),
         text.replace("set", "non empty set"),
         text.replace("thus X = X", "thus X in X"),
         text.replace("thus X = X", "thus X = 0"),
         text.replace("thus X = X", "thus X = f(X)"),
         conjunction.clone(),
         text.replace("for X being set, Unused being set", "ex X being set"),
-        text.replace("theorem T", "private theorem T")
-            .replace("set", "object"),
+        private_object.clone(),
         text.replace("theorem T", "public open theorem T"),
         "open theorem T: for X being set holds X = X;".into(),
         "assumed theorem T: for X being set holds X = X;".into(),
@@ -1505,6 +1508,44 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
             assert!(inference.facts().is_empty() && typed.facts().is_empty());
             continue;
         }
+        if [&unused_object, &all_object, &private_object].contains(&&changed) {
+            let (_, inference, typed) = result.unwrap();
+            assert_eq!(
+                (inference.terms().len(), inference.formulas().len()),
+                (4, 2)
+            );
+            assert_eq!(typed.source_term().unwrap().terms().len(), 4);
+            assert!(inference.facts().is_empty() && typed.facts().is_empty());
+            for (_, term) in inference.terms().iter() {
+                let entry = inference.type_entries().get(term.type_entry).unwrap();
+                let mizar_checker::typed_ast::TypeEntryActual::Known(id) = entry.actual else {
+                    panic!("known builtin type")
+                };
+                assert_eq!(
+                    inference.normalized_types().get(id).unwrap().head,
+                    if changed == unused_object {
+                        mizar_checker::type_checker::TypeHeadRef::BuiltinSet
+                    } else {
+                        mizar_checker::type_checker::TypeHeadRef::BuiltinObject
+                    }
+                );
+            }
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities(
+                    &altered_source,
+                    &empty,
+                    occurrence_input
+                )
+                .unwrap_err(),
+                mizar_resolve::symbols::validate_source_proof_occurrences(
+                    &altered_source,
+                    &empty,
+                    occurrence_input
+                )
+                .unwrap_err()
+            );
+            continue;
+        }
         if changed == conjunction {
             let (_, inference, typed) = result.unwrap();
             assert_eq!(typed.source_term().unwrap().terms().len(), 6);
@@ -1527,22 +1568,6 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
                 mizar_resolve::symbols::validate_source_proof_occurrences(
                     &altered_source,
                     env.env(),
-                    occurrence_input,
-                )
-                .unwrap_err()
-            );
-        }
-        if changed == unused_object {
-            assert_eq!(
-                TermFormulaChecker::check_source_theorem_equalities(
-                    &altered_source,
-                    &empty,
-                    occurrence_input,
-                )
-                .unwrap_err(),
-                mizar_resolve::symbols::validate_source_proof_occurrences(
-                    &altered_source,
-                    &empty,
                     occurrence_input,
                 )
                 .unwrap_err()

@@ -556,7 +556,7 @@ fn source_theorem_lexical_contexts_preserve_upstream_errors() {
             ));
         }
     }
-    for text in [text.replace("set", "object"), String::new()] {
+    for text in [format!("reserve spare for object; {text}"), String::new()] {
         let broader = parse(&text);
         let broader_source = SurfaceResolvedArena::lower(&broader, &module).unwrap();
         let shells = DeclarationShellCollector::new(&broader, &module).collect();

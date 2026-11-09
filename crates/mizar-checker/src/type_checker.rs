@@ -5737,24 +5737,58 @@ impl DeclarationChecker {
         String,
     > {
         use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypingState};
-        let ((bindings, inference, original, metadata), checked) =
+        let ((bindings, mut inference, original, metadata), checked) =
             Self::check_source_theorem_equalities(source, symbols, scope)?;
         let invalid = || "theorems.equality.invalid_typed_declaration_association".to_owned();
+        if !inference.candidate_sets.is_empty()
+            || !inference.facts.is_empty()
+            || !original.facts().is_empty()
+        {
+            return Err(invalid());
+        }
+        let mut normalized_types = inference.normalized_types.clone();
         let mut normalized_ids = BTreeMap::new();
         for (id, normalized) in checked.normalized_types().iter() {
-            let mut matching = inference.normalized_types().iter().filter(|(_, row)| {
-                row.status == NormalizedTypeStatus::Known
-                    && row.head == normalized.head
-                    && row.args.is_empty()
-                    && row.attributes == AttributeSet::empty()
+            let target = {
+                let mut matching = normalized_types.iter().filter(|(_, row)| {
+                    row.status == NormalizedTypeStatus::Known
+                        && row.head == normalized.head
+                        && row.args.is_empty()
+                        && row.attributes == AttributeSet::empty()
+                });
+                let target = matching.next().map(|(id, _)| id);
+                if matching.next().is_some() {
+                    return Err(invalid());
+                }
+                target
+            };
+            let target = target.unwrap_or_else(|| {
+                normalized_types.intern(NormalizedTypeDraft {
+                    head: normalized.head.clone(),
+                    args: normalized.args.clone(),
+                    attributes: normalized.attributes.clone(),
+                    source: normalized.source.clone(),
+                    status: normalized.status,
+                })
             });
-            let (target, _) = matching.next().ok_or_else(invalid)?;
-            if matching.next().is_some() {
-                return Err(invalid());
-            }
             normalized_ids.insert(id, target);
         }
-        let mut types = original.types().clone();
+        let (normalized_types, remap) = normalized_types.into_canonical();
+        for target in normalized_ids.values_mut() {
+            *target = *remap.get(target).ok_or_else(invalid)?;
+        }
+        inference.normalized_types = normalized_types;
+        inference.type_entries = remap_type_table(inference.type_entries, &remap);
+        for term in &mut inference.terms.entries {
+            term.expected_type = term.expected_type.map(|id| remapped_type_id(id, &remap));
+        }
+        for formula in &mut inference.formulas.entries {
+            formula.asserted_type = formula.asserted_type.map(|id| remapped_type_id(id, &remap));
+            for constraint in &mut formula.expected_types {
+                constraint.expected = remapped_type_id(constraint.expected, &remap);
+            }
+        }
+        let mut types = remap_type_table(original.types().clone(), &remap);
         let mut entry_ids = BTreeMap::new();
         for (id, entry) in checked.type_entries().iter() {
             let TypeEntryActual::Known(actual) = entry.actual else {
@@ -5887,7 +5921,13 @@ impl DeclarationChecker {
                 type_site.clone(),
                 written.source_range(),
                 written.spelling(),
-                TypeHeadInput::BuiltinSet,
+                match written.head() {
+                    crate::source_type::SourceTypeHead::BuiltinSet => TypeHeadInput::BuiltinSet,
+                    crate::source_type::SourceTypeHead::BuiltinObject => {
+                        TypeHeadInput::BuiltinObject
+                    }
+                    _ => return Err(invalid()),
+                },
             ));
             if kind == DeclarationKind::ReservedVariable {
                 input = input.with_reserved_default(ReservedDefaultPayload::new(type_site, false));
@@ -5933,7 +5973,17 @@ impl DeclarationChecker {
                 || entry.owner != declaration.site
                 || entry.status != TypeStatus::Known
                 || normalized.status != NormalizedTypeStatus::Known
-                || normalized.head != TypeHeadRef::BuiltinSet
+                || !matches!(
+                    (
+                        &normalized.head,
+                        input.type_expression.as_ref().map(|ty| &ty.head)
+                    ),
+                    (TypeHeadRef::BuiltinSet, Some(TypeHeadInput::BuiltinSet))
+                        | (
+                            TypeHeadRef::BuiltinObject,
+                            Some(TypeHeadInput::BuiltinObject)
+                        )
+                )
                 || !normalized.args.is_empty()
                 || normalized.attributes != AttributeSet::empty()
             {
@@ -9040,7 +9090,7 @@ impl TermFormulaChecker {
         Ok(citing_statement)
     }
 
-    /// Extracts and infers original-source set equalities without proof credit.
+    /// Extracts and infers original-source variable equalities without proof credit.
     pub fn check_source_theorem_equalities(
         source: &SurfaceResolvedArena,
         symbols: &SymbolEnv,
@@ -9335,6 +9385,7 @@ impl TermFormulaChecker {
                         "thus", "end", "by", "public", "private",
                     ]
                     .contains(&token.text.as_ref())
+                        || (!reserved && token.text.as_ref() == "object")
                         || ((reserved || implicit) && token.text.as_ref() == "reserve")
                         || (assumption_reserved && token.text.as_ref() == "assume")
                         || (witness_reserved && token.text.as_ref() == "take")
@@ -9488,7 +9539,7 @@ impl TermFormulaChecker {
                     true
                 }
                 (K::TypeExpression, ["TypeHead"])
-                | (K::TypeHead, ["set"])
+                | (K::TypeHead, ["set" | "object"])
                 | (K::TermExpression, ["TermReference"])
                 | (K::TermReference, ["identifier"])
                 | (K::Proposition, ["FormulaExpression"])
@@ -10065,6 +10116,14 @@ impl TermFormulaChecker {
                     .copied()
                     .ok_or_else(invalid)?
             };
+            let head = *node(ty)?.children().first().ok_or_else(invalid)?;
+            let token = *node(head)?.children().first().ok_or_else(invalid)?;
+            let spelling = part(token)?;
+            let head = match spelling.as_str() {
+                "set" => TypeHeadInput::BuiltinSet,
+                "object" => TypeHeadInput::BuiltinObject,
+                _ => return Err(invalid()),
+            };
             let ordinal = terms.len();
             let context = match &native_primary {
                 Some(primary) => primary
@@ -10108,8 +10167,8 @@ impl TermFormulaChecker {
                             )),
                         },
                         range(ty)?,
-                        "set",
-                        TypeHeadInput::BuiltinSet,
+                        spelling,
+                        head,
                     )),
             );
         }
@@ -10963,6 +11022,22 @@ impl TermFormulaChecker {
             let SourceAnchor::Range(type_range) = type_node.origin().anchor() else {
                 return Err(invalid());
             };
+            let head = source
+                .arena()
+                .node(*type_node.children().first().ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            let token = source
+                .arena()
+                .node(*head.children().first().ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            let K::Token(token) = token.kind() else {
+                return Err(invalid());
+            };
+            let head = match token.text.as_ref() {
+                "set" => TypeHeadInput::BuiltinSet,
+                "object" => TypeHeadInput::BuiltinObject,
+                _ => return Err(invalid()),
+            };
             let type_site = TypedSiteRef::Role {
                 node: original
                     .nodes()
@@ -10988,8 +11063,8 @@ impl TermFormulaChecker {
                 .with_result_type(TypeExpressionInput::new(
                     entry.owner.clone(),
                     *type_range,
-                    "set",
-                    TypeHeadInput::BuiltinSet,
+                    token.text.as_ref(),
+                    head,
                 )),
             );
         }

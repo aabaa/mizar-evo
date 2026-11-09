@@ -839,7 +839,7 @@ fn native_theorem_preparation_storage_replay_preserves_refusals() {
     let private = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
-    let fixture = Fixture::new(private.replace("set", "object").as_bytes());
+    let fixture = Fixture::new(private.replacen("thus X = X;", "thus X = 0;", 1).as_bytes());
     let (_, _, adapter, handle, _) =
         native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
     let output = adapter.publisher().storage().get(&handle).unwrap();

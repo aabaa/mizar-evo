@@ -466,7 +466,7 @@ fn source_theorem_typed_inference_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(
@@ -1097,7 +1097,7 @@ fn source_theorem_typed_declarations_preserve_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let unsupported_shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let unsupported_collected = SignatureProjectionExtractor::new(

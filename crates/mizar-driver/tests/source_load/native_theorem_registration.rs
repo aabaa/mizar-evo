@@ -355,7 +355,10 @@ fn native_theorem_registration_closure_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "unsupported-type"),
+        (
+            private.replacen("thus X = X;", "thus X = 0;", 1),
+            "unsupported-type",
+        ),
         (registration.to_owned(), "registration"),
     ] {
         let fixture = Fixture::new(text.as_bytes());

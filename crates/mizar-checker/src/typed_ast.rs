@@ -5307,6 +5307,26 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
             } else {
                 declaration.local_context
             };
+            let token_kind = match (
+                expression.head(),
+                expression.spelling(),
+                expression.head_spelling(),
+            ) {
+                (SourceTypeHead::BuiltinSet, "set", "set") => {
+                    "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })"
+                }
+                (SourceTypeHead::BuiltinObject, "object", "object") => {
+                    "Token(SurfaceToken { kind: ReservedWord, text: \"object\" })"
+                }
+                _ => return Err(invalid),
+            };
+            let [token_id] = head.children.as_slice() else {
+                return Err(invalid);
+            };
+            let token = parts
+                .nodes
+                .node(*token_id)
+                .ok_or(TypedAstError::InvalidSourceType)?;
             if application.binding() != declaration.binding
                 || application.source_ordinal() != declaration.source_ordinal
                 || expression.source_range() != declaration.written_type_range
@@ -5315,9 +5335,6 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 || expression.source_id() != parts.source_id
                 || expression.module_id() != &parts.module_id
                 || expression.form() != SourceTypeApplicationForm::Bare
-                || expression.head() != &SourceTypeHead::BuiltinSet
-                || expression.spelling() != "set"
-                || expression.head_spelling() != "set"
                 || expression.recovery() != NodeRecoveryState::Normal
                 || node.kind.as_str() != "TypeExpression"
                 || head.kind.as_str() != "TypeHead"
@@ -5326,6 +5343,14 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 || node.children != [head_site]
                 || node.links.context != Some(type_context)
                 || head.links.context != Some(type_context)
+                || node.resolved_node.map(|id| id.index()) != Some(site.index())
+                || head.resolved_node.map(|id| id.index()) != Some(head_site.index())
+                || token.resolved_node.map(|id| id.index()) != Some(token_id.index())
+                || token.kind.as_str() != token_kind
+                || token.anchor != SourceAnchor::Range(expression.head_range())
+                || token.recovery != NodeRecoveryState::Normal
+                || !token.children.is_empty()
+                || token.links.context != Some(type_context)
             {
                 return Err(invalid);
             }

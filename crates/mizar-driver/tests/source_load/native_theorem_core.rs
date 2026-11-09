@@ -239,7 +239,7 @@ fn native_theorem_core_caller_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "checker"),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), "checker"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "skeleton",
@@ -587,7 +587,10 @@ fn native_theorem_core_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "unsupported-type"),
+        (
+            private.replacen("thus X = X;", "thus X = 0;", 1),
+            "unsupported-type",
+        ),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -853,7 +856,7 @@ fn native_theorem_core_semantic_payload_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "unsupported-type"),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), "unsupported-type"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -1295,7 +1298,7 @@ fn native_theorem_core_publication_preserves_refusals_and_publisher_boundaries()
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.replace("set", "object"), "metadata"),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), "metadata"),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",

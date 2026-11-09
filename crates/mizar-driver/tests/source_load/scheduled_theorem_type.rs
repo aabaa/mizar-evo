@@ -342,7 +342,7 @@ fn scheduled_theorem_type_checking_preserves_resource_refusals() {
     let private = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
-    let unsupported = private.replace("set", "object");
+    let unsupported = private.replacen("thus X = X;", "thus X = 0;", 1);
     for case in [
         "cancel",
         "foreign-token",

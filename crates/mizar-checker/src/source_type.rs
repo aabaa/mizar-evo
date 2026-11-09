@@ -801,18 +801,22 @@ impl SourceTypeProducer {
                 let site = TypedNodeId::new(original.site.index());
                 let head_site = TypedNodeId::new(head.site.index());
                 let id = SourceTypeExpressionId::new(input.expressions.len());
-                // The genuine lower producer admitted the complete original AST as bare set.
+                let primitive = match head.spelling.as_str() {
+                    "set" => SourceTypeHead::BuiltinSet,
+                    "object" => SourceTypeHead::BuiltinObject,
+                    _ => return Err(invalid()),
+                };
                 input.expressions.push(SourceTypeExpressionInput {
                     source_id: source.source_id(),
                     module_id: source.module().clone(),
                     site: TypedSiteRef::Node(site),
                     source_range: original.range,
-                    spelling: "set".to_owned(),
+                    spelling: original.spelling.clone(),
                     head_site: TypedSiteRef::Node(head_site),
                     head_range: head.range,
-                    head_spelling: "set".to_owned(),
+                    head_spelling: head.spelling.clone(),
                     form: SourceTypeApplicationForm::Bare,
-                    head: SourceTypeHead::BuiltinSet,
+                    head: primitive,
                     recovery: original.recovery,
                 });
                 expression_for.insert(original.site, id);
@@ -6065,6 +6069,80 @@ mod tests {
         fixture.input.expressions[0].head_spelling = "ModeT".to_owned();
         fixture.input.expressions[0].head_range = range(fixture.source, 10, 15);
         refresh(fixture);
+    }
+
+    #[test]
+    fn native_builtin_heads_match_their_physical_reserved_tokens() {
+        use crate::typed_ast::{
+            NodeRecoveryState, TypedArena, TypedAst, TypedAstError,
+            tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        // EN03 §§3.3–3.5: Object and Set are distinct written primitive heads.
+        for spelling in ["set", "object"] {
+            let text = format!(
+                "theorem T: for x being {spelling} holds x = x\nproof\nlet x be {spelling};\nthus x = x;\nend;"
+            );
+            task257b5_native_case(
+                &text,
+                |_, parts, _, expressions, (symbols, source, scope)| {
+                    let (_, _, baseline, _) =
+                        SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope)
+                            .unwrap();
+                    let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                    for fault in 0..9 {
+                        let mut changed = parts.clone();
+                        let types = changed.source_type.as_mut().unwrap();
+                        let other_head = types.expressions.entries[1].head_site.clone();
+                        let expression = &mut types.expressions.entries[0];
+                        let head = expression.head_site.node();
+                        let token = parts.nodes.node(head).unwrap().children[0];
+                        assert!(parts.nodes.node(token).unwrap().links.context.is_some());
+                        let mut nodes = parts
+                            .nodes
+                            .iter()
+                            .map(|(_, row)| row.clone())
+                            .collect::<Vec<_>>();
+                        match fault {
+                            0 => {
+                                let (head, other) = if spelling == "set" {
+                                    (SourceTypeHead::BuiltinObject, "object")
+                                } else {
+                                    (SourceTypeHead::BuiltinSet, "set")
+                                };
+                                expression.head = head;
+                                expression.spelling = other.into();
+                                expression.head_spelling = other.into();
+                            }
+                            1 => nodes[token.index()].kind = "identifier".into(),
+                            2 => {
+                                nodes[token.index()].anchor =
+                                    nodes[parts.nodes.root().unwrap().index()].anchor.clone()
+                            }
+                            3 => nodes[token.index()].resolved_node = None,
+                            4 => nodes[token.index()].links.context = None,
+                            5 => nodes[head.index()].children.clear(),
+                            6 => expression.head_site = other_head,
+                            7 => nodes[token.index()].recovery = NodeRecoveryState::Recovered,
+                            _ => {
+                                nodes[token.index()].resolved_node =
+                                    nodes[head.index()].resolved_node
+                            }
+                        }
+                        changed.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                        let result = TypedAst::try_new(changed);
+                        if fault == 0 {
+                            assert_eq!(result.unwrap_err(), TypedAstError::InvalidSourceType);
+                        } else {
+                            assert!(result.is_err(), "{spelling} token/owner fault {fault}");
+                        }
+                        assert_eq!(
+                            task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                            pristine
+                        );
+                    }
+                },
+            );
+        }
     }
 
     #[test]

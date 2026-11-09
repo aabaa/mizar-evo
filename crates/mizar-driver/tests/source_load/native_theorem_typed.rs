@@ -294,7 +294,10 @@ fn native_theorem_typed_ast_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "unsupported-type"),
+        (
+            private.replacen("thus X = X;", "thus X = 0;", 1),
+            "unsupported-type",
+        ),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let (_, _, adapter, parent, _) =
@@ -490,7 +493,7 @@ fn native_theorem_typed_ast_signature_caller_preserves_refusals() {
     let private = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
-    let unsupported = private.replace("set", "object");
+    let unsupported = private.replacen("thus X = X;", "thus X = 0;", 1);
     for case in [
         "checker",
         "missing",
@@ -1102,7 +1105,7 @@ fn native_theorem_typed_ast_publication_preserves_refusals() {
     let private = include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
     );
-    let unsupported = private.replace("set", "object");
+    let unsupported = private.replacen("thus X = X;", "thus X = 0;", 1);
     for case in [
         "unsupported-type",
         "missing",

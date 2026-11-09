@@ -215,7 +215,7 @@ fn native_theorem_metadata_caller_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "checker"),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), "checker"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
         let ids = InMemorySessionIdAllocator::new();
@@ -684,7 +684,10 @@ fn native_theorem_metadata_storage_replay_preserves_refusals() {
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
         (private.replace("by PrivT1", "by Missing"), "citation"),
         (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
-        (private.replace("set", "object"), "unsupported-type"),
+        (
+            private.replacen("thus X = X;", "thus X = 0;", 1),
+            "unsupported-type",
+        ),
         (registration.to_owned(), "registration"),
     ] {
         let fixture = Fixture::new(text.as_bytes());
@@ -1326,6 +1329,7 @@ fn native_theorem_metadata_publication_seals_genuine_payload_and_streams() {
             include_str!(
                 "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
             ),
+            "theorem ObjectT: for X being object holds X = X proof let X be object; thus X = X; end;",
         ] {
             with_native_summary_parent(
                 text,
@@ -1429,7 +1433,11 @@ fn native_theorem_metadata_publication_seals_genuine_payload_and_streams() {
                     for id in normalized {
                         assert_eq!(
                             expected.1.normalized_types().get(id).unwrap().head,
-                            TypeHeadRef::BuiltinSet
+                            if text.contains("being object") {
+                                TypeHeadRef::BuiltinObject
+                            } else {
+                                TypeHeadRef::BuiltinSet
+                            }
                         );
                     }
                     let atomic = expected.2.source_atomic_formula().unwrap();

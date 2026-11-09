@@ -1368,7 +1368,7 @@ fn native_theorem_candidate_storage_preserves_refusals() {
     }
     let private = Fixture::new(include_str!(
         "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
-    ).replace("set", "object").as_bytes());
+    ).replacen("thus X = X;", "thus X = 0;", 1).as_bytes());
     let (_, _, adapter, handle, _) =
         native_disk_frontend_record_submission(&private, &ids, &snapshots, 0);
     let output = adapter.publisher().storage().get(&handle).unwrap();
@@ -4298,7 +4298,7 @@ fn native_theorem_candidate_check_storage_preserves_refusals() {
             );
             let private = Fixture::new(include_str!(
                 "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
-            ).replace("set", "object").as_bytes());
+            ).replacen("thus X = X;", "thus X = 0;", 1).as_bytes());
             let (_, _, adapter, handle, _) =
                 native_disk_frontend_record_submission(&private, ids, snapshots, 0);
             let private_frontend = adapter.publisher().storage().get(&handle).unwrap();

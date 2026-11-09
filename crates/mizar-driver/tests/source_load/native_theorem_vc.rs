@@ -280,7 +280,10 @@ fn native_theorem_vc_caller_preserves_refusals() {
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.replace("set", "object"), "metadata"),
+        (
+            private.replacen("thus X = X;", "thus X = 0;", 1),
+            "metadata",
+        ),
         (
             "theorem Empty: for A being set holds A = A proof end;".to_owned(),
             "empty",
@@ -808,7 +811,7 @@ fn native_theorem_vc_storage_preserves_refusals() {
     );
     for (text, is_none) in [
         (format!("{private}\nreserve Y for set;\n"), true),
-        (private.replace("set", "object"), false),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), false),
     ] {
         let refused = Fixture::new(text.as_bytes());
         let (_, _, refused_adapter, refused_handle, _) =
@@ -1362,7 +1365,7 @@ fn native_theorem_vc_publication_preserves_refusals_and_publisher_boundaries() {
     );
     for (text, case) in [
         (format!("{private}\nreserve Y for set;\n"), "reserve"),
-        (private.replace("set", "object"), "metadata"),
+        (private.replacen("thus X = X;", "thus X = 0;", 1), "metadata"),
         (
             "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;"
                 .to_owned(),

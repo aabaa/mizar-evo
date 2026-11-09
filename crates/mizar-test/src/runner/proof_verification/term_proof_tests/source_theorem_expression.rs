@@ -541,7 +541,7 @@ fn source_theorem_expression_metadata_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(

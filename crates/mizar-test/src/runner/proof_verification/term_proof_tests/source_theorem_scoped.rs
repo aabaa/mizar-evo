@@ -1169,7 +1169,7 @@ fn source_theorem_scoped_inference_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(
@@ -1370,7 +1370,7 @@ fn source_theorem_scoped_skeleton_intake_preserves_genuine_consumers() -> Result
                 ast.snapshot_text(),
                 frontend.source.clone(),
             );
-            if case >= 6 {
+            if case >= 7 {
                 let error = check_source_theorem_metadata(&source, symbols, &scope).unwrap_err();
                 assert_eq!(
                     check_source_theorem_metadata(&source, symbols, &scope).unwrap_err(),
@@ -1441,7 +1441,7 @@ fn source_theorem_scoped_skeleton_intake_preserves_genuine_consumers() -> Result
             for (index, (owner, visibility)) in checked.owners().iter().enumerate() {
                 assert_eq!(
                     *visibility,
-                    if index == 0 && matches!(case, 3 | 4) {
+                    if index == 0 && matches!(case, 3 | 4 | 6) {
                         "private"
                     } else {
                         "public"
@@ -1658,6 +1658,50 @@ fn source_theorem_scoped_skeleton_intake_preserves_genuine_consumers() -> Result
                         mizar_vc::vc_ir::VcFormulaRef::Core(seed.goal.unwrap())
                     );
                 }
+            }
+            if case == 6 {
+                use mizar_vc::discharge::{DischargeInput, DischargePolicy, try_discharge};
+                let guards = core
+                    .formulas()
+                    .iter()
+                    .filter_map(|(_, row)| match &row.kind {
+                        CoreFormulaKind::TypePred { ty, .. } => Some(ty.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(guards, vec!["object", "object"]);
+                let discharged = try_discharge(DischargeInput {
+                    vc_set: &vcs,
+                    policy: &DischargePolicy::default(),
+                })
+                .unwrap();
+                assert!(discharged.evidence_records().is_empty());
+                assert!(
+                    discharged
+                        .vc_set()
+                        .vcs()
+                        .iter()
+                        .all(|vc| vc.status == mizar_vc::vc_ir::VcStatus::NeedsAtp)
+                );
+                assert_eq!(
+                    mizar_core::elaborator::source_theorem_formula_payloads(&checked, &core, &[])
+                        .unwrap_err(),
+                    "unsupported source theorem formula payload"
+                );
+                assert_eq!(
+                    mizar_vc::kernel_evidence_handoff::build_source_theorem_kernel_handoff(
+                        &core,
+                        &vcs,
+                        vcs.vcs()[0].id
+                    )
+                    .unwrap_err(),
+                    "theorem.handoff.invalid_projection"
+                );
+                assert!(
+                    typed.source_composite_formula().is_none()
+                        && typed.source_formula_composition().is_none()
+                        && typed.source_statement().is_none()
+                );
             }
             let replay = Checker::check_theorem_skeletons(
                 &source, typed, &scope, symbols, &labels, &resolved, None,
@@ -4763,7 +4807,7 @@ fn task257b6_native_connective_lower_preserves_genuine_tables() -> Result<(), St
                 SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope);
             let expected = if cases[case] == nested_existential {
                 Some((4, 2, 3, 4))
-            } else if cases[case] == restricted_universal {
+            } else if cases[case] == restricted_universal || case == positive_count + 7 {
                 Some((6, 3, 2, 3))
             } else {
                 None
@@ -4786,6 +4830,59 @@ fn task257b6_native_connective_lower_preserves_genuine_tables() -> Result<(), St
                 assert_eq!(typed.source_type().unwrap().applications().len(), bindings);
                 assert_eq!(metadata.len(), terms + formulas);
                 assert!(inference.facts().is_empty() && typed.facts().is_empty());
+                if case == positive_count + 7 {
+                    let ast = frontend.ast.as_ref().unwrap();
+                    let physical = ast
+                        .node_views()
+                        .filter(|row| row.kind() == &K::TypeExpression)
+                        .collect::<Vec<_>>();
+                    assert_eq!(physical.len(), 2);
+                    for (_, row) in typed.source_type().unwrap().expressions().iter() {
+                        assert_eq!(row.head(), &SourceTypeHead::BuiltinObject);
+                        let syntax = physical
+                            .iter()
+                            .find(|syntax| syntax.range() == row.source_range())
+                            .unwrap();
+                        let head = ast.node_view(syntax.children()[0]).unwrap();
+                        assert_eq!(row.head_range(), head.range());
+                        assert_eq!(
+                            ast.node_view(head.children()[0])
+                                .unwrap()
+                                .as_token()
+                                .unwrap()
+                                .text
+                                .as_ref(),
+                            "object"
+                        );
+                    }
+                    for (_, row) in inference.type_entries().iter() {
+                        let TypeEntryActual::Known(id) = row.actual else {
+                            panic!("known Object type")
+                        };
+                        assert_eq!(
+                            inference.normalized_types().get(id).unwrap().head,
+                            TypeHeadRef::BuiltinObject
+                        );
+                    }
+                    for (_, row) in typed.source_context().unwrap().declarations().iter() {
+                        assert!(
+                            physical
+                                .iter()
+                                .any(|syntax| syntax.range() == row.written_type_range)
+                        );
+                        assert_eq!(
+                            env.bindings().get(row.binding).unwrap().owner_context,
+                            row.binding_context
+                        );
+                    }
+                    assert!(
+                        typed
+                            .clone()
+                            .with_source_formula_composition_from_original(source, symbols, scope)
+                            .is_err()
+                    );
+                }
+
                 assert!(
                     typed.source_composite_formula().is_none()
                         && typed.source_formula_composition().is_none()
@@ -7015,6 +7112,35 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             .replace("reserve x for set;", "reserve x, y for set;")
             .replace("holds x = x", "holds x = y"),
     ]);
+    // Literal physical type paths start at the actual ItemList. Declaration
+    // slots and reference winners are source-intent oracles, independent of receipts.
+    let mixed = "theorem Mixed: for x being set, idle being object holds x = x proof let x be set, spare be object; thus x = x; end;";
+    let grouped = "theorem Groups: for a, idle being object, b being set holds a = a & b = b proof let a, spare be object, b be set; thus a = a; thus b = b; end;";
+    let object_profiles = [
+        (cases[positive_count].clone(), vec!["object", "object"],
+            vec![vec![0,3,0,1,2], vec![0,4,1,1,2]], vec![0,1], vec![0,0,1,1], (4,2,2,3)),
+        (mixed.into(), vec!["set", "object", "set", "object"],
+            vec![vec![0,3,0,1,2],vec![0,3,0,3,2],vec![0,4,1,1,2],vec![0,4,1,3,2]], vec![0,1,2,3],vec![0,0,2,2],(4,2,4,3)),
+        ("theorem Inverse: for x being object, idle being set holds x = x proof let x be object, spare be set; thus x = x; end;".into(), vec!["object", "set", "object", "set"],
+            vec![vec![0,3,0,1,2],vec![0,3,0,3,2],vec![0,4,1,1,2],vec![0,4,1,3,2]],vec![0,1,2,3],vec![0,0,2,2],(4,2,4,3)),
+        (grouped.into(),vec!["object","set","object","set"],
+            vec![vec![0,3,0,1,4],vec![0,3,0,3,2],vec![0,4,1,1,4],vec![0,4,1,3,2]],vec![0,0,1,2,2,3],vec![0,0,2,2,3,3,5,5],(8,4,6,3)),
+        ("theorem Shadow: for x being object holds for x being set holds x = x proof let x be object; thus x = x; end;".into(),vec!["object","set","object"],
+            vec![vec![0,3,0,1,2],vec![0,3,0,3,1,2],vec![0,4,1,1,2]],vec![0,1,2],vec![1,1,2,2],(4,2,3,4)),
+        ("reserve x for set; theorem Override: for x being object holds x = x proof let x be object; thus x = x; end;".into(),vec!["set","object","object"],
+            vec![vec![0,1,2],vec![1,3,0,1,2],vec![1,4,1,1,2]],vec![0,1,2],vec![1,1,2,2],(4,2,3,3)),
+        (format!("\n:: Object layout\n{}",grouped.replace(" a,", " parcel,").replace(" a = a", " parcel = parcel").replace(" b being", " token being").replace(" b be", " token be").replace(" b = b", " token = token").replace("being object", "being\tobject").replace("proof", "proof\n:: locals\n")),vec!["object","set","object","set"],
+            vec![vec![0,3,0,1,4],vec![0,3,0,3,2],vec![0,4,1,1,4],vec![0,4,1,3,2]],vec![0,0,1,2,2,3],vec![0,0,2,2,3,3,5,5],(8,4,6,3)),
+        ("theorem Canonical: for idle being object, x being object holds x = x proof let spare be object, x be object; thus x = x; end;".into(),vec!["object","object","object","object"],
+            vec![vec![0,3,0,1,2],vec![0,3,0,3,2],vec![0,4,1,1,2],vec![0,4,1,3,2]],vec![0,1,2,3],vec![1,1,3,3],(4,2,4,3)),
+    ];
+    let object_cases = cases.len();
+    cases.extend(
+        object_profiles
+            .iter()
+            .skip(1)
+            .map(|profile| profile.0.clone()),
+    );
     let binder_cases = cases.len();
     let binder_proof = "theorem Binder: ex z being set st z = z proof let x, y, idle be set; thus (x |-> x) = x; end;";
     cases.extend([
@@ -7243,8 +7369,25 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             );
         }
     }
+    let mut remapped_inference_id = false;
+    let mut distinct_decl_namespace_id = false;
     for (case, (frontend, source, symbols, scope)) in prepared.iter().enumerate() {
-        if case >= positive_count {
+        let object_index = if case == positive_count {
+            Some(0)
+        } else if (object_cases..binder_cases).contains(&case) {
+            Some(case - object_cases + 1)
+        } else {
+            None
+        };
+        let object = object_index.map(|index| &object_profiles[index]);
+        let expected_head = |binding: usize| {
+            if object.is_some_and(|profile| profile.1[profile.3[binding]] == "object") {
+                TypeHeadRef::BuiltinObject
+            } else {
+                TypeHeadRef::BuiltinSet
+            }
+        };
+        if case >= positive_count && object.is_none() {
             if case == positive_count + 7 {
                 let binder = frontend
                     .ast
@@ -8281,7 +8424,8 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             assert_eq!(link.binding_context, id);
             assert!(typed.contexts().get(link.local_context).is_some());
         }
-        let (terms, atoms, bindings, contexts) = counts[case];
+        let (terms, atoms, bindings, contexts) =
+            object.map_or_else(|| counts[case], |profile| profile.5);
         assert_eq!(
             (
                 primary.terms().len(),
@@ -8409,7 +8553,9 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                 panic!("unknown Set type")
             };
             let actual = inference.normalized_types().get(actual).unwrap();
-            assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+            if object.is_none() {
+                assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+            }
             assert!(
                 actual.args.is_empty()
                     && actual.attributes.positive().is_empty()
@@ -8541,8 +8687,20 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             assert_eq!(written.source_range(), syntax.range());
             assert_eq!(written.head_site(), &site(head.id()));
             assert_eq!(written.head_range(), head.range());
-            assert_eq!(written.head(), &SourceTypeHead::BuiltinSet);
-            assert_eq!(spelling(syntax.id()), "set");
+            let head = if expected_head(original.id().index()) == TypeHeadRef::BuiltinObject {
+                SourceTypeHead::BuiltinObject
+            } else {
+                SourceTypeHead::BuiltinSet
+            };
+            assert_eq!(written.head(), &head);
+            assert_eq!(
+                spelling(syntax.id()),
+                if head == SourceTypeHead::BuiltinObject {
+                    "object"
+                } else {
+                    "set"
+                }
+            );
         }
         for (ordinal, original) in scope.references().iter().enumerate() {
             let (term_id, term) = primary
@@ -8574,6 +8732,230 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                     ordinal: winner.ordinal(),
                     declaration_range: winner.range()
                 }
+            );
+        }
+        if let Some(profile) = object {
+            use mizar_checker::type_checker::{
+                DeclarationChecker, DeclarationStatus, check_source_theorem_metadata,
+                check_source_theorem_registration_closure,
+            };
+            let compilation = *ast
+                .node_view(ast.root().unwrap())
+                .unwrap()
+                .children()
+                .last()
+                .unwrap();
+            let item_list = ast.node_view(compilation).unwrap().children()[0];
+            let physical = profile
+                .2
+                .iter()
+                .map(|path| {
+                    path.iter().fold(item_list, |node, child| {
+                        ast.node_view(node).unwrap().children()[*child]
+                    })
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(types.expressions().len(), physical.len());
+            assert_eq!(context.declarations().len(), profile.3.len());
+            for (index, node) in physical.iter().enumerate() {
+                let syntax = ast.node_view(*node).unwrap();
+                assert_eq!(syntax.kind(), &K::TypeExpression);
+                assert_eq!(spelling(*node), profile.1[index]);
+                assert_eq!(syntax.children().len(), 1);
+                let head = ast.node_view(syntax.children()[0]).unwrap();
+                let token = ast.node_view(head.children()[0]).unwrap();
+                assert_eq!(token.as_token().unwrap().text.as_ref(), profile.1[index]);
+                let (_, written) = types
+                    .expressions()
+                    .iter()
+                    .find(|(_, row)| row.site() == &site(*node))
+                    .unwrap();
+                assert_eq!(written.head_site(), &site(head.id()));
+                assert_eq!(written.head_range(), token.range());
+            }
+            for (index, (_, declaration)) in context.declarations().iter().enumerate() {
+                assert_eq!(
+                    declaration.written_type_range,
+                    ast.node_view(physical[profile.3[index]]).unwrap().range()
+                );
+            }
+            assert_eq!(primary.references().len(), profile.4.len());
+            for ((_, reference), binding) in primary.references().iter().zip(&profile.4) {
+                assert_eq!(reference.binding().index(), *binding);
+                let term = primary.terms().get(reference.term()).unwrap();
+                let (_, inferred) = inference
+                    .terms()
+                    .iter()
+                    .find(|(_, row)| &row.site == term.site())
+                    .unwrap();
+                let entry = inference.type_entries().get(inferred.type_entry).unwrap();
+                let TypeEntryActual::Known(id) = entry.actual else {
+                    panic!("known source head")
+                };
+                assert_eq!(
+                    inference.normalized_types().get(id).unwrap().head,
+                    expected_head(*binding)
+                );
+                let origin = physical[profile.3[*binding]];
+                assert!(
+                    inference
+                        .type_entries()
+                        .iter()
+                        .any(|(_, row)| row.owner.node() == site(origin).node())
+                );
+            }
+            let (direct_lower, checked) =
+                DeclarationChecker::check_source_theorem_equalities(source, symbols, scope)?;
+            assert_eq!(direct_lower, lower);
+            let installed =
+                DeclarationChecker::check_source_theorem_equalities_with_typed_declarations(
+                    source, symbols, scope,
+                )?;
+            let (_, union, declared, declared_metadata) = &installed;
+            assert_eq!(declared_metadata, metadata);
+            assert_eq!(declared.source_context(), typed.source_context());
+            assert_eq!(declared.source_type(), typed.source_type());
+            assert_eq!(declared.source_term(), typed.source_term());
+            assert_eq!(
+                declared.source_atomic_formula(),
+                typed.source_atomic_formula()
+            );
+            assert_eq!(declared.contexts(), typed.contexts());
+            let heads = profile
+                .1
+                .iter()
+                .map(|head| {
+                    if *head == "object" {
+                        TypeHeadRef::BuiltinObject
+                    } else {
+                        TypeHeadRef::BuiltinSet
+                    }
+                })
+                .collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(
+                union
+                    .normalized_types()
+                    .iter()
+                    .map(|(_, row)| row.head.clone())
+                    .collect::<Vec<_>>(),
+                heads.into_iter().collect::<Vec<_>>()
+            );
+            let remap = inference
+                .normalized_types()
+                .iter()
+                .map(|(old, row)| {
+                    let (id, canonical) = union
+                        .normalized_types()
+                        .iter()
+                        .find(|(_, candidate)| candidate.head == row.head)
+                        .unwrap();
+                    assert_eq!(canonical.source, row.source);
+                    assert_eq!(canonical.status, row.status);
+                    assert!(canonical.args.is_empty() && canonical.attributes == row.attributes);
+                    remapped_inference_id |= old != id;
+                    (old, id)
+                })
+                .collect::<std::collections::BTreeMap<_, _>>();
+            for (id, entry) in inference.type_entries().iter() {
+                let mut expected = entry.clone();
+                let TypeEntryActual::Known(actual) = entry.actual else {
+                    panic!("known lower type")
+                };
+                expected.actual = TypeEntryActual::Known(remap[&actual]);
+                expected.expected = entry.expected.map(|id| remap[&id]);
+                assert_eq!(union.type_entries().get(id), Some(&expected));
+                assert_eq!(declared.types().get(id), Some(&expected));
+            }
+            assert_eq!(union.type_entries().len(), inference.type_entries().len());
+            for (id, term) in inference.terms().iter() {
+                let mut expected = term.clone();
+                expected.expected_type = term.expected_type.map(|id| remap[&id]);
+                assert_eq!(union.terms().get(id), Some(&expected));
+            }
+            for (id, formula) in inference.formulas().iter() {
+                let mut expected = formula.clone();
+                expected.asserted_type = formula.asserted_type.map(|id| remap[&id]);
+                for constraint in &mut expected.expected_types {
+                    constraint.expected = remap[&constraint.expected];
+                }
+                assert_eq!(union.formulas().get(id), Some(&expected));
+            }
+            assert_eq!(checked.declarations().len(), profile.3.len());
+            assert!(checked.diagnostics().is_empty() && checked.facts().is_empty());
+            assert!(union.candidate_sets().is_empty() && union.facts().is_empty());
+            for (_, declaration) in checked.declarations().iter() {
+                assert_eq!(declaration.status, DeclarationStatus::Checked);
+                let entry = checked
+                    .type_entries()
+                    .get(declaration.type_entry.unwrap())
+                    .unwrap();
+                let TypeEntryActual::Known(actual) = entry.actual else {
+                    panic!("known declaration")
+                };
+                let head = expected_head(declaration.binding.index());
+                assert_eq!(checked.normalized_types().get(actual).unwrap().head, head);
+                if let Some((lower_id, _)) = inference
+                    .normalized_types()
+                    .iter()
+                    .find(|(_, row)| row.head == head)
+                {
+                    distinct_decl_namespace_id |= lower_id != actual;
+                }
+                let node = declared.nodes().node(declaration.site.node()).unwrap();
+                let installed_entry = declared
+                    .types()
+                    .get(node.links.type_entry.unwrap())
+                    .unwrap();
+                let TypeEntryActual::Known(installed_id) = installed_entry.actual else {
+                    panic!("known installed declaration")
+                };
+                assert_eq!(
+                    union.normalized_types().get(installed_id).unwrap().head,
+                    head
+                );
+                assert_eq!(installed_entry.owner, entry.owner);
+                assert_eq!(installed_entry.status, entry.status);
+                assert_eq!(installed_entry.provenance, entry.provenance);
+                assert_eq!(
+                    installed_entry.expected.map(|id| &union
+                        .normalized_types()
+                        .get(id)
+                        .unwrap()
+                        .head),
+                    entry
+                        .expected
+                        .map(|id| &checked.normalized_types().get(id).unwrap().head)
+                );
+            }
+            let actual = check_source_theorem_metadata(source, symbols, scope)?;
+            assert_eq!(
+                (&actual.0, &actual.1, &actual.2),
+                (&installed.0, &installed.1, &installed.2)
+            );
+            assert_eq!(actual.3.source_type(), declared.source_type());
+            assert!(
+                actual.3.checked_proofs().is_empty()
+                    && actual.3.checked_formulas().is_empty()
+                    && actual.3.statement_semantics().is_empty()
+            );
+            let closure =
+                check_source_theorem_registration_closure(source, symbols, scope, declared)?;
+            assert!(closure.closure_facts().is_empty());
+            assert_eq!(
+                check_source_theorem_metadata(source, symbols, scope)?,
+                actual
+            );
+            assert!(
+                typed
+                    .clone()
+                    .with_source_formula_composition_from_original(source, symbols, scope)
+                    .is_err()
+            );
+            assert_eq!(
+                DeclarationChecker::check_source_theorem_equalities_with_typed_declarations(
+                    source, symbols, scope
+                )?,
+                installed
             );
         }
         let mut atoms = ast
@@ -8871,6 +9253,7 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             .0;
         assert!(env.contexts().get(module_context).unwrap().parent.is_none());
     }
+    assert!(remapped_inference_id && distinct_decl_namespace_id);
     // Recovered source is refused at its genuine resolver or lower owner; it
     // never supplies a lower RED receipt for the admitted quantifier family.
     assert_eq!(recovered.len(), 3);

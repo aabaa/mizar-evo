@@ -1012,7 +1012,7 @@ fn source_theorem_local_type_contexts_preserve_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&text.replace("set", "object"));
+    let unsupported = parse(&format!("reserve spare for object; {text}"));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(
