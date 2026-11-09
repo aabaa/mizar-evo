@@ -172,6 +172,7 @@ pub enum SourceFormulaAtomicEdgeRole {
     BiconditionalLeft,
     BiconditionalRight,
     NegatedFormula,
+    ExistentialBody,
 }
 
 /// Immutable validated formula composition handoff.
@@ -2472,6 +2473,7 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
         SourceFormulaAtomicEdgeRole::BiconditionalLeft => "biconditional-left",
         SourceFormulaAtomicEdgeRole::BiconditionalRight => "biconditional-right",
         SourceFormulaAtomicEdgeRole::NegatedFormula => "negated-formula",
+        SourceFormulaAtomicEdgeRole::ExistentialBody => "existential-body",
     }
 }
 
@@ -6181,6 +6183,143 @@ fn exact_typed_child_containing(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    #[test]
+    fn task257b7_native_restriction_body_clocks_and_shadow_winners_are_replayed() {
+        use crate::typed_ast::tests::{task257b5_native_case, task257b5_native_replay};
+        let fixture = include_str!("../tests/testdata/native_quantifier_statement.miz");
+        for (case, text) in [
+            fixture.to_owned(),
+            fixture.replace(
+                "x = x & (ex y being set st y = x)",
+                "(ex y being set st y = x) & x = x",
+            ),
+        ]
+        .iter()
+        .enumerate()
+        {
+            task257b5_native_case(text, |installed, _, _, expressions, _| {
+                let baseline = installed.unwrap();
+                let original = baseline.source_formula_composition().unwrap();
+                let primary = baseline.source_term().unwrap();
+                let atomic = baseline.source_atomic_formula().unwrap();
+                let composite = baseline.source_composite_formula().unwrap();
+                assert_eq!(original.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!(original.atomic_formula_fingerprint(), atomic.debug_text());
+                assert_eq!(
+                    original.composite_formula_fingerprint(),
+                    composite.debug_text()
+                );
+                assert_eq!(
+                    original
+                        .bound_uses()
+                        .iter()
+                        .map(|(_, row)| row.body_edge().index())
+                        .collect::<Vec<_>>(),
+                    if case == 0 {
+                        [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]
+                    } else {
+                        [1, 1, 0, 0, 2, 2, 3, 3, 4, 4]
+                    }
+                );
+                let binders = composite.binders();
+                let mut ordinals = [0; 4];
+                for (_, row) in original.bound_uses().iter() {
+                    assert_eq!(row.ordinal(), ordinals[row.binder().index()]);
+                    ordinals[row.binder().index()] += 1;
+                    let reference = primary.references().get(row.reference()).unwrap();
+                    assert_eq!(reference.term(), row.term());
+                    assert_eq!(
+                        reference.binding(),
+                        binders.get(row.binder()).unwrap().binding()
+                    );
+                }
+                let existential = original
+                    .atomic_edges
+                    .rows
+                    .iter()
+                    .position(|row| row.role == SourceFormulaAtomicEdgeRole::ExistentialBody)
+                    .unwrap();
+                let restriction = original
+                    .atomic_edges
+                    .rows
+                    .iter()
+                    .position(|row| row.role == SourceFormulaAtomicEdgeRole::UniversalRestriction)
+                    .unwrap();
+                let body = original
+                    .atomic_edges
+                    .rows
+                    .iter()
+                    .position(|row| row.role == SourceFormulaAtomicEdgeRole::UniversalBody)
+                    .unwrap();
+                assert_eq!(
+                    original.atomic_edges.rows[restriction].formula,
+                    original.atomic_edges.rows[body].formula
+                );
+                assert_ne!(
+                    original.atomic_edges.rows[restriction].child,
+                    original.atomic_edges.rows[body].child
+                );
+                let outer = binders.get(SourceQuantifierBinderId::new(0)).unwrap();
+                let inner = binders.get(SourceQuantifierBinderId::new(2)).unwrap();
+                assert_eq!(outer.identifier_spelling(), inner.identifier_spelling());
+                assert_ne!(outer.binding(), inner.binding());
+                assert_ne!(outer.body_context(), inner.body_context());
+                let shadow_use = original
+                    .bound_uses
+                    .rows
+                    .iter()
+                    .position(|row| row.binder == SourceQuantifierBinderId::new(2))
+                    .unwrap();
+                let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                for mutation in 0..if case == 0 { 3 } else { 4 } {
+                    let mut candidate = original.clone();
+                    match mutation {
+                        0 => {
+                            candidate.atomic_edges.rows[existential].role =
+                                SourceFormulaAtomicEdgeRole::UniversalBody
+                        }
+                        1 => {
+                            let child = candidate.atomic_edges.rows[restriction].child;
+                            candidate.atomic_edges.rows[restriction].child =
+                                candidate.atomic_edges.rows[body].child;
+                            candidate.atomic_edges.rows[body].child = child;
+                            for row in &mut candidate.bound_uses.rows {
+                                if row.body_edge.index() == restriction {
+                                    row.body_edge = SourceFormulaAtomicEdgeId::new(body);
+                                } else if row.body_edge.index() == body {
+                                    row.body_edge = SourceFormulaAtomicEdgeId::new(restriction);
+                                }
+                            }
+                        }
+                        2 => {
+                            candidate.bound_uses.rows[shadow_use].binder =
+                                SourceQuantifierBinderId::new(0)
+                        }
+                        3 => candidate
+                            .bound_uses
+                            .rows
+                            .sort_by_key(|row| row.body_edge.index()),
+                        _ => unreachable!(),
+                    }
+                    assert_ne!(&candidate, original);
+                    let mut changed = baseline.clone();
+                    changed.inject_source_formula_composition_for_test(candidate);
+                    let before = changed.debug_text();
+                    assert_eq!(
+                        task257b5_native_replay(&changed, expressions.clone()),
+                        Err(ResolvedTypedAstError::InvalidSourceFormulaComposition),
+                        "{case}/{mutation}"
+                    );
+                    assert_eq!(changed.debug_text(), before);
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                }
+            });
+        }
+    }
+
     #[test]
     fn task257b6_native_composition_authenticates_roles_clocks_and_lexical_winners() {
         use crate::typed_ast::tests::{task257b5_native_case, task257b5_native_replay};

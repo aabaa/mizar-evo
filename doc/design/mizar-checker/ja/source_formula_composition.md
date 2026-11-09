@@ -917,5 +917,6 @@ scalar/no-installer lint guardもPASS。Finding-specific repair後のpost-source
 **NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`。Staging/commitはpending。
 
 ## Original-source universal composition
+UniversalRestrictionとExistentialBodyで実composite/atomic childの役割を保つ。operand ordinalは記述順で、restricted universalのcondition・body、他は唯一のbodyとし、source-reference clockは独立に維持する。
 [canonical native 入口](typed_ast.md#original-source-universal-composition) は、proof の別個の結論も含め、実 lower の全 primary/equality occurrence を保持する。header等式は実operand roleで最も近いcompositeに結び、atomicなimplication/biconditionalの左右とnegationは個別roleを持つ。bound useはedge割当てと独立に実header reference順を保ち、入れ子の外側binderも含めlexical binderを選ぶ。同じ綴りでも proof-local 変数は別 identity のままとする。
 完全な lower/composite fingerprint を保持し、実 owner/body/operand/context/type の対応、declaration/reference clock、lexical winner を認証する。fresh な共同検証は既存 original/source-context/type テーブルを用い、proof-goal tree・新 carrier・accepted formula を作らない。raw composition admission と先行 family の境界は分離する。

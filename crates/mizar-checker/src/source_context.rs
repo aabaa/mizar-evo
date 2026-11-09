@@ -489,7 +489,13 @@ impl SourceBindingContextProducer {
                         BindingContextOwner::SourceFormula { source_range },
                         BindingContextLayer::Expression,
                         TypeContextLayer::Expression,
-                    ) if kind == "QuantifiedFormula(Universal)" => source_range,
+                    ) if matches!(
+                        kind,
+                        "QuantifiedFormula(Universal)" | "QuantifiedFormula(Existential)"
+                    ) && kind == format!("{:?}", actual.kind()) =>
+                    {
+                        source_range
+                    }
                     (
                         BindingContextOwner::SourceStatement { source_range },
                         BindingContextLayer::Proof,

@@ -184,6 +184,7 @@ pub enum SourceFormulaEdgeRole {
     BiconditionalRight,
     ConjunctionLeft,
     ConjunctionRight,
+    UniversalRestriction,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2239,6 +2240,7 @@ fn edge_role_key(role: SourceFormulaEdgeRole) -> &'static str {
         SourceFormulaEdgeRole::BiconditionalRight => "biconditional-right",
         SourceFormulaEdgeRole::ConjunctionLeft => "conjunction-left",
         SourceFormulaEdgeRole::ConjunctionRight => "conjunction-right",
+        SourceFormulaEdgeRole::UniversalRestriction => "universal-restriction",
     }
 }
 
@@ -2285,6 +2287,117 @@ pub(crate) mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
+
+    #[test]
+    fn task257b7_native_quantifier_associations_require_original_replay() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        let fixture = include_str!("../tests/testdata/native_quantifier_statement.miz");
+        task257b5_native_case(fixture, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            let original = baseline.source_composite_formula().unwrap();
+            let existential = SourceCompositeFormulaId::new(2);
+            assert_eq!(
+                original.formulas.rows[2].kind,
+                SourceCompositeFormulaKind::Existential
+            );
+            assert_eq!(
+                original.edges.rows[0].role,
+                SourceFormulaEdgeRole::UniversalRestriction
+            );
+            assert_eq!(
+                original.edges.rows[1].role,
+                SourceFormulaEdgeRole::UniversalBody
+            );
+            let restriction = original.formulas.get(original.edges.rows[0].child).unwrap();
+            let body = original.formulas.get(original.edges.rows[1].child).unwrap();
+            assert_eq!(restriction.context(), body.context());
+            let wrapper = original
+                .wrappers
+                .rows
+                .iter()
+                .position(|row| row.formula == existential)
+                .unwrap();
+            let incoming = original.formulas.rows[2].context;
+            let body_context = original.binders.rows[1].body_context;
+            assert_ne!(incoming, body_context);
+            assert_eq!(original.type_sites.rows[1].context, incoming);
+            assert_eq!(original.wrappers.rows[wrapper].context, incoming);
+            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+            for mutation in 0..6 {
+                let mut composite = original.clone();
+                match mutation {
+                    0 => composite.formulas.rows[2].kind = SourceCompositeFormulaKind::Universal,
+                    1 => composite.formulas.rows[2].context = body_context,
+                    2 => composite.type_sites.rows[1].context = body_context,
+                    3 => composite.wrappers.rows[wrapper].context = body_context,
+                    4 => {
+                        let child = composite.edges.rows[0].child;
+                        composite.edges.rows[0].child = composite.edges.rows[1].child;
+                        composite.edges.rows[1].child = child;
+                    }
+                    5 => {
+                        let (role, ordinal) = (
+                            composite.edges.rows[0].role,
+                            composite.edges.rows[0].ordinal,
+                        );
+                        composite.edges.rows[0].role = composite.edges.rows[1].role;
+                        composite.edges.rows[0].ordinal = composite.edges.rows[1].ordinal;
+                        composite.edges.rows[1].role = role;
+                        composite.edges.rows[1].ordinal = ordinal;
+                    }
+                    _ => unreachable!(),
+                }
+                assert_ne!(&composite, original);
+                let old = baseline.source_formula_composition().unwrap();
+                let primary = baseline.source_term().unwrap();
+                let atomic = baseline.source_atomic_formula().unwrap();
+                let composition = SourceFormulaCompositionHandoff::from_original_input(
+                    SourceFormulaCompositionHandoffInput {
+                        source_id: old.source_id(),
+                        module_id: old.module_id().clone(),
+                        atomic_edges: old
+                            .atomic_edges()
+                            .iter()
+                            .map(|(_, row)| row.into())
+                            .collect(),
+                        bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                    },
+                    primary,
+                    atomic,
+                    &composite,
+                );
+                assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!(
+                    composition.atomic_formula_fingerprint(),
+                    atomic.debug_text()
+                );
+                assert_eq!(
+                    composition.composite_formula_fingerprint(),
+                    composite.debug_text()
+                );
+                let mut changed = baseline.clone();
+                changed.inject_source_composite_formula_for_test(composite);
+                changed.inject_source_formula_composition_for_test(composition);
+                let before = changed.debug_text();
+                assert_eq!(
+                    task257b5_native_replay(&changed, expressions.clone()),
+                    Err(ResolvedTypedAstError::InvalidSourceFormulaComposition),
+                    "{mutation}"
+                );
+                assert_eq!(changed.debug_text(), before);
+                assert_eq!(
+                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                    pristine
+                );
+            }
+        });
+    }
 
     #[test]
     fn task257b6_native_composite_associations_require_original_replay() {

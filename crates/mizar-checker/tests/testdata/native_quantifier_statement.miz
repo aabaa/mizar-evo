@@ -1,0 +1,6 @@
+theorem NativeQuantifiers: for x being set st (x = x & (ex y being set st y = x)) holds
+  ex x being set st ((x = x) or (for z being set st z = x holds z = x))
+proof
+ let x be set;
+ thus x = x;
+end;

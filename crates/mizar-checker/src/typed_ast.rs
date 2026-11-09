@@ -5374,23 +5374,42 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                             .ok_or(TypedAstError::InvalidSourceContext)?
                             .parent;
                     }
-                    let (range, kind) = match (&binding.owner, binding.layer, local.layer) {
-                        (
-                            BindingContextOwner::SourceFormula { source_range },
-                            BindingContextLayer::Expression,
-                            TypeContextLayer::Expression,
-                        ) => (source_range, "QuantifiedFormula(Universal)"),
-                        (
-                            BindingContextOwner::SourceStatement { source_range },
-                            BindingContextLayer::Proof,
-                            TypeContextLayer::Proof,
-                        ) => (source_range, "ProofBlock"),
-                        _ => return Err(TypedAstError::InvalidSourceContext),
-                    };
                     let owner = parts
                         .nodes
                         .node(local.owner.node())
                         .ok_or(TypedAstError::InvalidSourceContext)?;
+                    let (range, kind, opening) = match (&binding.owner, binding.layer, local.layer)
+                    {
+                        (
+                            BindingContextOwner::SourceFormula { source_range },
+                            BindingContextLayer::Expression,
+                            TypeContextLayer::Expression,
+                        ) => match owner.kind.as_str() {
+                            "QuantifiedFormula(Universal)" => (
+                                source_range,
+                                "QuantifiedFormula(Universal)",
+                                Some((
+                                    "for",
+                                    "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+                                )),
+                            ),
+                            "QuantifiedFormula(Existential)" => (
+                                source_range,
+                                "QuantifiedFormula(Existential)",
+                                Some((
+                                    "ex",
+                                    "Token(SurfaceToken { kind: ReservedWord, text: \"ex\" })",
+                                )),
+                            ),
+                            _ => return Err(TypedAstError::InvalidSourceContext),
+                        },
+                        (
+                            BindingContextOwner::SourceStatement { source_range },
+                            BindingContextLayer::Proof,
+                            TypeContextLayer::Proof,
+                        ) => (source_range, "ProofBlock", None),
+                        _ => return Err(TypedAstError::InvalidSourceContext),
+                    };
                     if !inside_item
                         || link.binding_context.index() == 0
                         || local.owner != TypedSiteRef::Node(local.owner.node())
@@ -5408,6 +5427,29 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                         })
                     {
                         return Err(TypedAstError::InvalidSourceContext);
+                    }
+                    if let Some((keyword, kind)) = opening {
+                        let token = owner
+                            .children
+                            .first()
+                            .and_then(|id| parts.nodes.node(*id))
+                            .ok_or(TypedAstError::InvalidSourceContext)?;
+                        let SourceAnchor::Range(opening_range) = &token.anchor else {
+                            return Err(TypedAstError::InvalidSourceContext);
+                        };
+                        if owner.recovery != NodeRecoveryState::Normal
+                            || token.kind.as_str() != kind
+                            || !token.children.is_empty()
+                            || token.recovery != NodeRecoveryState::Normal
+                            || token.links.context != Some(link.local_context)
+                            || opening_range.source_id != range.source_id
+                            || opening_range.start != range.start
+                            || opening_range.start.checked_add(keyword.len())
+                                != Some(opening_range.end)
+                            || opening_range.end > range.end
+                        {
+                            return Err(TypedAstError::InvalidSourceContext);
+                        }
                     }
                 } else if item.binding_context != link.binding_context
                     || item.local_context != link.local_context
@@ -7029,6 +7071,66 @@ pub(crate) mod tests {
                     assert_eq!(result, Err(crate::resolved_typed_ast::ResolvedTypedAstError::InvalidSourceStatement));
                     assert_eq!(
                         task257b5_native_replay(&installed, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn task257b7_native_condition_body_graph_is_authenticated() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_composite_formula::{SourceCompositeFormulaId, SourceCompositeFormulaKind},
+        };
+        let fixture = include_str!("../tests/testdata/native_quantifier_statement.miz");
+        task257b5_native_case(
+            fixture,
+            |installed, parts, primary, expressions, (symbols, source, scope)| {
+                let baseline = installed.unwrap();
+                let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                for formula in [0, 5] {
+                    let quantifier = baseline
+                        .source_composite_formula()
+                        .unwrap()
+                        .formulas()
+                        .get(SourceCompositeFormulaId::new(formula))
+                        .unwrap();
+                    assert_eq!(quantifier.kind(), SourceCompositeFormulaKind::Universal);
+                    let owner = quantifier.site().node();
+                    let mut changed = parts.clone();
+                    let mut nodes = parts
+                        .nodes
+                        .iter()
+                        .map(|(_, row)| row.clone())
+                        .collect::<Vec<_>>();
+                    assert_eq!(nodes[owner.index()].children.len(), 6);
+                    nodes[owner.index()].children.swap(3, 5);
+                    changed.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                    assert_ne!(changed.nodes, parts.nodes);
+                    let (lower, result) = task257b5_native_forged_replay(
+                        baseline.clone(),
+                        changed,
+                        primary.clone(),
+                        expressions.clone(),
+                    );
+                    let lower = lower.expect("condition/body swap retains primitive installation");
+                    let before = lower.debug_text();
+                    assert_eq!(
+                        lower
+                            .clone()
+                            .with_source_formula_composition_from_original(source, symbols, scope)
+                            .unwrap_err(),
+                        TypedAstError::InvalidSourceFormulaComposition
+                    );
+                    assert_eq!(lower.debug_text(), before);
+                    assert_eq!(
+                        result,
+                        Err(ResolvedTypedAstError::InvalidSourceFormulaComposition)
+                    );
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
                         pristine
                     );
                 }

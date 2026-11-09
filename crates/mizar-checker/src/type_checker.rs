@@ -6343,7 +6343,12 @@ impl TermFormulaChecker {
             if let Some(header) = children(owner).get(3)
                 && header.kind == K::FormulaExpression
                 && let [formula] = children(header).as_slice()
-                && formula.kind == K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                && matches!(
+                    formula.kind,
+                    K::QuantifiedFormula(
+                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                    )
+                )
             {
                 headers.insert(formula.site);
             }
@@ -6378,7 +6383,9 @@ impl TermFormulaChecker {
             if matches!(
                 original.kind,
                 K::BuiltinPredicateApplication
-                    | K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                    | K::QuantifiedFormula(
+                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                    )
                     | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
             ) || matches!(original.kind, K::BinaryFormula(operator) if !operator.repeated)
             {
@@ -6534,7 +6541,7 @@ impl TermFormulaChecker {
                                 ]
                                 .contains(&token.text.as_ref())
                                     || (header_nodes.contains(&current.site)
-                                        && ["or", "implies", "iff", "not"]
+                                        && ["ex", "st", "or", "implies", "iff", "not"]
                                             .contains(&token.text.as_ref()))
                             }
                             SurfaceTokenKind::ReservedSymbol => {
@@ -6608,27 +6615,49 @@ impl TermFormulaChecker {
                 ) => separated(names, "identifier"),
                 (
                     K::FormulaExpression,
-                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
-                ) => true,
-                (
-                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
                     [
-                        "for",
-                        segments @ ..,
-                        "holds",
-                        "BuiltinPredicateApplication" | "QuantifiedFormula(Universal)",
-                    ]
-                    | ["for", segments @ .., "QuantifiedFormula(Universal)"],
-                ) => {
-                    header_nodes.contains(&current.site)
-                        && separated(segments, "QuantifierVariableSegment")
-                }
-                (
-                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
-                    ["for", segments @ .., "holds", _],
-                ) if header_nodes.contains(&current.site) => {
+                        "BuiltinPredicateApplication"
+                        | "QuantifiedFormula(Universal)"
+                        | "QuantifiedFormula(Existential)",
+                    ],
+                ) => true,
+                (K::QuantifiedFormula(kind), _) if header_nodes.contains(&current.site) => {
+                    let (segments, restricted) = match (kind, parts.as_slice()) {
+                        (
+                            SurfaceQuantifierKind::Universal,
+                            ["for", segments @ .., "st", _, "holds", _],
+                        )
+                        | (
+                            SurfaceQuantifierKind::Universal,
+                            [
+                                "for",
+                                segments @ ..,
+                                "st",
+                                _,
+                                "QuantifiedFormula(Universal)" | "QuantifiedFormula(Existential)",
+                            ],
+                        ) => (segments, true),
+                        (SurfaceQuantifierKind::Universal, ["for", segments @ .., "holds", _])
+                        | (
+                            SurfaceQuantifierKind::Universal,
+                            [
+                                "for",
+                                segments @ ..,
+                                "QuantifiedFormula(Universal)" | "QuantifiedFormula(Existential)",
+                            ],
+                        )
+                        | (SurfaceQuantifierKind::Existential, ["ex", segments @ .., "st", _]) => {
+                            (segments, false)
+                        }
+                        _ => return Err(invalid()),
+                    };
+                    let children = children(current);
                     separated(segments, "QuantifierVariableSegment")
-                        && children(current).last().is_some_and(|body| {
+                        && (!restricted
+                            || effective_for
+                                .get(&children[segments.len() + 2].site)
+                                .is_some_and(|site| formula_sites.contains(site)))
+                        && children.last().is_some_and(|body| {
                             effective_for
                                 .get(&body.site)
                                 .is_some_and(|site| formula_sites.contains(site))
@@ -6828,7 +6857,9 @@ impl TermFormulaChecker {
             let header = *children(parts[3]).first().ok_or_else(invalid)?;
             if !matches!(
                 header.kind,
-                K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                K::QuantifiedFormula(
+                    SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                )
             ) || item.site != site(original)
                 || item.source_range != original.range
                 || id.index() != ordinal
@@ -7162,9 +7193,12 @@ impl TermFormulaChecker {
             let body_context = binding_context(original)?;
             let parts = children(original);
             let (kind, spelling, request_kind) = match original.kind {
-                K::QuantifiedFormula(SurfaceQuantifierKind::Universal) => (
-                    SourceCompositeFormulaKind::Universal,
-                    parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if matches!(token.text.as_ref(), "for" | "holds")))
+                K::QuantifiedFormula(kind) => (
+                    match kind {
+                        SurfaceQuantifierKind::Universal => SourceCompositeFormulaKind::Universal,
+                        SurfaceQuantifierKind::Existential => SourceCompositeFormulaKind::Existential,
+                    },
+                    parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if matches!(token.text.as_ref(), "for" | "ex" | "st" | "holds")))
                         .map(|row| row.spelling.as_str()).collect::<Vec<_>>().join(" "),
                     SourceFormulaRequestKind::QuantifierSemantics,
                 ),
@@ -7182,7 +7216,10 @@ impl TermFormulaChecker {
                 ),
                 _ => return Err(invalid()),
             };
-            let incoming = if kind == SourceCompositeFormulaKind::Universal {
+            let incoming = if matches!(
+                kind,
+                SourceCompositeFormulaKind::Universal | SourceCompositeFormulaKind::Existential
+            ) {
                 env.contexts()
                     .get(body_context)
                     .and_then(|context| context.parent)
@@ -7270,10 +7307,28 @@ impl TermFormulaChecker {
                 });
             }
             let operands = match kind {
-                SourceCompositeFormulaKind::Universal => vec![(
+                SourceCompositeFormulaKind::Universal => {
+                    let mut operands = Vec::new();
+                    if let Some(restriction) = parts.iter().position(
+                        |row| matches!(&row.kind, K::Token(token) if token.text.as_ref() == "st"),
+                    ) {
+                        operands.push((
+                            restriction + 1,
+                            SourceFormulaEdgeRole::UniversalRestriction,
+                            SourceFormulaAtomicEdgeRole::UniversalRestriction,
+                        ));
+                    }
+                    operands.push((
+                        parts.len() - 1,
+                        SourceFormulaEdgeRole::UniversalBody,
+                        SourceFormulaAtomicEdgeRole::UniversalBody,
+                    ));
+                    operands
+                }
+                SourceCompositeFormulaKind::Existential => vec![(
                     parts.len() - 1,
-                    SourceFormulaEdgeRole::UniversalBody,
-                    SourceFormulaAtomicEdgeRole::UniversalBody,
+                    SourceFormulaEdgeRole::ExistentialBody,
+                    SourceFormulaAtomicEdgeRole::ExistentialBody,
                 )],
                 SourceCompositeFormulaKind::Negation => vec![(
                     1,
@@ -9152,7 +9207,12 @@ impl TermFormulaChecker {
                 && let [_, _, _, header, _, _] = current.children()
                 && node(*header)?.kind() == &K::FormulaExpression
                 && let [formula] = node(*header)?.children()
-                && node(*formula)?.kind() == &K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                && matches!(
+                    node(*formula)?.kind(),
+                    K::QuantifiedFormula(
+                        SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                    )
+                )
             {
                 headers.insert(*formula);
             }
@@ -9187,7 +9247,8 @@ impl TermFormulaChecker {
                         || (witness_reserved && token.text.as_ref() == "take")
                         || (witness_choice.is_some() && token.text.as_ref() == "the")
                         || (header_nodes.contains(&id)
-                            && ["or", "implies", "iff", "not"].contains(&token.text.as_ref())) =>
+                            && ["ex", "st", "or", "implies", "iff", "not"]
+                                .contains(&token.text.as_ref())) =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -9310,7 +9371,13 @@ impl TermFormulaChecker {
                             }
                         && rest == ["identifier", ":", "FormulaExpression", "ProofBlock", ";"]
                         && node(current.children()[3])?.children().iter().all(|child| {
-                            part(*child).is_ok_and(|kind| kind == "QuantifiedFormula(Universal)")
+                            part(*child).is_ok_and(|kind| {
+                                matches!(
+                                    kind.as_str(),
+                                    "QuantifiedFormula(Universal)"
+                                        | "QuantifiedFormula(Existential)"
+                                )
+                            })
                         })
                 }
                 (K::ProofBlock, ["proof", statements @ .., "end"]) => statements
@@ -9356,7 +9423,11 @@ impl TermFormulaChecker {
                 }
                 (
                     K::FormulaExpression,
-                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
+                    [
+                        "BuiltinPredicateApplication"
+                        | "QuantifiedFormula(Universal)"
+                        | "QuantifiedFormula(Existential)",
+                    ],
                 ) => !reserved || parts == ["BuiltinPredicateApplication"],
                 (
                     kind,
@@ -9367,14 +9438,44 @@ impl TermFormulaChecker {
                         "BuiltinPredicateApplication" | "QuantifiedFormula(Universal)",
                     ]
                     | ["for", segments @ .., "QuantifiedFormula(Universal)"],
-                ) if format!("{kind:?}") == "QuantifiedFormula(Universal)" => {
+                ) if !header_nodes.contains(&id)
+                    && format!("{kind:?}") == "QuantifiedFormula(Universal)" =>
+                {
                     separated(segments, "QuantifierVariableSegment")
                 }
-                (
-                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
-                    ["for", segments @ .., "holds", _],
-                ) if header_nodes.contains(&id) => {
+                (K::QuantifiedFormula(kind), _) if header_nodes.contains(&id) => {
+                    let (segments, restricted) = match (kind, parts.as_slice()) {
+                        (
+                            SurfaceQuantifierKind::Universal,
+                            ["for", segments @ .., "st", _, "holds", _],
+                        )
+                        | (
+                            SurfaceQuantifierKind::Universal,
+                            [
+                                "for",
+                                segments @ ..,
+                                "st",
+                                _,
+                                "QuantifiedFormula(Universal)" | "QuantifiedFormula(Existential)",
+                            ],
+                        ) => (segments, true),
+                        (SurfaceQuantifierKind::Universal, ["for", segments @ .., "holds", _])
+                        | (
+                            SurfaceQuantifierKind::Universal,
+                            [
+                                "for",
+                                segments @ ..,
+                                "QuantifiedFormula(Universal)" | "QuantifiedFormula(Existential)",
+                            ],
+                        )
+                        | (SurfaceQuantifierKind::Existential, ["ex", segments @ .., "st", _]) => {
+                            (segments, false)
+                        }
+                        _ => return Err(invalid()),
+                    };
                     separated(segments, "QuantifierVariableSegment")
+                        && (!restricted
+                            || header_formulas.contains(&current.children()[segments.len() + 2]))
                         && current
                             .children()
                             .last()
@@ -9415,7 +9516,9 @@ impl TermFormulaChecker {
                     current.kind(),
                     K::FormulaExpression
                         | K::BuiltinPredicateApplication
-                        | K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                        | K::QuantifiedFormula(
+                            SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
+                        )
                         | K::BinaryFormula(_)
                         | K::PrefixFormula(_)
                         | K::ParenthesizedFormula
