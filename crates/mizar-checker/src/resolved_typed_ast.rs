@@ -2863,7 +2863,26 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceStructureDefinition)?;
         }
         let source_composite_formula = self.inputs.typed_ast.source_composite_formula().cloned();
-        if let Some(source_composite_formula) = &source_composite_formula {
+        let source_formula_composition =
+            self.inputs.typed_ast.source_formula_composition().cloned();
+        let native_composition = self.inputs.typed_ast.source_context().is_some()
+            && self.inputs.typed_ast.source_nodes().is_some()
+            && (source_composite_formula.is_some() || source_formula_composition.is_some());
+        if native_composition {
+            let (expected_composite, expected_composition) =
+                crate::type_checker::TermFormulaChecker::source_universal_composition(
+                    self.inputs.typed_ast,
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
+            if source_composite_formula.as_ref() != Some(&expected_composite)
+                || source_formula_composition.as_ref() != Some(&expected_composition)
+            {
+                return Err(ResolvedTypedAstError::InvalidSourceFormulaComposition);
+            }
+        }
+        if let Some(source_composite_formula) = &source_composite_formula
+            && !native_composition
+        {
             if self.inputs.typed_ast.source_context().is_some() {
                 return Err(if has_task_258b4_statement {
                     ResolvedTypedAstError::InvalidSourceStatement
@@ -2881,9 +2900,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     }
                 })?;
         }
-        let source_formula_composition =
-            self.inputs.typed_ast.source_formula_composition().cloned();
-        if let Some(source_formula_composition) = &source_formula_composition {
+        if let Some(source_formula_composition) = &source_formula_composition
+            && !native_composition
+        {
             let source_term =
                 self.inputs
                     .typed_ast
@@ -2925,11 +2944,13 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         ResolvedTypedAstError::InvalidSourceFormulaComposition
                     }
                 })?;
-        } else if source_composite_formula.as_ref().is_some_and(|handoff| {
-            handoff.is_task_257b1_profile()
-                || handoff.is_task_257b2_profile()
-                || handoff.is_task_257b3_profile()
-        }) {
+        } else if !native_composition
+            && source_composite_formula.as_ref().is_some_and(|handoff| {
+                handoff.is_task_257b1_profile()
+                    || handoff.is_task_257b2_profile()
+                    || handoff.is_task_257b3_profile()
+            })
+        {
             return Err(if has_task_258b4_statement {
                 ResolvedTypedAstError::InvalidSourceStatement
             } else {

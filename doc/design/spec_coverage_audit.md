@@ -3238,3 +3238,6 @@ Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit
 ## Core Task35L264 Task264 Equals Selector Term Lowering Audit
 
 Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit_addenda.md).
+
+## Native universal source composition
+The [live composite owner](mizar-checker/en/source_composite_formula.md#original-source-universal-composition) extends source-only transport to genuine normal theorem-equality contexts and explicit Set universals. Header/body/binder/type associations retain the full primitive proof/header partition; raw profiles and existing requirement credit remain unchanged. Native quantified/local-Let statement input and all theorem/proof/Core/VC acceptance remain with their separate owners.

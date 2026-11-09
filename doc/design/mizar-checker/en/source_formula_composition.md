@@ -1147,3 +1147,7 @@ Post-source independent reviews are **NO FINDINGS** after finding-specific
 repairs, and focused plus full-workspace verification and protected checks
 pass. Independent final quality is **NO FINDINGS**, with all nine hard gates
 passing at a valid uncapped `100/100`. Staging and commit remain pending.
+
+## Original-source universal composition
+The [canonical native entrance](typed_ast.md#original-source-universal-composition) retains every genuine lower primary/equality occurrence, including separate proof conclusions. Only terminal header equalities receive UniversalBody associations; bound uses select their actual header binder, including outer binders in nested bodies. Proof-local variables remain independent even when spelling matches.
+Retain complete lower/composite fingerprints and authenticate original owner/body/operand/context/type joins, actual declaration/reference clocks and lexical winners. Fresh joint validation consumes the existing original/source-context/type tables; no proof-goal tree, new carrier or accepted formula is introduced. Raw composition admission and all earlier family boundaries stay separate.

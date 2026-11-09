@@ -3730,6 +3730,44 @@ mod tests {
     }
 
     #[test]
+    fn task257b5_native_reference_rows_and_actual_clocks_are_replayed() {
+        use crate::typed_ast::tests::*;
+        for mutation in 0..3 {
+            task257b5_native_case(
+                TASK257B5_NATIVE_TEXT,
+                |installed, parts, mut primary, expressions, _| {
+                    match mutation {
+                        0 => primary.references.rows.swap(0, 1),
+                        1 => {
+                            primary.references.rows[0].use_ordinal =
+                                primary.references.rows[1].use_ordinal
+                        }
+                        _ => primary.terms.rows.push(primary.terms.rows[0].clone()),
+                    }
+                    let (lower, final_result) = task257b5_native_forged_replay(
+                        installed.unwrap(),
+                        parts,
+                        primary,
+                        expressions,
+                    );
+                    if mutation == 2 {
+                        // Existing atomic direct-target cardinality rejects the duplicate term.
+                        assert_eq!(
+                            lower.unwrap_err(),
+                            TypedAstError::InvalidSourceAtomicFormula
+                        );
+                    } else {
+                        lower.expect(
+                            "reference order/clock mutation must pass ordinary lower validation",
+                        );
+                    }
+                    assert!(final_result.is_err());
+                },
+            );
+        }
+    }
+
+    #[test]
     fn occurrence_builder_authenticates_resolver_target_and_scope() {
         let (scope, binding_env, arena, input) = occurrence_fixture();
         let handoff =

@@ -416,6 +416,27 @@ impl SourceConditionFormulaCompositionHandoff {
 }
 
 impl SourceFormulaCompositionHandoff {
+    pub(crate) fn from_original_input(
+        input: SourceFormulaCompositionHandoffInput,
+        primary: &SourcePrimaryTermHandoff,
+        atomic: &SourceAtomicFormulaHandoff,
+        composite: &SourceCompositeFormulaHandoff,
+    ) -> Self {
+        Self {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            primary_term_fingerprint: primary.debug_text(),
+            atomic_formula_fingerprint: atomic.debug_text(),
+            composite_formula_fingerprint: composite.debug_text(),
+            atomic_edges: SourceFormulaAtomicEdgeTable {
+                rows: input.atomic_edges.into_iter().map(Into::into).collect(),
+            },
+            bound_uses: SourceQuantifierBoundUseTable {
+                rows: input.bound_uses.into_iter().map(Into::into).collect(),
+            },
+        }
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }

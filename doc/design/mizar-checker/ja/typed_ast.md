@@ -2001,3 +2001,7 @@ native B3M2B1もこの厳密な正規base比較とatomic pairを維持し、一�
 original空集合・単元集合・bare-set choiceのstatement/witness pairも全canonical-base比較後にatomic代入する。実SourceSetと全primary fingerprintを保持し、この限定caseのset-aware companion検証を要求する。stale/partial/enriched/foreign/repeated receiverをhalf pairなしで拒否する。既存combined raw setterはresolved/arena root flagと独立にnative TheoremItem nodeを拒否し、歴史的raw tag/root方針を保つ。root metadataを落としてcanonical組込みを迂回させず、新field/API/caller-built source receiptを作らない。
 
 combined raw set/statement/witness setterの旧B3B/C admissionはCheckerのtest compilationだけに限定する。native-node/root guardは常に維持し、productionのoriginal-source構築と他raw-set familyの既存境界を保つ。
+
+## Original-source universal composition
+`with_source_formula_composition_from_original(self, source, symbols, scope)` は実 native theorem-equality の source/type/context base を再導出し、既存 generic original node table を内部で組み込む。node slot を分離した canonical base と receiver 全体を比較し、original table と既存 composite/composition handoff の両方を原子的に公開する。enriched・foreign・partial・反復・重複 receiver は InvalidSourceFormulaComposition で拒否する。
+primitive node/context/type と lower output をすべて保持する。raw setter の source-context 排他は維持し、detached native handoff を組み込めない。statement/input-fact、proof-local binding slot、theorem/proof acceptance、Core、VC の権限は追加しない。

@@ -6068,6 +6068,43 @@ mod tests {
     }
 
     #[test]
+    fn task257b5_native_type_associations_are_revalidated_at_final_replay() {
+        use crate::typed_ast::tests::*;
+        for mutation in 0..3 {
+            task257b5_native_case(
+                TASK257B5_NATIVE_TEXT,
+                |installed, mut parts, primary, expressions, _| {
+                    let types = parts.source_type.as_mut().unwrap();
+                    match mutation {
+                        0 => types.applications.entries.swap(0, 2),
+                        1 => {
+                            types.expressions.entries[0].head_site =
+                                types.expressions.entries[1].head_site.clone()
+                        }
+                        _ => {
+                            types.applications.entries[0].root = types.applications.entries[1].root
+                        }
+                    }
+                    let (lower, final_result) = task257b5_native_forged_replay(
+                        installed.unwrap(),
+                        parts,
+                        primary,
+                        expressions,
+                    );
+                    assert!(
+                        lower.is_err(),
+                        "the existing native type association validator must refuse"
+                    );
+                    assert!(
+                        final_result.is_err(),
+                        "final native replay must freshly delegate to it"
+                    );
+                },
+            );
+        }
+    }
+
+    #[test]
     fn flat_bracket_handoff_is_dense_immutable_and_deterministic() {
         let fixture = fixture();
         let first = build(&fixture).expect("handoff");

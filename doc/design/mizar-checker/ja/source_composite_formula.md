@@ -11,7 +11,7 @@ quantifier binderをsyntax-free immutable transportとしてownする。canonica
 behaviorはChapter 14のformula/quantifier rule、Chapter 4のbinder identity/scope
 rule、Chapter 3のwritten `set` type、およびunchanged
 `fail_type_elaboration_formula_connective_quantifier_gap_001.miz` intentに
-従う。raw `SurfaceAst` traversalはprivate `mizar-test` ownershipのままである。
+従う。
 
 このmoduleはconnective evaluation、quantifier relativization、truth、formula
 fact、theorem semantics、proof search、Core/CFG/VCを作らない。broader
@@ -178,3 +178,8 @@ C3 ownerはseparateにinstallされる。Task-257A/B production row/debug byte�
 不変で、installerはreciprocal C3 occupancy guardだけを追加する。
 mutation-sensitive testはunrelated dependency mismatchに依存せず
 A/B-after-C3とC3-after-A/Bをexerciseする。
+
+## Original-source universal composition
+original-source 入口は既存 native theorem-equality lower の完全な source context・type application・BindingEnv を用いる。通常のローカル theorem/lemma の明示的 builtin-Set universal header を、複数名・入れ子の binder とともに保持する。primitive grammar と typing は既存 lower が所有する。
+既存七テーブルで実際の root/body/binder/type/request の対応を保持する。formula と type-site の context は incoming、binder の body context は実際の native expression context とする。複数名は実在する segment/type/head/context だけを共有し、declaration/application は個別に結ぶ。operator/segment descriptor の意味を保ち、subtree 全体の spelling は original node table が所有する。
+raw producer/profile の検証は分離する。旧 diagnostic environment の捏造、detached/raw installation、statement ownership、universal truth、proof acceptance、function-Binder certification は認めない。

@@ -3240,3 +3240,7 @@ original equality lowerは唯一のreserved identifierを要素とするbare unn
 
 ## Original-source builtin-set choice lower acquisition
 original equality lowerと独立reserved-binding readerはbare unnamed `the set` witness一つを認証し、実reserved-variable occurrence四つをchoice primary/bindingを作らず保持する。実ChoiceTermとwritten target expression/headだけをSourceSet用にretagし、全original graph・source/scope census・syntax-only baseを保つ。Choice result inputはReserve-use typingやcanonical normalized provenanceから独立に、実written target site/rangeから導く。完全inferenceの前に実SymbolEnv databaseから既存builtin-set existential gateを評価し、正確なBuiltinSet/Builtin evidenceとregistration/fact/diagnosticなしの単一satisfied結果を要求する。SourceSet ChoiceNonempty/ResultTypeはrequest intentを保持し、Core stable identity・local semantic fact・Core obligation・native pair/final admission・proof/Driver acceptanceは別段階に残す。
+
+## Original-source universal composition intake
+native universal intake は、保持した original node graph を実 theorem-equality の source context/type/BindingEnv および primary/atomic result と照合する。既存 composite/composition row を導出し、構築と fresh replay の双方で owner/header/proof 構造全体・共有 written type・実 lexical scope・declaration/reference clock を認証する。primitive typing と旧 raw-family intake を保持し、proof goal の正規化や universal truth の確立は行わない。
+canonical 入口は実 TypeTable 全体をそのまま保持する。final source replay は owner/status と構造的な source-type 対応を検証する。opaque な Known normalized ID の意味は既存 lower ABI の所有であり、その normalized universe と SymbolEnv は Resolved input に保持されない。source transport は normalized-type certificate を追加しない。

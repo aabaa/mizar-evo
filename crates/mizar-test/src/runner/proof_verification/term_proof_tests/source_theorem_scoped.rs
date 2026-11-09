@@ -2478,3 +2478,974 @@ fn source_theorem_scoped_sequent_preserves_refusals() {
     );
     assert_eq!((core, vcs, output, policy, profile), before);
 }
+
+#[test]
+fn task257b5_native_universal_composition_preserves_original_owners_and_replay()
+-> Result<(), String> {
+    use mizar_checker::{
+        binding_env::{BinderIdentity, BindingContextLayer, BindingContextOwner},
+        cluster_trace::ClusterFactTable,
+        overload_resolution::*,
+        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
+        source_composite_formula::*,
+        source_formula_composition::*,
+        source_type::{SourceTypeHead, SourceTypeProducer},
+        type_checker::{FormulaStatus, TermStatus, TypeHeadRef},
+        typed_ast::{NodeRecoveryState, TypeEntryActual, TypeStatus, TypedSiteRef},
+    };
+    use mizar_frontend::{
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::NamespacePath,
+        names::{
+            LocalTermBinding, SourceVariableBindingKind, SourceVariableScopeInput,
+            SourceVariableScopeResolver,
+        },
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+        symbols::{SignatureProjectionExtractor, source_proof_scope_maps},
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId, SourceAnchor,
+        SourceInput, SourceOriginInput,
+    };
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceQuantifierKind};
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let fixture = include_str!(
+        "../../../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    // Counts are literal source inventories: owners, universals, header binders,
+    // all declarations, references, equality occurrences and written type nodes.
+    let cases = [
+        (fixture.to_owned(), (2, 2, 2, 4, 8, 4, 4)),
+        (fixture.replace("Lem1", "Seed")
+            .replace("for X being set holds X = X", "for Header being set holds Header = Header")
+            .replace("let X be set;", "let Local be set;")
+            .replace("thus X = X", "thus Local = Local"), (2, 2, 2, 4, 8, 4, 4)),
+        (format!("\n:: original layout\n{}", fixture.replace("being set", "being\tset")
+            .replace("proof", "proof\n:: proof layout\n")), (2, 2, 2, 4, 8, 4, 4)),
+        ("theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(), (1, 1, 3, 6, 4, 2, 2)),
+        ("theorem Groups: for A being set, Spare, B being set holds A = B proof let L be set, Unused, R be set; thus L = R; end;".into(), (1, 1, 3, 6, 4, 2, 4)),
+        ("theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(), (1, 3, 3, 6, 4, 2, 6)),
+        ("theorem Shadow: for A being set holds for A being set holds A = A proof let A be set; thus A = A; end;".into(), (1, 2, 2, 3, 4, 2, 3)),
+    ];
+    let temporary = std::process::Command::new("mktemp")
+        .arg("-d")
+        .output()
+        .unwrap();
+    assert!(temporary.status.success());
+    let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    fs::create_dir(root.join("src")).unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let mut prepared = Vec::new();
+    // Establish EVERY admitted source's unchanged lower before the new entrance.
+    for (case, (text, counts)) in cases.iter().enumerate() {
+        let path = root.join(format!("src/universal_{case}.miz"));
+        fs::write(&path, text).unwrap();
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            super::super::super::ParseOnlyImportProvider,
+            MizarParserSeam,
+        )
+        .run(
+            SourceUnitRequest {
+                snapshot: snapshot_id(795),
+                input: SourceInput {
+                    package_id: PackageId::new("native-universal-composition"),
+                    module_path: ModulePath::new(format!("owners_{case}")),
+                    normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &ids,
+        )
+        .unwrap();
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "case {case}: {:?}",
+            frontend.diagnostics
+        );
+        assert_eq!(frontend.source.source_text.as_ref(), text);
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = ModuleId::new(
+            frontend.source.package_id.clone(),
+            frontend.source.module_path.clone(),
+        );
+        let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(ast, &module, symbols),
+        )
+        .unwrap();
+        let baseline =
+            SourceTypeProducer::build_source_theorem_equalities(&source, symbols, &scope)?;
+        let (env, inference, typed, metadata) = &baseline;
+        let context = typed.source_context().unwrap();
+        let types = typed.source_type().unwrap();
+        let primary = typed.source_term().unwrap();
+        let atomic = typed.source_atomic_formula().unwrap();
+        let (owners, universals, binders, declarations, references, atoms, written_types) = *counts;
+        assert_eq!(context.items().len(), owners);
+        assert_eq!(context.declarations().len(), declarations);
+        assert_eq!(scope.bindings().len(), declarations);
+        assert_eq!(env.bindings().len(), declarations);
+        assert_eq!(context.binding_env(), env);
+        assert_eq!(env.contexts().len(), 1 + universals + owners);
+        assert_eq!(primary.terms().len(), references);
+        assert_eq!(primary.references().len(), references);
+        assert_eq!(scope.references().len(), references);
+        assert_eq!(atomic.formulas().len(), atoms);
+        assert_eq!(types.applications().len(), declarations);
+        assert_eq!(types.expressions().len(), written_types);
+        assert_eq!(metadata.len(), references + atoms);
+        assert!(typed.source_node_entries().is_none());
+        assert!(typed.source_composite_formula().is_none());
+        assert!(typed.source_formula_composition().is_none());
+        assert!(env.diagnostics().is_empty());
+        assert!(inference.diagnostics().is_empty());
+        assert!(inference.candidate_sets().is_empty());
+        assert!(inference.facts().is_empty());
+        assert!(typed.facts().is_empty() && typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(
+            inference
+                .terms()
+                .iter()
+                .all(|(_, term)| term.status == TermStatus::Inferred && term.deferred.is_empty())
+        );
+        assert!(
+            inference
+                .formulas()
+                .iter()
+                .all(|(_, formula)| formula.status == FormulaStatus::Checked
+                    && formula.deferred.is_empty())
+        );
+        for (_, entry) in inference.type_entries().iter() {
+            assert_eq!(entry.status, TypeStatus::Known);
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                panic!("non-Known lower type")
+            };
+            let actual = inference.normalized_types().get(actual).unwrap();
+            assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+            assert!(
+                actual.args.is_empty()
+                    && actual.attributes.positive().is_empty()
+                    && actual.attributes.negative().is_empty()
+            );
+        }
+        let maps = source_proof_scope_maps(&source, symbols, &scope)?;
+        let typed_site = |id| {
+            let resolved = source.resolved_node_for(id).unwrap();
+            let matches = typed
+                .nodes()
+                .iter()
+                .filter(|(_, row)| row.resolved_node == Some(resolved))
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1);
+            TypedSiteRef::Node(matches[0].0)
+        };
+        let spelling = |id| {
+            let range = ast.node_view(id).unwrap().range();
+            let mut tokens = ast
+                .node_views()
+                .filter(|view| {
+                    view.as_token().is_some()
+                        && range.start <= view.range().start
+                        && view.range().end <= range.end
+                })
+                .collect::<Vec<_>>();
+            tokens.sort_by_key(|view| view.range().start);
+            tokens
+                .iter()
+                .map(|view| view.as_token().unwrap().text.as_ref())
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let body_context = |id| {
+            let local = maps.0.get(&id).unwrap();
+            let matches = env
+                .contexts()
+                .iter()
+                .filter(|(_, row)| row.lexical_scope.as_ref() == Some(local))
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1);
+            matches[0].0
+        };
+        let mut quantifiers = ast
+            .node_views()
+            .filter(|view| view.kind() == &K::QuantifiedFormula(SurfaceQuantifierKind::Universal))
+            .collect::<Vec<_>>();
+        quantifiers.sort_by_key(|view| view.range().start);
+        assert_eq!(quantifiers.len(), universals);
+        let mut expected = SourceCompositeFormulaHandoffInput {
+            source_id: source.source_id(),
+            module_id: module.clone(),
+            formulas: vec![],
+            wrappers: vec![],
+            roots: vec![],
+            binders: vec![],
+            type_sites: vec![],
+            edges: vec![],
+            requests: vec![],
+        };
+        let mut composition = SourceFormulaCompositionHandoffInput {
+            source_id: source.source_id(),
+            module_id: module.clone(),
+            atomic_edges: vec![],
+            bound_uses: vec![],
+        };
+        let mut binder_for = BTreeMap::new();
+        let mut terminal_atoms = Vec::new();
+        for (index, quantifier) in quantifiers.iter().enumerate() {
+            let formula = SourceCompositeFormulaId::new(index);
+            let body = body_context(quantifier.id());
+            let incoming = env.contexts().get(body).unwrap().parent.unwrap();
+            assert_eq!(
+                env.contexts().get(body).unwrap().layer,
+                BindingContextLayer::Expression
+            );
+            assert_eq!(
+                env.contexts().get(body).unwrap().owner,
+                BindingContextOwner::SourceFormula {
+                    source_range: quantifier.range()
+                }
+            );
+            let local = context.context_links().get(body).unwrap().local_context;
+            assert_eq!(
+                typed
+                    .nodes()
+                    .node(typed_site(quantifier.id()).node())
+                    .unwrap()
+                    .links
+                    .context,
+                Some(local)
+            );
+            let marker = quantifier
+                .children()
+                .iter()
+                .filter_map(|id| {
+                    let child = ast.node_view(*id).unwrap();
+                    child
+                        .as_token()
+                        .filter(|token| matches!(token.text.as_ref(), "for" | "holds"))
+                        .map(|token| token.text.to_string())
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            expected.formulas.push(SourceCompositeFormulaInput {
+                site: typed_site(quantifier.id()),
+                source_range: quantifier.range(),
+                source_ordinal: index,
+                context: incoming,
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: marker,
+                kind: SourceCompositeFormulaKind::Universal,
+            });
+            let parent = ast
+                .node_views()
+                .find(|view| view.children().contains(&quantifier.id()))
+                .unwrap();
+            if let Some(parent_index) = quantifiers.iter().position(|view| view.id() == parent.id())
+            {
+                expected.edges.push(SourceFormulaEdgeInput {
+                    parent: SourceCompositeFormulaId::new(parent_index),
+                    ordinal: 0,
+                    role: SourceFormulaEdgeRole::UniversalBody,
+                    child: formula,
+                });
+            } else {
+                assert_eq!(parent.kind(), &K::FormulaExpression);
+                let owner = ast
+                    .node_views()
+                    .find(|view| view.children().contains(&parent.id()))
+                    .unwrap();
+                assert!(matches!(owner.kind(), K::TheoremItem | K::LemmaItem));
+                let item = context
+                    .items()
+                    .iter()
+                    .find(|(_, item)| item.site == typed_site(owner.id()))
+                    .unwrap()
+                    .1;
+                assert_eq!(item.source_range, owner.range());
+                assert!(item.parent.is_none());
+                expected.roots.push(SourceFormulaRootInput {
+                    formula,
+                    ordinal: expected.roots.len(),
+                    ownership: SourceFormulaRootOwnership::UnassignedStatement,
+                });
+            }
+            expected.requests.push(SourceFormulaRequestInput {
+                formula,
+                ordinal: 0,
+                kind: SourceFormulaRequestKind::QuantifierSemantics,
+                binder: None,
+                type_site: None,
+            });
+            let mut binder_ordinal = 0;
+            for segment_id in quantifier.children() {
+                let segment = ast.node_view(*segment_id).unwrap();
+                if segment.kind() != &K::QuantifierVariableSegment {
+                    continue;
+                }
+                let written = ast.node_view(*segment.children().last().unwrap()).unwrap();
+                assert_eq!(written.kind(), &K::TypeExpression);
+                let head = ast.node_view(written.children()[0]).unwrap();
+                assert_eq!(head.kind(), &K::TypeHead);
+                assert_eq!(spelling(written.id()), "set");
+                let segment_marker = segment.children()[..segment.children().len() - 1]
+                    .iter()
+                    .map(|id| spelling(*id))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                for name_id in &segment.children()[..segment.children().len() - 2] {
+                    let name = ast.node_view(*name_id).unwrap();
+                    if name.as_token().is_none_or(|token| {
+                        token.kind != mizar_syntax::SurfaceTokenKind::Identifier
+                    }) {
+                        continue;
+                    }
+                    let original = scope
+                        .bindings()
+                        .iter()
+                        .find(|binding| binding.node() == name.id())
+                        .unwrap();
+                    assert_eq!(original.kind(), SourceVariableBindingKind::Quantifier);
+                    let matching = env
+                        .bindings()
+                        .iter()
+                        .filter(|(_, entry)| {
+                            entry.identity
+                                == BinderIdentity::ResolverLocal {
+                                    scope: original.scope().clone(),
+                                    ordinal: original.ordinal(),
+                                    declaration_range: original.range(),
+                                }
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(matching.len(), 1);
+                    let (binding, entry) = matching[0];
+                    assert_eq!(entry.owner_context, body);
+                    assert_eq!(entry.visible_after_ordinal, original.ordinal());
+                    let declaration = context
+                        .declarations()
+                        .iter()
+                        .find(|(_, row)| row.binding == binding)
+                        .unwrap()
+                        .1;
+                    assert_eq!(declaration.site, typed_site(name.id()));
+                    assert_eq!(declaration.declaration_range, name.range());
+                    assert_eq!(declaration.written_type_range, written.range());
+                    let application = types
+                        .applications()
+                        .iter()
+                        .find(|(_, row)| row.binding() == binding)
+                        .unwrap()
+                        .1;
+                    let written_type = types.expressions().get(application.root()).unwrap();
+                    assert_eq!(written_type.site(), &typed_site(written.id()));
+                    assert_eq!(written_type.head_site(), &typed_site(head.id()));
+                    assert_eq!(written_type.source_range(), written.range());
+                    assert_eq!(written_type.head_range(), head.range());
+                    assert_eq!(written_type.head(), &SourceTypeHead::BuiltinSet);
+                    let binder = SourceQuantifierBinderId::new(expected.binders.len());
+                    let type_site = SourceBinderTypeSiteId::new(expected.type_sites.len());
+                    binder_for.insert(original.id(), binder);
+                    expected.binders.push(SourceQuantifierBinderInput {
+                        formula,
+                        ordinal: binder_ordinal,
+                        segment_site: typed_site(segment.id()),
+                        segment_range: segment.range(),
+                        segment_spelling: segment_marker.clone(),
+                        identifier_site: typed_site(name.id()),
+                        identifier_range: name.range(),
+                        identifier_spelling: original.spelling().into(),
+                        local: LocalTermBinding::new(
+                            original.spelling(),
+                            original.scope().clone(),
+                            original.range(),
+                            original.ordinal(),
+                        ),
+                        binding,
+                        body_context: body,
+                        type_site,
+                        recovery: SourceCompositeFormulaRecovery::Normal,
+                    });
+                    expected.type_sites.push(SourceBinderTypeSiteInput {
+                        binder,
+                        site: typed_site(written.id()),
+                        source_range: written.range(),
+                        spelling: "set".into(),
+                        head_site: typed_site(head.id()),
+                        head_range: head.range(),
+                        head_spelling: "set".into(),
+                        context: incoming,
+                        recovery: SourceCompositeFormulaRecovery::Normal,
+                        head: SourceBinderTypeHead::BuiltinSet,
+                    });
+                    expected.requests.push(SourceFormulaRequestInput {
+                        formula,
+                        ordinal: 1 + binder_ordinal,
+                        kind: SourceFormulaRequestKind::BinderType,
+                        binder: Some(binder),
+                        type_site: Some(type_site),
+                    });
+                    binder_ordinal += 1;
+                }
+            }
+            let child = ast
+                .node_view(*quantifier.children().last().unwrap())
+                .unwrap();
+            if child.kind() == &K::BuiltinPredicateApplication {
+                let atomic_id = atomic
+                    .formulas()
+                    .iter()
+                    .find(|(_, row)| row.site() == &typed_site(child.id()))
+                    .unwrap()
+                    .0;
+                let edge_id = SourceFormulaAtomicEdgeId::new(composition.atomic_edges.len());
+                composition.atomic_edges.push(SourceFormulaAtomicEdgeInput {
+                    formula,
+                    ordinal: 0,
+                    role: SourceFormulaAtomicEdgeRole::UniversalBody,
+                    child: atomic_id,
+                });
+                terminal_atoms.push((edge_id, child.id()));
+            } else {
+                assert_eq!(
+                    child.kind(),
+                    &K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                );
+            }
+        }
+        let mut use_ordinals = BTreeMap::new();
+        for (edge, atom_id) in terminal_atoms {
+            let atom = ast.node_view(atom_id).unwrap();
+            for operand in [atom.children()[0], atom.children()[2]] {
+                let expression = ast.node_view(operand).unwrap();
+                assert_eq!(expression.kind(), &K::TermExpression);
+                let term_id = expression.children()[0];
+                let original = scope
+                    .references()
+                    .iter()
+                    .find(|reference| reference.node() == term_id)
+                    .unwrap();
+                let binder = *binder_for.get(&original.binding()).unwrap();
+                let (term_id, term) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, row)| row.site() == &typed_site(term_id))
+                    .unwrap();
+                let (reference_id, reference) = primary
+                    .references()
+                    .iter()
+                    .find(|(_, row)| row.term() == term_id)
+                    .unwrap();
+                assert_eq!(
+                    reference.binding(),
+                    expected.binders[binder.index()].binding
+                );
+                assert_eq!(reference.lexical_scope(), Some(original.scope()));
+                assert_eq!(reference.use_ordinal(), original.ordinal());
+                assert_eq!(term.source_range(), original.range());
+                let ordinal = use_ordinals.entry(binder).or_insert(0);
+                composition.bound_uses.push(SourceQuantifierBoundUseInput {
+                    binder,
+                    ordinal: *ordinal,
+                    body_edge: edge,
+                    term: term_id,
+                    reference: reference_id,
+                });
+                *ordinal += 1;
+            }
+        }
+        assert_eq!(expected.binders.len(), binders);
+        assert_eq!(expected.roots.len(), owners);
+        assert_eq!(expected.edges.len(), universals - owners);
+        assert_eq!(expected.requests.len(), universals + binders);
+        assert_eq!(composition.atomic_edges.len(), owners);
+        assert_eq!(composition.bound_uses.len(), 2 * owners);
+        let header_terms = composition
+            .bound_uses
+            .iter()
+            .map(|row| row.term)
+            .collect::<BTreeSet<_>>();
+        for (_, reference) in primary.references().iter() {
+            let term = primary.terms().get(reference.term()).unwrap();
+            let original = scope
+                .references()
+                .iter()
+                .find(|row| {
+                    source.resolved_node_for(row.node())
+                        == typed
+                            .nodes()
+                            .node(term.site().node())
+                            .unwrap()
+                            .resolved_node
+                })
+                .unwrap();
+            assert_eq!(reference.use_ordinal(), original.ordinal());
+            assert_eq!(reference.lexical_scope(), Some(original.scope()));
+            let actual = &scope.bindings()[original.binding().index()];
+            assert_eq!(
+                header_terms.contains(&reference.term()),
+                actual.kind() == SourceVariableBindingKind::Quantifier
+            );
+            let binding = env.bindings().get(reference.binding()).unwrap();
+            assert_eq!(
+                binding.identity,
+                BinderIdentity::ResolverLocal {
+                    scope: actual.scope().clone(),
+                    ordinal: actual.ordinal(),
+                    declaration_range: actual.range()
+                }
+            );
+        }
+        let mut with_rows = typed.clone();
+        with_rows
+            .install_source_nodes(&source)
+            .map_err(|error| error.to_string())?;
+        let rows = with_rows
+            .source_node_entries()
+            .unwrap()
+            .cloned()
+            .collect::<Vec<_>>();
+        // Generic original rows own the reachable graph, not disconnected
+        // speculative structural storage. Root token aliases are one node.
+        let mut reachable = BTreeSet::new();
+        let mut pending = vec![source.arena().root()];
+        while let Some(site) = pending.pop() {
+            if reachable.insert(site) {
+                pending.extend_from_slice(source.arena().node(site).unwrap().children());
+            }
+        }
+        assert_eq!(
+            rows.iter().map(|row| row.site()).collect::<BTreeSet<_>>(),
+            reachable
+        );
+        assert_eq!(rows.len(), reachable.len());
+        assert!(
+            source
+                .arena()
+                .iter()
+                .filter(|(_, node)| matches!(node.kind(), K::Token(_)))
+                .all(|(site, _)| reachable.contains(&site))
+        );
+        for row in &rows {
+            let actual = source.arena().node(row.site()).unwrap();
+            assert_eq!(row.kind(), actual.kind());
+            assert_eq!(&SourceAnchor::Range(row.range()), actual.origin().anchor());
+            assert_eq!(row.recovery(), NodeRecoveryState::Normal);
+            let surface = ast
+                .node_views()
+                .find(|view| source.resolved_node_for(view.id()) == Some(row.site()))
+                .unwrap();
+            assert_eq!(row.spelling(), spelling(surface.id()));
+            if let Some(parent) = row.parent() {
+                let parent = source.arena().node(parent).unwrap();
+                assert_eq!(parent.children()[row.child_ordinal()], row.site());
+            } else {
+                assert_eq!(row.site(), source.arena().root());
+            }
+        }
+        prepared.push((
+            source,
+            symbols.clone(),
+            scope,
+            baseline,
+            expected,
+            composition,
+            rows,
+        ));
+    }
+
+    for (case, (source, symbols, scope, baseline, expected, expected_composition, rows)) in
+        prepared.iter().enumerate()
+    {
+        let (env, inference, before, metadata) = baseline;
+        let installed = before.clone().with_source_formula_composition_from_original(source, symbols, scope)
+            .expect("native universal composition is unsupported only after every genuine lower prerequisite");
+        let composite = installed.source_composite_formula().unwrap();
+        let composition = installed.source_formula_composition().unwrap();
+        assert_eq!(composite.binding_env(), env);
+        assert_eq!(
+            composite.binding_env(),
+            installed.source_context().unwrap().binding_env()
+        );
+        assert_eq!(composite.source_id(), source.source_id());
+        assert_eq!(composite.module_id(), source.module());
+        assert_eq!(composition.source_id(), source.source_id());
+        assert_eq!(composition.module_id(), source.module());
+        assert_eq!(
+            installed
+                .source_node_entries()
+                .unwrap()
+                .cloned()
+                .collect::<Vec<_>>(),
+            *rows
+        );
+        assert_eq!(installed.nodes(), before.nodes());
+        assert_eq!(installed.contexts(), before.contexts());
+        assert_eq!(installed.types(), before.types());
+        assert_eq!(installed.types(), inference.type_entries());
+        assert_eq!(installed.facts(), before.facts());
+        assert_eq!(installed.coercions(), before.coercions());
+        assert_eq!(
+            installed.initial_obligations(),
+            before.initial_obligations()
+        );
+        assert_eq!(installed.diagnostics(), before.diagnostics());
+        assert_eq!(installed.source_context(), before.source_context());
+        assert_eq!(installed.source_type(), before.source_type());
+        assert_eq!(installed.source_term(), before.source_term());
+        assert_eq!(
+            installed.source_atomic_formula(),
+            before.source_atomic_formula()
+        );
+        assert!(installed.source_statement().is_none());
+        assert!(installed.source_statement_references().is_none());
+        assert!(installed.source_statement_witnesses().is_none());
+        assert!(installed.source_proof_local_binding().is_none());
+        assert_eq!(composite.formulas().len(), expected.formulas.len());
+        for ((_, row), expected) in composite.formulas().iter().zip(&expected.formulas) {
+            assert_eq!(
+                (
+                    row.site(),
+                    row.source_range(),
+                    row.source_ordinal(),
+                    row.context(),
+                    row.recovery(),
+                    row.spelling(),
+                    row.kind()
+                ),
+                (
+                    &expected.site,
+                    expected.source_range,
+                    expected.source_ordinal,
+                    expected.context,
+                    expected.recovery,
+                    expected.spelling.as_str(),
+                    expected.kind
+                )
+            );
+        }
+        assert!(composite.wrappers().is_empty());
+        assert_eq!(composite.roots().len(), expected.roots.len());
+        for ((_, row), expected) in composite.roots().iter().zip(&expected.roots) {
+            assert_eq!(
+                (row.formula(), row.ordinal(), row.ownership()),
+                (expected.formula, expected.ordinal, expected.ownership)
+            );
+        }
+        assert_eq!(composite.binders().len(), expected.binders.len());
+        for ((_, row), expected) in composite.binders().iter().zip(&expected.binders) {
+            assert_eq!(
+                (
+                    row.formula(),
+                    row.ordinal(),
+                    row.segment_site(),
+                    row.segment_range(),
+                    row.segment_spelling()
+                ),
+                (
+                    expected.formula,
+                    expected.ordinal,
+                    &expected.segment_site,
+                    expected.segment_range,
+                    expected.segment_spelling.as_str()
+                )
+            );
+            assert_eq!(
+                (
+                    row.identifier_site(),
+                    row.identifier_range(),
+                    row.identifier_spelling(),
+                    row.local(),
+                    row.binding(),
+                    row.body_context(),
+                    row.type_site(),
+                    row.recovery()
+                ),
+                (
+                    &expected.identifier_site,
+                    expected.identifier_range,
+                    expected.identifier_spelling.as_str(),
+                    &expected.local,
+                    expected.binding,
+                    expected.body_context,
+                    expected.type_site,
+                    expected.recovery
+                )
+            );
+        }
+        assert_eq!(composite.type_sites().len(), expected.type_sites.len());
+        for ((_, row), expected) in composite.type_sites().iter().zip(&expected.type_sites) {
+            assert_eq!(
+                (
+                    row.binder(),
+                    row.site(),
+                    row.source_range(),
+                    row.spelling(),
+                    row.head_site(),
+                    row.head_range(),
+                    row.head_spelling(),
+                    row.context(),
+                    row.recovery(),
+                    row.head()
+                ),
+                (
+                    expected.binder,
+                    &expected.site,
+                    expected.source_range,
+                    expected.spelling.as_str(),
+                    &expected.head_site,
+                    expected.head_range,
+                    expected.head_spelling.as_str(),
+                    expected.context,
+                    expected.recovery,
+                    expected.head
+                )
+            );
+        }
+        assert_eq!(composite.edges().len(), expected.edges.len());
+        for ((_, row), expected) in composite.edges().iter().zip(&expected.edges) {
+            assert_eq!(
+                (row.parent(), row.ordinal(), row.role(), row.child()),
+                (
+                    expected.parent,
+                    expected.ordinal,
+                    expected.role,
+                    expected.child
+                )
+            );
+        }
+        assert_eq!(composite.requests().len(), expected.requests.len());
+        for ((_, row), expected) in composite.requests().iter().zip(&expected.requests) {
+            assert_eq!(
+                (
+                    row.formula(),
+                    row.ordinal(),
+                    row.kind(),
+                    row.binder(),
+                    row.type_site()
+                ),
+                (
+                    expected.formula,
+                    expected.ordinal,
+                    expected.kind,
+                    expected.binder,
+                    expected.type_site
+                )
+            );
+        }
+        assert_eq!(
+            composition.atomic_edges().len(),
+            expected_composition.atomic_edges.len()
+        );
+        for ((_, row), expected) in composition
+            .atomic_edges()
+            .iter()
+            .zip(&expected_composition.atomic_edges)
+        {
+            assert_eq!(
+                (row.formula(), row.ordinal(), row.role(), row.child()),
+                (
+                    expected.formula,
+                    expected.ordinal,
+                    expected.role,
+                    expected.child
+                )
+            );
+        }
+        assert_eq!(
+            composition.bound_uses().len(),
+            expected_composition.bound_uses.len()
+        );
+        for ((_, row), expected) in composition
+            .bound_uses()
+            .iter()
+            .zip(&expected_composition.bound_uses)
+        {
+            assert_eq!(
+                (
+                    row.binder(),
+                    row.ordinal(),
+                    row.body_edge(),
+                    row.term(),
+                    row.reference()
+                ),
+                (
+                    expected.binder,
+                    expected.ordinal,
+                    expected.body_edge,
+                    expected.term,
+                    expected.reference
+                )
+            );
+        }
+        assert_eq!(
+            composition.primary_term_fingerprint(),
+            installed.source_term().unwrap().debug_text()
+        );
+        assert_eq!(
+            composition.atomic_formula_fingerprint(),
+            installed.source_atomic_formula().unwrap().debug_text()
+        );
+        assert_eq!(
+            composition.composite_formula_fingerprint(),
+            composite.debug_text()
+        );
+        assert_eq!(installed.clone(), installed);
+        assert!(
+            installed
+                .clone()
+                .with_source_formula_composition_from_original(source, symbols, scope)
+                .is_err()
+        );
+        assert!(
+            installed
+                .clone()
+                .with_source_formula_composition(composite.clone(), composition.clone())
+                .is_err()
+        );
+        assert!(
+            before
+                .clone()
+                .with_source_composite_formula(composite.clone())
+                .is_err()
+        );
+        assert!(
+            before
+                .clone()
+                .with_source_formula_composition(composite.clone(), composition.clone())
+                .is_err()
+        );
+        let mut preinstalled_rows = before.clone();
+        preinstalled_rows.install_source_nodes(source).unwrap();
+        assert!(
+            preinstalled_rows
+                .with_source_formula_composition_from_original(source, symbols, scope)
+                .is_err()
+        );
+        let foreign = &prepared[(case + 1) % prepared.len()];
+        assert!(
+            before
+                .clone()
+                .with_source_formula_composition_from_original(&foreign.0, &foreign.1, &foreign.2)
+                .is_err()
+        );
+        assert!(
+            before
+                .clone()
+                .with_source_formula_composition_from_original(source, &foreign.1, scope)
+                .is_err()
+        );
+        assert!(
+            before
+                .clone()
+                .with_source_formula_composition_from_original(source, symbols, &foreign.2)
+                .is_err()
+        );
+        let collection = OverloadCollectionOutput::collect([], []);
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(&expansion, []);
+        let specificity = SpecificityGraphOutput::build(&viability, []);
+        let selection = OverloadSelectionOutput::resolve(&specificity, []);
+        let facts = ClusterFactTable::new();
+        let assemble = |typed, expressions| {
+            ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: typed,
+                cluster_facts: &facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &specificity,
+                overload_selection: &selection,
+                expressions,
+                node_hints: vec![],
+                statement_semantics: None,
+                statement_proofs: None,
+            })
+        };
+        let resolved = assemble(&installed, metadata.clone()).map_err(|error| error.to_string())?;
+        let mut reversed = metadata.clone();
+        reversed.reverse();
+        assert_eq!(assemble(&installed, reversed).unwrap(), resolved);
+        assert_eq!(resolved.clone(), resolved);
+        assert_eq!(resolved.source_context(), installed.source_context());
+        assert_eq!(resolved.source_type(), installed.source_type());
+        assert_eq!(resolved.source_term(), installed.source_term());
+        assert_eq!(
+            resolved.source_atomic_formula(),
+            installed.source_atomic_formula()
+        );
+        assert_eq!(resolved.source_composite_formula(), Some(composite));
+        assert_eq!(resolved.source_formula_composition(), Some(composition));
+        assert!(resolved.source_statement().is_none());
+        assert!(resolved.source_statement_references().is_none());
+        assert!(resolved.source_statement_witnesses().is_none());
+        assert!(resolved.diagnostics().is_empty());
+        assert_eq!(resolved.nodes().len(), installed.nodes().len());
+        assert_eq!(resolved.expr_metadata().len(), metadata.len());
+        for input in metadata {
+            let row = resolved.expr_metadata().get_by_expr(&input.expr).unwrap();
+            assert_eq!(row.typed_site, input.typed_site);
+            assert_eq!(row.local_context, input.local_context);
+            assert_eq!(row.cluster_facts, input.cluster_facts);
+            assert_eq!(
+                resolved.expr_metadata().get_by_site(&input.typed_site),
+                Some(row)
+            );
+            let node = installed.nodes().node(input.typed_site.node()).unwrap();
+            assert_eq!(node.anchor, SourceAnchor::Range(row.source_range));
+            let expected_type = installed
+                .types()
+                .iter()
+                .find(|(_, entry)| entry.owner == input.typed_site)
+                .map(|(_, entry)| {
+                    let TypeEntryActual::Known(actual) = entry.actual else {
+                        panic!("non-Known final type")
+                    };
+                    actual
+                });
+            assert_eq!(row.final_type, expected_type);
+            assert!(
+                row.visible_facts.is_empty()
+                    && row.overload.is_none()
+                    && row.inserted_views.is_empty()
+                    && row.diagnostics.is_empty()
+            );
+        }
+        let mut duplicate = metadata.clone();
+        duplicate.push(duplicate[0].clone());
+        assert!(assemble(&installed, duplicate).is_err());
+        let mut wrong_site = metadata.clone();
+        wrong_site[0].typed_site =
+            TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(usize::MAX));
+        assert!(assemble(&installed, wrong_site).is_err());
+        let mut wrong_context = metadata.clone();
+        wrong_context[0].local_context = Some(mizar_checker::typed_ast::LocalTypeContextId::new(
+            usize::MAX,
+        ));
+        assert!(assemble(&installed, wrong_context).is_err());
+        assert!(before.source_node_entries().is_none());
+        assert!(
+            before.source_composite_formula().is_none()
+                && before.source_formula_composition().is_none()
+        );
+    }
+    fs::remove_dir_all(root).unwrap();
+    Ok(())
+}

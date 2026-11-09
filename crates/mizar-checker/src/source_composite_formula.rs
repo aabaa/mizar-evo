@@ -209,6 +209,38 @@ pub struct SourceCompositeFormulaHandoff {
 }
 
 impl SourceCompositeFormulaHandoff {
+    pub(crate) fn from_original_input(
+        input: SourceCompositeFormulaHandoffInput,
+        bindings: &BindingEnv,
+    ) -> Self {
+        Self {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            binding_env: bindings.clone(),
+            formulas: SourceCompositeFormulaTable {
+                rows: input.formulas.into_iter().map(Into::into).collect(),
+            },
+            wrappers: SourceFormulaWrapperTable {
+                rows: input.wrappers.into_iter().map(Into::into).collect(),
+            },
+            roots: SourceFormulaRootTable {
+                rows: input.roots.into_iter().map(Into::into).collect(),
+            },
+            binders: SourceQuantifierBinderTable {
+                rows: input.binders.into_iter().map(Into::into).collect(),
+            },
+            type_sites: SourceBinderTypeSiteTable {
+                rows: input.type_sites.into_iter().map(Into::into).collect(),
+            },
+            edges: SourceFormulaEdgeTable {
+                rows: input.edges.into_iter().map(Into::into).collect(),
+            },
+            requests: SourceFormulaRequestTable {
+                rows: input.requests.into_iter().map(Into::into).collect(),
+            },
+        }
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }
@@ -2249,6 +2281,132 @@ pub(crate) mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
+
+    #[test]
+    fn task257b5_native_upper_binding_and_body_associations_are_replayed() {
+        use crate::{
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{
+                TASK257B5_NATIVE_TEXT, task257b5_native_case, task257b5_native_replay,
+            },
+        };
+        task257b5_native_case(TASK257B5_NATIVE_TEXT, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            for mutation in 0..10 {
+                let mut typed = baseline.clone();
+                let mut composite = typed.source_composite_formula().unwrap().clone();
+                let old = typed.source_formula_composition().unwrap();
+                let mut composition = SourceFormulaCompositionHandoffInput {
+                    source_id: old.source_id(),
+                    module_id: old.module_id().clone(),
+                    atomic_edges: old
+                        .atomic_edges()
+                        .iter()
+                        .map(|(_, row)| row.into())
+                        .collect(),
+                    bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                };
+                match mutation {
+                    0 => composite.formulas.rows.swap(0, 1),
+                    1 => {
+                        composite.binders.rows.swap(0, 1);
+                        for (i, binder) in composite.binders.rows.iter_mut().enumerate() {
+                            binder.formula = SourceCompositeFormulaId::new(i);
+                            binder.type_site = SourceBinderTypeSiteId::new(i);
+                        }
+                    }
+                    2 => {
+                        composite.type_sites.rows.swap(0, 1);
+                        for (i, site) in composite.type_sites.rows.iter_mut().enumerate() {
+                            site.binder = SourceQuantifierBinderId::new(i);
+                        }
+                    }
+                    3 => {
+                        let other = composite.binders.rows[1].body_context;
+                        let binder = &mut composite.binders.rows[0];
+                        binder.body_context = other;
+                        composite
+                            .binding_env
+                            .binding_mut_for_test(binder.binding)
+                            .unwrap()
+                            .owner_context = other;
+                    }
+                    4 => {
+                        let clock = composite
+                            .binding_env
+                            .bindings()
+                            .get(composite.binders.rows[1].binding)
+                            .unwrap()
+                            .visible_after_ordinal;
+                        let binder = &mut composite.binders.rows[0];
+                        binder.local = LocalTermBinding::new(
+                            binder.local.spelling(),
+                            binder.local.scope().clone(),
+                            binder.local.declaration_range(),
+                            clock,
+                        );
+                        let binding = composite
+                            .binding_env
+                            .binding_mut_for_test(binder.binding)
+                            .unwrap();
+                        binding.visible_after_ordinal = clock;
+                        if let BinderIdentity::ResolverLocal { ordinal, .. } = &mut binding.identity
+                        {
+                            *ordinal = clock;
+                        }
+                    }
+                    5 => {
+                        composite.binders.rows.pop();
+                    }
+                    6 => {
+                        composite.roots.rows.push(composite.roots.rows[0].clone());
+                    }
+                    7 => {
+                        composite.requests.rows.pop();
+                    }
+                    8 => {
+                        composition.atomic_edges.swap(0, 1);
+                        for (i, edge) in composition.atomic_edges.iter_mut().enumerate() {
+                            edge.formula = SourceCompositeFormulaId::new(i);
+                        }
+                        for use_row in &mut composition.bound_uses {
+                            use_row.body_edge =
+                                crate::source_formula_composition::SourceFormulaAtomicEdgeId::new(
+                                    1 - use_row.body_edge.index(),
+                                );
+                        }
+                    }
+                    9 => {
+                        let other = composition.bound_uses[2].clone();
+                        composition.bound_uses[0].term = other.term;
+                        composition.bound_uses[0].reference = other.reference;
+                    }
+                    _ => unreachable!(),
+                }
+                if mutation < 8 {
+                    assert_ne!(
+                        composite,
+                        *baseline.source_composite_formula().unwrap(),
+                        "upper mutation {mutation}"
+                    );
+                }
+                let fresh = SourceFormulaCompositionHandoff::from_original_input(
+                    composition,
+                    typed.source_term().unwrap(),
+                    typed.source_atomic_formula().unwrap(),
+                    &composite,
+                );
+                typed.inject_source_composite_formula_for_test(composite);
+                typed.inject_source_formula_composition_for_test(fresh);
+                assert!(
+                    task257b5_native_replay(&typed, expressions.clone()).is_err(),
+                    "upper mutation {mutation}"
+                );
+            }
+        });
+    }
 
     struct Fixture {
         source: SourceId,

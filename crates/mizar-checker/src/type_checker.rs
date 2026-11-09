@@ -36,7 +36,9 @@ use mizar_resolve::{
     },
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceTokenKind};
+use mizar_syntax::ast::{
+    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -6199,6 +6201,956 @@ pub struct TermFormulaChecker {
 }
 
 impl TermFormulaChecker {
+    // Original interpretation is shared by canonical installation and fresh final replay.
+    pub(crate) fn source_universal_composition(
+        typed: &crate::typed_ast::TypedAst,
+    ) -> Result<
+        (
+            crate::source_composite_formula::SourceCompositeFormulaHandoff,
+            crate::source_formula_composition::SourceFormulaCompositionHandoff,
+        ),
+        String,
+    > {
+        use crate::{
+            source_atomic_formula::*,
+            source_composite_formula::*,
+            source_context::{
+                SourceBindingSiteRole, SourceItemRecovery, SourceItemRole, SourceItemVisibility,
+            },
+            source_formula_composition::*,
+            source_term::{
+                SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole,
+                SourcePrimaryTermRole,
+            },
+            typed_ast::{SourceNode, TypedAst, TypedAstParts, TypingState, source_children},
+        };
+        let invalid = || "theorems.equality.invalid_original_composition".to_owned();
+        let rows = typed.source_nodes().ok_or_else(invalid)?;
+        let context = typed.source_context().ok_or_else(invalid)?;
+        let types = typed.source_type().ok_or_else(invalid)?;
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        let env = context.binding_env();
+        if typed.source_attribute().is_some()
+            || typed.source_evidence().is_some()
+            || typed.source_template().is_some()
+            || typed.source_application().is_some()
+            || typed.source_structure().is_some()
+            || typed.source_set_term().is_some()
+            || typed.source_attribute_definition().is_some()
+            || typed.source_redefinition().is_some()
+            || typed.source_predicate_definition().is_some()
+            || typed.source_functor_definition().is_some()
+            || typed.source_property_implementation().is_some()
+            || typed.source_mode_definition().is_some()
+            || typed.source_structure_definition().is_some()
+            || typed.source_nested_fraenkel_capture_identity().is_some()
+            || typed.source_condition_formula_composition().is_some()
+            || typed.source_predicate_chain_composition().is_some()
+            || typed.source_statement().is_some()
+            || typed.source_statement_references().is_some()
+            || typed.source_statement_witnesses().is_some()
+            || typed.source_proof_local_binding().is_some()
+            || typed.source_proof_local_declaration().is_some()
+            || typed.source_proof_local_let_binding().is_some()
+            || typed.source_proof_local_let_type().is_some()
+            || typed.source_proof_local_given_binding().is_some()
+            || typed.source_proof_local_given_type().is_some()
+            || typed.source_proof_local_given_use_type().is_some()
+            || typed.source_proof_local_given_use_term().is_some()
+            || typed.source_proof_local_given_condition_binding().is_some()
+            || typed.source_proof_local_given_condition_type().is_some()
+            || typed
+                .source_proof_local_given_condition_use_term()
+                .is_some()
+            || typed
+                .source_proof_local_given_descendant_binding()
+                .is_some()
+            || typed.source_proof_local_given_descendant_type().is_some()
+            || typed
+                .source_proof_local_given_descendant_use_term()
+                .is_some()
+            || !typed.facts().is_empty()
+            || !typed.coercions().is_empty()
+            || !typed.initial_obligations().is_empty()
+            || !typed.diagnostics().is_empty()
+            || !env.diagnostics().is_empty()
+            || !primary.numeric_type_requests().is_empty()
+            || !atomic.wrappers().is_empty()
+            || !atomic.predicate_segments().is_empty()
+            || !atomic.predicate_heads().is_empty()
+            || !atomic.candidates().is_empty()
+            || !atomic.type_sites().is_empty()
+            || !atomic.attributes().is_empty()
+        {
+            return Err(invalid());
+        }
+        // Reuse the native context/type invariants instead of maintaining copies.
+        TypedAst::try_new(TypedAstParts {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            resolved_root: typed.resolved_root(),
+            source_context: Some(context.clone()),
+            source_type: Some(types.clone()),
+            source_attribute: typed.source_attribute().cloned(),
+            nodes: typed.nodes().clone(),
+            contexts: typed.contexts().clone(),
+            types: typed.types().clone(),
+            facts: typed.facts().clone(),
+            coercions: typed.coercions().clone(),
+            initial_obligations: typed.initial_obligations().clone(),
+            diagnostics: typed.diagnostics().clone(),
+        })
+        .map_err(|_| invalid())?;
+        primary
+            .validate_installation(typed.source_id(), typed.module_id(), typed.nodes())
+            .map_err(|_| invalid())?;
+        atomic
+            .validate_installation(
+                typed.source_id(),
+                typed.module_id(),
+                primary,
+                None,
+                None,
+                None,
+                typed.nodes(),
+            )
+            .map_err(|_| invalid())?;
+        let by_site = rows
+            .iter()
+            .map(|row| (row.site, row))
+            .collect::<BTreeMap<_, _>>();
+        let row = |id| by_site.get(&id).copied().ok_or_else(invalid);
+        let site = |row: &SourceNode| TypedSiteRef::Node(TypedNodeId::new(row.site.index()));
+        let children = |parent: &SourceNode| source_children(rows, parent.site).collect::<Vec<_>>();
+        let resolved = |id| {
+            typed
+                .nodes()
+                .node(id)
+                .and_then(|node| node.resolved_node)
+                .ok_or_else(invalid)
+        };
+        let root = typed.resolved_root().ok_or_else(invalid)?;
+        if by_site.len() != rows.len()
+            || typed.nodes().root() != Some(TypedNodeId::new(root.index()))
+        {
+            return Err(invalid());
+        }
+        let mut reachable = BTreeSet::new();
+        let mut parents = BTreeMap::new();
+        let mut pending = vec![root];
+        while let Some(id) = pending.pop() {
+            if !reachable.insert(id) {
+                continue;
+            }
+            let current = row(id)?;
+            let node = typed
+                .nodes()
+                .node(site(current).node())
+                .ok_or_else(invalid)?;
+            for child in &node.children {
+                let child = resolved(*child)?;
+                if id != root && parents.insert(child, id).is_some() {
+                    return Err(invalid());
+                }
+                pending.push(child);
+            }
+        }
+        let mut expected = vec![(root, None, 0)];
+        let mut visited = BTreeSet::new();
+        for (index, current) in rows.iter().enumerate() {
+            if expected.pop() != Some((current.site, current.parent, current.child_ordinal))
+                || !visited.insert(current.site)
+                || current.preorder_ordinal != index
+                || current.range.source_id != typed.source_id()
+                || current.range.start > current.range.end
+                || current.recovery != NodeRecoveryState::Normal
+                || (current.kind == K::Root) != (current.site == root)
+            {
+                return Err(invalid());
+            }
+            let node = typed
+                .nodes()
+                .node(site(current).node())
+                .ok_or_else(invalid)?;
+            let kind = match current.kind {
+                K::TermReference => "source.term.variable-reference".to_owned(),
+                K::BuiltinPredicateApplication => "source.formula.atomic.equality".to_owned(),
+                _ => format!("{:?}", current.kind),
+            };
+            if node.resolved_node != Some(current.site)
+                || node.anchor != SourceAnchor::Range(current.range)
+                || node.recovery != NodeRecoveryState::Normal
+                || node.kind.as_str() != kind
+            {
+                return Err(invalid());
+            }
+            let mut end = current.range.start;
+            let mut child_sites = BTreeSet::new();
+            for (ordinal, child) in node.children.iter().enumerate() {
+                let child = row(resolved(*child)?)?;
+                if child.site.index() >= current.site.index()
+                    || !child_sites.insert(child.site)
+                    || child.range.start < current.range.start
+                    || child.range.end > current.range.end
+                    || (current.site != root && child.range.start < end)
+                {
+                    return Err(invalid());
+                }
+                end = child.range.end;
+                if current.site == root && parents.contains_key(&child.site) {
+                    if !matches!(child.kind, K::Token(_)) {
+                        return Err(invalid());
+                    }
+                    continue;
+                }
+                if child.parent != Some(current.site) || child.child_ordinal != ordinal {
+                    return Err(invalid());
+                }
+            }
+            for (ordinal, child) in node.children.iter().enumerate().rev() {
+                let child = resolved(*child)?;
+                if current.site != root || !parents.contains_key(&child) {
+                    expected.push((child, Some(current.site), ordinal));
+                }
+            }
+        }
+        if !expected.is_empty() || visited != reachable || visited.len() != typed.nodes().len() {
+            return Err(invalid());
+        }
+        let mut tokens = rows
+            .iter()
+            .filter(|row| matches!(row.kind, K::Token(_)))
+            .collect::<Vec<_>>();
+        tokens.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if tokens
+            .windows(2)
+            .any(|pair| pair[0].range.end > pair[1].range.start)
+        {
+            return Err(invalid());
+        }
+        for current in rows.iter() {
+            let spelling = tokens
+                .iter()
+                .filter(|token| {
+                    token.range.start >= current.range.start && token.range.end <= current.range.end
+                })
+                .map(|row| match &row.kind {
+                    K::Token(token) => token.text.as_ref(),
+                    _ => unreachable!(),
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if current.spelling != spelling {
+                return Err(invalid());
+            }
+            let parts = children(current)
+                .iter()
+                .map(|row| match &row.kind {
+                    K::Token(token)
+                        if token.kind == SurfaceTokenKind::Identifier
+                            && mizar_lexer::is_identifier(&token.text) =>
+                    {
+                        "identifier".to_owned()
+                    }
+                    K::Token(token) => token.text.to_string(),
+                    kind => format!("{kind:?}"),
+                })
+                .collect::<Vec<_>>();
+            let parts = parts.iter().map(String::as_str).collect::<Vec<_>>();
+            let separated = |parts: &[&str], name| {
+                !parts.is_empty()
+                    && parts.len() % 2 == 1
+                    && parts
+                        .iter()
+                        .enumerate()
+                        .all(|(i, part)| *part == if i % 2 == 0 { name } else { "," })
+            };
+            let valid = match (&current.kind, parts.as_slice()) {
+                (K::Token(token), []) => {
+                    token.text.len() == current.range.end - current.range.start
+                        && current.range.start < current.range.end
+                        && match token.kind {
+                            SurfaceTokenKind::Identifier => mizar_lexer::is_identifier(&token.text),
+                            SurfaceTokenKind::ReservedWord => [
+                                "theorem", "lemma", "for", "be", "being", "set", "holds", "proof",
+                                "let", "thus", "end", "by",
+                            ]
+                            .contains(&token.text.as_ref()),
+                            SurfaceTokenKind::ReservedSymbol => {
+                                [":", ";", ",", "="].contains(&token.text.as_ref())
+                            }
+                            _ => false,
+                        }
+                }
+                (K::Root, _) => children(current)
+                    .iter()
+                    .filter(|row| !matches!(row.kind, K::Token(_)))
+                    .map(|row| &row.kind)
+                    .eq([&K::CompilationUnit]),
+                (K::CompilationUnit, ["ItemList"]) => true,
+                (K::ItemList, owners) => {
+                    !owners.is_empty()
+                        && owners
+                            .iter()
+                            .all(|kind| matches!(*kind, "TheoremItem" | "LemmaItem"))
+                }
+                (
+                    K::TheoremItem,
+                    [
+                        "theorem",
+                        "identifier",
+                        ":",
+                        "FormulaExpression",
+                        "ProofBlock",
+                        ";",
+                    ],
+                )
+                | (
+                    K::LemmaItem,
+                    [
+                        "lemma",
+                        "identifier",
+                        ":",
+                        "FormulaExpression",
+                        "ProofBlock",
+                        ";",
+                    ],
+                )
+                | (K::TypeExpression, ["TypeHead"])
+                | (K::TypeHead, ["set"])
+                | (K::TermExpression, ["TermReference"])
+                | (K::TermReference, ["identifier"])
+                | (K::Proposition, ["FormulaExpression"])
+                | (K::ConclusionStatement, ["thus", "Proposition", ";"])
+                | (K::ConclusionStatement, ["thus", "Proposition", "JustificationClause", ";"])
+                | (K::JustificationClause, ["by", "ReferenceList"])
+                | (K::ReferenceList, ["Reference"])
+                | (K::Reference, ["identifier"])
+                | (K::BuiltinPredicateApplication, ["TermExpression", "=", "TermExpression"]) => {
+                    true
+                }
+                (K::ProofBlock, ["proof", statements @ .., "end"]) => {
+                    statements.contains(&"LetStatement")
+                        && statements.contains(&"ConclusionStatement")
+                        && statements
+                            .iter()
+                            .all(|kind| matches!(*kind, "LetStatement" | "ConclusionStatement"))
+                }
+                (K::LetStatement, ["let", segments @ .., ";"]) => {
+                    separated(segments, "QualifiedVariableSegment")
+                }
+                (
+                    K::QuantifierVariableSegment | K::QualifiedVariableSegment,
+                    [names @ .., "be" | "being", "TypeExpression"],
+                ) => separated(names, "identifier"),
+                (
+                    K::FormulaExpression,
+                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
+                ) => true,
+                (
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    [
+                        "for",
+                        segments @ ..,
+                        "holds",
+                        "BuiltinPredicateApplication" | "QuantifiedFormula(Universal)",
+                    ]
+                    | ["for", segments @ .., "QuantifiedFormula(Universal)"],
+                ) => separated(segments, "QuantifierVariableSegment"),
+                _ => false,
+            };
+            if !valid {
+                return Err(invalid());
+            }
+        }
+        // Resolver scope boundaries share a collision set per incoming scope.
+        let mut scopes = BTreeMap::new();
+        let mut components: BTreeMap<LocalTermScope, BTreeSet<u32>> = BTreeMap::new();
+        let mut boundaries = Vec::new();
+        for current in rows.iter() {
+            let mut scope = current
+                .parent
+                .map(|id| scopes.get(&id).cloned().ok_or_else(invalid))
+                .transpose()?
+                .unwrap_or_else(|| LocalTermScope::new(vec![]));
+            if matches!(current.kind, K::QuantifiedFormula(_) | K::ProofBlock) {
+                let used = components.entry(scope.clone()).or_default();
+                let mut component = u32::try_from(current.child_ordinal).map_err(|_| invalid())?;
+                if !used.insert(component) {
+                    component = used
+                        .last()
+                        .and_then(|last| last.checked_add(1))
+                        .ok_or_else(invalid)?;
+                    used.insert(component);
+                }
+                let mut path = scope.path().to_vec();
+                path.push(component);
+                scope = LocalTermScope::new(path);
+            }
+            if matches!(
+                current.kind,
+                K::Root | K::QuantifiedFormula(_) | K::ProofBlock
+            ) {
+                boundaries.push((scope.clone(), current));
+            }
+            scopes.insert(current.site, scope);
+        }
+        boundaries.sort_by(|(left, _), (right, _)| {
+            (left.path().len(), left.path()).cmp(&(right.path().len(), right.path()))
+        });
+        if env.contexts().len() != boundaries.len() {
+            return Err(invalid());
+        }
+        let mut context_for = BTreeMap::new();
+        for (((id, binding), (scope, original)), (local_id, local)) in env
+            .contexts()
+            .iter()
+            .zip(&boundaries)
+            .zip(typed.contexts().iter())
+        {
+            let link = context.context_links().get(id).ok_or_else(invalid)?;
+            let (owner, layer, parent_scope) = match original.kind {
+                K::Root => (
+                    BindingContextOwner::Module,
+                    BindingContextLayer::Module,
+                    None,
+                ),
+                K::ProofBlock => (
+                    BindingContextOwner::SourceStatement {
+                        source_range: original.range,
+                    },
+                    BindingContextLayer::Proof,
+                    original.parent.and_then(|id| scopes.get(&id)),
+                ),
+                _ => (
+                    BindingContextOwner::SourceFormula {
+                        source_range: original.range,
+                    },
+                    BindingContextLayer::Expression,
+                    original.parent.and_then(|id| scopes.get(&id)),
+                ),
+            };
+            let parent = parent_scope
+                .map(|scope| {
+                    boundaries
+                        .iter()
+                        .position(|(other, _)| other == scope)
+                        .map(BindingContextId::new)
+                        .ok_or_else(invalid)
+                })
+                .transpose()?;
+            if link.binding_context != id
+                || link.local_context != local_id
+                || binding.owner != owner
+                || binding.layer != layer
+                || binding.parent != parent
+                || binding.lexical_scope.as_ref() != parent.map(|_| scope)
+                || binding.recovery != BindingContextRecovery::Normal
+                || local.owner != site(original)
+                || typed
+                    .nodes()
+                    .node(site(original).node())
+                    .and_then(|node| node.links.context)
+                    != Some(link.local_context)
+            {
+                return Err(invalid());
+            }
+            let own = env
+                .bindings()
+                .iter()
+                .filter_map(|(binding, entry)| (entry.owner_context == id).then_some(binding))
+                .collect::<Vec<_>>();
+            let mut visible = own.clone();
+            if let Some(parent) = parent {
+                visible.extend_from_slice(
+                    &env.contexts()
+                        .get(parent)
+                        .ok_or_else(invalid)?
+                        .visible_bindings,
+                );
+            }
+            visible.sort();
+            visible.dedup();
+            let own_sites = context
+                .declarations()
+                .iter()
+                .filter(|(_, declaration)| declaration.binding_context == id)
+                .map(|(_, declaration)| BindingTypeRef::Site(declaration.site.clone()))
+                .collect::<Vec<_>>();
+            if binding.bindings != own
+                || binding.visible_bindings != visible
+                || local.bindings != own_sites
+                || local.recovery != ContextRecoveryState::Normal
+                || !local.visible_facts.is_empty()
+                || !local.introduced_assumptions.is_empty()
+            {
+                return Err(invalid());
+            }
+            context_for.insert(scope.clone(), id);
+        }
+        let binding_context = |original: &SourceNode| {
+            scopes
+                .get(&original.site)
+                .and_then(|scope| context_for.get(scope))
+                .copied()
+                .ok_or_else(invalid)
+        };
+        for original in rows.iter() {
+            let link = context
+                .context_links()
+                .get(binding_context(original)?)
+                .ok_or_else(invalid)?;
+            if typed
+                .nodes()
+                .node(site(original).node())
+                .and_then(|node| node.links.context)
+                != Some(link.local_context)
+            {
+                return Err(invalid());
+            }
+        }
+        let mut owners = rows
+            .iter()
+            .filter(|row| matches!(row.kind, K::TheoremItem | K::LemmaItem))
+            .collect::<Vec<_>>();
+        owners.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if owners.len() != context.items().len() || owners.is_empty() {
+            return Err(invalid());
+        }
+        for ((ordinal, original), (id, item)) in
+            owners.iter().enumerate().zip(context.items().iter())
+        {
+            let parts = children(original);
+            let header = *children(parts[3]).first().ok_or_else(invalid)?;
+            if !matches!(
+                header.kind,
+                K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+            ) || item.site != site(original)
+                || item.source_range != original.range
+                || id.index() != ordinal
+                || item.shell_ordinal != ordinal
+                || item.shell.index() != ordinal
+                || item.parent.is_some()
+                || item.local_scope.is_some()
+                || item.visibility != SourceItemVisibility::Unspecified
+                || item.recovery != SourceItemRecovery::Normal
+                || item.binding_context != binding_context(original)?
+                || item.role
+                    != if original.kind == K::TheoremItem {
+                        SourceItemRole::Theorem
+                    } else {
+                        SourceItemRole::Lemma
+                    }
+                || item.predecessor
+                    != ordinal
+                        .checked_sub(1)
+                        .map(crate::source_context::SourceItemId::new)
+            {
+                return Err(invalid());
+            }
+        }
+        let mut declarations = rows.iter().filter(|original| {
+            matches!(&original.kind, K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                && original.parent.and_then(|id| by_site.get(&id)).is_some_and(|parent| matches!(parent.kind, K::QuantifierVariableSegment | K::QualifiedVariableSegment))
+        }).collect::<Vec<_>>();
+        declarations.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if declarations.len() != context.declarations().len()
+            || declarations.len() != env.bindings().len()
+        {
+            return Err(invalid());
+        }
+        let mut declaration_for = BTreeMap::new();
+        for (((ordinal, original), (id, declaration)), (binding_id, binding)) in declarations
+            .iter()
+            .enumerate()
+            .zip(context.declarations().iter())
+            .zip(env.bindings().iter())
+        {
+            let segment = row(original.parent.ok_or_else(invalid)?)?;
+            let written = *children(segment).last().ok_or_else(invalid)?;
+            let scope = scopes.get(&original.site).ok_or_else(invalid)?;
+            let (kind, role) = if segment.kind == K::QuantifierVariableSegment {
+                (
+                    BindingKind::QuantifierBinder,
+                    SourceBindingSiteRole::QuantifierBinder,
+                )
+            } else {
+                (BindingKind::LetBinding, SourceBindingSiteRole::ProofLet)
+            };
+            let item = owners
+                .iter()
+                .position(|owner| {
+                    owner.range.start <= original.range.start
+                        && original.range.end <= owner.range.end
+                })
+                .ok_or_else(invalid)?;
+            let shadowed = declarations
+                .iter()
+                .filter(|prior| {
+                    prior.range.end <= original.range.start
+                        && prior.spelling == original.spelling
+                        && scopes.get(&prior.site).is_some_and(|parent| {
+                            parent != scope && scope.path().starts_with(parent.path())
+                        })
+                })
+                .max_by_key(|prior| scopes.get(&prior.site).map(|scope| scope.path().len()))
+                .and_then(|prior| {
+                    context
+                        .declarations()
+                        .iter()
+                        .find(|(_, row)| row.site == site(prior))
+                })
+                .map(|(_, row)| row.binding);
+            let expected_identity = BinderIdentity::ResolverLocal {
+                scope: scope.clone(),
+                ordinal,
+                declaration_range: original.range,
+            };
+            if id.index() != ordinal
+                || declaration.binding != binding_id
+                || declaration.site != site(original)
+                || declaration.declaration_range != original.range
+                || declaration.written_type_range != written.range
+                || declaration.spelling != original.spelling
+                || declaration.source_ordinal != ordinal
+                || declaration.role != role
+                || declaration.shadowed_binding != shadowed
+                || declaration.binding_context != binding_context(original)?
+                || declaration.item.index() != item
+                || declaration.predecessor
+                    != ordinal
+                        .checked_sub(1)
+                        .map(crate::source_context::SourceDeclarationId::new)
+                || binding.identity != expected_identity
+                || binding.kind != kind
+                || binding.spelling != original.spelling
+                || binding.declaration_range != original.range
+                || binding.owner_context != declaration.binding_context
+                || binding.visible_after_ordinal != ordinal
+                || binding.type_site != BindingTypeSite::Missing
+                || binding.status != BindingStatus::Active
+                || !binding.captured.identities().is_empty()
+                || !binding.diagnostics.is_empty()
+                || binding.recovery != BindingRecoveryState::Normal
+                || declaration_for.insert(original.site, declaration).is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        // Bound uses select actual local winners; declaration and use clocks are independent inventories.
+        let mut original_terms = rows
+            .iter()
+            .filter(|row| row.kind == K::TermReference)
+            .collect::<Vec<_>>();
+        original_terms.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if original_terms.len() != primary.terms().len()
+            || original_terms.len() != primary.references().len()
+        {
+            return Err(invalid());
+        }
+        let mut term_for = BTreeMap::new();
+        let mut type_owners = BTreeSet::new();
+        for (((ordinal, original), (id, term)), (reference_id, reference)) in original_terms
+            .iter()
+            .enumerate()
+            .zip(primary.terms().iter())
+            .zip(primary.references().iter())
+        {
+            let scope = scopes.get(&original.site).ok_or_else(invalid)?;
+            let winner = declarations
+                .iter()
+                .filter(|declaration| {
+                    declaration.spelling == original.spelling
+                        && declaration.range.end <= original.range.start
+                        && scopes
+                            .get(&declaration.site)
+                            .is_some_and(|local| scope.path().starts_with(local.path()))
+                })
+                .max_by_key(|declaration| {
+                    (
+                        scopes
+                            .get(&declaration.site)
+                            .map(|scope| scope.path().len()),
+                        declaration.range.start,
+                    )
+                })
+                .ok_or_else(invalid)?;
+            let declaration = declaration_for.get(&winner.site).ok_or_else(invalid)?;
+            let (_, application) = types
+                .applications()
+                .iter()
+                .find(|(_, application)| application.binding() == declaration.binding)
+                .ok_or_else(invalid)?;
+            let written = types
+                .expressions()
+                .get(application.root())
+                .ok_or_else(invalid)?;
+            let type_owner = TypedSiteRef::Role {
+                node: written.site().node(),
+                role: crate::typed_ast::TypeRole::new(format!("theorem.equality.use:{ordinal}")),
+            };
+            let type_entry = typed
+                .types()
+                .iter()
+                .find(|(_, entry)| entry.owner == type_owner)
+                .map(|(_, entry)| entry)
+                .ok_or_else(invalid)?;
+            type_owners.insert(type_owner);
+            type_owners.insert(term.site().clone());
+            let node = typed
+                .nodes()
+                .node(site(original).node())
+                .ok_or_else(invalid)?;
+            let entry = typed
+                .types()
+                .get(node.links.type_entry.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            if term.site() != &site(original)
+                || reference.term() != id
+                || term.source_range() != original.range
+                || term.spelling() != original.spelling
+                || term.source_ordinal() != ordinal
+                || term.context() != binding_context(original)?
+                || term.parent().is_some()
+                || term.kind() != SourcePrimaryTermKind::VariableReference
+                || term.role() != SourcePrimaryTermRole::Value
+                || term.recovery() != SourcePrimaryTermRecovery::Normal
+                || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                || reference.binding() != declaration.binding
+                || reference.use_ordinal() != ordinal
+                || reference.lexical_scope() != Some(scope)
+                || node.typing != TypingState::Successful
+                || entry.owner != term.site().clone()
+                || entry.status != TypeStatus::Known
+                || !matches!(entry.actual, TypeEntryActual::Known(_))
+                || entry.actual != type_entry.actual
+            {
+                return Err(invalid());
+            }
+            term_for.insert(original.site, (id, reference_id, reference.binding()));
+        }
+        for (_, entry) in typed.types().iter() {
+            if !type_owners.remove(&entry.owner)
+                || entry.status != TypeStatus::Known
+                || entry.expected.is_some()
+                || !matches!(entry.actual, TypeEntryActual::Known(_))
+            {
+                return Err(invalid());
+            }
+        }
+        if !type_owners.is_empty() {
+            return Err(invalid());
+        }
+        let mut original_atoms = rows
+            .iter()
+            .filter(|row| row.kind == K::BuiltinPredicateApplication)
+            .collect::<Vec<_>>();
+        original_atoms.sort_by_key(|row| (row.range.start, row.range.end, row.site));
+        if original_atoms.len() != atomic.formulas().len()
+            || atomic.edges().len() != 2 * original_atoms.len()
+        {
+            return Err(invalid());
+        }
+        let mut atom_for = BTreeMap::new();
+        for (ordinal, original) in original_atoms.iter().enumerate() {
+            let mut matching = atomic
+                .formulas()
+                .iter()
+                .filter(|(_, atom)| atom.site() == &site(original));
+            let (id, atom) = matching.next().ok_or_else(invalid)?;
+            if matching.next().is_some()
+                || atom.kind() != SourceAtomicFormulaKind::Equality
+                || atom.source_range() != original.range
+                || atom.source_ordinal() != ordinal
+                || atom.spelling() != original.spelling
+                || atom.context() != binding_context(original)?
+                || atom.recovery() != SourceAtomicFormulaRecovery::Normal
+                || typed
+                    .nodes()
+                    .node(site(original).node())
+                    .is_none_or(|node| node.typing != TypingState::Successful)
+            {
+                return Err(invalid());
+            }
+            let parts = children(original);
+            for (operand, role) in [
+                (0, SourceAtomicEdgeRole::BuiltinLeftOperand),
+                (2, SourceAtomicEdgeRole::BuiltinRightOperand),
+            ] {
+                let term = *children(parts[operand]).first().ok_or_else(invalid)?;
+                let target = term_for.get(&term.site).ok_or_else(invalid)?.0;
+                let mut edges = atomic
+                    .edges()
+                    .iter()
+                    .filter(|(_, edge)| edge.formula() == id && edge.ordinal() == operand / 2);
+                let (_, edge) = edges.next().ok_or_else(invalid)?;
+                if edges.next().is_some()
+                    || edge.role() != role
+                    || edge.target() != SourceAtomicTermTarget::Primary(target)
+                {
+                    return Err(invalid());
+                }
+            }
+            atom_for.insert(original.site, id);
+        }
+        let mut input = SourceCompositeFormulaHandoffInput {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            formulas: vec![],
+            wrappers: vec![],
+            roots: vec![],
+            binders: vec![],
+            type_sites: vec![],
+            edges: vec![],
+            requests: vec![],
+        };
+        let mut composition = SourceFormulaCompositionHandoffInput {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            atomic_edges: vec![],
+            bound_uses: vec![],
+        };
+        let quantifiers = rows
+            .iter()
+            .filter(|row| {
+                matches!(
+                    row.kind,
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                )
+            })
+            .collect::<Vec<_>>();
+        let formula_for = quantifiers
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (row.site, SourceCompositeFormulaId::new(index)))
+            .collect::<BTreeMap<_, _>>();
+        let mut binder_for = BTreeMap::new();
+        for original in &quantifiers {
+            let formula = *formula_for.get(&original.site).ok_or_else(invalid)?;
+            let body_context = binding_context(original)?;
+            let incoming = env
+                .contexts()
+                .get(body_context)
+                .and_then(|context| context.parent)
+                .ok_or_else(invalid)?;
+            let parts = children(original);
+            input.formulas.push(SourceCompositeFormulaInput { site: site(original), source_range: original.range, source_ordinal: formula.index(), context: incoming,
+                recovery: SourceCompositeFormulaRecovery::Normal, spelling: parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if matches!(token.text.as_ref(), "for" | "holds"))).map(|row| row.spelling.as_str()).collect::<Vec<_>>().join(" "), kind: SourceCompositeFormulaKind::Universal });
+            let parent = row(original.parent.ok_or_else(invalid)?)?;
+            if let Some(parent_formula) = formula_for.get(&parent.site) {
+                input.edges.push(SourceFormulaEdgeInput {
+                    parent: *parent_formula,
+                    ordinal: 0,
+                    role: SourceFormulaEdgeRole::UniversalBody,
+                    child: formula,
+                });
+                if incoming != binding_context(parent)? {
+                    return Err(invalid());
+                }
+            } else {
+                let owner = row(parent.parent.ok_or_else(invalid)?)?;
+                if parent.kind != K::FormulaExpression
+                    || !owners.contains(&owner)
+                    || children(owner).get(3) != Some(&parent)
+                {
+                    return Err(invalid());
+                }
+                input.roots.push(SourceFormulaRootInput {
+                    formula,
+                    ordinal: input.roots.len(),
+                    ownership: SourceFormulaRootOwnership::UnassignedStatement,
+                });
+            }
+            input.requests.push(SourceFormulaRequestInput {
+                formula,
+                ordinal: 0,
+                kind: SourceFormulaRequestKind::QuantifierSemantics,
+                binder: None,
+                type_site: None,
+            });
+            let mut ordinal = 0;
+            for segment in parts
+                .iter()
+                .filter(|row| row.kind == K::QuantifierVariableSegment)
+            {
+                let segment_parts = children(segment);
+                let written = *segment_parts.last().ok_or_else(invalid)?;
+                let head = *children(written).first().ok_or_else(invalid)?;
+                let descriptor = segment_parts[..segment_parts.len() - 1]
+                    .iter()
+                    .map(|row| row.spelling.as_str())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                for name in segment_parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if token.kind == SurfaceTokenKind::Identifier)) {
+                    let declaration = declaration_for.get(&name.site).ok_or_else(invalid)?;
+                    let binder = SourceQuantifierBinderId::new(input.binders.len());
+                    let type_site = SourceBinderTypeSiteId::new(input.type_sites.len());
+                    input.binders.push(SourceQuantifierBinderInput { formula, ordinal, segment_site: site(segment), segment_range: segment.range, segment_spelling: descriptor.clone(),
+                        identifier_site: site(name), identifier_range: name.range, identifier_spelling: name.spelling.clone(),
+                        local: LocalTermBinding::new(&name.spelling, scopes.get(&name.site).cloned().ok_or_else(invalid)?, name.range, declaration.source_ordinal),
+                        binding: declaration.binding, body_context, type_site, recovery: SourceCompositeFormulaRecovery::Normal });
+                    input.type_sites.push(SourceBinderTypeSiteInput { binder, site: site(written), source_range: written.range, spelling: written.spelling.clone(), head_site: site(head), head_range: head.range,
+                        head_spelling: head.spelling.clone(), context: incoming, recovery: SourceCompositeFormulaRecovery::Normal, head: SourceBinderTypeHead::BuiltinSet });
+                    input.requests.push(SourceFormulaRequestInput { formula, ordinal: 1 + ordinal, kind: SourceFormulaRequestKind::BinderType, binder: Some(binder), type_site: Some(type_site) });
+                    binder_for.insert(declaration.binding, binder); ordinal += 1;
+                }
+            }
+            let body = *parts.last().ok_or_else(invalid)?;
+            if let Some(atom) = atom_for.get(&body.site) {
+                composition.atomic_edges.push(SourceFormulaAtomicEdgeInput {
+                    formula,
+                    ordinal: 0,
+                    role: SourceFormulaAtomicEdgeRole::UniversalBody,
+                    child: *atom,
+                });
+            } else if !formula_for.contains_key(&body.site) {
+                return Err(invalid());
+            }
+        }
+        if input.roots.len() != owners.len()
+            || input.binders.len()
+                != declarations
+                    .iter()
+                    .filter(|row| {
+                        row.parent
+                            .and_then(|id| by_site.get(&id))
+                            .is_some_and(|row| row.kind == K::QuantifierVariableSegment)
+                    })
+                    .count()
+        {
+            return Err(invalid());
+        }
+        let mut use_ordinals = BTreeMap::new();
+        for (index, edge) in composition.atomic_edges.iter().enumerate() {
+            let atom = atomic.formulas().get(edge.child).ok_or_else(invalid)?;
+            let original = row(resolved(atom.site().node())?)?;
+            for operand in [0, 2] {
+                let expression = children(original)[operand];
+                let term = children(expression)[0];
+                let (term, reference, binding) = *term_for.get(&term.site).ok_or_else(invalid)?;
+                let binder = *binder_for.get(&binding).ok_or_else(invalid)?;
+                let ordinal = use_ordinals.entry(binder).or_insert(0);
+                composition.bound_uses.push(SourceQuantifierBoundUseInput {
+                    binder,
+                    ordinal: *ordinal,
+                    body_edge: SourceFormulaAtomicEdgeId::new(index),
+                    term,
+                    reference,
+                });
+                *ordinal += 1;
+            }
+        }
+        let composite = SourceCompositeFormulaHandoff::from_original_input(input, env);
+        let composition = SourceFormulaCompositionHandoff::from_original_input(
+            composition,
+            primary,
+            atomic,
+            &composite,
+        );
+        Ok((composite, composition))
+    }
+
     /// Checks the bounded dependent-return declaration and retains pending correctness requests.
     pub fn check_source_dependent_functor_types(
         source: &SurfaceResolvedArena,

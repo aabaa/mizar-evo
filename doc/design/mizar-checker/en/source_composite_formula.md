@@ -11,7 +11,6 @@ quantifier binder. The canonical behavior comes from Chapter 14 formula and
 quantifier rules, Chapter 4 binder identity and scope rules, Chapter 3's
 written `set` type, and the unchanged
 `fail_type_elaboration_formula_connective_quantifier_gap_001.miz` intent.
-Raw `SurfaceAst` traversal remains private to `mizar-test`.
 
 This module does not evaluate connectives, relativize quantifiers, assign
 truth, create formula facts, own theorem semantics, search proofs, or produce
@@ -191,3 +190,8 @@ The C3 owner is now installed separately. Task-257A/B production rows and
 debug bytes remain unchanged; their installers add only the reciprocal C3
 occupancy guard. Mutation-sensitive tests exercise A/B-after-C3 and
 C3-after-A/B without relying on unrelated dependency mismatch.
+
+## Original-source universal composition
+The original-source entrance consumes the existing native theorem-equality lower's complete source context, type applications and BindingEnv. It retains explicit builtin-Set universal headers of ordinary local theorem/lemma owners, including grouped and nested binders; primitive grammar and typing remain with the existing lower.
+The existing seven tables retain actual source-root/body/binder/type/request associations. Formula and type-site contexts are incoming contexts, while binder body contexts remain genuine native expression contexts. Grouped binders share only their real segment/type/head/context, with distinct declaration/application joins. Operator/segment descriptors retain their existing meaning; full subtree spelling belongs to the original node table.
+Raw producer/profile validation remains separate. Native construction neither fabricates the old diagnostic environment nor grants detached/raw installation, statement ownership, universal truth, proof acceptance or function-Binder certification.

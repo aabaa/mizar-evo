@@ -110,7 +110,7 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
             || path == root.join("src/type_checker.rs")
         {
             let permitted = if path == root.join("src/type_checker.rs") {
-                "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceTokenKind};"
+                "use mizar_syntax::ast::{\n    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
             } else {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};"
             };

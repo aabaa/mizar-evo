@@ -3690,6 +3690,82 @@ pub(crate) mod tests {
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
 
+    #[test]
+    fn task257b5_native_final_replay_rejects_a_raw_producer_omitted_proof_atom() {
+        use crate::{
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{
+                TASK257B5_NATIVE_TEXT, task257b5_native_case, task257b5_native_replay,
+            },
+        };
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, parts, primary, expressions, symbols| {
+                let mut typed = installed.unwrap();
+                let mut input = typed.source_atomic_formula().unwrap().to_input();
+                assert_eq!(input.formulas.len(), 4);
+                let last = SourceAtomicFormulaId::new(input.formulas.len() - 1);
+                let proof = input.formulas.pop().unwrap();
+                assert!(
+                    proof.source_range.start
+                        > typed
+                            .source_composite_formula()
+                            .unwrap()
+                            .formulas()
+                            .iter()
+                            .last()
+                            .unwrap()
+                            .1
+                            .source_range()
+                            .end
+                );
+                input.edges.retain(|row| row.formula != last);
+                input.requests.retain(|row| row.formula != last);
+                let atomic = SourceAtomicFormulaProducer::build(
+                    input,
+                    typed.source_context().unwrap().binding_env(),
+                    symbols,
+                    &primary,
+                    None,
+                    None,
+                    None,
+                    &parts.nodes,
+                )
+                .unwrap();
+                assert_eq!(atomic.primary_term_fingerprint, primary.debug_text());
+                let lower = TypedAst::try_new(parts)
+                    .unwrap()
+                    .with_source_term(primary)
+                    .unwrap()
+                    .with_source_atomic_formula(atomic.clone())
+                    .unwrap();
+                assert_eq!(lower.source_atomic_formula().unwrap().formulas().len(), 3);
+                typed.remove_source_atomic_formula_for_test();
+                typed = typed.with_source_atomic_formula(atomic).unwrap();
+                let old = typed.source_formula_composition().unwrap();
+                let fresh = SourceFormulaCompositionHandoff::from_original_input(
+                    SourceFormulaCompositionHandoffInput {
+                        source_id: old.source_id(),
+                        module_id: old.module_id().clone(),
+                        atomic_edges: old
+                            .atomic_edges()
+                            .iter()
+                            .map(|(_, row)| row.into())
+                            .collect(),
+                        bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                    },
+                    typed.source_term().unwrap(),
+                    typed.source_atomic_formula().unwrap(),
+                    typed.source_composite_formula().unwrap(),
+                );
+                typed.inject_source_formula_composition_for_test(fresh);
+                assert!(task257b5_native_replay(&typed, expressions).is_err());
+            },
+        );
+    }
+
     pub(crate) struct Fixture {
         pub(crate) source: SourceId,
         pub(crate) module: ModuleId,

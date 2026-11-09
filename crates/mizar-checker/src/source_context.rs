@@ -1590,6 +1590,66 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn task257b5_native_coherent_local_context_permutation_is_replayed() {
+        use crate::typed_ast::tests::*;
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, mut parts, primary, mut expressions, _| {
+                let installed = installed.unwrap();
+                let old = parts
+                    .contexts
+                    .iter()
+                    .map(|(_, context)| context.clone())
+                    .collect::<Vec<_>>();
+                assert_eq!(old[1].parent, old[2].parent);
+                let mut contexts = LocalTypeContextTable::new();
+                let mut ids = BTreeMap::new();
+                for index in [0, 2, 1, 3, 4] {
+                    let context = &old[index];
+                    let id = contexts.insert(LocalTypeContextDraft {
+                        owner: context.owner.clone(),
+                        parent: context.parent,
+                        layer: context.layer,
+                        bindings: context.bindings.clone(),
+                        introduced_assumptions: context.introduced_assumptions.clone(),
+                        visible_facts: context.visible_facts.clone(),
+                        recovery: context.recovery,
+                    });
+                    ids.insert(context.id, id);
+                }
+                let mut nodes = parts
+                    .nodes
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                for node in &mut nodes {
+                    node.links.context = node.links.context.map(|id| ids[&id]);
+                }
+                parts.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                parts.contexts = contexts;
+                let context = parts.source_context.as_mut().unwrap();
+                context.local_contexts = parts.contexts.clone();
+                for link in &mut context.context_links.entries {
+                    link.local_context = ids[&link.local_context];
+                }
+                for declaration in &mut context.declarations.entries {
+                    declaration.local_context = ids[&declaration.local_context];
+                }
+                for item in &mut context.items.entries {
+                    item.local_context = ids[&item.local_context];
+                }
+                for expression in &mut expressions {
+                    expression.local_context = expression.local_context.map(|id| ids[&id]);
+                }
+                let (lower, final_result) =
+                    task257b5_native_forged_replay(installed, parts, primary, expressions);
+                lower.unwrap();
+                assert!(final_result.is_err());
+            },
+        );
+    }
+
+    #[test]
     fn property_implementation_profile_builds_exact_context() {
         let fixture = task_248p_fixture();
         let projection = SourceBindingContextProducer::build(fixture.input.clone())

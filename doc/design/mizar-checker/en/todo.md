@@ -616,6 +616,7 @@ unchecked row below is one future nonempty logical task and one commit.
       257B1/B2. The frozen source-to-final-handoff transport is implemented
       without semantic truth, closure, capture-result, or theorem credit.
     - [x] **Task 257B4:** [guarded functor definientia](../../task_contracts/en/CHECKER257B4-GUARDED-FUNCTOR-DEFINIENTIA.md); ordered TermCase/fallback rows and Pending consistency; function Binder remains separate.
+    - [x] **Task 257B5:** [native universal composition](../../task_contracts/en/CHECKER257B5-NATIVE-UNIVERSAL-COMPOSITION.md); genuine normal source/context/type inputs through existing composite tables, before Task258 local-Let statements.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,

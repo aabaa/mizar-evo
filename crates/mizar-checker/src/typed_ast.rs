@@ -1859,6 +1859,34 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_formula_composition_from_original(
+        mut self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        scope: &mizar_resolve::names::ResolvedVariableScope,
+    ) -> Result<Self, TypedAstError> {
+        let invalid = || TypedAstError::InvalidSourceFormulaComposition;
+        let (_, _, mut canonical, _) =
+            crate::source_type::SourceTypeProducer::build_source_theorem_equalities(
+                source, symbols, scope,
+            )
+            .map_err(|_| invalid())?;
+        canonical
+            .install_source_nodes(source)
+            .map_err(|_| invalid())?;
+        let (composite, composition) =
+            crate::type_checker::TermFormulaChecker::source_universal_composition(&canonical)
+                .map_err(|_| invalid())?;
+        let source_nodes = canonical.source_nodes.take().ok_or_else(invalid)?;
+        if self != canonical {
+            return Err(invalid());
+        }
+        self.source_nodes = Some(source_nodes);
+        self.source_composite_formula = Some(composite);
+        self.source_formula_composition = Some(composition);
+        Ok(self)
+    }
+
     pub fn with_source_formula_composition(
         mut self,
         composite: SourceCompositeFormulaHandoff,
@@ -6503,12 +6531,552 @@ fn diagnostic_recovery_name(recovery: DiagnosticRecoveryState) -> &'static str {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     };
+
+    pub(crate) const TASK257B5_NATIVE_TEXT: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    ));
+
+    pub(crate) fn task257b5_native_case(
+        text: &str,
+        inspect: impl FnOnce(
+            Result<TypedAst, TypedAstError>,
+            TypedAstParts,
+            SourcePrimaryTermHandoff,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+            &mizar_resolve::env::SymbolEnv,
+        ),
+    ) {
+        use mizar_frontend::{
+            lexing::{TokenizeRequest, tokenize},
+            parsing::{MizarParserSeam, ParseRequest, ParserInputs, ParserSeam},
+            preprocess::preprocess,
+            source::{
+                FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit,
+            },
+            span_bridge::SpanBridge,
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::SurfaceResolvedArena,
+            symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+        };
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        std::fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/owners.miz");
+        std::fs::write(&path, text).unwrap();
+        let source = FrontendSourceLoader::new(DiskSourceLoader::new(&root))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                        "mizar-session-build-snapshot-v1:{}",
+                        "57".repeat(32)
+                    ))
+                    .unwrap(),
+                    input: SourceInput {
+                        package_id: PackageId::new("native-universal-private"),
+                        module_path: ModulePath::new("owners"),
+                        normalized_path: normalize_path(&root, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::OpenBuffer {
+                            uri: format!("file://{}", path.display()),
+                            expected_version: 1,
+                            actual_version: 1,
+                            text: text.into(),
+                        },
+                    },
+                },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        assert_eq!(source.source_text.as_ref(), text);
+        let mut bridge = SpanBridge::new();
+        register_source_unit(&mut bridge, &source).unwrap();
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+        assert!(preprocessed.import_stubs.is_empty());
+        let lexical = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let policy = ParserInputs::from_active_environment(source.edition.clone(), &lexical);
+        let tokens = tokenize(
+            TokenizeRequest::with_plan(
+                &preprocessed,
+                &lexical,
+                policy
+                    .string_required_positions
+                    .parser_lexing_plan(preprocessed.lexical_text.as_str()),
+            ),
+            &bridge,
+        )
+        .unwrap();
+        assert!(tokens.diagnostics().is_empty());
+        let parsed = MizarParserSeam.parse(ParseRequest::new(&tokens, policy));
+        assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+        let ast = parsed.ast.unwrap();
+        let module = ModuleId::new(source.package_id, source.module_path);
+        let native = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, symbols),
+        )
+        .unwrap();
+        let (env, inference, lower, expressions) =
+            crate::source_type::SourceTypeProducer::build_source_theorem_equalities(
+                &native, symbols, &scope,
+            )
+            .unwrap();
+        assert!(env.diagnostics().is_empty() && inference.diagnostics().is_empty());
+        assert!(!lower.source_context().unwrap().declarations().is_empty());
+        assert!(!lower.source_type().unwrap().applications().is_empty());
+        task257b5_native_replay(&lower, expressions.clone()).unwrap();
+        let primary = lower.source_term().unwrap().clone();
+        let parts = TypedAstParts {
+            source_id: lower.source_id,
+            module_id: lower.module_id.clone(),
+            resolved_root: lower.resolved_root,
+            source_context: lower.source_context.clone(),
+            source_type: lower.source_type.clone(),
+            source_attribute: lower.source_attribute.clone(),
+            nodes: lower.nodes.clone(),
+            contexts: lower.contexts.clone(),
+            types: lower.types.clone(),
+            facts: lower.facts.clone(),
+            coercions: lower.coercions.clone(),
+            initial_obligations: lower.initial_obligations.clone(),
+            diagnostics: lower.diagnostics.clone(),
+        };
+        let installed =
+            lower.with_source_formula_composition_from_original(&native, symbols, &scope);
+        if let Ok(installed) = &installed {
+            assert!(
+                !installed
+                    .source_composite_formula()
+                    .unwrap()
+                    .binders()
+                    .is_empty()
+            );
+            assert!(
+                !installed
+                    .source_formula_composition()
+                    .unwrap()
+                    .bound_uses()
+                    .is_empty()
+            );
+            task257b5_native_replay(installed, expressions.clone()).unwrap();
+        }
+        inspect(installed, parts, primary, expressions, symbols);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    pub(crate) fn task257b5_native_replay(
+        typed: &TypedAst,
+        expressions: Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+    ) -> Result<
+        crate::resolved_typed_ast::ResolvedTypedAst,
+        crate::resolved_typed_ast::ResolvedTypedAstError,
+    > {
+        use crate::{
+            cluster_trace::ClusterFactTable,
+            overload_resolution::*,
+            resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
+        };
+        let collection = OverloadCollectionOutput::collect([], []);
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(&expansion, []);
+        let specificity = SpecificityGraphOutput::build(&viability, []);
+        let selection = OverloadSelectionOutput::resolve(&specificity, []);
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: typed,
+            cluster_facts: &ClusterFactTable::new(),
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions,
+            node_hints: vec![],
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    }
+
+    pub(crate) fn task257b5_native_forged_replay(
+        mut baseline: TypedAst,
+        parts: TypedAstParts,
+        primary: SourcePrimaryTermHandoff,
+        expressions: Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+    ) -> (
+        Result<TypedAst, TypedAstError>,
+        Result<
+            crate::resolved_typed_ast::ResolvedTypedAst,
+            crate::resolved_typed_ast::ResolvedTypedAstError,
+        >,
+    ) {
+        use crate::source_formula_composition::SourceFormulaCompositionHandoffInput;
+        let mut atomic = baseline.source_atomic_formula.clone().unwrap();
+        atomic.set_primary_term_fingerprint_for_test(primary.debug_text());
+        let lower = TypedAst::try_new(parts.clone())
+            .and_then(|typed| typed.with_source_term(primary.clone()))
+            .and_then(|typed| typed.with_source_atomic_formula(atomic.clone()));
+        baseline.source_id = parts.source_id;
+        baseline.module_id = parts.module_id;
+        baseline.resolved_root = parts.resolved_root;
+        baseline.source_context = parts.source_context;
+        baseline.source_type = parts.source_type;
+        baseline.source_attribute = parts.source_attribute;
+        baseline.nodes = parts.nodes;
+        baseline.contexts = parts.contexts;
+        baseline.types = parts.types;
+        baseline.facts = parts.facts;
+        baseline.coercions = parts.coercions;
+        baseline.initial_obligations = parts.initial_obligations;
+        baseline.diagnostics = parts.diagnostics;
+        baseline.source_term = Some(primary);
+        baseline.source_atomic_formula = Some(atomic);
+        let old = baseline.source_formula_composition.as_ref().unwrap();
+        let mut input = SourceFormulaCompositionHandoffInput {
+            source_id: old.source_id(),
+            module_id: old.module_id().clone(),
+            atomic_edges: old
+                .atomic_edges()
+                .iter()
+                .map(|(_, row)| row.into())
+                .collect(),
+            bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+        };
+        for use_row in &mut input.bound_uses {
+            if let Some((id, _)) = baseline
+                .source_term()
+                .unwrap()
+                .references()
+                .iter()
+                .find(|(_, reference)| reference.term() == use_row.term)
+            {
+                use_row.reference = id;
+            }
+        }
+        baseline.source_formula_composition =
+            Some(SourceFormulaCompositionHandoff::from_original_input(
+                input,
+                baseline.source_term().unwrap(),
+                baseline.source_atomic_formula().unwrap(),
+                baseline.source_composite_formula().unwrap(),
+            ));
+        let final_result = task257b5_native_replay(&baseline, expressions);
+        (lower, final_result)
+    }
+
+    #[test]
+    fn task257b5_native_replay_rejects_an_appended_unowned_typed_node() {
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, parts, primary, expressions, _| {
+                let baseline = installed.unwrap();
+                for identity in [None, baseline.resolved_root()] {
+                    let mut changed = parts.clone();
+                    let mut nodes = changed
+                        .nodes
+                        .iter()
+                        .map(|(_, node)| node.clone())
+                        .collect::<Vec<_>>();
+                    let anchor = nodes[changed.nodes.root().unwrap().index()].anchor.clone();
+                    let mut extra = TypedNode::new("FormulaExpression", anchor);
+                    extra.resolved_node = identity;
+                    nodes.push(extra);
+                    changed.nodes = TypedArena::try_new(changed.nodes.root(), nodes).unwrap();
+                    let (lower, final_result) = task257b5_native_forged_replay(
+                        baseline.clone(),
+                        changed,
+                        primary.clone(),
+                        expressions.clone(),
+                    );
+                    lower.unwrap();
+                    assert!(
+                        final_result.is_err(),
+                        "appended detached identity {identity:?}"
+                    );
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn task257b5_native_replay_rejects_a_coherent_forward_child() {
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, mut parts, primary, expressions, _| {
+                let mut baseline = installed.unwrap();
+                let mut rows = baseline.source_nodes.as_ref().unwrap().to_vec();
+                let reference = rows
+                    .iter()
+                    .find(|row| row.kind == SurfaceNodeKind::Reference)
+                    .unwrap()
+                    .site;
+                let list = rows
+                    .iter()
+                    .find(|row| row.kind == SurfaceNodeKind::ReferenceList)
+                    .unwrap()
+                    .site;
+                assert!(reference.index() < list.index());
+                let remap = |id: ResolvedNodeId| {
+                    if id == reference {
+                        list
+                    } else if id == list {
+                        reference
+                    } else {
+                        id
+                    }
+                };
+                let mut nodes = parts
+                    .nodes
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                nodes.swap(reference.index(), list.index());
+                for node in &mut nodes {
+                    node.resolved_node = node.resolved_node.map(remap);
+                    for child in &mut node.children {
+                        *child = if child.index() == reference.index() {
+                            TypedNodeId::new(list.index())
+                        } else if child.index() == list.index() {
+                            TypedNodeId::new(reference.index())
+                        } else {
+                            *child
+                        };
+                    }
+                }
+                for row in &mut rows {
+                    row.site = remap(row.site);
+                    row.parent = row.parent.map(remap);
+                }
+                parts.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                baseline.source_nodes = Some(rows.into());
+                let (lower, final_result) =
+                    task257b5_native_forged_replay(baseline, parts, primary, expressions);
+                lower.unwrap();
+                assert!(
+                    final_result.is_err(),
+                    "native replay must retain the resolved child-first invariant"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn task257b5_native_replay_rejects_a_duplicate_root_token_edge() {
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, mut parts, primary, expressions, _| {
+                let baseline = installed.unwrap();
+                let token = baseline
+                    .source_nodes
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .find(|row| matches!(row.kind, SurfaceNodeKind::Token(_)))
+                    .unwrap()
+                    .site;
+                let root = parts.nodes.root().unwrap();
+                let mut nodes = parts
+                    .nodes
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                assert!(
+                    nodes[root.index()]
+                        .children
+                        .contains(&TypedNodeId::new(token.index()))
+                );
+                nodes[root.index()]
+                    .children
+                    .push(TypedNodeId::new(token.index()));
+                parts.nodes = TypedArena::try_new(Some(root), nodes).unwrap();
+                let (lower, final_result) =
+                    task257b5_native_forged_replay(baseline, parts, primary, expressions);
+                lower.unwrap();
+                assert!(
+                    final_result.is_err(),
+                    "native replay must reject duplicate edges from the original root"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn task257b5_native_original_label_token_byte_extent_is_replayed() {
+        task257b5_native_case(TASK257B5_NATIVE_TEXT, |installed, _, _, expressions, _| {
+            let mut typed = installed.unwrap();
+            let mut rows = typed.source_nodes.as_ref().unwrap().to_vec();
+            let label = rows.iter_mut().find(|row| matches!(&row.kind, SurfaceNodeKind::Token(token) if token.text.as_ref() == "Lem1")).unwrap();
+            if let SurfaceNodeKind::Token(token) = &mut label.kind {
+                token.text = "Lem11".into();
+            }
+            let site = label.site;
+            let kind = format!("{:?}", label.kind);
+            let mut tokens = rows
+                .iter()
+                .filter_map(|row| match &row.kind {
+                    SurfaceNodeKind::Token(token) => Some((row.range, token.text.to_string())),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            tokens.sort_by_key(|(range, _)| (range.start, range.end));
+            for row in &mut rows {
+                row.spelling = tokens
+                    .iter()
+                    .filter(|(range, _)| {
+                        range.start >= row.range.start && range.end <= row.range.end
+                    })
+                    .map(|(_, text)| text.as_str())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+            }
+            let mut nodes = typed
+                .nodes
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            nodes[site.index()].kind = kind.into();
+            typed.nodes = TypedArena::try_new(typed.nodes.root(), nodes).unwrap();
+            typed.source_nodes = Some(rows.into());
+            assert!(task257b5_native_replay(&typed, expressions).is_err());
+        });
+    }
+
+    #[test]
+    fn task257b5_native_empty_application_postsetter_is_quarantined() {
+        use crate::source_application::{
+            SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer,
+        };
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, _, primary, expressions, symbols| {
+                let typed = installed.unwrap();
+                let empty = SourceFunctorApplicationProducer::build(
+                    SourceFunctorApplicationHandoffInput {
+                        source_id: typed.source_id(),
+                        module_id: typed.module_id().clone(),
+                        applications: vec![],
+                        wrappers: vec![],
+                        candidates: vec![],
+                        arguments: vec![],
+                        type_requests: vec![],
+                    },
+                    symbols,
+                    typed.source_context().unwrap().binding_env(),
+                    &primary,
+                    typed.nodes(),
+                )
+                .unwrap();
+                assert!(empty.applications().is_empty());
+                let changed = typed.with_source_application(empty).unwrap();
+                assert!(changed.source_application().is_some());
+                assert!(task257b5_native_replay(&changed, expressions).is_err());
+            },
+        );
+    }
+
+    #[test]
+    fn task257b5_native_final_replay_requires_both_upper_companions() {
+        task257b5_native_case(TASK257B5_NATIVE_TEXT, |installed, _, _, expressions, _| {
+            let baseline = installed.unwrap();
+            for remove_composite in [false, true] {
+                let mut changed = baseline.clone();
+                if remove_composite {
+                    changed.source_composite_formula = None;
+                } else {
+                    changed.source_formula_composition = None;
+                }
+                assert!(task257b5_native_replay(&changed, expressions.clone()).is_err());
+            }
+        });
+    }
+
+    #[test]
+    fn task257b5_native_normalization_role_source_owners_are_replayed() {
+        task257b5_native_case(
+            TASK257B5_NATIVE_TEXT,
+            |installed, parts, primary, expressions, _| {
+                let baseline = installed.unwrap();
+                let (entry, original_node) = parts
+                    .types
+                    .iter()
+                    .find_map(|(id, entry)| match &entry.owner {
+                        TypedSiteRef::Role { node, .. } => Some((id, *node)),
+                        _ => None,
+                    })
+                    .unwrap();
+                let other = parts
+                    .source_type
+                    .as_ref()
+                    .unwrap()
+                    .expressions()
+                    .iter()
+                    .find(|(_, row)| row.site().node() != original_node)
+                    .unwrap()
+                    .1;
+                for owner in [other.site().node(), other.head_site().node()] {
+                    let mut changed = parts.clone();
+                    let TypedSiteRef::Role { node, .. } =
+                        &mut changed.types.entries[entry.index()].owner
+                    else {
+                        unreachable!()
+                    };
+                    *node = owner;
+                    assert!(
+                        changed
+                            .types
+                            .iter()
+                            .zip(parts.types.iter())
+                            .all(|((_, a), (_, b))| a.actual == b.actual
+                                && matches!(a.actual, TypeEntryActual::Known(_)))
+                    );
+                    let (lower, final_result) = task257b5_native_forged_replay(
+                        baseline.clone(),
+                        changed,
+                        primary.clone(),
+                        expressions.clone(),
+                    );
+                    lower.unwrap();
+                    assert!(final_result.is_err());
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn task257b5_native_excludes_genuine_lower_only_proof_shapes() {
+        for proof in ["", "let X be set;", "thus for Y being set holds Y = Y;"] {
+            let text = format!("theorem T: for X being set holds X = X\nproof\n{proof}\nend;\n");
+            task257b5_native_case(&text, |installed, parts, primary, _, _| {
+                assert!(!parts.nodes.is_empty());
+                assert!(!primary.terms().is_empty());
+                assert!(installed.is_err(), "excluded proof {proof:?}");
+            });
+        }
+    }
 
     #[test]
     fn raw_functor_property_obligation_requires_its_source_owner() {

@@ -915,3 +915,7 @@ Frozen public family/exact checker test 4件を実装済みで、private real-fi
 scalar/no-installer lint guardもPASS。Finding-specific repair後のpost-source independent reviewは
 **NO FINDINGS**、focused/full-workspace verificationとprotected checkはPASS。Final-quality、
 **NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`。Staging/commitはpending。
+
+## Original-source universal composition
+[canonical native 入口](typed_ast.md#original-source-universal-composition) は、proof の別個の結論も含め、実 lower の全 primary/equality occurrence を保持する。UniversalBody は header の末端等式だけに結び、bound use は入れ子の外側 binder も含めて実際の header binder を選ぶ。同じ綴りでも proof-local 変数は別 identity のままとする。
+完全な lower/composite fingerprint を保持し、実 owner/body/operand/context/type の対応、declaration/reference clock、lexical winner を認証する。fresh な共同検証は既存 original/source-context/type テーブルを用い、proof-goal tree・新 carrier・accepted formula を作らない。raw composition admission と先行 family の境界は分離する。
