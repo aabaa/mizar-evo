@@ -6852,12 +6852,13 @@ impl TermFormulaChecker {
         {
             let parts = children(original);
             let header = row(*effective_for.get(&parts[3].site).ok_or_else(invalid)?)?;
-            if !matches!(
+            if !(matches!(
                 header.kind,
                 K::QuantifiedFormula(
                     SurfaceQuantifierKind::Universal | SurfaceQuantifierKind::Existential
-                )
-            ) || item.site != site(original)
+                ) | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+            ) || matches!(header.kind, K::BinaryFormula(operator) if !operator.repeated))
+                || item.site != site(original)
                 || item.source_range != original.range
                 || id.index() != ordinal
                 || item.shell_ordinal != ordinal
@@ -9210,13 +9211,15 @@ impl TermFormulaChecker {
                     cursor = match (current.kind(), current.children()) {
                         (K::FormulaExpression, [child])
                         | (K::ParenthesizedFormula, [_, child, _]) => *child,
-                        (
-                            K::QuantifiedFormula(
-                                SurfaceQuantifierKind::Universal
-                                | SurfaceQuantifierKind::Existential,
-                            ),
-                            _,
-                        ) => {
+                        (kind, _)
+                            if matches!(
+                                kind,
+                                K::QuantifiedFormula(
+                                    SurfaceQuantifierKind::Universal
+                                        | SurfaceQuantifierKind::Existential
+                                ) | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+                            ) || matches!(kind, K::BinaryFormula(operator) if !operator.repeated) =>
+                        {
                             headers.insert(*header);
                             break;
                         }

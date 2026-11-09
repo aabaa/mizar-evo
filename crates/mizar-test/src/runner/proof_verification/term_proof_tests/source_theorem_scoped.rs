@@ -6916,6 +6916,12 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         theorem("(ex x being set st x = x)"),
         fixture.replace(": ", ": (((").replace("\nproof", ")))\nproof"),
         format!("\n:: grouped lemma\n{}", fixture.replace("theorem NativeQuantifiers", "lemma Grouped").replace(": ", ": ((").replace("\nproof", "))\nproof").replace("being set", "being\tset")),
+        theorem("not (for x being set holds x = x)"),
+        theorem("(for x being set holds x = x) & (ex y being set st y = y)"),
+        theorem("((for x being set holds x = x) or (ex y being set st y = y))"),
+        theorem("(((for x being set holds x = x) implies (ex y being set st y = y)))"),
+        format!("\n:: connective lemma\n{}", theorem("(for x being set holds x = x) iff (ex y being set st y = y)").replace("theorem Shape", "lemma Renamed").replace("being set", "being\tset")),
+        fixture.replace(": ", ": not (").replace("\nproof", ")\nproof"),
     ];
     // Manual (variable terms, equalities including proof, declarations, contexts).
     let counts = [
@@ -6940,11 +6946,16 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         (4, 2, 2, 3),
         (12, 6, 5, 6),
         (12, 6, 5, 6),
+        (4, 2, 2, 3),
+        (6, 3, 3, 4),
+        (6, 3, 3, 4),
+        (6, 3, 3, 4),
+        (6, 3, 3, 4),
+        (12, 6, 5, 6),
     ];
     let positive_count = cases.len();
     cases.extend([
         "reserve x for set; theorem Implicit: for x holds x = x proof let x be set; thus x = x; end;".into(),
-        theorem("not (for x being set holds x = x)"),
         theorem("ex x being object st x = x").replace("let x be set", "let x be object"),
         theorem("ex x being set st 1 = 1"),
         theorem("ex x being set st x = x & ... & x = x"),
@@ -7698,7 +7709,13 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
         (theorem("(for x being set holds x = x)"), vec![C::Universal], vec![], vec![(0,0,A::UniversalBody,0)], (1,0)),
         (theorem("(ex x being set st x = x)"), vec![C::Existential], vec![], vec![(0,0,A::ExistentialBody,0)], (1,0)),
         (fixture.replace(": ", ": (((").replace("\nproof", ")))\nproof"), fk.clone(), fe.clone(), fa.clone(), (7,1)),
-        (format!("\n:: grouped lemma\n{}", fixture.replace("theorem NativeQuantifiers", "lemma Grouped").replace(": ", ": ((").replace("\nproof", "))\nproof").replace("being set", "being\tset")), fk, fe, fa, (6,1)),
+        (format!("\n:: grouped lemma\n{}", fixture.replace("theorem NativeQuantifiers", "lemma Grouped").replace(": ", ": ((").replace("\nproof", "))\nproof").replace("being set", "being\tset")), fk.clone(), fe.clone(), fa.clone(), (6,1)),
+        (theorem("not (for x being set holds x = x)"), vec![C::Negation,C::Universal], vec![(0,0,E::NegatedFormula,1)], vec![(1,0,A::UniversalBody,0)], (1,0)),
+        (theorem("(for x being set holds x = x) & (ex y being set st y = y)"), vec![C::Conjunction,C::Universal,C::Existential], vec![(0,0,E::ConjunctionLeft,1),(0,1,E::ConjunctionRight,2)], vec![(1,0,A::UniversalBody,0),(2,0,A::ExistentialBody,1)], (2,0)),
+        (theorem("((for x being set holds x = x) or (ex y being set st y = y))"), vec![C::Disjunction,C::Universal,C::Existential], vec![(0,0,E::DisjunctionLeft,1),(0,1,E::DisjunctionRight,2)], vec![(1,0,A::UniversalBody,0),(2,0,A::ExistentialBody,1)], (3,0)),
+        (theorem("(((for x being set holds x = x) implies (ex y being set st y = y)))"), vec![C::Implication,C::Universal,C::Existential], vec![(0,0,E::ImplicationLeft,1),(0,1,E::ImplicationRight,2)], vec![(1,0,A::UniversalBody,0),(2,0,A::ExistentialBody,1)], (4,0)),
+        (format!("\n:: connective lemma\n{}", theorem("(for x being set holds x = x) iff (ex y being set st y = y)").replace("theorem Shape", "lemma Renamed").replace("being set", "being\tset")), vec![C::Biconditional,C::Universal,C::Existential], vec![(0,0,E::BiconditionalLeft,1),(0,1,E::BiconditionalRight,2)], vec![(1,0,A::UniversalBody,0),(2,0,A::ExistentialBody,1)], (2,0)),
+        (fixture.replace(": ", ": not (").replace("\nproof", ")\nproof"), std::iter::once(C::Negation).chain(fk).collect(), std::iter::once((0,0,E::NegatedFormula,1)).chain(fe.into_iter().map(|(parent,ordinal,role,child)| (parent+1,ordinal,role,child+1))).collect(), fa.into_iter().map(|(parent,ordinal,role,child)| (parent+1,ordinal,role,child)).collect(), (5,1)),
     ]);
     let temporary = std::process::Command::new("mktemp")
         .arg("-d")
@@ -7885,10 +7902,25 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
                 .join(" ")
         };
         let maps = source_proof_scope_maps(source, symbols, scope)?;
-        let body_context = |id| {
+        let root_scope = maps.0.get(&ast.root().unwrap()).unwrap();
+        assert!(root_scope.path().is_empty());
+        assert_eq!(
             env.contexts()
                 .iter()
-                .find(|(_, row)| row.lexical_scope.as_ref() == maps.0.get(&id))
+                .filter(|(_, row)| row.owner == BindingContextOwner::Module)
+                .count(),
+            1
+        );
+        let body_context = |id| {
+            let actual_scope = maps.0.get(&id).unwrap();
+            env.contexts()
+                .iter()
+                .find(|(_, row)| {
+                    row.lexical_scope.as_ref() == Some(actual_scope)
+                        || (row.owner == BindingContextOwner::Module
+                            && row.lexical_scope.is_none()
+                            && actual_scope == root_scope)
+                })
                 .unwrap()
                 .0
         };
@@ -8201,6 +8233,62 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
         assert_eq!(expected.wrappers.len(), wrapper_counts.0);
         assert_eq!(atomic.wrappers().len(), wrapper_counts.1);
         assert_eq!(composition.bound_uses.len(), 2 * atom_specs.len());
+        if matches!(
+            kinds[0],
+            C::Conjunction | C::Disjunction | C::Implication | C::Biconditional
+        ) {
+            assert_eq!(expected.binders.len(), 2);
+            let module_context = expected.formulas[0].context;
+            assert_eq!(
+                env.contexts().get(module_context).unwrap().owner,
+                BindingContextOwner::Module
+            );
+            assert_ne!(
+                expected.binders[0].body_context,
+                expected.binders[1].body_context
+            );
+            for binder in &expected.binders {
+                assert_eq!(
+                    env.contexts().get(binder.body_context).unwrap().parent,
+                    Some(module_context)
+                );
+            }
+            assert_eq!(
+                composition
+                    .bound_uses
+                    .iter()
+                    .map(|row| (row.binder.index(), row.ordinal, row.body_edge.index()))
+                    .collect::<Vec<_>>(),
+                vec![(0, 0, 0), (0, 1, 0), (1, 0, 1), (1, 1, 1)]
+            );
+            let proof_local = scope
+                .bindings()
+                .iter()
+                .find(|row| row.kind() == SourceVariableBindingKind::Let)
+                .unwrap();
+            let proof_declaration = primitive
+                .source_context()
+                .unwrap()
+                .declarations()
+                .iter()
+                .find(|(_, row)| row.site == site(proof_local.node()))
+                .unwrap()
+                .1;
+            assert!(
+                expected
+                    .binders
+                    .iter()
+                    .all(|row| row.binding != proof_declaration.binding
+                        && row.body_context != proof_declaration.binding_context)
+            );
+            assert_eq!(
+                env.contexts()
+                    .get(proof_declaration.binding_context)
+                    .unwrap()
+                    .parent,
+                Some(module_context)
+            );
+        }
         if case < 4 {
             assert_eq!(expected.binders.len(), 4);
             assert_eq!(expected.requests.len(), 10);
