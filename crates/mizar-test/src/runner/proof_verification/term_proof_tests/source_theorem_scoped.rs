@@ -4875,11 +4875,26 @@ fn task257b6_native_connective_lower_preserves_genuine_tables() -> Result<(), St
                             row.binding_context
                         );
                     }
-                    assert!(
-                        typed
-                            .clone()
-                            .with_source_formula_composition_from_original(source, symbols, scope)
-                            .is_err()
+                    let composed = typed
+                        .clone()
+                        .with_source_formula_composition_from_original(source, symbols, scope)
+                        .expect("RED: genuine Object connective composition");
+                    let graph = composed.source_composite_formula().unwrap();
+                    let pair = composed.source_formula_composition().unwrap();
+                    assert_eq!(
+                        (
+                            graph.formulas().len(),
+                            graph.binders().len(),
+                            graph.type_sites().len(),
+                            graph.edges().len(),
+                            pair.atomic_edges().len(),
+                            pair.bound_uses().len()
+                        ),
+                        (2, 1, 1, 1, 2, 4)
+                    );
+                    assert_eq!(
+                        format!("{:?}", graph.type_sites().iter().next().unwrap().1.head()),
+                        "BuiltinObject"
                     );
                 }
 
@@ -7133,6 +7148,8 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             vec![vec![0,3,0,1,4],vec![0,3,0,3,2],vec![0,4,1,1,4],vec![0,4,1,3,2]],vec![0,0,1,2,2,3],vec![0,0,2,2,3,3,5,5],(8,4,6,3)),
         ("theorem Canonical: for idle being object, x being object holds x = x proof let spare be object, x be object; thus x = x; end;".into(),vec!["object","object","object","object"],
             vec![vec![0,3,0,1,2],vec![0,3,0,3,2],vec![0,4,1,1,2],vec![0,4,1,3,2]],vec![0,1,2,3],vec![1,1,3,3],(4,2,4,3)),
+        ("theorem Restrict: for x being object st x = x holds x = x proof let x be object; thus x = x; end;".into(),vec!["object","object"],
+            vec![vec![0,3,0,1,2],vec![0,4,1,1,2]],vec![0,1],vec![0,0,0,0,1,1],(6,3,2,3)),
     ];
     let object_cases = cases.len();
     cases.extend(
@@ -8945,8 +8962,62 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                 check_source_theorem_metadata(source, symbols, scope)?,
                 actual
             );
+            let composed = typed
+                .clone()
+                .with_source_formula_composition_from_original(source, symbols, scope)
+                .expect("RED: genuine primitive quantifier composition");
+            let graph = composed.source_composite_formula().unwrap();
+            let declarations = context
+                .declarations()
+                .iter()
+                .filter(|(_, row)| {
+                    row.role
+                        == mizar_checker::source_context::SourceBindingSiteRole::QuantifierBinder
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(graph.binders().len(), declarations.len());
+            assert_eq!(graph.type_sites().len(), declarations.len());
+            for (binder_id, binder) in graph.binders().iter() {
+                let (_, declaration) = declarations
+                    .iter()
+                    .find(|(_, row)| row.binding == binder.binding())
+                    .unwrap();
+                let physical = physical[profile.3[declaration.source_ordinal]];
+                let syntax = ast.node_view(physical).unwrap();
+                let head = ast.node_view(syntax.children()[0]).unwrap();
+                let row = graph.type_sites().get(binder.type_site()).unwrap();
+                assert_eq!(row.binder(), binder_id);
+                assert_eq!(row.site(), &site(physical));
+                assert_eq!(row.source_range(), syntax.range());
+                assert_eq!(row.head_site(), &site(head.id()));
+                assert_eq!(row.head_range(), head.range());
+                let expected = profile.1[profile.3[declaration.source_ordinal]];
+                assert_eq!(row.spelling(), expected);
+                assert_eq!(row.head_spelling(), expected);
+                assert_eq!(
+                    format!("{:?}", row.head()),
+                    if expected == "object" {
+                        "BuiltinObject"
+                    } else {
+                        "BuiltinSet"
+                    }
+                );
+                assert_eq!(
+                    row.context(),
+                    env.contexts()
+                        .get(binder.body_context())
+                        .unwrap()
+                        .parent
+                        .unwrap()
+                );
+            }
+            assert_eq!(composed.nodes(), typed.nodes());
+            assert_eq!(composed.contexts(), typed.contexts());
+            assert_eq!(composed.types(), typed.types());
+            assert_eq!(composed.source_type(), typed.source_type());
+            assert_eq!(composed.source_context(), typed.source_context());
             assert!(
-                typed
+                composed
                     .clone()
                     .with_source_formula_composition_from_original(source, symbols, scope)
                     .is_err()

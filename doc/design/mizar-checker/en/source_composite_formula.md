@@ -120,7 +120,7 @@ final ownership, and preinstalled Task-248 rejection.
 | `SourceCompositeFormulaKind` | `#[non_exhaustive]`; callers must tolerate later frozen composite source kinds. |
 | `SourceCompositeFormulaRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourceFormulaRootOwnership` | `#[non_exhaustive]`; callers must tolerate later authenticated root owners. |
-| `SourceBinderTypeHead` | `#[non_exhaustive]`; callers must tolerate later frozen binder type heads. |
+| `SourceBinderTypeHead` | `#[non_exhaustive]`; native heads retain bare Set/Object; exact raw profiles keep their admission, and callers must tolerate later frozen heads. |
 | `SourceFormulaEdgeRole` | `#[non_exhaustive]`; callers must tolerate later composite child roles. |
 | `SourceFormulaRequestKind` | `#[non_exhaustive]`; callers must tolerate later unresolved request kinds. |
 | `SourceCompositeFormulaError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
@@ -194,7 +194,7 @@ C3-after-A/B without relying on unrelated dependency mismatch.
 ## Original-source universal composition
 Universal and existential roots retain optional universal restrictions and existential bodies as source structure, without assumption, witness or truth credit.
 Wrapper spelling recursively parenthesizes the owning formula descriptor; the original node table retains the complete written subtree.
-Fixed And/Or/Implies/Iff/Not and transparent grouping within these headers use the same tables. Nested explicit Set quantifiers retain their actual incoming/condition/body scopes; connectives and groups add no scope. ConjunctionLeft/Right distinguish composite children, while atomic groups remain with the atomic owner.
-The original-source entrance consumes the existing native theorem-equality lower's complete source context, type applications and BindingEnv. It retains explicit builtin-Set quantified headers of ordinary local theorem/lemma owners, including grouped and nested binders; primitive grammar and typing remain with the existing lower.
+Fixed And/Or/Implies/Iff/Not and transparent grouping within these headers use the same tables. Nested explicit Set/Object quantifiers retain their actual incoming/condition/body scopes; connectives and groups add no scope. ConjunctionLeft/Right distinguish composite children, while atomic groups remain with the atomic owner.
+The original-source entrance consumes the existing native theorem-equality lower's complete source context, type applications and BindingEnv. It retains explicit builtin-Set/Object quantified headers of ordinary local theorem/lemma owners, including grouped and nested binders; primitive grammar and typing remain with the existing lower.
 The existing seven tables retain actual source-root/body/binder/type/request associations. Each composite quantified formula and explicit type site use the incoming context; an implicit type site uses its authenticated Reserve module context, while condition/body uses the genuine quantifier context. Other formulas and wrappers use their actual lexical context. Grouped binders share only their real segment/type/head/context, with distinct declaration/application joins. Operator/segment descriptors retain their existing meaning; full subtree spelling belongs to the original node table.
 Raw producer/profile validation remains separate. Native construction neither fabricates the old diagnostic environment nor grants detached/raw installation, statement ownership, universal truth, proof acceptance or function-Binder certification.

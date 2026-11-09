@@ -3243,8 +3243,8 @@ original equality lowerと独立reserved-binding readerはbare unnamed `the set`
 
 ## Original-source universal composition intake
 native量化入口は、moduleに実量化子がある場合、明示型だけの量化子と未使用hintも含め、名前が重複しないmodule-level bare Set reserveを認める。元sourceとResolver宣言から同名の一意な先行Reserve identifier/segment/typeを認証し、型の等しさだけから出所を推測せず、省略箇所にTypeExpressionを作らない。proof Letは明示型を保持し、自由reserved参照・暗黙閉包・重複reserve・暗黙proof Letを拒否する。旧reserve-only経路の受理とerrorは維持する。
-明示SetのUniversal/Existential rootと入れ子bodyは実st/holds condition/body ownership・lexical context・source-type根拠を保持する。SourceContextとTypedの整合性は正確なquantifier-kind/opening-token対応を保ち、coherent source対応全体はoriginal replayが認証する。
-実lower入口とfresh original replayは、headerのrootまたは内部の固定And/Or/Implies/Iff/Not、明示Set quantifier、有限な透過的括弧を認める。atomic wrapperのtag・source ownership・contextを導き直したmetadataをscoped re-inferenceで保ち、proof conclusion grammarは別に維持する。結合式と括弧はcontextやchecked composite resultを作らず、bound-use clockをedge割当てから独立に保つ。
+明示Set/ObjectのUniversal/Existential rootと入れ子bodyは実st/holds condition/body ownership・lexical context・source-type根拠を保持する。組込みbinder headは実declaration/applicationと記述type/head/tokenに対応し、正規化型の等しさからownerを選ばない。SourceContextとTypedの整合性は正確なquantifier-kind/opening-token対応を保ち、coherent source対応全体はoriginal replayが認証する。
+実lower入口とfresh original replayは、headerのrootまたは内部の固定And/Or/Implies/Iff/Not、明示Set/Object quantifier、有限な透過的括弧を認める。atomic wrapperのtag・source ownership・contextを導き直したmetadataをscoped re-inferenceで保ち、proof conclusion grammarは別に維持する。結合式と括弧はcontextやchecked composite resultを作らず、bound-use clockをedge割当てから独立に保つ。
 native universal intake は、保持した original node graph を実 theorem-equality の source context/type/BindingEnv および primary/atomic result と照合する。既存 composite/composition row を導出し、構築と fresh replay の双方で owner/header/proof 構造全体・共有 written type・実 lexical scope・declaration/reference clock を認証する。primitive typing と旧 raw-family intake を保持し、proof goal の正規化や universal truth の確立は行わない。
 canonical 入口は実 TypeTable 全体をそのまま保持する。final source replay は owner/status と構造的な source-type 対応を検証する。opaque な Known normalized ID の意味は既存 lower ABI の所有であり、その normalized universe と SymbolEnv は Resolved input に保持されない。source transport は normalized-type certificate を追加しない。
 

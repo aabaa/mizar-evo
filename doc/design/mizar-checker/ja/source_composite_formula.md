@@ -112,7 +112,7 @@ ownership、preinstalled Task-248 rejectionをcoverする。
 | `SourceCompositeFormulaKind` | `#[non_exhaustive]`。callerはlater frozen composite source kindを許容する。 |
 | `SourceCompositeFormulaRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
 | `SourceFormulaRootOwnership` | `#[non_exhaustive]`。callerはlater authenticated root ownerを許容する。 |
-| `SourceBinderTypeHead` | `#[non_exhaustive]`。callerはlater frozen binder type headを許容する。 |
+| `SourceBinderTypeHead` | `#[non_exhaustive]`。native headは裸Set/Objectを保持し、旧raw profileの受理を維持する。callerは後続headを許容する。 |
 | `SourceFormulaEdgeRole` | `#[non_exhaustive]`。callerはlater composite child roleを許容する。 |
 | `SourceFormulaRequestKind` | `#[non_exhaustive]`。callerはlater unresolved request kindを許容する。 |
 | `SourceCompositeFormulaError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
@@ -182,7 +182,7 @@ A/B-after-C3とC3-after-A/Bをexerciseする。
 ## Original-source universal composition
 Universal/Existential rootは任意のuniversal restrictionとexistential bodyをsource構造として保持し、assumption・witness・truthの達成を与えない。
 wrapper spellingはowner formulaのdescriptorを再帰的に括弧で包み、実際に書かれたsubtree全体はoriginal node tableが保持する。
-header内の固定And/Or/Implies/Iff/Notと透過的括弧も同じtableを使う。入れ子の明示Set quantifierは実incoming/condition/body scopeを保ち、結合式と括弧はscopeを増やさない。ConjunctionLeft/Rightでcomposite childを区別し、atomic括弧はatomic ownerに残す。
-original-source 入口は既存 native theorem-equality lower の完全な source context・type application・BindingEnv を用いる。通常のローカル theorem/lemma の明示的 builtin-Set quantified header を、複数名・入れ子の binder とともに保持する。primitive grammar と typing は既存 lower が所有する。
+header内の固定And/Or/Implies/Iff/Notと透過的括弧も同じtableを使う。入れ子の明示Set/Object quantifierは実incoming/condition/body scopeを保ち、結合式と括弧はscopeを増やさない。ConjunctionLeft/Rightでcomposite childを区別し、atomic括弧はatomic ownerに残す。
+original-source 入口は既存 native theorem-equality lower の完全な source context・type application・BindingEnv を用いる。通常のローカル theorem/lemma の明示的 builtin-Set/Object quantified header を、複数名・入れ子の binder とともに保持する。primitive grammar と typing は既存 lower が所有する。
 既存七テーブルで実root/body/binder/type/request対応を保持する。各composite quantified formulaと明示type-siteはincoming context、暗黙type-siteは認証済みReserve module contextを使い、condition/bodyは実quantifier contextを使う。他のformulaとwrapperは実lexical contextを使う。複数名は実segment/type/head/contextだけを共有し、declaration/applicationは個別に結ぶ。operator/segment descriptorの意味を保ち、subtree全体のspellingはoriginal node tableが所有する。
 raw producer/profile の検証は分離する。旧 diagnostic environment の捏造、detached/raw installation、statement ownership、universal truth、proof acceptance、function-Binder certification は認めない。

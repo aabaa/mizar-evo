@@ -168,6 +168,7 @@ pub enum SourceFormulaRootOwnership {
 #[non_exhaustive]
 pub enum SourceBinderTypeHead {
     BuiltinSet,
+    BuiltinObject,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2224,6 +2225,7 @@ fn root_ownership_key(ownership: SourceFormulaRootOwnership) -> &'static str {
 fn binder_type_head_key(head: SourceBinderTypeHead) -> &'static str {
     match head {
         SourceBinderTypeHead::BuiltinSet => "builtin-set",
+        SourceBinderTypeHead::BuiltinObject => "builtin-object",
     }
 }
 
@@ -2287,6 +2289,167 @@ pub(crate) mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
+
+    #[test]
+    fn native_primitive_heads_keep_statement_and_final_replay_authentic() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            source_statement::{
+                SourceStatementCandidateFactKind, SourceStatementInputFactKind, SourceTheoremStatus,
+            },
+            source_type::SourceTypeHead,
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        // EN03/04/14: actual primitive declarations, including an unused Set.
+        let text = "theorem T: for x being object, y being set holds x = x proof let x be object, spare be set; thus x = x; end;";
+        task257b5_native_case(
+            text,
+            |installed, _, _, metadata, (symbols, source, scope)| {
+                let baseline = installed.expect("RED: genuine mixed primitive composition");
+                let original = baseline.source_composite_formula().unwrap();
+                assert_eq!(original.type_sites().len(), 2);
+                assert_eq!(
+                    original
+                        .type_sites()
+                        .iter()
+                        .map(|(_, row)| (row.spelling(), format!("{:?}", row.head())))
+                        .collect::<Vec<_>>(),
+                    vec![
+                        ("object", "BuiltinObject".to_owned()),
+                        ("set", "BuiltinSet".to_owned())
+                    ]
+                );
+                let pristine = task257b5_native_replay(&baseline, metadata.clone()).unwrap();
+                let statement = baseline
+                    .clone()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let handoff = statement.source_statement().unwrap();
+                assert_eq!(handoff.owners().len(), 1);
+                assert_eq!(
+                    handoff.owners().iter().next().unwrap().1.status(),
+                    SourceTheoremStatus::Unmodified
+                );
+                assert_eq!(handoff.candidate_facts().len(), 2);
+                assert!(handoff.candidate_facts().iter().all(|(_, row)| row.kind()
+                    == SourceStatementCandidateFactKind::UnverifiedProposition));
+                assert_eq!(handoff.input_facts().len(), 2);
+                for ((_, guard), (binding, uses, head)) in handoff.input_facts().iter().zip([
+                    (2, 2, SourceTypeHead::BuiltinObject),
+                    (3, 0, SourceTypeHead::BuiltinSet),
+                ]) {
+                    assert_eq!(guard.kind(), SourceStatementInputFactKind::LetTypeGuard);
+                    assert_eq!(
+                        (guard.binding().index(), guard.uses().len()),
+                        (binding, uses)
+                    );
+                    let types = statement.source_type().unwrap();
+                    let (_, application) = types
+                        .applications()
+                        .iter()
+                        .find(|(_, row)| row.binding() == guard.binding())
+                        .unwrap();
+                    assert_eq!(
+                        types.expressions().get(application.root()).unwrap().head(),
+                        &head
+                    );
+                }
+                assert_eq!(statement.nodes(), baseline.nodes());
+                assert_eq!(statement.contexts(), baseline.contexts());
+                assert_eq!(statement.types(), baseline.types());
+                assert_eq!(statement.source_composite_formula(), Some(original));
+                assert_eq!(
+                    statement.source_formula_composition(),
+                    baseline.source_formula_composition()
+                );
+                assert!(
+                    statement.facts().is_empty()
+                        && statement.coercions().is_empty()
+                        && statement.initial_obligations().is_empty()
+                );
+                let final_statement =
+                    task257b5_native_replay(&statement, metadata.clone()).unwrap();
+                assert_eq!(
+                    final_statement.source_statement(),
+                    statement.source_statement()
+                );
+                assert_eq!(final_statement.source_composite_formula(), Some(original));
+                assert!(
+                    final_statement.checked_proofs().is_empty()
+                        && final_statement.checked_formulas().is_empty()
+                        && final_statement.statement_semantics().is_empty()
+                );
+                assert!(
+                    statement
+                        .clone()
+                        .with_source_statement_from_original(source, symbols, scope)
+                        .is_err()
+                );
+                for target in 0..2 {
+                    for fault in 0..8 {
+                        let mut composite = original.clone();
+                        let other = original.type_sites.rows[1 - target].clone();
+                        let row = &mut composite.type_sites.rows[target];
+                        match fault {
+                            0 => {
+                                row.head = other.head;
+                                row.spelling = other.spelling;
+                                row.head_spelling = other.head_spelling;
+                            }
+                            1 => row.site = other.site,
+                            2 => row.source_range = other.source_range,
+                            3 => row.head_site = other.head_site,
+                            4 => row.context = original.binders.rows[target].body_context,
+                            5 => row.binder = other.binder,
+                            6 => row.head_range = other.head_range,
+                            _ => row.head_spelling = other.head_spelling,
+                        }
+                        assert_ne!(&composite, original);
+                        let old = baseline.source_formula_composition().unwrap();
+                        let composition = SourceFormulaCompositionHandoff::from_original_input(
+                            SourceFormulaCompositionHandoffInput {
+                                source_id: old.source_id(),
+                                module_id: old.module_id().clone(),
+                                atomic_edges: old
+                                    .atomic_edges()
+                                    .iter()
+                                    .map(|(_, row)| row.into())
+                                    .collect(),
+                                bound_uses: old
+                                    .bound_uses()
+                                    .iter()
+                                    .map(|(_, row)| row.into())
+                                    .collect(),
+                            },
+                            baseline.source_term().unwrap(),
+                            baseline.source_atomic_formula().unwrap(),
+                            &composite,
+                        );
+                        let mut changed = baseline.clone();
+                        changed.inject_source_composite_formula_for_test(composite);
+                        changed.inject_source_formula_composition_for_test(composition);
+                        assert_eq!(
+                            task257b5_native_replay(&changed, metadata.clone()),
+                            Err(ResolvedTypedAstError::InvalidSourceFormulaComposition),
+                            "head {target} fault {fault}"
+                        );
+                        assert!(
+                            changed
+                                .with_source_statement_from_original(source, symbols, scope)
+                                .is_err()
+                        );
+                        assert_eq!(
+                            task257b5_native_replay(&baseline, metadata.clone()).unwrap(),
+                            pristine
+                        );
+                    }
+                }
+            },
+        );
+    }
 
     #[test]
     fn native_connective_roots_require_original_replay() {

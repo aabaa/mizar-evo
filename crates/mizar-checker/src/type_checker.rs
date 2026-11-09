@@ -6276,6 +6276,7 @@ impl TermFormulaChecker {
                 SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole,
                 SourcePrimaryTermRole,
             },
+            source_type::SourceTypeHead,
             typed_ast::{SourceNode, TypedAst, TypedAstParts, TypingState, source_children},
         };
         let invalid = || "theorems.equality.invalid_original_composition".to_owned();
@@ -6594,8 +6595,8 @@ impl TermFormulaChecker {
                             SurfaceTokenKind::Identifier => mizar_lexer::is_identifier(&token.text),
                             SurfaceTokenKind::ReservedWord => {
                                 [
-                                    "theorem", "lemma", "for", "be", "being", "set", "holds",
-                                    "proof", "let", "thus", "end", "by",
+                                    "theorem", "lemma", "for", "be", "being", "set", "object",
+                                    "holds", "proof", "let", "thus", "end", "by",
                                 ]
                                 .contains(&token.text.as_ref())
                                     || (implicit && token.text.as_ref() == "reserve")
@@ -6647,7 +6648,7 @@ impl TermFormulaChecker {
                     ],
                 )
                 | (K::TypeExpression, ["TypeHead"])
-                | (K::TypeHead, ["set"])
+                | (K::TypeHead, ["set" | "object"])
                 | (K::TermExpression, ["TermReference"])
                 | (K::TermReference, ["identifier"])
                 | (K::Proposition, ["FormulaExpression"])
@@ -7392,6 +7393,17 @@ impl TermFormulaChecker {
                     let declaration = declaration_for.get(&name.site).ok_or_else(invalid)?;
                     let written = rows.iter().find(|row| row.kind == K::TypeExpression && row.range == declaration.written_type_range).ok_or_else(invalid)?;
                     let head = *children(written).first().ok_or_else(invalid)?;
+                    let (_, application) = types.applications().iter()
+                        .find(|(_, row)| row.binding() == declaration.binding).ok_or_else(invalid)?;
+                    let written_type = types.expressions().get(application.root()).ok_or_else(invalid)?;
+                    if written_type.site() != &site(written) || written_type.head_site() != &site(head) {
+                        return Err(invalid());
+                    }
+                    let primitive = match (written_type.head(), head.spelling.as_str()) {
+                        (SourceTypeHead::BuiltinSet, "set") => SourceBinderTypeHead::BuiltinSet,
+                        (SourceTypeHead::BuiltinObject, "object") => SourceBinderTypeHead::BuiltinObject,
+                        _ => return Err(invalid()),
+                    };
                     let binder = SourceQuantifierBinderId::new(input.binders.len());
                     let type_site = SourceBinderTypeSiteId::new(input.type_sites.len());
                     input.binders.push(SourceQuantifierBinderInput { formula, ordinal, segment_site: site(segment), segment_range: segment.range, segment_spelling: descriptor.clone(),
@@ -7399,7 +7411,7 @@ impl TermFormulaChecker {
                         local: LocalTermBinding::new(&name.spelling, scopes.get(&name.site).cloned().ok_or_else(invalid)?, name.range, declaration.source_ordinal),
                         binding: declaration.binding, body_context, type_site, recovery: SourceCompositeFormulaRecovery::Normal });
                     input.type_sites.push(SourceBinderTypeSiteInput { binder, site: site(written), source_range: written.range, spelling: written.spelling.clone(), head_site: site(head), head_range: head.range,
-                        head_spelling: head.spelling.clone(), context: if explicit { incoming } else { binding_context(written)? }, recovery: SourceCompositeFormulaRecovery::Normal, head: SourceBinderTypeHead::BuiltinSet });
+                        head_spelling: head.spelling.clone(), context: if explicit { incoming } else { binding_context(written)? }, recovery: SourceCompositeFormulaRecovery::Normal, head: primitive });
                     input.requests.push(SourceFormulaRequestInput { formula, ordinal: 1 + ordinal, kind: SourceFormulaRequestKind::BinderType, binder: Some(binder), type_site: Some(type_site) });
                     binder_for.insert(declaration.binding, binder); ordinal += 1;
                 }

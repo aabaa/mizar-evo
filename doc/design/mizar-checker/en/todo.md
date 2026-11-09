@@ -627,6 +627,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Fresh function-Binder BindingEnv](../../task_contracts/en/CHECKER257-FRESH-FUNCTION-BINDING-CONTEXTS.md); flat identity repair and lexical metadata before typing.
     - [x] [Scoped function-Binder primary references](../../task_contracts/en/CHECKER257-SCOPED-FUNCTION-REFERENCES.md); authenticated variable leaves before function formation.
     - [x] [Native Object types](../../task_contracts/en/CHECKER257-NATIVE-OBJECT-TYPES.md); actual bare annotations through canonical typed declarations and metadata.
+    - [x] [Native primitive composition](../../task_contracts/en/CHECKER257-NATIVE-PRIMITIVE-COMPOSITION.md); actual written quantifier heads through original pair, statement and final replay.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,

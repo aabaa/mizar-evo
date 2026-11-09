@@ -13,7 +13,7 @@ input、未検証candidate propositionのsyntax-free checker boundaryである�
 statement parse、label resolve、formula proof、theorem fact publicationは行わない。
 
 ## Native quantified statement and Let guard construction
-original-source statement入口は、明示Set universal・proof内Let宣言・最後の直接等式結論を持つ単一の認証済みB5 theoremも扱う。既存の単一定理seal、五テーブル、完全なnative lower/composite fingerprintを保持する。theorem propositionはincoming module contextのComposite rootを指し、外部quantifier guardを作らない。proof-local宣言変数は実proof contextの結論にLetTypeGuard intentを供給し、実reference useを保持する。未使用名のuseは空でよく、Let自体はproposition rowではない。
+original-source statement入口は、nativeが受理する組込み型universal・proof内Let宣言・最後の直接等式結論を持つ単一の認証済みB5 theoremも扱う。既存の単一定理seal、五テーブル、完全なnative lower/composite fingerprintを保持する。theorem propositionはincoming module contextのComposite rootを指し、外部quantifier guardを作らない。proof-local宣言変数は実proof contextの結論にLetTypeGuard intentを供給し、実reference useを保持する。未使用名のuseは空でよく、Let自体はproposition rowではない。
 fresh joint replayはoriginal graphとsource-type applicationに照らしてowner/statement/context/guard/candidate transaction全体を認証する。実primitive tableとmetadata、canonicalな原子的組込み、旧reserved/reference/witness経路とraw拒否を保持し、accepted factやproofを加えない。
 
 ## Original-source reserved statement construction
