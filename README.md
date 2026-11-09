@@ -60,6 +60,14 @@ For the development handoff, inspect recent commit bodies with
 and the [task roadmap](doc/design/todo.md). Verification must be run again on
 the new machine before relying on previous results.
 
+The historical pre-rollback implementation is retained separately under the
+tag `archive/pre-artifact-cache-rollback-20260622`. To inspect that backup:
+
+```sh
+git fetch origin --tags
+git worktree add ../mizar-evo-pre-rollback archive/pre-artifact-cache-rollback-20260622
+```
+
 ## Project Layout
 
 ```
