@@ -6664,7 +6664,7 @@ impl TermFormulaChecker {
                 (K::ReserveSegment, [names @ .., "for", "TypeExpression"]) if implicit => {
                     separated(names, "identifier")
                 }
-                (K::QuantifierVariableSegment, names)
+                (K::QuantifierVariableSegment | K::QualifiedVariableSegment, names)
                     if implicit && separated(names, "identifier") =>
                 {
                     true
@@ -6999,7 +6999,12 @@ impl TermFormulaChecker {
                             .is_some_and(|row| row.kind == K::ReserveSegment)
                 });
                 let hint = hints.next().ok_or_else(invalid)?;
-                if hints.next().is_some() || segment.kind != K::QuantifierVariableSegment {
+                if hints.next().is_some()
+                    || !matches!(
+                        segment.kind,
+                        K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                    )
+                {
                     return Err(invalid());
                 }
                 *children(row(hint.parent.ok_or_else(invalid)?)?)
@@ -9545,7 +9550,7 @@ impl TermFormulaChecker {
                     K::QuantifierVariableSegment | K::QualifiedVariableSegment,
                     [names @ .., "be" | "being", "TypeExpression"],
                 ) => separated(names, "identifier"),
-                (K::QuantifierVariableSegment, names)
+                (K::QuantifierVariableSegment | K::QualifiedVariableSegment, names)
                     if implicit && separated(names, "identifier") =>
                 {
                     true
@@ -23695,8 +23700,11 @@ fn source_theorem_implicit_type_sites(
         if !names.insert(hint.spelling())
             || !hint.scope().path().is_empty()
             || !hint.declared_type().is_some_and(|ty| {
-                ty.radix() == mizar_resolve::names::SourceVariableTypeRadix::Set
-                    && ty.attributes().is_empty()
+                matches!(
+                    ty.radix(),
+                    mizar_resolve::names::SourceVariableTypeRadix::Set
+                        | mizar_resolve::names::SourceVariableTypeRadix::Object
+                ) && ty.attributes().is_empty()
             })
         {
             return Err(invalid());
@@ -23718,7 +23726,10 @@ fn source_theorem_implicit_type_sites(
         types.insert(name, ty);
     }
     for binder in scope.bindings().iter().filter(|binding| {
-        binding.kind() == SourceVariableBindingKind::Quantifier && binding.declared_type().is_none()
+        matches!(
+            binding.kind(),
+            SourceVariableBindingKind::Quantifier | SourceVariableBindingKind::Let
+        ) && binding.declared_type().is_none()
     }) {
         let mut matching = hints.iter().filter(|hint| {
             hint.spelling() == binder.spelling() && hint.range().end < binder.range().start

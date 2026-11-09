@@ -166,6 +166,7 @@ fn source_theorem_registration_closure_preserves_upstream_errors() {
             NamespacePath::new(module.path().as_str()),
         )
         .collect(module);
+        assert!(collected.diagnostics().is_empty());
         let symbols = collected.env().clone();
         let scope = Resolver::resolve_proof_occurrences(Input::new(ast, module, &symbols)).unwrap();
         (source, symbols, scope)
@@ -283,11 +284,14 @@ fn source_theorem_registration_closure_preserves_upstream_errors() {
     let private_control = controls.len();
     for (case, text) in [
         include_str!("../../../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz").to_owned(),
-        format!("reserve spare for object; {text}"),
+        text.replacen("thus X = X;", "thus X = 0;", 1),
         format!("{text}\n{}", include_str!("../../../../../../tests/miz/pass/clusters/pass_advanced_semantics_existential_registration_001.miz")),
     ].into_iter().enumerate() {
         let ast = parse(&text);
         let (source, symbols, scope) = lower(&ast, &module);
+        if case == 1 {
+            assert_eq!(Checker::check_source_theorem_equalities_with_typed_declarations(&source, &symbols, &scope).unwrap_err(), "theorems.equality.unsupported_source_types");
+        }
         if case == 2 { assert!(!symbols.registrations().is_empty()); }
         controls.push((source.clone(), symbols, scope));
         controls.push((source, empty.clone(), other_scope.clone()));

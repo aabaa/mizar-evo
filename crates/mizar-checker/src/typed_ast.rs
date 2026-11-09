@@ -5186,7 +5186,10 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
             )
         })
     {
-        use crate::source_type::{SourceTypeApplicationForm, SourceTypeHead};
+        use crate::{
+            source_context::SourceBindingSiteRole,
+            source_type::{SourceTypeApplicationForm, SourceTypeHead},
+        };
         let invalid = TypedAstError::InvalidSourceType;
         if handoff.applications().len() != context.declarations().len()
             || !handoff.arguments().is_empty()
@@ -5224,18 +5227,21 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 .nodes
                 .node(head_site)
                 .ok_or(TypedAstError::InvalidSourceType)?;
-            let type_context = if declaration.role
-                == crate::source_context::SourceBindingSiteRole::QuantifierBinder
-                && parts.nodes.iter().any(|(_, segment)| {
-                    segment.kind.as_str() == "QuantifierVariableSegment"
-                        && segment.children.contains(&declaration.site.node())
-                        && !segment.children.iter().any(|id| {
-                            parts
-                                .nodes
-                                .node(*id)
-                                .is_some_and(|node| node.kind.as_str() == "TypeExpression")
-                        })
-                }) {
+            let type_context = if parts.nodes.iter().any(|(_, segment)| {
+                matches!(
+                    (&declaration.role, segment.kind.as_str()),
+                    (
+                        SourceBindingSiteRole::QuantifierBinder,
+                        "QuantifierVariableSegment"
+                    ) | (SourceBindingSiteRole::ProofLet, "QualifiedVariableSegment")
+                ) && segment.children.contains(&declaration.site.node())
+                    && !segment.children.iter().any(|id| {
+                        parts
+                            .nodes
+                            .node(*id)
+                            .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+                    })
+            }) {
                 let mut defaults = context.declarations().iter().filter(|(_, hint)| {
                     hint.role == crate::source_context::SourceBindingSiteRole::ReserveDefault
                         && hint.spelling == declaration.spelling
@@ -6958,6 +6964,124 @@ pub(crate) mod tests {
             ));
         let final_result = task257b5_native_replay(&baseline, expressions);
         (lower, final_result)
+    }
+
+    #[test]
+    fn native_primitive_defaults_authenticate_physical_context_and_segment_role() {
+        use crate::source_context::SourceBindingSiteRole;
+        for primitive in ["set", "object"] {
+            let text = format!(
+                "reserve x for {primitive}; theorem T: for x holds x = x proof let x; thus x = x; end;"
+            );
+            task257b5_native_case(
+                &text,
+                |installed, parts, _, expressions, (symbols, source, scope)| {
+                    let baseline = installed.unwrap();
+                    let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                    assert_eq!(validate_source_type(&parts), Ok(()));
+                    let context = parts.source_context.as_ref().unwrap();
+                    let types = parts.source_type.as_ref().unwrap();
+                    assert_eq!(context.declarations().len(), 3);
+                    assert_eq!(types.expressions().len(), 1);
+                    assert_eq!(types.applications().len(), 3);
+                    let (root, expression) = types.expressions().iter().next().unwrap();
+                    assert!(
+                        types
+                            .applications()
+                            .iter()
+                            .all(|(_, row)| row.root() == root)
+                    );
+                    let (_, hint) = context.declarations().iter().next().unwrap();
+                    assert_eq!(hint.role, SourceBindingSiteRole::ReserveDefault);
+                    let token = parts
+                        .nodes
+                        .node(expression.head_site().node())
+                        .unwrap()
+                        .children[0];
+                    for (_, declaration) in context.declarations().iter().skip(1) {
+                        assert_ne!(declaration.local_context, hint.local_context);
+                        assert_eq!(declaration.written_type_range, hint.written_type_range);
+                        assert_eq!(
+                            parts
+                                .nodes
+                                .node(declaration.site.node())
+                                .unwrap()
+                                .links
+                                .context,
+                            Some(declaration.local_context)
+                        );
+                        let segment = parts
+                            .nodes
+                            .iter()
+                            .find(|(_, node)| {
+                                matches!(
+                                    node.kind.as_str(),
+                                    "QuantifierVariableSegment" | "QualifiedVariableSegment"
+                                ) && node.children.contains(&declaration.site.node())
+                            })
+                            .unwrap()
+                            .0;
+                        let expected = match declaration.role {
+                            SourceBindingSiteRole::QuantifierBinder => "QuantifierVariableSegment",
+                            SourceBindingSiteRole::ProofLet => "QualifiedVariableSegment",
+                            _ => panic!("unexpected inherited declaration"),
+                        };
+                        assert_eq!(parts.nodes.node(segment).unwrap().kind.as_str(), expected);
+                        for fault in 0..4 {
+                            let mut changed = parts.clone();
+                            let mut nodes = parts
+                                .nodes
+                                .iter()
+                                .map(|(_, node)| node.clone())
+                                .collect::<Vec<_>>();
+                            match fault {
+                                0 => {
+                                    nodes[segment.index()].kind = TypedNodeKind::new(
+                                        if expected == "QualifiedVariableSegment" {
+                                            "QuantifierVariableSegment"
+                                        } else {
+                                            "QualifiedVariableSegment"
+                                        },
+                                    )
+                                }
+                                1 => nodes[segment.index()]
+                                    .children
+                                    .retain(|id| *id != declaration.site.node()),
+                                2 => nodes[segment.index()]
+                                    .children
+                                    .push(expression.site().node()),
+                                _ => {
+                                    for site in [
+                                        expression.site().node(),
+                                        expression.head_site().node(),
+                                        token,
+                                    ] {
+                                        nodes[site.index()].links.context =
+                                            Some(declaration.local_context);
+                                    }
+                                }
+                            }
+                            changed.nodes = TypedArena::try_new(parts.nodes.root(), nodes).unwrap();
+                            assert_eq!(
+                                validate_source_type(&changed),
+                                Err(TypedAstError::InvalidSourceType),
+                                "{primitive} {expected} fault {fault}"
+                            );
+                        }
+                    }
+                    assert_eq!(
+                        baseline
+                            .clone()
+                            .with_source_statement_from_original(source, symbols, scope),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions).unwrap(),
+                        pristine
+                    );
+                },
+            );
+        }
     }
 
     #[test]

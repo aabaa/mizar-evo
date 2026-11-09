@@ -370,7 +370,7 @@ fn source_theorem_final_metadata_preserves_upstream_errors() {
     let ids = InMemorySessionIdAllocator::new();
     for (ordinal, text) in [
         text.to_owned(),
-        format!("reserve spare for object; {text}"),
+        text.replacen("thus X = X;", "thus X = 0;", 1),
         format!("{text}\n{registration}"),
     ]
     .into_iter()
@@ -418,6 +418,16 @@ fn source_theorem_final_metadata_preserves_upstream_errors() {
         .collect(&module);
         let symbols = collected.env();
         let scope = Resolver::resolve_proof_occurrences(Input::new(ast, &module, symbols)).unwrap();
+        if ordinal == 1 {
+            assert!(collected.diagnostics().is_empty());
+            assert_eq!(
+                Checker::check_source_theorem_equalities_with_typed_declarations(
+                    &source, symbols, &scope
+                )
+                .unwrap_err(),
+                "theorems.equality.unsupported_source_types"
+            );
+        }
         let empty = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
         let mut controls = vec![(source.clone(), empty.clone(), scope.clone())];
         if ordinal == 0 {

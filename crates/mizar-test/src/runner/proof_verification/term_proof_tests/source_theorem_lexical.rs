@@ -556,7 +556,10 @@ fn source_theorem_lexical_contexts_preserve_upstream_errors() {
             ));
         }
     }
-    for text in [format!("reserve spare for object; {text}"), String::new()] {
+    for text in [
+        text.replacen("thus X = X;", "thus X = 0;", 1),
+        String::new(),
+    ] {
         let broader = parse(&text);
         let broader_source = SurfaceResolvedArena::lower(&broader, &module).unwrap();
         let shells = DeclarationShellCollector::new(&broader, &module).collect();
@@ -570,6 +573,18 @@ fn source_theorem_lexical_contexts_preserve_upstream_errors() {
             SourceVariableScopeInput::new(&broader, &module, collected.env()),
         )
         .unwrap();
+        if !text.is_empty() {
+            assert!(collected.diagnostics().is_empty());
+            assert_eq!(
+                Checker::check_source_theorem_equalities(
+                    &broader_source,
+                    collected.env(),
+                    &broader_scope
+                )
+                .unwrap_err(),
+                "theorems.equality.unsupported_source_types"
+            );
+        }
         let before = (
             broader_source.clone(),
             collected.env().clone(),

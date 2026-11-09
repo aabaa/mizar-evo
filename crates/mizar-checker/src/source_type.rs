@@ -6154,7 +6154,12 @@ mod tests {
             },
         };
         let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
-        task257b5_native_case(fixture, |installed, parts, primary, expressions, _| {
+        for (text, inherited) in [
+            (fixture.to_owned(), 1),
+            ("reserve x for object; theorem T: for x being set holds x = x proof let x; thus x = x; end;".into(), 2),
+            ("reserve x for set; theorem T: for x being object holds x = x proof let x; thus x = x; end;".into(), 2),
+        ] {
+        task257b5_native_case(&text, |installed, parts, primary, expressions, _| {
             let baseline = installed.unwrap();
             let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
             for fault in 0..4 {
@@ -6168,17 +6173,17 @@ mod tests {
                         .iter()
                         .map(|row| row.root.index())
                         .collect::<Vec<_>>(),
-                    vec![0, 0, 1]
+                    if inherited == 1 { vec![0, 0, 1] } else { vec![0, 1, 0] }
                 );
                 match fault {
-                    0 => types.applications.entries[1].root = SourceTypeExpressionId::new(1),
+                    0 => types.applications.entries[inherited].root = SourceTypeExpressionId::new(1),
                     1 => {
                         let mut duplicate = types.expressions.entries[0].clone();
                         duplicate.id = SourceTypeExpressionId::new(1);
                         types.expressions.entries[1].id = SourceTypeExpressionId::new(2);
                         types.expressions.entries.insert(1, duplicate);
-                        types.applications.entries[1].root = SourceTypeExpressionId::new(1);
-                        types.applications.entries[2].root = SourceTypeExpressionId::new(2);
+                        types.applications.entries[inherited].root = SourceTypeExpressionId::new(1);
+                        types.applications.entries[3 - inherited].root = SourceTypeExpressionId::new(2);
                     }
                     _ => {
                         let default = &types.expressions.entries[0];
@@ -6223,6 +6228,7 @@ mod tests {
                 );
             }
         });
+        }
     }
 
     #[test]

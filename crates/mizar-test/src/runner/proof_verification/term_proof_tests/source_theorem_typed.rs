@@ -466,7 +466,7 @@ fn source_theorem_typed_inference_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&format!("reserve spare for object; {text}"));
+    let unsupported = parse(&text.replacen("thus X = X;", "thus X = 0;", 1));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(
@@ -475,10 +475,20 @@ fn source_theorem_typed_inference_preserves_upstream_errors() {
         NamespacePath::new(module.path().as_str()),
     )
     .collect(&module);
+    assert!(collected.diagnostics().is_empty());
     let unsupported_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
         SourceVariableScopeInput::new(&unsupported, &module, collected.env()),
     )
     .unwrap();
+    assert_eq!(
+        mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(
+            &unsupported_source,
+            collected.env(),
+            &unsupported_scope,
+        )
+        .unwrap_err(),
+        "theorems.equality.unsupported_source_types"
+    );
     assert_eq!(
         validate_source_proof_occurrences(&unsupported_source, collected.env(), &unsupported_scope),
         Ok(())
@@ -1097,7 +1107,7 @@ fn source_theorem_typed_declarations_preserve_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&format!("reserve spare for object; {text}"));
+    let unsupported = parse(&text.replacen("thus X = X;", "thus X = 0;", 1));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let unsupported_shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let unsupported_collected = SignatureProjectionExtractor::new(
@@ -1106,10 +1116,20 @@ fn source_theorem_typed_declarations_preserve_upstream_errors() {
         NamespacePath::new(module.path().as_str()),
     )
     .collect(&module);
+    assert!(unsupported_collected.diagnostics().is_empty());
     let unsupported_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
         SourceVariableScopeInput::new(&unsupported, &module, unsupported_collected.env()),
     )
     .unwrap();
+    assert_eq!(
+        mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(
+            &unsupported_source,
+            unsupported_collected.env(),
+            &unsupported_scope,
+        )
+        .unwrap_err(),
+        "theorems.equality.unsupported_source_types"
+    );
     controls.push((
         unsupported_source.clone(),
         unsupported_collected.env().clone(),

@@ -1169,7 +1169,7 @@ fn source_theorem_scoped_inference_preserves_upstream_errors() {
             ));
         }
     }
-    let unsupported = parse(&format!("reserve spare for object; {text}"));
+    let unsupported = parse(&text.replacen("thus X = X;", "thus X = 0;", 1));
     let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
     let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
     let collected = SignatureProjectionExtractor::new(
@@ -1182,6 +1182,15 @@ fn source_theorem_scoped_inference_preserves_upstream_errors() {
         SourceVariableScopeInput::new(&unsupported, &module, collected.env()),
     )
     .unwrap();
+    assert_eq!(
+        Checker::check_source_theorem_equalities(
+            &unsupported_source,
+            collected.env(),
+            &unsupported_scope
+        )
+        .unwrap_err(),
+        "theorems.equality.unsupported_source_types"
+    );
     controls.push((
         "unsupported type",
         unsupported_source.clone(),
@@ -7121,16 +7130,15 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         theorem("ex x being set st x = x").replace("thus x = x;", "thus x = x & x = x;"),
         theorem("ex x being set st x = x").replace("thus x = x;", "set y = x; thus y = y;"),
     ]);
-    cases.extend([
-        implicit.replace("let x be set", "let x"),
-        implicit
-            .replace("reserve x for set;", "reserve x, y for set;")
-            .replace("holds x = x", "holds x = y"),
-    ]);
+    cases.extend([implicit
+        .replace("reserve x for set;", "reserve x, y for set;")
+        .replace("holds x = x", "holds x = y")]);
     // Literal physical type paths start at the actual ItemList. Declaration
     // slots and reference winners are source-intent oracles, independent of receipts.
     let mixed = "theorem Mixed: for x being set, idle being object holds x = x proof let x be set, spare be object; thus x = x; end;";
     let grouped = "theorem Groups: for a, idle being object, b being set holds a = a & b = b proof let a, spare be object, b be set; thus a = a; thus b = b; end;";
+    let object_let =
+        "reserve x for object; theorem ObjectLet: for x holds x = x proof let x; thus x = x; end;";
     let object_profiles = [
         (cases[positive_count].clone(), vec!["object", "object"],
             vec![vec![0,3,0,1,2], vec![0,4,1,1,2]], vec![0,1], vec![0,0,1,1], (4,2,2,3)),
@@ -7150,6 +7158,30 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             vec![vec![0,3,0,1,2],vec![0,3,0,3,2],vec![0,4,1,1,2],vec![0,4,1,3,2]],vec![0,1,2,3],vec![1,1,3,3],(4,2,4,3)),
         ("theorem Restrict: for x being object st x = x holds x = x proof let x be object; thus x = x; end;".into(),vec!["object","object"],
             vec![vec![0,3,0,1,2],vec![0,4,1,1,2]],vec![0,1],vec![0,0,0,0,1,1],(6,3,2,3)),
+        (implicit.replace("let x be set", "let x"),vec!["set"],
+            vec![vec![0,1,2]],vec![0,0,0],vec![1,1,2,2],(4,2,3,3)),
+        ("reserve x for object; theorem ObjectQuant: for x holds x = x proof let x be object; thus x = x; end;".into(),vec!["object","object"],
+            vec![vec![0,1,2],vec![1,4,1,1,2]],vec![0,0,1],vec![1,1,2,2],(4,2,3,3)),
+        (object_let.into(),vec!["object"],
+            vec![vec![0,1,2]],vec![0,0,0],vec![1,1,2,2],(4,2,3,3)),
+        ("reserve x for object; reserve y for set; theorem MixedDefault: for x, y holds x = x & y = y proof let x, y; thus x = x; thus y = y; end;".into(),vec!["object","set"],
+            vec![vec![0,1,2],vec![1,1,2]],vec![0,1,0,1,0,1],vec![2,2,3,3,4,4,5,5],(8,4,6,3)),
+        ("reserve x, y for object; theorem SharedDefault: for x, y holds x = y proof let x, y; thus x = x; end;".into(),vec!["object"],
+            vec![vec![0,1,4]],vec![0,0,0,0,0,0],vec![2,3,4,4],(4,2,6,3)),
+        ("reserve spare for object; reserve x for set; theorem UnusedDefault: for x holds x = x proof let x; thus x = x; end;".into(),vec!["object","set"],
+            vec![vec![0,1,2],vec![1,1,2]],vec![0,1,1,1],vec![2,2,3,3],(4,2,4,3)),
+        ("reserve x for object; theorem NestedDefault: for x holds for x being set holds x = x proof let x; thus x = x; end;".into(),vec!["object","set"],
+            vec![vec![0,1,2],vec![1,3,0,3,1,2]],vec![0,0,1,0],vec![2,2,3,3],(4,2,4,4)),
+        ("reserve x for object; theorem OverrideSet: for x being set holds x = x proof let x be set; thus x = x; end;".into(),vec!["object","set","set"],
+            vec![vec![0,1,2],vec![1,3,0,1,2],vec![1,4,1,1,2]],vec![0,1,2],vec![1,1,2,2],(4,2,3,3)),
+        ("reserve x for object; theorem LocalOverride: for x holds x = x proof let x be set; thus x = x; end;".into(),vec!["object","set"],
+            vec![vec![0,1,2],vec![1,4,1,1,2]],vec![0,0,1],vec![1,1,2,2],(4,2,3,3)),
+        ("reserve x for object; theorem HeaderOverride: for x being set holds x = x proof let x; thus x = x; end;".into(),vec!["object","set"],
+            vec![vec![0,1,2],vec![1,3,0,1,2]],vec![0,1,0],vec![1,1,2,2],(4,2,3,3)),
+        ("reserve x for set; theorem OppositeDefault: for x being object holds x = x proof let x; thus x = x; end;".into(),vec!["set","object"],
+            vec![vec![0,1,2],vec![1,3,0,1,2]],vec![0,1,0],vec![1,1,2,2],(4,2,3,3)),
+        (format!("\n:: default layout\n{}",object_let.replace(" x", " parcel").replace("for object", "for\tobject").replace("proof", "proof\n:: locals\n")),vec!["object"],
+            vec![vec![0,1,2]],vec![0,0,0],vec![1,1,2,2],(4,2,3,3)),
     ];
     let object_cases = cases.len();
     cases.extend(
@@ -7203,6 +7235,12 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         "{} reserve x for set;",
         implicit.replace("reserve x for set;", "")
     ));
+    let missing_let_default = cases.len();
+    cases.push(
+        "theorem MissingLet: for x being set holds x = x proof let x; thus x = x; end;".into(),
+    );
+    let forward_let_default = cases.len();
+    cases.push("theorem ForwardLet: for x being set holds x = x proof let x; thus x = x; end; reserve x for object;".into());
     let recovered_start = cases.len();
     cases.extend([
         theorem("for x being set holds (x = x"),
@@ -7278,7 +7316,27 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
             SourceVariableScopeInput::new(ast, &module, &symbols),
         );
-        if case == forward_default {
+        if case == forward_default || case == missing_let_default || case == forward_let_default {
+            if case == missing_let_default || case == forward_let_default {
+                let local = ast
+                    .node_views()
+                    .find(|view| view.kind() == &K::QualifiedVariableSegment)
+                    .unwrap();
+                assert!(
+                    !local
+                        .children()
+                        .iter()
+                        .any(|id| { ast.node_view(*id).unwrap().kind() == &K::TypeExpression })
+                );
+                let reserves = ast
+                    .node_views()
+                    .filter(|view| view.kind() == &K::ReserveSegment)
+                    .collect::<Vec<_>>();
+                assert_eq!(reserves.len(), usize::from(case == forward_let_default));
+                if case == forward_let_default {
+                    assert!(local.range().end < reserves[0].range().start);
+                }
+            }
             assert_eq!(
                 scope.unwrap_err(),
                 mizar_resolve::names::SourceVariableScopeError::UnreservedImplicitVariable
@@ -8610,6 +8668,15 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                     ) && view.children().contains(&original.node())
                 })
                 .unwrap();
+            assert_eq!(
+                segment.kind(),
+                &match original.kind() {
+                    SourceVariableBindingKind::Reserve => K::ReserveSegment,
+                    SourceVariableBindingKind::Quantifier => K::QuantifierVariableSegment,
+                    SourceVariableBindingKind::Let => K::QualifiedVariableSegment,
+                    kind => panic!("unexpected positive declaration {kind:?}"),
+                }
+            );
             let explicit = segment
                 .children()
                 .iter()
@@ -8691,6 +8758,26 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                 .unwrap()
                 .1;
             assert_eq!(application.source_ordinal(), original.ordinal());
+            if explicit.is_none() && original.kind() != SourceVariableBindingKind::Reserve {
+                let matching = scope
+                    .bindings()
+                    .iter()
+                    .filter(|hint| {
+                        hint.kind() == SourceVariableBindingKind::Reserve
+                            && hint.spelling() == original.spelling()
+                            && hint.range().end < original.range().start
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(matching.len(), 1);
+                let hint = matching[0];
+                let hint_application = types
+                    .applications()
+                    .iter()
+                    .find(|(_, row)| row.source_ordinal() == hint.ordinal())
+                    .unwrap()
+                    .1;
+                assert_eq!(application.root(), hint_application.root());
+            }
             let written = types.expressions().get(application.root()).unwrap();
             let syntax = ast
                 .node_views()
@@ -8704,6 +8791,35 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             assert_eq!(written.source_range(), syntax.range());
             assert_eq!(written.head_site(), &site(head.id()));
             assert_eq!(written.head_range(), head.range());
+            let physical_context = if explicit.is_none() {
+                let root = env
+                    .contexts()
+                    .iter()
+                    .find(|(_, row)| row.owner == BindingContextOwner::Module)
+                    .unwrap()
+                    .0;
+                context.context_links().get(root).unwrap().local_context
+            } else {
+                declaration.local_context
+            };
+            assert_eq!(
+                typed
+                    .nodes()
+                    .node(written.site().node())
+                    .unwrap()
+                    .links
+                    .context,
+                Some(physical_context)
+            );
+            assert_eq!(
+                typed
+                    .nodes()
+                    .node(written.head_site().node())
+                    .unwrap()
+                    .links
+                    .context,
+                Some(physical_context)
+            );
             let head = if expected_head(original.id().index()) == TypeHeadRef::BuiltinObject {
                 SourceTypeHead::BuiltinObject
             } else {
@@ -9002,13 +9118,30 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                         "BuiltinSet"
                     }
                 );
+                let original = scope
+                    .bindings()
+                    .iter()
+                    .find(|original| site(original.node()) == declaration.site)
+                    .unwrap();
+                assert_eq!(original.kind(), SourceVariableBindingKind::Quantifier);
+                if original.declared_type().is_none() {
+                    assert!(syntax.range().end < declaration.declaration_range.start);
+                }
                 assert_eq!(
                     row.context(),
-                    env.contexts()
-                        .get(binder.body_context())
-                        .unwrap()
-                        .parent
-                        .unwrap()
+                    if original.declared_type().is_none() {
+                        env.contexts()
+                            .iter()
+                            .find(|(_, row)| row.owner == BindingContextOwner::Module)
+                            .unwrap()
+                            .0
+                    } else {
+                        env.contexts()
+                            .get(binder.body_context())
+                            .unwrap()
+                            .parent
+                            .unwrap()
+                    }
                 );
             }
             assert_eq!(composed.nodes(), typed.nodes());
@@ -9016,6 +9149,30 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             assert_eq!(composed.types(), typed.types());
             assert_eq!(composed.source_type(), typed.source_type());
             assert_eq!(composed.source_context(), typed.source_context());
+            let final_composed = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: &composed,
+                cluster_facts: &facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &specificity,
+                overload_selection: &selection,
+                expressions: metadata.clone(),
+                node_hints: vec![],
+                statement_semantics: None,
+                statement_proofs: None,
+            })
+            .map_err(|error| error.to_string())?;
+            assert_eq!(final_composed.source_composite_formula(), Some(graph));
+            assert_eq!(
+                final_composed.source_formula_composition(),
+                composed.source_formula_composition()
+            );
+            assert!(
+                final_composed.checked_proofs().is_empty()
+                    && final_composed.checked_formulas().is_empty()
+                    && final_composed.statement_semantics().is_empty()
+            );
             assert!(
                 composed
                     .clone()
