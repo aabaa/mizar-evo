@@ -137,6 +137,9 @@ unrelated user changes. Use a Conventional Commits subject (`feat:`, `fix:`,
 `refactor:`, `docs:`, `test:`) and a short body ending with the `volume:` line.
 Commit by default when the full workflow or autonomous crate development was
 requested; otherwise only when the user asks (`commit`, `コミットまで`).
+After each authorized commit, push to the current branch's upstream before
+starting the next task. Follow the pre-push verification requirements above;
+if push is blocked, report the reason and leave the task incomplete.
 
 ## Final Response
 
