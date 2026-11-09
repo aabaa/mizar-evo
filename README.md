@@ -20,6 +20,46 @@ This redesign will help Mizar evolve into a next-generation formal mathematics e
 
 This is the place to discuss future directions for the Mizar language / system / library specifications. We welcome your constructive opinions. Please feel free to participate in the discussion.
 
+## Restore a development environment
+
+Use a Linux environment with Git, a native C compiler/linker, and Rust installed
+through rustup. The workspace uses Rust edition 2024; CI uses the stable
+toolchain with rustfmt and Clippy (see [CI](.github/workflows/ci.yml)).
+GitHub access and access to the Rust toolchain and crate registries are needed
+for the initial setup.
+
+```sh
+git clone https://github.com/aabaa/mizar-evo.git
+cd mizar-evo
+rustup toolchain install stable --component rustfmt --component clippy
+rustup override set stable
+export CARGO_BUILD_JOBS=4
+cargo build --locked
+```
+
+Run the repository checks before continuing development on the new machine:
+
+```sh
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test -p mizar-checker --test lint_policy
+cargo test -p mizar-test --test lint_policy
+cargo test --locked
+cargo run -p mizar-test -- plan --tests-root tests --manifest tests/coverage/spec_trace.toml
+```
+
+`Cargo.lock`, specifications, test fixtures, and shared agent instructions are
+tracked in Git. Build outputs and local run logs under `target/` can be
+regenerated; they are not required to restore the project. Machine-local agent
+settings listed in [.gitignore](.gitignore) must be configured separately if
+needed. Manage credentials separately and keep them out of the repository.
+
+For the development handoff, inspect recent commit bodies with
+`git log -5 --format=full`, then read [AGENTS.md](AGENTS.md), the
+[autonomous development protocol](doc/design/autonomous_crate_development.md),
+and the [task roadmap](doc/design/todo.md). Verification must be run again on
+the new machine before relying on previous results.
+
 ## Project Layout
 
 ```
