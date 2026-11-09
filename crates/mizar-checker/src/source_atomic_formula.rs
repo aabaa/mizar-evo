@@ -3691,6 +3691,232 @@ pub(crate) mod tests {
     };
 
     #[test]
+    fn task257b6_native_atomic_wrappers_authenticate_actual_formula_ownership() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_composite_formula::SourceCompositeFormulaKind,
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        let fixture = include_str!("../tests/testdata/native_connective_statement.miz");
+        for (case, text) in [
+            fixture.to_owned(),
+            fixture.replace("not (x = x)", "(not (x = x))"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            task257b5_native_case(
+                text,
+                |installed, mut parts, primary, expressions, (symbols, source, _)| {
+                    let baseline = installed.unwrap();
+                    let before = baseline.debug_text();
+                    let original = baseline.source_atomic_formula().unwrap();
+                    let composite = baseline.source_composite_formula().unwrap();
+                    assert!(!original.wrappers().is_empty() && !composite.wrappers().is_empty());
+                    let env = baseline.source_context().unwrap().binding_env();
+                    original
+                        .validate_installation(
+                            baseline.source_id(),
+                            baseline.module_id(),
+                            &primary,
+                            None,
+                            None,
+                            None,
+                            &parts.nodes,
+                        )
+                        .unwrap();
+                    let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                    if case == 0 {
+                        for mutation in 0..7 {
+                            let mut c = original.clone();
+                            match mutation {
+                                0 => c.wrappers.rows[0].ordinal += 1,
+                                1 => c.wrappers.rows[0].context = BindingContextId::new(0),
+                                2 => c.wrappers.rows[0].spelling.push('!'),
+                                3 => c.wrappers.rows[0].source_range.start += 1,
+                                4 => c.wrappers.rows.push(c.wrappers.rows[0].clone()),
+                                5 => c.wrappers.rows[0].formula = SourceAtomicFormulaId::new(0),
+                                6 => c.wrappers.rows[0].site = c.formulas.rows[0].site.clone(),
+                                _ => unreachable!(),
+                            }
+                            assert_ne!(&c, original);
+                            let unchanged = c.debug_text();
+                            assert!(
+                                c.validate_installation(
+                                    baseline.source_id(),
+                                    baseline.module_id(),
+                                    &primary,
+                                    None,
+                                    None,
+                                    None,
+                                    &parts.nodes
+                                )
+                                .is_err()
+                            );
+                            assert_eq!(c.debug_text(), unchanged);
+                            assert_eq!(
+                                task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                                pristine
+                            );
+                        }
+                        let mut nodes = parts
+                            .nodes
+                            .iter()
+                            .map(|(_, node)| node.clone())
+                            .collect::<Vec<_>>();
+                        let wrapper = original.wrappers().iter().next().unwrap().1;
+                        nodes[wrapper.site().node().index()].kind = "ParenthesizedFormula".into();
+                        let nodes =
+                            crate::typed_ast::TypedArena::try_new(parts.nodes.root(), nodes)
+                                .unwrap();
+                        assert_ne!(nodes, parts.nodes);
+                        assert!(
+                            original
+                                .validate_installation(
+                                    baseline.source_id(),
+                                    baseline.module_id(),
+                                    &primary,
+                                    None,
+                                    None,
+                                    None,
+                                    &nodes
+                                )
+                                .is_err()
+                        );
+                    }
+                    let mut input = original.to_input();
+                    if case == 0 {
+                        input.wrappers.clear();
+                    } else {
+                        let group = composite
+                            .wrappers()
+                            .iter()
+                            .map(|(_, row)| row)
+                            .find(|row| {
+                                composite.formulas().get(row.formula()).unwrap().kind()
+                                    == SourceCompositeFormulaKind::Negation
+                            })
+                            .unwrap();
+                        let atoms = input
+                            .formulas
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, atom)| {
+                                group.source_range().start < atom.source_range.start
+                                    && atom.source_range.end < group.source_range().end
+                            })
+                            .map(|(index, _)| index)
+                            .collect::<Vec<_>>();
+                        assert_eq!(atoms.len(), 1);
+                        let formula = SourceAtomicFormulaId::new(atoms[0]);
+                        let position = input
+                            .wrappers
+                            .iter()
+                            .position(|row| row.formula == formula)
+                            .unwrap();
+                        let spelling = format!("( {} )", input.wrappers[position].spelling);
+                        for wrapper in input
+                            .wrappers
+                            .iter_mut()
+                            .filter(|row| row.formula == formula)
+                        {
+                            wrapper.ordinal += 1;
+                        }
+                        input.wrappers.insert(
+                            position,
+                            SourceAtomicWrapperInput {
+                                formula,
+                                ordinal: 0,
+                                site: group.site().clone(),
+                                source_range: group.source_range(),
+                                context: input.formulas[formula.index()].context,
+                                recovery: SourceAtomicFormulaRecovery::Normal,
+                                spelling,
+                            },
+                        );
+                        let mut nodes = parts
+                            .nodes
+                            .iter()
+                            .map(|(_, node)| node.clone())
+                            .collect::<Vec<_>>();
+                        assert_eq!(
+                            nodes[group.site().node().index()].kind.as_str(),
+                            "ParenthesizedFormula"
+                        );
+                        nodes[group.site().node().index()].kind =
+                            "source.formula.atomic.parenthesized".into();
+                        parts.nodes =
+                            crate::typed_ast::TypedArena::try_new(parts.nodes.root(), nodes)
+                                .unwrap();
+                        assert_ne!(parts.nodes, *baseline.nodes());
+                    }
+                    let atomic = SourceAtomicFormulaProducer::build(
+                        input,
+                        env,
+                        symbols,
+                        &primary,
+                        None,
+                        None,
+                        None,
+                        &parts.nodes,
+                    )
+                    .expect(
+                        "generic atomic owner must accept before claiming original-source refusal",
+                    );
+                    assert_ne!(&atomic, original);
+                    let mut changed = TypedAst::try_new(parts)
+                        .unwrap()
+                        .with_source_term(primary)
+                        .unwrap()
+                        .with_source_atomic_formula(atomic)
+                        .expect("genuine generic lower must succeed");
+                    changed.install_source_nodes(source).unwrap();
+                    let old = baseline.source_formula_composition().unwrap();
+                    let fresh = SourceFormulaCompositionHandoff::from_original_input(
+                        SourceFormulaCompositionHandoffInput {
+                            source_id: old.source_id(),
+                            module_id: old.module_id().clone(),
+                            atomic_edges: old
+                                .atomic_edges()
+                                .iter()
+                                .map(|(_, row)| row.into())
+                                .collect(),
+                            bound_uses: old
+                                .bound_uses()
+                                .iter()
+                                .map(|(_, row)| row.into())
+                                .collect(),
+                        },
+                        changed.source_term().unwrap(),
+                        changed.source_atomic_formula().unwrap(),
+                        composite,
+                    );
+                    assert_eq!(
+                        fresh.atomic_formula_fingerprint(),
+                        changed.source_atomic_formula().unwrap().debug_text()
+                    );
+                    changed.inject_source_composite_formula_for_test(composite.clone());
+                    changed.inject_source_formula_composition_for_test(fresh);
+                    let unchanged = changed.debug_text();
+                    assert_eq!(
+                        task257b5_native_replay(&changed, expressions.clone()),
+                        Err(ResolvedTypedAstError::InvalidSourceFormulaComposition)
+                    );
+                    assert_eq!(changed.debug_text(), unchanged);
+                    assert_eq!(baseline.debug_text(), before);
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions).unwrap(),
+                        pristine
+                    );
+                },
+            );
+        }
+    }
+
+    #[test]
     fn task257b5_native_final_replay_rejects_a_raw_producer_omitted_proof_atom() {
         use crate::{
             source_formula_composition::{

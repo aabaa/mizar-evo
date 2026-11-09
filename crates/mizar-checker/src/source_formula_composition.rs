@@ -167,6 +167,11 @@ pub enum SourceFormulaAtomicEdgeRole {
     ConjunctionRight,
     DisjunctionLeft,
     DisjunctionRight,
+    ImplicationLeft,
+    ImplicationRight,
+    BiconditionalLeft,
+    BiconditionalRight,
+    NegatedFormula,
 }
 
 /// Immutable validated formula composition handoff.
@@ -2462,6 +2467,11 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
         SourceFormulaAtomicEdgeRole::ConjunctionRight => "conjunction-right",
         SourceFormulaAtomicEdgeRole::DisjunctionLeft => "disjunction-left",
         SourceFormulaAtomicEdgeRole::DisjunctionRight => "disjunction-right",
+        SourceFormulaAtomicEdgeRole::ImplicationLeft => "implication-left",
+        SourceFormulaAtomicEdgeRole::ImplicationRight => "implication-right",
+        SourceFormulaAtomicEdgeRole::BiconditionalLeft => "biconditional-left",
+        SourceFormulaAtomicEdgeRole::BiconditionalRight => "biconditional-right",
+        SourceFormulaAtomicEdgeRole::NegatedFormula => "negated-formula",
     }
 }
 
@@ -6171,6 +6181,129 @@ fn exact_typed_child_containing(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    #[test]
+    fn task257b6_native_composition_authenticates_roles_clocks_and_lexical_winners() {
+        use crate::typed_ast::tests::{task257b5_native_case, task257b5_native_replay};
+        let fixture = include_str!("../tests/testdata/native_connective_statement.miz");
+        for (case, text) in [
+            fixture.to_owned(),
+            fixture.replace("for y being set holds y = x", "for x being set holds x = x"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            task257b5_native_case(text, |installed, _, _, expressions, _| {
+                let baseline = installed.unwrap();
+                let original = baseline.source_formula_composition().unwrap();
+                assert!(!original.atomic_edges().is_empty() && !original.bound_uses().is_empty());
+                assert_eq!(
+                    original
+                        .bound_uses()
+                        .iter()
+                        .take(6)
+                        .map(|(_, row)| row.body_edge().index())
+                        .collect::<Vec<_>>(),
+                    [1, 1, 2, 2, 0, 0]
+                );
+                let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                let reject = |candidate: SourceFormulaCompositionHandoff| {
+                    assert_ne!(&candidate, original);
+                    let mut changed = baseline.clone();
+                    changed.inject_source_formula_composition_for_test(candidate);
+                    let before = changed.debug_text();
+                    assert_eq!(
+                        task257b5_native_replay(&changed, expressions.clone()),
+                        Err(ResolvedTypedAstError::InvalidSourceFormulaComposition)
+                    );
+                    assert_eq!(changed.debug_text(), before);
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                };
+                if case == 0 {
+                    for mutation in 0..22 {
+                        let mut c = original.clone();
+                        match mutation {
+                            0 => c.atomic_edges.rows.clear(),
+                            1 => c.atomic_edges.rows.push(c.atomic_edges.rows[0].clone()),
+                            2 => {
+                                c.atomic_edges.rows[0].role =
+                                    SourceFormulaAtomicEdgeRole::NegatedFormula
+                            }
+                            3 => c.atomic_edges.rows[0].ordinal += 1,
+                            4 => c.atomic_edges.rows[0].formula = SourceCompositeFormulaId::new(0),
+                            5 => c.atomic_edges.rows[0].child = c.atomic_edges.rows[1].child,
+                            6 => {
+                                c.atomic_edges.rows[0].child = baseline
+                                    .source_atomic_formula()
+                                    .unwrap()
+                                    .formulas()
+                                    .iter()
+                                    .last()
+                                    .unwrap()
+                                    .0
+                            }
+                            7 => c.bound_uses.rows.clear(),
+                            8 => c.bound_uses.rows.push(c.bound_uses.rows[0].clone()),
+                            9 => c.bound_uses.rows.swap(0, 1),
+                            10 => c.bound_uses.rows[0].ordinal += 1,
+                            11 => c.bound_uses.rows[0].binder = SourceQuantifierBinderId::new(1),
+                            12 => c.bound_uses.rows[0].term = c.bound_uses.rows[1].term,
+                            13 => c.bound_uses.rows[0].reference = c.bound_uses.rows[1].reference,
+                            14 => {
+                                c.bound_uses.rows[0].body_edge = SourceFormulaAtomicEdgeId::new(0)
+                            }
+                            15 => c.primary_term_fingerprint.push('!'),
+                            16 => c.atomic_formula_fingerprint.push('!'),
+                            17 => c.composite_formula_fingerprint.push('!'),
+                            18 => {
+                                let child = c.atomic_edges.rows[0].child;
+                                c.atomic_edges.rows[0].child = c.atomic_edges.rows[1].child;
+                                c.atomic_edges.rows[1].child = child;
+                                for row in &mut c.bound_uses.rows {
+                                    if row.body_edge.index() < 2 {
+                                        row.body_edge = SourceFormulaAtomicEdgeId::new(
+                                            1 - row.body_edge.index(),
+                                        );
+                                    }
+                                }
+                            }
+                            19 => {
+                                c.atomic_edges.rows.swap(0, 1);
+                                for row in &mut c.bound_uses.rows {
+                                    if row.body_edge.index() < 2 {
+                                        row.body_edge = SourceFormulaAtomicEdgeId::new(
+                                            1 - row.body_edge.index(),
+                                        );
+                                    }
+                                }
+                            }
+                            20 => c.bound_uses.rows.sort_by_key(|row| row.body_edge.index()),
+                            21 => {
+                                c.bound_uses.rows.pop();
+                            }
+                            _ => unreachable!(),
+                        }
+                        reject(c);
+                    }
+                } else {
+                    let binders = baseline.source_composite_formula().unwrap().binders();
+                    let outer = binders.get(SourceQuantifierBinderId::new(0)).unwrap();
+                    let inner = binders.get(SourceQuantifierBinderId::new(1)).unwrap();
+                    assert_eq!(outer.identifier_spelling(), inner.identifier_spelling());
+                    assert_ne!(outer.binding(), inner.binding());
+                    assert_ne!(outer.body_context(), inner.body_context());
+                    let mut c = original.clone();
+                    let use_row = c.bound_uses.rows.last_mut().unwrap();
+                    assert_eq!(use_row.binder, SourceQuantifierBinderId::new(1));
+                    use_row.binder = SourceQuantifierBinderId::new(0);
+                    reject(c);
+                }
+            });
+        }
+    }
+
     use crate::{
         binding_env::{
             BindingContextDraft, BindingContextId, BindingContextLayer, BindingContextOwner,

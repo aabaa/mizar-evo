@@ -6,6 +6,9 @@ atomic 式の range の入れ子は、所属式の集合オペランドに属す
 > 正本は英語です。英語版:
 > [../en/source_atomic_formula.md](../en/source_atomic_formula.md)。
 
+## Original-source formula wrappers
+native固定結合headerの透過的なatomic括弧は、実等式をownerとする既存wrapper tableで保持し、実typed site・range・順序・lexical contextを保つ。scoped re-inferenceは行を保持してcontextを導き直す。compound括弧はcomposite ownerに残し、括弧でformula identityや真偽を追加しない。
+
 ## スコープ
 
 Checker Task 256 は Task 257C1 により拡張され、ordinary predicate

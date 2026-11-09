@@ -182,6 +182,8 @@ pub enum SourceFormulaEdgeRole {
     DisjunctionRight,
     BiconditionalLeft,
     BiconditionalRight,
+    ConjunctionLeft,
+    ConjunctionRight,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2235,6 +2237,8 @@ fn edge_role_key(role: SourceFormulaEdgeRole) -> &'static str {
         SourceFormulaEdgeRole::DisjunctionRight => "disjunction-right",
         SourceFormulaEdgeRole::BiconditionalLeft => "biconditional-left",
         SourceFormulaEdgeRole::BiconditionalRight => "biconditional-right",
+        SourceFormulaEdgeRole::ConjunctionLeft => "conjunction-left",
+        SourceFormulaEdgeRole::ConjunctionRight => "conjunction-right",
     }
 }
 
@@ -2281,6 +2285,201 @@ pub(crate) mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
+
+    #[test]
+    fn task257b6_native_composite_associations_require_original_replay() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_formula_composition::{
+                SourceFormulaCompositionHandoff, SourceFormulaCompositionHandoffInput,
+            },
+            typed_ast::tests::{task257b5_native_case, task257b5_native_replay},
+        };
+        let fixture = include_str!("../tests/testdata/native_connective_statement.miz");
+        for (case, text) in [
+            fixture.to_owned(),
+            fixture.replace("not (x = x)", "(not (x = x)) & (not (x = x))"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            task257b5_native_case(text, |installed, _, _, expressions, _| {
+                let baseline = installed.unwrap();
+                let original = baseline.source_composite_formula().unwrap();
+                assert!(!original.wrappers().is_empty() && !original.edges().is_empty());
+                let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                let reject = |composite: SourceCompositeFormulaHandoff,
+                              swap: Option<(usize, usize)>| {
+                    assert_ne!(&composite, original);
+                    let old = baseline.source_formula_composition().unwrap();
+                    let mut input = SourceFormulaCompositionHandoffInput {
+                        source_id: old.source_id(),
+                        module_id: old.module_id().clone(),
+                        atomic_edges: old
+                            .atomic_edges()
+                            .iter()
+                            .map(|(_, row)| row.into())
+                            .collect(),
+                        bound_uses: old.bound_uses().iter().map(|(_, row)| row.into()).collect(),
+                    };
+                    if let Some((left, right)) = swap {
+                        for edge in &mut input.atomic_edges {
+                            if edge.formula.index() == left {
+                                edge.formula = SourceCompositeFormulaId::new(right);
+                            } else if edge.formula.index() == right {
+                                edge.formula = SourceCompositeFormulaId::new(left);
+                            }
+                        }
+                    }
+                    let composition = SourceFormulaCompositionHandoff::from_original_input(
+                        input,
+                        baseline.source_term().unwrap(),
+                        baseline.source_atomic_formula().unwrap(),
+                        &composite,
+                    );
+                    assert_eq!(
+                        composition.composite_formula_fingerprint(),
+                        composite.debug_text()
+                    );
+                    let mut changed = baseline.clone();
+                    changed.inject_source_composite_formula_for_test(composite);
+                    changed.inject_source_formula_composition_for_test(composition);
+                    let before = changed.debug_text();
+                    assert_eq!(
+                        task257b5_native_replay(&changed, expressions.clone()),
+                        Err(ResolvedTypedAstError::InvalidSourceFormulaComposition)
+                    );
+                    assert_eq!(changed.debug_text(), before);
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                };
+                if case == 0 {
+                    for mutation in 0..43 {
+                        let mut c = original.clone();
+                        match mutation {
+                            0 => c.formulas.rows[1].site = c.formulas.rows[2].site.clone(),
+                            1 => c.formulas.rows[1].source_range.start += 1,
+                            2 => c.formulas.rows[1].source_ordinal += 1,
+                            3 => c.formulas.rows[1].kind = SourceCompositeFormulaKind::Implication,
+                            4 => c.formulas.rows[1].context = c.formulas.rows[0].context,
+                            5 => c.formulas.rows[1].spelling.push('!'),
+                            6 => {
+                                c.formulas.rows.pop();
+                            }
+                            7 => c.formulas.rows.push(c.formulas.rows[1].clone()),
+                            8 => c.roots.rows.clear(),
+                            9 => c.roots.rows.push(c.roots.rows[0].clone()),
+                            10 => c.edges.rows[0].parent = c.edges.rows[0].child,
+                            11 => c.edges.rows[0].child = c.edges.rows[0].parent,
+                            12 => c.edges.rows[0].role = SourceFormulaEdgeRole::ConjunctionLeft,
+                            13 => c.edges.rows[0].ordinal += 1,
+                            14 => c.wrappers.rows[0].formula = SourceCompositeFormulaId::new(0),
+                            15 => c.wrappers.rows[0].site = c.wrappers.rows[1].site.clone(),
+                            16 => c.wrappers.rows[0].source_range.start += 1,
+                            17 => c.wrappers.rows[0].ordinal += 1,
+                            18 => c.wrappers.rows[0].context = c.formulas.rows[0].context,
+                            19 => c.wrappers.rows[0].spelling.push('!'),
+                            20 => c.wrappers.rows.swap(0, 1),
+                            21 => c.binders.rows[0].binding = c.binders.rows[1].binding,
+                            22 => c.binders.rows[0].ordinal += 1,
+                            23 => c.binders.rows[0].body_context = c.formulas.rows[0].context,
+                            24 => c.binders.rows[0].type_site = c.binders.rows[1].type_site,
+                            25 => {
+                                c.binders.rows[0].segment_site =
+                                    c.binders.rows[1].segment_site.clone()
+                            }
+                            26 => {
+                                c.binders.rows[0].identifier_site =
+                                    c.binders.rows[1].identifier_site.clone()
+                            }
+                            27 => {
+                                let local = &c.binders.rows[0].local;
+                                c.binders.rows[0].local = LocalTermBinding::new(
+                                    "wrong",
+                                    local.scope().clone(),
+                                    local.declaration_range(),
+                                    local.visible_after_ordinal(),
+                                );
+                            }
+                            28 => c.type_sites.rows[0].context = c.binders.rows[0].body_context,
+                            29 => {
+                                c.type_sites.rows[0].head_site = c.type_sites.rows[0].site.clone()
+                            }
+                            30 => c.type_sites.rows[0].head_spelling.push('!'),
+                            31 => {
+                                c.requests.rows[0].kind =
+                                    SourceFormulaRequestKind::ConnectiveSemantics
+                            }
+                            32 => c.requests.rows[0].formula = SourceCompositeFormulaId::new(1),
+                            33 => {
+                                c.requests.rows[0].binder = Some(SourceQuantifierBinderId::new(0))
+                            }
+                            34 => {
+                                c.requests.rows[0].type_site = Some(SourceBinderTypeSiteId::new(0))
+                            }
+                            35 => {
+                                c.requests.rows.pop();
+                            }
+                            36 => c.requests.rows.push(c.requests.rows[0].clone()),
+                            37 => c.type_sites.rows[0].source_range.start += 1,
+                            38 => c.type_sites.rows[0].head_range.start += 1,
+                            39 => c.type_sites.rows[0].binder = SourceQuantifierBinderId::new(1),
+                            40 => c.binders.rows[0].formula = SourceCompositeFormulaId::new(1),
+                            41 => c.wrappers.rows.clear(),
+                            42 => c.wrappers.rows.push(c.wrappers.rows[0].clone()),
+                            _ => unreachable!(),
+                        }
+                        reject(c, None);
+                    }
+                } else {
+                    let ids = original
+                        .formulas()
+                        .iter()
+                        .filter(|(_, row)| row.kind() == SourceCompositeFormulaKind::Negation)
+                        .map(|(id, _)| id.index())
+                        .collect::<Vec<_>>();
+                    assert_eq!(ids.len(), 2);
+                    let (left, right) = (ids[0], ids[1]);
+                    let mut c = original.clone();
+                    c.formulas.rows.swap(left, right);
+                    c.formulas.rows[left].source_ordinal = left;
+                    c.formulas.rows[right].source_ordinal = right;
+                    for edge in &mut c.edges.rows {
+                        for id in [&mut edge.parent, &mut edge.child] {
+                            if id.index() == left {
+                                *id = SourceCompositeFormulaId::new(right);
+                            } else if id.index() == right {
+                                *id = SourceCompositeFormulaId::new(left);
+                            }
+                        }
+                    }
+                    for wrapper in &mut c.wrappers.rows {
+                        if wrapper.formula.index() == left {
+                            wrapper.formula = SourceCompositeFormulaId::new(right);
+                        } else if wrapper.formula.index() == right {
+                            wrapper.formula = SourceCompositeFormulaId::new(left);
+                        }
+                    }
+                    c.wrappers
+                        .rows
+                        .sort_by_key(|row| (row.formula.index(), row.ordinal));
+                    for request in &mut c.requests.rows {
+                        if request.formula.index() == left {
+                            request.formula = SourceCompositeFormulaId::new(right);
+                        } else if request.formula.index() == right {
+                            request.formula = SourceCompositeFormulaId::new(left);
+                        }
+                    }
+                    c.requests
+                        .rows
+                        .sort_by_key(|row| (row.formula.index(), row.ordinal));
+                    reject(c, Some((left, right)));
+                }
+            });
+        }
+    }
 
     #[test]
     fn task257b5_native_upper_binding_and_body_associations_are_replayed() {

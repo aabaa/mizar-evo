@@ -7,6 +7,9 @@ this transport extension does not establish the condition's truth.
 > Canonical language: English. Japanese companion:
 > [../ja/source_atomic_formula.md](../ja/source_atomic_formula.md).
 
+## Original-source formula wrappers
+Native fixed-connective headers preserve each transparent atomic group in the existing wrapper table, owned by its actual equality with its real typed site, range, order and lexical context. Scoped re-inference retains these rows and rederives their contexts. Compound groups remain with the composite owner; grouping adds no formula identity or truth.
+
 ## Scope
 
 Checker Task 256, extended by Task 257C1, owns a syntax-free immutable

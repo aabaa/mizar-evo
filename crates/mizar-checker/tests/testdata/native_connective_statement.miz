@@ -1,0 +1,5 @@
+theorem NativeConnectives: for x being set holds (((x = x or x = x) & x = x) implies not (x = x)) iff (for y being set holds y = x)
+proof
+ let x be set;
+ thus x = x;
+end;

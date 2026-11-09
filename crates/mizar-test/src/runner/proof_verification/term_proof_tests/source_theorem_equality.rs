@@ -1421,6 +1421,7 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
     }
     let unused_object = text.replace("Unused being set", "Unused being object");
     let unresolved = text.replace("holds X = X", "holds X = Y");
+    let conjunction = text.replace("holds X = X", "holds X = X & X = X");
     for changed in [
         unused_object.clone(),
         text.replace("set", "object"),
@@ -1428,7 +1429,7 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
         text.replace("thus X = X", "thus X in X"),
         text.replace("thus X = X", "thus X = 0"),
         text.replace("thus X = X", "thus X = f(X)"),
-        text.replace("holds X = X", "holds X = X & X = X"),
+        conjunction.clone(),
         text.replace("for X being set, Unused being set", "ex X being set"),
         text.replace("theorem T", "private theorem T")
             .replace("set", "object"),
@@ -1455,19 +1456,44 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
         let occurrences = SourceVariableScopeResolver::resolve_proof_occurrences(
             SourceVariableScopeInput::new(&altered, &module, env.env()),
         );
-        let occurrence_input = if changed == unused_object {
+        let occurrence_input = if changed == conjunction {
+            occurrences
+                .as_ref()
+                .expect("fixed conjunction must resolve")
+        } else if changed == unused_object {
             occurrences
                 .as_ref()
                 .expect("unused object declaration must resolve")
         } else {
             occurrences.as_ref().unwrap_or(&scope)
         };
-        let error = TermFormulaChecker::check_source_theorem_equalities(
+        if env.env() != symbols {
+            assert!(
+                TermFormulaChecker::check_source_theorem_equalities(&source, env.env(), &scope)
+                    .is_err(),
+                "foreign env: {changed}"
+            );
+        }
+        let result = TermFormulaChecker::check_source_theorem_equalities(
             &altered_source,
             env.env(),
             occurrence_input,
-        )
-        .unwrap_err();
+        );
+        if changed == conjunction {
+            let (_, inference, typed) = result.unwrap();
+            assert_eq!(typed.source_term().unwrap().terms().len(), 6);
+            assert_eq!(inference.terms().len(), 6);
+            assert_eq!(typed.source_atomic_formula().unwrap().formulas().len(), 3);
+            assert_eq!(inference.formulas().len(), 3);
+            assert!(inference.facts().is_empty() && typed.facts().is_empty());
+            assert!(
+                typed.source_composite_formula().is_none()
+                    && typed.source_formula_composition().is_none()
+                    && typed.source_statement().is_none()
+            );
+            continue;
+        }
+        let error = result.unwrap_err();
         if changed == unresolved {
             assert!(occurrences.is_err());
             assert_eq!(
@@ -1494,13 +1520,6 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
                     occurrence_input,
                 )
                 .unwrap_err()
-            );
-        }
-        if env.env() != symbols {
-            assert!(
-                TermFormulaChecker::check_source_theorem_equalities(&source, env.env(), &scope)
-                    .is_err(),
-                "foreign env: {changed}"
             );
         }
     }

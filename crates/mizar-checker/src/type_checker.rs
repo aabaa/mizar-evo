@@ -37,8 +37,8 @@ use mizar_resolve::{
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::ast::{
-    SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind,
-    SurfaceTokenKind,
+    SurfaceAstBuilder, SurfaceFormulaConnective, SurfaceFormulaPrefixOperator,
+    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -6276,7 +6276,6 @@ impl TermFormulaChecker {
             || !typed.diagnostics().is_empty()
             || !env.diagnostics().is_empty()
             || !primary.numeric_type_requests().is_empty()
-            || !atomic.wrappers().is_empty()
             || !atomic.predicate_segments().is_empty()
             || !atomic.predicate_heads().is_empty()
             || !atomic.candidates().is_empty()
@@ -6336,6 +6335,56 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
+        let mut headers = BTreeSet::new();
+        for owner in rows
+            .iter()
+            .filter(|row| matches!(row.kind, K::TheoremItem | K::LemmaItem))
+        {
+            if let Some(header) = children(owner).get(3)
+                && header.kind == K::FormulaExpression
+                && let [formula] = children(header).as_slice()
+                && formula.kind == K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+            {
+                headers.insert(formula.site);
+            }
+        }
+        let mut header_nodes = BTreeSet::new();
+        for original in rows.iter() {
+            if headers.contains(&original.site)
+                || original
+                    .parent
+                    .is_some_and(|parent| header_nodes.contains(&parent))
+            {
+                header_nodes.insert(original.site);
+            }
+        }
+        let mut effective_for = BTreeMap::new();
+        let mut formula_sites = BTreeSet::new();
+        for original in rows.iter().rev() {
+            let parts = children(original);
+            let child = match original.kind {
+                K::FormulaExpression => parts.first(),
+                K::ParenthesizedFormula => parts.get(1),
+                _ => None,
+            };
+            effective_for.insert(
+                original.site,
+                if let Some(child) = child {
+                    *effective_for.get(&child.site).ok_or_else(invalid)?
+                } else {
+                    original.site
+                },
+            );
+            if matches!(
+                original.kind,
+                K::BuiltinPredicateApplication
+                    | K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                    | K::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+            ) || matches!(original.kind, K::BinaryFormula(operator) if !operator.repeated)
+            {
+                formula_sites.insert(original.site);
+            }
+        }
         let mut reachable = BTreeSet::new();
         let mut parents = BTreeMap::new();
         let mut pending = vec![root];
@@ -6376,6 +6425,12 @@ impl TermFormulaChecker {
             let kind = match current.kind {
                 K::TermReference => "source.term.variable-reference".to_owned(),
                 K::BuiltinPredicateApplication => "source.formula.atomic.equality".to_owned(),
+                K::ParenthesizedFormula
+                    if row(*effective_for.get(&current.site).ok_or_else(invalid)?)?.kind
+                        == K::BuiltinPredicateApplication =>
+                {
+                    "source.formula.atomic.parenthesized".to_owned()
+                }
                 _ => format!("{:?}", current.kind),
             };
             if node.resolved_node != Some(current.site)
@@ -6472,13 +6527,20 @@ impl TermFormulaChecker {
                         && current.range.start < current.range.end
                         && match token.kind {
                             SurfaceTokenKind::Identifier => mizar_lexer::is_identifier(&token.text),
-                            SurfaceTokenKind::ReservedWord => [
-                                "theorem", "lemma", "for", "be", "being", "set", "holds", "proof",
-                                "let", "thus", "end", "by",
-                            ]
-                            .contains(&token.text.as_ref()),
+                            SurfaceTokenKind::ReservedWord => {
+                                [
+                                    "theorem", "lemma", "for", "be", "being", "set", "holds",
+                                    "proof", "let", "thus", "end", "by",
+                                ]
+                                .contains(&token.text.as_ref())
+                                    || (header_nodes.contains(&current.site)
+                                        && ["or", "implies", "iff", "not"]
+                                            .contains(&token.text.as_ref()))
+                            }
                             SurfaceTokenKind::ReservedSymbol => {
                                 [":", ";", ",", "="].contains(&token.text.as_ref())
+                                    || (header_nodes.contains(&current.site)
+                                        && ["&", "(", ")"].contains(&token.text.as_ref()))
                             }
                             _ => false,
                         }
@@ -6557,7 +6619,48 @@ impl TermFormulaChecker {
                         "BuiltinPredicateApplication" | "QuantifiedFormula(Universal)",
                     ]
                     | ["for", segments @ .., "QuantifiedFormula(Universal)"],
-                ) => separated(segments, "QuantifierVariableSegment"),
+                ) => {
+                    header_nodes.contains(&current.site)
+                        && separated(segments, "QuantifierVariableSegment")
+                }
+                (
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    ["for", segments @ .., "holds", _],
+                ) if header_nodes.contains(&current.site) => {
+                    separated(segments, "QuantifierVariableSegment")
+                        && children(current).last().is_some_and(|body| {
+                            effective_for
+                                .get(&body.site)
+                                .is_some_and(|site| formula_sites.contains(site))
+                        })
+                }
+                (K::FormulaExpression, [_])
+                | (K::ParenthesizedFormula, ["(", "FormulaExpression", ")"])
+                | (K::PrefixFormula(SurfaceFormulaPrefixOperator::Not), ["not", _])
+                    if header_nodes.contains(&current.site) =>
+                {
+                    let parts = children(current);
+                    let child = parts[usize::from(current.kind != K::FormulaExpression)];
+                    formula_sites.contains(effective_for.get(&child.site).ok_or_else(invalid)?)
+                }
+                (K::BinaryFormula(operator), [_, token, _])
+                    if header_nodes.contains(&current.site) =>
+                {
+                    let parts = children(current);
+                    !operator.repeated
+                        && *token
+                            == match operator.connective {
+                                SurfaceFormulaConnective::And => "&",
+                                SurfaceFormulaConnective::Or => "or",
+                                SurfaceFormulaConnective::Implies => "implies",
+                                SurfaceFormulaConnective::Iff => "iff",
+                            }
+                        && [0, 2].into_iter().all(|operand| {
+                            effective_for
+                                .get(&parts[operand].site)
+                                .is_some_and(|site| formula_sites.contains(site))
+                        })
+                }
                 _ => false,
             };
             if !valid {
@@ -6953,6 +7056,7 @@ impl TermFormulaChecker {
             return Err(invalid());
         }
         let mut atom_for = BTreeMap::new();
+        let mut wrapper_index = 0;
         for (ordinal, original) in original_atoms.iter().enumerate() {
             let mut matching = atomic
                 .formulas()
@@ -6992,7 +7096,38 @@ impl TermFormulaChecker {
                     return Err(invalid());
                 }
             }
+            let mut cursor = *original;
+            let mut wrappers = Vec::new();
+            while let Some(parent) = cursor.parent {
+                let parent = row(parent)?;
+                match parent.kind {
+                    K::FormulaExpression => {}
+                    K::ParenthesizedFormula => wrappers.push(parent),
+                    _ => break,
+                }
+                cursor = parent;
+            }
+            for (ordinal, original) in wrappers.into_iter().rev().enumerate() {
+                let wrapper = atomic
+                    .wrappers()
+                    .get(SourceAtomicWrapperId::new(wrapper_index))
+                    .ok_or_else(invalid)?;
+                if wrapper.formula() != id
+                    || wrapper.ordinal() != ordinal
+                    || wrapper.site() != &site(original)
+                    || wrapper.source_range() != original.range
+                    || wrapper.context() != binding_context(original)?
+                    || wrapper.recovery() != SourceAtomicFormulaRecovery::Normal
+                    || wrapper.spelling() != original.spelling
+                {
+                    return Err(invalid());
+                }
+                wrapper_index += 1;
+            }
             atom_for.insert(original.site, id);
+        }
+        if wrapper_index != atomic.wrappers().len() {
+            return Err(invalid());
         }
         let mut input = SourceCompositeFormulaHandoffInput {
             source_id: typed.source_id(),
@@ -7011,51 +7146,60 @@ impl TermFormulaChecker {
             atomic_edges: vec![],
             bound_uses: vec![],
         };
-        let quantifiers = rows
+        let original_formulas = rows
             .iter()
-            .filter(|row| {
-                matches!(
-                    row.kind,
-                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
-                )
-            })
+            .filter(|row| formula_sites.contains(&row.site) && !atom_for.contains_key(&row.site))
             .collect::<Vec<_>>();
-        let formula_for = quantifiers
+        let formula_for = original_formulas
             .iter()
             .enumerate()
             .map(|(index, row)| (row.site, SourceCompositeFormulaId::new(index)))
             .collect::<BTreeMap<_, _>>();
         let mut binder_for = BTreeMap::new();
-        for original in &quantifiers {
+        let mut edge_for = BTreeMap::new();
+        for original in &original_formulas {
             let formula = *formula_for.get(&original.site).ok_or_else(invalid)?;
             let body_context = binding_context(original)?;
-            let incoming = env
-                .contexts()
-                .get(body_context)
-                .and_then(|context| context.parent)
-                .ok_or_else(invalid)?;
             let parts = children(original);
-            input.formulas.push(SourceCompositeFormulaInput { site: site(original), source_range: original.range, source_ordinal: formula.index(), context: incoming,
-                recovery: SourceCompositeFormulaRecovery::Normal, spelling: parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if matches!(token.text.as_ref(), "for" | "holds"))).map(|row| row.spelling.as_str()).collect::<Vec<_>>().join(" "), kind: SourceCompositeFormulaKind::Universal });
-            let parent = row(original.parent.ok_or_else(invalid)?)?;
-            if let Some(parent_formula) = formula_for.get(&parent.site) {
-                input.edges.push(SourceFormulaEdgeInput {
-                    parent: *parent_formula,
-                    ordinal: 0,
-                    role: SourceFormulaEdgeRole::UniversalBody,
-                    child: formula,
-                });
-                if incoming != binding_context(parent)? {
-                    return Err(invalid());
-                }
+            let (kind, spelling, request_kind) = match original.kind {
+                K::QuantifiedFormula(SurfaceQuantifierKind::Universal) => (
+                    SourceCompositeFormulaKind::Universal,
+                    parts.iter().filter(|row| matches!(&row.kind, K::Token(token) if matches!(token.text.as_ref(), "for" | "holds")))
+                        .map(|row| row.spelling.as_str()).collect::<Vec<_>>().join(" "),
+                    SourceFormulaRequestKind::QuantifierSemantics,
+                ),
+                K::PrefixFormula(SurfaceFormulaPrefixOperator::Not) => (
+                    SourceCompositeFormulaKind::Negation, parts[0].spelling.clone(),
+                    SourceFormulaRequestKind::NegationSemantics,
+                ),
+                K::BinaryFormula(operator) => (
+                    match operator.connective {
+                        SurfaceFormulaConnective::And => SourceCompositeFormulaKind::Conjunction,
+                        SurfaceFormulaConnective::Or => SourceCompositeFormulaKind::Disjunction,
+                        SurfaceFormulaConnective::Implies => SourceCompositeFormulaKind::Implication,
+                        SurfaceFormulaConnective::Iff => SourceCompositeFormulaKind::Biconditional,
+                    }, parts[1].spelling.clone(), SourceFormulaRequestKind::ConnectiveSemantics,
+                ),
+                _ => return Err(invalid()),
+            };
+            let incoming = if kind == SourceCompositeFormulaKind::Universal {
+                env.contexts()
+                    .get(body_context)
+                    .and_then(|context| context.parent)
+                    .ok_or_else(invalid)?
             } else {
-                let owner = row(parent.parent.ok_or_else(invalid)?)?;
-                if parent.kind != K::FormulaExpression
-                    || !owners.contains(&owner)
-                    || children(owner).get(3) != Some(&parent)
-                {
-                    return Err(invalid());
-                }
+                body_context
+            };
+            input.formulas.push(SourceCompositeFormulaInput {
+                site: site(original),
+                source_range: original.range,
+                source_ordinal: formula.index(),
+                context: incoming,
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: spelling.clone(),
+                kind,
+            });
+            if headers.contains(&original.site) {
                 input.roots.push(SourceFormulaRootInput {
                     formula,
                     ordinal: input.roots.len(),
@@ -7065,7 +7209,7 @@ impl TermFormulaChecker {
             input.requests.push(SourceFormulaRequestInput {
                 formula,
                 ordinal: 0,
-                kind: SourceFormulaRequestKind::QuantifierSemantics,
+                kind: request_kind,
                 binder: None,
                 type_site: None,
             });
@@ -7096,16 +7240,137 @@ impl TermFormulaChecker {
                     binder_for.insert(declaration.binding, binder); ordinal += 1;
                 }
             }
-            let body = *parts.last().ok_or_else(invalid)?;
-            if let Some(atom) = atom_for.get(&body.site) {
-                composition.atomic_edges.push(SourceFormulaAtomicEdgeInput {
+            let mut cursor = *original;
+            let mut wrappers = Vec::new();
+            let mut wrapper_spelling = spelling;
+            while let Some(parent) = cursor.parent {
+                let parent = row(parent)?;
+                match parent.kind {
+                    K::FormulaExpression => {}
+                    K::ParenthesizedFormula => {
+                        if binding_context(parent)? != incoming {
+                            return Err(invalid());
+                        }
+                        wrapper_spelling = format!("( {wrapper_spelling} )");
+                        wrappers.push((parent, wrapper_spelling.clone()));
+                    }
+                    _ => break,
+                }
+                cursor = parent;
+            }
+            for (ordinal, (wrapper, spelling)) in wrappers.into_iter().rev().enumerate() {
+                input.wrappers.push(SourceFormulaWrapperInput {
                     formula,
-                    ordinal: 0,
-                    role: SourceFormulaAtomicEdgeRole::UniversalBody,
-                    child: *atom,
+                    ordinal,
+                    site: site(wrapper),
+                    source_range: wrapper.range,
+                    context: incoming,
+                    recovery: SourceCompositeFormulaRecovery::Normal,
+                    spelling,
                 });
-            } else if !formula_for.contains_key(&body.site) {
-                return Err(invalid());
+            }
+            let operands = match kind {
+                SourceCompositeFormulaKind::Universal => vec![(
+                    parts.len() - 1,
+                    SourceFormulaEdgeRole::UniversalBody,
+                    SourceFormulaAtomicEdgeRole::UniversalBody,
+                )],
+                SourceCompositeFormulaKind::Negation => vec![(
+                    1,
+                    SourceFormulaEdgeRole::NegatedFormula,
+                    SourceFormulaAtomicEdgeRole::NegatedFormula,
+                )],
+                SourceCompositeFormulaKind::Conjunction => vec![
+                    (
+                        0,
+                        SourceFormulaEdgeRole::ConjunctionLeft,
+                        SourceFormulaAtomicEdgeRole::ConjunctionLeft,
+                    ),
+                    (
+                        2,
+                        SourceFormulaEdgeRole::ConjunctionRight,
+                        SourceFormulaAtomicEdgeRole::ConjunctionRight,
+                    ),
+                ],
+                SourceCompositeFormulaKind::Disjunction => vec![
+                    (
+                        0,
+                        SourceFormulaEdgeRole::DisjunctionLeft,
+                        SourceFormulaAtomicEdgeRole::DisjunctionLeft,
+                    ),
+                    (
+                        2,
+                        SourceFormulaEdgeRole::DisjunctionRight,
+                        SourceFormulaAtomicEdgeRole::DisjunctionRight,
+                    ),
+                ],
+                SourceCompositeFormulaKind::Implication => vec![
+                    (
+                        0,
+                        SourceFormulaEdgeRole::ImplicationLeft,
+                        SourceFormulaAtomicEdgeRole::ImplicationLeft,
+                    ),
+                    (
+                        2,
+                        SourceFormulaEdgeRole::ImplicationRight,
+                        SourceFormulaAtomicEdgeRole::ImplicationRight,
+                    ),
+                ],
+                SourceCompositeFormulaKind::Biconditional => vec![
+                    (
+                        0,
+                        SourceFormulaEdgeRole::BiconditionalLeft,
+                        SourceFormulaAtomicEdgeRole::BiconditionalLeft,
+                    ),
+                    (
+                        2,
+                        SourceFormulaEdgeRole::BiconditionalRight,
+                        SourceFormulaAtomicEdgeRole::BiconditionalRight,
+                    ),
+                ],
+                _ => return Err(invalid()),
+            };
+            for (ordinal, (operand, role, atomic_role)) in operands.into_iter().enumerate() {
+                let child = row(*effective_for
+                    .get(&parts[operand].site)
+                    .ok_or_else(invalid)?)?;
+                let context = binding_context(child)?;
+                let incoming = if matches!(child.kind, K::QuantifiedFormula(_)) {
+                    env.contexts()
+                        .get(context)
+                        .and_then(|context| context.parent)
+                        .ok_or_else(invalid)?
+                } else {
+                    context
+                };
+                if incoming != body_context {
+                    return Err(invalid());
+                }
+                if let Some(child) = formula_for.get(&child.site) {
+                    input.edges.push(SourceFormulaEdgeInput {
+                        parent: formula,
+                        ordinal,
+                        role,
+                        child: *child,
+                    });
+                } else {
+                    let child = *atom_for.get(&child.site).ok_or_else(invalid)?;
+                    if edge_for
+                        .insert(
+                            child,
+                            SourceFormulaAtomicEdgeId::new(composition.atomic_edges.len()),
+                        )
+                        .is_some()
+                    {
+                        return Err(invalid());
+                    }
+                    composition.atomic_edges.push(SourceFormulaAtomicEdgeInput {
+                        formula,
+                        ordinal,
+                        role: atomic_role,
+                        child,
+                    });
+                }
             }
         }
         if input.roots.len() != owners.len()
@@ -7122,19 +7387,20 @@ impl TermFormulaChecker {
             return Err(invalid());
         }
         let mut use_ordinals = BTreeMap::new();
-        for (index, edge) in composition.atomic_edges.iter().enumerate() {
-            let atom = atomic.formulas().get(edge.child).ok_or_else(invalid)?;
-            let original = row(resolved(atom.site().node())?)?;
-            for operand in [0, 2] {
-                let expression = children(original)[operand];
-                let term = children(expression)[0];
-                let (term, reference, binding) = *term_for.get(&term.site).ok_or_else(invalid)?;
+        for original in &original_terms {
+            if header_nodes.contains(&original.site) {
+                let expression = row(original.parent.ok_or_else(invalid)?)?;
+                let atom = atom_for
+                    .get(&expression.parent.ok_or_else(invalid)?)
+                    .ok_or_else(invalid)?;
+                let (term, reference, binding) =
+                    *term_for.get(&original.site).ok_or_else(invalid)?;
                 let binder = *binder_for.get(&binding).ok_or_else(invalid)?;
                 let ordinal = use_ordinals.entry(binder).or_insert(0);
                 composition.bound_uses.push(SourceQuantifierBoundUseInput {
                     binder,
                     ordinal: *ordinal,
-                    body_edge: SourceFormulaAtomicEdgeId::new(index),
+                    body_edge: *edge_for.get(atom).ok_or_else(invalid)?,
                     term,
                     reference,
                 });
@@ -8871,6 +9137,40 @@ impl TermFormulaChecker {
                             .is_some_and(|child| child.kind() == &K::ProofBlock)
                     })
             });
+        let mut parents = BTreeMap::new();
+        let mut headers = BTreeSet::new();
+        for (id, current) in source.arena().iter() {
+            if id != root {
+                for child in current.children() {
+                    if parents.insert(*child, id).is_some() {
+                        return Err(invalid());
+                    }
+                }
+            }
+            if !reserved
+                && matches!(current.kind(), K::TheoremItem | K::LemmaItem)
+                && let [_, _, _, header, _, _] = current.children()
+                && node(*header)?.kind() == &K::FormulaExpression
+                && let [formula] = node(*header)?.children()
+                && node(*formula)?.kind() == &K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+            {
+                headers.insert(*formula);
+            }
+        }
+        let mut header_nodes = BTreeSet::new();
+        for (id, _) in source.arena().iter() {
+            let mut cursor = id;
+            for _ in 0..source.arena().len() {
+                if headers.contains(&cursor) {
+                    header_nodes.insert(id);
+                    break;
+                }
+                let Some(parent) = parents.get(&cursor) else {
+                    break;
+                };
+                cursor = *parent;
+            }
+        }
         let part = |id| match node(id)?.kind() {
             K::Token(token) => match token.kind {
                 SurfaceTokenKind::Identifier if mizar_lexer::is_identifier(&token.text) => {
@@ -8885,7 +9185,9 @@ impl TermFormulaChecker {
                         || (reserved && token.text.as_ref() == "reserve")
                         || (assumption_reserved && token.text.as_ref() == "assume")
                         || (witness_reserved && token.text.as_ref() == "take")
-                        || (witness_choice.is_some() && token.text.as_ref() == "the") =>
+                        || (witness_choice.is_some() && token.text.as_ref() == "the")
+                        || (header_nodes.contains(&id)
+                            && ["or", "implies", "iff", "not"].contains(&token.text.as_ref())) =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -8894,7 +9196,9 @@ impl TermFormulaChecker {
                         || (witness_enumeration.is_some()
                             && ["{", "}"].contains(&token.text.as_ref()))
                         || (!parenthesized_witness.is_empty()
-                            && ["(", ")"].contains(&token.text.as_ref())) =>
+                            && ["(", ")"].contains(&token.text.as_ref()))
+                        || (header_nodes.contains(&id)
+                            && ["&", "(", ")"].contains(&token.text.as_ref())) =>
                 {
                     Ok(token.text.to_string())
                 }
@@ -8912,6 +9216,8 @@ impl TermFormulaChecker {
         };
         let mut arena = Vec::new();
         let mut equalities = Vec::new();
+        let mut header_formulas = BTreeSet::new();
+        let mut atomic_targets = BTreeMap::new();
         for (id, current) in source.arena().iter() {
             let parts = current
                 .children()
@@ -9064,14 +9370,74 @@ impl TermFormulaChecker {
                 ) if format!("{kind:?}") == "QuantifiedFormula(Universal)" => {
                     separated(segments, "QuantifierVariableSegment")
                 }
+                (
+                    K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+                    ["for", segments @ .., "holds", _],
+                ) if header_nodes.contains(&id) => {
+                    separated(segments, "QuantifierVariableSegment")
+                        && current
+                            .children()
+                            .last()
+                            .is_some_and(|body| header_formulas.contains(body))
+                }
+                (K::FormulaExpression, [_]) if header_nodes.contains(&id) => {
+                    header_formulas.contains(&current.children()[0])
+                }
+                (K::ParenthesizedFormula, ["(", "FormulaExpression", ")"])
+                    if header_nodes.contains(&id) =>
+                {
+                    header_formulas.contains(&current.children()[1])
+                }
+                (K::PrefixFormula(SurfaceFormulaPrefixOperator::Not), ["not", _])
+                    if header_nodes.contains(&id) =>
+                {
+                    header_formulas.contains(&current.children()[1])
+                }
+                (K::BinaryFormula(operator), [_, token, _]) if header_nodes.contains(&id) => {
+                    !operator.repeated
+                        && *token
+                            == match operator.connective {
+                                SurfaceFormulaConnective::And => "&",
+                                SurfaceFormulaConnective::Or => "or",
+                                SurfaceFormulaConnective::Implies => "implies",
+                                SurfaceFormulaConnective::Iff => "iff",
+                            }
+                        && header_formulas.contains(&current.children()[0])
+                        && header_formulas.contains(&current.children()[2])
+                }
                 _ => false,
             };
             if !valid {
                 return Err(invalid());
             }
+            if header_nodes.contains(&id)
+                && matches!(
+                    current.kind(),
+                    K::FormulaExpression
+                        | K::BuiltinPredicateApplication
+                        | K::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+                        | K::BinaryFormula(_)
+                        | K::PrefixFormula(_)
+                        | K::ParenthesizedFormula
+                )
+            {
+                header_formulas.insert(id);
+            }
+            let atomic_target = match current.kind() {
+                K::BuiltinPredicateApplication => Some(id),
+                K::FormulaExpression => atomic_targets.get(&current.children()[0]).copied(),
+                K::ParenthesizedFormula => atomic_targets.get(&current.children()[1]).copied(),
+                _ => None,
+            };
+            if let Some(target) = atomic_target {
+                atomic_targets.insert(id, target);
+            }
             let kind = match current.kind() {
                 K::TermReference => "source.term.variable-reference".to_owned(),
                 K::ParenthesizedTerm => "source.term.parenthesized".to_owned(),
+                K::ParenthesizedFormula if atomic_target.is_some() => {
+                    "source.formula.atomic.parenthesized".to_owned()
+                }
                 K::SetEnumeration => "source.term.set.enumeration".to_owned(),
                 K::ChoiceTerm => "source.term.set.choice".to_owned(),
                 K::TypeExpression
@@ -9844,6 +10210,31 @@ impl TermFormulaChecker {
                 spelling: format!("{} = {}", spellings[0], spellings[1]),
                 kind: SourceAtomicFormulaKind::Equality,
             });
+            let mut cursor = id;
+            let mut wrapper_spelling = atomic.formulas[formula.index()].spelling.clone();
+            let mut wrappers = Vec::new();
+            while let Some(parent) = parents.get(&cursor) {
+                match node(*parent)?.kind() {
+                    K::FormulaExpression => {}
+                    K::ParenthesizedFormula => {
+                        wrapper_spelling = format!("( {wrapper_spelling} )");
+                        wrappers.push((*parent, wrapper_spelling.clone()));
+                    }
+                    _ => break,
+                }
+                cursor = *parent;
+            }
+            for (ordinal, (wrapper, spelling)) in wrappers.into_iter().rev().enumerate() {
+                atomic.wrappers.push(SourceAtomicWrapperInput {
+                    formula,
+                    ordinal,
+                    site: site(wrapper),
+                    source_range: range(wrapper)?,
+                    context,
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling,
+                });
+            }
             formulas.push(
                 FormulaInput::new(site(id), context, range(id)?, FormulaKind::Equality)
                     .with_terms(operands),
@@ -10387,8 +10778,7 @@ impl TermFormulaChecker {
             );
         }
         let old_atomic = original.source_atomic_formula().ok_or_else(invalid)?;
-        if !old_atomic.wrappers().is_empty()
-            || !old_atomic.predicate_segments().is_empty()
+        if !old_atomic.predicate_segments().is_empty()
             || !old_atomic.predicate_heads().is_empty()
             || !old_atomic.candidates().is_empty()
             || !old_atomic.type_sites().is_empty()
@@ -10400,7 +10790,21 @@ impl TermFormulaChecker {
             source_id: old_atomic.source_id(),
             module_id: old_atomic.module_id().clone(),
             formulas: Vec::new(),
-            wrappers: Vec::new(),
+            wrappers: old_atomic
+                .wrappers()
+                .iter()
+                .map(|(_, wrapper)| {
+                    Ok(SourceAtomicWrapperInput {
+                        formula: wrapper.formula(),
+                        ordinal: wrapper.ordinal(),
+                        site: wrapper.site().clone(),
+                        source_range: wrapper.source_range(),
+                        context: context_for(wrapper.site())?,
+                        recovery: wrapper.recovery(),
+                        spelling: wrapper.spelling().into(),
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
             predicate_segments: Vec::new(),
             predicate_heads: Vec::new(),
             candidates: Vec::new(),

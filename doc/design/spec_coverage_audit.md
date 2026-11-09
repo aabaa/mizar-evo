@@ -3240,6 +3240,7 @@ Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit
 Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit_addenda.md).
 
 ## Native universal source composition
+Fixed connective/grouping transport extends the same original-source owner, including nested universal contexts, atomic/composite wrapper provenance and source-ordered bound uses; requirement and truth/proof acceptance credit remain unchanged.
 The [live composite owner](mizar-checker/en/source_composite_formula.md#original-source-universal-composition) extends source-only transport to genuine normal theorem-equality contexts and explicit Set universals. Header/body/binder/type associations retain the full primitive proof/header partition; raw profiles and existing requirement credit remain unchanged. Native quantified/local-Let statement input and all theorem/proof/Core/VC acceptance remain with their separate owners.
 
 ## Native quantified statement inputs
