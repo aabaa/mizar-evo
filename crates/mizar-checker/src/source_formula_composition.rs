@@ -903,7 +903,7 @@ impl SourceFormulaCompositionProducer {
     }
 }
 
-/// Validates and publishes the exact Task 257C2 condition/formula association.
+/// Validates condition/formula associations over numeric or variable dependencies.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SourceConditionFormulaCompositionProducer;
 
@@ -1579,6 +1579,91 @@ fn validate_condition_transaction(
         )
         .map_err(|_| SourceConditionFormulaCompositionError::DependencyMismatch)?;
 
+    if !primary_terms.references().is_empty() {
+        let invalid = SourceConditionFormulaCompositionError::DependencyMismatch;
+        if !primary_terms.numeric_type_requests().is_empty()
+            || primary_terms.references().len() != primary_terms.terms().len()
+            || primary_terms
+                .terms()
+                .iter()
+                .zip(primary_terms.references().iter())
+                .any(|((id, term), (_, reference))| {
+                    term.kind() != SourcePrimaryTermKind::VariableReference
+                        || term.role() != SourcePrimaryTermRole::Value
+                        || term.recovery() != SourcePrimaryTermRecovery::Normal
+                        || term.parent().is_some()
+                        || reference.term() != id
+                        || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                })
+            || !applications.applications().is_empty()
+            || !applications.wrappers().is_empty()
+            || !applications.candidates().is_empty()
+            || !applications.arguments().is_empty()
+            || !applications.type_requests().is_empty()
+            || !set_terms.wrappers().is_empty()
+            || set_terms.generators().len() != set_terms.terms().len()
+            || set_terms.conditions().is_empty()
+            || set_terms.terms().iter().any(|(_, term)| {
+                term.kind() != SourceSetTermKind::Comprehension
+                    || term.recovery() != SourceSetTermRecovery::Normal
+            })
+            || set_terms
+                .edges()
+                .iter()
+                .any(|(_, edge)| !matches!(edge.target(), SourceSetTarget::Primary(_)))
+            || !atomic_formulas.wrappers().is_empty()
+            || !atomic_formulas.predicate_segments().is_empty()
+            || !atomic_formulas.predicate_heads().is_empty()
+            || !atomic_formulas.candidates().is_empty()
+            || !atomic_formulas.type_sites().is_empty()
+            || !atomic_formulas.attributes().is_empty()
+            || atomic_formulas.formulas().iter().any(|(_, formula)| {
+                formula.kind() != SourceAtomicFormulaKind::Membership
+                    || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+            })
+            || atomic_formulas.edges().iter().any(|(_, edge)| {
+                !matches!(
+                    edge.target(),
+                    SourceAtomicTermTarget::Primary(_) | SourceAtomicTermTarget::SetTerm(_)
+                )
+            })
+        {
+            return Err(invalid);
+        }
+        if input.edges.len() != set_terms.conditions().len() {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+        for ((condition_id, condition), edge) in set_terms.conditions().iter().zip(&input.edges) {
+            let term = set_terms
+                .terms()
+                .get(condition.term())
+                .ok_or(SourceConditionFormulaCompositionError::DependencyMismatch)?;
+            let mut direct = atomic_formulas.formulas().iter().filter(|(_, formula)| {
+                condition.source_range() == formula.source_range()
+                    && condition.spelling() == formula.spelling()
+                    && term.context() == formula.context()
+                    && condition.condition_site() != formula.site()
+                    && arena
+                        .node(condition.condition_site().node())
+                        .is_some_and(|node| node.children.contains(&formula.site().node()))
+            });
+            let Some((formula, _)) = direct.next() else {
+                return Err(invalid);
+            };
+            if direct.next().is_some() {
+                return Err(invalid);
+            }
+            if edge.condition != condition_id
+                || edge.ordinal != condition.ordinal()
+                || edge.formula != formula
+            {
+                return Err(SourceConditionFormulaCompositionError::InvalidEdge {
+                    edge: SourceConditionFormulaEdgeId::new(condition_id.index()),
+                });
+            }
+        }
+        return Ok(());
+    }
     validate_condition_dependency_profiles(
         primary_terms,
         applications,
