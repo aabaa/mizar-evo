@@ -1,6 +1,766 @@
 use super::*;
 
 #[test]
+fn step5c5_local_predicate_chains_preserve_physical_atoms_and_final_transport() {
+    use mizar_checker::{
+        binding_env::{BindingContextLayer, BindingContextOwner, BindingKind, BindingTypeSite},
+        source_atomic_formula::{
+            SourceAtomicEdgeInput, SourceAtomicEdgeRole, SourceAtomicFormulaHandoffInput,
+            SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
+            SourceAtomicRequestInput, SourceAtomicRequestKind, SourceAtomicTermTarget,
+            SourcePredicateCandidateInput, SourcePredicateHeadInput, SourcePredicateSegmentInput,
+            SourcePredicateSegmentPolarityInput,
+        },
+        type_checker::TermFormulaChecker,
+        typed_ast::{TypeEntryActual, TypeStatus, TypedArena, TypedSiteRef},
+    };
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use mizar_syntax::ast::SurfaceNodeKind as K;
+
+    let config = config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    for id in [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let base = fs::read_to_string(&case.source_path).unwrap();
+        let head = if id == STEP5C5_PHRASE_ID {
+            "likes"
+        } else {
+            "<<="
+        };
+        let call = format!("X {head} X");
+        // Widths and per-segment polarity are independent source-intent oracles.
+        let profiles = [
+            (call.clone(), call.clone(), vec![""], vec![""], false),
+            (
+                format!("{call} {head} X"),
+                call.clone(),
+                vec!["", ""],
+                vec![""],
+                false,
+            ),
+            (
+                call.clone(),
+                format!("{call} does not {head} X"),
+                vec![""],
+                vec!["", "does"],
+                false,
+            ),
+            (
+                format!("X does not {head} X {head} X"),
+                format!("{call} do not {head} X"),
+                vec!["does", ""],
+                vec!["", "do"],
+                false,
+            ),
+            (
+                format!("{call} does not {head} X {head} X"),
+                format!("X does not {head} X {head} X do not {head} X"),
+                vec!["", "does", ""],
+                vec!["does", "", "do"],
+                false,
+            ),
+            (
+                format!("{call} {head} X does not {head} X {head} X"),
+                format!("{call} {head} X"),
+                vec!["", "", "does", ""],
+                vec!["", ""],
+                true,
+            ),
+        ];
+        for (profile, (header, proof, header_polarity, proof_polarity, layout)) in
+            profiles.into_iter().enumerate()
+        {
+            let mut text = base
+                .replace(&format!("holds {call}"), &format!("holds {header}"))
+                .replace(&format!("thus {call}"), &format!("thus {proof}"));
+            if layout {
+                text = text
+                    .replace(" X", " Parcel")
+                    .replace(" Y", " Token")
+                    .replace("proof\n", "proof\n:: chain layout\n");
+            }
+            let frontend = super::super::super::formula_statement::step5c8_test_frontend(&text);
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{id:?} {profile}: {:?}",
+                frontend.diagnostics
+            );
+            let ast = frontend.ast.clone().unwrap();
+            let (source, neutral, symbols) = super::super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                frontend,
+            )
+            .unwrap();
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(&ast, source.module(), &symbols),
+            )
+            .unwrap();
+            assert_eq!(scope.bindings().len(), 2);
+            assert_eq!(
+                scope.references().len(),
+                header_polarity.len() + proof_polarity.len() + 2
+            );
+            let before = (source.clone(), neutral.clone(), symbols.clone());
+            let (bindings, inference, typed) =
+                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
+                    .unwrap_or_else(|error| panic!("RED source atoms {id:?}/{profile}: {error}"));
+            assert_eq!(
+                bindings.bindings().len(),
+                if id == STEP5C5_PHRASE_ID { 4 } else { 5 }
+            );
+            assert_eq!(
+                inference.terms().len(),
+                (if id == STEP5C5_PHRASE_ID { 6 } else { 8 })
+                    + header_polarity.len()
+                    + proof_polarity.len()
+                    - 2
+            );
+            assert!(inference.facts().is_empty() && inference.diagnostics().is_empty());
+            assert!(typed.source_statement().is_none() && typed.source_context().is_none());
+            let primary = typed.source_term().unwrap();
+            let atomic = typed.source_atomic_formula().unwrap();
+            assert_eq!(primary.terms().len(), inference.terms().len());
+            assert_eq!(
+                atomic.predicate_segments().len(),
+                header_polarity.len() + proof_polarity.len()
+            );
+            let predicate = symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate)
+                .unwrap();
+            let site = |id| {
+                let resolved = source.resolved_node_for(id).unwrap();
+                let nodes = typed
+                    .nodes()
+                    .iter()
+                    .filter(|(_, row)| row.resolved_node == Some(resolved))
+                    .collect::<Vec<_>>();
+                assert_eq!(nodes.len(), 1);
+                TypedSiteRef::Node(nodes[0].0)
+            };
+            let theorem = ast
+                .node_views()
+                .find(|view| view.kind() == &K::TheoremItem)
+                .unwrap();
+            let quantified = ast
+                .node_view(ast.node_view(theorem.children()[3]).unwrap().children()[0])
+                .unwrap();
+            assert!(matches!(quantified.kind(), K::QuantifiedFormula(_)));
+            let header_declaration = ast
+                .node_view(ast.node_view(quantified.children()[1]).unwrap().children()[0])
+                .unwrap();
+            let proof_block = ast.node_view(theorem.children()[4]).unwrap();
+            assert_eq!(proof_block.kind(), &K::ProofBlock);
+            let proof_let = ast.node_view(proof_block.children()[1]).unwrap();
+            assert_eq!(proof_let.kind(), &K::LetStatement);
+            let proof_declaration = ast
+                .node_view(ast.node_view(proof_let.children()[1]).unwrap().children()[0])
+                .unwrap();
+            let declarations = [
+                (
+                    header_declaration,
+                    quantified.range(),
+                    BindingKind::QuantifierBinder,
+                    BindingContextLayer::Expression,
+                ),
+                (
+                    proof_declaration,
+                    proof_block.range(),
+                    BindingKind::LetBinding,
+                    BindingContextLayer::Proof,
+                ),
+            ];
+            for (declaration, _, kind, _) in declarations {
+                let winner = scope
+                    .bindings()
+                    .iter()
+                    .find(|row| row.node() == declaration.id())
+                    .unwrap();
+                assert_eq!(winner.range(), declaration.range());
+                assert_eq!(
+                    winner.spelling(),
+                    &text[declaration.range().start..declaration.range().end]
+                );
+                assert_eq!(
+                    bindings
+                        .bindings()
+                        .iter()
+                        .filter(|(_, row)| row.kind == kind
+                            && row.declaration_range == declaration.range())
+                        .count(),
+                    1
+                );
+            }
+            let mut applications = ast
+                .node_views()
+                .filter(|view| {
+                    view.kind() == &K::PredicateApplication
+                        && theorem.range().start <= view.range().start
+                        && view.range().end <= theorem.range().end
+                })
+                .collect::<Vec<_>>();
+            applications.sort_by_key(|view| view.range().start);
+            assert_eq!(applications.len(), 2);
+            let formal = ast
+                .node_views()
+                .find(|view| view.kind() == &K::DefinitionParameter)
+                .unwrap();
+            let formal_segment = ast.node_view(formal.children()[1]).unwrap();
+            let formal_type = ast
+                .node_view(*formal_segment.children().last().unwrap())
+                .unwrap();
+            assert_eq!(formal_type.kind(), &K::TypeExpression);
+            assert_eq!(
+                bindings
+                    .bindings()
+                    .iter()
+                    .filter(|(_, row)| row.kind == BindingKind::DefinitionParameter
+                        && row.type_site == BindingTypeSite::Source(formal_type.range()))
+                    .count(),
+                2
+            );
+            for (application_index, (application, polarities)) in applications
+                .iter()
+                .zip([&header_polarity, &proof_polarity])
+                .enumerate()
+            {
+                let (declaration, owner_range, binding_kind, layer) =
+                    declarations[application_index];
+                let source_winner = scope
+                    .bindings()
+                    .iter()
+                    .find(|row| row.node() == declaration.id())
+                    .unwrap();
+                let formula = atomic
+                    .formulas()
+                    .iter()
+                    .find(|(_, row)| row.site() == &site(application.id()))
+                    .unwrap();
+                assert_eq!(
+                    formula.1.kind(),
+                    SourceAtomicFormulaKind::PredicateApplication
+                );
+                assert_eq!(formula.1.source_range(), application.range());
+                let context = bindings.contexts().get(formula.1.context()).unwrap();
+                assert_eq!(
+                    context.owner,
+                    BindingContextOwner::SourceStatement {
+                        source_range: owner_range
+                    }
+                );
+                assert_eq!(context.layer, layer);
+                let local_binding = bindings
+                    .bindings()
+                    .iter()
+                    .find(|(_, row)| {
+                        row.kind == binding_kind && row.declaration_range == declaration.range()
+                    })
+                    .unwrap();
+                assert_eq!(local_binding.1.owner_context, formula.1.context());
+                assert_eq!(application.children().len(), polarities.len());
+                let segments = atomic
+                    .predicate_segments()
+                    .iter()
+                    .filter(|(_, row)| row.formula() == formula.0)
+                    .collect::<Vec<_>>();
+                let heads = atomic
+                    .predicate_heads()
+                    .iter()
+                    .filter(|(_, row)| row.formula() == formula.0)
+                    .collect::<Vec<_>>();
+                let edges = atomic
+                    .edges()
+                    .iter()
+                    .filter(|(_, row)| row.formula() == formula.0)
+                    .collect::<Vec<_>>();
+                let requests = atomic
+                    .requests()
+                    .iter()
+                    .filter(|(_, row)| row.formula() == formula.0)
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    (segments.len(), heads.len(), edges.len(), requests.len()),
+                    (
+                        polarities.len(),
+                        polarities.len(),
+                        polarities.len() + 1,
+                        polarities.len()
+                    )
+                );
+                let mut physical_terms = Vec::new();
+                for (ordinal, (segment_id, expected_verb)) in
+                    application.children().iter().zip(polarities).enumerate()
+                {
+                    let syntax = ast.node_view(*segment_id).unwrap();
+                    assert_eq!(syntax.kind(), &K::PredicateSegment);
+                    let (_, row) = segments[ordinal];
+                    assert_eq!(
+                        (row.ordinal(), row.site(), row.source_range(), row.context()),
+                        (
+                            ordinal,
+                            &site(syntax.id()),
+                            syntax.range(),
+                            formula.1.context()
+                        )
+                    );
+                    let head_syntax = syntax
+                        .children()
+                        .iter()
+                        .filter_map(|id| ast.node_view(*id))
+                        .find(|view| view.kind() == &K::PredicateHead)
+                        .unwrap();
+                    let (head_id, head_row) = heads[ordinal];
+                    assert_eq!(
+                        (
+                            row.head(),
+                            head_row.site(),
+                            head_row.source_range(),
+                            head_row.spelling()
+                        ),
+                        (head_id, &site(head_syntax.id()), head_syntax.range(), head)
+                    );
+                    assert_eq!(head_row.context(), formula.1.context());
+                    assert_eq!(
+                        (row.left_edge(), row.right_edge()),
+                        (edges[ordinal].0, edges[ordinal + 1].0)
+                    );
+                    if ordinal > 0 {
+                        assert_eq!(row.left_edge(), segments[ordinal - 1].1.right_edge());
+                    }
+                    match (row.polarity(), *expected_verb) {
+                        (SourcePredicateSegmentPolarityInput::Positive, "") => {}
+                        (
+                            SourcePredicateSegmentPolarityInput::Negative {
+                                verb_site,
+                                verb_range,
+                                verb_spelling,
+                                not_site,
+                                not_range,
+                                not_spelling,
+                                ..
+                            },
+                            verb,
+                        ) if verb == "does" || verb == "do" => {
+                            assert_eq!(verb_spelling, verb);
+                            assert_eq!(not_spelling, "not");
+                            assert_eq!(&text[verb_range.start..verb_range.end], verb);
+                            assert_eq!(&text[not_range.start..not_range.end], "not");
+                            assert!(syntax.children().iter().any(|id| &site(*id) == verb_site));
+                            assert!(syntax.children().iter().any(|id| &site(*id) == not_site));
+                        }
+                        other => panic!("unexpected polarity {other:?} in {id:?}/{profile}"),
+                    }
+                    let (candidate_id, candidate) = atomic
+                        .candidates()
+                        .iter()
+                        .find(|(_, candidate)| candidate.head() == head_id)
+                        .unwrap();
+                    assert_eq!(candidate.symbol(), predicate.symbol());
+                    assert_eq!(candidate.contribution(), predicate.contribution());
+                    assert_eq!(
+                        (
+                            requests[ordinal].1.ordinal(),
+                            requests[ordinal].1.kind(),
+                            requests[ordinal].1.candidate(),
+                            requests[ordinal].1.edge()
+                        ),
+                        (
+                            ordinal,
+                            SourceAtomicRequestKind::PredicateCandidateSignature,
+                            Some(candidate_id),
+                            None
+                        )
+                    );
+                    let terms = syntax
+                        .children()
+                        .iter()
+                        .filter_map(|id| ast.node_view(*id))
+                        .filter(|view| view.kind() == &K::TermExpression)
+                        .collect::<Vec<_>>();
+                    assert_eq!(terms.len(), if ordinal == 0 { 2 } else { 1 });
+                    for term in terms {
+                        let reference = ast.node_view(term.children()[0]).unwrap();
+                        assert_eq!(reference.kind(), &K::TermReference);
+                        physical_terms.push(reference.id());
+                    }
+                }
+                assert_eq!(physical_terms.len(), polarities.len() + 1);
+                for (ordinal, (_, edge)) in edges.iter().enumerate() {
+                    assert_eq!(edge.ordinal(), ordinal);
+                    assert_eq!(
+                        edge.role(),
+                        if ordinal == 0 {
+                            SourceAtomicEdgeRole::PredicateLeftArgument
+                        } else if ordinal + 1 == edges.len() {
+                            SourceAtomicEdgeRole::PredicateRightArgument
+                        } else {
+                            SourceAtomicEdgeRole::PredicateChainBoundary
+                        }
+                    );
+                    let term = primary
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site() == &site(physical_terms[ordinal]))
+                        .unwrap();
+                    assert_eq!(edge.target(), SourceAtomicTermTarget::Primary(term.0));
+                    assert_eq!(term.1.context(), formula.1.context());
+                    let source_reference = scope
+                        .references()
+                        .iter()
+                        .find(|row| row.node() == physical_terms[ordinal])
+                        .unwrap();
+                    assert_eq!(source_reference.binding(), source_winner.id());
+                    assert_eq!(source_reference.range(), term.1.source_range());
+                    let primary_reference = primary
+                        .references()
+                        .iter()
+                        .find(|(_, row)| row.term() == term.0)
+                        .unwrap()
+                        .1;
+                    assert_eq!(primary_reference.binding(), local_binding.0);
+                    let actual_winner = bindings
+                        .bindings()
+                        .get(primary_reference.binding())
+                        .unwrap();
+                    assert_eq!(
+                        (
+                            actual_winner.kind,
+                            actual_winner.declaration_range,
+                            actual_winner.owner_context
+                        ),
+                        (binding_kind, source_winner.range(), formula.1.context())
+                    );
+                    let inferred = inference
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| &row.site == term.1.site())
+                        .unwrap()
+                        .1;
+                    let entry = inference.type_entries().get(inferred.type_entry).unwrap();
+                    let TypeEntryActual::Known(actual) = entry.actual else {
+                        panic!("known physical operand type")
+                    };
+                    assert_eq!(entry.status, TypeStatus::Known);
+                    assert_eq!(entry.expected, Some(actual));
+                }
+            }
+            if profile == 1 || profile == 2 {
+                assert!(
+                    atomic.wrappers().is_empty()
+                        && atomic.type_sites().is_empty()
+                        && atomic.attributes().is_empty()
+                );
+                assert!(
+                    typed.source_application().is_none()
+                        && typed.source_structure().is_none()
+                        && typed.source_set_term().is_none()
+                );
+                let input = SourceAtomicFormulaHandoffInput {
+                    source_id: atomic.source_id(),
+                    module_id: atomic.module_id().clone(),
+                    formulas: atomic
+                        .formulas()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicFormulaInput {
+                            site: row.site().clone(),
+                            source_range: row.source_range(),
+                            source_ordinal: row.source_ordinal(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().into(),
+                            kind: row.kind(),
+                        })
+                        .collect(),
+                    wrappers: vec![],
+                    predicate_segments: atomic
+                        .predicate_segments()
+                        .iter()
+                        .map(|(_, row)| SourcePredicateSegmentInput {
+                            formula: row.formula(),
+                            ordinal: row.ordinal(),
+                            site: row.site().clone(),
+                            source_range: row.source_range(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().into(),
+                            head: row.head(),
+                            polarity: row.polarity().clone(),
+                            left_edge: row.left_edge(),
+                            right_edge: row.right_edge(),
+                        })
+                        .collect(),
+                    predicate_heads: atomic
+                        .predicate_heads()
+                        .iter()
+                        .map(|(_, row)| SourcePredicateHeadInput {
+                            formula: row.formula(),
+                            site: row.site().clone(),
+                            source_range: row.source_range(),
+                            context: row.context(),
+                            recovery: row.recovery(),
+                            spelling: row.spelling().into(),
+                            left_arity: row.left_arity(),
+                            right_arity: row.right_arity(),
+                        })
+                        .collect(),
+                    candidates: atomic
+                        .candidates()
+                        .iter()
+                        .map(|(_, row)| SourcePredicateCandidateInput {
+                            head: row.head(),
+                            ordinal: row.ordinal(),
+                            symbol: row.symbol().clone(),
+                            contribution: row.contribution(),
+                        })
+                        .collect(),
+                    type_sites: vec![],
+                    attributes: vec![],
+                    edges: atomic
+                        .edges()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicEdgeInput {
+                            formula: row.formula(),
+                            ordinal: row.ordinal(),
+                            role: row.role(),
+                            target: row.target(),
+                        })
+                        .collect(),
+                    requests: atomic
+                        .requests()
+                        .iter()
+                        .map(|(_, row)| SourceAtomicRequestInput {
+                            formula: row.formula(),
+                            ordinal: row.ordinal(),
+                            kind: row.kind(),
+                            edge: row.edge(),
+                            candidate: row.candidate(),
+                            type_site: row.type_site(),
+                            attribute: row.attribute(),
+                        })
+                        .collect(),
+                };
+                assert_eq!(
+                    SourceAtomicFormulaProducer::build(
+                        input.clone(),
+                        &bindings,
+                        &symbols,
+                        primary,
+                        None,
+                        None,
+                        None,
+                        typed.nodes()
+                    )
+                    .unwrap(),
+                    *atomic
+                );
+                let chain_formula = atomic
+                    .formulas()
+                    .iter()
+                    .find(|(_, row)| {
+                        row.site() == &site(applications[usize::from(profile == 2)].id())
+                    })
+                    .unwrap()
+                    .0;
+                let second = input
+                    .predicate_segments
+                    .iter()
+                    .position(|row| row.formula == chain_formula && row.ordinal == 1)
+                    .unwrap();
+                if profile == 1 {
+                    let first = input
+                        .predicate_segments
+                        .iter()
+                        .position(|row| row.formula == chain_formula && row.ordinal == 0)
+                        .unwrap();
+                    let candidate = input
+                        .candidates
+                        .iter()
+                        .position(|row| row.head == input.predicate_segments[second].head)
+                        .unwrap();
+                    let theorem_symbol = symbols
+                        .symbols()
+                        .iter()
+                        .find(|row| row.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                        .unwrap();
+                    let mut changed = input.clone();
+                    changed.candidates[candidate].symbol = theorem_symbol.symbol().clone();
+                    assert!(
+                        SourceAtomicFormulaProducer::build(
+                            changed,
+                            &bindings,
+                            &symbols,
+                            primary,
+                            None,
+                            None,
+                            None,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    let mut contributions = symbols.contributions().clone();
+                    let foreign_contribution = contributions.insert(
+                        source.module().clone(),
+                        mizar_resolve::env::ContributionKind::LocalSource {
+                            source_id: source.source_id(),
+                        },
+                        theorem_symbol.origin().anchor().clone(),
+                    );
+                    assert!(symbols.contributions().get(foreign_contribution).is_none());
+                    let mut changed = input.clone();
+                    changed.candidates[candidate].contribution = foreign_contribution;
+                    assert!(
+                        SourceAtomicFormulaProducer::build(
+                            changed,
+                            &bindings,
+                            &symbols,
+                            primary,
+                            None,
+                            None,
+                            None,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    let first_request = input
+                        .requests
+                        .iter()
+                        .find(|row| row.formula == chain_formula && row.ordinal == 0)
+                        .unwrap()
+                        .candidate;
+                    let mut changed = input.clone();
+                    let second_request = changed
+                        .requests
+                        .iter_mut()
+                        .find(|row| row.formula == chain_formula && row.ordinal == 1)
+                        .unwrap();
+                    second_request.candidate = first_request;
+                    assert!(
+                        SourceAtomicFormulaProducer::build(
+                            changed,
+                            &bindings,
+                            &symbols,
+                            primary,
+                            None,
+                            None,
+                            None,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    let mut changed = input.clone();
+                    let shared_edge = changed.predicate_segments[second].left_edge.index();
+                    let first_edge = changed.predicate_segments[first].left_edge.index();
+                    changed.edges[shared_edge].target = input.edges[first_edge].target;
+                    assert!(
+                        SourceAtomicFormulaProducer::build(
+                            changed,
+                            &bindings,
+                            &symbols,
+                            primary,
+                            None,
+                            None,
+                            None,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                } else {
+                    let mut changed = input.clone();
+                    changed.predicate_segments[second].polarity =
+                        SourcePredicateSegmentPolarityInput::Positive;
+                    assert!(
+                        SourceAtomicFormulaProducer::build(
+                            changed,
+                            &bindings,
+                            &symbols,
+                            primary,
+                            None,
+                            None,
+                            None,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                }
+            }
+            let final_ast =
+                crate::runner::type_elaboration::assemble_empty_resolved_typed_ast(&typed, vec![])
+                    .unwrap();
+            assert_eq!(final_ast.source_term(), typed.source_term());
+            assert_eq!(
+                final_ast.source_atomic_formula(),
+                typed.source_atomic_formula()
+            );
+            assert!(
+                final_ast.expr_metadata().is_empty()
+                    && final_ast.checked_formulas().is_empty()
+                    && final_ast.statement_semantics().is_empty()
+                    && final_ast.checked_proofs().is_empty()
+                    && final_ast.checked_terminal_goals().is_empty()
+            );
+            assert_eq!(
+                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
+                    .unwrap(),
+                (bindings.clone(), inference.clone(), typed.clone())
+            );
+            assert_eq!((source.clone(), neutral.clone(), symbols.clone()), before);
+            if profile == 1 {
+                let continuation = ast.node_view(applications[0].children()[1]).unwrap();
+                let continued_head = continuation
+                    .children()
+                    .iter()
+                    .filter_map(|id| ast.node_view(*id))
+                    .find(|view| view.kind() == &K::PredicateHead)
+                    .unwrap();
+                let TypedSiteRef::Node(head_site) = site(continued_head.id()) else {
+                    unreachable!()
+                };
+                let mut nodes = neutral
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                nodes[head_site.index()].kind =
+                    r#"Token(SurfaceToken { kind: Identifier, text: "foreign" })"#.into();
+                let changed = TypedArena::try_new(neutral.root(), nodes).unwrap();
+                assert!(
+                    TermFormulaChecker::check_source_predicate_statements(
+                        &source, &symbols, &changed
+                    )
+                    .is_err()
+                );
+                assert_eq!((source.clone(), neutral.clone(), symbols.clone()), before);
+            }
+            if profile > 0 {
+                let owner = symbols
+                    .symbols()
+                    .iter()
+                    .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                    .unwrap();
+                let namespace =
+                    mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
+                let labels = mizar_resolve::labels::ProofLabelSourceCollector::new(
+                    &ast,
+                    source.module(),
+                    namespace.clone(),
+                    owner.contribution(),
+                    &source,
+                )
+                .unwrap()
+                .collect_with_theorem_owners(&symbols)
+                .unwrap();
+                let resolved = mizar_resolve::labels::LabelResolver::new(labels.projections())
+                    .resolve(source.module(), &namespace, labels.references());
+                assert!(mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source, &typed, &scope, &symbols, &labels, &resolved, None,
+                ).is_err());
+            }
+        }
+    }
+}
+
+#[test]
 fn step5c5_equals_preserves_rhs_scopes_and_two_open_goals() {
     use mizar_core::core_ir::*;
     fn term(core: &CoreIr, id: CoreTermId) -> String {

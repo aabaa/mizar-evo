@@ -11933,33 +11933,58 @@ impl TermFormulaChecker {
                 formula
             };
             let formula_id = SourceAtomicFormulaId::new(ordinal);
-            let (operands, call) = if ordinal < body_count || functor {
+            let (operands, calls) = if ordinal < body_count || functor {
                 let [left, operator, right] = parts(formula, &K::BuiltinPredicateApplication)?
                 else {
                     return Err(invalid());
                 };
                 tokens(&[(*operator, if nested.is_some() { "in" } else { "=" })])?;
-                ([*left, *right], None)
+                (vec![*left, *right], Vec::new())
             } else {
-                let segment = only(formula, &K::PredicateApplication)?;
-                let (left, call_head, right, negative) = match parts(segment, &K::PredicateSegment)?
-                {
-                    [left, head, right] => (*left, *head, *right, None),
-                    [left, does, not, head, right] => {
-                        tokens(&[(*does, "does"), (*not, "not")])?;
-                        (*left, *head, *right, Some((*does, *not)))
-                    }
-                    _ => return Err(invalid()),
-                };
-                let token = only(
-                    only(only(call_head, &K::PredicateHead)?, &K::QualifiedSymbol)?,
-                    &K::PathSegment,
-                )?;
-                if text(token)? != text(head)? || range(*definition)?.end > range(formula)?.start {
+                let segments = parts(formula, &K::PredicateApplication)?;
+                if segments.is_empty() {
                     return Err(invalid());
                 }
-                ([left, right], Some((segment, call_head, negative)))
+                let mut operands = Vec::new();
+                let mut calls = Vec::new();
+                for (index, segment) in segments.iter().copied().enumerate() {
+                    let (left, call_head, right, negative) =
+                        match (index, parts(segment, &K::PredicateSegment)?) {
+                            (0, [left, head, right]) => (Some(*left), *head, *right, None),
+                            (0, [left, verb, not, head, right]) => {
+                                (Some(*left), *head, *right, Some((*verb, *not)))
+                            }
+                            (_, [head, right]) if index > 0 => (None, *head, *right, None),
+                            (_, [verb, not, head, right]) if index > 0 => {
+                                (None, *head, *right, Some((*verb, *not)))
+                            }
+                            _ => return Err(invalid()),
+                        };
+                    if let Some((verb, not)) = negative {
+                        let spelling = text(verb)?;
+                        if !matches!(spelling, "does" | "do") {
+                            return Err(invalid());
+                        }
+                        tokens(&[(verb, spelling), (not, "not")])?;
+                    }
+                    let token = only(
+                        only(only(call_head, &K::PredicateHead)?, &K::QualifiedSymbol)?,
+                        &K::PathSegment,
+                    )?;
+                    if text(token)? != text(head)?
+                        || range(*definition)?.end > range(formula)?.start
+                    {
+                        return Err(invalid());
+                    }
+                    if let Some(left) = left {
+                        operands.push(left);
+                    }
+                    operands.push(right);
+                    calls.push((segment, call_head, negative));
+                }
+                (operands, calls)
             };
+            let operand_count = operands.len();
             let mut spellings = Vec::new();
             let mut operand_sites = Vec::new();
             let edge_start = atomic.edges.len();
@@ -12072,7 +12097,17 @@ impl TermFormulaChecker {
                         let expected = if functor {
                             *parameter_type
                         } else {
-                            identities.get(&loci[argument]).ok_or_else(invalid)?.2
+                            let expected = identities
+                                .get(&loci[usize::from(argument != 0)])
+                                .ok_or_else(invalid)?
+                                .2;
+                            if argument > 0
+                                && argument + 1 < operand_count
+                                && identities.get(&loci[0]).ok_or_else(invalid)?.2 != expected
+                            {
+                                return Err(invalid());
+                            }
+                            expected
                         };
                         let target = TypedSiteRef::Role {
                             node: TypedNodeId::new(term.index()),
@@ -12202,7 +12237,10 @@ impl TermFormulaChecker {
                         (true, 0) => SourceAtomicEdgeRole::BuiltinLeftOperand,
                         (true, _) => SourceAtomicEdgeRole::BuiltinRightOperand,
                         (false, 0) => SourceAtomicEdgeRole::PredicateLeftArgument,
-                        (false, _) => SourceAtomicEdgeRole::PredicateRightArgument,
+                        (false, _) if argument + 1 == operand_count => {
+                            SourceAtomicEdgeRole::PredicateRightArgument
+                        }
+                        (false, _) => SourceAtomicEdgeRole::PredicateChainBoundary,
                     },
                     target,
                 });
@@ -12222,7 +12260,8 @@ impl TermFormulaChecker {
                     return Err(invalid());
                 }
             }
-            let spelling = if let Some((segment, call_head, negative)) = call {
+            let mut predicate_spellings = Vec::new();
+            for (segment_ordinal, (segment, call_head, negative)) in calls.into_iter().enumerate() {
                 let head_id = SourcePredicateHeadId::new(atomic.predicate_heads.len());
                 let candidate = SourcePredicateCandidateId::new(atomic.candidates.len());
                 let polarity = if let Some((does, not)) = negative {
@@ -12242,16 +12281,21 @@ impl TermFormulaChecker {
                 } else {
                     SourcePredicateSegmentPolarityInput::Positive
                 };
-                let spelling = format!(
-                    "{} {}{} {}",
-                    spellings[0],
-                    if negative.is_some() { "does not " } else { "" },
-                    text(head)?,
-                    spellings[1]
-                );
+                let mut spelling = if segment_ordinal == 0 {
+                    format!("{} ", spellings[0])
+                } else {
+                    String::new()
+                };
+                if let Some((verb, _)) = negative {
+                    spelling.push_str(text(verb)?);
+                    spelling.push_str(" not ");
+                }
+                spelling.push_str(text(head)?);
+                spelling.push(' ');
+                spelling.push_str(&spellings[segment_ordinal + 1]);
                 atomic.predicate_segments.push(SourcePredicateSegmentInput {
                     formula: formula_id,
-                    ordinal: 0,
+                    ordinal: segment_ordinal,
                     site: site(segment),
                     source_range: range(segment)?,
                     context,
@@ -12259,8 +12303,8 @@ impl TermFormulaChecker {
                     spelling: spelling.clone(),
                     head: head_id,
                     polarity,
-                    left_edge: SourceAtomicEdgeId::new(edge_start),
-                    right_edge: SourceAtomicEdgeId::new(edge_start + 1),
+                    left_edge: SourceAtomicEdgeId::new(edge_start + segment_ordinal),
+                    right_edge: SourceAtomicEdgeId::new(edge_start + segment_ordinal + 1),
                 });
                 atomic.predicate_heads.push(SourcePredicateHeadInput {
                     formula: formula_id,
@@ -12280,7 +12324,7 @@ impl TermFormulaChecker {
                 });
                 atomic.requests.push(SourceAtomicRequestInput {
                     formula: formula_id,
-                    ordinal: 0,
+                    ordinal: segment_ordinal,
                     kind: SourceAtomicRequestKind::PredicateCandidateSignature,
                     edge: None,
                     candidate: Some(candidate),
@@ -12290,7 +12334,10 @@ impl TermFormulaChecker {
                 arena[segment.index()].kind = "source.formula.atomic.predicate-segment".into();
                 arena[call_head.index()].kind = "source.formula.atomic.predicate-head".into();
                 arena[formula.index()].kind = "source.formula.atomic.predicate".into();
-                spelling
+                predicate_spellings.push(spelling);
+            }
+            let spelling = if !predicate_spellings.is_empty() {
+                predicate_spellings.join(" ")
             } else {
                 for (request_ordinal, argument) in (usize::from(nested.is_some())..2).enumerate() {
                     atomic.requests.push(SourceAtomicRequestInput {
@@ -12359,7 +12406,9 @@ impl TermFormulaChecker {
         if !inference.diagnostics().is_empty()
             || !inference.facts().is_empty()
             || !inference.candidate_sets().is_empty()
-            || inference.terms().iter().count() != if equals_functor { 9 } else { 2 * (body_count + 2) + if means_functor { 2 } else { 0 } }
+            || inference.terms().iter().count() != if !functor {
+                source.arena().iter().filter(|(_, node)| node.kind() == &K::TermReference).count()
+            } else if equals_functor { 9 } else { 2 * (body_count + 2) + if means_functor { 2 } else { 0 } }
             || inference.terms().iter().any(|(_, term)| {
                 term.status != TermStatus::Inferred
                     || !term.deferred.is_empty()

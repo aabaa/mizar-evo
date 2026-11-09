@@ -2992,7 +2992,7 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 
 `TermFormulaChecker::check_source_predicate_statements(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は local な binary builtin-set predicate と theorem header・proof-local の両 call を認証し、既存の `(BindingEnv, TermFormulaInferenceOutput, TypedAst)` を返す。
 source/environment を再照合し、実 declaration・順序付き loci・等式または否定等式の本体・別個の量化/proof binding を検査する。既存 inference で実引数型と期待型が Known で同じ正規化済み identity を持つことを確定し、open predicate candidate を完全な検査結果とは扱わない。
-返却 AST は既存 primary/atomic handoff を install し、各 call に同じ実 predicate identity と各自の positive または `does not` polarity site を保持する。本体の否定で call の否定を相殺せず、header/proof の一致や theorem の真偽は検証しない。
+返却 AST は両call contextの有限local binary chainを既存primary/atomic handoffへ組み込む。実operandは一度だけ保持し、隣接segmentは実boundary edgeを共有し、各segmentは実predicate identityとpositive/`does not`/`do not` polarity siteを保つ。共有operandの両formal位置を実際のwritten formal typeで認証する。本体の否定でcallの否定を相殺せず、header/proofの一致やtheoremの真偽は検証しない。
 この直接操作だけが限定 statement-check 結果を与え、transport request は未解決データのままである。unfolding・fact・証明受理・Task274・Core/VC・新たな source-family install authority は与えない。
 
 ## Source functor synonym typing

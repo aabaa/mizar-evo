@@ -3171,7 +3171,7 @@ Only actual Known set-to-structure viability rejections at authenticated argumen
 
 `TermFormulaChecker::check_source_predicate_statements(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns existing `(BindingEnv, TermFormulaInferenceOutput, TypedAst)` after authenticating one local binary builtin-set predicate and its theorem/header and proof-local calls.
 It replays source/environment identity, checks the real declaration, ordered loci, body equality or negated equality, and distinct quantified/proof bindings; existing inference must establish Known actual and expected argument types with identical normalized identities. Open predicate candidates are never treated as complete checking.
-The returned AST installs existing primary and atomic handoffs: each call retains the same actual predicate identity and its own positive or `does not` polarity sites. The body polarity cannot cancel call polarity; header/proof agreement or theorem truth is not checked here.
+The returned AST installs existing primary and atomic handoffs for finite local binary chains in either call context: each physical operand occurs once, adjacent segments share its actual boundary edge, and each segment retains the actual predicate identity and positive/`does not`/`do not` polarity sites. Authenticate both formal positions of shared operands through their genuine written formal type. The body polarity cannot cancel call polarity; header/proof agreement or theorem truth is not checked here.
 Only the direct operation grants this bounded statement-check result; transport requests stay unresolved data. No unfolding, facts, proof acceptance, Task274, Core/VC or new source-family installation authority follows.
 
 ## Source functor synonym typing

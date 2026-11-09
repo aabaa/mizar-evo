@@ -631,6 +631,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Native primitive defaults](../../task_contracts/en/CHECKER257-NATIVE-PRIMITIVE-DEFAULTS.md); prior Reserve types for omitted quantifiers and proof Lets.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
+    - [x] [Native predicate-chain atomic prerequisite](../../task_contracts/en/CHECKER257C-NATIVE-PREDICATE-ATOMS.md); variable-width local binary source intake through existing final metadata, before native C composition.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,
       polarity-token, and shared-boundary transport.
       - [x] Freeze the syntax-free nine-table contract, exact consumer, tests,

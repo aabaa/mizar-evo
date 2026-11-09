@@ -2234,14 +2234,26 @@ fn validate_candidates(
                 return Err(SourceAtomicFormulaError::InvalidCandidate { candidate: id });
             }
             if let Some(symbols) = symbols {
-                let single = input
+                let segment_count = input
                     .predicate_segments
                     .iter()
                     .filter(|segment| segment.formula == head.formula)
-                    .count()
-                    == 1;
+                    .count();
                 let mut spelling = head.spelling.as_str();
-                if single {
+                if segment_count == 1
+                    || segment_count >= 2
+                        && matches!(
+                            symbols
+                                .contributions()
+                                .get(candidate.contribution)
+                                .map(|row| row.kind()),
+                            Some(ContributionKind::LocalSource { .. })
+                        )
+                        && symbols
+                            .symbols()
+                            .get(&candidate.symbol)
+                            .is_some_and(|entry| entry.primary_spelling() != head.spelling.as_str())
+                {
                     let invalid = || SourceAtomicFormulaError::InvalidCandidate { candidate: id };
                     let entry = symbols
                         .symbols()
@@ -7432,6 +7444,13 @@ pub(crate) mod tests {
             }
             fixture.symbols = symbols("X divides Y", "X divides Y", "X divides Y");
             let valid = fixture.input.clone();
+            fixture.input.predicate_segments.clear();
+            assert!(matches!(
+                build(&fixture),
+                Err(SourceAtomicFormulaError::InvalidCandidate { candidate })
+                    if candidate == SourcePredicateCandidateId::new(0)
+            ));
+            fixture.input = valid.clone();
             for corruption in 0..10 {
                 fixture.input = valid.clone();
                 match corruption {

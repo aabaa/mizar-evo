@@ -12,7 +12,7 @@ native固定結合headerの透過的なatomic括弧は、実等式をownerとす
 ## スコープ
 
 Checker Task 256 は Task 257C1 により拡張され、ordinary predicate
-application、exact two-segment predicate-chain transport 1件、equality、
+application、native local binary chainとexact imported chain transport、equality、
 inequality、membership、bare builtin type assertion、simple imported
 attribute assertionという限定された source atomic formula の syntax-free
 immutable 記述を所有する。source occurrence、transparent wrapper、predicate
@@ -24,7 +24,7 @@ authority は Chapters 9/14 で、Chapters 3/6/13/19 が type、attribute、term
 resolver boundary を定める。Task 252/253/254/255 はそれぞれ primary、
 application、structure、set/choice/`qua` term を所有し、本module は row を
 複製せず dense root ID を参照する。predicate-chain applicability、implicit
-conjunction、semantic segment negation、broader predicate chain、connective/
+conjunction、semantic segment negation、connective/
 quantifier、condition formula、candidate selection、assertion truth、formula
 result、theorem acceptance、fact、proof、downstream IR は deferred のままである。
 
@@ -99,7 +99,7 @@ request 1件を持つ。request は intent だけで、answer、selected candida
 type、fact、truth を含まない。
 
 binary application 1件は segment・head/candidate/request 各1件と直接 edge 2件でも表現でき、positive または source の否定極性を保持する。既存の unsegmented application と複数 segment chain の規則は維持する。
-この local 単一 segment だけは実 symbol/definition が保持する相異なる identifier loci と、それらと異なる identifier または有効な非予約 user-symbol head からなる同一 binary pattern の中央を head として認める。primary/notation 一致・kind・namespace・先行 local origin・candidate ownership を維持し、signature typing や架空 symbol を与えない。
+local full binary patternは各segmentで、実symbol/definitionが保持する相異なるidentifier lociと、それらと異なるidentifierまたは有効な非予約user-symbol headからなる同一patternの中央をheadとして認める。primary/notation一致・kind・namespace・先行local origin・candidate ownershipを維持する。importedおよびplain-head candidate経路は既存規則を保ち、signature typingや架空symbolを与えない。
 この単一 segment のみ formula と同一 range を許すが、別個の実 source node・operand/head/否定 token の順序・arena identity・他の全 ownership 検査を要求する。架空の wrapper や segment は認めない。
 [直接 statement checker](./type_checker.md#ordinary-predicate-application-checking) が別途 declaration・binding・引数互換性を検査する。この transport は未解決 request を持つ不変 source 記述であり、selection・式の真偽・証明受理を与えない。
 

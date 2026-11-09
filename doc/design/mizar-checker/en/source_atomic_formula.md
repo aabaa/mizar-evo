@@ -14,7 +14,7 @@ Native fixed-connective headers preserve each transparent atomic group in the ex
 
 Checker Task 256, extended by Task 257C1, owns a syntax-free immutable
 description of bounded source atomic formulas: ordinary predicate
-applications, one exact two-segment predicate-chain transport, equality,
+applications, native local binary chains and the exact imported chain transport, equality,
 inequality, membership, bare builtin type assertions, and simple imported
 attribute assertions. It transports source occurrence identity, transparent
 wrappers, predicate segments and their direct polarity tokens, predicate-head
@@ -27,7 +27,7 @@ the owned type, attribute, term, and resolver boundaries. Task 252 owns
 primary terms, Task 253 owns applications, Task 254 owns structure terms, and
 Task 255 owns set/choice/`qua` terms. This module links their dense root IDs
 without copying rows. Predicate-chain applicability, implicit conjunction,
-semantic segment negation, broader predicate chains, connectives, quantifiers,
+semantic segment negation, connectives, quantifiers,
 condition formulas, candidate selection, assertion truth, formula results,
 theorem acceptance, facts, proof, and downstream IR remain deferred.
 
@@ -104,7 +104,7 @@ Requests publish intent only; they contain no answer, selected candidate,
 type, fact, or truth.
 
 One binary application may instead carry one segment, one head/candidate/request and two direct edges, retaining positive or source-written negative polarity. Existing unsegmented applications and multi-segment chains retain their rules.
-For this local single-segment case, the head may be the middle token of the same binary pattern with distinct identifier loci and a distinct identifier or valid non-reserved user-symbol head stored by the real symbol and definition; primary/notation agreement, kind, namespace, earlier local origin and candidate ownership remain mandatory. This supplies no signature typing or invented symbol.
+A local full binary pattern may supply the middle head token in any segment, with distinct identifier loci and a distinct identifier or valid non-reserved user-symbol head stored by the real symbol and definition; primary/notation agreement, kind, namespace, earlier local origin and candidate ownership remain mandatory. Imported and plain-head candidate routes retain their existing rules. This supplies no signature typing or invented symbol.
 Only this single segment may equal its formula's range; its distinct real source node, ordered operands/head/negation tokens, arena identity and all other ownership checks remain required. No synthetic wrapper or segment is admitted.
 The [direct statement checker](./type_checker.md#ordinary-predicate-application-checking) separately checks declaration, bindings and argument compatibility. This transport remains an immutable source description with unresolved requests, not selection, formula truth or proof acceptance.
 
