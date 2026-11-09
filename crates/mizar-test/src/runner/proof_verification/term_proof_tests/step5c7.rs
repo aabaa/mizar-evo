@@ -198,7 +198,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             SourceConditionFormulaCompositionHandoffInput,
             SourceConditionFormulaCompositionProducer, SourceConditionFormulaEdgeInput,
         },
-        source_set_term::SourceSetConditionId,
+        source_set_term::{
+            SourceSetConditionId, SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget,
+            SourceSetTermKind, SourceSetTypeHead, SourceSetTypeOwner,
+        },
         type_checker::SourceVariableSemanticsChecker,
     };
     use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
@@ -234,6 +237,23 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     );
     let noncondition_equality = original.replacen("st x in A holds", "st x = x holds", 1);
     let equality_layout = original.replace(": z in A", ":  z = z");
+    let set_literal = "{ z where z is object : z in A }";
+    let multiple = original.replace("z where z is object", "z where z is object, w is object");
+    let three_generators = original.replace(
+        "z where z is object",
+        "z where z is object, w is object, v is object",
+    );
+    let unused_set = original.replace("z where z is object", "z where z is object, w is set");
+    let mut enumeration_sibling = original.clone();
+    let last_set = enumeration_sibling.rfind(set_literal).unwrap();
+    enumeration_sibling.replace_range(last_set..last_set + set_literal.len(), "{ x }");
+    let enumeration_mapper = original.replace(set_literal, "{ { x } where z is object : z in A }");
+    let enumeration_tree =
+        original.replace(set_literal, "{ { { x } } where z is object : z in A }");
+    let inner_comprehension = original.replace(
+        set_literal,
+        "{ { x where w is object } where z is object : z in A }",
+    );
     let cases = [
         ("one", one, 1, &["z in A"][..]),
         ("header only", header_only, 1, &["z in A"][..]),
@@ -262,6 +282,40 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             &["q = q"][..],
         ),
         ("equality layout", equality_layout, 2, &["z = z"][..]),
+        ("multiple generators", multiple.clone(), 2, &["z in A"][..]),
+        ("three generators", three_generators, 2, &["z in A"][..]),
+        (
+            "multiple generators alpha",
+            multiple.replace('z', "q"),
+            2,
+            &["q in A"][..],
+        ),
+        ("unused set generator", unused_set, 2, &["z in A"][..]),
+        (
+            "enumeration sibling",
+            enumeration_sibling,
+            1,
+            &["z in A"][..],
+        ),
+        (
+            "enumeration mapper",
+            enumeration_mapper.clone(),
+            2,
+            &["z in A"][..],
+        ),
+        (
+            "enumeration mapper layout",
+            enumeration_mapper.replace("{ x }", "{  x }"),
+            2,
+            &["z in A"][..],
+        ),
+        ("enumeration tree", enumeration_tree, 2, &["z in A"][..]),
+        (
+            "inner comprehension boundary",
+            inner_comprehension,
+            2,
+            &["z in A"][..],
+        ),
         (
             "noncondition equality",
             noncondition_equality,
@@ -299,6 +353,278 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         let primary = typed.source_term().unwrap();
         let sets = typed.source_set_term().unwrap();
         let atomic = typed.source_atomic_formula().unwrap();
+        if matches!(
+            label,
+            "multiple generators"
+                | "three generators"
+                | "multiple generators alpha"
+                | "unused set generator"
+                | "enumeration sibling"
+                | "enumeration mapper"
+                | "enumeration mapper layout"
+                | "enumeration tree"
+                | "inner comprehension boundary"
+        ) {
+            // Compare the lower Set rows with actual syntax, independently of C2.
+            let written_sets = ast
+                .node_views()
+                .filter_map(|view| {
+                    let node = ast.node(view.id())?;
+                    match &node.kind {
+                        SurfaceNodeKind::SetComprehension => {
+                            Some((view.id(), node, SourceSetTermKind::Comprehension))
+                        }
+                        SurfaceNodeKind::SetEnumeration => {
+                            Some((view.id(), node, SourceSetTermKind::Enumeration))
+                        }
+                        _ => None,
+                    }
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                sets.terms().len(),
+                written_sets.len(),
+                "{label}: Set census"
+            );
+            let (expected_terms, expected_generators, expected_nested) = match label {
+                "multiple generators" | "multiple generators alpha" | "unused set generator" => {
+                    (2, 4, 0)
+                }
+                "three generators" => (2, 6, 0),
+                "enumeration sibling" => (2, 1, 0),
+                "enumeration mapper" | "enumeration mapper layout" => (4, 2, 2),
+                "enumeration tree" => (6, 2, 4),
+                "inner comprehension boundary" => (4, 4, 2),
+                _ => unreachable!(),
+            };
+            assert_eq!(
+                written_sets.len(),
+                expected_terms,
+                "{label}: written Set count"
+            );
+            for (site, node, kind) in &written_sets {
+                let matching = sets
+                    .terms()
+                    .iter()
+                    .filter(|(_, row)| row.site().node().index() == site.index())
+                    .collect::<Vec<_>>();
+                let [(term_id, term)] = matching.as_slice() else {
+                    panic!("{label}: missing or duplicate written Set")
+                };
+                assert_eq!(term.source_range(), node.range);
+                assert_eq!(term.kind(), *kind);
+                if *kind == SourceSetTermKind::Enumeration {
+                    assert!(
+                        sets.conditions()
+                            .iter()
+                            .all(|(_, row)| row.term() != *term_id)
+                    );
+                    assert!(
+                        sets.generators()
+                            .iter()
+                            .all(|(_, row)| row.term() != *term_id)
+                    );
+                }
+            }
+            let written_generators = ast
+                .node_views()
+                .filter(|view| {
+                    matches!(
+                        ast.node(view.id()).unwrap().kind,
+                        SurfaceNodeKind::ComprehensionVariableSegment
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                sets.generators().len(),
+                written_generators.len(),
+                "{label}: generator census"
+            );
+            assert_eq!(
+                written_generators.len(),
+                expected_generators,
+                "{label}: written generator count"
+            );
+            assert_eq!(sets.type_sites().len(), written_generators.len());
+            for segment in written_generators {
+                let node = ast.node(segment.id()).unwrap();
+                let identifier = node
+                    .children
+                    .iter()
+                    .copied()
+                    .find(|child| {
+                        ast.node(*child)
+                            .unwrap()
+                            .token_text()
+                            .is_some_and(|text| text != "is")
+                    })
+                    .unwrap();
+                let type_expression = node
+                    .children
+                    .iter()
+                    .copied()
+                    .find(|child| {
+                        matches!(
+                            ast.node(*child).unwrap().kind,
+                            SurfaceNodeKind::TypeExpression
+                        )
+                    })
+                    .unwrap();
+                let (parent_site, parent, _) = written_sets
+                    .iter()
+                    .find(|(_, parent, kind)| {
+                        *kind == SourceSetTermKind::Comprehension
+                            && parent.children.contains(&segment.id())
+                    })
+                    .unwrap();
+                let parent_id = sets
+                    .terms()
+                    .iter()
+                    .find(|(_, row)| row.site().node().index() == parent_site.index())
+                    .unwrap()
+                    .0;
+                let (generator_id, generator) = sets
+                    .generators()
+                    .iter()
+                    .find(|(_, row)| row.site().node().index() == identifier.index())
+                    .unwrap();
+                assert_eq!(generator.term(), parent_id);
+                assert_eq!(
+                    generator.source_range(),
+                    ast.node(identifier).unwrap().range
+                );
+                let written_ordinal = parent
+                    .children
+                    .iter()
+                    .take_while(|child| **child != segment.id())
+                    .filter(|child| {
+                        matches!(
+                            ast.node(**child).unwrap().kind,
+                            SurfaceNodeKind::ComprehensionVariableSegment
+                        )
+                    })
+                    .count();
+                assert_eq!(generator.ordinal(), written_ordinal);
+                let type_site = sets.type_sites().get(generator.type_site()).unwrap();
+                assert_eq!(
+                    type_site.owner(),
+                    SourceSetTypeOwner::Generator(generator_id)
+                );
+                assert_eq!(type_site.site().node().index(), type_expression.index());
+                assert_eq!(
+                    type_site.source_range(),
+                    ast.node(type_expression).unwrap().range
+                );
+                let head = ast
+                    .node(type_expression)
+                    .unwrap()
+                    .children
+                    .iter()
+                    .copied()
+                    .find(|child| {
+                        matches!(ast.node(*child).unwrap().kind, SurfaceNodeKind::TypeHead)
+                    })
+                    .unwrap();
+                assert_eq!(type_site.head_site().node().index(), head.index());
+                assert_eq!(type_site.head_range(), ast.node(head).unwrap().range);
+                let written_tokens = ast
+                    .node(head)
+                    .unwrap()
+                    .children
+                    .iter()
+                    .filter_map(|child| ast.node(*child).unwrap().token_text())
+                    .collect::<Vec<_>>();
+                let [written_head] = written_tokens.as_slice() else {
+                    panic!("{label}: generator type has no single written head")
+                };
+                assert_eq!(type_site.spelling(), *written_head);
+                assert_eq!(type_site.head_spelling(), *written_head);
+                assert_eq!(
+                    type_site.head(),
+                    match *written_head {
+                        "set" => SourceSetTypeHead::BuiltinSet,
+                        "object" => SourceSetTypeHead::BuiltinObject,
+                        _ => panic!("{label}: unsupported written generator type"),
+                    }
+                );
+                let requests = sets
+                    .requests()
+                    .iter()
+                    .filter(|(_, row)| {
+                        row.kind() == SourceSetRequestKind::GeneratorSethood
+                            && row.generator() == Some(generator_id)
+                    })
+                    .collect::<Vec<_>>();
+                let [(_, request)] = requests.as_slice() else {
+                    panic!("{label}: missing or duplicate generator request")
+                };
+                assert_eq!(request.term(), parent_id);
+                assert_eq!(request.type_site(), Some(generator.type_site()));
+            }
+            assert_eq!(
+                sets.requests()
+                    .iter()
+                    .filter(|(_, row)| row.kind() == SourceSetRequestKind::ResultType)
+                    .count(),
+                written_sets.len(),
+                "{label}: result request census"
+            );
+            let mut nested_count = 0;
+            for (inner_site, inner, _) in &written_sets {
+                let parent = written_sets
+                    .iter()
+                    .filter(|(outer_site, outer, _)| {
+                        outer_site != inner_site
+                            && outer.range.start <= inner.range.start
+                            && inner.range.end <= outer.range.end
+                    })
+                    .min_by_key(|(_, outer, _)| outer.range.end - outer.range.start);
+                if let Some((outer_site, _, outer_kind)) = parent {
+                    nested_count += 1;
+                    let inner_id = sets
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site().node().index() == inner_site.index())
+                        .unwrap()
+                        .0;
+                    let outer_id = sets
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site().node().index() == outer_site.index())
+                        .unwrap()
+                        .0;
+                    let role = if *outer_kind == SourceSetTermKind::Comprehension {
+                        SourceSetEdgeRole::ComprehensionMapper
+                    } else {
+                        SourceSetEdgeRole::EnumerationElement
+                    };
+                    assert_eq!(
+                        sets.edges()
+                            .iter()
+                            .filter(|(_, edge)| {
+                                edge.term() == outer_id
+                                    && edge.role() == role
+                                    && edge.target() == SourceSetTarget::SetTerm(inner_id)
+                            })
+                            .count(),
+                        1,
+                        "{label}: nested mapper ownership"
+                    );
+                }
+            }
+            assert_eq!(
+                sets.edges()
+                    .iter()
+                    .filter(|(_, edge)| matches!(edge.target(), SourceSetTarget::SetTerm(_)))
+                    .count(),
+                nested_count,
+                "{label}: nested Set edge census"
+            );
+            assert_eq!(
+                nested_count, expected_nested,
+                "{label}: written nested Set count"
+            );
+        }
         if label == "noncondition equality" {
             let outside = ast
                 .node_views()
@@ -519,6 +845,13 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             assert!(build(input).is_err(), "zero-condition C2 admitted");
             continue;
         }
+        if label == "inner comprehension boundary" {
+            assert!(
+                build(input).is_err(),
+                "nested comprehension mapper admitted"
+            );
+            continue;
+        }
         let composition = build(input.clone()).expect("RED native C2 associations");
         assert_eq!(composition.edges().len(), count);
         for (index, (id, row)) in composition.edges().iter().enumerate() {
@@ -579,7 +912,15 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(final_ast.checked_formulas().is_empty());
         assert!(final_ast.statement_semantics().is_empty());
         assert!(final_ast.checked_proofs().is_empty());
-        if matches!(label, "original" | "equality") {
+        if matches!(
+            label,
+            "original"
+                | "equality"
+                | "multiple generators"
+                | "unused set generator"
+                | "enumeration sibling"
+                | "enumeration mapper"
+        ) {
             use mizar_checker::source_set_term::SourceSetTermProducer;
             use mizar_resolve::{
                 labels::{LabelResolver, ProofLabelSourceCollector},
@@ -695,6 +1036,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         );
         assert!(build(foreign_module).is_err(), "{label}: foreign module");
         if let Some((other_primary, other_arena)) = &foreign_lower {
+            assert_ne!(other_arena, typed.nodes(), "{label}: foreign arena setup");
             assert!(
                 SourceConditionFormulaCompositionProducer::build(
                     input.clone(),
@@ -725,7 +1067,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             composition,
             "{label}: pristine replay"
         );
-        foreign_lower = Some((primary.clone(), typed.nodes().clone()));
+        if foreign_lower.is_none() {
+            foreign_lower = Some((primary.clone(), typed.nodes().clone()));
+        }
         foreign_composition = Some(composition);
     }
 }

@@ -1601,16 +1601,24 @@ fn validate_condition_transaction(
             || !applications.arguments().is_empty()
             || !applications.type_requests().is_empty()
             || !set_terms.wrappers().is_empty()
-            || set_terms.generators().len() != set_terms.terms().len()
             || set_terms.conditions().is_empty()
             || set_terms.terms().iter().any(|(_, term)| {
-                term.kind() != SourceSetTermKind::Comprehension
-                    || term.recovery() != SourceSetTermRecovery::Normal
+                !matches!(
+                    term.kind(),
+                    SourceSetTermKind::Comprehension | SourceSetTermKind::Enumeration
+                ) || term.recovery() != SourceSetTermRecovery::Normal
             })
             || set_terms
                 .edges()
                 .iter()
-                .any(|(_, edge)| !matches!(edge.target(), SourceSetTarget::Primary(_)))
+                .any(|(_, edge)| match edge.target() {
+                    SourceSetTarget::Primary(_) => false,
+                    SourceSetTarget::SetTerm(id) => !set_terms
+                        .terms()
+                        .get(id)
+                        .is_some_and(|term| term.kind() == SourceSetTermKind::Enumeration),
+                    _ => true,
+                })
             || !atomic_formulas.wrappers().is_empty()
             || !atomic_formulas.predicate_segments().is_empty()
             || !atomic_formulas.predicate_heads().is_empty()

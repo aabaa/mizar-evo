@@ -3136,6 +3136,9 @@ pub(super) fn step5c7_set_output(
     let mut roots = roots.to_vec();
     roots.sort_by_key(|root| ast.nodes()[*root].range.start);
     for root in roots {
+        if extracted.terms.iter().any(|term| term.node == root) {
+            continue;
+        }
         if matches!(ast.nodes()[root].kind, SurfaceNodeKind::SetComprehension) {
             let term = SourceSetTermId::new(extracted.terms.len());
             extracted.terms.push(ExtractedTerm {

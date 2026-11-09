@@ -1,7 +1,7 @@
 # Module: harness
 
 ## Direct builtin comprehension conditions
-The existing Step5C7 source intake transports direct Equality conditions from authenticated comprehension wrappers alongside Membership, deriving the existing operand requests from the written operator. Unrelated Equality intake and Membership behavior stay unchanged. C2/final association metadata supplies no set-bound evidence; the separate membership-proof checker still refuses Equality guards.
+The existing Step5C7 source intake transports direct Equality conditions from authenticated comprehension wrappers alongside Membership, deriving the existing operand requests from the written operator. The same native Set intake retains each recursively collected actual root once, reusing existing generator groups and Enumeration siblings/child targets. Unrelated Equality intake and Membership behavior stay unchanged. C2/final association metadata supplies no set-bound evidence; the separate membership-proof checker still refuses Equality guards.
 
 ## Native proof-local binding metadata
 

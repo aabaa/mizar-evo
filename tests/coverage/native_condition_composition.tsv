@@ -1,3 +1,6 @@
 slice	family	predecessor	status	note
 membership	CHECKER257C-NATIVE-CONDITION-COMPOSITION	-	implemented	full-tier baseline
 equality	CHECKER257C-NATIVE-CONDITION-COMPOSITION	membership	implemented	direct Equality conditions; no set-bound or proof credit
+multiple-generators	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	existing nonempty generator groups and requests
+enumeration-sibling	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	Enumeration siblings have no condition association
+enumeration-mapper	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	Enumeration child targets and recursive actual-root uniqueness
