@@ -4866,6 +4866,8 @@ pub enum SourceVariableBindingKind {
     AlgorithmLocal,
     /// A local name introduced by a named Take witness in proof-binding mode.
     NamedWitness,
+    /// A fresh mathematical function-Binder head, visible only in its body.
+    FunctionBinder,
 }
 
 /// Kind of source variable reference admitted by the variable resolver.
@@ -5937,6 +5939,107 @@ impl<'a> VariableResolveState<'a> {
                 continue;
             }
             match view.kind() {
+                SurfaceNodeKind::BinderExpression => {
+                    if !self.comprehension_scopes {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    let mut current = self.parents.get(&id).copied();
+                    let mut mathematical_owner = false;
+                    while let Some(parent) = current {
+                        let ancestor = self.view(parent)?;
+                        if matches!(
+                            ancestor.kind(),
+                            SurfaceNodeKind::AlgorithmDefinition
+                                | SurfaceNodeKind::AlgorithmBody
+                                | SurfaceNodeKind::MatchStatement
+                                | SurfaceNodeKind::MatchCase
+                        ) {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        }
+                        if matches!(ancestor.kind(), SurfaceNodeKind::QuaExpression)
+                            && direct_type_expression(self.ast, parent)
+                                .and_then(|ty| {
+                                    direct_children(self.ast, ty.id(), |kind| {
+                                        matches!(kind, SurfaceNodeKind::TypeHead)
+                                    })
+                                    .next()
+                                })
+                                .and_then(|head| head.child_views().next())
+                                .and_then(SurfaceNodeView::as_token)
+                                .is_some_and(|token| {
+                                    token.kind == SurfaceTokenKind::ReservedWord
+                                        && token.text.as_ref() == "expr"
+                                })
+                        {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        }
+                        mathematical_owner |= matches!(
+                            ancestor.kind(),
+                            SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem
+                        );
+                        current = self.parents.get(&parent).copied();
+                    }
+                    if !mathematical_owner {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    let children = view.children();
+                    if children.len() < 3 {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    let body = self.view(*children.last().expect("nonempty Binder children"))?;
+                    let arrow = self.view(children[children.len() - 2])?;
+                    if body.kind() != &SurfaceNodeKind::TermExpression
+                        || !arrow.as_token().is_some_and(|token| {
+                            token.kind == SurfaceTokenKind::ReservedSymbol
+                                && token.text.as_ref() == "|->"
+                        })
+                    {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    let body_scope = self.scope_of(body.id());
+                    let head = &children[..children.len() - 2];
+                    let mut names = BTreeSet::new();
+                    for (index, child) in head.iter().enumerate() {
+                        let binder = self.view(*child)?;
+                        let token = binder
+                            .as_token()
+                            .ok_or(SourceVariableScopeError::InvalidShape)?;
+                        let identifier = head.len() == 1
+                            || (index > 0 && index + 1 < head.len() && index % 2 == 1);
+                        if !identifier {
+                            let expected = if index == 0 {
+                                "("
+                            } else if index + 1 == head.len() {
+                                ")"
+                            } else {
+                                ","
+                            };
+                            if head.len() < 5
+                                || head.len() % 2 == 0
+                                || token.kind != SurfaceTokenKind::ReservedSymbol
+                                || token.text.as_ref() != expected
+                            {
+                                return Err(SourceVariableScopeError::InvalidShape);
+                            }
+                            continue;
+                        }
+                        if token.kind != SurfaceTokenKind::Identifier
+                            || !names.insert(token.text.to_string())
+                        {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        }
+                        self.push_decl(VariableDeclSite {
+                            kind: SourceVariableBindingKind::FunctionBinder,
+                            owner: id,
+                            binder: binder.id(),
+                            spelling: token.text.to_string(),
+                            range: binder.range(),
+                            scope: body_scope.clone(),
+                            declared_type: None,
+                            arity: None,
+                        });
+                    }
+                }
                 SurfaceNodeKind::ReserveItem => {
                     if !self
                         .scopes
@@ -6203,6 +6306,55 @@ impl<'a> VariableResolveState<'a> {
             )
         });
         for (ordinal, decl) in self.declarations.iter().enumerate() {
+            let declared_type = if decl.kind == SourceVariableBindingKind::FunctionBinder {
+                if self
+                    .declarations
+                    .iter()
+                    .filter(|candidate| {
+                        candidate.kind == SourceVariableBindingKind::Reserve
+                            && candidate.spelling == decl.spelling
+                    })
+                    .count()
+                    > 1
+                {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+                let incoming = VariableReferenceSite {
+                    node: decl.binder,
+                    spelling: decl.spelling.clone(),
+                    range: decl.range,
+                    scope: self.scope_of(decl.owner),
+                    kind: SourceVariableReferenceKind::Term,
+                };
+                let (outer, kind, _, _) = self
+                    .visible_binding(&incoming)
+                    .ok_or(SourceVariableScopeError::UnresolvedReference)?;
+                if !matches!(
+                    kind,
+                    SourceVariableBindingKind::Let
+                        | SourceVariableBindingKind::Reserve
+                        | SourceVariableBindingKind::FunctionBinder
+                ) {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+                let outer = &self.bindings[outer.index()];
+                Some(
+                    outer
+                        .declared_type
+                        .clone()
+                        .or_else(|| {
+                            (kind == SourceVariableBindingKind::Let)
+                                .then(|| {
+                                    self.candidate_reservation(&decl.spelling, outer.range.start)
+                                        .and_then(|reservation| reservation.declared_type.clone())
+                                })
+                                .flatten()
+                        })
+                        .ok_or(SourceVariableScopeError::InvalidShape)?,
+                )
+            } else {
+                decl.declared_type.clone()
+            };
             let id = SourceVariableBindingId(ordinal);
             self.bindings.push(SourceVariableBinding {
                 id,
@@ -6212,7 +6364,7 @@ impl<'a> VariableResolveState<'a> {
                 range: decl.range,
                 scope: decl.scope.clone(),
                 ordinal,
-                declared_type: decl.declared_type.clone(),
+                declared_type,
                 arity: decl.arity,
                 captures: Vec::new(),
             });
@@ -6649,7 +6801,13 @@ impl<'a> VariableResolveState<'a> {
                     .ok_or(SourceVariableScopeError::InvalidShape)?;
                 let is_formal = self.bindings[binding_id.index()].kind
                     == SourceVariableBindingKind::InlineParameter;
-                if !is_formal && binding_id != owner_id {
+                if !is_formal
+                    && binding_id != owner_id
+                    && (binding_kind != SourceVariableBindingKind::FunctionBinder
+                        || self.bindings[binding_id.index()]
+                            .scope
+                            .contains(&self.bindings[owner_id.index()].scope))
+                {
                     self.bindings[owner_id.index()].captures.push(binding_id);
                 }
             }
@@ -6670,7 +6828,15 @@ impl<'a> VariableResolveState<'a> {
         Option<usize>,
         SurfaceNodeId,
     )> {
-        self.bindings
+        let binder_occurrence =
+            std::iter::successors(Some(reference.node), |node| self.parents.get(node).copied())
+                .any(|node| {
+                    self.ast
+                        .node(node)
+                        .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::BinderExpression))
+                });
+        let binding = self
+            .bindings
             .iter()
             .filter(|binding| {
                 binding.spelling == reference.spelling
@@ -6679,7 +6845,7 @@ impl<'a> VariableResolveState<'a> {
                         || (binding.kind == SourceVariableBindingKind::ComprehensionGenerator
                             && self.enclosing_comprehension(binding.node)
                                 == self.enclosing_comprehension(reference.node)))
-                    && (!self.proof_bindings
+                    && (!(self.proof_bindings || binder_occurrence)
                         || !matches!(
                             binding.kind,
                             SourceVariableBindingKind::Set
@@ -6706,8 +6872,63 @@ impl<'a> VariableResolveState<'a> {
                     binding.range.end,
                     binding.id.index(),
                 )
-            })
-            .map(|binding| (binding.id, binding.kind, binding.arity, binding.node))
+            })?;
+        if binder_occurrence {
+            // Witness declarations omitted by a profile still shadow older
+            // bindings inside a Binder; never substitute the older winner.
+            for candidate in self.ast.node_views() {
+                if !candidate.as_token().is_some_and(|token| {
+                    token.kind == SurfaceTokenKind::Identifier
+                        && token.text.as_ref() == reference.spelling
+                }) {
+                    continue;
+                }
+                let Some(parent) = self
+                    .parents
+                    .get(&candidate.id())
+                    .and_then(|id| self.ast.node_view(*id))
+                else {
+                    continue;
+                };
+                let omitted_witness =
+                    (matches!(parent.kind(), SurfaceNodeKind::QualifiedVariableSegment)
+                        && self
+                            .parents
+                            .get(&parent.id())
+                            .and_then(|id| self.ast.node(*id))
+                            .is_some_and(|owner| {
+                                matches!(
+                                    owner.kind,
+                                    SurfaceNodeKind::GivenStatement
+                                        | SurfaceNodeKind::ConsiderStatement
+                                )
+                            }))
+                        || (matches!(parent.kind(), SurfaceNodeKind::Witness)
+                            && has_direct_equals(self.ast, parent.id())
+                            && first_direct_identifier(self.ast, parent.id())
+                                .is_some_and(|name| name.id() == candidate.id()));
+                if !omitted_witness {
+                    continue;
+                }
+                let rhs = direct_term_child(self.ast, parent.id()).map(|term| term.id());
+                let mut current = Some(reference.node);
+                while current.is_some() && current != rhs {
+                    current = current.and_then(|node| self.parents.get(&node).copied());
+                }
+                if current.is_some() {
+                    continue;
+                }
+                let candidate_scope = self.scope_of(candidate.id());
+                if candidate.range().start < reference.range.start
+                    && candidate_scope.contains(&reference.scope)
+                    && (candidate_scope.path().len(), candidate.range().start)
+                        > (binding.scope.path().len(), binding.range.start)
+                {
+                    return None;
+                }
+            }
+        }
+        Some((binding.id, binding.kind, binding.arity, binding.node))
     }
 
     fn has_later_binding(&self, reference: &VariableReferenceSite) -> bool {
@@ -7328,7 +7549,10 @@ fn collect_variable_scopes(
         }
         let child_scope = if is_variable_scope_boundary(child_view.kind())
             || (comprehension_scopes
-                && matches!(child_view.kind(), SurfaceNodeKind::SetComprehension))
+                && (matches!(child_view.kind(), SurfaceNodeKind::SetComprehension)
+                    || (matches!(view.kind(), SurfaceNodeKind::BinderExpression)
+                        && view.children().last() == Some(child)
+                        && matches!(child_view.kind(), SurfaceNodeKind::TermExpression))))
         {
             let used = boundary_components.entry(scope.clone()).or_default();
             let mut component =
@@ -7766,6 +7990,7 @@ fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
         SourceVariableBindingKind::DefinitionParameter => 11,
         SourceVariableBindingKind::AlgorithmLocal => 12,
         SourceVariableBindingKind::NamedWitness => 13,
+        SourceVariableBindingKind::FunctionBinder => 14,
     }
 }
 

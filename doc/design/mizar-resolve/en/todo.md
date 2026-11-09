@@ -1,5 +1,7 @@
 # mizar-resolve TODO
 
+- [x] Task 257B prerequisite: [fresh mathematical Binder occurrences](../../task_contracts/en/RESOLVE257-FRESH-FUNCTION-BINDERS.md).
+
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
 
 - [x] [Original-source theorem lexical contexts](../../task_contracts/en/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).

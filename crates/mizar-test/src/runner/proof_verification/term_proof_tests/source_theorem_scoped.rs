@@ -7003,6 +7003,7 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         theorem("ex x being set st contradiction"),
         theorem("ex x being set st thesis"),
         theorem("ex x being set st x = x").replace("thus x = x;", "thus (x = x);"),
+        theorem("ex x being set st x = x").replace("thus x = x;", "thus (x |-> x) = x;"),
         theorem("ex x being set st x = x").replace("thus x = x;", "thus x = x & x = x;"),
         theorem("ex x being set st x = x").replace("thus x = x;", "set y = x; thus y = y;"),
     ]);
@@ -7120,6 +7121,32 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
     let facts = ClusterFactTable::new();
     for (case, (frontend, source, symbols, scope)) in prepared.iter().enumerate() {
         if case >= positive_count {
+            if let Some(binder) = frontend
+                .ast
+                .as_ref()
+                .unwrap()
+                .node_views()
+                .find(|view| view.kind() == &K::BinderExpression)
+            {
+                let fresh = scope
+                    .bindings()
+                    .iter()
+                    .find(|binding| binding.node() == binder.children()[0])
+                    .expect("real Binder head declaration before checker refusal");
+                assert_eq!(fresh.kind(), SourceVariableBindingKind::FunctionBinder);
+                assert_eq!(fresh.declared_type(), scope.bindings()[1].declared_type());
+                let uses = scope
+                    .references()
+                    .iter()
+                    .filter(|row| {
+                        binder.range().start <= row.range().start
+                            && row.range().end <= binder.range().end
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(uses.len(), 1);
+                assert_eq!(uses[0].binding(), fresh.id());
+                assert_ne!(fresh.id(), scope.bindings()[1].id());
+            }
             assert_eq!(
                 SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope)
                     .unwrap_err(),

@@ -623,6 +623,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Native fixed-connective roots](../../task_contracts/en/CHECKER257-NATIVE-CONNECTIVE-ROOTS.md); existing operators at theorem/lemma header roots.
     - [x] [Native implicit quantifiers](../../task_contracts/en/CHECKER257-NATIVE-IMPLICIT-QUANTIFIERS.md); authenticated Reserve type provenance through genuine lower/context/type and original replay.
     - [x] [Native Reserve placement](../../task_contracts/en/CHECKER257-NATIVE-RESERVE-PLACEMENT.md); distinct hints in quantified modules with prior-default provenance.
+    - [x] [Fresh function-Binder resolver prerequisite](../../task_contracts/en/RESOLVE257-FRESH-FUNCTION-BINDERS.md); lexical identities before certified formation.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,

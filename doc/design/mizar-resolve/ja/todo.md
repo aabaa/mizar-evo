@@ -1,5 +1,7 @@
 # mizar-resolve TODO
 
+- [x] Task 257B prerequisite: [fresh mathematical Binder occurrences](../../task_contracts/ja/RESOLVE257-FRESH-FUNCTION-BINDERS.md).
+
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
 
 - [x] [元ソースの定理 lexical context](../../task_contracts/ja/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).

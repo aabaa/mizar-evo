@@ -7373,3 +7373,132 @@ fn task257b4_binary_prefix_formals_authenticate_roles_and_declaration_order() {
         assert!(lookup(&invalid, 4).is_err(), "missing or forward y: {text}");
     }
 }
+
+#[test]
+fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() {
+    use crate::{
+        declarations::DeclarationShellCollector,
+        symbols::{
+            SignatureProjectionExtractor, source_proof_scope_maps,
+            validate_source_proof_occurrences,
+        },
+    };
+    let source = source_id();
+    let module = module_id("pkg", "fresh_replay");
+    let text = "reserve x,y for set; theorem B: (x,y) |-> {x,y} = x;";
+    let ast = proof_binding_source_ast(source, text);
+    let arena = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let symbols =
+        SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("fresh_replay"))
+            .collect(&module)
+            .into_env();
+    let actual = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(&ast, &module, &symbols),
+    )
+    .unwrap();
+    assert_eq!(
+        actual.bindings.len(),
+        4,
+        "fresh source declarations precede mutation probes"
+    );
+    validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
+    for mutation in 0..9 {
+        let mut changed = actual.clone();
+        match mutation {
+            0 => changed.references[0].binding = changed.bindings[0].id,
+            1 => changed.bindings[2].node = changed.bindings[0].node,
+            2 => changed.bindings[2].scope = LocalTermScope::default(),
+            3 => {
+                changed.bindings[2].declared_type.as_mut().unwrap().radix =
+                    SourceVariableTypeRadix::Object
+            }
+            4 => changed.bindings[2].spelling = "foreign".to_owned(),
+            5 => changed.references[0].scope = LocalTermScope::default(),
+            6 => changed.bindings.swap(2, 3),
+            7 => changed.bindings[2].range.start += 1,
+            8 => changed.module_id = module_id("pkg", "foreign"),
+            _ => unreachable!(),
+        }
+        assert!(
+            source_proof_scope_maps(&arena, &symbols, &changed).is_err(),
+            "mutation {mutation}"
+        );
+        validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
+    }
+    for text in [
+        text.replace("(x,y)", "(y,x)"),
+        text.replace("{x,y}", "{y,x}"),
+        text.replace("for set", "for object"),
+        text.replace("(x,y) |-> {x,y}", "x |-> y |-> {x,y}"),
+        text.replace('x', "z"),
+    ] {
+        let changed_ast = proof_binding_source_ast(source, &text);
+        let changed_arena = SurfaceResolvedArena::lower(&changed_ast, &module).unwrap();
+        let changed_shells = DeclarationShellCollector::new(&changed_ast, &module).collect();
+        let changed_symbols = SignatureProjectionExtractor::new(
+            &changed_ast,
+            &changed_shells,
+            NamespacePath::new("fresh_replay"),
+        )
+        .collect(&module)
+        .into_env();
+        let changed = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&changed_ast, &module, &changed_symbols),
+        )
+        .unwrap();
+        validate_source_proof_occurrences(&changed_arena, &changed_symbols, &changed).unwrap();
+        assert!(
+            validate_source_proof_occurrences(&arena, &symbols, &changed).is_err(),
+            "coherent source {text}"
+        );
+        assert!(
+            validate_source_proof_occurrences(&changed_arena, &changed_symbols, &actual).is_err()
+        );
+    }
+    for mutation in 0..3 {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let mut nodes = Vec::new();
+        for node in ast.node_views() {
+            let children = node
+                .children()
+                .iter()
+                .map(|child| nodes[child.index()])
+                .collect();
+            let next = if let Some(token) = node.as_token() {
+                if mutation == 0 && node.id() == actual.bindings[2].node {
+                    builder.add_recovered_token(token.kind, token.text.clone(), node.range())
+                } else if (mutation == 1 && node.id() == actual.bindings[3].node)
+                    || (mutation == 2 && node.id() == actual.bindings[1].node)
+                {
+                    builder.add_token(token.kind, "x", node.range())
+                } else {
+                    builder.add_token(token.kind, token.text.clone(), node.range())
+                }
+            } else {
+                builder.add_node(node.kind().clone(), node.range(), children)
+            };
+            nodes.push(next);
+        }
+        let recovered = builder.finish(ast.root().map(|root| nodes[root.index()]), None);
+        assert_eq!(
+            SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+                &recovered, &module, &symbols
+            )),
+            Err(if mutation == 0 {
+                SourceVariableScopeError::RecoveredSyntax
+            } else {
+                SourceVariableScopeError::InvalidShape
+            })
+        );
+    }
+    assert_eq!(
+        SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+            &ast,
+            &module_id("pkg", "foreign"),
+            &symbols
+        )),
+        Err(SourceVariableScopeError::ModuleMismatch)
+    );
+    validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
+}

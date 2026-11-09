@@ -9741,3 +9741,645 @@ fn algorithm_ordinary_occurrences_reject_source_recovery_and_missing_write_token
     }
     assert_eq!((ast, env, arena), before);
 }
+
+#[test]
+fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
+    use crate::names::{
+        SourceVariableBindingKind as B, SourceVariableScopeInput, SourceVariableScopeResolver,
+        SourceVariableTypeRadix as T,
+    };
+    use crate::symbols::{source_proof_scope_maps, validate_source_proof_occurrences};
+    for (text, declarations, targets, captures, binding_paths, reference_paths, body_positions) in [
+        (
+            "reserve x for set; reserve y,z for object; theorem B: x = x proof let x be object; thus x = x; thus (x,y) |-> x = y |-> x |-> y; thus (x |-> x) = (x |-> y); thus x = y; end;",
+            vec![
+                ("x", 0, B::Reserve, T::Set),
+                ("y", 0, B::Reserve, T::Object),
+                ("z", 0, B::Reserve, T::Object),
+                ("x", 3, B::Let, T::Object),
+                ("x", 6, B::FunctionBinder, T::Object),
+                ("y", 1, B::FunctionBinder, T::Object),
+                ("y", 2, B::FunctionBinder, T::Object),
+                ("x", 8, B::FunctionBinder, T::Object),
+                ("x", 9, B::FunctionBinder, T::Object),
+                ("x", 11, B::FunctionBinder, T::Object),
+            ],
+            vec![0, 0, 3, 3, 4, 6, 8, 1, 3, 1],
+            None,
+            // The proof is theorem child 4. Binder bodies use child 6, then
+            // child 2; sibling collisions at child 2 allocate 7 and 8.
+            vec![
+                vec![],
+                vec![],
+                vec![],
+                vec![4],
+                vec![4, 6],
+                vec![4, 6],
+                vec![4, 2],
+                vec![4, 2, 2],
+                vec![4, 7],
+                vec![4, 8],
+            ],
+            vec![
+                vec![],
+                vec![],
+                vec![4],
+                vec![4],
+                vec![4, 6],
+                vec![4, 2, 2],
+                vec![4, 7],
+                vec![4, 8],
+                vec![4],
+                vec![4],
+            ],
+            vec![6, 2, 2, 2, 2],
+        ),
+        (
+            "reserve x,y for set; theorem B: x = y proof deffunc F(n be object) -> set equals x |-> {x,y}; thus x = y; end;",
+            vec![
+                ("x", 0, B::Reserve, T::Set),
+                ("y", 0, B::Reserve, T::Set),
+                ("F", 0, B::InlineFunctor, T::Set),
+                ("n", 0, B::InlineParameter, T::Object),
+                ("x", 2, B::FunctionBinder, T::Set),
+            ],
+            vec![0, 1, 4, 1, 0, 1],
+            Some((2, vec![1])),
+            // The Inline definition is proof child 1; its Binder body is child 2.
+            vec![vec![], vec![], vec![4], vec![4, 1], vec![4, 1, 2]],
+            vec![
+                vec![],
+                vec![],
+                vec![4, 1, 2],
+                vec![4, 1, 2],
+                vec![4],
+                vec![4],
+            ],
+            vec![2],
+        ),
+        (
+            "reserve x,y for set; reserve z for object; lemma B: (z,x,y) |-> {x,y,z} = x;",
+            vec![
+                ("x", 0, B::Reserve, T::Set),
+                ("y", 0, B::Reserve, T::Set),
+                ("z", 0, B::Reserve, T::Object),
+                ("z", 1, B::FunctionBinder, T::Object),
+                ("x", 1, B::FunctionBinder, T::Set),
+                ("y", 1, B::FunctionBinder, T::Set),
+            ],
+            vec![4, 5, 3, 0],
+            None,
+            // The lemma has no proof boundary; the ordered ternary body is child 8.
+            vec![vec![], vec![], vec![], vec![8], vec![8], vec![8]],
+            vec![vec![8], vec![8], vec![8], vec![]],
+            vec![8],
+        ),
+    ] {
+        for text in [
+            text.to_owned(),
+            text.replace(' ', "\n  "),
+            text.replace('x', "u").replace('y', "v").replace('z', "w"),
+        ] {
+            let renamed = text.contains("reserve u");
+            let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+            let pristine = (ast.clone(), env.clone(), arena.clone());
+            let mut expected_nodes = Vec::new();
+            for (spelling, occurrence, _, _) in &declarations {
+                let spelling = if renamed {
+                    match *spelling {
+                        "x" => "u",
+                        "y" => "v",
+                        "z" => "w",
+                        other => other,
+                    }
+                } else {
+                    spelling
+                };
+                let starts = text
+                    .match_indices(spelling)
+                    .filter(|(start, _)| {
+                        let bytes = text.as_bytes();
+                        (*start == 0 || !bytes[*start - 1].is_ascii_alphanumeric())
+                            && (*start + spelling.len() == bytes.len()
+                                || !bytes[*start + spelling.len()].is_ascii_alphanumeric())
+                    })
+                    .map(|(start, _)| start)
+                    .collect::<Vec<_>>();
+                let start = starts[*occurrence];
+                let range = SourceRange {
+                    source_id: ast.source_id,
+                    start,
+                    end: start + spelling.len(),
+                };
+                let nodes = ast.node_views().filter(|node| node.range() == range && matches!(node.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == spelling)).collect::<Vec<_>>();
+                assert_eq!(nodes.len(), 1);
+                expected_nodes.push(nodes[0].id());
+            }
+            let mut uses = ast
+                .node_views()
+                .filter(|node| matches!(node.kind(), SurfaceNodeKind::TermReference))
+                .collect::<Vec<_>>();
+            uses.sort_by_key(|node| node.range().start);
+            assert_eq!(uses.len(), targets.len());
+            let mut binders = ast
+                .node_views()
+                .filter(|node| matches!(node.kind(), SurfaceNodeKind::BinderExpression))
+                .collect::<Vec<_>>();
+            binders.sort_by_key(|node| node.range().start);
+            assert_eq!(
+                binders
+                    .iter()
+                    .map(|node| node.children().len() - 1)
+                    .collect::<Vec<_>>(),
+                body_positions
+            );
+            if let Some(proof) = ast
+                .node_views()
+                .find(|node| matches!(node.kind(), SurfaceNodeKind::ProofBlock))
+            {
+                let theorem = ast
+                    .node_views()
+                    .find(|node| matches!(node.kind(), SurfaceNodeKind::TheoremItem))
+                    .unwrap();
+                assert_eq!(theorem.children()[4], proof.id());
+                if let Some(inline) = ast
+                    .node_views()
+                    .find(|node| matches!(node.kind(), SurfaceNodeKind::InlineFunctorDefinition))
+                {
+                    assert_eq!(proof.children()[1], inline.id());
+                }
+            }
+            for resolve in [
+                SourceVariableScopeResolver::resolve_occurrences,
+                SourceVariableScopeResolver::resolve_proof_occurrences,
+                SourceVariableScopeResolver::resolve_proof_bindings,
+            ] {
+                let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+                assert_eq!(
+                    actual.bindings().len(),
+                    declarations.len(),
+                    "fresh head identities: {text}"
+                );
+                assert_eq!(actual.source_id(), ast.source_id);
+                assert_eq!(actual.module_id(), &module);
+                assert!(actual.thesis().is_none());
+                assert!(actual.statements().is_empty());
+                validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+                let (scopes, _) = source_proof_scope_maps(&arena, &env, &actual).unwrap();
+                for (ordinal, (binding, (_, _, kind, radix))) in
+                    actual.bindings().iter().zip(&declarations).enumerate()
+                {
+                    let token = ast.node_view(expected_nodes[ordinal]).unwrap();
+                    assert_eq!(binding.id().index(), ordinal);
+                    assert_eq!(binding.ordinal(), ordinal);
+                    assert_eq!(binding.node(), token.id());
+                    assert_eq!(binding.range(), token.range());
+                    assert_eq!(binding.spelling(), token.as_token().unwrap().text.as_ref());
+                    assert_eq!(binding.kind(), *kind);
+                    assert_eq!(binding.scope().path(), binding_paths[ordinal]);
+                    let mut token_path = binding_paths[ordinal].clone();
+                    if *kind == B::FunctionBinder {
+                        token_path.pop();
+                    }
+                    if *kind == B::InlineFunctor {
+                        token_path.push(1);
+                    }
+                    assert_eq!(scopes[&token.id()].path(), token_path);
+                    assert_eq!(binding.declared_type().unwrap().radix(), *radix);
+                    assert!(binding.declared_type().unwrap().attributes().is_empty());
+                    assert_eq!(binding.arity(), (*kind == B::InlineFunctor).then_some(1));
+                    let expected_captures = captures
+                        .as_ref()
+                        .filter(|(owner, _)| *owner == ordinal)
+                        .map(|(_, ids)| ids.clone())
+                        .unwrap_or_default();
+                    assert_eq!(
+                        binding
+                            .captures()
+                            .iter()
+                            .map(|id| id.index())
+                            .collect::<Vec<_>>(),
+                        expected_captures
+                    );
+                    if *kind == B::FunctionBinder {
+                        let owner = ast
+                            .node_views()
+                            .find(|node| {
+                                matches!(node.kind(), SurfaceNodeKind::BinderExpression)
+                                    && node.children().contains(&token.id())
+                            })
+                            .unwrap();
+                        let body = *owner.children().last().unwrap();
+                        assert_eq!(scopes[&body].path(), binding_paths[ordinal]);
+                        assert_eq!(scopes[&owner.id()].path(), token_path);
+                        assert!(
+                            binding.id()
+                                != actual
+                                    .bindings()
+                                    .iter()
+                                    .find(|other| other.spelling() == binding.spelling())
+                                    .unwrap()
+                                    .id()
+                        );
+                    }
+                }
+                assert_eq!(actual.references().len(), targets.len());
+                for (ordinal, ((reference, node), target)) in actual
+                    .references()
+                    .iter()
+                    .zip(&uses)
+                    .zip(&targets)
+                    .enumerate()
+                {
+                    assert_eq!(reference.id().index(), ordinal);
+                    assert_eq!(reference.ordinal(), ordinal);
+                    assert_eq!(reference.node(), node.id());
+                    assert_eq!(reference.range(), node.range());
+                    assert_eq!(reference.spelling(), actual.bindings()[*target].spelling());
+                    assert_eq!(reference.binding(), actual.bindings()[*target].id());
+                    assert_eq!(reference.scope().path(), reference_paths[ordinal]);
+                    assert_eq!(scopes[&node.id()].path(), reference_paths[ordinal]);
+                    assert_eq!(
+                        reference.kind(),
+                        crate::names::SourceVariableReferenceKind::Term
+                    );
+                    assert!(
+                        reference
+                            .scope()
+                            .path()
+                            .starts_with(actual.bindings()[*target].scope().path())
+                    );
+                }
+                assert_eq!(
+                    resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap(),
+                    actual
+                );
+            }
+            assert_eq!((ast, env, arena), pristine);
+        }
+    }
+}
+
+#[test]
+fn fresh_function_binders_refuse_unsupported_sources_and_protect_legacy_output() {
+    use crate::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    for text in [
+        "theorem B: x |-> x = 0;",
+        "theorem B: x |-> x = 0; reserve x for set;",
+        "theorem B: 0 = 0 proof thus x |-> x = 0; let x be set; end;",
+        "theorem B: 0 = 0 proof let x; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof set x = 0; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof reconsider x = 0 as set; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof given x be set such that x = x; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof consider x be set such that x = x by B; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof take x = 0; thus x |-> x = 0; end;",
+        "reserve x for set; theorem B: 0 = 0 proof deffunc F(x be set) -> set equals x |-> x; thus 0 = 0; end;",
+        "reserve x for set; theorem B: for x being object holds x |-> x = 0;",
+        "reserve x for set; set f = x |-> x;",
+        "reserve x for expr of set; theorem B: x |-> x = x;",
+        "reserve x for set; theorem B: (x |-> x) qua expr of set = x;",
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(text);
+        let pristine = (ast.clone(), env.clone(), arena.clone());
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ] {
+            assert!(
+                resolve(SourceVariableScopeInput::new(&ast, &module, &env)).is_err(),
+                "{text}"
+            );
+        }
+        assert_eq!((ast, env, arena), pristine);
+    }
+    for text in [
+        "reserve x for set; theorem B: x |-> x = x;",
+        "reserve x for set; theorem B: x = x proof thus x |-> x = x; end;",
+    ] {
+        let (ast, module, _, env, _) = parsed_private_theorem_fixture(text);
+        assert!(
+            SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &env
+            ))
+            .is_ok()
+        );
+        assert!(
+            SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+                &ast, &module, &env
+            ))
+            .is_err(),
+            "legacy must not flatten {text}"
+        );
+    }
+    let (ast, module, _, env, _) = parsed_private_theorem_fixture(
+        "reserve x for set; theorem B: x = x proof thus x = x; end;",
+    );
+    assert!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(&ast, &module, &env))
+            .is_ok()
+    );
+    let (ast, module, _, env, _) = parsed_private_theorem_fixture(
+        "definition let x be set; func F: f x -> set equals x |-> x; end; reserve y for set; theorem B: y = y;",
+    );
+    for resolve in [
+        SourceVariableScopeResolver::resolve,
+        SourceVariableScopeResolver::resolve_occurrences,
+        SourceVariableScopeResolver::resolve_proof_occurrences,
+        SourceVariableScopeResolver::resolve_proof_bindings,
+    ] {
+        let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+        assert_eq!(actual.bindings().len(), 1);
+        assert_eq!(actual.bindings()[0].spelling(), "y");
+    }
+}
+
+#[test]
+fn fresh_function_binders_inherit_prior_defaults_and_nested_head_types() {
+    use crate::names::{
+        SourceVariableScopeInput, SourceVariableScopeResolver, SourceVariableTypeRadix as T,
+    };
+    for (text, types, targets) in [
+        (
+            "reserve x for set; theorem B: x = x proof let x; thus x |-> x |-> x = x; end;",
+            vec![T::Set, T::Set, T::Set],
+            vec![0, 0, 3, 1],
+        ),
+        (
+            "reserve x for set; theorem B: x = x proof let x be object; thus x |-> x |-> x = x; end;",
+            vec![T::Object, T::Object, T::Object],
+            vec![0, 0, 3, 1],
+        ),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(text);
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ] {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+            assert_eq!(actual.bindings().len(), 4);
+            assert_eq!(
+                actual.bindings()[0].declared_type().unwrap().radix(),
+                T::Set
+            );
+            for (binding, radix) in actual.bindings().iter().skip(1).zip(&types) {
+                if binding.kind() == crate::names::SourceVariableBindingKind::Let
+                    && text.contains("let x;")
+                {
+                    assert!(binding.declared_type().is_none());
+                } else {
+                    assert_eq!(binding.declared_type().unwrap().radix(), *radix);
+                }
+            }
+            assert_eq!(
+                actual
+                    .references()
+                    .iter()
+                    .map(|r| r.binding().index())
+                    .collect::<Vec<_>>(),
+                targets
+            );
+            assert!(
+                actual.bindings()[3]
+                    .scope()
+                    .path()
+                    .starts_with(actual.bindings()[2].scope().path())
+            );
+            assert_eq!(
+                actual.bindings()[3].scope().path().len(),
+                actual.bindings()[2].scope().path().len() + 1
+            );
+            crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+        }
+    }
+}
+
+#[test]
+fn fresh_function_binders_keep_ordinary_type_annotations_mathematical() {
+    use crate::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    for term in ["x |-> x qua set", "(x |-> x) qua set"] {
+        let text = format!("reserve x for set; theorem B: {term} = x;");
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ] {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+            assert_eq!(actual.bindings().len(), 2);
+            assert_eq!(
+                actual
+                    .references()
+                    .iter()
+                    .map(|r| r.binding().index())
+                    .collect::<Vec<_>>(),
+                [1, 0]
+            );
+            crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+        }
+    }
+}
+
+#[test]
+fn fresh_function_binders_see_incoming_initializer_and_sibling_contexts() {
+    use crate::names::{
+        SourceVariableScopeInput, SourceVariableScopeResolver, SourceVariableTypeRadix,
+    };
+    for declaration in [
+        "take x = (x |-> x);",
+        "set x = (x |-> x);",
+        "reconsider x = (x |-> x) as set;",
+    ] {
+        let text =
+            format!("reserve x for set; theorem B: x = x proof {declaration} thus x = x; end;");
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        for (profile, resolve) in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+            let named_take = declaration.starts_with("take") && profile < 2;
+            let head = if named_take { 1 } else { 2 };
+            assert_eq!(actual.bindings().len(), head + 1);
+            assert_eq!(
+                format!("{:?}", actual.bindings()[head].kind()),
+                "FunctionBinder"
+            );
+            assert_eq!(
+                actual.bindings()[head].declared_type().unwrap().radix(),
+                SourceVariableTypeRadix::Set
+            );
+            assert_eq!(
+                actual
+                    .references()
+                    .iter()
+                    .map(|r| r.binding().index())
+                    .collect::<Vec<_>>(),
+                [
+                    0,
+                    0,
+                    head,
+                    if named_take { 0 } else { 1 },
+                    if named_take { 0 } else { 1 }
+                ]
+            );
+            crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+        }
+    }
+    let text = "reserve x for set; theorem B: x = x proof now given x be object such that x = x; thus x = x; end; thus x |-> x = x; end;";
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(text);
+    for (profile, resolve) in [
+        SourceVariableScopeResolver::resolve_occurrences,
+        SourceVariableScopeResolver::resolve_proof_occurrences,
+        SourceVariableScopeResolver::resolve_proof_bindings,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+        let head = actual.bindings().last().unwrap();
+        assert_eq!(
+            head.kind(),
+            crate::names::SourceVariableBindingKind::FunctionBinder
+        );
+        assert_eq!(
+            head.declared_type().unwrap().radix(),
+            SourceVariableTypeRadix::Set
+        );
+        assert_eq!(
+            actual.references().last().unwrap().binding(),
+            actual.bindings()[0].id()
+        );
+        if profile == 0 {
+            // The legacy occurrence profile omits Given rows; native replay
+            // authenticates the two proof occurrence profiles.
+            assert!(
+                crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).is_err()
+            );
+        } else {
+            crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+        }
+    }
+}
+
+#[test]
+fn fresh_function_binder_free_references_see_prior_initializer_values() {
+    use crate::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    for declaration in ["set x = y |-> x;", "reconsider x = y |-> x as set;"] {
+        let text = format!(
+            "reserve y for set; theorem B: 0 = 0 proof let x be set; now {declaration} thus x = x; end; thus x = x; end;"
+        );
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ] {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+            assert_eq!(actual.bindings().len(), 4);
+            assert_eq!(
+                actual
+                    .references()
+                    .iter()
+                    .map(|reference| reference.binding().index())
+                    .collect::<Vec<_>>(),
+                [1, 2, 2, 1, 1],
+                "{declaration}"
+            );
+            assert_eq!(
+                actual.bindings()[3].kind(),
+                crate::names::SourceVariableBindingKind::FunctionBinder
+            );
+            assert!(
+                actual.bindings()[1].scope().path().len()
+                    < actual.bindings()[2].scope().path().len()
+            );
+            crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+        }
+    }
+}
+
+#[test]
+fn fresh_function_binder_free_references_refuse_omitted_witness_winners() {
+    use crate::names::{
+        SourceVariableBindingKind as B, SourceVariableScopeInput, SourceVariableScopeResolver,
+    };
+    for (declaration, kind, first_supported) in [
+        ("take y = 0;", B::NamedWitness, 2),
+        ("given y be set such that y = y;", B::GivenWitness, 1),
+        (
+            "consider y be set such that y = y by B;",
+            B::ConsiderWitness,
+            1,
+        ),
+    ] {
+        let text = format!(
+            "reserve x,y for set; theorem B: 0 = 0 proof {declaration} thus x |-> y = 0; end;"
+        );
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let pristine = (ast.clone(), env.clone(), arena.clone());
+        for (profile, resolve) in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env));
+            if profile < first_supported {
+                assert!(
+                    actual.is_err(),
+                    "omitted {kind:?} winner in profile {profile}"
+                );
+            } else {
+                let actual = actual.unwrap();
+                assert_eq!(actual.bindings().len(), 4);
+                assert_eq!(actual.bindings()[2].kind(), kind);
+                assert_eq!(actual.bindings()[3].kind(), B::FunctionBinder);
+                assert_eq!(
+                    actual
+                        .references()
+                        .iter()
+                        .map(|reference| reference.binding().index())
+                        .collect::<Vec<_>>(),
+                    if kind == B::NamedWitness {
+                        vec![2]
+                    } else {
+                        vec![2, 2, 2]
+                    }
+                );
+                crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+                assert_eq!(
+                    resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap(),
+                    actual
+                );
+            }
+        }
+        assert_eq!((ast, env, arena), pristine);
+        let (ast, module, _, env, arena) =
+            parsed_private_theorem_fixture(&text.replace("x |-> y", "y"));
+        for (profile, resolve) in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+            SourceVariableScopeResolver::resolve_proof_bindings,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+            assert_eq!(
+                actual.references().last().unwrap().binding().index(),
+                if profile < first_supported { 1 } else { 2 }
+            );
+            if profile >= first_supported {
+                crate::symbols::validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
+            }
+        }
+    }
+}
