@@ -2168,14 +2168,24 @@ impl TypedAst {
         let (statement, references, witnesses, mut canonical) =
             SourceStatementHandoff::from_original(source, symbols, scope)
                 .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        let source_nodes = canonical
-            .source_nodes
-            .take()
-            .ok_or(TypedAstError::InvalidSourceStatement)?;
-        if self != canonical {
-            return Err(TypedAstError::InvalidSourceStatement);
+        if canonical.source_context.is_some()
+            && canonical.source_type.is_some()
+            && canonical.source_composite_formula.is_some()
+            && canonical.source_formula_composition.is_some()
+        {
+            if self != canonical {
+                return Err(TypedAstError::InvalidSourceStatement);
+            }
+        } else {
+            let source_nodes = canonical
+                .source_nodes
+                .take()
+                .ok_or(TypedAstError::InvalidSourceStatement)?;
+            if self != canonical {
+                return Err(TypedAstError::InvalidSourceStatement);
+            }
+            self.source_nodes = Some(source_nodes);
         }
-        self.source_nodes = Some(source_nodes);
         self.source_statement = Some(statement);
         self.source_statement_references = references;
         self.source_statement_witnesses = witnesses;
@@ -6550,7 +6560,11 @@ pub(crate) mod tests {
             TypedAstParts,
             SourcePrimaryTermHandoff,
             Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
-            &mizar_resolve::env::SymbolEnv,
+            (
+                &mizar_resolve::env::SymbolEnv,
+                &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+                &mizar_resolve::names::ResolvedVariableScope,
+            ),
         ),
     ) {
         use mizar_frontend::{
@@ -6686,9 +6700,17 @@ pub(crate) mod tests {
             );
             task257b5_native_replay(installed, expressions.clone()).unwrap();
         }
-        inspect(installed, parts, primary, expressions, symbols);
+        inspect(
+            installed,
+            parts,
+            primary,
+            expressions,
+            (symbols, &native, &scope),
+        );
         std::fs::remove_dir_all(root).unwrap();
     }
+
+    pub(crate) use self::task257b5_native_replay as task257b5_native_assemble;
 
     pub(crate) fn task257b5_native_replay(
         typed: &TypedAst,
@@ -6786,6 +6808,232 @@ pub(crate) mod tests {
             ));
         let final_result = task257b5_native_replay(&baseline, expressions);
         (lower, final_result)
+    }
+
+    #[test]
+    fn task258_native_statement_canonical_receiver_is_atomic_and_pure() {
+        let text = include_str!("../tests/testdata/native_universal_statement.miz");
+        task257b5_native_case(
+            text,
+            |lower, _, _, expressions, (symbols, source, scope)| {
+                let baseline = lower.unwrap();
+                let before = baseline.clone();
+                let installed = baseline
+                    .clone()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let resolved = task257b5_native_replay(&installed, expressions.clone()).unwrap();
+                assert_eq!(installed.nodes(), baseline.nodes());
+                assert_eq!(installed.contexts(), baseline.contexts());
+                assert_eq!(installed.types(), baseline.types());
+                assert_eq!(installed.source_nodes, baseline.source_nodes);
+                assert_eq!(installed.source_context(), baseline.source_context());
+                assert_eq!(installed.source_type(), baseline.source_type());
+                assert_eq!(installed.source_term(), baseline.source_term());
+                assert_eq!(
+                    installed.source_atomic_formula(),
+                    baseline.source_atomic_formula()
+                );
+                assert_eq!(
+                    installed.source_composite_formula(),
+                    baseline.source_composite_formula()
+                );
+                assert_eq!(
+                    installed.source_formula_composition(),
+                    baseline.source_formula_composition()
+                );
+                assert!(
+                    installed.source_statement_references().is_none()
+                        && installed.source_statement_witnesses().is_none()
+                );
+                for case in 0..6 {
+                    let mut receiver = match case {
+                        0 => {
+                            crate::source_type::SourceTypeProducer::build_source_theorem_equalities(
+                                source, symbols, scope,
+                            )
+                            .unwrap()
+                            .2
+                        }
+                        5 => installed.clone(),
+                        _ => baseline.clone(),
+                    };
+                    match case {
+                        1 => receiver.source_nodes = None,
+                        2 => receiver.source_composite_formula = None,
+                        3 => receiver.source_formula_composition = None,
+                        4 => {
+                            let mut rows = receiver.source_nodes.as_ref().unwrap().to_vec();
+                            rows.swap(0, 1);
+                            receiver.source_nodes = Some(rows.into());
+                        }
+                        _ => {}
+                    }
+                    let original = receiver.clone();
+                    assert_eq!(
+                        receiver
+                            .clone()
+                            .with_source_statement_from_original(source, symbols, scope),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(receiver, original);
+                }
+                for repeated in [false, true] {
+                    let receiver = if repeated {
+                        installed.clone()
+                    } else {
+                        baseline.clone()
+                    };
+                    assert_eq!(
+                        receiver
+                            .clone()
+                            .with_source_statement(installed.source_statement().unwrap().clone()),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(
+                        receiver.with_source_formula_composition_statement(
+                            baseline.source_composite_formula().unwrap().clone(),
+                            baseline.source_formula_composition().unwrap().clone(),
+                            installed.source_statement().unwrap().clone()
+                        ),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                }
+                let alpha = text.replace("NativeUniversalStatement", "AlphaXUniversalStatement");
+                task257b5_native_case(
+                    &alpha,
+                    |foreign,
+                     _,
+                     _,
+                     foreign_expressions,
+                     (foreign_symbols, foreign_source, foreign_scope)| {
+                        let foreign = foreign.unwrap();
+                        let foreign_native = foreign
+                            .clone()
+                            .with_source_statement_from_original(
+                                foreign_source,
+                                foreign_symbols,
+                                foreign_scope,
+                            )
+                            .unwrap();
+                        task257b5_native_replay(&foreign_native, foreign_expressions).unwrap();
+                        assert_ne!(foreign, baseline);
+                        let unchanged = foreign.clone();
+                        assert_eq!(
+                            foreign
+                                .clone()
+                                .with_source_statement_from_original(source, symbols, scope),
+                            Err(TypedAstError::InvalidSourceStatement)
+                        );
+                        assert_eq!(foreign, unchanged);
+                        assert_eq!(
+                            baseline.clone().with_source_statement_from_original(
+                                foreign_source,
+                                foreign_symbols,
+                                foreign_scope
+                            ),
+                            Err(TypedAstError::InvalidSourceStatement)
+                        );
+                    },
+                );
+                assert_eq!(baseline, before);
+                assert_eq!(
+                    baseline
+                        .with_source_statement_from_original(source, symbols, scope)
+                        .unwrap(),
+                    installed
+                );
+                assert_eq!(
+                    task257b5_native_replay(&installed, expressions).unwrap(),
+                    resolved
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn task258_native_statement_narrows_genuine_b5_proof_order() {
+        for proof in [
+            "let X be set; thus X = X; thus X = X;",
+            "let X be set; thus X = X; let Y be set;",
+            "let X be set; thus X = X by T;",
+        ] {
+            let text = format!("theorem T: for H being set holds H = H proof {proof} end;");
+            task257b5_native_case(
+                &text,
+                |lower, _, _, expressions, (symbols, source, scope)| {
+                    let lower = lower.unwrap();
+                    let pristine = task257b5_native_replay(&lower, expressions.clone()).unwrap();
+                    let before = lower.clone();
+                    assert_eq!(
+                        lower
+                            .clone()
+                            .with_source_statement_from_original(source, symbols, scope),
+                        Err(TypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(lower, before);
+                    assert_eq!(
+                        task257b5_native_replay(&lower, expressions).unwrap(),
+                        pristine
+                    );
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn task258_native_statement_malformed_graphs_refuse_before_owner_rebuild() {
+        let text = include_str!("../tests/testdata/native_universal_statement.miz");
+        task257b5_native_case(
+            text,
+            |lower, parts, primary, expressions, (symbols, source, scope)| {
+                let installed = lower
+                    .unwrap()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let pristine = task257b5_native_replay(&installed, expressions.clone()).unwrap();
+                for extra_node in [false, true] {
+                    let mut changed = parts.clone();
+                    let root = changed.nodes.root().unwrap();
+                    let mut nodes = changed
+                        .nodes
+                        .iter()
+                        .map(|(_, row)| row.clone())
+                        .collect::<Vec<_>>();
+                    if extra_node {
+                        nodes.push(TypedNode::new(
+                            "FormulaExpression",
+                            nodes[root.index()].anchor.clone(),
+                        ));
+                    } else {
+                        let token = installed
+                            .source_nodes
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .find(|row| matches!(row.kind, SurfaceNodeKind::Token(_)))
+                            .unwrap();
+                        nodes[root.index()]
+                            .children
+                            .push(TypedNodeId::new(token.site.index()));
+                    }
+                    changed.nodes = TypedArena::try_new(Some(root), nodes).unwrap();
+                    assert_ne!(changed.nodes, parts.nodes);
+                    let (primitive, result) = task257b5_native_forged_replay(
+                        installed.clone(),
+                        changed,
+                        primary.clone(),
+                        expressions.clone(),
+                    );
+                    primitive.unwrap();
+                    assert_eq!(result, Err(crate::resolved_typed_ast::ResolvedTypedAstError::InvalidSourceStatement));
+                    assert_eq!(
+                        task257b5_native_replay(&installed, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                }
+            },
+        );
     }
 
     #[test]
@@ -6972,7 +7220,7 @@ pub(crate) mod tests {
         };
         task257b5_native_case(
             TASK257B5_NATIVE_TEXT,
-            |installed, _, primary, expressions, symbols| {
+            |installed, _, primary, expressions, (symbols, _, _)| {
                 let typed = installed.unwrap();
                 let empty = SourceFunctorApplicationProducer::build(
                     SourceFunctorApplicationHandoffInput {

@@ -278,6 +278,7 @@ pub enum SourceStatementFormulaTarget {
 #[non_exhaustive]
 pub enum SourceStatementInputFactKind {
     ReservedTypeGuard,
+    LetTypeGuard,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -407,8 +408,12 @@ impl SourceStatementHandoff {
             binding_env: bindings,
             primary_term_fingerprint: primary.debug_text(),
             atomic_formula_fingerprint: atomic.debug_text(),
-            composite_formula_fingerprint: None,
-            formula_composition_fingerprint: None,
+            composite_formula_fingerprint: typed
+                .source_composite_formula()
+                .map(|row| row.debug_text()),
+            formula_composition_fingerprint: typed
+                .source_formula_composition()
+                .map(|row| row.debug_text()),
             checked_owner,
             owner_contribution: owner.contribution,
             owners: SourceTheoremOwnerTable {
@@ -484,13 +489,20 @@ impl SourceStatementHandoff {
                     .collect(),
             },
         };
-        handoff.validate_installation(
-            source.source_id(),
-            source.module(),
-            primary,
-            atomic,
-            typed.nodes(),
-        )?;
+        if let (Some(composite), Some(composition)) = (
+            typed.source_composite_formula(),
+            typed.source_formula_composition(),
+        ) {
+            handoff.validate_native_installation(&typed, composite, composition)?;
+        } else {
+            handoff.validate_installation(
+                source.source_id(),
+                source.module(),
+                primary,
+                atomic,
+                typed.nodes(),
+            )?;
+        }
         let references = match reference_input {
             Some((input, ast, labels, resolution)) => {
                 let candidate = labels.references().first().ok_or_else(invalid)?.clone();
@@ -1301,6 +1313,108 @@ impl SourceStatementHandoff {
             );
         }
         output
+    }
+
+    /// Called only with the complete native graph and freshly replayed B5 pair.
+    pub(crate) fn validate_native_installation(
+        &self,
+        typed: &TypedAst,
+        composite: &SourceCompositeFormulaHandoff,
+        composition: &SourceFormulaCompositionHandoff,
+    ) -> Result<(), SourceStatementError> {
+        let invalid = || SourceStatementError::DependencyMismatch;
+        let input = TermFormulaChecker::source_native_statement_inputs(
+            typed,
+            composite,
+            composition,
+            &self.checked_owner,
+        )?;
+        let bindings = typed.source_context().ok_or_else(invalid)?.binding_env();
+        if self.source_id != input.source_id
+            || self.module_id != input.module_id
+            || &self.binding_env != bindings
+            || self.binding_fingerprint != bindings.debug_text()
+            || self.primary_term_fingerprint
+                != typed.source_term().ok_or_else(invalid)?.debug_text()
+            || self.atomic_formula_fingerprint
+                != typed
+                    .source_atomic_formula()
+                    .ok_or_else(invalid)?
+                    .debug_text()
+            || self.composite_formula_fingerprint.as_deref()
+                != Some(composite.debug_text().as_str())
+            || self.formula_composition_fingerprint.as_deref()
+                != Some(composition.debug_text().as_str())
+            || typed.source_statement_references().is_some()
+            || typed.source_statement_witnesses().is_some()
+            || self.owner_contribution != input.owners.first().ok_or_else(invalid)?.contribution
+            || self.owners.len() != input.owners.len()
+            || self.statements.len() != input.statements.len()
+            || self.contexts.len() != input.contexts.len()
+            || self.input_facts.len() != input.input_facts.len()
+            || self.candidate_facts.len() != input.candidate_facts.len()
+            || !self.owners.iter().zip(&input.owners).all(|((_, a), b)| {
+                a.symbol == b.symbol
+                    && a.contribution == b.contribution
+                    && a.site == b.site
+                    && a.source_range == b.source_range
+                    && a.spelling == b.spelling
+                    && a.role == b.role
+                    && a.status == b.status
+                    && a.recovery == b.recovery
+            })
+            || !self
+                .statements
+                .iter()
+                .zip(&input.statements)
+                .all(|((_, a), b)| {
+                    a.owner == b.owner
+                        && a.context == b.context
+                        && a.formula == b.formula
+                        && a.site == b.site
+                        && a.source_range == b.source_range
+                        && a.source_ordinal == b.source_ordinal
+                        && a.spelling == b.spelling
+                        && a.kind == b.kind
+                        && a.recovery == b.recovery
+                })
+            || !self
+                .contexts
+                .iter()
+                .zip(&input.contexts)
+                .all(|((_, a), b)| {
+                    a.statement == b.statement
+                        && a.binding_context == b.binding_context
+                        && a.source_range == b.source_range
+                        && a.visible_bindings == b.visible_bindings
+                })
+            || !self
+                .input_facts
+                .iter()
+                .zip(&input.input_facts)
+                .all(|((_, a), b)| {
+                    a.statement == b.statement
+                        && a.context == b.context
+                        && a.ordinal == b.ordinal
+                        && a.kind == b.kind
+                        && a.binding == b.binding
+                        && a.uses == b.uses
+                })
+            || !self
+                .candidate_facts
+                .iter()
+                .zip(&input.candidate_facts)
+                .all(|((_, a), b)| {
+                    a.statement == b.statement
+                        && a.context == b.context
+                        && a.ordinal == b.ordinal
+                        && a.kind == b.kind
+                        && a.formula == b.formula
+                })
+        {
+            return Err(invalid());
+        }
+        Ok(())
     }
 
     pub(crate) fn validate_installation(
@@ -15809,6 +15923,7 @@ fn witness_kind_key(kind: SourceStatementWitnessKind) -> &'static str {
 fn input_fact_kind_key(kind: SourceStatementInputFactKind) -> &'static str {
     match kind {
         SourceStatementInputFactKind::ReservedTypeGuard => "reserved-type-guard",
+        SourceStatementInputFactKind::LetTypeGuard => "let-type-guard",
     }
 }
 

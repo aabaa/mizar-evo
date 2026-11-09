@@ -6105,6 +6105,87 @@ mod tests {
     }
 
     #[test]
+    fn task258_native_statement_rejects_a_coherent_let_type_application_swap() {
+        use crate::{
+            resolved_typed_ast::ResolvedTypedAstError,
+            source_context::SourceBindingSiteRole,
+            typed_ast::tests::{
+                task257b5_native_case, task257b5_native_forged_replay, task257b5_native_replay,
+            },
+        };
+        task257b5_native_case(
+            include_str!("../tests/testdata/native_universal_statement.miz"),
+            |lower, mut parts, primary, expressions, (symbols, source, scope)| {
+                let installed = lower
+                    .unwrap()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let original = installed.clone();
+                let pristine = task257b5_native_replay(&installed, expressions.clone()).unwrap();
+                let context = installed.source_context().unwrap();
+                let declaration = |role| {
+                    context
+                        .declarations()
+                        .iter()
+                        .find(|(_, row)| row.role == role)
+                        .unwrap()
+                        .1
+                        .binding
+                };
+                let header = declaration(SourceBindingSiteRole::QuantifierBinder);
+                let local = declaration(SourceBindingSiteRole::ProofLet);
+                assert_ne!(header, local);
+                let original_types = parts.source_type.clone();
+                let types = parts.source_type.as_mut().unwrap();
+                let root = |binding| {
+                    types
+                        .applications()
+                        .iter()
+                        .find(|(_, row)| row.binding() == binding)
+                        .unwrap()
+                        .1
+                        .root()
+                };
+                let header_root = root(header);
+                let local_root = root(local);
+                assert_ne!(header_root, local_root);
+                let header_type = types.expressions().get(header_root).unwrap();
+                let local_type = types.expressions().get(local_root).unwrap();
+                assert_eq!(header_type.head(), &SourceTypeHead::BuiltinSet);
+                assert_eq!(local_type.head(), header_type.head());
+                assert_ne!(local_type.site(), header_type.site());
+                assert_ne!(local_type.source_range(), header_type.source_range());
+                types
+                    .applications
+                    .entries
+                    .iter_mut()
+                    .find(|row| row.binding == local)
+                    .unwrap()
+                    .root = header_root;
+                assert_ne!(parts.source_type, original_types);
+                let mutated_types = parts.source_type.clone();
+                let (lower, final_result) = task257b5_native_forged_replay(
+                    installed.clone(),
+                    parts.clone(),
+                    primary,
+                    expressions.clone(),
+                );
+                assert_eq!(lower, Err(TypedAstError::InvalidSourceType));
+                assert_eq!(
+                    final_result,
+                    Err(ResolvedTypedAstError::InvalidSourceStatement)
+                );
+                assert_eq!(parts.source_type, mutated_types);
+                assert_eq!(installed, original);
+                assert_eq!(
+                    task257b5_native_replay(&installed, expressions).unwrap(),
+                    pristine
+                );
+            },
+        );
+    }
+
+    #[test]
     fn flat_bracket_handoff_is_dense_immutable_and_deterministic() {
         let fixture = fixture();
         let first = build(&fixture).expect("handoff");

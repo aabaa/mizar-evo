@@ -3241,3 +3241,6 @@ Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit
 
 ## Native universal source composition
 The [live composite owner](mizar-checker/en/source_composite_formula.md#original-source-universal-composition) extends source-only transport to genuine normal theorem-equality contexts and explicit Set universals. Header/body/binder/type associations retain the full primitive proof/header partition; raw profiles and existing requirement credit remain unchanged. Native quantified/local-Let statement input and all theorem/proof/Core/VC acceptance remain with their separate owners.
+
+## Native quantified statement inputs
+The [statement owner](mizar-checker/en/source_statement.md#native-quantified-statement-and-let-guard-construction) extends source-only intent to one actual quantified theorem and proof-local Let type guards. Quantifier guards remain formula-internal; local contexts, declared type applications and unverified candidates remain distinct. Requirement status, accepted theorem/proof/fact credit and downstream semantic owners are unchanged.

@@ -3244,3 +3244,7 @@ original equality lowerと独立reserved-binding readerはbare unnamed `the set`
 ## Original-source universal composition intake
 native universal intake は、保持した original node graph を実 theorem-equality の source context/type/BindingEnv および primary/atomic result と照合する。既存 composite/composition row を導出し、構築と fresh replay の双方で owner/header/proof 構造全体・共有 written type・実 lexical scope・declaration/reference clock を認証する。primitive typing と旧 raw-family intake を保持し、proof goal の正規化や universal truth の確立は行わない。
 canonical 入口は実 TypeTable 全体をそのまま保持する。final source replay は owner/status と構造的な source-type 対応を検証する。opaque な Known normalized ID の意味は既存 lower ABI の所有であり、その normalized universe と SymbolEnv は Resolved input に保持されない。source transport は normalized-type certificate を追加しない。
+
+## Native quantified statement inputs
+statement interpreterは未変更B5 native input familyを単一の通常default-public theorem、proof内Let宣言に続く直接等式結論一つ、citationなしに限定して用いる。original node、実declaration/type application、実primary referenceからstatement shell・source ordinal・incoming/proof context・LetTypeGuard inputを導出する。header binder guardは量化式内部に保ち、proof-local identityと置き換えない。fresh joint validationもこの解釈を共有し、opaque typeの正規化やtheorem受理を行わない。
+owner認証は完全検証済みoriginal graphから既存original SurfaceAstを一時再構築し、実resolver declaration/signature collectorを再実行する。opaque symbol identityを解釈せず、得られた実sealとcontributionを比較し、並列ASTは保持しない。

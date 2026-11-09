@@ -2005,3 +2005,6 @@ combined raw set/statement/witness setterの旧B3B/C admissionはCheckerのtest 
 ## Original-source universal composition
 `with_source_formula_composition_from_original(self, source, symbols, scope)` は実 native theorem-equality の source/type/context base を再導出し、既存 generic original node table を内部で組み込む。node slot を分離した canonical base と receiver 全体を比較し、original table と既存 composite/composition handoff の両方を原子的に公開する。enriched・foreign・partial・反復・重複 receiver は InvalidSourceFormulaComposition で拒否する。
 primitive node/context/type と lower output をすべて保持する。raw setter の source-context 排他は維持し、detached native handoff を組み込めない。statement/input-fact、proof-local binding slot、theorem/proof acceptance、Core、VC の権限は追加しない。
+
+## Native quantified statement installation
+native quantified Let statementではwith_source_statement_from_originalが、original nodeと両composition handoffを含む実B5組込み済みcanonical receiver全体を比較してから、既存statement slotを付ける。旧reserved入口のnode slot分離とreceiver規則は維持する。primitive tableとmetadataを保持し、反復・partial・enriched・foreign receiverを原子的に拒否する。

@@ -3702,7 +3702,7 @@ pub(crate) mod tests {
         };
         task257b5_native_case(
             TASK257B5_NATIVE_TEXT,
-            |installed, parts, primary, expressions, symbols| {
+            |installed, parts, primary, expressions, (symbols, _, _)| {
                 let mut typed = installed.unwrap();
                 let mut input = typed.source_atomic_formula().unwrap().to_input();
                 assert_eq!(input.formulas.len(), 4);

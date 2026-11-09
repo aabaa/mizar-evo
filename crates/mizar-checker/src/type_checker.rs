@@ -37,7 +37,8 @@ use mizar_resolve::{
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::ast::{
-    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,
+    SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind,
+    SurfaceTokenKind,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -6247,7 +6248,6 @@ impl TermFormulaChecker {
             || typed.source_nested_fraenkel_capture_identity().is_some()
             || typed.source_condition_formula_composition().is_some()
             || typed.source_predicate_chain_composition().is_some()
-            || typed.source_statement().is_some()
             || typed.source_statement_references().is_some()
             || typed.source_statement_witnesses().is_some()
             || typed.source_proof_local_binding().is_some()
@@ -7148,6 +7148,11 @@ impl TermFormulaChecker {
             atomic,
             &composite,
         );
+        if let Some(statement) = typed.source_statement() {
+            statement
+                .validate_native_installation(typed, &composite, &composition)
+                .map_err(|_| invalid())?;
+        }
         Ok((composite, composition))
     }
 
@@ -7682,6 +7687,358 @@ impl TermFormulaChecker {
         Ok((bindings, inference, obligations))
     }
 
+    /// Interprets only the native statement family after complete B5 validation.
+    /// This must not call composition replay or a final/constructor entrance.
+    pub(crate) fn source_native_statement_inputs(
+        typed: &crate::typed_ast::TypedAst,
+        composite: &crate::source_composite_formula::SourceCompositeFormulaHandoff,
+        composition: &crate::source_formula_composition::SourceFormulaCompositionHandoff,
+        checked_owner: &CheckedStatementOwner,
+    ) -> Result<
+        crate::source_statement::SourceStatementHandoffInput,
+        crate::source_statement::SourceStatementError,
+    > {
+        use crate::{
+            source_atomic_formula::{SourceAtomicFormulaKind, SourceAtomicTermTarget},
+            source_composite_formula::SourceFormulaRootOwnership,
+            source_context::{SourceBindingSiteRole, SourceItemRole},
+            source_statement::*,
+            typed_ast::{NodeRecoveryState, SourceNode, source_children},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector, env::NamespacePath,
+            symbols::SignatureProjectionExtractor,
+        };
+        let invalid = || SourceStatementError::DependencyMismatch;
+        let rows = typed.source_nodes().ok_or_else(invalid)?;
+        let source_context = typed.source_context().ok_or_else(invalid)?;
+        let types = typed.source_type().ok_or_else(invalid)?;
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        let env = source_context.binding_env();
+        let by_site = rows
+            .iter()
+            .map(|row| (row.site, row))
+            .collect::<BTreeMap<_, _>>();
+        let site = |row: &SourceNode| TypedSiteRef::Node(TypedNodeId::new(row.site.index()));
+        let children = |row: &SourceNode| source_children(rows, row.site).collect::<Vec<_>>();
+        let mut items = source_context.items().iter();
+        let (item_id, item) = items.next().ok_or_else(invalid)?;
+        if items.next().is_some() || item.role != SourceItemRole::Theorem {
+            return Err(invalid());
+        }
+        let theorem = by_site
+            .get(
+                &typed
+                    .nodes()
+                    .node(item.site.node())
+                    .and_then(|node| node.resolved_node)
+                    .ok_or_else(invalid)?,
+            )
+            .copied()
+            .ok_or_else(invalid)?;
+        let parts = children(theorem);
+        let [_, label, _, header, proof, _] = parts.as_slice() else {
+            return Err(invalid());
+        };
+        if theorem.kind != K::TheoremItem || proof.kind != K::ProofBlock {
+            return Err(invalid());
+        }
+        let proof_parts = children(proof);
+        let [_, lets @ .., conclusion, _] = proof_parts.as_slice() else {
+            return Err(invalid());
+        };
+        if lets.is_empty()
+            || lets.iter().any(|row| row.kind != K::LetStatement)
+            || conclusion.kind != K::ConclusionStatement
+        {
+            return Err(invalid());
+        }
+        let conclusion_parts = children(conclusion);
+        let [_, proposition, _] = conclusion_parts.as_slice() else {
+            return Err(invalid());
+        };
+        let conclusion_expression =
+            crate::typed_ast::source_unique_child(rows, proposition, K::FormulaExpression)
+                .ok_or_else(invalid)?;
+        let conclusion_equality = crate::typed_ast::source_unique_child(
+            rows,
+            conclusion_expression,
+            K::BuiltinPredicateApplication,
+        )
+        .ok_or_else(invalid)?;
+        let header_root = crate::typed_ast::source_unique_child(
+            rows,
+            header,
+            K::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+        )
+        .ok_or_else(invalid)?;
+        let (header_id, header_formula) = composite
+            .formulas()
+            .iter()
+            .find(|(_, row)| row.site() == &site(header_root))
+            .ok_or_else(invalid)?;
+        let (conclusion_id, conclusion_formula) = atomic
+            .formulas()
+            .iter()
+            .find(|(_, row)| row.site() == &site(conclusion_equality))
+            .ok_or_else(invalid)?;
+        if composite.roots().len() != 1
+            || !composite.roots().iter().any(|(_, row)| {
+                row.formula() == header_id
+                    && row.ownership() == SourceFormulaRootOwnership::UnassignedStatement
+            })
+            || conclusion_formula.kind() != SourceAtomicFormulaKind::Equality
+            || composition
+                .atomic_edges()
+                .iter()
+                .any(|(_, edge)| edge.child() == conclusion_id)
+            || env
+                .contexts()
+                .get(header_formula.context())
+                .is_none_or(|row| row.owner != BindingContextOwner::Module)
+            || env
+                .contexts()
+                .get(conclusion_formula.context())
+                .is_none_or(|row| {
+                    row.owner
+                        != (BindingContextOwner::SourceStatement {
+                            source_range: proof.range,
+                        })
+                })
+        {
+            return Err(invalid());
+        }
+        // Source rows are preorder; the authenticated TypedArena is child-first.
+        // Use original kinds and guarded child IDs, never a parsed debug tag.
+        let mut builder = SurfaceAstBuilder::new(typed.source_id());
+        let mut rebuilt = Vec::with_capacity(typed.nodes().len());
+        for (_, node) in typed.nodes().iter() {
+            let original = by_site
+                .get(&node.resolved_node.ok_or_else(invalid)?)
+                .copied()
+                .ok_or_else(invalid)?;
+            if original.recovery != NodeRecoveryState::Normal
+                || matches!(original.kind, K::ErrorRecovery(_))
+            {
+                return Err(invalid());
+            }
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt.get(child.index()).copied().ok_or_else(invalid))
+                .collect::<Result<Vec<_>, _>>()?;
+            let id = match &original.kind {
+                K::Token(token) if children.is_empty() => {
+                    builder.add_token(token.kind, token.text.clone(), original.range)
+                }
+                K::Token(_) => return Err(invalid()),
+                kind => builder.add_node(kind.clone(), original.range, children),
+            };
+            rebuilt.push(id);
+        }
+        let root = rebuilt
+            .get(typed.nodes().root().ok_or_else(invalid)?.index())
+            .copied()
+            .ok_or_else(invalid)?;
+        let ast = builder.finish(Some(root), None);
+        let shells = DeclarationShellCollector::new(&ast, typed.module_id()).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(typed.module_id().path().as_str()),
+        )
+        .collect(typed.module_id());
+        if !collected.diagnostics().is_empty() {
+            return Err(invalid());
+        }
+        let symbols = collected.env();
+        let mut owners = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Theorem);
+        let owner = owners.next().ok_or_else(invalid)?;
+        if owners.next().is_some()
+            || owner.primary_spelling() != label.spelling
+            || owner.origin().anchor() != &SourceAnchor::Range(theorem.range)
+        {
+            return Err(invalid());
+        }
+        let fresh_owner = CheckedStatementOwner::validate_exact_local_theorem(
+            symbols,
+            owner.symbol().clone(),
+            typed.source_id(),
+            typed.module_id(),
+        )
+        .map_err(|_| invalid())?;
+        if &fresh_owner != checked_owner {
+            return Err(invalid());
+        }
+        let mut input = SourceStatementHandoffInput {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            owners: vec![SourceTheoremOwnerInput {
+                symbol: owner.symbol().clone(),
+                contribution: owner.contribution(),
+                site: site(theorem),
+                source_range: theorem.range,
+                spelling: label.spelling.clone(),
+                role: SourceTheoremRole::Theorem,
+                status: SourceTheoremStatus::Unmodified,
+                recovery: SourceStatementRecovery::Normal,
+            }],
+            statements: vec![],
+            contexts: vec![],
+            input_facts: vec![],
+            candidate_facts: vec![],
+        };
+        for (index, (original, binding_context, formula, source_ordinal, kind)) in [
+            (
+                theorem,
+                header_formula.context(),
+                SourceStatementFormulaTarget::Composite(header_id),
+                0,
+                SourceStatementKind::TheoremProposition,
+            ),
+            (
+                *conclusion,
+                conclusion_formula.context(),
+                SourceStatementFormulaTarget::Atomic(conclusion_id),
+                lets.len() + 1,
+                SourceStatementKind::Conclusion,
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let statement = SourceStatementId::new(index);
+            let context = SourceStatementContextId::new(index);
+            input.statements.push(SourceStatementInput {
+                owner: SourceTheoremOwnerId::new(0),
+                context,
+                formula,
+                site: site(original),
+                source_range: original.range,
+                source_ordinal,
+                spelling: original.spelling.clone(),
+                kind,
+                recovery: SourceStatementRecovery::Normal,
+            });
+            input.contexts.push(SourceStatementContextInput {
+                statement,
+                binding_context,
+                source_range: original.range,
+                visible_bindings: env
+                    .contexts()
+                    .get(binding_context)
+                    .ok_or_else(invalid)?
+                    .visible_bindings
+                    .clone(),
+            });
+            input
+                .candidate_facts
+                .push(SourceStatementCandidateFactInput {
+                    statement,
+                    context,
+                    ordinal: 0,
+                    kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                    formula,
+                });
+        }
+        let operand_terms = atomic
+            .edges()
+            .iter()
+            .filter(|(_, edge)| edge.formula() == conclusion_id)
+            .map(|(_, edge)| match edge.target() {
+                SourceAtomicTermTarget::Primary(id) => Ok(id),
+                _ => Err(invalid()),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut accounted = BTreeSet::new();
+        for (_, declaration) in source_context
+            .declarations()
+            .iter()
+            .filter(|(_, row)| row.role == SourceBindingSiteRole::ProofLet)
+        {
+            let binding = env
+                .bindings()
+                .get(declaration.binding)
+                .ok_or_else(invalid)?;
+            let mut applications = types
+                .applications()
+                .iter()
+                .filter(|(_, application)| application.binding() == declaration.binding);
+            let (_, application) = applications.next().ok_or_else(invalid)?;
+            let written = types
+                .expressions()
+                .get(application.root())
+                .ok_or_else(invalid)?;
+            let identifier = by_site
+                .get(
+                    &typed
+                        .nodes()
+                        .node(declaration.site.node())
+                        .and_then(|node| node.resolved_node)
+                        .ok_or_else(invalid)?,
+                )
+                .copied()
+                .ok_or_else(invalid)?;
+            let segment = by_site
+                .get(&identifier.parent.ok_or_else(invalid)?)
+                .copied()
+                .ok_or_else(invalid)?;
+            if declaration.item != item_id
+                || declaration.binding_context != conclusion_formula.context()
+                || binding.kind != BindingKind::LetBinding
+                || binding.status != BindingStatus::Active
+                || !input.contexts[1]
+                    .visible_bindings
+                    .contains(&declaration.binding)
+                || applications.next().is_some()
+                || application.source_ordinal() != declaration.source_ordinal
+                || written.source_range() != declaration.written_type_range
+                || !lets.iter().any(|row| Some(row.site) == segment.parent)
+            {
+                return Err(invalid());
+            }
+            let uses = primary
+                .references()
+                .iter()
+                .filter(|(_, reference)| reference.binding() == declaration.binding)
+                .map(|(id, reference)| {
+                    let term = primary.terms().get(reference.term()).ok_or_else(invalid)?;
+                    if !operand_terms.contains(&reference.term())
+                        || term.context() != conclusion_formula.context()
+                        || !accounted.insert(reference.term())
+                    {
+                        return Err(invalid());
+                    }
+                    Ok(id)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            input.input_facts.push(SourceStatementInputFactInput {
+                statement: SourceStatementId::new(1),
+                context: SourceStatementContextId::new(1),
+                ordinal: input.input_facts.len(),
+                kind: SourceStatementInputFactKind::LetTypeGuard,
+                binding: declaration.binding,
+                uses,
+            });
+        }
+        if input
+            .input_facts
+            .iter()
+            .map(|row| row.binding)
+            .collect::<Vec<_>>()
+            != input.contexts[1].visible_bindings
+            || accounted != operand_terms.into_iter().collect()
+            || !input.contexts[0].visible_bindings.is_empty()
+        {
+            return Err(invalid());
+        }
+        Ok(input)
+    }
+
     // reason: Keep the existing owning tuple instead of a single-use handoff type.
     #[allow(clippy::type_complexity)]
     pub(crate) fn check_source_reserved_statement_inputs(
@@ -7712,6 +8069,43 @@ impl TermFormulaChecker {
             },
         };
         let invalid = || SourceStatementError::DependencyMismatch;
+        if !source
+            .arena()
+            .iter()
+            .any(|(_, node)| node.kind() == &K::ReserveItem)
+        {
+            // Keep native-only typed-base temporaries off the reserved path's stack.
+            let native_inputs = || {
+                let (bindings, _, typed, _) =
+                    crate::source_type::SourceTypeProducer::build_source_theorem_equalities(
+                        source, symbols, scope,
+                    )
+                    .map_err(|_| invalid())?;
+                let typed = typed
+                    .with_source_formula_composition_from_original(source, symbols, scope)
+                    .map_err(|_| invalid())?;
+                let owner = symbols
+                    .symbols()
+                    .iter()
+                    .find(|entry| entry.kind() == SymbolKind::Theorem)
+                    .ok_or_else(invalid)?;
+                let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
+                    symbols,
+                    owner.symbol().clone(),
+                    source.source_id(),
+                    source.module(),
+                )
+                .map_err(|_| invalid())?;
+                let input = Self::source_native_statement_inputs(
+                    &typed,
+                    typed.source_composite_formula().ok_or_else(invalid)?,
+                    typed.source_formula_composition().ok_or_else(invalid)?,
+                    &checked_owner,
+                )?;
+                Ok((input, bindings, typed, None, None))
+            };
+            return native_inputs();
+        }
         let (bindings, _, mut typed) =
             Self::check_source_theorem_equalities(source, symbols, scope).map_err(|_| invalid())?;
         if !source

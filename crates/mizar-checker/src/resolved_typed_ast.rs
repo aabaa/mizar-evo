@@ -2076,7 +2076,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         if let Some(handoff) = &source_proof_local_let_binding {
             let installation_available =
                 source_proof_local_let_binding_typed_profile_is_empty(self.inputs.typed_ast)
-                    && source_statement_inputs_are_syntax_only(&self.inputs, false);
+                    && source_statement_inputs_are_syntax_only(&self.inputs, false, false);
             handoff
                 .validate_complete_installation(source_id, &module_id, installation_available)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)?;
@@ -2090,7 +2090,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         if let Some(handoff) = &source_proof_local_given_binding {
             let installation_available =
                 source_proof_local_given_binding_typed_profile_is_empty(self.inputs.typed_ast)
-                    && source_statement_inputs_are_syntax_only(&self.inputs, false);
+                    && source_statement_inputs_are_syntax_only(&self.inputs, false, false);
             handoff
                 .validate_complete_installation(source_id, &module_id, installation_available)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenBinding)?;
@@ -2316,6 +2316,23 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
+        let native_statement = original_statement
+            && self.inputs.typed_ast.source_context().is_some()
+            && self.inputs.typed_ast.source_type().is_some()
+            && self.inputs.typed_ast.source_composite_formula().is_some()
+            && self.inputs.typed_ast.source_formula_composition().is_some();
+        if native_statement {
+            let (composite, composition) =
+                crate::type_checker::TermFormulaChecker::source_universal_composition(
+                    self.inputs.typed_ast,
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
+            if self.inputs.typed_ast.source_composite_formula() != Some(&composite)
+                || self.inputs.typed_ast.source_formula_composition() != Some(&composition)
+            {
+                return Err(ResolvedTypedAstError::InvalidSourceStatement);
+            }
+        }
         let native_witness_statement = original_statement
             && self
                 .inputs
@@ -2351,8 +2368,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         })
                 });
         if original_statement
-            && (self.inputs.typed_ast.source_context().is_some()
-                || self.inputs.typed_ast.source_type().is_some()
+            && ((self.inputs.typed_ast.source_context().is_some() && !native_statement)
+                || (self.inputs.typed_ast.source_type().is_some() && !native_statement)
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
                 || self.inputs.typed_ast.source_template().is_some()
@@ -2382,8 +2399,10 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .typed_ast
                     .source_predicate_definition()
                     .is_some()
-                || self.inputs.typed_ast.source_composite_formula().is_some()
-                || self.inputs.typed_ast.source_formula_composition().is_some()
+                || (self.inputs.typed_ast.source_composite_formula().is_some()
+                    && !native_statement)
+                || (self.inputs.typed_ast.source_formula_composition().is_some()
+                    && !native_statement)
                 || self
                     .inputs
                     .typed_ast
@@ -2466,14 +2485,19 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .typed_ast
                     .source_proof_local_given_descendant_use_term()
                     .is_some()
-                || self.inputs.typed_ast.nodes().iter().any(|(_, node)| {
-                    node.typing != TypingState::Unknown || node.links != Default::default()
-                }))
+                || (!native_statement
+                    && self.inputs.typed_ast.nodes().iter().any(|(_, node)| {
+                        node.typing != TypingState::Unknown || node.links != Default::default()
+                    })))
         {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
         if self.inputs.typed_ast.source_statement().is_some()
-            && !source_statement_inputs_are_syntax_only(&self.inputs, original_statement)
+            && !source_statement_inputs_are_syntax_only(
+                &self.inputs,
+                original_statement,
+                native_statement,
+            )
         {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
@@ -2868,7 +2892,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let native_composition = self.inputs.typed_ast.source_context().is_some()
             && self.inputs.typed_ast.source_nodes().is_some()
             && (source_composite_formula.is_some() || source_formula_composition.is_some());
-        if native_composition {
+        if native_composition && !native_statement {
             let (expected_composite, expected_composition) =
                 crate::type_checker::TermFormulaChecker::source_universal_composition(
                     self.inputs.typed_ast,
@@ -3062,16 +3086,16 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
                 || source_statement.is_task_258b4b_profile()
                 || source_statement.is_task_258b4c_profile();
-            if self.inputs.typed_ast.source_context().is_some()
-                || self.inputs.typed_ast.source_type().is_some()
+            if (self.inputs.typed_ast.source_context().is_some() && !native_statement)
+                || (self.inputs.typed_ast.source_type().is_some() && !native_statement)
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
                 || (source_structure.is_some() && !structure_witness_profile)
                 || (source_set_term.is_some()
                     && !native_set_witness_statement
                     && !legacy_set_witness_statement)
-                || (source_composite_formula.is_some() && !is_task_258b4)
-                || (source_formula_composition.is_some() && !is_task_258b4)
+                || (source_composite_formula.is_some() && !is_task_258b4 && !native_statement)
+                || (source_formula_composition.is_some() && !is_task_258b4 && !native_statement)
                 || (is_task_258b4
                     && (source_composite_formula.is_none()
                         || source_formula_composition.is_none()
@@ -3107,7 +3131,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         self.inputs.typed_ast.nodes(),
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
-            } else {
+            } else if !native_statement {
                 source_statement
                     .validate_installation(
                         source_id,
@@ -3881,10 +3905,11 @@ fn source_proof_local_given_descendant_use_term_typed_profile_is_exact(
 fn source_statement_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
     original_statement: bool,
+    native_statement: bool,
 ) -> bool {
     (inputs.typed_ast.resolved_root().is_none() || original_statement)
-        && inputs.typed_ast.contexts().is_empty()
-        && inputs.typed_ast.types().is_empty()
+        && (native_statement || inputs.typed_ast.contexts().is_empty())
+        && (native_statement || inputs.typed_ast.types().is_empty())
         && inputs.typed_ast.facts().is_empty()
         && inputs.typed_ast.coercions().is_empty()
         && inputs.typed_ast.initial_obligations().is_empty()
@@ -3905,68 +3930,68 @@ fn source_statement_inputs_are_syntax_only(
         && inputs.overload_selection.results().is_empty()
         && inputs.overload_selection.inserted_views().is_empty()
         && inputs.overload_selection.diagnostics().is_empty()
-        && inputs.expressions.is_empty()
+        && (native_statement || inputs.expressions.is_empty())
         && source_statement_node_hints_are_syntax_only(inputs)
         && inputs.statement_semantics.is_none()
         && inputs.statement_proofs.is_none()
 }
 
 fn source_proof_local_let_type_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_use_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_binding_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_condition_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_binding_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_type_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_proof_local_given_descendant_use_term_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
-    source_statement_inputs_are_syntax_only(inputs, false) && inputs.node_hints.is_empty()
+    source_statement_inputs_are_syntax_only(inputs, false, false) && inputs.node_hints.is_empty()
 }
 
 fn source_statement_node_hints_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
@@ -5986,6 +6011,243 @@ mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     };
+
+    #[test]
+    fn task258_native_statement_retains_real_metadata_and_requires_companions() {
+        use crate::typed_ast::tests::{task257b5_native_assemble, task257b5_native_case};
+        task257b5_native_case(
+            include_str!("../tests/testdata/native_universal_statement.miz"),
+            |lower, _, _, expressions, (symbols, source, scope)| {
+                let lower = lower.unwrap();
+                let lower_final = task257b5_native_assemble(&lower, expressions.clone()).unwrap();
+                let typed = lower
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let original = typed.clone();
+                let resolved = task257b5_native_assemble(&typed, expressions.clone()).unwrap();
+                assert!(
+                    !typed.contexts().is_empty()
+                        && !typed.types().is_empty()
+                        && !expressions.is_empty()
+                );
+                assert_eq!(resolved.nodes(), lower_final.nodes());
+                assert_eq!(resolved.expr_metadata(), lower_final.expr_metadata());
+                assert_eq!(resolved.source_statement(), typed.source_statement());
+                assert!(
+                    resolved.checked_formulas().is_empty()
+                        && resolved.statement_semantics().is_empty()
+                );
+                assert!(
+                    resolved.checked_proofs().is_empty()
+                        && resolved.checked_proof_nodes().is_empty()
+                        && resolved.checked_terminal_goals().is_empty()
+                );
+                assert!(
+                    resolved.cluster_facts().is_empty()
+                        && resolved.inserted_coercions().is_empty()
+                        && resolved.diagnostics().is_empty()
+                );
+                assert_eq!(resolved.clone(), resolved);
+                assert_eq!(
+                    resolved.debug_text(),
+                    task257b5_native_assemble(&typed, expressions.clone())
+                        .unwrap()
+                        .debug_text()
+                );
+                let mut reversed = expressions.clone();
+                reversed.reverse();
+                assert_eq!(
+                    task257b5_native_assemble(&typed, reversed).unwrap(),
+                    resolved
+                );
+                for missing in 0..4 {
+                    let mut changed = typed.clone();
+                    match missing {
+                        0 => changed.remove_source_composite_formula_for_test(),
+                        1 => changed.remove_source_formula_composition_for_test(),
+                        2 => changed.remove_source_atomic_formula_for_test(),
+                        _ => changed.remove_source_term_for_test(),
+                    }
+                    assert_ne!(changed, typed);
+                    let before = changed.clone();
+                    assert_eq!(
+                        task257b5_native_assemble(&changed, expressions.clone()),
+                        Err(ResolvedTypedAstError::InvalidSourceStatement)
+                    );
+                    assert_eq!(changed, before);
+                    assert_eq!(
+                        task257b5_native_assemble(&typed, expressions.clone()).unwrap(),
+                        resolved
+                    );
+                }
+                let mut duplicate = expressions.clone();
+                duplicate.push(expressions[0].clone());
+                assert_eq!(
+                    task257b5_native_assemble(&typed, duplicate),
+                    Err(ResolvedTypedAstError::DuplicateExpression {
+                        expr: expressions[0].expr.clone()
+                    })
+                );
+                let mut wrong_context = expressions.clone();
+                wrong_context[0].local_context = Some(LocalTypeContextId::new(usize::MAX));
+                assert_ne!(wrong_context, expressions);
+                assert_eq!(
+                    task257b5_native_assemble(&typed, wrong_context),
+                    Err(ResolvedTypedAstError::InvalidLocalContext {
+                        context: LocalTypeContextId::new(usize::MAX)
+                    })
+                );
+                assert_eq!(typed, original);
+                assert_eq!(
+                    task257b5_native_assemble(&typed, expressions).unwrap(),
+                    resolved
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn task258_native_statement_quarantines_each_external_semantic_category() {
+        use crate::typed_ast::tests::{task257b5_native_assemble, task257b5_native_case};
+        task257b5_native_case(
+            include_str!("../tests/testdata/native_universal_statement.miz"),
+            |lower, _, _, expressions, (symbols, source, scope)| {
+                let typed = lower
+                    .unwrap()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .unwrap();
+                let original = typed.clone();
+                let pristine = task257b5_native_assemble(&typed, expressions.clone()).unwrap();
+                let empty_facts = ClusterFactTable::new();
+                let empty_collection = OverloadCollectionOutput::collect([], []);
+                let empty_expansion = TemplateExpansionOutput::expand(&empty_collection);
+                let empty_viability = CandidateViabilityOutput::filter(&empty_expansion, []);
+                let empty_graphs = SpecificityGraphOutput::build(&empty_viability, []);
+                let empty_selection = OverloadSelectionOutput::resolve(&empty_graphs, []);
+                let mut facts = ClusterFactTable::new();
+                facts.insert(cluster_fact(typed.source_id(), 0));
+                let collection = OverloadCollectionOutput::collect(
+                    [site(
+                        "native-external",
+                        expressions[0].typed_site.clone(),
+                        typed.source_id(),
+                        0,
+                    )],
+                    [candidate(
+                        "native-external",
+                        "external",
+                        "external",
+                        0,
+                        Some(NormalizedTypeId::new(0)),
+                    )],
+                );
+                let expansion = TemplateExpansionOutput::expand(&collection);
+                let viability = CandidateViabilityOutput::filter(
+                    &expansion,
+                    [viable_input(OverloadCandidateId::new(0))],
+                );
+                let graphs = SpecificityGraphOutput::build(&viability, []);
+                let selection = OverloadSelectionOutput::resolve(&graphs, []);
+                assert!(
+                    !facts.is_empty()
+                        && !collection.sites().is_empty()
+                        && !collection.candidates().is_empty()
+                );
+                assert!(
+                    !expansion.candidates().is_empty()
+                        && !viability.candidates().is_empty()
+                        && !viability.decisions().is_empty()
+                );
+                assert!(
+                    !graphs.candidates().is_empty()
+                        && !graphs.graphs().is_empty()
+                        && !selection.results().is_empty()
+                );
+                let semantic = statement_fixture(
+                    FormulaKind::Contradiction,
+                    NodeRecoveryState::Normal,
+                    50,
+                    60,
+                    false,
+                );
+                assemble_statement(&semantic, vec![semantic.row()]).unwrap();
+                let hints = typed
+                    .nodes()
+                    .iter()
+                    .map(|(id, _)| ResolvedNodeKindHint {
+                        typed_node: id,
+                        kind: ResolvedNodeKindHintKind::SourcePreserved {
+                            role: SourceNodeRole::new("source.statement.transport"),
+                        },
+                    })
+                    .collect::<Vec<_>>();
+                let assemble_case = |category| {
+                    let mut inputs = ResolvedTypedAstInputs {
+                        typed_ast: &typed,
+                        cluster_facts: &empty_facts,
+                        overload_collection: &empty_collection,
+                        template_expansion: &empty_expansion,
+                        viability: &empty_viability,
+                        specificity: &empty_graphs,
+                        overload_selection: &empty_selection,
+                        expressions: expressions.clone(),
+                        node_hints: vec![],
+                        statement_semantics: None,
+                        statement_proofs: None,
+                    };
+                    match category {
+                        0 => inputs.cluster_facts = &facts,
+                        1 => inputs.overload_collection = &collection,
+                        2 => inputs.template_expansion = &expansion,
+                        3 => inputs.viability = &viability,
+                        4 => inputs.specificity = &graphs,
+                        5 => inputs.overload_selection = &selection,
+                        6 => {
+                            inputs.statement_semantics = Some(StatementSemanticInputs {
+                                owner: &semantic.checked_owner,
+                                binding_env: &semantic.binding_env,
+                                term_formula: &semantic.term_formula,
+                                rows: vec![semantic.row()],
+                            })
+                        }
+                        7 => {
+                            inputs.statement_proofs = Some(StatementProofInputs {
+                                owner: &semantic.checked_owner,
+                                rows: vec![semantic.proof_row()],
+                            })
+                        }
+                        8 => {
+                            inputs.node_hints = hints.clone();
+                            inputs.node_hints[0].kind = ResolvedNodeKindHintKind::ResolvedUse {
+                                symbol: semantic.owner.clone(),
+                            };
+                        }
+                        9 => {
+                            inputs.node_hints = hints.clone();
+                            inputs.node_hints.pop();
+                        }
+                        _ => inputs.node_hints = hints.clone(),
+                    }
+                    ResolvedTypedAst::assemble(inputs)
+                };
+                let allowed_hints = assemble_case(10).unwrap();
+                assert_eq!(allowed_hints.source_statement(), typed.source_statement());
+                assert_eq!(allowed_hints.expr_metadata(), pristine.expr_metadata());
+                for category in 0..10 {
+                    assert_eq!(
+                        assemble_case(category),
+                        Err(ResolvedTypedAstError::InvalidSourceStatement),
+                        "external category {category}"
+                    );
+                    assert_eq!(typed, original);
+                    assert_eq!(
+                        task257b5_native_assemble(&typed, expressions.clone()).unwrap(),
+                        pristine
+                    );
+                }
+            },
+        );
+    }
 
     #[test]
     fn exact_statement_semantic_projection_is_deterministic_and_fail_closed() {

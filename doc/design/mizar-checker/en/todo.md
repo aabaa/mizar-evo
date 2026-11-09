@@ -640,6 +640,7 @@ unchecked row below is one future nonempty logical task and one commit.
         predicate-chain composition after fresh post-documentation preflight.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
+  - [x] [Native quantified statements and Let guards](../../task_contracts/en/CHECKER258-NATIVE-LET-STATEMENTS.md); consumes the genuine B5 source/context/type pair.
   - [x] **Task 258A:** exact reserved-variable equality theorem owner,
     statement shell, implicit reserved-type-guard input, and unverified
     proposition candidate.

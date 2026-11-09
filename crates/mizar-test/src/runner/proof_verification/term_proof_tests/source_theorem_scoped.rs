@@ -3449,3 +3449,1164 @@ fn task257b5_native_universal_composition_preserves_original_owners_and_replay()
     fs::remove_dir_all(root).unwrap();
     Ok(())
 }
+
+#[test]
+fn task258_native_let_statements_preserve_source_intent_and_installed_replay() -> Result<(), String>
+{
+    use mizar_checker::{
+        binding_env::{BinderIdentity, BindingContextOwner, BindingTypeSite},
+        cluster_trace::ClusterFactTable,
+        overload_resolution::*,
+        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
+        source_atomic_formula::{
+            SourceAtomicFormulaId, SourceAtomicFormulaKind, SourceAtomicTermTarget,
+        },
+        source_composite_formula::*,
+        source_statement::*,
+        source_type::{SourceTypeHead, SourceTypeProducer},
+        type_checker::{CheckedStatementOwner, FormulaStatus, TermStatus, TypeHeadRef},
+        typed_ast::{TypeEntryActual, TypeStatus, TypedAst, TypedAstParts, TypedSiteRef},
+    };
+    use mizar_frontend::{
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::{ContributionKind, ExportStatus, NamespacePath, Visibility},
+        names::{SourceVariableBindingKind, SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+        symbols::{SignatureProjectionExtractor, source_proof_scope_maps},
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId, SourceAnchor,
+        SourceInput, SourceOriginInput,
+    };
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceQuantifierKind};
+
+    // EN04 4.2/4.5/4.6/4.7.1, EN14 14.4.1/14.5.2/14.7.5,
+    // EN15 15.2.1/15.4.1/15.10/15.11.1 and EN16 16.1/16.2/16.4.
+    // Literal source inventories: owners, universals, header bindings, Let
+    // bindings, Let statements and written types. Let is not a proposition.
+    let fixture =
+        include_str!("../../../../../mizar-checker/tests/testdata/native_universal_statement.miz");
+    let old_lemma = include_str!(
+        "../../../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    let cases = [
+        (fixture.to_owned(), (1, 1, 1, 1, 1, 2)),
+        (fixture.replace("for X being set holds X = X", "for Header being set holds Header = Header"), (1, 1, 1, 1, 1, 2)),
+        (fixture.replace("let X be set;", "let Local be set;").replace("thus X = X", "thus Local = Local"), (1, 1, 1, 1, 1, 2)),
+        (format!("\n:: native layout\n{}", fixture.replace("being set", "being\tset").replace("proof", "proof\n:: local declaration\n")), (1, 1, 1, 1, 1, 2)),
+        ("theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(), (1, 1, 3, 3, 1, 2)),
+        ("theorem Groups: for A being set, Spare, B being set holds A = B proof let L be set, Unused, R be set; thus L = R; end;".into(), (1, 1, 3, 3, 1, 4)),
+        ("theorem Separate: for A being set holds A = A proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(), (1, 1, 1, 3, 3, 4)),
+        ("theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(), (1, 3, 3, 3, 3, 6)),
+        (old_lemma.to_owned(), (2, 2, 2, 2, 2, 4)),
+    ];
+    let temporary = std::process::Command::new("mktemp")
+        .arg("-d")
+        .output()
+        .unwrap();
+    assert!(temporary.status.success());
+    let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    fs::create_dir(root.join("src")).unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let collection = OverloadCollectionOutput::collect([], []);
+    let expansion = TemplateExpansionOutput::expand(&collection);
+    let viability = CandidateViabilityOutput::filter(&expansion, []);
+    let specificity = SpecificityGraphOutput::build(&viability, []);
+    let selection = OverloadSelectionOutput::resolve(&specificity, []);
+    let facts = ClusterFactTable::new();
+    let assemble = |typed: &TypedAst, expressions| {
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: typed,
+            cluster_facts: &facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions,
+            node_hints: vec![],
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    };
+    let mut prepared = Vec::new();
+    // EVERY positive morph reaches actual frontend, resolver, SourceType, B5
+    // and Resolved success before the first unsupported statement call.
+    for (case, (text, counts)) in cases.iter().enumerate() {
+        let (owners, universals, header_bindings, let_bindings, let_events, written_types) =
+            *counts;
+        let path = root.join(format!("src/native_let_{case}.miz"));
+        fs::write(&path, text).unwrap();
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            super::super::super::ParseOnlyImportProvider,
+            MizarParserSeam,
+        )
+        .run(
+            SourceUnitRequest {
+                snapshot: snapshot_id(796),
+                input: SourceInput {
+                    package_id: PackageId::new("native-let-statements"),
+                    module_path: ModulePath::new(format!("native_let_{case}")),
+                    normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &ids,
+        )
+        .unwrap();
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "case {case}: {:?}",
+            frontend.diagnostics
+        );
+        assert_eq!(frontend.source.source_text.as_ref(), text);
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = ModuleId::new(
+            frontend.source.package_id.clone(),
+            frontend.source.module_path.clone(),
+        );
+        let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        source.validate_against(ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(ast, &module, symbols),
+        )
+        .unwrap();
+        let lower = SourceTypeProducer::build_source_theorem_equalities(&source, symbols, &scope)?;
+        let (env, inference, primitive, metadata) = &lower;
+        let context = primitive.source_context().unwrap();
+        let types = primitive.source_type().unwrap();
+        let primary = primitive.source_term().unwrap();
+        let atomic = primitive.source_atomic_formula().unwrap();
+        assert_eq!(context.items().len(), owners);
+        assert_eq!(context.declarations().len(), header_bindings + let_bindings);
+        assert_eq!(env.bindings().len(), header_bindings + let_bindings);
+        assert_eq!(scope.bindings().len(), header_bindings + let_bindings);
+        assert_eq!(context.binding_env(), env);
+        assert_eq!(env.contexts().len(), 1 + universals + owners);
+        assert_eq!(primary.terms().len(), 4 * owners);
+        assert_eq!(primary.references().len(), 4 * owners);
+        assert_eq!(scope.references().len(), 4 * owners);
+        assert_eq!(atomic.formulas().len(), 2 * owners);
+        assert_eq!(types.applications().len(), header_bindings + let_bindings);
+        assert_eq!(types.expressions().len(), written_types);
+        assert_eq!(metadata.len(), 6 * owners);
+        assert!(primitive.source_node_entries().is_none());
+        assert!(primitive.source_statement().is_none());
+        assert!(!primitive.contexts().is_empty() && !primitive.types().is_empty());
+        assert_eq!(primitive.types(), inference.type_entries());
+        assert!(env.diagnostics().is_empty() && inference.diagnostics().is_empty());
+        assert!(inference.candidate_sets().is_empty() && inference.facts().is_empty());
+        assert!(primitive.facts().is_empty() && primitive.coercions().is_empty());
+        assert!(primitive.initial_obligations().is_empty() && primitive.diagnostics().is_empty());
+        assert!(
+            inference
+                .terms()
+                .iter()
+                .all(|(_, row)| row.status == TermStatus::Inferred && row.deferred.is_empty())
+        );
+        assert!(
+            inference
+                .formulas()
+                .iter()
+                .all(|(_, row)| row.status == FormulaStatus::Checked && row.deferred.is_empty())
+        );
+        for (_, row) in primitive.types().iter() {
+            assert_eq!(row.status, TypeStatus::Known);
+            let TypeEntryActual::Known(actual) = row.actual else {
+                panic!("non-Known lower type")
+            };
+            let actual = inference.normalized_types().get(actual).unwrap();
+            assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+            assert!(
+                actual.args.is_empty()
+                    && actual.attributes.positive().is_empty()
+                    && actual.attributes.negative().is_empty()
+            );
+        }
+        let maps = source_proof_scope_maps(&source, symbols, &scope)?;
+        let typed_site = |id| {
+            let resolved = source.resolved_node_for(id).unwrap();
+            let matches = primitive
+                .nodes()
+                .iter()
+                .filter(|(_, row)| row.resolved_node == Some(resolved))
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1);
+            TypedSiteRef::Node(matches[0].0)
+        };
+        let spelling = |id| {
+            let range = ast.node_view(id).unwrap().range();
+            let mut tokens = ast
+                .node_views()
+                .filter(|view| {
+                    view.as_token().is_some()
+                        && range.start <= view.range().start
+                        && view.range().end <= range.end
+                })
+                .collect::<Vec<_>>();
+            tokens.sort_by_key(|view| view.range().start);
+            tokens
+                .iter()
+                .map(|view| view.as_token().unwrap().text.as_ref())
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let body_context = |id| {
+            let local = maps.0.get(&id).unwrap();
+            let matches = env
+                .contexts()
+                .iter()
+                .filter(|(_, row)| row.lexical_scope.as_ref() == Some(local))
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1);
+            matches[0].0
+        };
+        // Authenticate every source declaration/type application and reference;
+        // these joins are independent of the statement producer's output.
+        for original in scope.bindings() {
+            let identity = BinderIdentity::ResolverLocal {
+                scope: original.scope().clone(),
+                ordinal: original.ordinal(),
+                declaration_range: original.range(),
+            };
+            let matches = env
+                .bindings()
+                .iter()
+                .filter(|(_, row)| row.identity == identity)
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1);
+            let (binding, entry) = matches[0];
+            assert_eq!(entry.visible_after_ordinal, original.ordinal());
+            let declarations = context
+                .declarations()
+                .iter()
+                .filter(|(_, row)| row.binding == binding)
+                .collect::<Vec<_>>();
+            assert_eq!(declarations.len(), 1);
+            let declaration = declarations[0].1;
+            assert_eq!(declaration.site, typed_site(original.node()));
+            assert_eq!(declaration.spelling, original.spelling());
+            assert_eq!(declaration.source_ordinal, original.ordinal());
+            assert_eq!(declaration.declaration_range, original.range());
+            assert_eq!(declaration.binding_context, entry.owner_context);
+            // The primitive binding slot stays untyped; SourceType owns the written type.
+            assert_eq!(entry.type_site, BindingTypeSite::Missing);
+            let applications = types
+                .applications()
+                .iter()
+                .filter(|(_, row)| row.binding() == binding)
+                .collect::<Vec<_>>();
+            assert_eq!(applications.len(), 1);
+            let application = applications[0].1;
+            assert_eq!(application.source_ordinal(), original.ordinal());
+            let written = types.expressions().get(application.root()).unwrap();
+            let syntax = ast
+                .node_views()
+                .find(|view| {
+                    view.kind() == &K::TypeExpression
+                        && view.range() == declaration.written_type_range
+                })
+                .unwrap();
+            let head = ast.node_view(syntax.children()[0]).unwrap();
+            assert_eq!(written.site(), &typed_site(syntax.id()));
+            assert_eq!(written.source_range(), syntax.range());
+            assert_eq!(written.head_site(), &typed_site(head.id()));
+            assert_eq!(written.head_range(), head.range());
+            assert_eq!(written.head(), &SourceTypeHead::BuiltinSet);
+            assert_eq!(spelling(syntax.id()), "set");
+        }
+        for (ordinal, original) in scope.references().iter().enumerate() {
+            let (term_id, term) = primary
+                .terms()
+                .iter()
+                .find(|(_, row)| row.site() == &typed_site(original.node()))
+                .unwrap();
+            let (_, reference) = primary
+                .references()
+                .iter()
+                .find(|(_, row)| row.term() == term_id)
+                .unwrap();
+            let binding = &scope.bindings()[original.binding().index()];
+            assert_eq!(term.source_range(), original.range());
+            assert_eq!(term.source_ordinal(), ordinal);
+            assert_eq!(term.spelling(), binding.spelling());
+            assert_eq!(reference.use_ordinal(), original.ordinal());
+            assert_eq!(reference.lexical_scope(), Some(original.scope()));
+            assert_eq!(
+                env.bindings().get(reference.binding()).unwrap().identity,
+                BinderIdentity::ResolverLocal {
+                    scope: binding.scope().clone(),
+                    ordinal: binding.ordinal(),
+                    declaration_range: binding.range()
+                }
+            );
+        }
+        let baseline = primitive
+            .clone()
+            .with_source_formula_composition_from_original(&source, symbols, &scope)
+            .expect("unchanged genuine B5 prerequisite");
+        let composite = baseline.source_composite_formula().unwrap();
+        let composition = baseline.source_formula_composition().unwrap();
+        assert_eq!(composite.binding_env(), env);
+        assert_eq!(composite.source_id(), source.source_id());
+        assert_eq!(composite.module_id(), source.module());
+        assert_eq!(composition.source_id(), source.source_id());
+        assert_eq!(composition.module_id(), source.module());
+        assert_eq!(baseline.nodes(), primitive.nodes());
+        assert_eq!(baseline.contexts(), primitive.contexts());
+        assert_eq!(baseline.types(), primitive.types());
+        assert_eq!(baseline.source_context(), primitive.source_context());
+        assert_eq!(baseline.source_type(), primitive.source_type());
+        assert_eq!(baseline.source_term(), primitive.source_term());
+        assert_eq!(
+            baseline.source_atomic_formula(),
+            primitive.source_atomic_formula()
+        );
+        assert!(baseline.source_statement().is_none());
+        let mut quantifiers = ast
+            .node_views()
+            .filter(|view| view.kind() == &K::QuantifiedFormula(SurfaceQuantifierKind::Universal))
+            .collect::<Vec<_>>();
+        quantifiers.sort_by_key(|view| view.range().start);
+        assert_eq!(quantifiers.len(), universals);
+        assert_eq!(composite.formulas().len(), universals);
+        assert_eq!(composite.roots().len(), owners);
+        assert_eq!(composite.binders().len(), header_bindings);
+        assert_eq!(composite.type_sites().len(), header_bindings);
+        assert_eq!(composite.edges().len(), universals - owners);
+        assert_eq!(composite.requests().len(), universals + header_bindings);
+        assert_eq!(composition.atomic_edges().len(), owners);
+        assert_eq!(composition.bound_uses().len(), 2 * owners);
+        // The preceding B5 primary owns its complete graph oracle. Here check
+        // the actual joins that the new statement must preserve and target.
+        for (index, syntax) in quantifiers.iter().enumerate() {
+            let id = SourceCompositeFormulaId::new(index);
+            let row = composite.formulas().get(id).unwrap();
+            let body = body_context(syntax.id());
+            let incoming = env.contexts().get(body).unwrap().parent.unwrap();
+            assert_eq!(row.site(), &typed_site(syntax.id()));
+            assert_eq!(row.source_range(), syntax.range());
+            assert_eq!(row.context(), incoming);
+            assert_eq!(
+                env.contexts().get(body).unwrap().owner,
+                BindingContextOwner::SourceFormula {
+                    source_range: syntax.range()
+                }
+            );
+            for (binder_id, binder) in composite
+                .binders()
+                .iter()
+                .filter(|(_, binder)| binder.formula() == id)
+            {
+                let original = scope
+                    .bindings()
+                    .iter()
+                    .find(|original| typed_site(original.node()) == *binder.identifier_site())
+                    .unwrap();
+                assert_eq!(original.kind(), SourceVariableBindingKind::Quantifier);
+                assert_eq!(original.scope(), maps.0.get(&syntax.id()).unwrap());
+                assert_eq!(binder.body_context(), body);
+                let declaration = context
+                    .declarations()
+                    .iter()
+                    .find(|(_, row)| row.site == typed_site(original.node()))
+                    .unwrap()
+                    .1;
+                assert_eq!(binder.binding(), declaration.binding);
+                let application = types
+                    .applications()
+                    .iter()
+                    .find(|(_, row)| row.binding() == binder.binding())
+                    .unwrap()
+                    .1;
+                let written = types.expressions().get(application.root()).unwrap();
+                let ty = composite.type_sites().get(binder.type_site()).unwrap();
+                assert_eq!(ty.binder(), binder_id);
+                assert_eq!(ty.site(), written.site());
+                assert_eq!(ty.source_range(), declaration.written_type_range);
+                assert_eq!(ty.context(), incoming);
+            }
+            let child = ast.node_view(*syntax.children().last().unwrap()).unwrap();
+            if child.kind() == &K::BuiltinPredicateApplication {
+                let (_, edge) = composition
+                    .atomic_edges()
+                    .iter()
+                    .find(|(_, edge)| edge.formula() == id)
+                    .unwrap();
+                let (atom_id, atom) = atomic
+                    .formulas()
+                    .iter()
+                    .find(|(_, row)| row.site() == &typed_site(child.id()))
+                    .unwrap();
+                assert_eq!(edge.child(), atom_id);
+                assert_eq!(atom.context(), body);
+            }
+        }
+        assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+        assert_eq!(
+            composition.atomic_formula_fingerprint(),
+            atomic.debug_text()
+        );
+        assert_eq!(
+            composition.composite_formula_fingerprint(),
+            composite.debug_text()
+        );
+        let baseline_resolved = assemble(&baseline, metadata.clone())
+            .map_err(|error| format!("case {case} B5 Resolved prerequisite: {error}"))?;
+        assert_eq!(baseline_resolved.expr_metadata().len(), metadata.len());
+        assert_eq!(
+            baseline_resolved.source_formula_composition(),
+            Some(composition)
+        );
+        assert!(baseline_resolved.source_statement().is_none());
+        assert!(
+            baseline_resolved.checked_formulas().is_empty()
+                && baseline_resolved.statement_semantics().is_empty()
+                && baseline_resolved.checked_proofs().is_empty()
+        );
+        // The old two-owner lemma fixture has genuine B5/Resolved success; it
+        // cannot supply the single ordinary theorem seal for this new route.
+        let expected = if owners == 2 {
+            assert_eq!(text, old_lemma);
+            assert_eq!(
+                symbols
+                    .symbols()
+                    .iter()
+                    .filter(|entry| entry.visibility() == Visibility::Public)
+                    .count(),
+                2
+            );
+            None
+        } else {
+            let theorem = ast
+                .node_views()
+                .find(|view| view.kind() == &K::TheoremItem)
+                .unwrap();
+            let label = ast.node_view(theorem.children()[1]).unwrap();
+            let label_text = label.as_token().unwrap().text.as_ref();
+            let symbol = symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.primary_spelling() == label_text)
+                .unwrap();
+            let checked = CheckedStatementOwner::validate_exact_local_theorem(
+                symbols,
+                symbol.symbol().clone(),
+                source.source_id(),
+                source.module(),
+            )
+            .unwrap();
+            assert_eq!(checked.source_range(), theorem.range());
+            assert_eq!(checked.origin(), symbol.origin());
+            assert_eq!(
+                checked.origin().anchor(),
+                &SourceAnchor::Range(theorem.range())
+            );
+            assert_eq!(checked.visibility(), Visibility::Public);
+            assert_eq!(checked.export_status(), ExportStatus::Exported);
+            let definition = symbols.definitions().by_symbol(symbol.symbol()).unwrap();
+            assert_eq!(definition.origin(), symbol.origin());
+            assert_eq!(definition.contribution(), symbol.contribution());
+            let contribution = symbols.contributions().get(symbol.contribution()).unwrap();
+            assert_eq!(contribution.module(), source.module());
+            assert_eq!(
+                contribution.kind(),
+                &ContributionKind::LocalSource {
+                    source_id: source.source_id()
+                }
+            );
+            assert!(contribution.effects().symbols().contains(symbol.symbol()));
+            assert!(
+                contribution
+                    .effects()
+                    .definitions()
+                    .contains(&definition.id())
+            );
+            assert_eq!(contribution.anchor(), &SourceAnchor::Range(theorem.range()));
+            let proof = ast
+                .node_views()
+                .find(|view| view.kind() == &K::ProofBlock)
+                .unwrap();
+            let conclusion = ast
+                .node_views()
+                .find(|view| view.kind() == &K::ConclusionStatement)
+                .unwrap();
+            assert_eq!(
+                ast.node_views()
+                    .filter(|view| view.kind() == &K::LetStatement)
+                    .count(),
+                let_events
+            );
+            assert_eq!(
+                ast.node_views()
+                    .filter(|view| view.kind() == &K::ConclusionStatement)
+                    .count(),
+                1
+            );
+            let proof_context = body_context(proof.id());
+            let module_context = env
+                .contexts()
+                .iter()
+                .find(|(_, row)| row.owner == BindingContextOwner::Module)
+                .unwrap()
+                .0;
+            assert_eq!(
+                env.contexts().get(proof_context).unwrap().parent,
+                Some(module_context)
+            );
+            assert!(
+                env.contexts()
+                    .get(module_context)
+                    .unwrap()
+                    .visible_bindings
+                    .is_empty()
+            );
+            let conclusion_atom = atomic
+                .formulas()
+                .get(SourceAtomicFormulaId::new(1))
+                .unwrap();
+            assert_eq!(conclusion_atom.context(), proof_context);
+            assert_eq!(conclusion_atom.kind(), SourceAtomicFormulaKind::Equality);
+            assert!(
+                conclusion.range().start <= conclusion_atom.source_range().start
+                    && conclusion_atom.source_range().end <= conclusion.range().end
+            );
+            let mut input = SourceStatementHandoffInput {
+                source_id: source.source_id(),
+                module_id: source.module().clone(),
+                owners: vec![SourceTheoremOwnerInput {
+                    symbol: symbol.symbol().clone(),
+                    contribution: symbol.contribution(),
+                    site: typed_site(theorem.id()),
+                    source_range: theorem.range(),
+                    spelling: label_text.into(),
+                    role: SourceTheoremRole::Theorem,
+                    status: SourceTheoremStatus::Unmodified,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                statements: vec![],
+                contexts: vec![],
+                input_facts: vec![],
+                candidate_facts: vec![],
+            };
+            for (index, (syntax, binding_context, formula, source_ordinal, kind)) in [
+                (
+                    theorem,
+                    module_context,
+                    SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
+                    0,
+                    SourceStatementKind::TheoremProposition,
+                ),
+                (
+                    conclusion,
+                    proof_context,
+                    SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(1)),
+                    1 + let_events,
+                    SourceStatementKind::Conclusion,
+                ),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let statement = SourceStatementId::new(index);
+                let context = SourceStatementContextId::new(index);
+                input.statements.push(SourceStatementInput {
+                    owner: SourceTheoremOwnerId::new(0),
+                    context,
+                    formula,
+                    site: typed_site(syntax.id()),
+                    source_range: syntax.range(),
+                    source_ordinal,
+                    spelling: spelling(syntax.id()),
+                    kind,
+                    recovery: SourceStatementRecovery::Normal,
+                });
+                input.contexts.push(SourceStatementContextInput {
+                    statement,
+                    binding_context,
+                    source_range: syntax.range(),
+                    visible_bindings: env
+                        .contexts()
+                        .get(binding_context)
+                        .unwrap()
+                        .visible_bindings
+                        .clone(),
+                });
+                input
+                    .candidate_facts
+                    .push(SourceStatementCandidateFactInput {
+                        statement,
+                        context,
+                        ordinal: 0,
+                        kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                        formula,
+                    });
+            }
+            let mut locals = scope
+                .bindings()
+                .iter()
+                .filter(|binding| binding.kind() == SourceVariableBindingKind::Let)
+                .collect::<Vec<_>>();
+            locals.sort_by_key(|binding| binding.range().start);
+            assert_eq!(locals.len(), let_bindings);
+            for (ordinal, local) in locals.iter().enumerate() {
+                let declaration = context
+                    .declarations()
+                    .iter()
+                    .find(|(_, row)| row.site == typed_site(local.node()))
+                    .unwrap()
+                    .1;
+                assert_eq!(declaration.binding_context, proof_context);
+                let uses = primary
+                    .references()
+                    .iter()
+                    .filter(|(_, reference)| reference.binding() == declaration.binding)
+                    .map(|(id, reference)| {
+                        let term = primary.terms().get(reference.term()).unwrap();
+                        assert_eq!(term.context(), proof_context);
+                        assert!(
+                            conclusion.range().start <= term.source_range().start
+                                && term.source_range().end <= conclusion.range().end
+                        );
+                        assert!(atomic.edges().iter().any(|(_, edge)| edge.formula()
+                            == SourceAtomicFormulaId::new(1)
+                            && edge.target() == SourceAtomicTermTarget::Primary(reference.term())));
+                        id
+                    })
+                    .collect::<Vec<_>>();
+                let expected_uses = scope
+                    .references()
+                    .iter()
+                    .filter(|reference| reference.binding() == local.id())
+                    .map(|reference| {
+                        primary
+                            .references()
+                            .iter()
+                            .find(|(_, row)| {
+                                primary.terms().get(row.term()).unwrap().site()
+                                    == &typed_site(reference.node())
+                            })
+                            .unwrap()
+                            .0
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(uses, expected_uses);
+                input.input_facts.push(SourceStatementInputFactInput {
+                    statement: SourceStatementId::new(1),
+                    context: SourceStatementContextId::new(1),
+                    ordinal,
+                    kind: SourceStatementInputFactKind::LetTypeGuard,
+                    binding: declaration.binding,
+                    uses,
+                });
+            }
+            assert_eq!(
+                input.contexts[1].visible_bindings,
+                input
+                    .input_facts
+                    .iter()
+                    .map(|row| row.binding)
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(
+                input
+                    .input_facts
+                    .iter()
+                    .map(|row| row.uses.len())
+                    .sum::<usize>(),
+                2
+            );
+            assert!(input.input_facts.iter().all(|row| {
+                composite
+                    .binders()
+                    .iter()
+                    .all(|(_, binder)| binder.binding() != row.binding)
+            }));
+            assert_eq!(
+                composite
+                    .formulas()
+                    .get(SourceCompositeFormulaId::new(0))
+                    .unwrap()
+                    .context(),
+                module_context
+            );
+            if let_bindings == 3 {
+                assert!(input.input_facts[1].uses.is_empty());
+            }
+            if case == 0 {
+                assert_eq!(input.statements[1].source_ordinal, 2);
+                assert_eq!(locals[0].ordinal(), 1);
+                assert_eq!(
+                    input.input_facts[0]
+                        .uses
+                        .iter()
+                        .map(|id| primary.references().get(*id).unwrap().use_ordinal())
+                        .collect::<Vec<_>>(),
+                    vec![2, 3]
+                );
+                let header = composite
+                    .binders()
+                    .get(SourceQuantifierBinderId::new(0))
+                    .unwrap();
+                assert_eq!(header.identifier_spelling(), locals[0].spelling());
+                assert_ne!(header.binding(), input.input_facts[0].binding);
+            }
+            if case == 4 || case == 5 {
+                assert_eq!(input.statements[1].source_ordinal, 2);
+                assert_eq!(
+                    locals.iter().map(|row| row.ordinal()).collect::<Vec<_>>(),
+                    vec![3, 4, 5]
+                );
+            }
+            if case == 6 || case == 7 {
+                assert_eq!(input.statements[1].source_ordinal, 4);
+                assert_ne!(input.statements[1].source_ordinal, locals[0].ordinal());
+            }
+            Some((input, checked))
+        };
+        prepared.push((
+            source,
+            symbols.clone(),
+            scope,
+            lower,
+            baseline,
+            baseline_resolved,
+            expected,
+        ));
+    }
+    assert_eq!(prepared.len(), 9);
+    for (case, (source, symbols, scope, lower, baseline, baseline_resolved, expected)) in
+        prepared.iter().enumerate()
+    {
+        let (env, inference, primitive, metadata) = lower;
+        let Some((expected, checked)) = expected else {
+            assert!(
+                baseline
+                    .clone()
+                    .with_source_statement_from_original(source, symbols, scope)
+                    .is_err()
+            );
+            assert_eq!(
+                assemble(baseline, metadata.clone()).unwrap(),
+                *baseline_resolved
+            );
+            continue;
+        };
+        let before = (
+            source.clone(),
+            symbols.clone(),
+            scope.clone(),
+            lower.clone(),
+            baseline.clone(),
+        );
+        let installed = baseline.clone().with_source_statement_from_original(source, symbols, scope)
+            .expect("CHECKER258 native Let statement unsupported after all genuine SourceType/B5/Resolved prerequisites");
+        let statement = installed.source_statement().unwrap();
+        assert_eq!(statement.source_id(), expected.source_id);
+        assert_eq!(statement.module_id(), &expected.module_id);
+        assert_eq!(statement.checked_owner(), checked);
+        assert_eq!(statement.binding_env(), env);
+        assert_eq!(statement.binding_fingerprint(), env.debug_text());
+        assert_eq!(
+            statement.primary_term_fingerprint(),
+            primitive.source_term().unwrap().debug_text()
+        );
+        assert_eq!(
+            statement.atomic_formula_fingerprint(),
+            primitive.source_atomic_formula().unwrap().debug_text()
+        );
+        assert_eq!(
+            statement.composite_formula_fingerprint(),
+            Some(
+                baseline
+                    .source_composite_formula()
+                    .unwrap()
+                    .debug_text()
+                    .as_str()
+            )
+        );
+        assert_eq!(
+            statement.formula_composition_fingerprint(),
+            Some(
+                baseline
+                    .source_formula_composition()
+                    .unwrap()
+                    .debug_text()
+                    .as_str()
+            )
+        );
+        assert_eq!(statement.owners().len(), 1);
+        assert_eq!(statement.statements().len(), 2);
+        assert_eq!(statement.contexts().len(), 2);
+        assert_eq!(statement.input_facts().len(), expected.input_facts.len());
+        assert_eq!(statement.candidate_facts().len(), 2);
+        for ((id, row), expected) in statement.owners().iter().zip(&expected.owners) {
+            assert_eq!(id, SourceTheoremOwnerId::new(0));
+            assert_eq!(row.symbol(), &expected.symbol);
+            assert_eq!(row.contribution(), expected.contribution);
+            assert_eq!(row.site(), &expected.site);
+            assert_eq!(row.source_range(), expected.source_range);
+            assert_eq!(row.spelling(), expected.spelling.as_str());
+            assert_eq!(row.role(), expected.role);
+            assert_eq!(row.status(), expected.status);
+            assert_eq!(row.recovery(), expected.recovery);
+            let symbol = symbols.symbols().get(row.symbol()).unwrap();
+            assert_eq!(symbol.origin(), checked.origin());
+            assert_eq!(row.contribution(), symbol.contribution());
+        }
+        for (index, ((id, row), expected)) in statement
+            .statements()
+            .iter()
+            .zip(&expected.statements)
+            .enumerate()
+        {
+            assert_eq!(id, SourceStatementId::new(index));
+            assert_eq!(row.owner(), expected.owner);
+            assert_eq!(row.context(), expected.context);
+            assert_eq!(row.formula(), expected.formula);
+            assert_eq!(row.site(), &expected.site);
+            assert_eq!(row.source_range(), expected.source_range);
+            assert_eq!(row.source_ordinal(), expected.source_ordinal);
+            assert_eq!(row.spelling(), expected.spelling.as_str());
+            assert_eq!(row.kind(), expected.kind);
+            assert_eq!(row.recovery(), expected.recovery);
+        }
+        for (index, ((id, row), expected)) in statement
+            .contexts()
+            .iter()
+            .zip(&expected.contexts)
+            .enumerate()
+        {
+            assert_eq!(id, SourceStatementContextId::new(index));
+            assert_eq!(row.statement(), expected.statement);
+            assert_eq!(row.binding_context(), expected.binding_context);
+            assert_eq!(row.source_range(), expected.source_range);
+            assert_eq!(row.visible_bindings(), expected.visible_bindings.as_slice());
+        }
+        for (index, ((id, row), expected)) in statement
+            .input_facts()
+            .iter()
+            .zip(&expected.input_facts)
+            .enumerate()
+        {
+            assert_eq!(id, SourceStatementInputFactId::new(index));
+            assert_eq!(row.statement(), expected.statement);
+            assert_eq!(row.context(), expected.context);
+            assert_eq!(row.ordinal(), expected.ordinal);
+            assert_eq!(row.kind(), expected.kind);
+            assert_eq!(row.binding(), expected.binding);
+            assert_eq!(row.uses(), expected.uses.as_slice());
+            let declaration = installed
+                .source_context()
+                .unwrap()
+                .declarations()
+                .iter()
+                .find(|(_, declaration)| declaration.binding == row.binding())
+                .unwrap()
+                .1;
+            let application = installed
+                .source_type()
+                .unwrap()
+                .applications()
+                .iter()
+                .find(|(_, application)| application.binding() == row.binding())
+                .unwrap()
+                .1;
+            assert_eq!(application.source_ordinal(), declaration.source_ordinal);
+            assert_eq!(
+                installed
+                    .source_type()
+                    .unwrap()
+                    .expressions()
+                    .get(application.root())
+                    .unwrap()
+                    .source_range(),
+                declaration.written_type_range
+            );
+        }
+        assert!(
+            !statement
+                .input_facts()
+                .iter()
+                .any(|(_, row)| row.statement() == SourceStatementId::new(0))
+        );
+        for (index, ((id, row), expected)) in statement
+            .candidate_facts()
+            .iter()
+            .zip(&expected.candidate_facts)
+            .enumerate()
+        {
+            assert_eq!(id, SourceStatementCandidateFactId::new(index));
+            assert_eq!(row.statement(), expected.statement);
+            assert_eq!(row.context(), expected.context);
+            assert_eq!(row.ordinal(), expected.ordinal);
+            assert_eq!(row.kind(), expected.kind);
+            assert_eq!(row.formula(), expected.formula);
+        }
+        assert_eq!(installed.nodes(), baseline.nodes());
+        assert_eq!(installed.contexts(), baseline.contexts());
+        assert_eq!(installed.types(), baseline.types());
+        assert_eq!(installed.types(), inference.type_entries());
+        assert_eq!(installed.source_context(), baseline.source_context());
+        assert_eq!(installed.source_type(), baseline.source_type());
+        assert_eq!(installed.source_term(), baseline.source_term());
+        assert_eq!(
+            installed.source_atomic_formula(),
+            baseline.source_atomic_formula()
+        );
+        assert_eq!(
+            installed.source_composite_formula(),
+            baseline.source_composite_formula()
+        );
+        assert_eq!(
+            installed.source_formula_composition(),
+            baseline.source_formula_composition()
+        );
+        assert_eq!(
+            installed
+                .source_node_entries()
+                .unwrap()
+                .cloned()
+                .collect::<Vec<_>>(),
+            baseline
+                .source_node_entries()
+                .unwrap()
+                .cloned()
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(installed.facts(), baseline.facts());
+        assert_eq!(installed.coercions(), baseline.coercions());
+        assert_eq!(
+            installed.initial_obligations(),
+            baseline.initial_obligations()
+        );
+        assert_eq!(installed.diagnostics(), baseline.diagnostics());
+        assert!(
+            installed.source_statement_references().is_none()
+                && installed.source_statement_witnesses().is_none()
+        );
+        assert!(
+            installed.source_proof_local_binding().is_none()
+                && installed.source_proof_local_let_binding().is_none()
+                && installed.source_proof_local_let_type().is_none()
+        );
+        let fresh = SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope)?
+            .2
+            .with_source_formula_composition_from_original(source, symbols, scope)
+            .unwrap()
+            .with_source_statement_from_original(source, symbols, scope)
+            .unwrap();
+        assert_eq!(fresh, installed);
+        let resolved = assemble(&installed, metadata.clone())
+            .map_err(|error| format!("case {case} installed replay: {error}"))?;
+        assert_eq!(assemble(&fresh, metadata.clone()).unwrap(), resolved);
+        let mut reversed = metadata.clone();
+        reversed.reverse();
+        assert_eq!(assemble(&installed, reversed).unwrap(), resolved);
+        assert_eq!(resolved.source_statement(), Some(statement));
+        assert_eq!(resolved.source_context(), installed.source_context());
+        assert_eq!(resolved.source_type(), installed.source_type());
+        assert_eq!(resolved.source_term(), installed.source_term());
+        assert_eq!(
+            resolved.source_atomic_formula(),
+            installed.source_atomic_formula()
+        );
+        assert_eq!(
+            resolved.source_composite_formula(),
+            installed.source_composite_formula()
+        );
+        assert_eq!(
+            resolved.source_formula_composition(),
+            installed.source_formula_composition()
+        );
+        assert_eq!(resolved.nodes(), baseline_resolved.nodes());
+        assert_eq!(resolved.expr_metadata(), baseline_resolved.expr_metadata());
+        assert_eq!(resolved.expr_metadata().len(), metadata.len());
+        for input in metadata {
+            let row = resolved.expr_metadata().get_by_expr(&input.expr).unwrap();
+            assert_eq!(row.typed_site.clone(), input.typed_site.clone());
+            assert_eq!(row.local_context, input.local_context);
+            assert_eq!(row.cluster_facts.clone(), input.cluster_facts.clone());
+            assert_eq!(
+                resolved.expr_metadata().get_by_site(&input.typed_site),
+                Some(row)
+            );
+            let node = installed.nodes().node(input.typed_site.node()).unwrap();
+            assert_eq!(node.anchor, SourceAnchor::Range(row.source_range));
+            assert_eq!(node.links.context, input.local_context);
+            let expected_type = installed
+                .types()
+                .iter()
+                .find(|(_, entry)| entry.owner == input.typed_site)
+                .map(|(_, entry)| {
+                    let TypeEntryActual::Known(actual) = entry.actual else {
+                        panic!("non-Known final type")
+                    };
+                    actual
+                });
+            assert_eq!(row.final_type, expected_type);
+            assert!(
+                row.visible_facts.is_empty()
+                    && row.overload.is_none()
+                    && row.inserted_views.is_empty()
+                    && row.diagnostics.is_empty()
+            );
+        }
+        assert!(
+            resolved.checked_formulas().is_empty()
+                && resolved.statement_semantics().is_empty()
+                && resolved.checked_proofs().is_empty()
+        );
+        assert!(
+            resolved.checked_proof_nodes().is_empty()
+                && resolved.checked_terminal_goals().is_empty()
+        );
+        assert!(
+            resolved.cluster_facts().is_empty()
+                && resolved.inserted_coercions().is_empty()
+                && resolved.diagnostics().is_empty()
+        );
+        assert!(
+            resolved.source_statement_references().is_none()
+                && resolved.source_statement_witnesses().is_none()
+        );
+        assert_eq!(resolved.clone(), resolved);
+        // Every refusal starts from a genuine nonempty installed transaction.
+        assert!(
+            installed
+                .clone()
+                .with_source_statement_from_original(source, symbols, scope)
+                .is_err()
+        );
+        assert!(
+            installed
+                .clone()
+                .with_source_statement(statement.clone())
+                .is_err()
+        );
+        assert!(
+            baseline
+                .clone()
+                .with_source_statement(statement.clone())
+                .is_err()
+        );
+        assert!(
+            primitive
+                .clone()
+                .with_source_statement_from_original(source, symbols, scope)
+                .is_err()
+        );
+        assert!(
+            primitive
+                .clone()
+                .with_source_statement(statement.clone())
+                .is_err()
+        );
+        assert!(
+            primitive
+                .clone()
+                .with_source_formula_composition_statement(
+                    baseline.source_composite_formula().unwrap().clone(),
+                    baseline.source_formula_composition().unwrap().clone(),
+                    statement.clone()
+                )
+                .is_err()
+        );
+        let mut rows_only = primitive.clone();
+        rows_only.install_source_nodes(source).unwrap();
+        assert!(
+            rows_only
+                .with_source_statement_from_original(source, symbols, scope)
+                .is_err()
+        );
+        let detached = TypedAst::try_new(TypedAstParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            resolved_root: primitive.resolved_root(),
+            source_context: primitive.source_context().cloned(),
+            source_type: primitive.source_type().cloned(),
+            source_attribute: None,
+            nodes: primitive.nodes().clone(),
+            contexts: primitive.contexts().clone(),
+            types: primitive.types().clone(),
+            facts: primitive.facts().clone(),
+            coercions: primitive.coercions().clone(),
+            initial_obligations: primitive.initial_obligations().clone(),
+            diagnostics: primitive.diagnostics().clone(),
+        });
+        assert!(
+            detached
+                .unwrap()
+                .with_source_statement(statement.clone())
+                .is_err()
+        );
+        let foreign = &prepared[(case + 1) % 8];
+        assert!(
+            baseline
+                .clone()
+                .with_source_statement_from_original(&foreign.0, &foreign.1, &foreign.2)
+                .is_err()
+        );
+        assert!(
+            foreign
+                .4
+                .clone()
+                .with_source_statement_from_original(source, symbols, scope)
+                .is_err()
+        );
+        assert!(
+            baseline
+                .clone()
+                .with_source_statement_from_original(source, &foreign.1, scope)
+                .is_err()
+        );
+        assert!(
+            baseline
+                .clone()
+                .with_source_statement_from_original(source, symbols, &foreign.2)
+                .is_err()
+        );
+        let mut duplicate = metadata.clone();
+        duplicate.push(duplicate[0].clone());
+        assert!(assemble(&installed, duplicate).is_err());
+        let mut wrong_site = metadata.clone();
+        wrong_site[0].typed_site =
+            TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(usize::MAX));
+        assert!(assemble(&installed, wrong_site).is_err());
+        let mut wrong_context = metadata.clone();
+        wrong_context[0].local_context = Some(mizar_checker::typed_ast::LocalTypeContextId::new(
+            usize::MAX,
+        ));
+        assert!(assemble(&installed, wrong_context).is_err());
+        assert_eq!(assemble(&installed, metadata.clone()).unwrap(), resolved);
+        assert_eq!(
+            (
+                source.clone(),
+                symbols.clone(),
+                scope.clone(),
+                lower.clone(),
+                baseline.clone()
+            ),
+            before
+        );
+        assert!(baseline.source_statement().is_none());
+    }
+    fs::remove_dir_all(root).unwrap();
+    Ok(())
+}

@@ -1960,3 +1960,6 @@ original-statement final組込みは限定されたoriginal有限enumeration wit
 ## Original-source universal composition
 native source context と composite transport が共存するときは、既存 composite/composition handoff の両方を要求する。fresh な共同検証で、保持した original/context/type/lower 情報から source graph・incoming/body context・実 binder/type application・header/proof の区分を再導出し、期待する handoff 全体と fingerprint を比較する。欠けた companion、整合させた対応の交換、orphan/foreign row を拒否し、immutable clone は完全な pair を保持する。
 既存 expression metadata と context universe を用い、statement-semantic input や追加 BindingEnv field は不要とする。legacy raw 検証は分離し、accepted statement/proof/fact、closure/capture、Core、VC output を追加しない。
+
+## Native quantified statement replay
+original-source Let statementの再生は、legacy syntax-onlyの空条件を適用せず、実native type/context/expression metadataを保持する。認証済みcomposite/composition pair全体を要求し、単一owner・Composite header・Atomic conclusion・incoming/proof context・local Let guard・unverified candidateを同じoriginal/lower graphと再照合する。この検証済みcompanionだけがnative compositionと共存でき、無関係なsemantic input・reference/witness companion・補助familyの除外は維持する。

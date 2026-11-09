@@ -12,6 +12,10 @@ statement/reference installation profile を拡張しない。
 input、未検証candidate propositionのsyntax-free checker boundaryである。
 statement parse、label resolve、formula proof、theorem fact publicationは行わない。
 
+## Native quantified statement and Let guard construction
+original-source statement入口は、明示Set universal・proof内Let宣言・最後の直接等式結論を持つ単一の認証済みB5 theoremも扱う。既存の単一定理seal、五テーブル、完全なnative lower/composite fingerprintを保持する。theorem propositionはincoming module contextのComposite rootを指し、外部quantifier guardを作らない。proof-local宣言変数は実proof contextの結論にLetTypeGuard intentを供給し、実reference useを保持する。未使用名のuseは空でよく、Let自体はproposition rowではない。
+fresh joint replayはoriginal graphとsource-type applicationに照らしてowner/statement/context/guard/candidate transaction全体を認証する。実primitive tableとmetadata、canonicalな原子的組込み、旧reserved/reference/witness経路とraw拒否を保持し、accepted factやproofを加えない。
+
 ## Original-source reserved statement construction
 crate-private所有constructor `SourceStatementHandoff::from_original` は[TypeChecker intake](type_checker.md#original-source-reserved-statement-inputs)にソース解釈を委ね、返されたsemantic ownerを`CheckedStatementOwner`で認証し、既存5テーブル・任意reference/witness companion・正規base `TypedAst`をtupleで返す。実ソースとlower factsからtheorem proposition、module context、reserved-type guard、未検証candidateを導出する。
 proofless sliceではownerのsite/rangeは元TheoremItem、spellingは実label、metadataはTheorem/Unmodified/Normalとする。唯一のstatementも同じsite/range、owner/context IDとsource ordinalは0、formulaは実atomic equality targetを使う。statement spellingはtheorem内tokenをsource range順に並べASCII空白1個で連結する。認証済み固定grammarにより、owner labelと実atomic spellingからの整形も同値となる。contextはtheorem rangeと実module binding context/visible bindings、reserved-type guardは実bindingとoperand順のprimary reference IDを使う。guard/candidate ordinalは0で、candidateは同じstatement/context/atomic targetを指す。このordinalはtable位置でありresolver use clockではない。
