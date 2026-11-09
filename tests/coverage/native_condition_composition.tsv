@@ -1,0 +1,3 @@
+slice	family	predecessor	status	note
+membership	CHECKER257C-NATIVE-CONDITION-COMPOSITION	-	implemented	full-tier baseline
+equality	CHECKER257C-NATIVE-CONDITION-COMPOSITION	membership	implemented	direct Equality conditions; no set-bound or proof credit

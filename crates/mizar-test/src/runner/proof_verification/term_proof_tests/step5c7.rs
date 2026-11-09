@@ -193,6 +193,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         source_application::{
             SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer,
         },
+        source_atomic_formula::{SourceAtomicFormulaKind, SourceAtomicRequestKind},
         source_formula_composition::{
             SourceConditionFormulaCompositionHandoffInput,
             SourceConditionFormulaCompositionProducer, SourceConditionFormulaEdgeInput,
@@ -223,21 +224,57 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     let alpha = original.replace("z", "q");
     let layout = original.replace(": z in A", ":  z in A");
     let set_heads = original.replace("z is object", "z is set");
+    let equality = original.replace(": z in A", ": z = z");
+    let header_equality = original.replacen(": z in A", ": z = z", 1);
+    let mut proof_equality = original.clone();
+    let proof_condition = proof_equality.rfind(": z in A").unwrap();
+    proof_equality.replace_range(
+        proof_condition..proof_condition + ": z in A".len(),
+        ": z = z",
+    );
+    let noncondition_equality = original.replacen("st x in A holds", "st x = x holds", 1);
+    let equality_layout = original.replace(": z in A", ":  z = z");
     let cases = [
-        ("one", one, 1, "z in A"),
-        ("header only", header_only, 1, "z in A"),
-        ("original", original, 2, "z in A"),
-        ("three", three, 3, "z in A"),
-        ("alpha", alpha, 2, "q in A"),
-        ("layout", layout, 2, "z in A"),
-        ("set heads", set_heads, 2, "z in A"),
-        ("zero", zero, 0, "z in A"),
+        ("one", one, 1, &["z in A"][..]),
+        ("header only", header_only, 1, &["z in A"][..]),
+        ("original", original, 2, &["z in A"][..]),
+        ("three", three, 3, &["z in A"][..]),
+        ("alpha", alpha, 2, &["q in A"][..]),
+        ("layout", layout, 2, &["z in A"][..]),
+        ("set heads", set_heads, 2, &["z in A"][..]),
+        ("equality", equality.clone(), 2, &["z = z"][..]),
+        (
+            "header equality",
+            header_equality,
+            2,
+            &["z = z", "z in A"][..],
+        ),
+        (
+            "proof equality",
+            proof_equality,
+            2,
+            &["z in A", "z = z"][..],
+        ),
+        (
+            "equality alpha",
+            equality.replace('z', "q"),
+            2,
+            &["q = q"][..],
+        ),
+        ("equality layout", equality_layout, 2, &["z = z"][..]),
+        (
+            "noncondition equality",
+            noncondition_equality,
+            2,
+            &["z in A"][..],
+        ),
+        ("zero", zero, 0, &["z in A"][..]),
     ];
     let mut foreign_lower = None;
     let mut foreign_composition: Option<
         mizar_checker::source_formula_composition::SourceConditionFormulaCompositionHandoff,
     > = None;
-    for (label, source, count, condition_text) in cases {
+    for (label, source, count, condition_texts) in cases {
         let ast = parse(&source);
         let symbols = resolver_symbol_collection(root, case, &ast);
         assert!(
@@ -262,6 +299,38 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         let primary = typed.source_term().unwrap();
         let sets = typed.source_set_term().unwrap();
         let atomic = typed.source_atomic_formula().unwrap();
+        if label == "noncondition equality" {
+            let outside = ast
+                .node_views()
+                .find(|view| {
+                    let node = ast.node(view.id()).unwrap();
+                    matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                        && node
+                            .children
+                            .iter()
+                            .filter_map(|child| ast.node(*child).unwrap().token_text())
+                            .collect::<Vec<_>>()
+                            == ["="]
+                })
+                .expect("actual noncondition equality");
+            assert!(
+                atomic
+                    .formulas()
+                    .iter()
+                    .all(|(_, row)| row.site().node().index() != outside.id().index())
+            );
+            assert_ne!(
+                typed
+                    .nodes()
+                    .node(mizar_checker::typed_ast::TypedNodeId::new(
+                        outside.id().index()
+                    ))
+                    .unwrap()
+                    .kind
+                    .as_str(),
+                "source.formula.atomic.equality"
+            );
+        }
         let application = SourceFunctorApplicationProducer::build(
             SourceFunctorApplicationHandoffInput {
                 source_id: ast.source_id,
@@ -294,21 +363,27 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(baseline.checked_proofs().is_empty());
 
         // The source literal fixes the condition census. Resolve every literal
-        // to its actual wrapper and direct membership child before looking up
+        // to its actual wrapper and direct atomic child before looking up
         // lower IDs; no expected association comes from C2 output.
-        let literal_positions = source
-            .match_indices(condition_text)
-            .filter_map(|(start, _)| {
-                source[..start]
-                    .trim_end()
-                    .ends_with(':')
-                    .then_some((start, start + condition_text.len()))
+        let mut literal_positions = condition_texts
+            .iter()
+            .flat_map(|condition_text| {
+                source
+                    .match_indices(*condition_text)
+                    .filter_map(|(start, _)| {
+                        source[..start].trim_end().ends_with(':').then_some((
+                            start,
+                            start + condition_text.len(),
+                            *condition_text,
+                        ))
+                    })
             })
             .collect::<Vec<_>>();
+        literal_positions.sort_by_key(|(start, _, _)| *start);
         assert_eq!(literal_positions.len(), count, "{label}");
         assert_eq!(sets.conditions().len(), count, "{label}");
         let mut edges = Vec::new();
-        for (start, end) in literal_positions {
+        for (start, end, condition_text) in literal_positions {
             let (wrapper_id, wrapper) = ast
                 .node_views()
                 .find_map(|view| {
@@ -334,6 +409,24 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 SurfaceNodeKind::BuiltinPredicateApplication
             ));
             assert_eq!(formula.range, wrapper.range);
+            let expected_kind = if condition_text.contains(" = ") {
+                SourceAtomicFormulaKind::Equality
+            } else {
+                SourceAtomicFormulaKind::Membership
+            };
+            let written_operator = formula
+                .children
+                .iter()
+                .filter_map(|child| ast.node(*child).unwrap().token_text())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                written_operator,
+                if expected_kind == SourceAtomicFormulaKind::Equality {
+                    ["="]
+                } else {
+                    ["in"]
+                }
+            );
             let (condition_id, condition) = sets
                 .conditions()
                 .iter()
@@ -358,17 +451,49 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .formulas()
                 .iter()
                 .find(|(_, row)| row.site().node().index() == formula_id.index())
-                .expect("actual lower direct membership");
+                .expect("actual lower direct condition atom");
             assert_eq!(condition.source_range(), wrapper.range);
             assert_eq!(atomic_row.source_range(), formula.range);
             assert_eq!(condition.spelling(), condition_text);
             assert_eq!(atomic_row.spelling(), condition_text);
+            assert_eq!(atomic_row.kind(), expected_kind);
             assert_eq!(condition.term(), set_id);
             assert_eq!(condition.ordinal(), 0);
             assert_eq!(
                 atomic_row.context(),
                 sets.terms().get(condition.term()).unwrap().context()
             );
+            let formula_edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, row)| row.formula() == atomic_id)
+                .map(|(id, _)| id)
+                .collect::<Vec<_>>();
+            assert_eq!(formula_edges.len(), 2);
+            let formula_requests = atomic
+                .requests()
+                .iter()
+                .filter(|(_, row)| row.formula() == atomic_id)
+                .map(|(_, row)| row)
+                .collect::<Vec<_>>();
+            let expected_request_edges = if expected_kind == SourceAtomicFormulaKind::Equality {
+                formula_edges.as_slice()
+            } else {
+                &formula_edges[1..]
+            };
+            assert_eq!(formula_requests.len(), expected_request_edges.len());
+            for (ordinal, (request, edge)) in formula_requests
+                .into_iter()
+                .zip(expected_request_edges)
+                .enumerate()
+            {
+                assert_eq!(request.ordinal(), ordinal);
+                assert_eq!(request.kind(), SourceAtomicRequestKind::OperandExpectedType);
+                assert_eq!(request.edge(), Some(*edge));
+                assert!(request.candidate().is_none());
+                assert!(request.type_site().is_none());
+                assert!(request.attribute().is_none());
+            }
             edges.push(SourceConditionFormulaEdgeInput {
                 condition: condition_id,
                 ordinal: 0,
@@ -454,6 +579,50 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(final_ast.checked_formulas().is_empty());
         assert!(final_ast.statement_semantics().is_empty());
         assert!(final_ast.checked_proofs().is_empty());
+        if matches!(label, "original" | "equality") {
+            use mizar_checker::source_set_term::SourceSetTermProducer;
+            use mizar_resolve::{
+                labels::{LabelResolver, ProofLabelSourceCollector},
+                resolved_ast::SurfaceResolvedArena,
+            };
+            let source_arena = SurfaceResolvedArena::lower(&ast, module).unwrap();
+            let owner = symbols
+                .env
+                .symbols()
+                .iter()
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                .unwrap();
+            let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+            let labels = ProofLabelSourceCollector::new(
+                &ast,
+                module,
+                namespace.clone(),
+                owner.contribution(),
+                &source_arena,
+            )
+            .unwrap()
+            .collect_with_let_conditions()
+            .unwrap();
+            let resolved = LabelResolver::new(labels.projections()).resolve(
+                module,
+                &namespace,
+                labels.references(),
+            );
+            assert!(!resolved.has_unresolved());
+            assert_eq!(
+                SourceSetTermProducer::check_membership_proof(
+                    &installed,
+                    &scope,
+                    &bindings,
+                    &labels,
+                    &resolved,
+                    &symbols.env,
+                )
+                .is_ok(),
+                label == "original",
+                "{label}: wrong proof credit"
+            );
+        }
         assert!(
             installed
                 .clone()

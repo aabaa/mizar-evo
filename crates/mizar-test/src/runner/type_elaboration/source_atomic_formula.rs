@@ -1294,13 +1294,41 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         .source_set_term()
         .ok_or_else(|| "membership set transaction produced no set handoff".to_owned())?
         .clone();
-    let arena = membership_restore_arena(ast, set_output.typed_ast.nodes())?;
+    let mut arena = membership_restore_arena(ast, set_output.typed_ast.nodes())?;
+    let equality_sites = set_handoff
+        .conditions()
+        .iter()
+        .filter_map(|(_, condition)| {
+            let wrapper = ast.nodes().get(condition.condition_site().node().index())?;
+            let children = structural_child_ids(ast, wrapper);
+            let [child] = children.as_slice() else {
+                return None;
+            };
+            let formula = ast.node(*child)?;
+            (matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                && direct_token_texts(ast, formula) == ["="]
+                && formula.range == condition.source_range()
+                && surface_text(ast, formula) == condition.spelling())
+            .then_some(child.index())
+        })
+        .collect::<Vec<_>>();
+    if !equality_sites.is_empty() {
+        let mut nodes = arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for site in &equality_sites {
+            nodes[*site].kind = "source.formula.atomic.equality".into();
+        }
+        arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
+    }
     let mut formulas = ast
         .node_views()
         .filter_map(|view| {
             let node = ast.node(view.id())?;
             (matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                && direct_token_texts(ast, node) == ["in"])
+                && (direct_token_texts(ast, node) == ["in"]
+                    || equality_sites.contains(&view.id().index())))
             .then_some(view.id())
         })
         .collect::<Vec<_>>();
@@ -1313,7 +1341,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
     }
     let mut atomic_formulas = Vec::with_capacity(formulas.len());
     let mut edges = Vec::with_capacity(formulas.len() * 2);
-    let mut requests = Vec::with_capacity(formulas.len());
+    let mut requests = Vec::with_capacity(formulas.len() * 2);
     for (formula_ordinal, formula_id) in formulas.iter().copied().enumerate() {
         let formula = ast
             .node(formula_id)
@@ -1344,6 +1372,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         let left = target(*left)?;
         let right = target(*right)?;
         let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
+        let equality = equality_sites.contains(&formula_id.index());
         atomic_formulas.push(SourceAtomicFormulaInput {
             site: surface_site(formula_id),
             source_range: formula.range,
@@ -1351,7 +1380,11 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             context: BindingContextId::new(0),
             recovery: SourceAtomicFormulaRecovery::Normal,
             spelling: surface_text(ast, formula),
-            kind: SourceAtomicFormulaKind::Membership,
+            kind: if equality {
+                SourceAtomicFormulaKind::Equality
+            } else {
+                SourceAtomicFormulaKind::Membership
+            },
         });
         edges.extend([
             edge(
@@ -1367,15 +1400,17 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 right,
             ),
         ]);
-        requests.push(SourceAtomicRequestInput {
-            formula: formula_key,
-            ordinal: 0,
-            kind: SourceAtomicRequestKind::OperandExpectedType,
-            edge: Some(SourceAtomicEdgeId::new(edges.len() - 1)),
-            candidate: None,
-            type_site: None,
-            attribute: None,
-        });
+        for (request_ordinal, edge_ordinal) in (if equality { 0..2 } else { 1..2 }).enumerate() {
+            requests.push(SourceAtomicRequestInput {
+                formula: formula_key,
+                ordinal: request_ordinal,
+                kind: SourceAtomicRequestKind::OperandExpectedType,
+                edge: Some(SourceAtomicEdgeId::new(edges.len() - 2 + edge_ordinal)),
+                candidate: None,
+                type_site: None,
+                attribute: None,
+            });
+        }
     }
     let handoff = SourceAtomicFormulaProducer::build(
         SourceAtomicFormulaHandoffInput {

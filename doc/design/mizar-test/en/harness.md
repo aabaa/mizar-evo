@@ -1,5 +1,8 @@
 # Module: harness
 
+## Direct builtin comprehension conditions
+The existing Step5C7 source intake transports direct Equality conditions from authenticated comprehension wrappers alongside Membership, deriving the existing operand requests from the written operator. Unrelated Equality intake and Membership behavior stay unchanged. C2/final association metadata supplies no set-bound evidence; the separate membership-proof checker still refuses Equality guards.
+
 ## Native proof-local binding metadata
 
 The `declaration_symbol` domain `checker.proof_local_bindings` consumes the

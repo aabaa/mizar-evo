@@ -1618,8 +1618,10 @@ fn validate_condition_transaction(
             || !atomic_formulas.type_sites().is_empty()
             || !atomic_formulas.attributes().is_empty()
             || atomic_formulas.formulas().iter().any(|(_, formula)| {
-                formula.kind() != SourceAtomicFormulaKind::Membership
-                    || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+                !matches!(
+                    formula.kind(),
+                    SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Membership
+                ) || formula.recovery() != SourceAtomicFormulaRecovery::Normal
             })
             || atomic_formulas.edges().iter().any(|(_, edge)| {
                 !matches!(
@@ -1661,6 +1663,12 @@ fn validate_condition_transaction(
                     edge: SourceConditionFormulaEdgeId::new(condition_id.index()),
                 });
             }
+        }
+        if atomic_formulas.formulas().iter().any(|(id, formula)| {
+            formula.kind() == SourceAtomicFormulaKind::Equality
+                && !input.edges.iter().any(|edge| edge.formula == id)
+        }) {
+            return Err(invalid);
         }
         return Ok(());
     }

@@ -1,5 +1,8 @@
 # Module: harness
 
+## 内包表記の直接組み込み条件
+既存Step5C7 source intakeは、認証済み内包表記wrapperの直接Equality条件をMembershipとともに転送し、書かれた演算子から既存operand requestを生成する。無関係なEquality intakeとMembershipの動作は維持する。C2/final関連付けmetadataはset-bound evidenceを与えず、別のmembership-proof checkerはEquality guardを引き続き拒否する。
+
 ## Native proof-local binding metadata
 
 `declaration_symbol` の domain `checker.proof_local_bindings` は
