@@ -26,8 +26,8 @@ pub(super) enum SyntaxEvent {
 }
 
 pub(super) struct SyntaxEventSink {
-    builder: SurfaceAstBuilder,
-    claimed_non_root_children: BTreeSet<SurfaceBuilderNodeId>,
+    pub(super) builder: SurfaceAstBuilder,
+    pub(super) claimed_non_root_children: BTreeSet<SurfaceBuilderNodeId>,
 }
 
 impl SyntaxEventSink {

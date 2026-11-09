@@ -9745,7 +9745,22 @@ impl Parser {
                 probe += 1;
             }
         }
-        let inner = self.parse_formula_expression_at(inner_position, inner_operand_context)?;
+        let last_node = self.events.builder.last_node_id();
+        let claimed_children = self.events.claimed_non_root_children.clone();
+        let trivia = self.trivia.clone();
+        let diagnostic_count = self.diagnostics.len();
+        let recovery_count = self.events.recovery_node_ids().len();
+        let Some(inner) = self.parse_formula_expression_at(inner_position, inner_operand_context)
+        else {
+            if self.diagnostics.len() == diagnostic_count
+                && self.events.recovery_node_ids().len() == recovery_count
+            {
+                self.events.builder.truncate_after(last_node);
+                self.events.claimed_non_root_children = claimed_children;
+                self.trivia = trivia;
+            }
+            return None;
+        };
         let mut children = vec![self.token_node_ids[position], inner.id];
         let mut recovery_nodes = inner.recovery_nodes;
         let mut cursor = inner.next_position;

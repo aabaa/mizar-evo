@@ -20778,19 +20778,45 @@ impl SourceVariableSemanticsChecker {
         symbols: &SymbolEnv,
         scope: &ResolvedVariableScope,
     ) -> Result<BindingEnv, String> {
-        let (original, _, _) =
-            TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)?;
-        let default_types = source_theorem_implicit_type_sites(source, scope)?;
-        if default_types.is_empty()
-            && scope.bindings().iter().any(|binding| {
-                binding.kind() == mizar_resolve::names::SourceVariableBindingKind::Reserve
-            })
-        {
-            return Err("theorems.equality.unsupported_source_types".to_owned());
-        }
-        let (scopes, parents) =
-            mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
         let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();
+        let function_metadata = scope
+            .bindings()
+            .iter()
+            .any(|binding| binding.kind() == SourceVariableBindingKind::FunctionBinder);
+        let (original, default_types, (scopes, parents)) = if function_metadata {
+            let maps = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+            let mut reserves = BTreeSet::new();
+            if scope.bindings().iter().any(|binding| match binding.kind() {
+                SourceVariableBindingKind::Reserve => !reserves.insert(binding.spelling()),
+                SourceVariableBindingKind::Quantifier
+                | SourceVariableBindingKind::Let
+                | SourceVariableBindingKind::FunctionBinder => false,
+                _ => true,
+            }) || source.arena().iter().any(|(_, node)| {
+                node.kind() == &K::Witness
+                    && node.children().iter().any(|child| {
+                        matches!(source.arena().node(*child).map(|node| node.kind()),
+                            Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
+                    })
+            }) {
+                return Err(invalid());
+            }
+            (project_binding_env(scope).0, BTreeMap::new(), maps)
+        } else {
+            let (original, _, _) =
+                TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)?;
+            let default_types = source_theorem_implicit_type_sites(source, scope)?;
+            if default_types.is_empty()
+                && scope
+                    .bindings()
+                    .iter()
+                    .any(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+            {
+                return Err("theorems.equality.unsupported_source_types".to_owned());
+            }
+            let maps = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+            (original, default_types, maps)
+        };
         let root_scope = scopes
             .iter()
             .find(|(node, _)| source.resolved_node_for(**node) == Some(source.arena().root()))
@@ -20804,6 +20830,7 @@ impl SourceVariableSemanticsChecker {
                 None,
             ),
         )]);
+        let mut function_heads = BTreeSet::new();
         for (node, local) in &scopes {
             let Some(parent) = parents.get(node) else {
                 continue;
@@ -20812,10 +20839,8 @@ impl SourceVariableSemanticsChecker {
             if local == parent_scope {
                 continue;
             }
-            let actual = source
-                .arena()
-                .node(source.resolved_node_for(*node).ok_or_else(invalid)?)
-                .ok_or_else(invalid)?;
+            let resolved = source.resolved_node_for(*node).ok_or_else(invalid)?;
+            let actual = source.arena().node(resolved).ok_or_else(invalid)?;
             let SourceAnchor::Range(source_range) = actual.origin().anchor() else {
                 return Err(invalid());
             };
@@ -20832,6 +20857,48 @@ impl SourceVariableSemanticsChecker {
                     },
                     BindingContextLayer::Proof,
                 ),
+                K::TermExpression if function_metadata => {
+                    let binder = source
+                        .arena()
+                        .node(source.resolved_node_for(*parent).ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?;
+                    if binder.kind() != &K::BinderExpression
+                        || binder.children().last() != Some(&resolved)
+                        || binder.children().len() < 3
+                    {
+                        return Err(invalid());
+                    }
+                    let heads = binder.children()[..binder.children().len() - 2]
+                        .iter()
+                        .filter(|head| {
+                            matches!(source.arena().node(**head).map(|node| node.kind()),
+                                Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
+                        });
+                    let declarations = scope
+                        .bindings()
+                        .iter()
+                        .filter(|binding| {
+                            binding.kind() == SourceVariableBindingKind::FunctionBinder
+                                && binding.scope() == local
+                        })
+                        .collect::<Vec<_>>();
+                    if heads.copied().map(Some).ne(declarations
+                        .iter()
+                        .map(|binding| source.resolved_node_for(binding.node())))
+                    {
+                        return Err(invalid());
+                    }
+                    function_heads.extend(declarations.iter().map(|binding| binding.node()));
+                    let SourceAnchor::Range(source_range) = binder.origin().anchor() else {
+                        return Err(invalid());
+                    };
+                    (
+                        BindingContextOwner::SourceFunctionBinder {
+                            source_range: *source_range,
+                        },
+                        BindingContextLayer::Expression,
+                    )
+                }
                 _ => return Err(invalid()),
             };
             if boundaries
@@ -20864,7 +20931,15 @@ impl SourceVariableSemanticsChecker {
             {
                 return Err(invalid());
             }
-            if scopes.get(&declaration.node()) != Some(local) {
+            if if declaration.kind() == SourceVariableBindingKind::FunctionBinder {
+                !function_heads.contains(&declaration.node())
+                    || scopes.get(&declaration.node())
+                        != boundaries
+                            .get(local)
+                            .and_then(|(_, _, parent)| parent.as_ref())
+            } else {
+                scopes.get(&declaration.node()) != Some(local)
+            } {
                 return Err(invalid());
             }
             let owner_context = *ids.get(local).ok_or_else(invalid)?;
@@ -23645,6 +23720,7 @@ fn projected_binding_kind(kind: SourceVariableBindingKind) -> BindingKind {
         SourceVariableBindingKind::Reserve => BindingKind::ReservedVariable,
         SourceVariableBindingKind::Quantifier => BindingKind::QuantifierBinder,
         SourceVariableBindingKind::Let => BindingKind::LetBinding,
+        SourceVariableBindingKind::FunctionBinder => BindingKind::FunctionBinder,
         SourceVariableBindingKind::Set
         | SourceVariableBindingKind::Reconsider
         | SourceVariableBindingKind::NamedWitness => BindingKind::LocalAbbreviation,

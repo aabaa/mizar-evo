@@ -1441,6 +1441,13 @@ nodes through typed builder accessors such as `node_kind` and `node_range`.
 Those accessors expose only the surface kind and source range needed for parser
 composition; they do not expose the private builder arena as a storage contract.
 
+`last_node_id` marks the current prefix; `truncate_after` authenticates that
+optional builder-local ID before dropping its appended suffix and token/recovery
+side-table entries. `None` restores an empty builder. Retained IDs stay valid;
+discarded IDs and checkpoints must not be reused because indices may be allocated
+again. Parser speculation also restores its own child claims and trivia, and
+only rolls back clean failures without new diagnostics or recovery nodes.
+
 The compatibility root may list both source-order token nodes and structural
 nodes that contain those tokens, because task-12 consumers still inspect both
 views. The rowan green tree remains source-shaped: when a structural child owns

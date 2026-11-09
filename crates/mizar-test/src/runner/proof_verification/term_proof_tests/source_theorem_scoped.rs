@@ -6856,7 +6856,7 @@ fn task257b6_native_connective_composition_preserves_installed_replay() -> Resul
 #[test]
 fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), String> {
     use mizar_checker::{
-        binding_env::{BinderIdentity, BindingContextOwner, BindingTypeSite},
+        binding_env::*,
         cluster_trace::ClusterFactTable,
         overload_resolution::*,
         resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
@@ -6866,7 +6866,9 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             SourcePrimaryTermRole,
         },
         source_type::{SourceTypeHead, SourceTypeProducer},
-        type_checker::{FormulaStatus, TermStatus, TypeHeadRef},
+        type_checker::{
+            FormulaStatus, SourceVariableSemanticsChecker as Semantics, TermStatus, TypeHeadRef,
+        },
         typed_ast::{
             NodeRecoveryState, TypeEntryActual, TypeStatus, TypedArena, TypedAst, TypedAstError,
             TypedAstParts, TypedNodeKind, TypedSiteRef,
@@ -7013,6 +7015,44 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             .replace("reserve x for set;", "reserve x, y for set;")
             .replace("holds x = x", "holds x = y"),
     ]);
+    let binder_cases = cases.len();
+    let binder_proof = "theorem Binder: ex z being set st z = z proof let x, y, idle be set; thus (x |-> x) = x; end;";
+    cases.extend([
+        binder_proof.to_owned(),
+        binder_proof.replace("(x |-> x)", "(x,y) |-> {x,y}"),
+        binder_proof.replace("(x |-> x)", "(x,y) |-> x"),
+        binder_proof
+            .replace("let x, y, idle be set", "let x be set, y, idle be object")
+            .replace("(x |-> x)", "(x,y) |-> y"),
+        binder_proof.replace("x |-> x", "x |-> (x |-> x)"),
+        binder_proof.replace("(x |-> x) = x", "(x |-> x) = (x |-> x)"),
+        binder_proof.replace("x |-> x", "x |-> y"),
+        binder_proof.replace("x |-> x", "x |-> ((y |-> x))"),
+        format!("reserve x, y for object; {binder_proof}"),
+        format!(
+            "\n:: alpha/layout\n{}",
+            binder_proof
+                .replace(" x", " parcel")
+                .replace("(x", "(parcel")
+                .replace(" y", " token")
+                .replace("set;", "set;\n:: declarations\n")
+        ),
+        "reserve x for set; theorem Head: ex z being set st (x |-> x) = x proof let x be set; thus x = x; end;".into(),
+        binder_proof.replace("thus", "take x; thus"),
+    ]);
+    let distinct_reserves = cases.len();
+    cases.push(format!(
+        "reserve spare for set; reserve other for object; {binder_proof}"
+    ));
+    cases.push(binder_proof.replace("(x |-> x)", "((x,y) |-> {x,y})"));
+    let unsupported_binder_cases = cases.len();
+    cases.extend([
+        binder_proof.replace("thus", "set local = x; thus"),
+        binder_proof.replace("thus", "deffunc Local(n be set) -> set equals n; thus"),
+        binder_proof.replace("thus (x |-> x) = x;", "now thus (x |-> x) = x; end;"),
+        binder_proof.replace("x |-> x", "x |-> {y where y is set : y = x}"),
+        binder_proof.replace("thus", "take local = x; thus"),
+    ]);
     let duplicate_reserve = cases.len();
     cases.push(implicit.replace("reserve x for set;", "reserve x, x for set;"));
     let forward_default = cases.len();
@@ -7110,7 +7150,9 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
             recovered.push((source, symbols, scope));
             continue;
         }
-        let scope = scope.unwrap();
+        let scope = scope.unwrap_or_else(|error| {
+            panic!("case {case}: {error:?}: {text}: {}", ast.snapshot_text())
+        });
         prepared.push((frontend, source, symbols, scope));
     }
     let collection = OverloadCollectionOutput::collect([], []);
@@ -7119,15 +7161,98 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
     let specificity = SpecificityGraphOutput::build(&viability, []);
     let selection = OverloadSelectionOutput::resolve(&specificity, []);
     let facts = ClusterFactTable::new();
+    // Flat projection is a transaction, including unsupported lexical families.
+    // Complete this pass before asking the scoped producer for any metadata.
+    for (frontend, source, symbols, scope) in &prepared {
+        let ast = frontend.ast.as_ref().unwrap();
+        if !ast
+            .node_views()
+            .any(|view| view.kind() == &K::BinderExpression)
+        {
+            continue;
+        }
+        source_proof_scope_maps(source, symbols, scope)?;
+        let flat = Semantics::occurrence_binding_env(scope);
+        assert_eq!(flat.source_id(), scope.source_id());
+        assert_eq!(flat.module_id(), scope.module_id());
+        assert!(flat.diagnostics().is_empty());
+        assert_eq!(flat.contexts().len(), 1);
+        let root = flat.contexts().get(BindingContextId::new(0)).unwrap();
+        assert_eq!(root.owner, BindingContextOwner::Module);
+        assert_eq!(root.layer, BindingContextLayer::Module);
+        assert!(root.parent.is_none() && root.lexical_scope.is_none());
+        assert_eq!(root.recovery, BindingContextRecovery::Normal);
+        let ids = (0..scope.bindings().len())
+            .map(BindingId::new)
+            .collect::<Vec<_>>();
+        assert_eq!(root.bindings, ids);
+        assert_eq!(root.visible_bindings, ids);
+        assert_eq!(flat.bindings().len(), scope.bindings().len());
+        for ((id, row), declaration) in flat.bindings().iter().zip(scope.bindings()) {
+            assert_eq!(id.index(), declaration.id().index());
+            assert_eq!(row.id, id);
+            assert_eq!(row.spelling, declaration.spelling());
+            assert_eq!(
+                format!("{:?}", row.kind),
+                match declaration.kind() {
+                    SourceVariableBindingKind::Reserve => "ReservedVariable",
+                    SourceVariableBindingKind::Quantifier
+                    | SourceVariableBindingKind::ComprehensionGenerator => "QuantifierBinder",
+                    SourceVariableBindingKind::Let => "LetBinding",
+                    SourceVariableBindingKind::FunctionBinder => "FunctionBinder",
+                    SourceVariableBindingKind::InlineParameter => "DefinitionParameter",
+                    SourceVariableBindingKind::Set | SourceVariableBindingKind::InlineFunctor =>
+                        "LocalAbbreviation",
+                    kind => panic!("uncovered genuine declaration {kind:?}"),
+                }
+            );
+            let identity = |declaration: &mizar_resolve::names::SourceVariableBinding| {
+                BinderIdentity::ResolverLocal {
+                    scope: declaration.scope().clone(),
+                    ordinal: declaration.ordinal(),
+                    declaration_range: declaration.range(),
+                }
+            };
+            assert_eq!(
+                row.identity,
+                if declaration.kind() == SourceVariableBindingKind::Reserve {
+                    BinderIdentity::ReservedVariable {
+                        spelling: declaration.spelling().into(),
+                        declaration_range: declaration.range(),
+                    }
+                } else {
+                    identity(declaration)
+                }
+            );
+            assert_eq!(row.owner_context, BindingContextId::new(0));
+            assert_eq!(row.declaration_range, declaration.range());
+            assert_eq!(row.visible_after_ordinal, declaration.ordinal());
+            assert_eq!(row.type_site, BindingTypeSite::Missing);
+            assert_eq!(row.status, BindingStatus::Active);
+            assert_eq!(row.recovery, BindingRecoveryState::Normal);
+            assert!(row.diagnostics.is_empty());
+            assert_eq!(
+                row.captured,
+                CapturedFreeVariables::new(
+                    declaration
+                        .captures()
+                        .iter()
+                        .map(|capture| identity(&scope.bindings()[capture.index()]))
+                        .collect()
+                )
+            );
+        }
+    }
     for (case, (frontend, source, symbols, scope)) in prepared.iter().enumerate() {
         if case >= positive_count {
-            if let Some(binder) = frontend
-                .ast
-                .as_ref()
-                .unwrap()
-                .node_views()
-                .find(|view| view.kind() == &K::BinderExpression)
-            {
+            if case == positive_count + 7 {
+                let binder = frontend
+                    .ast
+                    .as_ref()
+                    .unwrap()
+                    .node_views()
+                    .find(|view| view.kind() == &K::BinderExpression)
+                    .unwrap();
                 let fresh = scope
                     .bindings()
                     .iter()
@@ -7146,6 +7271,722 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                 assert_eq!(uses.len(), 1);
                 assert_eq!(uses[0].binding(), fresh.id());
                 assert_ne!(fresh.id(), scope.bindings()[1].id());
+            }
+            let ast = frontend.ast.as_ref().unwrap();
+            if ast
+                .node_views()
+                .any(|view| view.kind() == &K::BinderExpression)
+            {
+                let before = (
+                    source.clone(),
+                    symbols.clone(),
+                    scope.clone(),
+                    ast.snapshot_text(),
+                    frontend.source.clone(),
+                );
+                let maps = source_proof_scope_maps(source, symbols, scope)?;
+                let build = Semantics::source_theorem_binding_env;
+                if case >= unsupported_binder_cases {
+                    assert_eq!(
+                        build(source, symbols, scope).unwrap_err(),
+                        "theorems.bindings.invalid_lexical_association"
+                    );
+                } else {
+                    // Fixture intent fixes boundaries and declaration/reference membership;
+                    // neither the resolver maps nor the projected environment select them.
+                    use SourceVariableBindingKind::{FunctionBinder, Let, Quantifier, Reserve};
+                    use mizar_resolve::names::{LocalTermScope, SourceVariableTypeRadix as Radix};
+                    let legacy = case < binder_cases;
+                    let variant = if legacy { 0 } else { case - binder_cases };
+                    let header_binder = variant == 10;
+                    let reserve_count = match variant {
+                        8 | 12 => 2,
+                        10 => 1,
+                        _ => 0,
+                    };
+                    let ast_root = ast.root().unwrap();
+                    let compilation = ast.node_view(ast_root).unwrap().children().len() - 1;
+                    let item = if variant == 12 {
+                        2
+                    } else {
+                        usize::from(reserve_count > 0)
+                    };
+                    let prefix = [compilation, 0, item];
+                    let syntax_at = |path: &[usize]| {
+                        path.iter().fold(ast_root, |node, index| {
+                            ast.node_view(node).unwrap().children()[*index]
+                        })
+                    };
+                    let at = |path: &[usize]| syntax_at(&[prefix.as_slice(), path].concat());
+                    let quantifier = at(&[3, 0]);
+                    let proof = at(&[4]);
+                    assert!(matches!(
+                        ast.node_view(quantifier).unwrap().kind(),
+                        K::QuantifiedFormula(_)
+                    ));
+                    assert_eq!(ast.node_view(proof).unwrap().kind(), &K::ProofBlock);
+                    let mut expected = vec![
+                        (
+                            LocalTermScope::new(vec![]),
+                            "Module".to_owned(),
+                            BindingContextLayer::Module,
+                            None,
+                        ),
+                        (
+                            LocalTermScope::new(vec![0]),
+                            format!(
+                                "SourceFormula {{ source_range: {:?} }}",
+                                ast.node_view(quantifier).unwrap().range()
+                            ),
+                            BindingContextLayer::Expression,
+                            Some(LocalTermScope::new(vec![])),
+                        ),
+                        (
+                            LocalTermScope::new(vec![4]),
+                            format!(
+                                "SourceStatement {{ source_range: {:?} }}",
+                                ast.node_view(proof).unwrap().range()
+                            ),
+                            BindingContextLayer::Proof,
+                            Some(LocalTermScope::new(vec![])),
+                        ),
+                    ];
+                    let mut boundaries = vec![
+                        (vec![], LocalTermScope::new(vec![])),
+                        (
+                            [prefix.as_slice(), &[3, 0]].concat(),
+                            LocalTermScope::new(vec![0]),
+                        ),
+                        (
+                            [prefix.as_slice(), &[4]].concat(),
+                            LocalTermScope::new(vec![4]),
+                        ),
+                    ];
+                    let conclusion = if variant == 11 { 3 } else { 2 };
+                    let equation_path = if header_binder {
+                        vec![3, 0, 3]
+                    } else {
+                        vec![4, conclusion, 1, 0, 0]
+                    };
+                    let mut binder_path = [equation_path.as_slice(), &[0, 0]].concat();
+                    let multi = matches!(variant, 1..=3 | 13);
+                    if !multi || variant == 13 {
+                        binder_path.extend([1, 0]);
+                    }
+                    let first_binder = at(&binder_path);
+                    let mut binders = vec![(
+                        binder_path.clone(),
+                        if multi {
+                            vec![4, 6]
+                        } else if header_binder {
+                            vec![0, 2]
+                        } else {
+                            vec![4, 2]
+                        },
+                        if multi { 6 } else { 2 },
+                    )];
+                    if matches!(variant, 4 | 7) {
+                        let suffix = if variant == 4 {
+                            vec![2, 0, 1, 0]
+                        } else {
+                            vec![2, 0, 1, 0, 1, 0]
+                        };
+                        binders.push((
+                            [binder_path.as_slice(), suffix.as_slice()].concat(),
+                            vec![4, 2, 2],
+                            2,
+                        ));
+                    } else if variant == 5 {
+                        binders.push((
+                            [equation_path.as_slice(), &[2, 0, 1, 0]].concat(),
+                            vec![4, 3],
+                            2,
+                        ));
+                    }
+                    for (path, local, body_index) in &binders {
+                        let binder = ast.node_view(at(path)).unwrap();
+                        assert_eq!(binder.kind(), &K::BinderExpression);
+                        assert_eq!(binder.children().len(), body_index + 1);
+                        let parent = LocalTermScope::new(local[..local.len() - 1].to_vec());
+                        expected.push((
+                            LocalTermScope::new(local.clone()),
+                            format!(
+                                "SourceFunctionBinder {{ source_range: {:?} }}",
+                                binder.range()
+                            ),
+                            BindingContextLayer::Expression,
+                            Some(parent),
+                        ));
+                        boundaries.push((
+                            [prefix.as_slice(), path.as_slice(), &[*body_index]].concat(),
+                            LocalTermScope::new(local.clone()),
+                        ));
+                    }
+                    // A plain tree census assigns each node to the deepest explicit
+                    // fixture boundary and independently checks every upstream map row.
+                    let mut expected_scopes = std::collections::BTreeMap::new();
+                    let mut expected_parents = std::collections::BTreeMap::new();
+                    let compilation_node = syntax_at(&[compilation]);
+                    expected_scopes.insert(ast_root, LocalTermScope::new(vec![]));
+                    expected_parents.insert(compilation_node, ast_root);
+                    let mut pending = vec![(compilation_node, vec![compilation])];
+                    while let Some((node, path)) = pending.pop() {
+                        let local = boundaries
+                            .iter()
+                            .filter(|(boundary, _)| path.starts_with(boundary))
+                            .max_by_key(|(boundary, _)| boundary.len())
+                            .unwrap()
+                            .1
+                            .clone();
+                        assert!(expected_scopes.insert(node, local).is_none());
+                        for (index, child) in
+                            ast.node_view(node).unwrap().children().iter().enumerate()
+                        {
+                            assert!(expected_parents.insert(*child, node).is_none());
+                            let mut child_path = path.clone();
+                            child_path.push(index);
+                            pending.push((*child, child_path));
+                        }
+                    }
+                    // The root's flat token overlay is metadata; only tokens
+                    // unused by the structural tree retain the root as parent.
+                    for token in &ast.node_view(ast_root).unwrap().children()[..compilation] {
+                        assert!(ast.node_view(*token).unwrap().as_token().is_some());
+                        expected_scopes
+                            .entry(*token)
+                            .or_insert_with(|| LocalTermScope::new(vec![]));
+                        expected_parents.entry(*token).or_insert(ast_root);
+                    }
+                    assert_eq!(expected_scopes.len(), ast.node_views().count());
+                    assert_eq!(maps.0, expected_scopes);
+                    assert_eq!(maps.1, expected_parents);
+                    let x = if variant == 9 { "parcel" } else { "x" };
+                    let y = if variant == 9 { "token" } else { "y" };
+                    let mut declarations = Vec::new();
+                    let mut bind = |node, kind, spelling: &str, local: Vec<u32>, radix| {
+                        declarations.push((
+                            node,
+                            kind,
+                            spelling.to_owned(),
+                            LocalTermScope::new(local),
+                            radix,
+                        ));
+                    };
+                    if variant == 8 {
+                        bind(
+                            syntax_at(&[compilation, 0, 0, 1, 0]),
+                            Reserve,
+                            "x",
+                            vec![],
+                            Radix::Object,
+                        );
+                        bind(
+                            syntax_at(&[compilation, 0, 0, 1, 2]),
+                            Reserve,
+                            "y",
+                            vec![],
+                            Radix::Object,
+                        );
+                    } else if header_binder || variant == 12 {
+                        bind(
+                            syntax_at(&[compilation, 0, 0, 1, 0]),
+                            Reserve,
+                            if header_binder { "x" } else { "spare" },
+                            vec![],
+                            Radix::Set,
+                        );
+                        if variant == 12 {
+                            bind(
+                                syntax_at(&[compilation, 0, 1, 1, 0]),
+                                Reserve,
+                                "other",
+                                vec![],
+                                Radix::Object,
+                            );
+                        }
+                    }
+                    let quantifier_id = reserve_count;
+                    bind(
+                        at(&[3, 0, 1, 0]),
+                        Quantifier,
+                        if legacy { "x" } else { "z" },
+                        vec![0],
+                        Radix::Set,
+                    );
+                    if header_binder {
+                        bind(
+                            ast.node_view(first_binder).unwrap().children()[0],
+                            FunctionBinder,
+                            "x",
+                            vec![0, 2],
+                            Radix::Set,
+                        );
+                    }
+                    let let_id = reserve_count + 1 + usize::from(header_binder);
+                    bind(at(&[4, 1, 1, 0]), Let, x, vec![4], Radix::Set);
+                    if !legacy && !header_binder {
+                        let (y_path, idle_path) = if variant == 3 {
+                            (vec![4, 1, 3, 0], vec![4, 1, 3, 2])
+                        } else {
+                            (vec![4, 1, 1, 2], vec![4, 1, 1, 4])
+                        };
+                        let radix = if variant == 3 {
+                            Radix::Object
+                        } else {
+                            Radix::Set
+                        };
+                        bind(at(&y_path), Let, y, vec![4], radix);
+                        bind(at(&idle_path), Let, "idle", vec![4], radix);
+                    }
+                    let fresh_id = let_id + if legacy || header_binder { 1 } else { 3 };
+                    if !header_binder {
+                        for (index, (path, local, _)) in binders.iter().enumerate() {
+                            let binder = ast.node_view(at(path)).unwrap();
+                            bind(
+                                binder.children()[usize::from(multi)],
+                                FunctionBinder,
+                                if variant == 7 && index == 1 { y } else { x },
+                                local.clone(),
+                                Radix::Set,
+                            );
+                            if multi {
+                                bind(
+                                    binder.children()[3],
+                                    FunctionBinder,
+                                    y,
+                                    local.clone(),
+                                    if variant == 3 {
+                                        Radix::Object
+                                    } else {
+                                        Radix::Set
+                                    },
+                                );
+                            }
+                        }
+                    }
+                    assert_eq!(scope.bindings().len(), declarations.len());
+                    for (index, (row, (node, kind, spelling, local, radix))) in
+                        scope.bindings().iter().zip(&declarations).enumerate()
+                    {
+                        let syntax = ast.node_view(*node).unwrap();
+                        assert_eq!(syntax.as_token().unwrap().text.as_ref(), spelling);
+                        assert_eq!(row.id().index(), index);
+                        assert_eq!(row.ordinal(), index);
+                        assert_eq!(row.node(), *node);
+                        assert_eq!(row.range(), syntax.range());
+                        assert_eq!(row.kind(), *kind);
+                        assert_eq!(row.spelling(), spelling);
+                        assert_eq!(row.scope(), local);
+                        assert_eq!(row.declared_type().unwrap().radix(), *radix);
+                        assert!(row.declared_type().unwrap().attributes().is_empty());
+                        assert!(row.arity().is_none() && row.captures().is_empty());
+                    }
+                    let mut references = Vec::new();
+                    if !header_binder {
+                        references.extend([
+                            (at(&[3, 0, 3, 0, 0]), quantifier_id, vec![0]),
+                            (at(&[3, 0, 3, 2, 0]), quantifier_id, vec![0]),
+                        ]);
+                    }
+                    if variant == 11 {
+                        references.push((at(&[4, 2, 1, 0, 0]), let_id, vec![4]));
+                    }
+                    let (body_path, body_scope, _) = binders.last().unwrap();
+                    let body_index = if multi { 6 } else { 2 };
+                    let body = [body_path.as_slice(), &[body_index]].concat();
+                    if header_binder {
+                        references.push((at(&[body.as_slice(), &[0]].concat()), 2, vec![0, 2]));
+                    } else if matches!(variant, 1 | 13) {
+                        references.extend([
+                            (
+                                at(&[body.as_slice(), &[0, 1, 0]].concat()),
+                                fresh_id,
+                                body_scope.clone(),
+                            ),
+                            (
+                                at(&[body.as_slice(), &[0, 3, 0]].concat()),
+                                fresh_id + 1,
+                                body_scope.clone(),
+                            ),
+                        ]);
+                    } else {
+                        if variant == 5 {
+                            references.push((
+                                at(&[binder_path.as_slice(), &[2, 0]].concat()),
+                                fresh_id,
+                                vec![4, 2],
+                            ));
+                        }
+                        let selected = match variant {
+                            3..=5 => fresh_id + 1,
+                            6 => let_id + 1,
+                            _ => fresh_id,
+                        };
+                        references.push((
+                            at(&[body.as_slice(), &[0]].concat()),
+                            selected,
+                            body_scope.clone(),
+                        ));
+                    }
+                    if variant != 5 {
+                        references.push((
+                            at(&[equation_path.as_slice(), &[2, 0]].concat()),
+                            if header_binder { 0 } else { let_id },
+                            if header_binder { vec![0] } else { vec![4] },
+                        ));
+                    }
+                    if header_binder {
+                        references.extend([
+                            (at(&[4, 2, 1, 0, 0, 0, 0]), let_id, vec![4]),
+                            (at(&[4, 2, 1, 0, 0, 2, 0]), let_id, vec![4]),
+                        ]);
+                    }
+                    assert_eq!(scope.references().len(), references.len());
+                    for (index, (row, (node, binding, local))) in
+                        scope.references().iter().zip(&references).enumerate()
+                    {
+                        assert_eq!(row.id().index(), index);
+                        assert_eq!(row.ordinal(), index);
+                        assert_eq!(row.node(), *node);
+                        assert_eq!(row.range(), ast.node_view(*node).unwrap().range());
+                        assert_eq!(row.spelling(), declarations[*binding].2);
+                        assert_eq!(row.scope(), &LocalTermScope::new(local.clone()));
+                        assert_eq!(row.binding().index(), *binding);
+                        assert_eq!(
+                            row.kind(),
+                            mizar_resolve::names::SourceVariableReferenceKind::Term
+                        );
+                    }
+                    expected.sort_by(|left, right| {
+                        (left.0.path().len(), left.0.path())
+                            .cmp(&(right.0.path().len(), right.0.path()))
+                    });
+                    let scoped = build(source, symbols, scope)
+                        .unwrap_or_else(|error| panic!("RED scoped Binder case {case}: {error}"));
+                    let flat = Semantics::occurrence_binding_env(scope);
+                    let context_ids = expected
+                        .iter()
+                        .enumerate()
+                        .map(|(index, row)| (row.0.clone(), BindingContextId::new(index)))
+                        .collect::<std::collections::BTreeMap<_, _>>();
+                    assert_eq!(scoped.source_id(), source.source_id());
+                    assert_eq!(scoped.module_id(), source.module());
+                    assert_eq!(scoped.diagnostics(), flat.diagnostics());
+                    assert_eq!(scoped.contexts().len(), expected.len());
+                    assert_eq!(scoped.bindings().len(), flat.bindings().len());
+                    for ((id, row), (local, owner, layer, parent)) in
+                        scoped.contexts().iter().zip(&expected)
+                    {
+                        assert_eq!(row.id, id);
+                        assert_eq!(id, context_ids[local]);
+                        assert_eq!(format!("{:?}", row.owner), *owner);
+                        assert_eq!(row.layer, *layer);
+                        assert_eq!(row.parent, parent.as_ref().map(|scope| context_ids[scope]));
+                        assert_eq!(row.lexical_scope.as_ref(), parent.as_ref().map(|_| local));
+                        assert_eq!(row.recovery, BindingContextRecovery::Normal);
+                        let mut ancestors = vec![local.clone()];
+                        while let Some(parent) = &expected
+                            .iter()
+                            .find(|context| context.0 == *ancestors.last().unwrap())
+                            .unwrap()
+                            .3
+                        {
+                            ancestors.push(parent.clone());
+                        }
+                        let own = declarations
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, declaration)| &declaration.3 == local)
+                            .map(|(index, _)| BindingId::new(index))
+                            .collect::<Vec<_>>();
+                        let visible = declarations
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, declaration)| ancestors.contains(&declaration.3))
+                            .map(|(index, _)| BindingId::new(index))
+                            .collect::<Vec<_>>();
+                        assert_eq!(row.bindings, own);
+                        assert_eq!(row.visible_bindings, visible);
+                    }
+                    for ((id, row), declaration) in scoped.bindings().iter().zip(scope.bindings()) {
+                        let mut unchanged = flat.bindings().get(id).unwrap().clone();
+                        unchanged.owner_context = context_ids[declaration.scope()];
+                        assert_eq!(row, &unchanged);
+                        assert_eq!(row.type_site, BindingTypeSite::Missing);
+                        if declaration.kind() == SourceVariableBindingKind::FunctionBinder {
+                            let binder = ast
+                                .node_views()
+                                .find(|view| {
+                                    view.kind() == &K::BinderExpression
+                                        && view.children().contains(&declaration.node())
+                                })
+                                .unwrap();
+                            let body = *binder.children().last().unwrap();
+                            assert_eq!(maps.0.get(&body), Some(declaration.scope()));
+                            let incoming = maps.0.get(&declaration.node()).unwrap();
+                            assert_eq!(incoming, &maps.0[&binder.id()]);
+                            assert_ne!(incoming, declaration.scope());
+                            let winner = scope
+                                .bindings()
+                                .iter()
+                                .filter(|prior| {
+                                    prior.spelling() == declaration.spelling()
+                                        && incoming.path().starts_with(prior.scope().path())
+                                        && prior.range().end <= declaration.range().start
+                                })
+                                .max_by_key(|prior| (prior.scope().path().len(), prior.ordinal()))
+                                .unwrap();
+                            let clock = scope
+                                .bindings()
+                                .iter()
+                                .filter(|prior| prior.range().end <= declaration.range().start)
+                                .count();
+                            assert_eq!(
+                                scoped
+                                    .lookup(&BindingLookupSite::new(
+                                        declaration.spelling(),
+                                        context_ids[incoming],
+                                        Some(incoming.clone()),
+                                        clock
+                                    ))
+                                    .unwrap(),
+                                BindingLookupResult::Local(BindingId::new(winner.id().index()))
+                            );
+                            assert_ne!(winner.id(), declaration.id());
+                        }
+                    }
+                    let mut different_clocks = false;
+                    for reference in scope.references() {
+                        assert_eq!(maps.0.get(&reference.node()), Some(reference.scope()));
+                        let clock = scope
+                            .bindings()
+                            .iter()
+                            .filter(|binding| binding.range().end <= reference.range().start)
+                            .count();
+                        different_clocks |= clock != reference.ordinal();
+                        assert_eq!(
+                            scoped
+                                .lookup(&BindingLookupSite::new(
+                                    reference.spelling(),
+                                    context_ids[reference.scope()],
+                                    Some(reference.scope().clone()),
+                                    clock
+                                ))
+                                .unwrap(),
+                            BindingLookupResult::Local(BindingId::new(reference.binding().index()))
+                        );
+                    }
+                    assert!(different_clocks);
+                    // Upstream replay errors win over metadata-only admission.
+                    let (_, other_source, other_symbols, other_scope) = &prepared[0];
+                    let empty = mizar_resolve::env::SymbolEnv::new(
+                        source.module().clone(),
+                        mizar_resolve::env::SymbolEnvIndexes::default(),
+                    );
+                    for (candidate, environment, occurrences) in [
+                        (source, &empty, scope),
+                        (other_source, symbols, scope),
+                        (source, other_symbols, scope),
+                        (source, symbols, other_scope),
+                    ] {
+                        assert_eq!(
+                            build(candidate, environment, occurrences).unwrap_err(),
+                            source_proof_scope_maps(candidate, environment, occurrences)
+                                .unwrap_err()
+                        );
+                    }
+                    if case == binder_cases + 1 || case == distinct_reserves {
+                        use mizar_syntax::SurfaceAstBuilder;
+                        let binder = ast
+                            .node_views()
+                            .find(|view| view.kind() == &K::BinderExpression)
+                            .unwrap();
+                        let head = binder.children()[1];
+                        let body = *binder.children().last().unwrap();
+                        for mutation in if case == distinct_reserves {
+                            4..5
+                        } else {
+                            0..4
+                        } {
+                            let mut builder = SurfaceAstBuilder::new(ast.source_id);
+                            let mut rebuilt = Vec::new();
+                            for view in ast.node_views() {
+                                let children = view
+                                    .children()
+                                    .iter()
+                                    .map(|id| rebuilt[id.index()])
+                                    .collect();
+                                rebuilt.push(if let Some(token) = view.as_token() {
+                                    if mutation == 0 && view.id() == head {
+                                        builder.add_recovered_token(
+                                            token.kind,
+                                            token.text.clone(),
+                                            view.range(),
+                                        )
+                                    } else {
+                                        let swap = (mutation == 1
+                                            && binder.children().contains(&view.id()))
+                                            || (mutation == 2
+                                                && ast.node_view(body).unwrap().range().start
+                                                    <= view.range().start
+                                                && view.range().end
+                                                    <= ast.node_view(body).unwrap().range().end)
+                                            || mutation == 3;
+                                        builder.add_token(
+                                            token.kind,
+                                            if mutation == 4 && token.text.as_ref() == "other" {
+                                                "spare"
+                                            } else if swap && token.text.as_ref() == "x" {
+                                                "y"
+                                            } else if swap && token.text.as_ref() == "y" {
+                                                "x"
+                                            } else {
+                                                token.text.as_ref()
+                                            },
+                                            view.range(),
+                                        )
+                                    }
+                                } else {
+                                    builder.add_node(view.kind().clone(), view.range(), children)
+                                });
+                            }
+                            let changed =
+                                builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+                            let changed_source =
+                                SurfaceResolvedArena::lower(&changed, source.module()).unwrap();
+                            let shells =
+                                DeclarationShellCollector::new(&changed, source.module()).collect();
+                            let changed_symbols = SignatureProjectionExtractor::new(
+                                &changed,
+                                &shells,
+                                NamespacePath::new(source.module().path().as_str()),
+                            )
+                            .collect(source.module())
+                            .into_env();
+                            if mutation == 0 {
+                                assert_eq!(
+                                    build(&changed_source, &changed_symbols, scope).unwrap_err(),
+                                    source_proof_scope_maps(
+                                        &changed_source,
+                                        &changed_symbols,
+                                        scope
+                                    )
+                                    .unwrap_err()
+                                );
+                            } else {
+                                let changed_scope =
+                                    SourceVariableScopeResolver::resolve_proof_occurrences(
+                                        SourceVariableScopeInput::new(
+                                            &changed,
+                                            source.module(),
+                                            &changed_symbols,
+                                        ),
+                                    )
+                                    .unwrap();
+                                source_proof_scope_maps(
+                                    &changed_source,
+                                    &changed_symbols,
+                                    &changed_scope,
+                                )?;
+                                if mutation == 4 {
+                                    let projected =
+                                        Semantics::occurrence_binding_env(&changed_scope);
+                                    assert_eq!(
+                                        projected.bindings().len(),
+                                        changed_scope.bindings().len()
+                                    );
+                                    assert_eq!(
+                                        changed_scope
+                                            .bindings()
+                                            .iter()
+                                            .filter(|binding| binding.kind()
+                                                == SourceVariableBindingKind::Reserve
+                                                && binding.spelling() == "spare")
+                                            .count(),
+                                        2
+                                    );
+                                    assert_eq!(
+                                        build(&changed_source, &changed_symbols, &changed_scope)
+                                            .unwrap_err(),
+                                        "theorems.bindings.invalid_lexical_association"
+                                    );
+                                } else {
+                                    assert!(
+                                        build(&changed_source, &changed_symbols, &changed_scope)
+                                            .is_ok()
+                                    );
+                                }
+                                for (candidate, environment, occurrences) in [
+                                    (source, symbols, &changed_scope),
+                                    (&changed_source, &changed_symbols, scope),
+                                ] {
+                                    assert_eq!(
+                                        build(candidate, environment, occurrences).unwrap_err(),
+                                        source_proof_scope_maps(
+                                            candidate,
+                                            environment,
+                                            occurrences
+                                        )
+                                        .unwrap_err()
+                                    );
+                                }
+                            }
+                            assert_eq!(build(source, symbols, scope)?, scoped);
+                        }
+                    }
+                    assert_eq!(build(source, symbols, scope)?, scoped);
+                    assert_eq!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities_with_scoped_inference(source, symbols, scope).unwrap_err(), "theorems.equality.unsupported_source_types");
+                    if case == binder_cases + 8 {
+                        use mizar_session::{
+                            SessionIdAllocator, SnapshotInput, SnapshotRegistry, SourceVersion,
+                            ToolchainInfo, WorkspaceRoot, hash_text,
+                        };
+                        let policy = mizar_proof::policy::VerifierPolicy::default();
+                        let registry = SnapshotRegistry::new();
+                        let unit = &frontend.source;
+                        let (snapshot, _lease) = registry
+                            .create_snapshot(
+                                ids.next_request_id().unwrap(),
+                                SnapshotInput {
+                                    workspace_root: WorkspaceRoot::new(root.to_str().unwrap()),
+                                    source_versions: vec![SourceVersion {
+                                        source_id: unit.source_id,
+                                        package_id: unit.package_id.clone(),
+                                        module_path: unit.module_path.clone(),
+                                        normalized_path: unit.normalized_path.clone(),
+                                        source_hash: unit.source_hash,
+                                        edition: unit.edition.clone(),
+                                        origin: unit.origin.clone(),
+                                    }],
+                                    dependency_artifacts: vec![],
+                                    lockfile_hash: hash_text(
+                                        &fs::read_to_string(
+                                            Path::new(env!("CARGO_MANIFEST_DIR"))
+                                                .join("../../Cargo.lock"),
+                                        )
+                                        .unwrap(),
+                                    ),
+                                    toolchain: ToolchainInfo::new("fresh-binder-metadata-test"),
+                                    verifier_config_hash: policy.policy_fingerprint().hash(),
+                                },
+                            )
+                            .unwrap();
+                        let pristine = snapshot.clone();
+                        assert_eq!(mizar_proof::status::source_theorem_reflexivity_witness_draft_from_original(source, symbols, &snapshot, &policy, "").unwrap_err(), "theorems.equality.unsupported_source_types");
+                        assert_eq!(snapshot, pristine);
+                        assert!(!root.join("proof-witnesses").exists());
+                    }
+                }
+                assert_eq!(
+                    before,
+                    (
+                        source.clone(),
+                        symbols.clone(),
+                        scope.clone(),
+                        ast.snapshot_text(),
+                        frontend.source.clone()
+                    )
+                );
             }
             assert_eq!(
                 SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope)

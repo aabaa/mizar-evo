@@ -22,6 +22,8 @@ type inference、registration activation、overload selection、proof behavior �
 
 ## 境界
 
+fresh な数学的 head は元の resolver-local identity を保持した `BindingKind::FunctionBinder` を使う。`SourceFunctionBinder { source_range }` は実親 Binder の range と Expression layer の body scope を所有し、head token は入力側 source scope に残る。flat 投影は module transaction、認証済み字句投影は実 body context を保つ。この Binder 経路の全 binding 行で `BindingTypeSite::Missing` を保持し、正規化された型や関数形成の根拠は付けない。
+
 `binding_env` が所有するもの:
 
 - local variable、binder、reserved variable、local abbreviation、generated

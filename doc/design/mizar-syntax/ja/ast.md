@@ -1360,6 +1360,12 @@ disconnected allowance と3つの fail-closed case を固定する。
 composition に必要な surface kind と source range だけを公開し、private builder
 arena を storage contract として露出しない。
 
+`last_node_id` は現在の prefix を記録し、`truncate_after` は任意の builder-local ID
+を検証して、その後の node と token/recovery side table entry を破棄する。`None` は
+空の builder に戻す。保持した ID は有効だが、index は再利用され得るため、破棄した
+ID と checkpoint は再利用してはならない。parser は自身の child claim と trivia も
+復元し、新しい診断や recovery node がない失敗時だけ巻き戻す。
+
 互換 root は、task 12 の consumer が両方の view を検査し続けられるよう、ソース順
 の token node と、それらの token を含む structural node の両方を列挙してよい。
 rowan green tree は source-shaped のままである。structural child が source token

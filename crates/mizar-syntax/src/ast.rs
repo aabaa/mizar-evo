@@ -1600,6 +1600,30 @@ impl SurfaceAstBuilder {
         self.node(id).map(|node| node.range)
     }
 
+    /// Returns the last retained node, or `None` for an empty builder.
+    ///
+    /// A returned checkpoint must be discarded if that node is truncated;
+    /// later insertions may reuse its index.
+    pub fn last_node_id(&self) -> Option<SurfaceBuilderNodeId> {
+        self.nodes
+            .len()
+            .checked_sub(1)
+            .map(|index| SurfaceBuilderNodeId::new(index, self.builder_id))
+    }
+
+    /// Discards nodes after a retained node, or all nodes for `None`.
+    ///
+    /// The retained id must still exist in this builder. Discard all ids and
+    /// checkpoints into the removed suffix before further construction:
+    /// later insertions may reuse their indices.
+    pub fn truncate_after(&mut self, retained: Option<SurfaceBuilderNodeId>) {
+        self.assert_existing_optional_id(retained, "retained");
+        let len = retained.map_or(0, |id| id.index() + 1);
+        self.nodes.truncate(len);
+        self.token_nodes.retain(|id| id.index() < len);
+        self.recovery_nodes.retain(|id| id.index() < len);
+    }
+
     pub fn token_node_ids(&self) -> &[SurfaceBuilderNodeId] {
         &self.token_nodes
     }

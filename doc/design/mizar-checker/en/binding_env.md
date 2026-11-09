@@ -24,6 +24,8 @@ builder described here.
 
 ## Boundary
 
+Fresh mathematical heads use `BindingKind::FunctionBinder` with the original resolver-local identity. `SourceFunctionBinder { source_range }` owns the actual parent Binder range and an Expression-layer body scope; head tokens retain their incoming source scope. Flat projection keeps its module transaction, while authenticated lexical projection keeps the real body contexts. All Binder-branch rows retain `BindingTypeSite::Missing` and provide no normalized type or function-formation evidence.
+
 `binding_env` owns:
 
 - checker-local binding identities for local variables, binders, reserved

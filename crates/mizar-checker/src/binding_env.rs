@@ -324,6 +324,7 @@ pub enum BindingContextOwner {
     SourceStatement { source_range: SourceRange },
     SourceComprehension { source_range: SourceRange },
     Generated(String),
+    SourceFunctionBinder { source_range: SourceRange },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -480,6 +481,7 @@ pub enum BindingKind {
     LetBinding,
     GivenWitness,
     Generated,
+    FunctionBinder,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1015,6 +1017,7 @@ fn validate_contexts(parts: &BindingEnvParts) -> Result<(), BindingEnvError> {
             BindingContextOwner::SourceFormula { source_range }
             | BindingContextOwner::SourceStatement { source_range }
             | BindingContextOwner::SourceComprehension { source_range }
+            | BindingContextOwner::SourceFunctionBinder { source_range }
                 if source_range.source_id != parts.source_id
                     || source_range.start >= source_range.end =>
             {
@@ -1550,6 +1553,13 @@ fn write_context_owner(output: &mut String, owner: &BindingContextOwner) {
             write_quoted(output, key);
             output.push(')');
         }
+        BindingContextOwner::SourceFunctionBinder { source_range } => {
+            let _ = write!(
+                output,
+                "source-function-binder({}..{})",
+                source_range.start, source_range.end
+            );
+        }
     }
 }
 
@@ -1734,6 +1744,7 @@ fn binding_kind_name(kind: BindingKind) -> &'static str {
         BindingKind::LetBinding => "let_binding",
         BindingKind::GivenWitness => "given_witness",
         BindingKind::Generated => "generated",
+        BindingKind::FunctionBinder => "function_binder",
     }
 }
 
@@ -1792,6 +1803,116 @@ mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     };
+
+    #[test]
+    fn function_binder_metadata_preserves_identity_visibility_and_source_ranges() {
+        let (source, foreign) = distinct_source_ids();
+        let mut contexts = BindingContextTable::new();
+        let root = contexts.insert(context_draft(
+            BindingContextOwner::Module,
+            None,
+            BindingContextLayer::Module,
+            None,
+        ));
+        let body = contexts.insert(context_draft(
+            BindingContextOwner::SourceFunctionBinder {
+                source_range: range(source, 2, 12),
+            },
+            Some(root),
+            BindingContextLayer::Expression,
+            Some(LocalTermScope::new(vec![0])),
+        ));
+        let sibling = contexts.insert(context_draft(
+            BindingContextOwner::SourceFunctionBinder {
+                source_range: range(source, 14, 24),
+            },
+            Some(root),
+            BindingContextLayer::Expression,
+            Some(LocalTermScope::new(vec![1])),
+        ));
+        let mut bindings = BindingTable::new();
+        let binding = bindings.insert(BindingDraft {
+            kind: BindingKind::FunctionBinder,
+            ..local_binding(body, "x", vec![0], range(source, 2, 3), 1)
+        });
+        contexts.contexts[body.index()].bindings = vec![binding];
+        contexts.contexts[body.index()].visible_bindings = vec![binding];
+        let parts = parts_with(source, contexts, bindings);
+        let env = BindingEnv::try_new(parts.clone()).unwrap();
+        assert!(env.debug_text().contains("source-function-binder(2..12)"));
+        assert!(env.debug_text().contains("kind=function_binder"));
+        assert_eq!(
+            env.lookup(&BindingLookupSite::new(
+                "x",
+                body,
+                Some(LocalTermScope::new(vec![0])),
+                2,
+            )),
+            Ok(BindingLookupResult::Local(binding))
+        );
+        assert!(matches!(
+            env.lookup(&BindingLookupSite::new(
+                "x", body, Some(LocalTermScope::new(vec![0])), 1,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == vec![binding]
+        ));
+        for (context, scope) in [(root, vec![]), (sibling, vec![1])] {
+            assert_eq!(
+                env.lookup(&BindingLookupSite::new(
+                    "x",
+                    context,
+                    Some(LocalTermScope::new(scope)),
+                    2,
+                )),
+                Ok(BindingLookupResult::Unresolved)
+            );
+        }
+        for source_range in [
+            range(foreign, 2, 12),
+            range(source, 2, 2),
+            range(source, 12, 2),
+        ] {
+            let mut changed = parts.clone();
+            changed.contexts.contexts[body.index()].owner =
+                BindingContextOwner::SourceFunctionBinder { source_range };
+            assert_eq!(
+                BindingEnv::try_new(changed),
+                Err(BindingEnvError::InvalidContextSourceRange { context: body })
+            );
+        }
+        let mut changed = parts.clone();
+        changed.contexts.contexts[sibling.index()].visible_bindings = vec![binding];
+        assert_eq!(
+            BindingEnv::try_new(changed),
+            Err(BindingEnvError::InvalidVisibleBindingOwner {
+                context: sibling,
+                binding,
+                owner: body,
+            })
+        );
+        let mut changed = parts.clone();
+        changed.bindings.bindings[binding.index()].identity = BinderIdentity::Generated {
+            context: body,
+            counter: 0,
+        };
+        assert_eq!(
+            BindingEnv::try_new(changed),
+            Err(BindingEnvError::InvalidBindingKindIdentity { binding })
+        );
+        for (ordinal, declaration_range) in [(2, range(source, 2, 3)), (1, range(source, 3, 4))] {
+            let mut changed = parts.clone();
+            changed.bindings.bindings[binding.index()].identity = BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![0]),
+                ordinal,
+                declaration_range,
+            };
+            assert_eq!(
+                BindingEnv::try_new(changed),
+                Err(BindingEnvError::InconsistentResolverLocalIdentity { binding })
+            );
+        }
+    }
 
     #[test]
     fn module_shell_records_external_gaps_and_debug_rendering_is_stable() {

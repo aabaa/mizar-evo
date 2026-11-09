@@ -1,6 +1,143 @@
 use super::*;
 
 #[test]
+fn parser_keeps_grouped_binder_arenas_owned_once() {
+    for (source, binders, expected) in [
+        (
+            "theorem B : not ( x |-> ) = x ;",
+            1,
+            vec![ExpectedParserDiagnostic::term(
+                "expected term after `|->`",
+                ")",
+                0,
+            )],
+        ),
+        (
+            "theorem B : ( x = x ) = y ;",
+            0,
+            vec![ExpectedParserDiagnostic::term(
+                "unexpected token in theorem item",
+                "=",
+                1,
+            )],
+        ),
+        (
+            "theorem B : ( x |-> x = x ) = y ;",
+            1,
+            vec![ExpectedParserDiagnostic::term(
+                "unexpected token in theorem item",
+                "=",
+                1,
+            )],
+        ),
+        (
+            "theorem B : not ( x |-> ) ;",
+            1,
+            vec![
+                ExpectedParserDiagnostic::term("expected term after `|->`", ")", 0),
+                ExpectedParserDiagnostic::formula("expected formula after `not`", "(", 0),
+                ExpectedParserDiagnostic::term("unexpected token in theorem item", "(", 0),
+            ],
+        ),
+        ("theorem B : x |-> x = x ;", 1, vec![]),
+        ("theorem B : ( x |-> x ) = x ;", 1, vec![]),
+        ("theorem B : ( x , y ) |-> x = x ;", 1, vec![]),
+        ("theorem B : ( ( x , y ) |-> x ) = x ;", 1, vec![]),
+        ("theorem B : ( ( x , y ) |-> C ) = x ;", 1, vec![]),
+        ("theorem B : ( ( x , y ) |-> ( z |-> x ) ) = x ;", 2, vec![]),
+        ("theorem B : ( x ) = x ; theorem F : ( x = x ) ;", 0, vec![]),
+        (
+            "thesis by computation ( inspect ( ( A1 & A2 ) , x = x ) ) ;",
+            0,
+            vec![],
+        ),
+        (
+            "thus thesis by computation ( inspect ( ( thesis ) , x = x ) ) ;",
+            0,
+            vec![],
+        ),
+        (
+            "thesis by computation ( inspect ( ( ( x , y ) |-> x ) = x , ( x = x ) ) ) ;",
+            1,
+            vec![],
+        ),
+        (
+            "definition algorithm f ( ) do var a := ( x ) , b := ( x = x ) ; var c := ( ( x , y ) |-> x ) = x ; end ; end ;",
+            1,
+            vec![],
+        ),
+    ] {
+        let source_id = source_id(253);
+        let entries = source
+            .split_whitespace()
+            .map(|text| {
+                let kind = match text {
+                    "theorem" | "not" | "thesis" | "by" | "computation" | "thus" | "definition"
+                    | "algorithm" | "do" | "var" | "end" => ParserTokenKind::ReservedWord,
+                    "(" | ")" | "," | ";" | ":" | ":=" | "=" | "&" | "|->" => {
+                        ParserTokenKind::ReservedSymbol
+                    }
+                    "C" => ParserTokenKind::UserSymbol,
+                    _ => ParserTokenKind::Identifier,
+                };
+                (text, kind)
+            })
+            .collect::<Vec<_>>();
+        let tokens = token_sequence(source_id, &entries);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens.clone(),
+            Vec::new(),
+        ));
+        assert_eq!(
+            output.diagnostics.len(),
+            expected.len(),
+            "{source}: {:?}",
+            output.diagnostics
+        );
+        for (diagnostic, expected) in output.diagnostics.iter().zip(&expected) {
+            assert_matches_expected_diagnostic(diagnostic, &tokens, expected);
+            assert!(diagnostic.secondary.is_empty());
+        }
+        let ast = output.ast.expect("grouping retains a parser AST");
+        if !expected.is_empty() {
+            continue;
+        }
+        let mut parents = std::collections::BTreeSet::new();
+        for view in ast.node_views() {
+            for child in view.child_views() {
+                if *view.kind() == SurfaceNodeKind::Root && child.as_token().is_some() {
+                    continue;
+                }
+                assert!(
+                    parents.insert(child.id()),
+                    "multiple structural parents: {source}: {:?}",
+                    child.id()
+                );
+            }
+        }
+        let mut visited = std::collections::BTreeSet::new();
+        let mut pending = vec![ast.root().unwrap()];
+        while let Some(id) = pending.pop() {
+            if visited.insert(id) {
+                pending.extend_from_slice(ast.node(id).unwrap().children.as_slice());
+            }
+        }
+        assert_eq!(
+            visited.len(),
+            ast.nodes().len(),
+            "orphan arena nodes: {source}"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| *kind == SurfaceNodeKind::BinderExpression),
+            binders,
+            "{source}"
+        );
+    }
+}
+
+#[test]
 fn parser_keeps_selector_arguments_before_structure_fields() {
     let source_id = source_id(126);
     let tokens = token_sequence(

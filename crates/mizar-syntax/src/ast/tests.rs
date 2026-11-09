@@ -4100,6 +4100,84 @@ fn ast_rejects_trivia_from_another_source() {
 }
 
 #[test]
+fn builder_truncates_speculative_nodes_and_side_tables() {
+    let source_id = source_id(67);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    assert_eq!(builder.last_node_id(), None);
+    let token =
+        builder.add_recovered_token(SurfaceTokenKind::ErrorRecovery, "x", range(source_id, 0, 1));
+    let recovery = builder.add_recovery(
+        SyntaxRecoveryKind::SkippedToken,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let retained = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![recovery],
+    );
+    let checkpoint = builder.last_node_id();
+    assert_eq!(checkpoint, Some(retained));
+    let discarded = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 2, 3));
+    builder.add_recovery(
+        SyntaxRecoveryKind::SkippedToken,
+        range(source_id, 2, 3),
+        vec![discarded],
+    );
+    builder.truncate_after(checkpoint);
+    assert_eq!(builder.last_node_id(), checkpoint);
+    assert_eq!(builder.token_node_ids(), &[token]);
+    assert_eq!(builder.recovery_node_ids(), &[recovery]);
+    assert_eq!(builder.node(retained).unwrap().children, vec![recovery]);
+    assert!(builder.node(discarded).is_none());
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![retained],
+    );
+    let ast = builder.finish(Some(root), None);
+    assert_eq!(ast.token_texts(), vec!["x"]);
+    assert_eq!(ast.nodes().len(), 4);
+}
+
+#[test]
+fn builder_truncation_authenticates_retained_ids_and_resets_empty_prefix() {
+    for foreign in [false, true] {
+        let source_id = source_id(68);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let invalid = if foreign {
+            SurfaceAstBuilder::new(source_id).add_token(
+                SurfaceTokenKind::Identifier,
+                "z",
+                range(source_id, 0, 1),
+            )
+        } else {
+            let removed =
+                builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 2, 3));
+            builder.truncate_after(Some(token));
+            removed
+        };
+        let rejected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            builder.truncate_after(Some(invalid))
+        }));
+        assert!(rejected.is_err());
+        assert_eq!(builder.last_node_id(), Some(token));
+        assert_eq!(builder.token_node_ids(), &[token]);
+        builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 0, 1),
+            vec![token],
+        );
+        builder.truncate_after(None);
+        assert_eq!(builder.last_node_id(), None);
+        assert!(builder.token_node_ids().is_empty());
+        assert!(builder.recovery_node_ids().is_empty());
+        assert!(builder.finish(None, None).nodes().is_empty());
+    }
+}
+
+#[test]
 #[should_panic(expected = "must have been created by this builder")]
 fn builder_rejects_child_ids_not_created_by_this_builder() {
     let source_id = source_id(16);
