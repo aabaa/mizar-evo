@@ -5,11 +5,17 @@ fn step5c5_local_predicate_chains_preserve_physical_atoms_and_final_transport() 
     use mizar_checker::{
         binding_env::{BindingContextLayer, BindingContextOwner, BindingKind, BindingTypeSite},
         source_atomic_formula::{
-            SourceAtomicEdgeInput, SourceAtomicEdgeRole, SourceAtomicFormulaHandoffInput,
-            SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
-            SourceAtomicRequestInput, SourceAtomicRequestKind, SourceAtomicTermTarget,
-            SourcePredicateCandidateInput, SourcePredicateHeadInput, SourcePredicateSegmentInput,
+            SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
+            SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId, SourceAtomicFormulaInput,
+            SourceAtomicFormulaKind, SourceAtomicFormulaProducer, SourceAtomicRequestInput,
+            SourceAtomicRequestKind, SourceAtomicTermTarget, SourcePredicateCandidateInput,
+            SourcePredicateHeadInput, SourcePredicateSegmentId, SourcePredicateSegmentInput,
             SourcePredicateSegmentPolarityInput,
+        },
+        source_formula_composition::{
+            SourcePredicateChainCompositionError, SourcePredicateChainCompositionHandoffInput,
+            SourcePredicateChainCompositionProducer, SourcePredicateChainConjunctionInput,
+            SourcePredicateChainNegationInput,
         },
         type_checker::TermFormulaChecker,
         typed_ast::{TypeEntryActual, TypeStatus, TypedArena, TypedSiteRef},
@@ -65,6 +71,34 @@ fn step5c5_local_predicate_chains_preserve_physical_atoms_and_final_transport() 
                 vec!["", "", "does", ""],
                 vec!["", ""],
                 true,
+            ),
+            (
+                format!("{call} {head} X"),
+                format!("X does not {head} X"),
+                vec!["", ""],
+                vec!["does"],
+                false,
+            ),
+            (
+                format!("X do not {head} X"),
+                format!("{call} {head} X"),
+                vec!["do"],
+                vec!["", ""],
+                false,
+            ),
+            (
+                format!("X does not {head} X"),
+                call.clone(),
+                vec!["does"],
+                vec![""],
+                false,
+            ),
+            (
+                call.clone(),
+                format!("X do not {head} X"),
+                vec![""],
+                vec!["do"],
+                false,
             ),
         ];
         for (profile, (header, proof, header_polarity, proof_polarity, layout)) in
@@ -706,6 +740,346 @@ fn step5c5_local_predicate_chains_preserve_physical_atoms_and_final_transport() 
                 (bindings.clone(), inference.clone(), typed.clone())
             );
             assert_eq!((source.clone(), neutral.clone(), symbols.clone()), before);
+            let body_formulas = if id == STEP5C5_PHRASE_ID { 1 } else { 2 };
+            assert_eq!(atomic.formulas().len(), body_formulas + 2);
+            let mut c_input = SourcePredicateChainCompositionHandoffInput {
+                source_id: source.source_id(),
+                module_id: source.module().clone(),
+                conjunctions: Vec::new(),
+                negations: Vec::new(),
+            };
+            let mut segment_start = 0;
+            let mut edge_start = body_formulas * 2;
+            for (application_index, (application, polarities)) in applications
+                .iter()
+                .zip([&header_polarity, &proof_polarity])
+                .enumerate()
+            {
+                let formula = SourceAtomicFormulaId::new(body_formulas + application_index);
+                assert_eq!(
+                    atomic.formulas().get(formula).unwrap().site(),
+                    &site(application.id())
+                );
+                if polarities.len() > 1 {
+                    for ordinal in 0..polarities.len() - 1 {
+                        let left_segment = SourcePredicateSegmentId::new(segment_start + ordinal);
+                        let right_segment =
+                            SourcePredicateSegmentId::new(segment_start + ordinal + 1);
+                        let boundary = SourceAtomicEdgeId::new(edge_start + ordinal + 1);
+                        assert_eq!(
+                            atomic
+                                .predicate_segments()
+                                .get(left_segment)
+                                .unwrap()
+                                .site(),
+                            &site(application.children()[ordinal])
+                        );
+                        assert_eq!(
+                            atomic
+                                .predicate_segments()
+                                .get(right_segment)
+                                .unwrap()
+                                .site(),
+                            &site(application.children()[ordinal + 1])
+                        );
+                        assert_eq!(
+                            atomic.edges().get(boundary).unwrap().role(),
+                            SourceAtomicEdgeRole::PredicateChainBoundary
+                        );
+                        c_input
+                            .conjunctions
+                            .push(SourcePredicateChainConjunctionInput {
+                                formula,
+                                ordinal,
+                                left_segment,
+                                right_segment,
+                                boundary,
+                            });
+                    }
+                    for (segment_ordinal, verb) in polarities.iter().enumerate() {
+                        if !verb.is_empty() {
+                            c_input.negations.push(SourcePredicateChainNegationInput {
+                                formula,
+                                ordinal: polarities[..segment_ordinal]
+                                    .iter()
+                                    .filter(|prior| !prior.is_empty())
+                                    .count(),
+                                segment: SourcePredicateSegmentId::new(
+                                    segment_start + segment_ordinal,
+                                ),
+                            });
+                        }
+                    }
+                }
+                segment_start += polarities.len();
+                edge_start += polarities.len() + 1;
+            }
+            assert_eq!(segment_start, atomic.predicate_segments().len());
+            assert_eq!(edge_start, atomic.edges().len());
+            let lower_before_c = typed.clone();
+            if c_input.conjunctions.is_empty() {
+                assert_eq!(
+                    SourcePredicateChainCompositionProducer::build(
+                        c_input,
+                        primary,
+                        atomic,
+                        typed.nodes()
+                    ),
+                    Err(SourcePredicateChainCompositionError::DependencyMismatch)
+                );
+            } else {
+                let c = SourcePredicateChainCompositionProducer::build(
+                    c_input.clone(),
+                    primary,
+                    atomic,
+                    typed.nodes(),
+                )
+                .expect("RED native C3 associations");
+                assert_eq!(c.source_id(), source.source_id());
+                assert_eq!(c.module_id(), source.module());
+                assert_eq!(c.primary_term_fingerprint(), primary.debug_text());
+                assert_eq!(c.atomic_formula_fingerprint(), atomic.debug_text());
+                assert_eq!(c.conjunctions().len(), c_input.conjunctions.len());
+                assert_eq!(c.negations().len(), c_input.negations.len());
+                for ((_, actual), expected) in c.conjunctions().iter().zip(&c_input.conjunctions) {
+                    assert_eq!(
+                        (
+                            actual.formula(),
+                            actual.ordinal(),
+                            actual.left_segment(),
+                            actual.right_segment(),
+                            actual.boundary()
+                        ),
+                        (
+                            expected.formula,
+                            expected.ordinal,
+                            expected.left_segment,
+                            expected.right_segment,
+                            expected.boundary
+                        )
+                    );
+                }
+                for ((_, actual), expected) in c.negations().iter().zip(&c_input.negations) {
+                    assert_eq!(
+                        (actual.formula(), actual.ordinal(), actual.segment()),
+                        (expected.formula, expected.ordinal, expected.segment)
+                    );
+                }
+                assert_eq!(
+                    SourcePredicateChainCompositionProducer::build(
+                        c_input.clone(),
+                        primary,
+                        atomic,
+                        typed.nodes()
+                    )
+                    .unwrap(),
+                    c
+                );
+                let installed = typed
+                    .clone()
+                    .with_source_predicate_chain_composition(c.clone())
+                    .unwrap();
+                assert_eq!(installed.source_predicate_chain_composition(), Some(&c));
+                let installed_before_repeat = installed.clone();
+                assert!(
+                    installed
+                        .clone()
+                        .with_source_predicate_chain_composition(c.clone())
+                        .is_err()
+                );
+                assert_eq!(installed, installed_before_repeat);
+                let final_composed =
+                    crate::runner::type_elaboration::assemble_empty_resolved_typed_ast(
+                        &installed,
+                        vec![],
+                    )
+                    .unwrap();
+                assert_eq!(final_composed.source_term(), final_ast.source_term());
+                assert_eq!(
+                    final_composed.source_atomic_formula(),
+                    final_ast.source_atomic_formula()
+                );
+                assert_eq!(
+                    final_composed.source_predicate_chain_composition(),
+                    Some(&c)
+                );
+                assert!(
+                    final_composed.expr_metadata().is_empty()
+                        && final_composed.checked_formulas().is_empty()
+                        && final_composed.statement_semantics().is_empty()
+                        && final_composed.checked_proofs().is_empty()
+                        && final_composed.checked_terminal_goals().is_empty()
+                );
+                assert_eq!(typed, lower_before_c);
+                if profile == 6 || profile == 7 {
+                    let singleton_formula =
+                        SourceAtomicFormulaId::new(body_formulas + usize::from(profile == 6));
+                    let singleton_segment = SourcePredicateSegmentId::new(if profile == 6 {
+                        header_polarity.len()
+                    } else {
+                        0
+                    });
+                    let mut changed = c_input.clone();
+                    changed.negations.push(SourcePredicateChainNegationInput {
+                        formula: singleton_formula,
+                        ordinal: 0,
+                        segment: singleton_segment,
+                    });
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            changed,
+                            primary,
+                            atomic,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                }
+                if profile == 4 {
+                    assert_eq!(
+                        (c_input.conjunctions.len(), c_input.negations.len()),
+                        (4, 3)
+                    );
+                    for defect in 0..13 {
+                        let mut changed = c_input.clone();
+                        match defect {
+                            0 => {
+                                changed.conjunctions.remove(0);
+                            }
+                            1 => changed.conjunctions.push(changed.conjunctions[0].clone()),
+                            2 => changed.conjunctions.swap(0, 1),
+                            3 => {
+                                changed.conjunctions[0].right_segment =
+                                    SourcePredicateSegmentId::new(2)
+                            }
+                            4 => changed.conjunctions[0].ordinal = 1,
+                            5 => changed.conjunctions[0].formula = SourceAtomicFormulaId::new(0),
+                            6 => {
+                                changed.conjunctions[0].left_segment =
+                                    changed.conjunctions[0].right_segment
+                            }
+                            7 => changed.conjunctions[0].boundary = SourceAtomicEdgeId::new(0),
+                            8 => {
+                                changed.negations.remove(0);
+                            }
+                            9 => changed.negations.push(changed.negations[0].clone()),
+                            10 => changed.negations[0].segment = SourcePredicateSegmentId::new(0),
+                            11 => {
+                                changed.negations[0].formula =
+                                    SourceAtomicFormulaId::new(body_formulas + 1)
+                            }
+                            12 => changed.negations[0].ordinal = 1,
+                            _ => unreachable!(),
+                        }
+                        assert!(
+                            SourcePredicateChainCompositionProducer::build(
+                                changed,
+                                primary,
+                                atomic,
+                                typed.nodes()
+                            )
+                            .is_err(),
+                            "C3 defect {defect}"
+                        );
+                    }
+                    let mut cross_context = c_input.clone();
+                    cross_context.conjunctions[0].right_segment =
+                        SourcePredicateSegmentId::new(header_polarity.len());
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            cross_context,
+                            primary,
+                            atomic,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    let mut foreign_module = c_input.clone();
+                    foreign_module.module_id = mizar_resolve::resolved_ast::ModuleId::new(
+                        mizar_session::PackageId::new("foreign"),
+                        mizar_session::ModulePath::new("foreign.module"),
+                    );
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            foreign_module,
+                            primary,
+                            atomic,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            c_input.clone(),
+                            primary,
+                            atomic,
+                            &neutral
+                        )
+                        .is_err()
+                    );
+                    let (foreign_source, foreign_nodes, foreign_symbols) =
+                        super::super::super::source_registration_inputs(
+                            &config.workspace_root,
+                            case,
+                            super::super::super::formula_statement::step5c8_test_frontend(&base),
+                        )
+                        .unwrap();
+                    let (_, _, foreign_typed) =
+                        TermFormulaChecker::check_source_predicate_statements(
+                            &foreign_source,
+                            &foreign_symbols,
+                            &foreign_nodes,
+                        )
+                        .unwrap();
+                    let mut foreign_id = c_input.clone();
+                    let source_ids = mizar_session::InMemorySessionIdAllocator::new();
+                    loop {
+                        foreign_id.source_id = mizar_session::SessionIdAllocator::next_source_id(
+                            &source_ids,
+                            snapshot_id(0),
+                        )
+                        .unwrap();
+                        if foreign_id.source_id != source.source_id() {
+                            break;
+                        }
+                    }
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            foreign_id,
+                            primary,
+                            atomic,
+                            typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    assert!(
+                        SourcePredicateChainCompositionProducer::build(
+                            c_input.clone(),
+                            foreign_typed.source_term().unwrap(),
+                            foreign_typed.source_atomic_formula().unwrap(),
+                            foreign_typed.nodes()
+                        )
+                        .is_err()
+                    );
+                    assert!(
+                        foreign_typed
+                            .clone()
+                            .with_source_predicate_chain_composition(c.clone())
+                            .is_err()
+                    );
+                    assert_eq!(
+                        SourcePredicateChainCompositionProducer::build(
+                            c_input,
+                            primary,
+                            atomic,
+                            typed.nodes()
+                        )
+                        .unwrap(),
+                        c
+                    );
+                    assert_eq!(typed, lower_before_c);
+                }
+            }
             if profile == 1 {
                 let continuation = ast.node_view(applications[0].children()[1]).unwrap();
                 let continued_head = continuation

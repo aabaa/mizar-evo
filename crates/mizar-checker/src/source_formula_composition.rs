@@ -950,7 +950,7 @@ impl SourceConditionFormulaCompositionProducer {
     }
 }
 
-/// Validates and publishes the exact Task 257C3 predicate-chain composition.
+/// Validates predicate-chain associations over numeric or variable dependencies.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SourcePredicateChainCompositionProducer;
 
@@ -1116,6 +1116,136 @@ fn validate_predicate_chain_transaction(
             arena,
         )
         .map_err(|_| SourcePredicateChainCompositionError::DependencyMismatch)?;
+    if !primary_terms.references().is_empty() {
+        let invalid = SourcePredicateChainCompositionError::DependencyMismatch;
+        if !primary_terms.numeric_type_requests().is_empty()
+            || primary_terms.references().len() != primary_terms.terms().len()
+            || primary_terms
+                .terms()
+                .iter()
+                .zip(primary_terms.references().iter())
+                .any(|((id, term), (_, reference))| {
+                    term.kind() != SourcePrimaryTermKind::VariableReference
+                        || term.role() != SourcePrimaryTermRole::Value
+                        || term.recovery() != SourcePrimaryTermRecovery::Normal
+                        || term.parent().is_some()
+                        || term.source_ordinal() != id.index()
+                        || reference.term() != id
+                        || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                })
+            || !atomic_formulas.wrappers().is_empty()
+            || !atomic_formulas.type_sites().is_empty()
+            || !atomic_formulas.attributes().is_empty()
+            || atomic_formulas.formulas().iter().any(|(_, formula)| {
+                formula.recovery() != SourceAtomicFormulaRecovery::Normal
+                    || !matches!(
+                        formula.kind(),
+                        SourceAtomicFormulaKind::Equality
+                            | SourceAtomicFormulaKind::Membership
+                            | SourceAtomicFormulaKind::PredicateApplication
+                    )
+            })
+            || atomic_formulas
+                .edges()
+                .iter()
+                .any(|(_, edge)| !matches!(edge.target(), SourceAtomicTermTarget::Primary(_)))
+            || atomic_formulas.predicate_heads().len() != atomic_formulas.predicate_segments().len()
+            || atomic_formulas.candidates().len() != atomic_formulas.predicate_heads().len()
+        {
+            return Err(invalid);
+        }
+        let first = atomic_formulas
+            .candidates()
+            .get(SourcePredicateCandidateId::new(0))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if first.symbol().module() != &input.module_id
+            || atomic_formulas
+                .predicate_heads()
+                .iter()
+                .zip(atomic_formulas.candidates().iter())
+                .any(|((head_id, head), (_, candidate))| {
+                    head.recovery() != SourceAtomicFormulaRecovery::Normal
+                        || head.left_arity() != 1
+                        || head.right_arity() != 1
+                        || candidate.head() != head_id
+                        || candidate.ordinal() != 0
+                        || candidate.symbol() != first.symbol()
+                        || candidate.contribution() != first.contribution()
+                })
+        {
+            return Err(invalid);
+        }
+        let mut conjunctions = Vec::new();
+        let mut negations = Vec::new();
+        for (formula, row) in atomic_formulas.formulas().iter() {
+            if row.kind() != SourceAtomicFormulaKind::PredicateApplication {
+                continue;
+            }
+            let segments = atomic_formulas
+                .predicate_segments()
+                .iter()
+                .filter(|(_, segment)| segment.formula() == formula)
+                .collect::<Vec<_>>();
+            if segments.is_empty() {
+                return Err(invalid);
+            }
+            if segments.len() == 1 {
+                continue;
+            }
+            for (ordinal, pair) in segments.windows(2).enumerate() {
+                if pair[0].1.right_edge() != pair[1].1.left_edge() {
+                    return Err(invalid);
+                }
+                conjunctions.push(SourcePredicateChainConjunctionInput {
+                    formula,
+                    ordinal,
+                    left_segment: pair[0].0,
+                    right_segment: pair[1].0,
+                    boundary: pair[0].1.right_edge(),
+                });
+            }
+            for (ordinal, (segment, _)) in segments
+                .iter()
+                .filter(|(_, segment)| {
+                    matches!(
+                        segment.polarity(),
+                        SourcePredicateSegmentPolarityInput::Negative { .. }
+                    )
+                })
+                .enumerate()
+            {
+                negations.push(SourcePredicateChainNegationInput {
+                    formula,
+                    ordinal,
+                    segment: *segment,
+                });
+            }
+        }
+        if conjunctions.is_empty() {
+            return Err(invalid);
+        }
+        if input.conjunctions.len() != conjunctions.len()
+            || input.negations.len() != negations.len()
+        {
+            return Err(SourcePredicateChainCompositionError::InvalidAggregate);
+        }
+        for (index, (actual, expected)) in input.conjunctions.iter().zip(&conjunctions).enumerate()
+        {
+            if actual != expected {
+                return Err(SourcePredicateChainCompositionError::InvalidConjunction {
+                    conjunction: SourcePredicateChainConjunctionId::new(index),
+                });
+            }
+        }
+        for (index, (actual, expected)) in input.negations.iter().zip(&negations).enumerate() {
+            if actual != expected {
+                return Err(SourcePredicateChainCompositionError::InvalidNegation {
+                    negation: SourcePredicateChainNegationId::new(index),
+                });
+            }
+        }
+        return Ok(());
+    }
     validate_predicate_chain_dependency_profiles(primary_terms, atomic_formulas)?;
 
     let ([conjunction], [negation]) = (input.conjunctions.as_slice(), input.negations.as_slice())

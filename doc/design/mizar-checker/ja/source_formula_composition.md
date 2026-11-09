@@ -27,6 +27,9 @@ composition検証は同じ局所bindingを選び、元のcontext、scope、ordin
 検査し、汎用PrimaryTermの規則は維持する。依存・transaction形状と元の
 デバッグ期待値は変更しない。
 
+## 変数参照predicate-chainの関連付け
+既存C3 producerとTyped/Resolved replayは、normalな変数参照依存、記録済みの同一module述語identityを共有するbinary head、変更しないEquality/Membership・singleton siblingも検証する。各multi-segment chainはsource順の全隣接pairと全negative segment rowを持つ。conjunction ordinalは隣接順、negation ordinalはformulaごとのnegative segment順である。singletonにC rowは付けず、少なくとも一つのchainを要求する。lower ID/fingerprintと所有は検証済みlower producerに残し、新たなsource/type認証・推論・proof権限を与えない。参照なしnumeric profileは以下の正確な規則を保つ。
+
 ## Task257C3 の相対ソース位置
 
 C3は実formula/segmentのメンバー範囲と重複しないソース順序を使い、numeral/divides/does/not

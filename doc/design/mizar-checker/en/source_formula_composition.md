@@ -28,6 +28,9 @@ with the original context, scope, ordinal, declaration identity and empty captur
 Composition checks both bare-use byte extents; generic PrimaryTerm policy stays
 unchanged. All dependency/transaction shapes and original debug oracles remain fixed.
 
+## Variable-reference predicate-chain associations
+The existing C3 producer and Typed/Resolved replay also validate normal variable-reference dependencies with binary heads sharing one recorded current-module predicate identity and unchanged Equality/Membership or singleton siblings. Every actual multi-segment chain contributes its complete source-ordered adjacent-pair census and all negative-segment rows; conjunction ordinals count adjacency, while negation ordinals count only negative segments per formula. Singleton calls have no C rows and at least one chain is required. Lower IDs/fingerprints and ownership stay with the validated lower producers; this adds no fresh source/type certification, inference or proof authority. The reference-empty numeric profile below retains its exact rules.
+
 ## Task257C3 relative source profile
 
 C3 uses actual formula/segment member envelopes and nonoverlapping source order,
