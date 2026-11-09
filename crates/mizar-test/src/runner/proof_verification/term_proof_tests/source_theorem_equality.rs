@@ -1422,6 +1422,7 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
     let unused_object = text.replace("Unused being set", "Unused being object");
     let unresolved = text.replace("holds X = X", "holds X = Y");
     let conjunction = text.replace("holds X = X", "holds X = X & X = X");
+    let unused_reserve = format!("reserve Z for set; {text}");
     for changed in [
         unused_object.clone(),
         text.replace("set", "object"),
@@ -1437,7 +1438,7 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
         "open theorem T: for X being set holds X = X;".into(),
         "assumed theorem T: for X being set holds X = X;".into(),
         "theorem T: 0 = 0 by computation(steps: 8);".into(),
-        format!("reserve Z for set; {text}"),
+        unused_reserve.clone(),
         format!("import mml.test; {text}"),
         format!("definition let Z be set; end; {text}"),
         text.replace("thus X = X", "thus X ="),
@@ -1460,6 +1461,10 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
             occurrences
                 .as_ref()
                 .expect("fixed conjunction must resolve")
+        } else if changed == unused_reserve {
+            occurrences
+                .as_ref()
+                .expect("unused Reserve must resolve freshly")
         } else if changed == unused_object {
             occurrences
                 .as_ref()
@@ -1479,6 +1484,27 @@ fn source_theorem_equality_producer_rejects_foreign_and_unsupported_sources() {
             env.env(),
             occurrence_input,
         );
+        if changed == unused_reserve {
+            // EN04 §4.3: the unused default does not exclude an explicitly typed quantifier.
+            assert!(
+                TermFormulaChecker::check_source_theorem_equalities(
+                    &altered_source,
+                    env.env(),
+                    &scope
+                )
+                .is_err()
+            );
+            let (_, inference, typed) = result.unwrap();
+            assert_eq!(
+                (inference.terms().len(), inference.formulas().len()),
+                (4, 2)
+            );
+            assert_eq!(typed.source_term().unwrap().terms().len(), 4);
+            assert_eq!(typed.source_atomic_formula().unwrap().formulas().len(), 2);
+            assert!(typed.source_type().is_none());
+            assert!(inference.facts().is_empty() && typed.facts().is_empty());
+            continue;
+        }
         if changed == conjunction {
             let (_, inference, typed) = result.unwrap();
             assert_eq!(typed.source_term().unwrap().terms().len(), 6);

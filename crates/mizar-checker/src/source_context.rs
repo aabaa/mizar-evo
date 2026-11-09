@@ -2153,38 +2153,71 @@ pub(crate) mod tests {
             task257b5_native_case, task257b5_native_forged_replay, task257b5_native_replay,
         };
         let fixture = include_str!("../tests/testdata/native_implicit_quantifier_statement.miz");
-        task257b5_native_case(fixture, |installed, parts, primary, expressions, _| {
-            let baseline = installed.unwrap();
-            let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
-            for fault in 0..4 {
-                let mut changed = parts.clone();
-                let context = changed.source_context.as_mut().unwrap();
-                assert_eq!(context.declarations.entries.len(), 3);
-                match fault {
-                    0 => {
-                        context.declarations.entries[1].written_type_range =
-                            context.declarations.entries[2].written_type_range
+        for (text, declarations) in [
+            (fixture.to_owned(), 3),
+            (
+                format!(
+                    "{fixture} reserve y for set; theorem Later: for y holds y = y proof let y be set; thus y = y; end;"
+                ),
+                6,
+            ),
+        ] {
+            task257b5_native_case(&text, |installed, parts, primary, expressions, _| {
+                let baseline = installed.unwrap();
+                let pristine = task257b5_native_replay(&baseline, expressions.clone()).unwrap();
+                for fault in 0..if declarations == 6 { 5 } else { 4 } {
+                    let mut changed = parts.clone();
+                    let context = changed.source_context.as_mut().unwrap();
+                    assert_eq!(context.declarations.entries.len(), declarations);
+                    match fault {
+                        0 => {
+                            context.declarations.entries[1].written_type_range =
+                                context.declarations.entries[2].written_type_range
+                        }
+                        1 => {
+                            context.declarations.entries[1].shadowed_binding =
+                                Some(context.declarations.entries[2].binding)
+                        }
+                        2 => context.declarations.entries.swap(0, 1),
+                        3 => context.declarations.entries[1].source_ordinal = 0,
+                        _ => {
+                            let future = context
+                                .declarations
+                                .entries
+                                .iter()
+                                .find(|row| {
+                                    row.role == SourceBindingSiteRole::ReserveDefault
+                                        && row.spelling == "y"
+                                })
+                                .unwrap()
+                                .written_type_range;
+                            let earlier = context
+                                .declarations
+                                .entries
+                                .iter_mut()
+                                .find(|row| {
+                                    row.role == SourceBindingSiteRole::QuantifierBinder
+                                        && row.spelling == "x"
+                                })
+                                .unwrap();
+                            assert!(earlier.declaration_range.end < future.start);
+                            earlier.written_type_range = future;
+                        }
                     }
-                    1 => {
-                        context.declarations.entries[1].shadowed_binding =
-                            Some(context.declarations.entries[2].binding)
-                    }
-                    2 => context.declarations.entries.swap(0, 1),
-                    _ => context.declarations.entries[1].source_ordinal = 0,
+                    let (_, result) = task257b5_native_forged_replay(
+                        baseline.clone(),
+                        changed,
+                        primary.clone(),
+                        expressions.clone(),
+                    );
+                    assert!(result.is_err(), "declaration fault {fault}");
+                    assert_eq!(
+                        task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
+                        pristine
+                    );
                 }
-                let (_, result) = task257b5_native_forged_replay(
-                    baseline.clone(),
-                    changed,
-                    primary.clone(),
-                    expressions.clone(),
-                );
-                assert!(result.is_err(), "declaration fault {fault}");
-                assert_eq!(
-                    task257b5_native_replay(&baseline, expressions.clone()).unwrap(),
-                    pristine
-                );
-            }
-        });
+            });
+        }
     }
 
     #[test]

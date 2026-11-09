@@ -6937,6 +6937,19 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         "reserve x, y for set; lemma Fixed: (for x holds x = x) iff (ex y st y = y) proof let x be set; thus x = x; end;".into(),
         "reserve x, y for set; theorem Unused: for x, y holds x = x proof let x be set; thus x = x; end;".into(),
     ]);
+    // EN04 §§4.3/4.5/4.6.1: defaults apply after their directive;
+    // explicit binders need no default, and unused hints remain source items.
+    let interleaved = "reserve x for set; theorem First: for x holds x = x proof let x be set; thus x = x; end; reserve y for set; lemma Second: ex y st y = y proof let y be set; thus y = y; end;";
+    cases.extend([
+        implicit.replace("for x holds", "for x being set holds"),
+        format!("{} reserve y for set;", implicit.trim()),
+        format!("{} {implicit}", theorem("for z being set holds z = z")),
+        interleaved.into(),
+        interleaved
+            .replace(" x", " parcel")
+            .replace(" y", " token")
+            .replace("set;", "set;\n:: layout\n"),
+    ]);
     // Manual (variable terms, equalities including proof, declarations, contexts).
     let counts = [
         (12, 6, 3, 4),
@@ -6975,6 +6988,11 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         (6, 3, 5, 4),
         (6, 3, 5, 4),
         (4, 2, 5, 3),
+        (4, 2, 3, 3),
+        (4, 2, 4, 3),
+        (8, 4, 5, 5),
+        (8, 4, 6, 5),
+        (8, 4, 6, 5),
     ];
     let positive_count = cases.len();
     cases.extend([
@@ -6989,15 +7007,18 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         theorem("ex x being set st x = x").replace("thus x = x;", "set y = x; thus y = y;"),
     ]);
     cases.extend([
-        implicit.replace("for x holds", "for x being set holds"),
         implicit.replace("let x be set", "let x"),
         implicit
             .replace("reserve x for set;", "reserve x, y for set;")
             .replace("holds x = x", "holds x = y"),
-        format!("{} reserve y for set;", implicit.trim()),
     ]);
     let duplicate_reserve = cases.len();
     cases.push(implicit.replace("reserve x for set;", "reserve x, x for set;"));
+    let forward_default = cases.len();
+    cases.push(format!(
+        "{} reserve x for set;",
+        implicit.replace("reserve x for set;", "")
+    ));
     let recovered_start = cases.len();
     cases.extend([
         theorem("for x being set holds (x = x"),
@@ -7073,6 +7094,13 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
         let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
             SourceVariableScopeInput::new(ast, &module, &symbols),
         );
+        if case == forward_default {
+            assert_eq!(
+                scope.unwrap_err(),
+                mizar_resolve::names::SourceVariableScopeError::UnreservedImplicitVariable
+            );
+            continue;
+        }
         if is_recovered {
             assert!(
                 ast.node_views()
@@ -7215,6 +7243,45 @@ fn task257b7_native_quantifier_lower_preserves_genuine_tables() -> Result<(), St
                     .node_views()
                     .filter(|view| view.kind() == &K::ReserveItem)
                     .count()
+        );
+        let mut items = ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), K::ReserveItem | K::TheoremItem | K::LemmaItem))
+            .collect::<Vec<_>>();
+        items.sort_by_key(|view| view.range().start);
+        for (ordinal, ((id, row), syntax)) in context.items().iter().zip(&items).enumerate() {
+            assert_eq!(
+                (row.shell_ordinal, row.source_range, row.site.clone()),
+                (ordinal, syntax.range(), site(syntax.id()))
+            );
+            assert_eq!(
+                row.predecessor,
+                ordinal
+                    .checked_sub(1)
+                    .map(mizar_checker::source_context::SourceItemId::new)
+            );
+            assert_eq!(id.index(), ordinal);
+            assert_eq!(
+                row.role,
+                match syntax.kind() {
+                    K::ReserveItem => mizar_checker::source_context::SourceItemRole::Reserve,
+                    K::TheoremItem => mizar_checker::source_context::SourceItemRole::Theorem,
+                    K::LemmaItem => mizar_checker::source_context::SourceItemRole::Lemma,
+                    _ => unreachable!(),
+                }
+            );
+        }
+        assert_eq!(
+            context
+                .declarations()
+                .iter()
+                .map(|(_, row)| row.declaration_range)
+                .collect::<Vec<_>>(),
+            scope
+                .bindings()
+                .iter()
+                .map(|row| row.range())
+                .collect::<Vec<_>>()
         );
         assert_eq!(context.declarations().len(), scope.bindings().len());
         assert_eq!(env.bindings().len(), scope.bindings().len());
@@ -7875,6 +7942,45 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
         ("reserve x, y for set; lemma Fixed: (for x holds x = x) iff (ex y st y = y) proof let x be set; thus x = x; end;".into(), vec![C::Biconditional,C::Universal,C::Existential], vec![(0,0,E::BiconditionalLeft,1),(0,1,E::BiconditionalRight,2)], vec![(1,0,A::UniversalBody,0),(2,0,A::ExistentialBody,1)], (2,0)),
         ("reserve x, y for set; theorem Unused: for x, y holds x = x proof let x be set; thus x = x; end;".into(), vec![C::Universal], vec![], vec![(0,0,A::UniversalBody,0)], (0,0)),
     ]);
+    let interleaved = "reserve x for set; theorem First: for x holds x = x proof let x be set; thus x = x; end; reserve y for set; lemma Second: ex y st y = y proof let y be set; thus y = y; end;";
+    cases.extend([
+        (
+            implicit.replace("for x holds", "for x being set holds"),
+            vec![C::Universal],
+            vec![],
+            vec![(0, 0, A::UniversalBody, 0)],
+            (0, 0),
+        ),
+        (
+            format!("{} reserve y for set;", implicit.trim()),
+            vec![C::Universal],
+            vec![],
+            vec![(0, 0, A::UniversalBody, 0)],
+            (0, 0),
+        ),
+        (
+            format!("{} {implicit}", theorem("for z being set holds z = z")),
+            vec![C::Universal, C::Universal],
+            vec![],
+            vec![(0, 0, A::UniversalBody, 0), (1, 0, A::UniversalBody, 2)],
+            (0, 0),
+        ),
+    ]);
+    for text in [
+        interleaved.to_owned(),
+        interleaved
+            .replace(" x", " parcel")
+            .replace(" y", " token")
+            .replace("set;", "set;\n:: layout\n"),
+    ] {
+        cases.push((
+            text,
+            vec![C::Universal, C::Existential],
+            vec![],
+            vec![(0, 0, A::UniversalBody, 0), (1, 0, A::ExistentialBody, 2)],
+            (0, 0),
+        ));
+    }
     let temporary = std::process::Command::new("mktemp")
         .arg("-d")
         .output()
@@ -8111,11 +8217,23 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
             module_id: source.module().clone(),
             formulas: vec![],
             wrappers: vec![],
-            roots: vec![SourceFormulaRootInput {
-                formula: SourceCompositeFormulaId::new(0),
-                ordinal: 0,
-                ownership: SourceFormulaRootOwnership::UnassignedStatement,
-            }],
+            roots: syntax
+                .iter()
+                .enumerate()
+                .filter(|(_, written)| {
+                    !syntax.iter().any(|outer| {
+                        outer.id() != written.id()
+                            && outer.range().start <= written.range().start
+                            && written.range().end <= outer.range().end
+                    })
+                })
+                .enumerate()
+                .map(|(ordinal, (index, _))| SourceFormulaRootInput {
+                    formula: SourceCompositeFormulaId::new(index),
+                    ordinal,
+                    ownership: SourceFormulaRootOwnership::UnassignedStatement,
+                })
+                .collect(),
             binders: vec![],
             type_sites: vec![],
             edges: vec![],
@@ -8817,6 +8935,50 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
             let (actual_scope, labels, resolution) =
                 mizar_resolve::symbols::source_proof_inputs(source, symbols)?;
             assert_eq!(&actual_scope, scope);
+            use mizar_session::{
+                SessionIdAllocator, SnapshotInput, SnapshotRegistry, SourceVersion, ToolchainInfo,
+                WorkspaceRoot, hash_text,
+            };
+            let policy = mizar_proof::policy::VerifierPolicy::default();
+            let registry = SnapshotRegistry::new();
+            let unit = &frontend.source;
+            let (snapshot, _lease) = registry
+                .create_snapshot(
+                    ids.next_request_id().unwrap(),
+                    SnapshotInput {
+                        workspace_root: WorkspaceRoot::new(root.to_str().unwrap()),
+                        source_versions: vec![SourceVersion {
+                            source_id: unit.source_id,
+                            package_id: unit.package_id.clone(),
+                            module_path: unit.module_path.clone(),
+                            normalized_path: unit.normalized_path.clone(),
+                            source_hash: unit.source_hash,
+                            edition: unit.edition.clone(),
+                            origin: unit.origin.clone(),
+                        }],
+                        dependency_artifacts: vec![],
+                        lockfile_hash: hash_text(
+                            &fs::read_to_string(
+                                Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.lock"),
+                            )
+                            .unwrap(),
+                        ),
+                        toolchain: ToolchainInfo::new("native-reserve-placement-test"),
+                        verifier_config_hash: policy.policy_fingerprint().hash(),
+                    },
+                )
+                .unwrap();
+            let snapshot_before = snapshot.clone();
+            assert_eq!(
+                mizar_proof::status::source_theorem_reflexivity_witness_draft_from_original(
+                    source, symbols, &snapshot, &policy, ""
+                )
+                .unwrap_err(),
+                "theorems.equality.unsupported_source_types"
+            );
+            assert_eq!(snapshot, snapshot_before);
+            assert!(!root.join("proof-witnesses").exists());
+            assert!(mizar_checker::type_checker::SourceVariableSemanticsChecker::check_proof_organization(&baseline, scope, symbols, &labels, &resolution).is_err());
             assert!(mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(source, &baseline, scope, symbols, &labels, &resolution, None).is_err());
         }
         let statement_admitted = !implicit_family

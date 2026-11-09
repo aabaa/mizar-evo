@@ -6338,14 +6338,12 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
-        let implicit = rows.iter().any(|original| {
-            original.kind == K::QuantifierVariableSegment
-                && !children(original)
-                    .iter()
-                    .any(|child| child.kind == K::TypeExpression)
-        });
-        let has_reserve = rows.iter().any(|row| row.kind == K::ReserveItem);
-        if has_reserve != implicit {
+        let implicit = rows.iter().any(|row| row.kind == K::ReserveItem);
+        if implicit
+            && !rows
+                .iter()
+                .any(|row| matches!(row.kind, K::QuantifiedFormula(_)))
+        {
             return Err(invalid());
         }
         let mut headers = BTreeSet::new();
@@ -6873,14 +6871,7 @@ impl TermFormulaChecker {
             .filter(|row| matches!(row.kind, K::ReserveItem | K::TheoremItem | K::LemmaItem))
             .collect::<Vec<_>>();
         items.sort_by_key(|row| (row.range.start, row.range.end, row.site));
-        if items.len() != context.items().len()
-            || owners.is_empty()
-            || (implicit
-                && items
-                    .iter()
-                    .filter(|row| row.kind == K::ReserveItem)
-                    .any(|hint| hint.range.end > owners[0].range.start))
-        {
+        if items.len() != context.items().len() || owners.is_empty() {
             return Err(invalid());
         }
         for ((ordinal, original), (id, item)) in
@@ -23521,9 +23512,11 @@ fn source_theorem_implicit_type_sites(
     scope: &ResolvedVariableScope,
 ) -> Result<BTreeMap<ResolvedNodeId, ResolvedNodeId>, String> {
     let invalid = || "theorems.equality.unsupported_source_types".to_owned();
-    if !scope.bindings().iter().any(|binding| {
-        binding.kind() == SourceVariableBindingKind::Quantifier && binding.declared_type().is_none()
-    }) {
+    if !scope
+        .bindings()
+        .iter()
+        .any(|binding| binding.kind() == SourceVariableBindingKind::Quantifier)
+    {
         return Ok(BTreeMap::new());
     }
     let hints = scope
@@ -23534,16 +23527,6 @@ fn source_theorem_implicit_type_sites(
     if hints.is_empty() {
         return Ok(BTreeMap::new());
     }
-    let first_owner = source
-        .arena()
-        .iter()
-        .filter(|(_, row)| matches!(row.kind(), K::TheoremItem | K::LemmaItem))
-        .filter_map(|(_, row)| match row.origin().anchor() {
-            SourceAnchor::Range(range) => Some(range.start),
-            _ => None,
-        })
-        .min()
-        .ok_or_else(invalid)?;
     let mut names = BTreeSet::new();
     let mut types = BTreeMap::new();
     for hint in &hints {
@@ -23567,9 +23550,7 @@ fn source_theorem_implicit_type_sites(
         }
         let ty = *segment.children().last().ok_or_else(invalid)?;
         let row = source.arena().node(ty).ok_or_else(invalid)?;
-        if row.kind() != &K::TypeExpression
-            || !matches!(row.origin().anchor(), SourceAnchor::Range(range) if range.end < first_owner)
-        {
+        if row.kind() != &K::TypeExpression {
             return Err(invalid());
         }
         types.insert(name, ty);
