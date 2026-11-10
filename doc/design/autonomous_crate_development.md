@@ -397,9 +397,7 @@ documents never link back to a contract. A contract is linked only from
 `doc/design/todo.md`, crate plans, crate todos, and the coverage audit.
 
 Stable module inventories and public-enum policies remain in their existing
-owner documents when required by repository lint. A future task-contract lint
-must scan the paired directory recursively before the workflow may claim that
-nested task contracts are machine-enforced.
+owner documents when required by repository lint.
 
 ### Migration policy
 
@@ -535,6 +533,7 @@ recorded in the commit body. Files without a row are held at the default.
 | `ceremony_tokens` | `doc/design/**/*.md` except `archive/` and this protocol: occurrences of `quality score`, `score cap`, `xhigh`, `<n>/100`, `hard gate(s) n/m`, the words `Luna`/`Sol`/`Terra`, and 64-hex digests | 0 |
 | `contract_lines` | each `doc/design/task_contracts/{en,ja}/**/*.md` | 60 |
 | `contract_fanout` | files outside `task_contracts/`, `todo.md`, crate plans, crate todos, and `spec_coverage_audit.md` that link a contract | 0 |
+| `fixture_constants` | `doc/design/**/*.md` except `archive/` and this protocol: lines with a byte range `<n>..<n>`, a `<n>-byte` size, or `<n> Surface rows` | 0 |
 
 ## Verification Cadence
 
@@ -575,15 +574,15 @@ test-runner threads and required test coverage.
   Missing or ambiguous full-success/count evidence requires a full run before
   further deferral. Only a full success covering all outstanding changes
   resets the count.
-- **Not a per-task step:** full `cargo test` runs only on one of the triggers
-  above (tenth task, integration/exit, policy/selection change, full-failure
-  repair, or impact that cannot be bounded), and the commit body names the
-  trigger. A task boundary, a review round, or caution alone is not a
-  trigger. "Cannot be bounded" must name the unbounded obligation; a slice
-  that extends an existing producer/test family under a frozen contract is
-  bounded by that family's focused checks. After a review fix, rerun only the
-  checks whose inputs the fix changed; a documentation-only fix reruns only
-  the documentation/ledger checks.
+- **Policy change:** a change to verification policy or test selection
+  requires full `cargo test` immediately.
+- **Not a per-task step:** full `cargo test` runs only on a trigger above, and
+  the commit body names it. A task boundary, a review round, or caution alone
+  is not a trigger. "Cannot be bounded" must name the unbounded obligation; a
+  slice that extends an existing producer/test family under a frozen contract
+  is bounded by that family's focused checks. After a review fix, rerun only
+  the checks whose inputs the fix changed; a documentation-only fix reruns
+  only the documentation/ledger checks.
 
 Record the last full-success revision plus dirty-diff identity if applicable,
 outstanding task count, commands/results/log paths, and the reason each long
@@ -616,24 +615,19 @@ matrices only: it does not include `standard`. Cost labels describe selection
 breadth, not a time guarantee; measure build and execution time separately on
 identified trees and keep measurements outside `doc/`.
 
-Before implementation, record affected functions, selected checks, and which
-heavy obligations run or defer in existing task evidence. A changed obligation
-requires its heavy matrix immediately regardless of cost; a matching dependency
-or the word "identity" alone does not require unrelated matrices or full tests.
-Defer only bounded, unaffected obligations, naming the group, reason and its
-periodic/integration deadline under the rules above. New/changed regressions
-and unclassified affected tests must run explicitly; unknown impact requires
-full. Record the trigger for each full run, rather than treating a task boundary
-as one. Reuse checks already covered on the same tree under the evidence rules;
-corpus commands and extra assertions still need their own applicable evidence.
+Before implementation, record in the task evidence the affected functions,
+the selected checks, and which heavy obligations run or defer. A changed
+obligation runs its heavy matrix immediately regardless of cost; a matching
+dependency or the word "identity" alone does not require unrelated matrices
+or full tests. Defer only bounded, unaffected obligations, naming the group,
+the reason, and its periodic/integration deadline. New/changed regressions and
+unclassified affected tests run explicitly. Corpus commands and extra
+assertions need their own evidence even when other checks are reused.
 
-Changes to verification policy or test selection require `full` immediately.
-These are starting sets. Before implementation, add change-specific regressions,
-affected crate/corpus checks, and relevant long tests under the rules above.
-Run formatting and Clippy separately as required by `AGENTS.md`; these commands
+Formatting and Clippy run separately as `AGENTS.md` requires; these commands
 select tests only. A regression first found by periodic full testing becomes a
-focused check for that change class. Exact representative tests must exist;
-a renamed or missing test makes the command fail rather than pass zero tests.
+focused check for that change class. Exact representative tests must exist; a
+renamed or missing test makes the command fail rather than pass zero tests.
 
 Keep ordinary `cargo test` exhaustive and CI running it on every push/PR.
 Do not add `#[ignore]` or omit cases from CI to implement this cadence.

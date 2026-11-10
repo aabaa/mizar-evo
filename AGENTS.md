@@ -15,26 +15,16 @@ Where the two differ, the protocol wins.
   use. Inline first; abstract only at three or more real call sites.
 - For changes exceeding 300 production lines or adding a public seam, present
   the plan first; this alone does not require user approval.
-- Documentation records decisions and boundaries only. Per-run evidence,
-  scores, gate tallies, digests, review outcomes, and model/reasoning settings
-  belong in the commit body, never `doc/`. `cargo test` enforces the ratchet
-  in `tests/coverage/doc_volume_baseline.tsv`; rows may only be lowered or
-  removed.
-- A task contract is at most 60 lines per language, linked only from
-  `doc/design/todo.md`, crate plans, crate todos, or the coverage audit.
-  Module documents never point back at contracts.
-- Declare the gate tier (full, pattern, or light) in the contract or commit
-  body. A slice that repeats a reviewed family's pattern for one more input
-  shape is pattern tier; one family contract covers its slices through its
-  ledger under `tests/coverage/`, and a slice updates its ledger row, never a
-  contract line. Bundle three to five identical-shape slices (under about
-  thirty production lines each, no profile or baseline retirement) into one
-  task and one commit (protocol: "Gate Tiering", "Canonical Task Contracts").
-- Module and harness documents change only on a boundary change (public API,
-  type, or field; diagnostic class; owner module; accepted-input rule; exit
-  criterion). A slice that makes a sentence stale deletes it; the
-  `fixture_constants` ratchet refuses new byte ranges, `-byte` sizes, and
-  Surface row counts under `doc/design`.
+- Documentation records decisions and boundaries only; per-run evidence,
+  scores, digests, review outcomes, and model settings go in the commit body.
+  The `doc_volume_baseline.tsv` ratchet enforces this (protocol:
+  "Documentation Volume Ledger").
+- Declare the gate tier (full, pattern, or light) before implementation. A
+  further slice of a reviewed family is pattern tier unless it fails a named
+  pattern criterion; bundle three to five small identical-shape slices into
+  one task and commit. A slice updates its family ledger row; module and
+  harness documents change only on a boundary change (protocol: "Gate
+  Tiering", "Canonical Task Contracts").
 - End every commit body with `volume: prod +N test +N doc +N` (added lines from
   `git diff --numstat`: non-test `crates/**/src`, tests and `.miz`/`.toml`
   fixtures, `doc/`).
@@ -68,10 +58,9 @@ and give each sub-agent a self-contained [review packet](doc/design/autonomous_c
 with a clear write scope and no pre-stated conclusion. Each sub-agent serves
 one review phase or implementation packet of one task: close it after
 integration, never reuse it for a later task, and never let it spawn its own
-sub-agents. Each review phase gets at most two re-reviews, after which the
-parent decides. Keep the parent context small: locate with `rg -n`, read
-bounded ranges, and never print whole large files or logs (protocol:
-"Economical Review Packets", "Sub-agent lifecycle").
+sub-agents. Each review phase gets at most two re-reviews; then the parent
+decides. Keep the parent context small (protocol: "Economical Review Packets",
+"Delegation And Model Routing").
 
 Run read-only commands such as `rg`, `sed`, `cat`, and `git diff/status/log`
 inside the sandbox. Request escalation only for a command that failed there for
@@ -100,29 +89,11 @@ cargo test
 ```
 
 Follow the canonical [Verification Cadence](doc/design/autonomous_crate_development.md#verification-cadence).
-Its operational summary is:
-
-- Every changed task runs fmt, Clippy, both `lint_policy` suites (inventory,
-  ledger, link, and doc-volume checks), the owner test group, and a short
-  end-to-end check for executable changes. Reuse evidence only with unchanged
-  relevant inputs and execution conditions.
-- Pattern slice: one post-implementation review (a pre-implementation review
-  only when the plan departs from the predecessor); no delta review or
-  before/after measurement probes. Add the family oracle/metamorphic cases;
-  corpus, Driver, and docs groups run every third slice, with the volume
-  review, or with every bundle (protocol: "Pattern gates").
-- Select function and cost separately using the protocol command table; heavy
-  groups are additional, not cumulative. Run affected long tests immediately
-  and record deferred groups with reasons and deadlines.
-- Full `cargo test` is not a per-task step. Run it only on a named cadence
-  trigger (tenth repository-changing task since the last full success,
-  integration/exit, verification-policy or selection change, full-failure
-  repair, named unbounded impact) and record the trigger. Full must also pass
-  before shared push/merge, release, or crate/milestone exit. Never reset the
-  pending count on restart or branch change; unknown state requires full.
-  Local commits may be "focused checks passed; full regression pending".
-- Full failure stops feature work until repair and full success. Keep CI
-  running full on every push/PR.
+In short: every changed task runs fmt, Clippy, both `lint_policy` suites, the
+owner test group, and a short end-to-end check for executable changes; pattern
+slices run the narrower set under "Pattern gates". Full `cargo test` runs only
+on a named cadence trigger, which includes shared push; record the trigger. A
+full failure stops feature work until it is repaired.
 
 Reviewers reuse the parent's command, checked revision/worktree, exit status,
 and log location, rerunning only what changes or findings invalidate. Keep full
