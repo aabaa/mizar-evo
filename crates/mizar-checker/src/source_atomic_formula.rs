@@ -1812,7 +1812,8 @@ fn validate_cross_family_ranges(
                 if ranges_overlap(outer, occurrence.range)
                     && !properly_contains(formula.source_range, occurrence.range)
                     && !is_authenticated_condition_container(
-                        formula,
+                        input,
+                        SourceAtomicFormulaId::new(formula_index),
                         outer,
                         set_terms,
                         id,
@@ -1829,16 +1830,38 @@ fn validate_cross_family_ranges(
 }
 
 fn is_authenticated_condition_container(
-    formula: &SourceAtomicFormulaInput,
+    input: &SourceAtomicFormulaHandoffInput,
+    formula_id: SourceAtomicFormulaId,
     effective_formula_range: SourceRange,
     set_terms: &SourceSetTermHandoff,
     set_term_id: SourceSetTermId,
     set_term_range: SourceRange,
     arena: &TypedArena,
 ) -> bool {
+    let Some(formula) = input.formulas.get(formula_id.index()) else {
+        return false;
+    };
     let Some(set_term) = set_terms.terms().get(set_term_id) else {
         return false;
     };
+    let wrappers = input
+        .wrappers
+        .iter()
+        .filter(|wrapper| wrapper.formula == formula_id);
+    let (outer_site, outer_range, outer_spelling) = wrappers.clone().next().map_or(
+        (
+            &formula.site,
+            formula.source_range,
+            formula.spelling.as_str(),
+        ),
+        |wrapper| {
+            (
+                &wrapper.site,
+                wrapper.source_range,
+                wrapper.spelling.as_str(),
+            )
+        },
+    );
     if set_term.kind() != SourceSetTermKind::Comprehension
         || !matches!(
             formula.kind,
@@ -1848,20 +1871,76 @@ fn is_authenticated_condition_container(
         )
         || formula.recovery != SourceAtomicFormulaRecovery::Normal
         || formula.context != set_term.context()
-        || formula.source_range != effective_formula_range
-        || !properly_contains(set_term_range, formula.source_range)
+        || outer_range != effective_formula_range
+        || !properly_contains(set_term_range, outer_range)
     {
         return false;
+    }
+    let mut inner_site = formula.site.node();
+    let mut inner_range = formula.source_range;
+    for wrapper in wrappers.rev() {
+        if wrapper.recovery != SourceAtomicFormulaRecovery::Normal {
+            return false;
+        }
+        let Some(parent) = arena.node(wrapper.site.node()) else {
+            return false;
+        };
+        let [open, expression, close] = parent.children.as_slice() else {
+            return false;
+        };
+        let Some(expression) = arena.node(*expression) else {
+            return false;
+        };
+        if expression.kind.as_str() != "FormulaExpression"
+            || expression.recovery != NodeRecoveryState::Normal
+            || expression.anchor != SourceAnchor::Range(inner_range)
+            || expression.children.as_slice() != [inner_site]
+        {
+            return false;
+        }
+        for (site, kind, start, end) in [
+            (
+                *open,
+                r#"Token(SurfaceToken { kind: ReservedSymbol, text: "(" })"#,
+                wrapper.source_range.start,
+                wrapper.source_range.start + 1,
+            ),
+            (
+                *close,
+                r#"Token(SurfaceToken { kind: ReservedSymbol, text: ")" })"#,
+                wrapper.source_range.end - 1,
+                wrapper.source_range.end,
+            ),
+        ] {
+            let Some(token) = arena.node(site) else {
+                return false;
+            };
+            if token.kind.as_str() != kind
+                || !token.children.is_empty()
+                || token.recovery != NodeRecoveryState::Normal
+                || !matches!(&token.anchor, SourceAnchor::Range(range)
+                    if range.source_id == wrapper.source_range.source_id
+                    && range.start == start && range.end == end)
+            {
+                return false;
+            }
+        }
+        inner_site = wrapper.site.node();
+        inner_range = wrapper.source_range;
     }
     set_terms.conditions().iter().any(|(_, condition)| {
         condition.term() == set_term_id
             && condition.recovery() == SourceSetTermRecovery::Normal
-            && condition.source_range() == formula.source_range
-            && condition.spelling() == formula.spelling
-            && condition.condition_site() != &formula.site
+            && condition.source_range() == outer_range
+            && condition.spelling() == outer_spelling
+            && condition.condition_site() != outer_site
             && arena
                 .node(condition.condition_site().node())
-                .is_some_and(|node| node.children.contains(&formula.site.node()))
+                .is_some_and(|node| {
+                    node.children.contains(&outer_site.node())
+                        && (outer_site == &formula.site
+                            || node.children.as_slice() == [outer_site.node()])
+                })
     })
 }
 
@@ -1990,7 +2069,8 @@ fn validate_formula_order(
                                     && edge.target == SourceAtomicTermTarget::SetTerm(id)
                             })
                             && is_authenticated_condition_container(
-                                &input.formulas[index],
+                                input,
+                                SourceAtomicFormulaId::new(index),
                                 current.range,
                                 sets,
                                 id,
@@ -8959,6 +9039,276 @@ request#1 formula=0 ordinal=1 kind=operand-expected-type edge=1 candidate=- type
                 .expect("pristine atomic replay install"),
             set_then_atomic,
             "failed mismatch and relation checks must leave pristine replay available"
+        );
+    }
+
+    #[test]
+    fn grouped_builtin_condition_container_authenticates_and_replays() {
+        let mut options = ConditionContainerOptions::exact();
+        options.formula_range = (179, 184);
+        options.formula_spelling = "3 = 4";
+        options.operand_ranges = [(179, 180), (183, 184)];
+        let mut fixture = condition_container_fixture(options);
+        fixture.set_input.terms[0].source_range = range(fixture.source, 139, 188);
+        fixture.set_input.terms[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : ( 3 = 4 ) }".to_owned();
+        fixture.set_input.conditions[0].source_range = range(fixture.source, 177, 186);
+        fixture.set_input.conditions[0].spelling = "( 3 = 4 )".to_owned();
+
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[11] = TypedNode::new(
+            "source.term.set.comprehension-condition",
+            SourceAnchor::Range(range(fixture.source, 177, 186)),
+        )
+        .with_children(vec![node(13).node()]);
+        nodes[12] = TypedNode::new(
+            "source.term.set.comprehension",
+            SourceAnchor::Range(range(fixture.source, 139, 188)),
+        )
+        .with_children(vec![
+            node(5).node(),
+            node(6).node(),
+            node(9).node(),
+            node(11).node(),
+        ]);
+        nodes.push(
+            TypedNode::new(
+                "source.formula.atomic.parenthesized",
+                SourceAnchor::Range(range(fixture.source, 177, 186)),
+            )
+            .with_children(vec![node(14).node(), node(15).node(), node(16).node()]),
+        );
+        nodes.push(TypedNode::new(
+            r#"Token(SurfaceToken { kind: ReservedSymbol, text: "(" })"#,
+            SourceAnchor::Range(range(fixture.source, 177, 178)),
+        ));
+        nodes.push(
+            TypedNode::new(
+                "FormulaExpression",
+                SourceAnchor::Range(range(fixture.source, 179, 184)),
+            )
+            .with_children(vec![node(10).node()]),
+        );
+        nodes.push(TypedNode::new(
+            r#"Token(SurfaceToken { kind: ReservedSymbol, text: ")" })"#,
+            SourceAnchor::Range(range(fixture.source, 185, 186)),
+        ));
+        fixture.arena = TypedArena::try_new(None, nodes).expect("grouped condition arena");
+        fixture.atomic_input.wrappers = vec![SourceAtomicWrapperInput {
+            formula: SourceAtomicFormulaId::new(0),
+            ordinal: 0,
+            site: node(13),
+            source_range: range(fixture.source, 177, 186),
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "( 3 = 4 )".to_owned(),
+        }];
+
+        let set_terms = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("grouped equality set");
+        let without_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("grouped equality atomic family");
+        let with_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), Some(&set_terms))
+            .expect("authenticated grouped equality condition");
+        assert_eq!(without_set, with_set);
+        assert_eq!(without_set.debug_text(), with_set.debug_text());
+        assert_eq!(with_set.wrappers().len(), 1);
+
+        let set_then_atomic = fixture
+            .typed_ast()
+            .with_source_set_term(set_terms.clone())
+            .expect("grouped set-first install")
+            .with_source_atomic_formula(with_set.clone())
+            .expect("grouped atomic-after-set install");
+        let atomic_then_set = fixture
+            .typed_ast()
+            .with_source_atomic_formula(without_set.clone())
+            .expect("grouped atomic-first install")
+            .with_source_set_term(set_terms.clone())
+            .expect("grouped set-after-atomic install");
+        assert_eq!(set_then_atomic, atomic_then_set);
+        assert_eq!(set_then_atomic.debug_text(), atomic_then_set.debug_text());
+        let exact_arena = fixture.arena.clone();
+        let exact_nodes = exact_arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        let exact_set_input = fixture.set_input.clone();
+        let exact_atomic_input = fixture.atomic_input.clone();
+        let corruptions = [
+            (
+                "missing outer wrapper row",
+                (|_: &mut [TypedNode], input: &mut SourceAtomicFormulaHandoffInput| {
+                    input.wrappers.clear()
+                }) as fn(&mut [TypedNode], &mut SourceAtomicFormulaHandoffInput),
+            ),
+            ("missing condition child", |nodes, _| {
+                nodes[11].children.clear()
+            }),
+            ("condition points to core", |nodes, _| {
+                nodes[11].children = vec![node(10).node()]
+            }),
+            ("condition points to bridge", |nodes, _| {
+                nodes[11].children = vec![node(15).node()]
+            }),
+            ("extra condition child", |nodes, _| {
+                nodes[11].children.push(node(15).node())
+            }),
+            ("outer wrapper range", |nodes, input| {
+                let narrower = range(input.source_id, 178, 185);
+                nodes[13].anchor = SourceAnchor::Range(narrower);
+                input.wrappers[0].source_range = narrower;
+            }),
+            ("degraded outer wrapper", |nodes, input| {
+                nodes[13].recovery = NodeRecoveryState::Degraded;
+                input.wrappers[0].recovery = SourceAtomicFormulaRecovery::Degraded;
+            }),
+            ("missing wrapper part", |nodes, _| {
+                nodes[13].children.pop();
+            }),
+            ("nontransparent bridge", |nodes, _| {
+                nodes[15].kind = "ParenthesizedFormula".into();
+            }),
+            ("extra bridge child", |nodes, _| {
+                nodes[15].children.push(node(2).node());
+            }),
+            ("disconnected core", |nodes, _| {
+                nodes[15].children = vec![node(2).node()];
+            }),
+            ("recovered bridge", |nodes, _| {
+                nodes[15].recovery = NodeRecoveryState::Recovered;
+            }),
+            ("bridge range", |nodes, input| {
+                nodes[15].anchor = SourceAnchor::Range(range(input.source_id, 178, 184));
+            }),
+            ("recovered opening token", |nodes, _| {
+                nodes[14].recovery = NodeRecoveryState::Recovered;
+            }),
+            ("opening token range", |nodes, input| {
+                nodes[14].anchor = SourceAnchor::Range(range(input.source_id, 178, 179));
+            }),
+            ("wrong opening punctuation", |nodes, _| {
+                nodes[14].kind =
+                    r#"Token(SurfaceToken { kind: ReservedSymbol, text: ")" })"#.into();
+            }),
+            ("wrong opening token kind", |nodes, _| {
+                nodes[14].kind = r#"Token(SurfaceToken { kind: Identifier, text: "(" })"#.into();
+            }),
+            ("opening token child", |nodes, _| {
+                nodes[14].children.push(node(2).node());
+            }),
+            ("wrong closing punctuation", |nodes, _| {
+                nodes[16].kind =
+                    r#"Token(SurfaceToken { kind: ReservedSymbol, text: "(" })"#.into();
+            }),
+        ];
+        for (label, corrupt) in corruptions {
+            let mut nodes = exact_nodes.clone();
+            let mut atomic_input = exact_atomic_input.clone();
+            corrupt(&mut nodes, &mut atomic_input);
+            fixture.arena = TypedArena::try_new(exact_arena.root(), nodes)
+                .unwrap_or_else(|error| panic!("{label}: {error:?}"));
+            let corrupted_set = fixture
+                .build_set(exact_set_input.clone())
+                .unwrap_or_else(|error| panic!("{label}: set family rejected: {error:?}"));
+            fixture
+                .build_atomic(atomic_input.clone(), None)
+                .unwrap_or_else(|error| panic!("{label}: atomic family rejected: {error:?}"));
+            assert_eq!(
+                fixture
+                    .build_atomic(atomic_input, Some(&corrupted_set))
+                    .expect_err(label),
+                SourceAtomicFormulaError::SetTermDependencyMismatch,
+                "{label}: only condition-chain authentication should reject"
+            );
+        }
+
+        fixture.arena = exact_arena.clone();
+        let stale_set = fixture
+            .build_set(exact_set_input.clone())
+            .expect("set before chain mutation");
+        let mut stale_nodes = exact_nodes.clone();
+        stale_nodes[15].children.clear();
+        fixture.arena = TypedArena::try_new(exact_arena.root(), stale_nodes)
+            .expect("stale grouped condition arena");
+        stale_set
+            .validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                Some(&fixture.application),
+                None,
+                &fixture.arena,
+            )
+            .expect("the stale set remains family-valid");
+        fixture
+            .build_atomic(exact_atomic_input.clone(), None)
+            .expect("the stale arena leaves the atomic family valid");
+        assert_eq!(
+            fixture
+                .build_atomic(exact_atomic_input.clone(), Some(&stale_set))
+                .expect_err("stale grouped wrapper chain"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut rollback_nodes = exact_nodes.clone();
+        rollback_nodes[11].children = vec![node(10).node()];
+        fixture.arena = TypedArena::try_new(exact_arena.root(), rollback_nodes)
+            .expect("rollback grouped condition arena");
+        let rollback_set = fixture
+            .build_set(exact_set_input.clone())
+            .expect("rollback set family");
+        let rollback_atomic = fixture
+            .build_atomic(exact_atomic_input.clone(), None)
+            .expect("rollback atomic family");
+        let set_first = fixture
+            .typed_ast()
+            .with_source_set_term(rollback_set.clone())
+            .expect("rollback set-first install");
+        assert_eq!(
+            set_first
+                .clone()
+                .with_source_atomic_formula(rollback_atomic.clone())
+                .expect_err("bad chain after set install"),
+            TypedAstError::InvalidSourceAtomicFormula
+        );
+        assert_eq!(set_first.source_atomic_formula(), None);
+        let atomic_first = fixture
+            .typed_ast()
+            .with_source_atomic_formula(rollback_atomic)
+            .expect("rollback atomic-first install");
+        assert_eq!(
+            atomic_first
+                .clone()
+                .with_source_set_term(rollback_set)
+                .expect_err("bad chain after atomic install"),
+            TypedAstError::InvalidSourceSetTerm
+        );
+        assert_eq!(atomic_first.source_set_term(), None);
+
+        fixture.arena = exact_arena;
+        let replay_set = fixture
+            .build_set(exact_set_input)
+            .expect("pristine grouped set replay");
+        let replay_atomic = fixture
+            .build_atomic(exact_atomic_input, None)
+            .expect("pristine grouped atomic replay");
+        assert_eq!(
+            fixture
+                .typed_ast()
+                .with_source_set_term(replay_set)
+                .expect("pristine grouped set install")
+                .with_source_atomic_formula(replay_atomic)
+                .expect("pristine grouped atomic install"),
+            set_then_atomic,
+            "failed chain and stale checks must leave pristine replay available"
         );
     }
 

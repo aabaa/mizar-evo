@@ -11,9 +11,9 @@ use mizar_checker::{
         SourceAtomicEdgeInput, SourceAtomicEdgeRole, SourceAtomicFormulaHandoffInput,
         SourceAtomicFormulaId, SourceAtomicFormulaInput, SourceAtomicFormulaKind,
         SourceAtomicFormulaProducer, SourceAtomicFormulaRecovery, SourceAtomicRequestInput,
-        SourceAtomicRequestKind, SourceAtomicTermTarget, SourcePredicateCandidateId,
-        SourcePredicateCandidateInput, SourcePredicateHeadId, SourcePredicateHeadInput,
-        SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
+        SourceAtomicRequestKind, SourceAtomicTermTarget, SourceAtomicWrapperInput,
+        SourcePredicateCandidateId, SourcePredicateCandidateInput, SourcePredicateHeadId,
+        SourcePredicateHeadInput, SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
     source_set_term::SourceSetTermHandoff,
     source_term::{
@@ -1295,35 +1295,55 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         .ok_or_else(|| "membership set transaction produced no set handoff".to_owned())?
         .clone();
     let mut arena = membership_restore_arena(ast, set_output.typed_ast.nodes())?;
-    let comparison_sites = set_handoff
+    let condition_atoms = set_handoff
         .conditions()
         .iter()
         .filter_map(|(_, condition)| {
-            let wrapper = ast.nodes().get(condition.condition_site().node().index())?;
-            let children = structural_child_ids(ast, wrapper);
-            let [child] = children.as_slice() else {
+            let condition_node = ast.nodes().get(condition.condition_site().node().index())?;
+            let children = structural_child_ids(ast, condition_node);
+            let [child] = children.as_slice() else { return None; };
+            let outer = ast.node(*child)?;
+            if outer.range != condition.source_range()
+                || surface_text(ast, outer) != condition.spelling()
+            {
                 return None;
-            };
-            let formula = ast.node(*child)?;
+            }
+            let mut cursor = *child;
+            let mut wrappers = Vec::new();
+            while matches!(ast.node(cursor)?.kind, SurfaceNodeKind::ParenthesizedFormula) {
+                wrappers.push(cursor);
+                let children = structural_child_ids(ast, ast.node(cursor)?);
+                let [expression] = children.as_slice() else { return None; };
+                let expression = ast.node(*expression)?;
+                if !matches!(expression.kind, SurfaceNodeKind::FormulaExpression) {
+                    return None;
+                }
+                let children = structural_child_ids(ast, expression);
+                let [inner] = children.as_slice() else { return None; };
+                cursor = *inner;
+            }
+            let formula = ast.node(cursor)?;
             (matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                && matches!(direct_token_texts(ast, formula).as_slice(), [operator] if matches!(operator.as_str(), "=" | "<>"))
-                && formula.range == condition.source_range()
-                && surface_text(ast, formula) == condition.spelling())
-            .then_some(child.index())
+                && matches!(direct_token_texts(ast, formula).as_slice(), [operator] if matches!(operator.as_str(), "=" | "<>" | "in")))
+            .then_some((cursor, wrappers))
         })
         .collect::<Vec<_>>();
-    if !comparison_sites.is_empty() {
+    if !condition_atoms.is_empty() {
         let mut nodes = arena
             .iter()
             .map(|(_, node)| node.clone())
             .collect::<Vec<_>>();
-        for site in &comparison_sites {
-            nodes[*site].kind = if direct_token_texts(ast, &ast.nodes()[*site]) == ["<>"] {
-                "source.formula.atomic.inequality"
-            } else {
-                "source.formula.atomic.equality"
+        for (site, wrappers) in &condition_atoms {
+            nodes[site.index()].kind =
+                match direct_token_texts(ast, &ast.nodes()[site.index()]).as_slice() {
+                    [operator] if operator == "=" => "source.formula.atomic.equality",
+                    [operator] if operator == "<>" => "source.formula.atomic.inequality",
+                    _ => "source.formula.atomic.membership",
+                }
+                .into();
+            for wrapper in wrappers {
+                nodes[wrapper.index()].kind = "source.formula.atomic.parenthesized".into();
             }
-            .into();
         }
         arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
     }
@@ -1333,7 +1353,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             let node = ast.node(view.id())?;
             (matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
                 && (direct_token_texts(ast, node) == ["in"]
-                    || comparison_sites.contains(&view.id().index())))
+                    || condition_atoms.iter().any(|(site, _)| *site == view.id())))
             .then_some(view.id())
         })
         .collect::<Vec<_>>();
@@ -1345,6 +1365,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         return Err("membership source AST has no membership formula".to_owned());
     }
     let mut atomic_formulas = Vec::with_capacity(formulas.len());
+    let mut wrappers = Vec::new();
     let mut edges = Vec::with_capacity(formulas.len() * 2);
     let mut requests = Vec::with_capacity(formulas.len() * 2);
     for (formula_ordinal, formula_id) in formulas.iter().copied().enumerate() {
@@ -1377,7 +1398,23 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         let left = target(*left)?;
         let right = target(*right)?;
         let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
-        let comparison = comparison_sites.contains(&formula_id.index());
+        let comparison = direct_token_texts(ast, formula) != ["in"];
+        if let Some((_, groups)) = condition_atoms.iter().find(|(site, _)| *site == formula_id) {
+            for (ordinal, site) in groups.iter().copied().enumerate() {
+                let group = ast
+                    .node(site)
+                    .ok_or_else(|| "condition group disappeared".to_owned())?;
+                wrappers.push(SourceAtomicWrapperInput {
+                    formula: formula_key,
+                    ordinal,
+                    site: surface_site(site),
+                    source_range: group.range,
+                    context: BindingContextId::new(0),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling: surface_text(ast, group),
+                });
+            }
+        }
         atomic_formulas.push(SourceAtomicFormulaInput {
             site: surface_site(formula_id),
             source_range: formula.range,
@@ -1424,7 +1461,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             source_id: ast.source_id,
             module_id: module.clone(),
             formulas: atomic_formulas,
-            wrappers: Vec::new(),
+            wrappers,
             predicate_segments: Vec::new(),
             predicate_heads: Vec::new(),
             candidates: Vec::new(),

@@ -1628,7 +1628,10 @@ fn validate_condition_transaction(
                         .is_some_and(|term| term.kind() == SourceSetTermKind::Enumeration),
                     _ => true,
                 })
-            || !atomic_formulas.wrappers().is_empty()
+            || atomic_formulas
+                .wrappers()
+                .iter()
+                .any(|(_, wrapper)| wrapper.recovery() != SourceAtomicFormulaRecovery::Normal)
             || !atomic_formulas.predicate_segments().is_empty()
             || !atomic_formulas.predicate_heads().is_empty()
             || !atomic_formulas.candidates().is_empty()
@@ -1659,14 +1662,22 @@ fn validate_condition_transaction(
                 .terms()
                 .get(condition.term())
                 .ok_or(SourceConditionFormulaCompositionError::DependencyMismatch)?;
-            let mut direct = atomic_formulas.formulas().iter().filter(|(_, formula)| {
-                condition.source_range() == formula.source_range()
-                    && condition.spelling() == formula.spelling()
+            let mut direct = atomic_formulas.formulas().iter().filter(|(id, formula)| {
+                let outer = atomic_formulas
+                    .wrappers()
+                    .iter()
+                    .find(|(_, wrapper)| wrapper.formula() == *id && wrapper.ordinal() == 0);
+                let (site, range, spelling) = outer.map_or(
+                    (formula.site(), formula.source_range(), formula.spelling()),
+                    |(_, wrapper)| (wrapper.site(), wrapper.source_range(), wrapper.spelling()),
+                );
+                condition.source_range() == range
+                    && condition.spelling() == spelling
                     && term.context() == formula.context()
-                    && condition.condition_site() != formula.site()
+                    && condition.condition_site() != site
                     && arena
                         .node(condition.condition_site().node())
-                        .is_some_and(|node| node.children.contains(&formula.site().node()))
+                        .is_some_and(|node| node.children.contains(&site.node()))
             });
             let Some((formula, _)) = direct.next() else {
                 return Err(invalid);
@@ -1683,7 +1694,12 @@ fn validate_condition_transaction(
                 });
             }
         }
-        if atomic_formulas.formulas().iter().any(|(id, formula)| {
+        if atomic_formulas.wrappers().iter().any(|(_, wrapper)| {
+            !input
+                .edges
+                .iter()
+                .any(|edge| edge.formula == wrapper.formula())
+        }) || atomic_formulas.formulas().iter().any(|(id, formula)| {
             matches!(
                 formula.kind(),
                 SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Inequality

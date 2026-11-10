@@ -194,8 +194,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer,
         },
         source_atomic_formula::{
-            SourceAtomicEdgeRole, SourceAtomicFormulaKind, SourceAtomicRequestKind,
-            SourceAtomicTermTarget,
+            SourceAtomicEdgeRole, SourceAtomicFormulaKind, SourceAtomicFormulaRecovery,
+            SourceAtomicRequestKind, SourceAtomicTermTarget,
         },
         source_formula_composition::{
             SourceConditionFormulaCompositionHandoffInput,
@@ -252,7 +252,6 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         proof_inequality.replacen(": z in A", ": z = z", 1)
     );
     let noncondition_inequality = inequality.replacen("st x in A holds", "st x <> x holds", 1);
-    let grouped_inequality = inequality.replace(": z <> z", ": (z <> z)");
     let composite_inequality = inequality.replace(": z <> z", ": z <> z & z in A");
     let set_literal = "{ z where z is object : z in A }";
     let multiple = original.replace("z where z is object", "z where z is object, w is object");
@@ -283,7 +282,6 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     let double_grouped_set = original.replace(set_literal, &format!("(({set_literal}))"));
     let grouped_layout = original.replace(set_literal, &format!("(  {set_literal}  )"));
     let grouped_primary = original.replacen("st x in A holds", "st (x) in A holds", 1);
-    let grouped_condition = original.replace(": z in A", ": (z in A)");
     let grouped_left = original.replace(
         &format!("x in {set_literal}"),
         &format!("({set_literal}) in A"),
@@ -295,10 +293,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         set_literal,
         "{ { x where w is object } where z is object : z in A }",
     );
-    let cases = [
+    let mut cases = [
         ("one", one, 1, &["z in A"][..]),
         ("header only", header_only, 1, &["z in A"][..]),
-        ("original", original, 2, &["z in A"][..]),
+        ("original", original.clone(), 2, &["z in A"][..]),
         ("three", three, 3, &["z in A"][..]),
         ("alpha", alpha, 2, &["q in A"][..]),
         ("layout", layout, 2, &["z in A"][..]),
@@ -456,13 +454,111 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             &["z <> z"][..],
         ),
         ("zero", zero, 0, &["z in A"][..]),
-    ];
+    ]
+    .into_iter()
+    .map(|(label, source, count, literals)| (label, source, count, literals.to_vec()))
+    .collect::<Vec<_>>();
+    // EN14 14.1 grouping is transparent condition metadata, without proof credit.
+    for (header_label, proof_label, both_label, nested_label, direct, grouped, nested) in [
+        (
+            "grouped equality header",
+            "grouped equality proof",
+            "grouped equality",
+            "nested equality",
+            "z = z",
+            "(z = z)",
+            "((z = z))",
+        ),
+        (
+            "grouped inequality header",
+            "grouped inequality proof",
+            "grouped inequality",
+            "nested inequality",
+            "z <> A",
+            "(z <> A)",
+            "((z <> A))",
+        ),
+        (
+            "grouped membership header",
+            "grouped membership proof",
+            "grouped condition",
+            "nested membership",
+            "z in A",
+            "(z in A)",
+            "((z in A))",
+        ),
+    ] {
+        let base = original.replace(": z in A", &format!(": {direct}"));
+        cases.push((
+            header_label,
+            base.replacen(&format!(": {direct}"), &format!(": {grouped}"), 1),
+            2,
+            vec![grouped, direct],
+        ));
+        let mut proof = base.clone();
+        let last = proof.rfind(&format!(": {direct}")).unwrap();
+        proof.replace_range(last..last + direct.len() + 2, &format!(": {grouped}"));
+        cases.push((proof_label, proof, 2, vec![direct, grouped]));
+        cases.push((
+            both_label,
+            base.replace(&format!(": {direct}"), &format!(": {grouped}")),
+            2,
+            vec![grouped],
+        ));
+        cases.push((
+            nested_label,
+            base.replace(&format!(": {direct}"), &format!(": {nested}")),
+            2,
+            vec![nested],
+        ));
+    }
+    cases.extend([
+        (
+            "outside grouped membership",
+            original.replace(": z in A", ": (z in A)").replacen(
+                "st x in A holds",
+                "st (x in A) holds",
+                1,
+            ),
+            2,
+            vec!["(z in A)"],
+        ),
+        (
+            "grouped condition alpha",
+            original
+                .replace(": z in A", ": ((q in A))")
+                .replace("z where z", "q where q"),
+            2,
+            vec!["((q in A))"],
+        ),
+        (
+            "grouped condition layout",
+            original.replace(": z in A", ": (  (z in A)  )"),
+            2,
+            vec!["(  (z in A)  )"],
+        ),
+        (
+            "grouped condition-free sibling",
+            original
+                .replacen(" : z in A", "", 1)
+                .replace(": z in A", ": (z in A)"),
+            1,
+            vec!["(z in A)"],
+        ),
+    ]);
     let mut foreign_lower = None;
     let mut foreign_composition: Option<
         mizar_checker::source_formula_composition::SourceConditionFormulaCompositionHandoff,
     > = None;
     for (label, source, count, condition_texts) in cases {
-        let ast = if label.contains("inequality") || label == "mixed conditions" {
+        let ast = if label.contains("inequality")
+            || label == "mixed conditions"
+            || label.starts_with("grouped condition")
+            || label.starts_with("grouped equality")
+            || label.starts_with("grouped membership")
+            || label.starts_with("nested ")
+            || label == "outside grouped membership"
+        {
             let frontend = super::super::super::formula_statement::step5c8_test_frontend(&source);
             assert!(
                 frontend.diagnostics.is_empty(),
@@ -1026,7 +1122,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(baseline.checked_proofs().is_empty());
 
         // The source literal fixes the condition census. Resolve every literal
-        // to its actual wrapper and direct atomic child before looking up
+        // to its actual transparent chain and core atom before looking up
         // lower IDs; no expected association comes from C2 output.
         let mut literal_positions = condition_texts
             .iter()
@@ -1046,6 +1142,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert_eq!(literal_positions.len(), count, "{label}");
         assert_eq!(sets.conditions().len(), count, "{label}");
         let mut edges = Vec::new();
+        let mut expected_wrappers = Vec::new();
         for (start, end, condition_text) in literal_positions {
             let (wrapper_id, wrapper) = ast
                 .node_views()
@@ -1063,15 +1160,60 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .copied()
                 .filter(|id| !matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::Token(_)))
                 .collect::<Vec<_>>();
-            let [formula_id] = children.as_slice() else {
-                panic!("{label}: condition is not a direct atomic child")
+            let [first] = children.as_slice() else {
+                panic!("{label}: condition has no single effective occurrence")
             };
-            let formula = ast.node(*formula_id).unwrap();
+            let mut formula_id = *first;
+            let mut shells = Vec::new();
+            while matches!(
+                ast.node(formula_id).unwrap().kind,
+                SurfaceNodeKind::ParenthesizedFormula
+            ) {
+                let shell = ast.node(formula_id).unwrap();
+                assert!(!shell.recovered);
+                assert_eq!(
+                    shell
+                        .children
+                        .iter()
+                        .filter_map(|child| ast.node(*child).unwrap().token_text())
+                        .collect::<Vec<_>>(),
+                    ["(", ")"]
+                );
+                shells.push(formula_id);
+                let bridges = shell
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|child| {
+                        !matches!(ast.node(*child).unwrap().kind, SurfaceNodeKind::Token(_))
+                    })
+                    .collect::<Vec<_>>();
+                let [bridge_id] = bridges.as_slice() else {
+                    panic!("{label}: grouped condition bridge census")
+                };
+                let bridge = ast.node(*bridge_id).unwrap();
+                assert!(matches!(bridge.kind, SurfaceNodeKind::FormulaExpression));
+                assert!(!bridge.recovered);
+                let inner = bridge
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|child| {
+                        !matches!(ast.node(*child).unwrap().kind, SurfaceNodeKind::Token(_))
+                    })
+                    .collect::<Vec<_>>();
+                let [child] = inner.as_slice() else {
+                    panic!("{label}: grouped condition inner census")
+                };
+                assert_eq!(bridge.range, ast.node(*child).unwrap().range);
+                formula_id = *child;
+            }
+            let formula = ast.node(formula_id).unwrap();
             assert!(matches!(
                 formula.kind,
                 SurfaceNodeKind::BuiltinPredicateApplication
             ));
-            assert_eq!(formula.range, wrapper.range);
+            assert_eq!(ast.node(*first).unwrap().range, wrapper.range);
             let (expected_kind, expected_operator) = if condition_text.contains(" <> ") {
                 (SourceAtomicFormulaKind::Inequality, "<>")
             } else if condition_text.contains(" = ") {
@@ -1112,8 +1254,37 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .expect("actual lower direct condition atom");
             assert_eq!(condition.source_range(), wrapper.range);
             assert_eq!(atomic_row.source_range(), formula.range);
-            assert_eq!(condition.spelling(), condition_text);
-            assert_eq!(atomic_row.spelling(), condition_text);
+            let canonical = condition_text
+                .replace('(', " ( ")
+                .replace(')', " ) ")
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ");
+            assert_eq!(condition.spelling(), canonical);
+            assert_eq!(
+                atomic_row.spelling(),
+                condition_text
+                    .trim_matches(|ch: char| ch == '(' || ch == ')' || ch.is_whitespace())
+            );
+            assert_eq!(atomic_row.recovery(), SourceAtomicFormulaRecovery::Normal);
+            for (ordinal, shell_id) in shells.into_iter().enumerate() {
+                let shell = ast.node(shell_id).unwrap();
+                let literal = &source[shell.range.start..shell.range.end];
+                let spelling = literal
+                    .replace('(', " ( ")
+                    .replace(')', " ) ")
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                expected_wrappers.push((
+                    atomic_id,
+                    ordinal,
+                    shell_id,
+                    shell.range,
+                    atomic_row.context(),
+                    spelling,
+                ));
+            }
             assert_eq!(atomic_row.kind(), expected_kind);
             assert_eq!(condition.term(), set_id);
             assert_eq!(condition.ordinal(), 0);
@@ -1128,7 +1299,12 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .map(|(id, _)| id)
                 .collect::<Vec<_>>();
             assert_eq!(formula_edges.len(), 2);
-            if expected_kind == SourceAtomicFormulaKind::Inequality {
+            if expected_kind == SourceAtomicFormulaKind::Inequality
+                || label.starts_with("grouped condition")
+                || label.starts_with("grouped equality")
+                || label.starts_with("grouped membership")
+                || label.starts_with("nested ")
+            {
                 let operands = formula
                     .children
                     .iter()
@@ -1188,6 +1364,22 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 formula: atomic_id,
             });
         }
+        assert_eq!(
+            atomic.wrappers().len(),
+            expected_wrappers.len(),
+            "{label}: complete wrapper census"
+        );
+        for ((_, actual), (formula, ordinal, site, range, context, spelling)) in
+            atomic.wrappers().iter().zip(&expected_wrappers)
+        {
+            assert_eq!(actual.formula(), *formula);
+            assert_eq!(actual.ordinal(), *ordinal);
+            assert_eq!(actual.site().node().index(), site.index());
+            assert_eq!(actual.source_range(), *range);
+            assert_eq!(actual.context(), *context);
+            assert_eq!(actual.spelling(), spelling);
+            assert_eq!(actual.recovery(), SourceAtomicFormulaRecovery::Normal);
+        }
         let input = SourceConditionFormulaCompositionHandoffInput {
             source_id: ast.source_id,
             module_id: module.clone(),
@@ -1214,82 +1406,74 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             );
             continue;
         }
-        if label == "noncondition inequality" {
+        if matches!(
+            label,
+            "noncondition inequality" | "outside grouped membership"
+        ) {
             use mizar_checker::{
                 source_atomic_formula::{
                     SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicFormulaHandoffInput,
                     SourceAtomicFormulaId, SourceAtomicFormulaInput, SourceAtomicFormulaProducer,
-                    SourceAtomicFormulaRecovery, SourceAtomicRequestInput,
+                    SourceAtomicRequestInput, SourceAtomicWrapperInput,
                 },
                 typed_ast::{TypedArena, TypedNodeId, TypedSiteRef},
             };
+            let comparison = label == "noncondition inequality";
+            let shift = usize::from(comparison);
             let outside = ast
                 .node_views()
                 .find(|view| {
                     let node = ast.node(view.id()).unwrap();
                     matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                        && source[node.range.start..node.range.end] == *"x <> x"
+                        && &source[node.range.start..node.range.end]
+                            == if comparison { "x <> x" } else { "x in A" }
+                        && (comparison || node.range.start == source.find("(x in A)").unwrap() + 1)
                 })
                 .unwrap();
             let outside_node = ast.node(outside.id()).unwrap();
-            let mut formulas = vec![SourceAtomicFormulaInput {
-                site: TypedSiteRef::Node(TypedNodeId::new(outside.id().index())),
-                source_range: outside_node.range,
-                source_ordinal: 0,
-                context: mizar_checker::binding_env::BindingContextId::new(0),
-                recovery: SourceAtomicFormulaRecovery::Normal,
-                spelling: "x <> x".into(),
-                kind: SourceAtomicFormulaKind::Inequality,
-            }];
-            formulas.extend(
-                atomic
-                    .formulas()
-                    .iter()
-                    .map(|(_, row)| SourceAtomicFormulaInput {
-                        site: row.site().clone(),
-                        source_range: row.source_range(),
-                        source_ordinal: row.source_ordinal() + 1,
-                        context: row.context(),
-                        recovery: row.recovery(),
-                        spelling: row.spelling().into(),
-                        kind: row.kind(),
-                    }),
-            );
-            let mut receiver_edges = outside_node
-                .children
-                .iter()
-                .filter_map(|child| {
-                    let operand = ast.node(*child).unwrap();
-                    (!matches!(operand.kind, SurfaceNodeKind::Token(_))).then_some(operand.range)
-                })
-                .enumerate()
-                .map(|(ordinal, range)| SourceAtomicEdgeInput {
-                    formula: SourceAtomicFormulaId::new(0),
-                    ordinal,
-                    role: if ordinal == 0 {
-                        SourceAtomicEdgeRole::BuiltinLeftOperand
-                    } else {
-                        SourceAtomicEdgeRole::BuiltinRightOperand
-                    },
-                    target: SourceAtomicTermTarget::Primary(
-                        primary
-                            .terms()
-                            .iter()
-                            .find(|(_, row)| row.source_range() == range)
-                            .unwrap()
-                            .0,
-                    ),
-                })
-                .collect::<Vec<_>>();
-            assert_eq!(receiver_edges.len(), 2);
-            receiver_edges.extend(atomic.edges().iter().map(|(_, row)| SourceAtomicEdgeInput {
-                formula: SourceAtomicFormulaId::new(row.formula().index() + 1),
-                ordinal: row.ordinal(),
-                role: row.role(),
-                target: row.target(),
-            }));
-            let mut requests = (0..2)
-                .map(|ordinal| SourceAtomicRequestInput {
+            let mut formulas = Vec::new();
+            let mut receiver_edges = Vec::new();
+            let mut requests = Vec::new();
+            if comparison {
+                formulas.push(SourceAtomicFormulaInput {
+                    site: TypedSiteRef::Node(TypedNodeId::new(outside.id().index())),
+                    source_range: outside_node.range,
+                    source_ordinal: 0,
+                    context: mizar_checker::binding_env::BindingContextId::new(0),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling: "x <> x".into(),
+                    kind: SourceAtomicFormulaKind::Inequality,
+                });
+                receiver_edges.extend(
+                    outside_node
+                        .children
+                        .iter()
+                        .filter_map(|child| {
+                            let operand = ast.node(*child).unwrap();
+                            (!matches!(operand.kind, SurfaceNodeKind::Token(_)))
+                                .then_some(operand.range)
+                        })
+                        .enumerate()
+                        .map(|(ordinal, range)| SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal,
+                            role: if ordinal == 0 {
+                                SourceAtomicEdgeRole::BuiltinLeftOperand
+                            } else {
+                                SourceAtomicEdgeRole::BuiltinRightOperand
+                            },
+                            target: SourceAtomicTermTarget::Primary(
+                                primary
+                                    .terms()
+                                    .iter()
+                                    .find(|(_, row)| row.source_range() == range)
+                                    .unwrap()
+                                    .0,
+                            ),
+                        }),
+                );
+                assert_eq!(receiver_edges.len(), 2);
+                requests.extend((0..2).map(|ordinal| SourceAtomicRequestInput {
                     formula: SourceAtomicFormulaId::new(0),
                     ordinal,
                     kind: SourceAtomicRequestKind::OperandExpectedType,
@@ -1297,34 +1481,108 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     candidate: None,
                     type_site: None,
                     attribute: None,
-                })
-                .collect::<Vec<_>>();
+                }));
+            }
+            formulas.extend(
+                atomic
+                    .formulas()
+                    .iter()
+                    .map(|(_, row)| SourceAtomicFormulaInput {
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        source_ordinal: row.source_ordinal() + shift,
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().into(),
+                        kind: row.kind(),
+                    }),
+            );
+            receiver_edges.extend(atomic.edges().iter().map(|(_, row)| SourceAtomicEdgeInput {
+                formula: SourceAtomicFormulaId::new(row.formula().index() + shift),
+                ordinal: row.ordinal(),
+                role: row.role(),
+                target: row.target(),
+            }));
             requests.extend(atomic.requests().iter().map(|(_, row)| {
                 SourceAtomicRequestInput {
-                    formula: SourceAtomicFormulaId::new(row.formula().index() + 1),
+                    formula: SourceAtomicFormulaId::new(row.formula().index() + shift),
                     ordinal: row.ordinal(),
                     kind: row.kind(),
                     edge: row
                         .edge()
-                        .map(|edge| SourceAtomicEdgeId::new(edge.index() + 2)),
+                        .map(|edge| SourceAtomicEdgeId::new(edge.index() + 2 * shift)),
                     candidate: row.candidate(),
                     type_site: row.type_site(),
                     attribute: row.attribute(),
                 }
             }));
+            let mut wrappers = atomic
+                .wrappers()
+                .iter()
+                .map(|(_, row)| SourceAtomicWrapperInput {
+                    formula: SourceAtomicFormulaId::new(row.formula().index() + shift),
+                    ordinal: row.ordinal(),
+                    site: row.site().clone(),
+                    source_range: row.source_range(),
+                    context: row.context(),
+                    recovery: row.recovery(),
+                    spelling: row.spelling().into(),
+                })
+                .collect::<Vec<_>>();
             let mut nodes = typed
                 .nodes()
                 .iter()
                 .map(|(_, node)| node.clone())
                 .collect::<Vec<_>>();
-            nodes[outside.id().index()].kind = "source.formula.atomic.inequality".into();
+            if comparison {
+                nodes[outside.id().index()].kind = "source.formula.atomic.inequality".into();
+            } else {
+                let shell = ast
+                    .node_views()
+                    .find(|view| {
+                        let node = ast.node(view.id()).unwrap();
+                        matches!(node.kind, SurfaceNodeKind::ParenthesizedFormula)
+                            && &source[node.range.start..node.range.end] == "(x in A)"
+                    })
+                    .unwrap();
+                let shell_node = ast.node(shell.id()).unwrap();
+                let bridge = shell_node
+                    .children
+                    .iter()
+                    .filter_map(|child| {
+                        let node = ast.node(*child).unwrap();
+                        matches!(node.kind, SurfaceNodeKind::FormulaExpression).then_some(node)
+                    })
+                    .next()
+                    .unwrap();
+                assert!(bridge.children.contains(&outside.id()));
+                let (formula, row) = atomic
+                    .formulas()
+                    .iter()
+                    .find(|(_, row)| row.site().node().index() == outside.id().index())
+                    .unwrap();
+                assert_eq!(row.kind(), SourceAtomicFormulaKind::Membership);
+                nodes[shell.id().index()].kind = "source.formula.atomic.parenthesized".into();
+                wrappers.insert(
+                    0,
+                    SourceAtomicWrapperInput {
+                        formula,
+                        ordinal: 0,
+                        site: TypedSiteRef::Node(TypedNodeId::new(shell.id().index())),
+                        source_range: shell_node.range,
+                        context: row.context(),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "( x in A )".into(),
+                    },
+                );
+            }
             let receiver_arena = TypedArena::try_new(typed.nodes().root(), nodes).unwrap();
             let receiver_atomic = SourceAtomicFormulaProducer::build(
                 SourceAtomicFormulaHandoffInput {
                     source_id: ast.source_id,
                     module_id: module.clone(),
                     formulas,
-                    wrappers: vec![],
+                    wrappers,
                     predicate_segments: vec![],
                     predicate_heads: vec![],
                     candidates: vec![],
@@ -1341,10 +1599,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 Some(sets),
                 &receiver_arena,
             )
-            .expect("genuine outside-condition Inequality lower input");
+            .expect("genuine independently valid outside-condition Atomic input");
             let mut receiver_input = input.clone();
             for edge in &mut receiver_input.edges {
-                edge.formula = SourceAtomicFormulaId::new(edge.formula.index() + 1);
+                edge.formula = SourceAtomicFormulaId::new(edge.formula.index() + shift);
             }
             assert!(
                 SourceConditionFormulaCompositionProducer::build(
@@ -1356,7 +1614,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     &receiver_arena,
                 )
                 .is_err(),
-                "outside-condition Inequality admitted by C2"
+                "{label}: outside-condition atom/wrapper admitted by C2"
             );
         }
         let composition = build(input.clone()).expect("RED native C2 associations");
@@ -1377,6 +1635,63 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             composition.atomic_formula_fingerprint(),
             atomic.debug_text()
         );
+        if label == "nested inequality" {
+            use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypedNodeId};
+            let (_, _, outer, _, _, _) = expected_wrappers.first().unwrap();
+            let condition = sets.conditions().get(input.edges[0].condition).unwrap();
+            let bridge = ast
+                .node(*outer)
+                .unwrap()
+                .children
+                .iter()
+                .copied()
+                .find(|child| {
+                    matches!(
+                        ast.node(*child).unwrap().kind,
+                        SurfaceNodeKind::FormulaExpression
+                    )
+                })
+                .unwrap();
+            let core = atomic
+                .formulas()
+                .get(input.edges[0].formula)
+                .unwrap()
+                .site()
+                .node();
+            for mutation in 0..5 {
+                let mut nodes = typed
+                    .nodes()
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                match mutation {
+                    0 => nodes[condition.condition_site().node().index()].children = vec![core],
+                    1 => nodes[bridge.index()].children = vec![core],
+                    2 => nodes[bridge.index()].recovery = NodeRecoveryState::Degraded,
+                    3 => nodes[bridge.index()].children.push(core),
+                    4 => nodes[outer.index()].children[0] = TypedNodeId::new(bridge.index()),
+                    _ => unreachable!(),
+                }
+                let changed = TypedArena::try_new(typed.nodes().root(), nodes).unwrap();
+                assert!(
+                    SourceConditionFormulaCompositionProducer::build(
+                        input.clone(),
+                        primary,
+                        &application,
+                        sets,
+                        atomic,
+                        &changed,
+                    )
+                    .is_err(),
+                    "source chain mutation {mutation} admitted"
+                );
+            }
+            assert_eq!(
+                build(input.clone()).unwrap(),
+                composition,
+                "source-chain pristine replay"
+            );
+        }
         let installed = typed_with_application
             .clone()
             .with_source_condition_formula_composition(composition.clone())
@@ -1419,31 +1734,33 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(final_ast.checked_formulas().is_empty());
         assert!(final_ast.statement_semantics().is_empty());
         assert!(final_ast.checked_proofs().is_empty());
-        if matches!(
-            label,
-            "original"
-                | "equality"
-                | "inequality"
-                | "header inequality"
-                | "proof inequality"
-                | "inequality distinct operands"
-                | "inequality condition-free sibling"
-                | "multiple generators"
-                | "unused set generator"
-                | "enumeration sibling"
-                | "enumeration mapper"
-                | "wrapped mapper"
-                | "wrapped element"
-                | "double wrapped mapper"
-                | "grouped set"
-                | "grouped header"
-                | "grouped proof"
-                | "double grouped set"
-                | "grouped alpha"
-                | "grouped layout"
-                | "grouped left"
-                | "grouped enumeration"
-        ) {
+        if !expected_wrappers.is_empty()
+            || matches!(
+                label,
+                "original"
+                    | "equality"
+                    | "inequality"
+                    | "header inequality"
+                    | "proof inequality"
+                    | "inequality distinct operands"
+                    | "inequality condition-free sibling"
+                    | "multiple generators"
+                    | "unused set generator"
+                    | "enumeration sibling"
+                    | "enumeration mapper"
+                    | "wrapped mapper"
+                    | "wrapped element"
+                    | "double wrapped mapper"
+                    | "grouped set"
+                    | "grouped header"
+                    | "grouped proof"
+                    | "double grouped set"
+                    | "grouped alpha"
+                    | "grouped layout"
+                    | "grouped left"
+                    | "grouped enumeration"
+            )
+        {
             use mizar_checker::source_set_term::SourceSetTermProducer;
             use mizar_resolve::{
                 labels::{LabelResolver, ProofLabelSourceCollector},
@@ -1606,8 +1923,6 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     }
     for (label, source) in [
         ("grouped Primary", grouped_primary),
-        ("grouped condition", grouped_condition),
-        ("grouped inequality", grouped_inequality),
         ("composite inequality", composite_inequality),
     ] {
         let ast = parse(&source);
@@ -1618,17 +1933,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         )
         .unwrap();
         let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
-        if matches!(
-            label,
-            "grouped condition" | "grouped inequality" | "composite inequality"
-        ) {
-            let spelling = match label {
-                "grouped condition" => "(z in A)",
-                "grouped inequality" => "(z <> z)",
-                "composite inequality" => "z <> z & z in A",
-                _ => unreachable!(),
-            };
-            let positions = source.match_indices(spelling).collect::<Vec<_>>();
+        if label == "composite inequality" {
+            let positions = source.match_indices("z <> z & z in A").collect::<Vec<_>>();
             assert_eq!(positions.len(), 2);
             for (start, spelling) in positions {
                 let wrapper = ast
@@ -1639,15 +1945,11 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             && node.range.start == start
                             && node.range.end == start + spelling.len()
                     })
-                    .expect("actual unsupported condition wrapper");
-                assert!(wrapper.children.iter().any(|child| {
-                    let kind = &ast.node(*child).unwrap().kind;
-                    if label == "composite inequality" {
-                        matches!(kind, SurfaceNodeKind::BinaryFormula(_))
-                    } else {
-                        matches!(kind, SurfaceNodeKind::ParenthesizedFormula)
-                    }
-                }));
+                    .expect("actual unsupported composite condition wrapper");
+                assert!(wrapper.children.iter().any(|child| matches!(
+                    ast.node(*child).unwrap().kind,
+                    SurfaceNodeKind::BinaryFormula(_)
+                )));
             }
         }
         let lower = super::super::super::type_elaboration::step5c7_membership_typed_ast(
@@ -1657,52 +1959,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             &scope,
             &bindings,
         );
-        if label == "grouped inequality" {
-            let typed = lower.expect("grouped inequality retains its Set condition");
-            let primary = typed.source_term().unwrap();
-            let sets = typed.source_set_term().unwrap();
-            let atomic = typed.source_atomic_formula().unwrap();
-            assert_eq!(sets.conditions().len(), 2);
-            for (_, condition) in sets.conditions().iter() {
-                assert!(
-                    atomic
-                        .formulas()
-                        .iter()
-                        .all(|(_, formula)| { formula.source_range() != condition.source_range() })
-                );
-            }
-            let application = SourceFunctorApplicationProducer::build(
-                SourceFunctorApplicationHandoffInput {
-                    source_id: ast.source_id,
-                    module_id: symbols.module.clone(),
-                    applications: vec![],
-                    wrappers: vec![],
-                    candidates: vec![],
-                    arguments: vec![],
-                    type_requests: vec![],
-                },
-                &symbols.env,
-                &bindings,
-                primary,
-                typed.nodes(),
-            )
-            .unwrap();
-            let outside = atomic.formulas().iter().next().unwrap().0;
-            assert_eq!(SourceConditionFormulaCompositionProducer::build(
-                SourceConditionFormulaCompositionHandoffInput {
-                    source_id: ast.source_id,
-                    module_id: symbols.module.clone(),
-                    edges: sets.conditions().iter().map(|(id, condition)| {
-                        SourceConditionFormulaEdgeInput {
-                            condition: id, ordinal: condition.ordinal(), formula: outside,
-                        }
-                    }).collect(),
-                },
-                primary, &application, sets, atomic, typed.nodes(),
-            ).unwrap_err(), mizar_checker::source_formula_composition::SourceConditionFormulaCompositionError::DependencyMismatch);
-        } else {
-            assert!(lower.is_err(), "{label}: unsupported lower input admitted");
-        }
+        assert!(lower.is_err(), "{label}: unsupported lower input admitted");
     }
 }
 
