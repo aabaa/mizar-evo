@@ -710,6 +710,118 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             vec!["z in A"],
         ),
     ]);
+    // EN13.1.3/13.4 and EN14.2 permit bare Enumeration condition operands.
+    cases.push((
+        "primary condition Enumeration membership",
+        original.replace(": z in A", ": (z) in { A }"),
+        2,
+        vec!["(z) in { A }"],
+    ));
+    for (header_label, proof_label, both_label, condition) in [
+        (
+            "primary condition Enumeration in left header",
+            "primary condition Enumeration in left proof",
+            "primary condition Enumeration in left",
+            "{ A } in z",
+        ),
+        (
+            "primary condition Enumeration in right header",
+            "primary condition Enumeration in right proof",
+            "primary condition Enumeration in right",
+            "z in { A }",
+        ),
+        (
+            "primary condition Enumeration eq left header",
+            "primary condition Enumeration eq left proof",
+            "primary condition Enumeration eq left",
+            "{ A } = z",
+        ),
+        (
+            "primary condition Enumeration eq right header",
+            "primary condition Enumeration eq right proof",
+            "primary condition Enumeration eq right",
+            "z = { A }",
+        ),
+        (
+            "primary condition Enumeration ne left header",
+            "primary condition Enumeration ne left proof",
+            "primary condition Enumeration ne left",
+            "{ A } <> z",
+        ),
+        (
+            "primary condition Enumeration ne right header",
+            "primary condition Enumeration ne right proof",
+            "primary condition Enumeration ne right",
+            "z <> { A }",
+        ),
+    ] {
+        cases.push((
+            header_label,
+            original.replacen(": z in A", &format!(": {condition}"), 1),
+            2,
+            vec![condition, "z in A"],
+        ));
+        let mut proof = original.clone();
+        let last = proof.rfind(": z in A").unwrap();
+        proof.replace_range(last..last + ": z in A".len(), &format!(": {condition}"));
+        cases.push((proof_label, proof, 2, vec!["z in A", condition]));
+        cases.push((
+            both_label,
+            original.replace(": z in A", &format!(": {condition}")),
+            2,
+            vec![condition],
+        ));
+    }
+    cases.extend([
+        (
+            "primary condition Enumeration empty",
+            original.replace(": z in A", ": z in { }"),
+            2,
+            vec!["z in { }"],
+        ),
+        (
+            "primary condition Enumeration nested",
+            original.replace(": z in A", ": z in { A , { ((x)) } , z }"),
+            2,
+            vec!["z in { A , { ((x)) } , z }"],
+        ),
+        (
+            "primary condition Enumeration both",
+            original.replace(": z in A", ": { (z) } = { A }"),
+            2,
+            vec!["{ (z) } = { A }"],
+        ),
+        (
+            "primary condition Enumeration alpha",
+            original
+                .replace("z where z", "q where q")
+                .replace(": z in A", ": ((q) in { A })"),
+            2,
+            vec!["((q) in { A })"],
+        ),
+        (
+            "primary condition Enumeration layout",
+            original.replace(": z in A", ":  ( z ) in {  A  }"),
+            2,
+            vec!["( z ) in {  A  }"],
+        ),
+        (
+            "primary condition Enumeration mapper",
+            original
+                .replace("z where z", "(z) where z")
+                .replace(": z in A", ": z in { (A) }"),
+            2,
+            vec!["z in { (A) }"],
+        ),
+        (
+            "primary condition Enumeration condition-free sibling",
+            original
+                .replacen(" : z in A", "", 1)
+                .replace(": z in A", ": z in { A }"),
+            1,
+            vec!["z in { A }"],
+        ),
+    ]);
     let mut foreign_lower = None;
     let mut foreign_composition: Option<
         mizar_checker::source_formula_composition::SourceConditionFormulaCompositionHandoff,
@@ -779,7 +891,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .node_views()
                 .filter(|view| matches!(view.kind(), SurfaceNodeKind::ParenthesizedTerm))
                 .filter(|view| {
-                    (label.starts_with("primary Set")
+                    ((label.starts_with("primary Set")
+                        || label.starts_with("primary condition Enumeration"))
                         && ast.node_views().any(|owner| {
                             matches!(
                                 owner.kind(),
@@ -910,6 +1023,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 | "grouped enumeration"
                 | "inner comprehension boundary"
         ) || label.starts_with("primary Set")
+            || label.starts_with("primary condition Enumeration")
         {
             // Compare the lower Set rows with actual syntax, independently of C2.
             let written_sets = ast
@@ -950,6 +1064,15 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 "primary Set nested header" | "primary Set nested proof" => (4, 2, 2),
                 "primary Set enumeration sibling" => (2, 1, 0),
                 _ if label.starts_with("primary Set") => (2, 2, 0),
+                "primary condition Enumeration nested" => (6, 2, 2),
+                "primary condition Enumeration both" => (6, 2, 0),
+                "primary condition Enumeration condition-free sibling" => (3, 2, 0),
+                _ if label.starts_with("primary condition Enumeration")
+                    && (label.ends_with("header") || label.ends_with("proof")) =>
+                {
+                    (3, 2, 0)
+                }
+                _ if label.starts_with("primary condition Enumeration") => (4, 2, 0),
                 _ => unreachable!(),
             };
             assert_eq!(
@@ -1124,7 +1247,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 written_sets.len(),
                 "{label}: result request census"
             );
-            if label.starts_with("primary Set") {
+            if label.starts_with("primary Set")
+                || label.starts_with("primary condition Enumeration")
+            {
                 assert!(sets.wrappers().is_empty());
                 assert_eq!(
                     sets.requests().len(),
@@ -1198,7 +1323,40 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             && inner.range.end <= outer.range.end
                     })
                     .min_by_key(|(_, outer, _)| outer.range.end - outer.range.start);
-                if let Some((outer_site, _, outer_kind)) = parent {
+                if let Some((outer_site, outer, outer_kind)) = parent {
+                    if label.starts_with("primary condition Enumeration")
+                        && *outer_kind == SourceSetTermKind::Comprehension
+                        && outer.children.iter().any(|id| {
+                            let child = ast.node(*id).unwrap();
+                            matches!(child.kind, SurfaceNodeKind::FormulaExpression)
+                                && child.range.start <= inner.range.start
+                                && inner.range.end <= child.range.end
+                        })
+                    {
+                        let (inner_id, row) = sets
+                            .terms()
+                            .iter()
+                            .find(|(_, row)| row.site().node().index() == inner_site.index())
+                            .unwrap();
+                        let owner = sets
+                            .terms()
+                            .iter()
+                            .find(|(_, row)| row.site().node().index() == outer_site.index())
+                            .unwrap()
+                            .1;
+                        assert_eq!(
+                            row.context(),
+                            owner.context(),
+                            "{label}: condition forest context"
+                        );
+                        assert!(
+                            sets.edges().iter().all(
+                                |(_, edge)| edge.target() != SourceSetTarget::SetTerm(inner_id)
+                            ),
+                            "{label}: condition forest root has a Set parent"
+                        );
+                        continue;
+                    }
                     nested_count += 1;
                     let inner_id = sets
                         .terms()
@@ -1665,6 +1823,58 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .map(|(id, _)| id)
                 .collect::<Vec<_>>();
             assert_eq!(formula_edges.len(), 2);
+            if label.starts_with("primary condition Enumeration") {
+                let slots = formula
+                    .children
+                    .iter()
+                    .filter_map(|id| {
+                        let node = ast.node(*id).unwrap();
+                        (!matches!(node.kind, SurfaceNodeKind::Token(_))).then_some(node)
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(slots.len(), 2);
+                let mut roots = Vec::new();
+                for (ordinal, slot) in slots.iter().enumerate() {
+                    assert!(matches!(slot.kind, SurfaceNodeKind::TermExpression));
+                    assert!(!slot.recovered);
+                    let [root] = slot.children.as_slice() else {
+                        panic!("{label}: condition operand has no sole bare root")
+                    };
+                    let node = ast.node(*root).unwrap();
+                    assert_eq!(slot.range, node.range);
+                    if matches!(node.kind, SurfaceNodeKind::SetEnumeration) {
+                        let (id, term) = sets
+                            .terms()
+                            .iter()
+                            .find(|(_, term)| term.site().node().index() == root.index())
+                            .unwrap();
+                        assert_eq!(term.context(), atomic_row.context());
+                        assert_eq!(
+                            atomic.edges().get(formula_edges[ordinal]).unwrap().target(),
+                            SourceAtomicTermTarget::SetTerm(id)
+                        );
+                        roots.push(id);
+                    }
+                }
+                let forest = sets
+                    .terms()
+                    .iter()
+                    .filter(|(id, term)| {
+                        term.kind() == SourceSetTermKind::Enumeration
+                            && wrapper.range.start <= term.source_range().start
+                            && term.source_range().end <= wrapper.range.end
+                            && sets
+                                .edges()
+                                .iter()
+                                .all(|(_, edge)| edge.target() != SourceSetTarget::SetTerm(*id))
+                    })
+                    .map(|(id, _)| id)
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    forest, roots,
+                    "{label}: complete condition Enumeration forest census"
+                );
+            }
             if expected_kind == SourceAtomicFormulaKind::Inequality
                 || label.starts_with("grouped condition")
                 || label.starts_with("grouped equality")
@@ -2067,7 +2277,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         }
         if matches!(
             label,
-            "primary condition inequality" | "primary Set elements"
+            "primary condition inequality"
+                | "primary Set elements"
+                | "primary condition Enumeration membership"
         ) {
             use mizar_checker::{
                 source_term::SourcePrimaryTermKind,
@@ -2091,20 +2303,41 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 })
                 .unwrap();
             let child = ast.node(bridge_id).unwrap().children[0];
-            let set_slot = sets.edges().iter().find_map(|(_, edge)| {
-                (edge.target() == SourceSetTarget::Primary(group_id)).then(|| {
-                    let owner = sets.terms().get(edge.term()).unwrap().site().node();
-                    let slots = ast.nodes()[owner.index()]
-                        .children
-                        .iter()
-                        .copied()
-                        .filter(|id| {
-                            matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression)
-                        })
-                        .collect::<Vec<_>>();
-                    (owner, slots, edge.ordinal())
+            let set_slot = if label == "primary condition Enumeration membership" {
+                let owner = atomic
+                    .formulas()
+                    .get(input.edges[0].formula)
+                    .unwrap()
+                    .site()
+                    .node();
+                let slots = ast.nodes()[owner.index()]
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|id| {
+                        matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression)
+                    })
+                    .collect::<Vec<_>>();
+                Some((owner, slots, 1))
+            } else {
+                sets.edges().iter().find_map(|(_, edge)| {
+                    (edge.target() == SourceSetTarget::Primary(group_id)).then(|| {
+                        let owner = sets.terms().get(edge.term()).unwrap().site().node();
+                        let slots = ast.nodes()[owner.index()]
+                            .children
+                            .iter()
+                            .copied()
+                            .filter(|id| {
+                                matches!(
+                                    ast.node(*id).unwrap().kind,
+                                    SurfaceNodeKind::TermExpression
+                                )
+                            })
+                            .collect::<Vec<_>>();
+                        (owner, slots, edge.ordinal())
+                    })
                 })
-            });
+            };
             for mutation in 0..if set_slot.is_some() { 14 } else { 4 } {
                 let mut nodes = typed
                     .nodes()
@@ -2469,8 +2702,12 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         ("grouped Primary", grouped_primary),
         ("composite inequality", composite_inequality),
         (
-            "condition Set operand",
-            original.replace(": z in A", ": (z) in { A }"),
+            "wrapped condition Enumeration",
+            original.replace(": z in A", ": (z) in ({ A })"),
+        ),
+        (
+            "condition Comprehension operand",
+            original.replace(": z in A", ": (z) in { A where w is object }"),
         ),
     ] {
         let ast = parse(&source);

@@ -6,6 +6,9 @@ transport 専用の `build` とは別に、`check_membership_proof` は既存の
 > 正本は英語です。英語版:
 > [../en/source_set_term.md](../en/source_set_term.md)。
 
+## 変数参照条件のEnumeration root
+Primary依存がnormalなValue変数leafと括弧だけで構成され、完全な順序付きの非空Variable-reference censusを持ちnumeric requestがない場合、Comprehension条件内のnormalな裸Enumeration rootを認める。最も近い条件所有Comprehensionとcontextを一致させ、この独立rootにはSet parent edgeを付けず、入れ子Enumeration要素には既存parent edgeを維持する。Application・Structure・Comprehension条件operandと参照なしnumeric profileの除外は維持する。これはmetadata所有関係であり、[C2](source_formula_composition.md#変数参照の条件式関連付け)が構築時とTyped/final再生で実builtin operand slotを認証する。単独source receiptやproof creditを与えない。
+
 ## Original-source empty-enumeration input
 original equality intakeは認証済みempty witnessの実typed site/range・proof binding context・Normal recovery・canonical `{ }` spellingから既存Enumeration rowを構築する。source ordinalは0で、wrapper/generator/written type site/condition/child edgeは空、term 0に属する未関連ResultType requestを一つ持つ。このsyntax-free producerは既存public transactionで全実primary dependencyとarenaを検証し、original-source adapter・新schema・numeric/reference childを追加しない。[TypeChecker](type_checker.md#original-source-empty-enumeration-lower-acquisition)がintrinsic result typingを別に所有し、このhandoffはrequest intentを保持してsethood fact・witness substitution・proof creditを与えない。
 

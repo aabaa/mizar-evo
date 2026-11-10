@@ -6,7 +6,10 @@ use crate::{
         SourceFunctorApplicationHandoff, SourceFunctorApplicationId, SourceFunctorArgumentTarget,
     },
     source_structure::{SourceStructureHandoff, SourceStructureTarget, SourceStructureTermId},
-    source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
+    source_term::{
+        SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermKind,
+        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+    },
     typed_ast::{NodeRecoveryState, TypedArena, TypedSiteRef},
 };
 use mizar_resolve::resolved_ast::ModuleId;
@@ -2141,6 +2144,28 @@ fn validate_conditions(
         .iter()
         .map(|(_, primary)| primary.site().clone())
         .collect::<BTreeSet<_>>();
+    let variable_leaves = primary_terms
+        .terms()
+        .iter()
+        .filter(|(_, term)| term.kind() == SourcePrimaryTermKind::VariableReference)
+        .collect::<Vec<_>>();
+    let variable_primary = !primary_terms.references().is_empty()
+        && primary_terms.numeric_type_requests().is_empty()
+        && primary_terms.terms().iter().all(|(_, term)| {
+            matches!(
+                term.kind(),
+                SourcePrimaryTermKind::VariableReference | SourcePrimaryTermKind::Parenthesized
+            ) && term.role() == SourcePrimaryTermRole::Value
+                && term.recovery() == SourcePrimaryTermRecovery::Normal
+        })
+        && variable_leaves.len() == primary_terms.references().len()
+        && variable_leaves
+            .iter()
+            .zip(primary_terms.references().iter())
+            .all(|((id, _), (_, reference))| {
+                reference.term() == *id
+                    && reference.role() == SourcePrimaryTermReferenceRole::Variable
+            });
     let mut previous_range = None;
 
     for (term_index, group) in groups.iter().enumerate() {
@@ -2271,8 +2296,13 @@ fn validate_conditions(
                 }
             }
         }
-        if input.terms.iter().enumerate().any(|(index, _)| {
-            index != term_index && range_contains(condition.source_range, effective[index].range)
+        if input.terms.iter().enumerate().any(|(index, other)| {
+            index != term_index
+                && range_contains(condition.source_range, effective[index].range)
+                && (!variable_primary
+                    || condition.recovery != SourceSetTermRecovery::Normal
+                    || other.kind != SourceSetTermKind::Enumeration
+                    || other.recovery != SourceSetTermRecovery::Normal)
         }) {
             return Err(SourceSetTermError::InvalidCondition {
                 condition: condition_id,
@@ -2608,10 +2638,29 @@ fn validate_set_term_ownership(
         }
     }
     for index in 0..input.terms.len() {
-        let nested = (0..index).any(|parent| {
-            properly_contains(input.terms[parent].source_range, effective[index].range)
+        let parent = (0..index).rfind(|parent| {
+            properly_contains(input.terms[*parent].source_range, effective[index].range)
         });
-        if target_counts[index] != usize::from(nested) {
+        let condition_root = parent.is_some_and(|parent| {
+            input.conditions.iter().any(|condition| {
+                condition.term == SourceSetTermId::new(parent)
+                    && range_contains(condition.source_range, effective[index].range)
+            })
+        });
+        if condition_root
+            && (input.terms[index].kind != SourceSetTermKind::Enumeration
+                || parent
+                    .is_none_or(|parent| input.terms[parent].context != input.terms[index].context)
+                || input
+                    .wrappers
+                    .iter()
+                    .any(|wrapper| wrapper.term == SourceSetTermId::new(index)))
+        {
+            return Err(SourceSetTermError::InvalidTerm {
+                term: SourceSetTermId::new(index),
+            });
+        }
+        if target_counts[index] != usize::from(parent.is_some() && !condition_root) {
             return Err(SourceSetTermError::InvalidTerm {
                 term: SourceSetTermId::new(index),
             });
@@ -3307,8 +3356,10 @@ mod tests {
     use super::*;
     use crate::{
         binding_env::{
-            BindingContextDraft, BindingContextLayer, BindingContextOwner, BindingContextRecovery,
-            BindingContextTable, BindingDiagnosticTable, BindingEnvParts, BindingTable,
+            BinderIdentity, BindingContextDraft, BindingContextLayer, BindingContextOwner,
+            BindingContextRecovery, BindingContextTable, BindingDiagnosticTable, BindingDraft,
+            BindingEnvParts, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
+            BindingTable, BindingTypeSite, CapturedFreeVariables,
         },
         cluster_trace::ClusterFactTable,
         overload_resolution::{
@@ -3335,7 +3386,7 @@ mod tests {
         source_term::{
             SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermInput,
             SourcePrimaryTermKind, SourcePrimaryTermProducer, SourcePrimaryTermRecovery,
-            SourcePrimaryTermRole,
+            SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
         },
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
@@ -4661,6 +4712,148 @@ mod tests {
             target: SourceSetTarget::Primary(SourcePrimaryTermId::new(1)),
         });
         assert!(edge_into_condition.build(None, None).is_err());
+    }
+
+    #[test]
+    fn condition_empty_enumeration_root_requires_variable_primary_lower() {
+        let mut fixture = condition_fixture();
+        let (source, module) = (fixture.source, fixture.module.clone());
+        let binding_ids = [BindingId::new(0)];
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: binding_ids.to_vec(),
+            visible_bindings: binding_ids.to_vec(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let mut bindings = BindingTable::new();
+        let declaration_range = range(source, 0, 1);
+        bindings.insert(BindingDraft {
+            spelling: "x".to_owned(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range,
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range,
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Missing,
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        fixture.bindings = BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module.clone(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("reserved-variable context");
+
+        let condition_range = range(source, 40, 47);
+        let enumeration_range = range(source, 44, 47);
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes[0] = TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(range(source, 12, 13)),
+        );
+        nodes[1] = TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(range(source, 40, 41)),
+        );
+        nodes[8].anchor = SourceAnchor::Range(condition_range);
+        nodes[9].anchor = SourceAnchor::Range(condition_range);
+        nodes[9].children = vec![TypedNodeId::new(1), TypedNodeId::new(10)];
+        nodes.push(TypedNode::new(
+            "source.term.set.enumeration",
+            SourceAnchor::Range(enumeration_range),
+        ));
+        fixture.arena = TypedArena::try_new(None, nodes).expect("condition Enumeration arena");
+        let primary_input = SourcePrimaryTermHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            terms: [(0, 12, 13), (1, 40, 41)]
+                .into_iter()
+                .map(|(ordinal, start, end)| SourcePrimaryTermInput {
+                    site: node(ordinal),
+                    source_range: range(source, start, end),
+                    source_ordinal: ordinal,
+                    context: BindingContextId::new(0),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: "x".to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                })
+                .collect(),
+            references: [0, 1]
+                .into_iter()
+                .map(|term| SourcePrimaryTermReferenceInput {
+                    term: SourcePrimaryTermId::new(term),
+                    binding: binding_ids[0],
+                    role: SourcePrimaryTermReferenceRole::Variable,
+                })
+                .collect(),
+            numeric_type_requests: Vec::new(),
+        };
+        fixture.primary =
+            SourcePrimaryTermProducer::build(primary_input, &fixture.bindings, &fixture.arena)
+                .expect("generic variable Primary lower");
+        fixture.input.terms[0].spelling = "{ x where candidate is set : x = { } }".to_owned();
+        fixture.input.terms.push(SourceSetTermInput {
+            site: node(10),
+            source_range: enumeration_range,
+            source_ordinal: 1,
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: "{ }".to_owned(),
+            kind: SourceSetTermKind::Enumeration,
+        });
+        fixture.input.conditions[0].source_range = condition_range;
+        fixture.input.conditions[0].spelling = "x = { }".to_owned();
+        fixture.input.requests.push(SourceSetRequestInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            kind: SourceSetRequestKind::ResultType,
+            generator: None,
+            type_site: None,
+        });
+        let handoff = fixture
+            .build(None, None)
+            .expect("empty condition Enumeration root");
+        assert_eq!(handoff.terms().len(), 2);
+        assert_eq!(handoff.edges().len(), 1, "no fabricated mapper edge");
+        assert!(handoff.edges().get(SourceSetEdgeId::new(0)).is_some_and(
+            |edge| edge.target() == SourceSetTarget::Primary(SourcePrimaryTermId::new(0))
+        ));
+
+        let contexts = binding_env_with_two_contexts(source, &module);
+        assert!(contexts.contexts().get(BindingContextId::new(1)).is_some());
+        let mut foreign_context = fixture.input.clone();
+        foreign_context.terms[1].context = BindingContextId::new(1);
+        let effective = foreign_context
+            .terms
+            .iter()
+            .map(|term| EffectiveOccurrence {
+                range: term.source_range,
+                site: term.site.clone(),
+                spelling: term.spelling.clone(),
+            })
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            validate_set_term_ownership(&foreign_context, &effective),
+            Err(SourceSetTermError::InvalidTerm { term }) if term == SourceSetTermId::new(1)
+        ));
     }
 
     #[test]

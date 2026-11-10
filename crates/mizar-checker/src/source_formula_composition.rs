@@ -1781,6 +1781,64 @@ fn validate_condition_transaction(
                 }
             }
         }
+        for (id, root) in set_terms.terms().iter() {
+            if root.kind() != SourceSetTermKind::Enumeration
+                || set_terms
+                    .edges()
+                    .iter()
+                    .any(|(_, edge)| edge.target() == SourceSetTarget::SetTerm(id))
+            {
+                continue;
+            }
+            let Some((condition_id, _)) = set_terms.conditions().iter().find(|(_, condition)| {
+                condition.source_range().start <= root.source_range().start
+                    && root.source_range().end <= condition.source_range().end
+            }) else {
+                continue;
+            };
+            if set_terms
+                .wrappers()
+                .iter()
+                .any(|(_, wrapper)| wrapper.term() == id)
+            {
+                return Err(invalid);
+            }
+            let association = input
+                .edges
+                .iter()
+                .find(|edge| edge.condition == condition_id)
+                .ok_or_else(|| invalid.clone())?;
+            let mut operands = atomic_formulas.edges().iter().filter(|(_, edge)| {
+                edge.formula() == association.formula
+                    && edge.target() == SourceAtomicTermTarget::SetTerm(id)
+            });
+            let (_, operand) = operands.next().ok_or_else(|| invalid.clone())?;
+            if operands.next().is_some() {
+                return Err(invalid);
+            }
+            let atom = atomic_formulas
+                .formulas()
+                .get(association.formula)
+                .ok_or_else(|| invalid.clone())?;
+            let slots = arena
+                .node(atom.site().node())
+                .ok_or_else(|| invalid.clone())?
+                .children
+                .iter()
+                .filter_map(|id| arena.node(*id))
+                .filter(|node| node.kind.as_str() == "TermExpression")
+                .collect::<Vec<_>>();
+            let slot = slots
+                .get(operand.ordinal())
+                .ok_or_else(|| invalid.clone())?;
+            if slots.len() != 2
+                || slot.recovery != NodeRecoveryState::Normal
+                || slot.anchor != SourceAnchor::Range(root.source_range())
+                || slot.children.as_slice() != [root.site().node()]
+            {
+                return Err(invalid);
+            }
+        }
         if atomic_formulas.wrappers().iter().any(|(_, wrapper)| {
             !input
                 .edges
