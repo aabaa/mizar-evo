@@ -1,0 +1,21 @@
+# Task CHECKER257C-NATIVE-COMPREHENSION-CONTEXTS: scoped lexical prefix
+Canonical language: English; [Japanese pointer](../ja/CHECKER257C-NATIVE-COMPREHENSION-CONTEXTS.md).
+Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md), [Task257C index](../../mizar-checker/en/todo.md); consumer: existing scoped Primary producer.
+Authority: [EN4.6](../../../spec/en/04.variables_and_constants.md#46-scoping-and-shadowing), [EN13.4](../../../spec/en/13.term_expression.md#134-set-expressions).
+Full tier: new Comprehension context/refusal class beyond the reviewed FunctionBinder metadata profile. This is a genuine lexical acquisition prerequisite for later predicate conditions, not C2 admission.
+
+## Frozen boundary
+Extend only existing `source_theorem_binding_env` acquisition and its documented boundary; use the original SurfaceResolvedArena, SymbolEnv, sealed ResolvedVariableScope and authenticated resolver lexical maps. No caller-supplied contexts/maps, fake clocks, reconstructed resolution, new public API/type/field/helper or alternate producer.
+The new profile admits normal explicit quantified theorem/proof-Let sources with Comprehension generators and outer-variable mappers. Preserve existing non-Comprehension inference, FunctionBinder profiles, error precedence and exact nested-Fraenkel products. Reserve/default inference, definitions, witnesses and mixed FunctionBinder/Comprehension profiles remain excluded from the new profile.
+Derive each actual Comprehension lexical boundary as existing SourceComprehension/Expression with exact range, lexical scope and nearest real parent. Preserve unused and sibling boundaries. Keep module context zero and existing deterministic context ordering.
+Retain every resolver binding ID, declaration range/clock, identity, recovery and other projected field; change only owner context by authenticated declaration scope. Own/visible rows must exactly match own/ancestor bindings, without sibling leakage. Preserve Missing type sites; this is no typing or sethood certificate.
+Use existing `build_from_scoped_theorem_occurrences` as the real consumer over the complete normal bare VariableReference/Value occurrence census, preserving exact sites, source ordinals, binding identities, lexical scopes and reference clocks. Check lookup with declaration clocks, never reference ordinals.
+Generator-used mappers before written declarations remain outside this prefix: keep the existing scoped Primary refusal and clocks. Do not omit references, reinterpret exact DTOs, or claim that lexical projection solves mapper visibility/formation.
+No Set/Atomic/C2, inference, generator-domain evidence, capture-result, fact, proof acceptance, Core/VC, artifact or coverage credit follows. Keep original membership, equality and formation refusals.
+
+## Tests and exit
+Before production obtain diagnostic-free genuine Frontend/Resolver maps and compile an intended runtime acquisition RED in existing owner tests. Use source literals and actual structural children to derive expected contexts, declaration ownership and all Primary leaves independently of new output.
+Cover header/proof/both, nested and sibling Comprehensions with outer mappers, alpha/layout, unused/shadowed generators, exact parents/scopes/ranges/own/visible rows, all preserved fields and both clocks. Test complete scoped Primary construction and existing Typed/final replay without fabricated positive phases.
+Reject foreign source/environment/scope, recovered or unsupported declarations, wrong context/parent/lexical identity/visibility/clocks and incomplete/duplicated/reordered/rebound Primary rows; retain pristine replay and input purity. Preserve old non-Comp/FunctionBinder and generator-mapper controls.
+Update only paired live TypeChecker/Primary boundaries and the owning TODO link. Keep spec/MIZ/expectations/trace/audit credit unchanged; evidence outside doc. Run independent PRE authority/trust, POST precision/sufficiency/paired consistency, volume review and full-tier exit checks.
+Verification: fmt, all-target/all-feature Clippy -Dwarnings, both lint_policy, affected lexical-context/SourcePrimary/native-source owners and short source end-to-end checks; affected replay immediately, full cargo test for shared-push integration. Broader257B/C remains open.

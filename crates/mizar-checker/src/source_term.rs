@@ -3904,6 +3904,386 @@ mod tests {
     }
 
     #[test]
+    fn task257c_native_comprehension_contexts_feed_complete_scoped_primary() {
+        use mizar_frontend::{
+            lexing::{ParserLexingPlan, TokenizeRequest, tokenize},
+            parsing::{MizarParserSeam, ParseRequest, ParserInputs, ParserSeam},
+            preprocess::preprocess,
+            source::{
+                FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit,
+            },
+            span_bridge::SpanBridge,
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector, env::NamespacePath,
+            resolved_ast::SurfaceResolvedArena, symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{DiskSourceLoader, Edition, SourceInput, SourceOriginInput};
+
+        // Literal reference winners include unused declarations and lexical shadowing.
+        for (case, (text, comp_count, binding_count, winners, primary)) in [
+            ("theorem T: for A being set holds A in { A where z is object : z in A } proof let A be set; thus A in { A where z is object : z in A }; end;", 2, 4, vec![0,0,1,0,2,2,3,2], Some(true)),
+            ("theorem T: for A being set holds A in { A where z is object : z in A };", 1, 2, vec![0,0,1,0], Some(true)),
+            ("theorem T: for A being set holds A = A proof let A be set; thus A in { A where z is object : z in A }; end;", 1, 3, vec![0,0,1,1,2,1], Some(true)),
+            ("theorem T: for A being set holds A in { A where z is object : z in { A where q is object : q in A } };", 2, 3, vec![0,0,1,0,2,0], Some(true)),
+            ("theorem T: for A being set holds A in { A where z is object : z in A } & A in { A where w is object : w in A };", 2, 3, vec![0,0,1,0,0,0,2,0], Some(true)),
+            ("theorem T: for A being set holds A in { A where z is object : A = A };", 1, 2, vec![0,0,0,0], Some(true)),
+            ("theorem T: for A being set holds A in { A where z is object : z in { A where z is object : z in A } };", 2, 3, vec![0,0,1,0,2,0], Some(true)),
+            ("\n:: alpha/layout\ntheorem T: for parcel being\tset holds parcel in { parcel where needle is object : needle in parcel } proof\nlet parcel be set; thus parcel in { parcel where needle is object : needle in parcel }; end;", 2, 4, vec![0,0,1,0,2,2,3,2], Some(true)),
+            ("theorem T: for A being set holds A in { z where z is object : z in A };", 1, 2, vec![0,1,1,0], Some(false)),
+            ("theorem T: for A being set holds A = A proof let A be set; thus A = A; end;", 0, 2, vec![0,0,1,1], Some(true)),
+            ("theorem T: for A being set holds A = A proof let A be set; thus (A |-> A) = A; end;", 0, 3, vec![0,0,2,1], Some(true)),
+            ("reserve A for set; theorem T: for A holds A in { A where z is object : z in A };", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A = A proof let A be set; take A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A = A proof let A be set; set B = A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A = A proof let A be set; thus (A |-> A) in { A where z is object : z in A }; end;", 1, 0, vec![], None),
+        ].into_iter().enumerate() {
+        let directory = std::env::temp_dir().join(format!(
+            "native-comprehension-contexts-{}-{case}",
+            std::process::id()
+        ));
+        let path = directory.join("src/main.miz");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, text).unwrap();
+        let loaded = FrontendSourceLoader::new(DiskSourceLoader::new(&directory))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                        "mizar-session-build-snapshot-v1:{}",
+                        "39".repeat(32)
+                    ))
+                    .unwrap(),
+                    input: SourceInput {
+                        package_id: PackageId::new("pkg"),
+                        module_path: ModulePath::new("comprehension_contexts"),
+                        normalized_path: mizar_session::normalize_path(&directory, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::Disk { path },
+                    },
+                },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        std::fs::remove_dir_all(directory).unwrap();
+        assert_eq!(loaded.source_text.as_ref(), text);
+        let mut bridge = SpanBridge::new();
+        register_source_unit(&mut bridge, &loaded).unwrap();
+        let preprocessed = preprocess(&loaded, &mut bridge).unwrap();
+        assert!(preprocessed.diagnostics.is_empty());
+        assert!(preprocessed.import_stubs.is_empty());
+        let lexical = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let tokens = tokenize(
+            TokenizeRequest::with_plan(
+                &preprocessed,
+                &lexical,
+                ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str()),
+            ),
+            &bridge,
+        )
+        .unwrap();
+        assert!(
+            tokens.diagnostics().is_empty(),
+            "{:?}",
+            tokens.diagnostics()
+        );
+        let parsed = MizarParserSeam.parse(ParseRequest::new(
+            &tokens,
+            ParserInputs::from_active_environment(loaded.edition, &lexical),
+        ));
+        assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+        let ast = parsed.ast.unwrap();
+        let actual_module = module("comprehension_contexts");
+        let shells = DeclarationShellCollector::new(&ast, &actual_module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(actual_module.path().as_str()),
+        )
+        .collect(&actual_module);
+        assert!(
+            collected.diagnostics().is_empty(),
+            "{:?}",
+            collected.diagnostics()
+        );
+        let symbols = collected.into_env();
+        let resolved = SurfaceResolvedArena::lower(&ast, &actual_module).unwrap();
+        mizar_resolve::symbols::validate_source_symbol_env(&resolved, &symbols).unwrap();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &actual_module, &symbols),
+        )
+        .unwrap();
+        let (scopes, parents) =
+            mizar_resolve::symbols::source_proof_scope_maps(&resolved, &symbols, &scope)
+                .expect("original sealed lexical maps");
+        assert_eq!(ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::SetComprehension).count(), comp_count);
+        let acquisition = SourceVariableSemanticsChecker::source_theorem_binding_env(
+            &resolved, &symbols, &scope,
+        );
+        if primary.is_none() {
+            assert_eq!(acquisition.unwrap_err(), "theorems.bindings.invalid_lexical_association", "case {case}");
+            continue;
+        }
+        assert_eq!(scope.bindings().len(), binding_count, "case {case}");
+        assert_eq!(scope.references().iter().map(|actual| actual.binding().index()).collect::<Vec<_>>(), winners, "case {case}");
+        let mut boundaries = scopes
+            .iter()
+            .filter(|(id, local)| {
+                parents
+                    .get(id)
+                    .is_none_or(|parent| scopes.get(parent) != Some(local))
+            })
+            .collect::<Vec<_>>();
+        boundaries.sort_by_key(|(_, local)| (local.path().len(), local.path()));
+        assert_eq!(boundaries.len(), 1 + comp_count + ast.node_views().filter(|view| matches!(view.kind(), SurfaceNodeKind::QuantifiedFormula(_) | SurfaceNodeKind::ProofBlock | SurfaceNodeKind::BinderExpression)).count());
+        let expected_context = |local: &LocalTermScope| {
+            BindingContextId::new(
+                boundaries
+                    .iter()
+                    .position(|(_, scope)| *scope == local)
+                    .unwrap(),
+            )
+        };
+        let bindings = acquisition.expect("genuine comprehension lexical acquisition");
+        assert_eq!(bindings.contexts().len(), boundaries.len());
+        assert_eq!(bindings.bindings().len(), scope.bindings().len());
+        assert!(bindings.diagnostics().is_empty());
+        for (index, (syntax, local)) in boundaries.iter().enumerate() {
+            let id = BindingContextId::new(index);
+            let context = bindings.contexts().get(id).unwrap();
+            let actual = ast.node_view(**syntax).unwrap();
+            let parent = parents.get(syntax).map(|parent| expected_context(scopes.get(parent).unwrap()));
+            let (owner, layer) = match actual.kind() {
+                SurfaceNodeKind::QuantifiedFormula(_) => (BindingContextOwner::SourceFormula { source_range: actual.range() }, BindingContextLayer::Expression),
+                SurfaceNodeKind::ProofBlock => (BindingContextOwner::SourceStatement { source_range: actual.range() }, BindingContextLayer::Proof),
+                SurfaceNodeKind::SetComprehension => (BindingContextOwner::SourceComprehension { source_range: actual.range() }, BindingContextLayer::Expression),
+                SurfaceNodeKind::TermExpression => {
+                    let binder = ast.node_view(*parents.get(syntax).unwrap()).unwrap();
+                    assert_eq!(binder.kind(), &SurfaceNodeKind::BinderExpression);
+                    assert_eq!(binder.children().last(), Some(*syntax));
+                    (BindingContextOwner::SourceFunctionBinder { source_range: binder.range() }, BindingContextLayer::Expression)
+                }
+                _ if index == 0 => (BindingContextOwner::Module, BindingContextLayer::Module),
+                kind => panic!("unexpected source boundary {kind:?}"),
+            };
+            assert_eq!(context.id, id);
+            assert_eq!(context.owner, owner, "case {case}");
+            assert_eq!(context.layer, layer);
+            assert_eq!(context.parent, parent);
+            assert_eq!(context.lexical_scope.as_ref(), parent.map(|_| *local));
+            assert_eq!(context.recovery, BindingContextRecovery::Normal);
+            let own = scope.bindings().iter().filter(|binding| binding.scope() == *local).map(|binding| BindingId::new(binding.id().index())).collect::<Vec<_>>();
+            let visible = scope.bindings().iter().filter(|binding| local.path().starts_with(binding.scope().path())).map(|binding| BindingId::new(binding.id().index())).collect::<Vec<_>>();
+            assert_eq!(context.bindings, own);
+            assert_eq!(context.visible_bindings, visible, "case {case}");
+        }
+        let flat = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        for ((id, entry), declaration) in bindings.bindings().iter().zip(scope.bindings()) {
+            let mut expected = flat.bindings().get(id).unwrap().clone();
+            expected.owner_context = expected_context(declaration.scope());
+            if comp_count == 0 { expected.type_site = entry.type_site.clone(); }
+            assert_eq!(entry, &expected, "every projected field, case {case}");
+            assert_eq!(entry.id.index(), declaration.id().index());
+            assert_eq!(entry.identity, BinderIdentity::ResolverLocal { scope: declaration.scope().clone(), ordinal: declaration.ordinal(), declaration_range: declaration.range() });
+            assert_eq!(entry.visible_after_ordinal, declaration.ordinal());
+            assert_eq!(entry.declaration_range, declaration.range());
+            if comp_count > 0 { assert_eq!(entry.type_site, BindingTypeSite::Missing); }
+        }
+        let arena = TypedArena::try_new(
+            Some(TypedNodeId::new(resolved.arena().root().index())),
+            resolved
+                .arena()
+                .iter()
+                .map(|(id, current)| {
+                    TypedNode::new(
+                        if current.kind() == &SurfaceNodeKind::TermReference {
+                            "source.term.variable-reference".to_owned()
+                        } else {
+                            format!("{:?}", current.kind())
+                        },
+                        current.origin().anchor().clone(),
+                    )
+                    .with_resolved_node(id)
+                    .with_children(
+                        current
+                            .children()
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                })
+                .collect(),
+        )
+        .unwrap();
+        let mut leaves = ast
+            .node_views()
+            .filter(|view| view.kind() == &SurfaceNodeKind::TermReference)
+            .collect::<Vec<_>>();
+        leaves.sort_by_key(|view| view.range().start);
+        assert_eq!(
+            leaves.len(),
+            scope.references().len(),
+            "complete structural leaf census"
+        );
+        let input = SourcePrimaryTermHandoffInput {
+            source_id: ast.source_id,
+            module_id: actual_module,
+            terms: leaves
+                .iter()
+                .enumerate()
+                .map(|(ordinal, leaf)| SourcePrimaryTermInput {
+                    site: node(resolved.resolved_node_for(leaf.id()).unwrap().index()),
+                    source_range: leaf.range(),
+                    source_ordinal: ordinal,
+                    context: expected_context(scopes.get(&leaf.id()).unwrap()),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: text[leaf.range().start..leaf.range().end].to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                })
+                .collect(),
+            references: leaves
+                .iter()
+                .enumerate()
+                .map(|(ordinal, leaf)| {
+                    let actual = scope
+                        .references()
+                        .iter()
+                        .find(|actual| actual.node() == leaf.id())
+                        .unwrap();
+                    SourcePrimaryTermReferenceInput {
+                        term: SourcePrimaryTermId::new(ordinal),
+                        binding: BindingId::new(actual.binding().index()),
+                        role: SourcePrimaryTermReferenceRole::Variable,
+                    }
+                })
+                .collect(),
+            numeric_type_requests: Vec::new(),
+        };
+        let provenance = (resolved.clone(), symbols.clone(), scopes.clone(), parents.clone(), ast.snapshot_text(), loaded.source_text.clone());
+        let pristine = (input.clone(), bindings.clone(), arena.clone(), scope.clone());
+        let consume = |candidate, environment: &BindingEnv| SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(
+            candidate, environment, &arena, &resolved, &symbols, &scope,
+        );
+        if primary == Some(false) {
+            let mapper = scope.references().iter().find(|reference| {
+                scope.bindings()[reference.binding().index()].range().end > reference.range().start
+            }).expect("genuine generator mapper precedes its declaration");
+            assert_eq!(mapper.spelling(), "z");
+            assert!(matches!(consume(input.clone(), &bindings), Err(SourcePrimaryTermError::InvalidReference { .. })));
+            assert_eq!((&input, &bindings, &arena, &scope), (&pristine.0, &pristine.1, &pristine.2, &pristine.3));
+            continue;
+        }
+        let handoff = consume(input.clone(), &bindings).expect("complete real scoped comprehension Primary consumer");
+        assert_eq!(handoff.terms().len(), leaves.len());
+        assert_eq!(handoff.references().len(), leaves.len());
+        assert!(handoff.numeric_type_requests().is_empty());
+        for ((_, reference), actual) in handoff.references().iter().zip(scope.references()) {
+            let term = handoff.terms().get(reference.term()).unwrap();
+            let expected = &input.terms[reference.term().index()];
+            assert_eq!(term.site(), &expected.site);
+            assert_eq!(term.source_range(), actual.range());
+            assert_eq!(term.source_ordinal(), reference.term().index());
+            assert_eq!(term.spelling(), actual.spelling());
+            assert_eq!(term.kind(), SourcePrimaryTermKind::VariableReference);
+            assert_eq!(term.role(), SourcePrimaryTermRole::Value);
+            assert_eq!(term.recovery(), SourcePrimaryTermRecovery::Normal);
+            assert_eq!(term.parent(), None);
+            assert_eq!(term.context(), expected_context(actual.scope()));
+            // Lookup uses written declaration events, independently of reference clocks.
+            let declaration_clock = scope.bindings().iter().filter(|binding| binding.range().end <= actual.range().start).count();
+            assert_eq!(bindings.lookup(&BindingLookupSite::new(actual.spelling(), term.context(), Some(actual.scope().clone()), declaration_clock)), Ok(BindingLookupResult::Local(BindingId::new(actual.binding().index()))));
+            assert_eq!(reference.binding().index(), actual.binding().index());
+            assert_eq!(reference.lexical_scope(), Some(actual.scope()));
+            assert_eq!(reference.use_ordinal(), actual.ordinal());
+        }
+        assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
+        if case == 0 {
+            for mutation in 0..9 {
+                let mut candidate = input.clone();
+                match mutation {
+                    0 => { candidate.terms.pop(); candidate.references.pop(); }
+                    1 => candidate.references.push(candidate.references[0].clone()),
+                    2 => candidate.references.swap(0, 1),
+                    3 => candidate.references[0].binding = BindingId::new(2),
+                    4 => candidate.terms[1].context = candidate.terms[0].context,
+                    5 => candidate.terms[0].recovery = SourcePrimaryTermRecovery::Degraded,
+                    6 => candidate.source_id = other_source_id(),
+                    7 => candidate.module_id = module("foreign"),
+                    _ => candidate.terms[0].source_ordinal += 1,
+                }
+                assert!(consume(candidate, &bindings).is_err(), "Primary mutation {mutation}");
+            }
+            let comp = bindings.contexts().iter().find(|(_, context)| matches!(context.owner, BindingContextOwner::SourceComprehension { .. })).unwrap().0;
+            for mutation in 0..7 {
+                let mut contexts = BindingContextTable::new();
+                for (id, context) in bindings.contexts().iter() {
+                    let mut draft = BindingContextDraft {
+                        owner: context.owner.clone(), parent: context.parent, layer: context.layer,
+                        lexical_scope: context.lexical_scope.clone(), bindings: context.bindings.clone(),
+                        visible_bindings: context.visible_bindings.clone(), recovery: context.recovery,
+                    };
+                    if id == comp {
+                        match mutation {
+                            0 => if let BindingContextOwner::SourceComprehension { source_range } = &mut draft.owner { source_range.start += 1; },
+                            1 => draft.owner = BindingContextOwner::SourceStatement { source_range: ast.node_view(*boundaries[comp.index()].0).unwrap().range() },
+                            2 => draft.lexical_scope = Some(LocalTermScope::new(vec![999])),
+                            3 => draft.layer = BindingContextLayer::Block,
+                            4 => draft.recovery = BindingContextRecovery::Recovered,
+                            5 => { draft.parent = Some(BindingContextId::new(0)); draft.visible_bindings = draft.bindings.clone(); }
+                            _ => draft.visible_bindings.clear(),
+                        }
+                    }
+                    assert_eq!(contexts.insert(draft), id);
+                }
+                let candidate = BindingEnv::try_new(BindingEnvParts {
+                    source_id: bindings.source_id(), module_id: bindings.module_id().clone(),
+                    contexts, bindings: bindings.bindings().clone(), diagnostics: bindings.diagnostics().clone(),
+                }).expect("structurally valid context mutation before source authentication");
+                assert_eq!(consume(input.clone(), &candidate), Err(SourcePrimaryTermError::InvalidTransaction), "context mutation {mutation}");
+            }
+            for mutation in 0..4 {
+                let mut candidate = bindings.clone();
+                let entry = candidate.binding_mut_for_test(BindingId::new(1)).unwrap();
+                match mutation {
+                    0 => { entry.visible_after_ordinal += 1; if let BinderIdentity::ResolverLocal { ordinal, .. } = &mut entry.identity { *ordinal += 1; } }
+                    1 => entry.recovery = BindingRecoveryState::Recovered,
+                    2 => if let BinderIdentity::ResolverLocal { scope, .. } = &mut entry.identity { *scope = LocalTermScope::new(vec![999]); },
+                    _ => entry.type_site = BindingTypeSite::Deferred("foreign".into()),
+                }
+                let candidate = BindingEnv::try_new(BindingEnvParts {
+                    source_id: candidate.source_id(), module_id: candidate.module_id().clone(),
+                    contexts: candidate.contexts().clone(), bindings: candidate.bindings().clone(), diagnostics: candidate.diagnostics().clone(),
+                }).expect("structurally valid binding mutation before source authentication");
+                assert_eq!(consume(input.clone(), &candidate), Err(SourcePrimaryTermError::InvalidTransaction), "binding mutation {mutation}");
+            }
+            let foreign_module = module("foreign");
+            let foreign_source = SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap();
+            let foreign_symbols = SymbolEnv::new(foreign_module.clone(), SymbolEnvIndexes::default());
+            let foreign_scope = SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(&ast, &foreign_module, &foreign_symbols)).unwrap();
+            for (source, symbols, scope) in [(&foreign_source, &symbols, &scope), (&resolved, &foreign_symbols, &scope), (&resolved, &symbols, &foreign_scope)] {
+                assert_eq!(SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(input.clone(), &bindings, &arena, source, symbols, scope), Err(SourcePrimaryTermError::InvalidTransaction));
+            }
+        }
+        // Existing generic installation replays node metadata; full source/context/
+        // reference authentication belongs to the scoped producer above.
+        let typed = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), arena.clone()).with_source_term(handoff.clone()).unwrap();
+        assert_eq!(typed.source_term(), Some(&handoff));
+        assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.initial_obligations().is_empty());
+        assert!(typed.source_set_term().is_none() && typed.source_atomic_formula().is_none() && typed.source_formula_composition().is_none());
+        let final_ast = task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()).expect("generic Primary metadata replay with no inferred phases");
+        assert_eq!(final_ast.source_term(), Some(&handoff));
+        assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast));
+        let mut nodes = arena.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+        nodes[input.terms[0].site.node().index()].recovery = NodeRecoveryState::Recovered;
+        let recovered_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+        assert!(matches!(task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), recovered_arena).with_source_term(handoff), Err(TypedAstError::InvalidSourceTerm)));
+        assert_eq!((&input, &bindings, &arena, &scope), (&pristine.0, &pristine.1, &pristine.2, &pristine.3));
+        assert_eq!((resolved, symbols, scopes, parents, ast.snapshot_text(), loaded.source_text), provenance);
+        }
+    }
+
+    #[test]
     fn occurrence_builder_authenticates_genuine_parenthesized_variable_chains() {
         use mizar_frontend::{
             lexing::{ParserLexingPlan, TokenizeRequest, tokenize},

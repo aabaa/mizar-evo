@@ -168,14 +168,15 @@ response、accepted fact/declaration/proof、downstream IR、Tasks 253+、Steps 
 explicit ownerに残る。
 
 ## Original-source theorem scoped primary references
+同じ入口は、外側変数mapperを含む宣言後の完全なnormal変数leafについて実Comprehension字句環境を受け取る。宣言前のgenerator mapper認証や型付けは与えない。構築時に元のsource環境と完全なoccurrence censusを再生し、通常のTyped/final installationは既存のnode-level metadata保証を維持する。
 `SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(input, binding_env, arena, source, symbols, scope)` は既存の所有 SourcePrimaryTermHandoffInput と借用 BindingEnv、TypedArena、SurfaceResolvedArena、SymbolEnv、ResolvedVariableScope を受け、既存 SourcePrimaryTermHandoff または SourcePrimaryTermError を返す。実在する定理参照と字句 context を認証する別入口であり、既存 builder と検証は変更しない。
 最初に source/symbols/scope から[実在する定理 BindingEnv](type_checker.md#original-source-theorem-binding-contexts)を取得し、未使用の宣言・context を含めて渡された環境全体との一致を要求する。上流拒否と環境不一致は InvalidTransaction。非公開 scoped profile で既存の主項検証を再利用し、この入口だけ FunctionBinder の変数参照を許可する。Generic と flat 入口は変更しない。宣言イベント順序、実際の BindingEnv.lookup の勝者、node/range/cardinality と既存エラーを保持し、その後、全 term を Normal VariableReference/Value に制限する。ResolverLocal identity の検証は使用される Reserve 参照を引き続き拒否する。Binder root、型、formation evidence は生成しない。
 各生成参照の実在 typed-site node の resolved link を source.resolved_node_for(reference.node()) を介して実際の元 Resolver 参照に対応付ける。surface と typed の数値 node ID をキャスト・同一視しない。Resolver 参照の一意な全数対応、Term/Variable role、正確な range/spelling/binding と、term context の lexical scope が実際の使用 scope に一致することを要求する。不一致は既存 InvalidReference とし、部分 handoff を返さない。
 この検証後に限り、封印済み Resolver 参照の scope と参照列挙 ordinal を既存の非公開出力参照 field に保持する。この ordinal は Generic build の宣言イベント lookup clock と異なり、相互に代用しない。他の生成 field、dense ID/順序と source identity は保持する。caller が scope/use ordinal を注入する field や新表現は追加しない。
 既存 install は source/module と arena 形状を検証し、BindingEnv lookup は再実行しない。本入口は primary 参照だけを認証し、[scoped atomic/inference の構成](type_checker.md#original-source-theorem-scoped-inference) は TypeChecker が所有する。theorem の採用、汎用 source-context handoff、完全な context/type phase、composite/composition、Artifact/publication/currentness/reuse/acceptance は延期し、既存の定理・証明方針は変更しない。
 ### Scoped primary reference tests
-既存の非 Binder テストは実在 Disk/OpenBuffer の equality/primary 取得と scoped 環境を保持する。Binder 参照テストでは実際の元ソースの range/resolved link と独立した fixture の宣言・参照・context 一覧から、caller 所有の Unknown/Normal TypedArena leaf と primary 入力を導く。正の TypedAst や checked phase は構築しない。全出力行、字句 scope、異なる宣言・参照 clock、source identity、入力不変性を検証する。既存 Generic/flat 入口の検証を維持し、未使用の fresh head と自由な外側参照の実際の勝者も確認する。
-負例は foreign source/environment/scope、未使用宣言/context の変更、term/reference/site の不完全・不一致と複合 fault の権威優先を扱う。実在 nested use を Generic lookup が成功する祖先 context へ移す例、および通常の形状検証は成功する誤 resolved-node 対応を含め、新入口が両者を拒否する。下位 guard の全行列は複製しない。合成データは拒否専用とし、正の AST/env/phase/VC/token の捏造や scoped inference/Core/証明受理は主張しない。
+既存の非 Binder テストは実在 Disk/OpenBuffer の equality/primary 取得と scoped 環境を保持する。Binder 参照テストでは実際の元ソースの range/resolved link と独立した fixture の宣言・参照・context 一覧から、caller 所有の Unknown/Normal TypedArena leaf と primary 入力を導く。推論済み・checked semantic phaseは与えない。全出力行、字句 scope、異なる宣言・参照 clock、source identity、入力不変性を検証する。既存 Generic/flat 入口の検証を維持し、未使用の fresh head と自由な外側参照の実際の勝者も確認する。
+負例は foreign source/environment/scope、未使用宣言/context の変更、term/reference/site の不完全・不一致と複合 fault の権威優先を扱う。実在 nested use を Generic lookup が成功する祖先 context へ移す例、および通常の形状検証は成功する誤 resolved-node 対応を含め、新入口が両者を拒否する。下位 guard の全行列は複製しない。合成変異は拒否専用とする。空のTyped/final containerは認証済みmetadataを再生し、推論済み型・fact・VC/token evidenceやscoped inference/Core/証明受理は与えない。
 
 ## Task 257C4C4 nested Fraenkel mapper primary
 

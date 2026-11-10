@@ -20924,21 +20924,33 @@ impl SourceVariableSemanticsChecker {
             .bindings()
             .iter()
             .any(|binding| binding.kind() == SourceVariableBindingKind::FunctionBinder);
-        let (original, default_types, (scopes, parents)) = if function_metadata {
+        let comprehension_metadata = !function_metadata
+            && scope
+                .bindings()
+                .iter()
+                .any(|binding| binding.kind() == SourceVariableBindingKind::ComprehensionGenerator);
+        let lexical_metadata = function_metadata || comprehension_metadata;
+        let (original, default_types, (scopes, parents)) = if lexical_metadata {
             let maps = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
             let mut reserves = BTreeSet::new();
             if scope.bindings().iter().any(|binding| match binding.kind() {
-                SourceVariableBindingKind::Reserve => !reserves.insert(binding.spelling()),
-                SourceVariableBindingKind::Quantifier
-                | SourceVariableBindingKind::Let
-                | SourceVariableBindingKind::FunctionBinder => false,
+                SourceVariableBindingKind::Reserve => {
+                    comprehension_metadata || !reserves.insert(binding.spelling())
+                }
+                SourceVariableBindingKind::Quantifier | SourceVariableBindingKind::Let => {
+                    comprehension_metadata && binding.declared_type().is_none()
+                }
+                SourceVariableBindingKind::FunctionBinder => !function_metadata,
+                SourceVariableBindingKind::ComprehensionGenerator => !comprehension_metadata,
                 _ => true,
             }) || source.arena().iter().any(|(_, node)| {
-                node.kind() == &K::Witness
-                    && node.children().iter().any(|child| {
-                        matches!(source.arena().node(*child).map(|node| node.kind()),
-                            Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
-                    })
+                (comprehension_metadata && node.kind() == &K::DefinitionBlockItem)
+                    || (node.kind() == &K::Witness
+                        && (comprehension_metadata
+                            || node.children().iter().any(|child| {
+                                matches!(source.arena().node(*child).map(|node| node.kind()),
+                                Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
+                            })))
             }) {
                 return Err(invalid());
             }
@@ -20997,6 +21009,12 @@ impl SourceVariableSemanticsChecker {
                         source_range: *source_range,
                     },
                     BindingContextLayer::Proof,
+                ),
+                K::SetComprehension if comprehension_metadata => (
+                    BindingContextOwner::SourceComprehension {
+                        source_range: *source_range,
+                    },
+                    BindingContextLayer::Expression,
                 ),
                 K::TermExpression if function_metadata => {
                     let binder = source
