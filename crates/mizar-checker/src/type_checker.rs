@@ -20932,6 +20932,102 @@ impl SourceVariableSemanticsChecker {
         let lexical_metadata = function_metadata || comprehension_metadata;
         let (original, default_types, (scopes, parents)) = if lexical_metadata {
             let maps = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+            if comprehension_metadata {
+                let node = |id| source.arena().node(id).ok_or_else(invalid);
+                let parts = |id, kind: &K| {
+                    let actual = node(id)?;
+                    (actual.kind() == kind)
+                        .then_some(actual.children())
+                        .ok_or_else(invalid)
+                };
+                let only = |id, kind: &K| {
+                    let [child] = parts(id, kind)? else {
+                        return Err(invalid());
+                    };
+                    Ok(*child)
+                };
+                let identifier = |id| match node(id)?.kind() {
+                    K::Token(token) if token.kind == SurfaceTokenKind::Identifier => {
+                        Ok(token.text.as_ref())
+                    }
+                    _ => Err(invalid()),
+                };
+                let definitions = source
+                    .arena()
+                    .iter()
+                    .filter(|(_, node)| node.kind() == &K::DefinitionBlockItem)
+                    .map(|(id, _)| id)
+                    .collect::<Vec<_>>();
+                if !definitions.is_empty() {
+                    let [block] = definitions.as_slice() else {
+                        return Err(invalid());
+                    };
+                    let items = source
+                        .arena()
+                        .iter()
+                        .find(|(_, node)| node.kind() == &K::ItemList)
+                        .ok_or_else(invalid)?
+                        .1
+                        .children();
+                    if items.first() != Some(block)
+                        || items.len() < 2
+                        || items[1..].iter().any(|id| {
+                            !matches!(
+                                node(*id).map(|node| node.kind()),
+                                Ok(K::TheoremItem | K::LemmaItem)
+                            )
+                        })
+                    {
+                        return Err(invalid());
+                    }
+                    let [_, parameter, definition, _, _] = parts(*block, &K::DefinitionBlockItem)?
+                    else {
+                        return Err(invalid());
+                    };
+                    let [_, segment, _] = parts(*parameter, &K::DefinitionParameter)? else {
+                        return Err(invalid());
+                    };
+                    let [first, _, second, _, ty] = parts(*segment, &K::QualifiedVariableSegment)?
+                    else {
+                        return Err(invalid());
+                    };
+                    let formals = [identifier(*first)?, identifier(*second)?];
+                    let head = only(only(*ty, &K::TypeExpression)?, &K::TypeHead)?;
+                    if formals[0] == formals[1]
+                        || !matches!(node(head)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && matches!(token.text.as_ref(), "set" | "object"))
+                    {
+                        return Err(invalid());
+                    }
+                    let [_, label, _, pattern, _, body, _] =
+                        parts(*definition, &K::PredicateDefinition)?
+                    else {
+                        return Err(invalid());
+                    };
+                    identifier(*label)?;
+                    let [left, head, right] = parts(*pattern, &K::PredicatePattern)? else {
+                        return Err(invalid());
+                    };
+                    identifier(*head)?;
+                    if [identifier(*left)?, identifier(*right)?] != formals {
+                        return Err(invalid());
+                    }
+                    let equality = only(only(*body, &K::FormulaDefiniens)?, &K::FormulaExpression)?;
+                    let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)?
+                    else {
+                        return Err(invalid());
+                    };
+                    if !matches!(node(*equals)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "=")
+                    {
+                        return Err(invalid());
+                    }
+                    for (operand, formal) in [left, right].into_iter().zip(formals) {
+                        let reference = only(*operand, &K::TermExpression)?;
+                        if identifier(only(reference, &K::TermReference)?)? != formal {
+                            return Err(invalid());
+                        }
+                    }
+                }
+            }
             let mut reserves = BTreeSet::new();
             if scope.bindings().iter().any(|binding| match binding.kind() {
                 SourceVariableBindingKind::Reserve => {
@@ -20944,13 +21040,12 @@ impl SourceVariableSemanticsChecker {
                 SourceVariableBindingKind::ComprehensionGenerator => !comprehension_metadata,
                 _ => true,
             }) || source.arena().iter().any(|(_, node)| {
-                (comprehension_metadata && node.kind() == &K::DefinitionBlockItem)
-                    || (node.kind() == &K::Witness
-                        && (comprehension_metadata
-                            || node.children().iter().any(|child| {
-                                matches!(source.arena().node(*child).map(|node| node.kind()),
+                node.kind() == &K::Witness
+                    && (comprehension_metadata
+                        || node.children().iter().any(|child| {
+                            matches!(source.arena().node(*child).map(|node| node.kind()),
                                 Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
-                            })))
+                        }))
             }) {
                 return Err(invalid());
             }
@@ -21009,6 +21104,12 @@ impl SourceVariableSemanticsChecker {
                         source_range: *source_range,
                     },
                     BindingContextLayer::Proof,
+                ),
+                K::DefinitionBlockItem if comprehension_metadata => (
+                    BindingContextOwner::SourceStatement {
+                        source_range: *source_range,
+                    },
+                    BindingContextLayer::Declaration,
                 ),
                 K::SetComprehension if comprehension_metadata => (
                     BindingContextOwner::SourceComprehension {

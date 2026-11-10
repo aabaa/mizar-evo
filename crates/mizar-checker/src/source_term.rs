@@ -3985,6 +3985,21 @@ mod tests {
             ("theorem T: for A being set holds A = A proof let A be set; take A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
             ("theorem T: for A being set holds A = A proof let A be set; set B = A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
             ("theorem T: for A being set holds A = A proof let A be set; thus (A |-> A) in { A where z is object : z in A }; end;", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A = A proof let A be set; thus A in { z where z is set : z likes A }; end;", 1, 3, vec![0,0,1,2,2,1], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A } proof let A be set; thus A in { z where z is set : z likes A }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
+            (":: prefix alpha/layout\ndefinition\n let parcel, needle be object; pred Rel: parcel knows needle means parcel = needle; end;\ntheorem T: for item being set holds item in { point where point is set : point knows item };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A }; theorem U: for A being set holds A in { z where z is set : z in A };", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: Y likes X means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means Y = X; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = X; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X be set; let Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y,Z be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X in Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; pred OtherDef: X knows Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; definition let X,Y be set; pred OtherDef: X knows Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A in { z where z is set : z in A }; definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end;", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A = A; definition let X,Y be set; pred OtherDef: X knows Y means X = Y; end; theorem U: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
         ].into_iter().enumerate() {
         let directory = std::env::temp_dir().join(format!(
             "native-comprehension-contexts-{}-{case}",
@@ -4082,7 +4097,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         boundaries.sort_by_key(|(_, local)| (local.path().len(), local.path()));
-        assert_eq!(boundaries.len(), 1 + comp_count + ast.node_views().filter(|view| matches!(view.kind(), SurfaceNodeKind::QuantifiedFormula(_) | SurfaceNodeKind::ProofBlock | SurfaceNodeKind::BinderExpression)).count());
+        assert_eq!(boundaries.len(), 1 + comp_count + ast.node_views().filter(|view| matches!(view.kind(), SurfaceNodeKind::QuantifiedFormula(_) | SurfaceNodeKind::ProofBlock | SurfaceNodeKind::BinderExpression | SurfaceNodeKind::DefinitionBlockItem)).count());
         let expected_context = |local: &LocalTermScope| {
             BindingContextId::new(
                 boundaries
@@ -4103,6 +4118,7 @@ mod tests {
             let (owner, layer) = match actual.kind() {
                 SurfaceNodeKind::QuantifiedFormula(_) => (BindingContextOwner::SourceFormula { source_range: actual.range() }, BindingContextLayer::Expression),
                 SurfaceNodeKind::ProofBlock => (BindingContextOwner::SourceStatement { source_range: actual.range() }, BindingContextLayer::Proof),
+                SurfaceNodeKind::DefinitionBlockItem => (BindingContextOwner::SourceStatement { source_range: actual.range() }, BindingContextLayer::Declaration),
                 SurfaceNodeKind::SetComprehension => (BindingContextOwner::SourceComprehension { source_range: actual.range() }, BindingContextLayer::Expression),
                 SurfaceNodeKind::TermExpression => {
                     let binder = ast.node_view(*parents.get(syntax).unwrap()).unwrap();
@@ -4162,9 +4178,27 @@ mod tests {
                 .collect(),
         )
         .unwrap();
+        // Resolver deliberately excludes the entire real definition subtree.
+        // Derive that exclusion from the AST, independently of acquired metadata.
+        let definition_ranges = ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::DefinitionBlockItem).map(|view| view.range()).collect::<Vec<_>>();
+        let in_definition = |range: SourceRange| definition_ranges.iter().any(|block| block.start <= range.start && range.end <= block.end);
+        let excluded = ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::TermReference && in_definition(view.range())).collect::<Vec<_>>();
+        assert_eq!(excluded.len(), 2 * definition_ranges.len());
+        assert!(scope.bindings().iter().all(|binding| !in_definition(binding.range())));
+        assert!(scope.references().iter().all(|reference| !in_definition(reference.range())));
+        for range in &definition_ranges {
+            let context = bindings.contexts().iter().find(|(_, context)| context.owner == BindingContextOwner::SourceStatement { source_range: *range }).unwrap().1;
+            assert_eq!(context.layer, BindingContextLayer::Declaration);
+            assert!(context.bindings.is_empty() && context.visible_bindings.is_empty());
+            let formals = ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::QualifiedVariableSegment && in_definition(view.range())).collect::<Vec<_>>();
+            assert_eq!(formals.len(), 1);
+            for formal in [formals[0].children()[0], formals[0].children()[2]] {
+                assert!(scope.bindings().iter().all(|binding| binding.node() != formal));
+            }
+        }
         let mut leaves = ast
             .node_views()
-            .filter(|view| view.kind() == &SurfaceNodeKind::TermReference)
+            .filter(|view| view.kind() == &SurfaceNodeKind::TermReference && !in_definition(view.range()))
             .collect::<Vec<_>>();
         leaves.sort_by_key(|view| view.range().start);
         assert_eq!(
@@ -4244,7 +4278,7 @@ mod tests {
             assert_eq!(reference.use_ordinal(), actual.ordinal());
         }
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
-        if case == 8 {
+        if case == 8 || case == 21 {
             assert_eq!(input.terms[1].spelling, "z");
             for mutation in 0..7 {
                 let mut candidate = input.clone();
@@ -4269,7 +4303,7 @@ mod tests {
                 assert_eq!(consume(input.clone(), &candidate), Err(SourcePrimaryTermError::InvalidTransaction));
             }
         }
-        if case == 0 {
+        if case == 0 || case == 21 {
             for mutation in 0..9 {
                 let mut candidate = input.clone();
                 match mutation {
@@ -4286,7 +4320,8 @@ mod tests {
                 assert!(consume(candidate, &bindings).is_err(), "Primary mutation {mutation}");
             }
             let comp = bindings.contexts().iter().find(|(_, context)| matches!(context.owner, BindingContextOwner::SourceComprehension { .. })).unwrap().0;
-            for mutation in 0..7 {
+            let definition = bindings.contexts().iter().find(|(_, context)| context.layer == BindingContextLayer::Declaration).map(|(id, _)| id);
+            for mutation in 0..if definition.is_some() { 11 } else { 7 } {
                 let mut contexts = BindingContextTable::new();
                 for (id, context) in bindings.contexts().iter() {
                     let mut draft = BindingContextDraft {
@@ -4294,7 +4329,7 @@ mod tests {
                         lexical_scope: context.lexical_scope.clone(), bindings: context.bindings.clone(),
                         visible_bindings: context.visible_bindings.clone(), recovery: context.recovery,
                     };
-                    if id == comp {
+                    if id == comp && mutation < 7 {
                         match mutation {
                             0 => if let BindingContextOwner::SourceComprehension { source_range } = &mut draft.owner { source_range.start += 1; },
                             1 => draft.owner = BindingContextOwner::SourceStatement { source_range: ast.node_view(*boundaries[comp.index()].0).unwrap().range() },
@@ -4303,6 +4338,14 @@ mod tests {
                             4 => draft.recovery = BindingContextRecovery::Recovered,
                             5 => { draft.parent = Some(BindingContextId::new(0)); draft.visible_bindings = draft.bindings.clone(); }
                             _ => draft.visible_bindings.clear(),
+                        }
+                    }
+                    if Some(id) == definition && mutation >= 7 {
+                        match mutation {
+                            7 => if let BindingContextOwner::SourceStatement { source_range } = &mut draft.owner { source_range.start += 1; },
+                            8 => draft.layer = BindingContextLayer::Block,
+                            9 => draft.lexical_scope = Some(LocalTermScope::new(vec![999])),
+                            _ => draft.recovery = BindingContextRecovery::Recovered,
                         }
                     }
                     assert_eq!(contexts.insert(draft), id);
