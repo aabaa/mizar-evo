@@ -4,3 +4,4 @@ equality	CHECKER257C-NATIVE-CONDITION-COMPOSITION	membership	implemented	direct 
 multiple-generators	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	existing nonempty generator groups and requests
 enumeration-sibling	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	Enumeration siblings have no condition association
 enumeration-mapper	CHECKER257C-NATIVE-CONDITION-COMPOSITION	equality	implemented	Enumeration child targets and recursive actual-root uniqueness
+enumeration-wrappers	CHECKER257C-NATIVE-CONDITION-COMPOSITION	enumeration-mapper	implemented	Normal Enumeration-owned wrappers with role/depth metamorphics

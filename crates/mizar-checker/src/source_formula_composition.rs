@@ -1600,7 +1600,13 @@ fn validate_condition_transaction(
             || !applications.candidates().is_empty()
             || !applications.arguments().is_empty()
             || !applications.type_requests().is_empty()
-            || !set_terms.wrappers().is_empty()
+            || set_terms.wrappers().iter().any(|(_, wrapper)| {
+                wrapper.recovery() != SourceSetTermRecovery::Normal
+                    || !set_terms
+                        .terms()
+                        .get(wrapper.term())
+                        .is_some_and(|term| term.kind() == SourceSetTermKind::Enumeration)
+            })
             || set_terms.conditions().is_empty()
             || set_terms.terms().iter().any(|(_, term)| {
                 !matches!(

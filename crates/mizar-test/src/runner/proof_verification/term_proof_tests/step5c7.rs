@@ -200,7 +200,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         },
         source_set_term::{
             SourceSetConditionId, SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget,
-            SourceSetTermKind, SourceSetTypeHead, SourceSetTypeOwner,
+            SourceSetTermKind, SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner,
         },
         type_checker::SourceVariableSemanticsChecker,
     };
@@ -250,6 +250,11 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     let enumeration_mapper = original.replace(set_literal, "{ { x } where z is object : z in A }");
     let enumeration_tree =
         original.replace(set_literal, "{ { { x } } where z is object : z in A }");
+    let wrapped_mapper = original.replace(set_literal, "{ ({ x }) where z is object : z in A }");
+    let wrapped_element =
+        original.replace(set_literal, "{ { ({ x }) } where z is object : z in A }");
+    let double_wrapped_mapper =
+        original.replace(set_literal, "{ (({ x })) where z is object : z in A }");
     let inner_comprehension = original.replace(
         set_literal,
         "{ { x where w is object } where z is object : z in A }",
@@ -310,6 +315,31 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             &["z in A"][..],
         ),
         ("enumeration tree", enumeration_tree, 2, &["z in A"][..]),
+        ("wrapped mapper", wrapped_mapper.clone(), 2, &["z in A"][..]),
+        (
+            "wrapped mapper alpha",
+            wrapped_mapper.replace('z', "q"),
+            2,
+            &["q in A"][..],
+        ),
+        (
+            "wrapped element",
+            wrapped_element.clone(),
+            2,
+            &["z in A"][..],
+        ),
+        (
+            "wrapped element layout",
+            wrapped_element.replace("({ x })", "( {  x  } )"),
+            2,
+            &["z in A"][..],
+        ),
+        (
+            "double wrapped mapper",
+            double_wrapped_mapper,
+            2,
+            &["z in A"][..],
+        ),
         (
             "inner comprehension boundary",
             inner_comprehension,
@@ -363,6 +393,11 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 | "enumeration mapper"
                 | "enumeration mapper layout"
                 | "enumeration tree"
+                | "wrapped mapper"
+                | "wrapped mapper alpha"
+                | "wrapped element"
+                | "wrapped element layout"
+                | "double wrapped mapper"
                 | "inner comprehension boundary"
         ) {
             // Compare the lower Set rows with actual syntax, independently of C2.
@@ -394,6 +429,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 "enumeration sibling" => (2, 1, 0),
                 "enumeration mapper" | "enumeration mapper layout" => (4, 2, 2),
                 "enumeration tree" => (6, 2, 4),
+                "wrapped mapper" | "wrapped mapper alpha" | "double wrapped mapper" => (4, 2, 2),
+                "wrapped element" | "wrapped element layout" => (6, 2, 4),
                 "inner comprehension boundary" => (4, 4, 2),
                 _ => unreachable!(),
             };
@@ -624,6 +661,112 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 nested_count, expected_nested,
                 "{label}: written nested Set count"
             );
+            if matches!(
+                label,
+                "wrapped mapper"
+                    | "wrapped mapper alpha"
+                    | "wrapped element"
+                    | "wrapped element layout"
+                    | "double wrapped mapper"
+            ) {
+                let written_wrappers = ast
+                    .node_views()
+                    .filter(|view| {
+                        matches!(
+                            ast.node(view.id()).unwrap().kind,
+                            SurfaceNodeKind::ParenthesizedTerm
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                let expected = if label == "double wrapped mapper" {
+                    4
+                } else {
+                    2
+                };
+                assert_eq!(
+                    written_wrappers.len(),
+                    expected,
+                    "{label}: written wrappers"
+                );
+                assert_eq!(sets.wrappers().len(), expected, "{label}: lower wrappers");
+                for (inner_id, term) in sets.terms().iter() {
+                    if term.kind() != SourceSetTermKind::Enumeration {
+                        continue;
+                    }
+                    let mut physical = written_wrappers
+                        .iter()
+                        .filter_map(|view| {
+                            let node = ast.node(view.id())?;
+                            (node.range.start < term.source_range().start
+                                && term.source_range().end < node.range.end)
+                                .then_some((view.id(), node))
+                        })
+                        .collect::<Vec<_>>();
+                    physical
+                        .sort_by_key(|(_, node)| (node.range.start, usize::MAX - node.range.end));
+                    let owned = sets
+                        .wrappers()
+                        .iter()
+                        .filter(|(_, row)| row.term() == inner_id)
+                        .collect::<Vec<_>>();
+                    assert_eq!(owned.len(), physical.len(), "{label}: wrapper owner census");
+                    for (ordinal, ((_, wrapper), (site, node))) in
+                        owned.iter().zip(&physical).enumerate()
+                    {
+                        let tokens = ast
+                            .token_views()
+                            .filter_map(|view| {
+                                let token = ast.node(view.id())?;
+                                token.token_text().filter(|_| {
+                                    node.range.start <= token.range.start
+                                        && token.range.end <= node.range.end
+                                })
+                            })
+                            .collect::<Vec<_>>();
+                        assert_eq!(wrapper.term(), inner_id);
+                        assert_eq!(wrapper.ordinal(), ordinal);
+                        assert_eq!(wrapper.site().node().index(), site.index());
+                        assert_eq!(wrapper.source_range(), node.range);
+                        assert_eq!(wrapper.spelling(), tokens.join(" "));
+                        assert_eq!(wrapper.context(), term.context());
+                        assert_eq!(wrapper.recovery(), SourceSetTermRecovery::Normal);
+                        assert!(!node.recovered);
+                    }
+                    if let Some((_, outermost)) = physical.first() {
+                        let (parent_site, _, parent_kind) = written_sets
+                            .iter()
+                            .filter(|(_, parent, _)| {
+                                parent.range.start < outermost.range.start
+                                    && outermost.range.end < parent.range.end
+                            })
+                            .min_by_key(|(_, parent, _)| parent.range.end - parent.range.start)
+                            .expect("wrapped Enumeration has a written Set parent");
+                        let parent_id = sets
+                            .terms()
+                            .iter()
+                            .find(|(_, row)| row.site().node().index() == parent_site.index())
+                            .unwrap()
+                            .0;
+                        let role = if *parent_kind == SourceSetTermKind::Comprehension {
+                            SourceSetEdgeRole::ComprehensionMapper
+                        } else {
+                            SourceSetEdgeRole::EnumerationElement
+                        };
+                        assert_eq!(
+                            sets.edges()
+                                .iter()
+                                .filter(|(_, edge)| {
+                                    edge.term() == parent_id
+                                        && edge.role() == role
+                                        && edge.target() == SourceSetTarget::SetTerm(inner_id)
+                                })
+                                .count(),
+                            1,
+                            "{label}: wrapped effective parent edge"
+                        );
+                    }
+                }
+            }
         }
         if label == "noncondition equality" {
             let outside = ast
@@ -920,6 +1063,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 | "unused set generator"
                 | "enumeration sibling"
                 | "enumeration mapper"
+                | "wrapped mapper"
+                | "wrapped element"
+                | "double wrapped mapper"
         ) {
             use mizar_checker::source_set_term::SourceSetTermProducer;
             use mizar_resolve::{
