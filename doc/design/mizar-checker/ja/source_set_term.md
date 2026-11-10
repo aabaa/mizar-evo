@@ -6,6 +6,9 @@ transport 専用の `build` とは別に、`check_membership_proof` は既存の
 > 正本は英語です。英語版:
 > [../en/source_set_term.md](../en/source_set_term.md)。
 
+## Scoped comprehension structural tests
+[Scoped Primary matrix](source_term.md#scoped-primary-reference-tests) は元 AST/source metadata から direct generator mapper と完全 Primary census を持つ独立 predicate-conditioned Comprehension を導く。実際の内側 context、宣言 identity、scope、clock を保持し、written bare Set type は Missing BindingTypeSite と独立のままとする。変更のない build は root ごとに generator 関連の未解決 GeneratorSethood と関連なし ResultType request を運び、sethood、result type、formation、capture の credit を与えない。Metadata retag は children、anchor、resolved link、Unknown typing を保持し、独立 predicate Atomic product は同一 arena 上で Set dependency なしに不変再生する。Source/site/context/mapper/type/generator/request 変異は拒否し、production consumer と installation 境界は変更しない。
+
 ## 変数参照条件のEnumeration root
 Primary依存がnormalなValue変数leafと括弧だけで構成され、完全な順序付きの非空Variable-reference censusを持ちnumeric requestがない場合、Comprehension条件内のnormalな括弧を任意に持つEnumeration rootを認める。最も近い条件所有Comprehensionとcontextを一致させ、この独立rootにはSet parent edgeを付けず、入れ子Enumeration要素には既存parent edgeを維持する。Application・Structure・Comprehension条件operandと参照なしnumeric profileの除外は維持する。これはmetadata所有関係であり、[C2](source_formula_composition.md#変数参照の条件式関連付け)が構築時とTyped/final再生で実効operand slotと各wrapper/TermExpression/core連鎖を認証する。単独source receiptやproof creditを与えない。
 

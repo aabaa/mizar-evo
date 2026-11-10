@@ -4280,6 +4280,7 @@ mod tests {
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
         if (19..=22).contains(&case) {
             use crate::source_atomic_formula::*;
+            use crate::source_set_term::*;
             use mizar_resolve::env::SymbolKind;
 
             let predicates = symbols.symbols().iter().filter(|entry| entry.kind() == SymbolKind::Predicate).collect::<Vec<_>>();
@@ -4308,6 +4309,131 @@ mod tests {
             comprehensions.sort_by_key(|view| view.range().start);
             assert_eq!(ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::PredicateApplication && !in_definition(view.range())).count(), comp_count);
             let primary_before = handoff.clone();
+            let mut set_input = SourceSetTermHandoffInput {
+                source_id: ast.source_id, module_id: input.module_id.clone(),
+                terms: Vec::new(), wrappers: Vec::new(), generators: Vec::new(),
+                type_sites: Vec::new(), conditions: Vec::new(), edges: Vec::new(), requests: Vec::new(),
+            };
+            let mut nodes = arena.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+            let mut retagged = Vec::new();
+            for (ordinal, comprehension) in comprehensions.iter().copied().enumerate() {
+                let term = SourceSetTermId::new(ordinal);
+                let generator_id = SourceSetGeneratorId::new(ordinal);
+                let type_id = SourceSetTypeSiteId::new(ordinal);
+                let mapper = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::TermExpression).unwrap();
+                let [mapper_leaf] = mapper.children() else { panic!("one direct mapper reference"); };
+                let mapper_primary = SourcePrimaryTermId::new(leaves.iter().position(|view| view.id() == *mapper_leaf).unwrap());
+                let generator = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::ComprehensionVariableSegment).unwrap();
+                let identifier = ast.node_view(generator.children()[0]).unwrap();
+                let written_type = generator.child_views().find(|view| view.kind() == &SurfaceNodeKind::TypeExpression).unwrap();
+                let [type_head] = written_type.children() else { panic!("bare written type"); };
+                let type_head = ast.node_view(*type_head).unwrap();
+                assert_eq!(type_head.kind(), &SurfaceNodeKind::TypeHead);
+                assert_eq!(&text[written_type.range().start..written_type.range().end], "set");
+                assert_eq!(written_type.range(), type_head.range());
+                let colon = comprehension.child_views().find(|view| &text[view.range().start..view.range().end] == ":").unwrap();
+                let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
+                let context = expected_context(scopes.get(&mapper.id()).unwrap());
+                assert_eq!(bindings.contexts().get(context).unwrap().owner, BindingContextOwner::SourceComprehension { source_range: comprehension.range() });
+                let actual_generator = scope.bindings().iter().find(|binding| binding.node() == identifier.id()).unwrap();
+                let binding = BindingId::new(actual_generator.id().index());
+                assert_eq!(actual_generator.kind(), mizar_resolve::names::SourceVariableBindingKind::ComprehensionGenerator);
+                assert_eq!(actual_generator.scope(), scopes.get(&mapper.id()).unwrap());
+                assert_eq!(actual_generator.range(), identifier.range());
+                let condition_generator = scope.references().iter().filter(|reference| condition.range().start <= reference.range().start && reference.range().end <= condition.range().end && reference.spelling() == actual_generator.spelling()).collect::<Vec<_>>();
+                assert_eq!(condition_generator.len(), 1);
+                assert_eq!(condition_generator[0].binding(), actual_generator.id());
+                assert_eq!(condition_generator[0].scope(), actual_generator.scope());
+                assert_eq!(bindings.bindings().get(binding).unwrap().type_site, BindingTypeSite::Missing);
+                assert_eq!(handoff.references().get(SourcePrimaryTermReferenceId::new(mapper_primary.index())).unwrap().binding(), binding);
+                let spelling = |view: syntax::SurfaceNodeView<'_>| text[view.range().start..view.range().end].to_owned();
+                let site = |view: syntax::SurfaceNodeView<'_>| node(resolved.resolved_node_for(view.id()).unwrap().index());
+                set_input.terms.push(SourceSetTermInput { site: site(comprehension), source_range: comprehension.range(), source_ordinal: ordinal, context, recovery: SourceSetTermRecovery::Normal, spelling: spelling(comprehension), kind: SourceSetTermKind::Comprehension });
+                set_input.generators.push(SourceSetGeneratorInput { term, ordinal: 0, site: site(identifier), source_range: identifier.range(), spelling: spelling(identifier), context, recovery: SourceSetTermRecovery::Normal, type_site: type_id });
+                set_input.type_sites.push(SourceSetTypeSiteInput { owner: SourceSetTypeOwner::Generator(generator_id), site: site(written_type), source_range: written_type.range(), spelling: spelling(written_type), head_site: site(type_head), head_range: type_head.range(), head_spelling: spelling(type_head), context, recovery: SourceSetTermRecovery::Normal, head: SourceSetTypeHead::BuiltinSet });
+                set_input.conditions.push(SourceSetConditionInput { term, ordinal: 0, colon_site: site(colon), colon_range: colon.range(), colon_spelling: spelling(colon), condition_site: site(condition), source_range: condition.range(), spelling: spelling(condition), recovery: SourceSetTermRecovery::Normal });
+                set_input.edges.push(SourceSetEdgeInput { term, ordinal: 0, role: SourceSetEdgeRole::ComprehensionMapper, target: SourceSetTarget::Primary(mapper_primary) });
+                set_input.requests.extend([
+                    SourceSetRequestInput { term, ordinal: 0, kind: SourceSetRequestKind::GeneratorSethood, generator: Some(generator_id), type_site: Some(type_id) },
+                    SourceSetRequestInput { term, ordinal: 1, kind: SourceSetRequestKind::ResultType, generator: None, type_site: None },
+                ]);
+                for (view, key) in [(comprehension, "source.term.set.comprehension"), (identifier, "source.term.set.comprehension-generator"), (written_type, "source.term.set.target-type"), (type_head, "source.term.set.target-type-head"), (colon, "source.term.set.comprehension-condition-colon"), (condition, "source.term.set.comprehension-condition")] {
+                    let index = site(view).node().index();
+                    assert!(!retagged.contains(&index));
+                    retagged.push(index);
+                    nodes[index].kind = key.into();
+                }
+                for view in ast.node_views().filter(|view| condition.range().start <= view.range().start && view.range().end <= condition.range().end) {
+                    let key = match view.kind() {
+                        SurfaceNodeKind::PredicateApplication => "source.formula.atomic.predicate",
+                        SurfaceNodeKind::PredicateSegment => "source.formula.atomic.predicate-segment",
+                        SurfaceNodeKind::PredicateHead => "source.formula.atomic.predicate-head",
+                        _ => continue,
+                    };
+                    let index = site(view).node().index();
+                    assert!(!retagged.contains(&index));
+                    retagged.push(index);
+                    nodes[index].kind = key.into();
+                }
+            }
+            let set_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+            let set = SourceSetTermProducer::build(set_input.clone(), &bindings, &handoff, None, None, &set_arena).unwrap_or_else(|error| panic!("genuine scoped Set case {case}: {error:?}"));
+            assert_eq!(set.source_id(), ast.source_id);
+            assert_eq!(set.module_id(), &input.module_id);
+            assert_eq!(set.primary_term_fingerprint(), handoff.debug_text());
+            assert!(set.application_fingerprint().is_none() && set.structure_fingerprint().is_none());
+            assert_eq!((set.terms().len(), set.wrappers().len(), set.generators().len(), set.type_sites().len(), set.conditions().len(), set.edges().len(), set.requests().len()), (comp_count, 0, comp_count, comp_count, comp_count, comp_count, 2 * comp_count));
+            for ((id, row), expected) in set.terms().iter().zip(&set_input.terms) {
+                assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&expected.site, expected.source_range, id.index(), expected.context, SourceSetTermRecovery::Normal, expected.spelling.as_str(), SourceSetTermKind::Comprehension));
+            }
+            for ((id, row), expected) in set.generators().iter().zip(&set_input.generators) {
+                assert_eq!((row.term(), row.ordinal(), row.site(), row.source_range(), row.spelling(), row.context(), row.recovery(), row.type_site()), (SourceSetTermId::new(id.index()), 0, &expected.site, expected.source_range, expected.spelling.as_str(), expected.context, SourceSetTermRecovery::Normal, SourceSetTypeSiteId::new(id.index())));
+            }
+            for ((id, row), expected) in set.type_sites().iter().zip(&set_input.type_sites) {
+                assert_eq!((row.owner(), row.site(), row.source_range(), row.spelling(), row.head_site(), row.head_range(), row.head_spelling(), row.context(), row.recovery(), row.head()), (SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(id.index())), &expected.site, expected.source_range, "set", &expected.head_site, expected.source_range, "set", expected.context, SourceSetTermRecovery::Normal, SourceSetTypeHead::BuiltinSet));
+            }
+            for ((id, row), expected) in set.conditions().iter().zip(&set_input.conditions) {
+                assert_eq!((row.term(), row.ordinal(), row.colon_site(), row.colon_range(), row.colon_spelling(), row.condition_site(), row.source_range(), row.spelling(), row.recovery()), (SourceSetTermId::new(id.index()), 0, &expected.colon_site, expected.colon_range, ":", &expected.condition_site, expected.source_range, expected.spelling.as_str(), SourceSetTermRecovery::Normal));
+            }
+            for ((id, row), expected) in set.edges().iter().zip(&set_input.edges) {
+                assert_eq!((row.term(), row.ordinal(), row.role(), row.target()), (SourceSetTermId::new(id.index()), 0, SourceSetEdgeRole::ComprehensionMapper, expected.target));
+            }
+            for (id, row) in set.requests().iter() {
+                let ordinal = id.index() % 2;
+                let owner = id.index() / 2;
+                assert_eq!((row.term(), row.ordinal(), row.kind(), row.generator(), row.type_site()), (SourceSetTermId::new(owner), ordinal, if ordinal == 0 { SourceSetRequestKind::GeneratorSethood } else { SourceSetRequestKind::ResultType }, (ordinal == 0).then_some(SourceSetGeneratorId::new(owner)), (ordinal == 0).then_some(SourceSetTypeSiteId::new(owner))));
+            }
+            for ((id, original), (_, actual)) in arena.iter().zip(set_arena.iter()) {
+                let mut expected = original.clone();
+                if retagged.contains(&id.index()) { expected.kind = actual.kind.clone(); }
+                assert_eq!(actual, &expected, "only original Set/Atomic metadata keys are retagged");
+                assert_eq!(actual.typing, TypingState::Unknown);
+                assert_eq!(actual.links, crate::typed_ast::TypedNodeLinks::default());
+            }
+            let set_pristine = (set_input.clone(), set_arena.clone(), bindings.clone(), handoff.clone());
+            let build_set = |candidate| SourceSetTermProducer::build(candidate, &bindings, &handoff, None, None, &set_arena);
+            for mutation in 0..14 {
+                let mut candidate = set_input.clone();
+                match mutation {
+                    0 => candidate.source_id = other_source_id(),
+                    1 => candidate.terms[0].site = input.terms[0].site.clone(),
+                    2 => candidate.terms[0].context = BindingContextId::new(0),
+                    3 => candidate.edges[0].target = SourceSetTarget::Primary(SourcePrimaryTermId::new(0)),
+                    4 => candidate.type_sites[0].owner = SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(comp_count)),
+                    5 => candidate.type_sites[0].head_site = candidate.type_sites[0].site.clone(),
+                    6 => candidate.generators[0].context = BindingContextId::new(0),
+                    7 => candidate.generators[0].type_site = SourceSetTypeSiteId::new(comp_count),
+                    8 => candidate.generators[0].site = input.terms[0].site.clone(),
+                    9 => candidate.conditions[0].condition_site = candidate.terms[0].site.clone(),
+                    10 => candidate.conditions[0].colon_range.start += 1,
+                    11 => candidate.requests[0].generator = None,
+                    12 => candidate.requests[1].type_site = Some(SourceSetTypeSiteId::new(0)),
+                    _ => candidate.requests.clear(),
+                }
+                assert!(build_set(candidate).is_err(), "genuine Set case {case} mutation {mutation}");
+                assert_eq!(build_set(set_input.clone()), Ok(set.clone()));
+            }
+            assert_eq!(SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(input.clone(), &bindings, &set_arena, &resolved, &symbols, &scope), Ok(primary_before.clone()));
             for comprehension in comprehensions {
                 let conditions = comprehension.child_views().filter(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).collect::<Vec<_>>();
                 let [condition] = conditions.as_slice() else { panic!("one actual condition"); };
@@ -4341,12 +4467,6 @@ mod tests {
                     nodes[resolved.resolved_node_for(view.id()).unwrap().index()].kind = key.into();
                 }
                 let atomic_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
-                for ((id, original), (_, actual)) in arena.iter().zip(atomic_arena.iter()) {
-                    let mut expected = original.clone();
-                    if [formula, segment, head].iter().any(|view| resolved.resolved_node_for(view.id()).unwrap().index() == id.index()) { expected.kind = actual.kind.clone(); }
-                    assert_eq!(actual, &expected, "only actual atom/segment/head keys are retagged");
-                    assert_eq!(actual.typing, TypingState::Unknown);
-                }
                 let atomic_input = SourceAtomicFormulaHandoffInput {
                     source_id: ast.source_id, module_id: input.module_id.clone(),
                     formulas: vec![SourceAtomicFormulaInput {
@@ -4374,6 +4494,8 @@ mod tests {
                 let atomic_pristine = (atomic_input.clone(), atomic_arena.clone());
                 let build = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, None, &atomic_arena);
                 let atomic = build(atomic_input.clone()).unwrap_or_else(|error| panic!("genuine predicate condition case {case}: {error:?}"));
+                let build = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, None, &set_arena);
+                assert_eq!(build(atomic_input.clone()), Ok(atomic.clone()), "same Atomic product on the final Set metadata arena without a Set dependency");
                 assert_eq!(atomic.source_id(), ast.source_id);
                 assert_eq!(atomic.module_id(), &input.module_id);
                 assert_eq!(atomic.primary_term_fingerprint(), handoff.debug_text());
@@ -4419,6 +4541,7 @@ mod tests {
                 assert_eq!(handoff, primary_before);
                 assert_eq!(consume(input.clone(), &bindings), Ok(primary_before.clone()));
             }
+            assert_eq!((set_input, set_arena, bindings.clone(), handoff.clone()), set_pristine);
         }
         if case == 8 || case == 21 {
             assert_eq!(input.terms[1].spelling, "z");
