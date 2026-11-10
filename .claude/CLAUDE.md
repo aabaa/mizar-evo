@@ -15,7 +15,7 @@
 ## Documentation Volume
 
 - Design documents record decisions and boundaries only. Never write scores, gate tallies, digests, review outcomes, model names, or reasoning settings under `doc/`; `cargo test` enforces this via `tests/coverage/doc_volume_baseline.tsv`, whose rows may only be lowered or removed.
-- Task contracts are at most 60 lines per language and are linked only from `doc/design/todo.md`, crate plans, crate todos, or `doc/design/spec_coverage_audit.md`.
+- Task contracts are at most 60 lines and 660 words per language and are linked only from `doc/design/todo.md`, crate plans, crate todos, or `doc/design/spec_coverage_audit.md`.
 
 ## Commit Message Suggestions
 

@@ -325,9 +325,9 @@ doc/design/task_contracts/ja/<task-id>.md
 ```
 
 `<task-id>` must match `[A-Za-z0-9][A-Za-z0-9._-]*` and be identical in both
-trees. The English contract is canonical and at most 60 lines; the Japanese
-companion is a pointer stub (title, canonical link, owner-plan links) created in
-the same change. Both files link to the corresponding owning crate plans, or
+trees. The English contract is canonical and at most 60 lines and 660 words;
+the Japanese companion is a pointer stub (title, canonical link, owner-plan
+links) created in the same change. Both files link to the corresponding owning crate plans, or
 the existing crate TODO when that crate has no plan. Consumer references do not
 require reciprocal ownership links. If an owner has no
 Japanese plan under an adapted non-bilingual layout, the Japanese contract
@@ -509,7 +509,7 @@ Budgets the reviewer checks against the `volume:` commit line:
 
 | Measure | Limit without prior user approval |
 |---|---:|
-| task-contract length, per language | 60 lines |
+| task-contract length, per language | 60 lines and 660 words |
 | documentation lines added per task, all commits | 200 |
 | documentation added versus production added | 2 : 1; test-only exception below |
 | production lines added per task | 300 without a presented plan |
@@ -532,6 +532,7 @@ recorded in the commit body. Files without a row are held at the default.
 |---|---|---:|
 | `ceremony_tokens` | `doc/design/**/*.md` except `archive/` and this protocol: occurrences of `quality score`, `score cap`, `xhigh`, `<n>/100`, `hard gate(s) n/m`, the words `Luna`/`Sol`/`Terra`, and 64-hex digests | 0 |
 | `contract_lines` | each `doc/design/task_contracts/{en,ja}/**/*.md` | 60 |
+| `contract_words` | each task contract: whitespace-separated words, so long lines cannot evade `contract_lines` | 660 |
 | `contract_fanout` | files outside `task_contracts/`, `todo.md`, crate plans, crate todos, and `spec_coverage_audit.md` that link a contract | 0 |
 | `fixture_constants` | `doc/design/**/*.md` except `archive/` and this protocol: lines with a byte range `<n>..<n>`, a `<n>-byte` size, or `<n> Surface rows` | 0 |
 
@@ -785,7 +786,7 @@ Score caps:
 | `source_undocumented_behavior` remains | 84 |
 | `test_expectation_drift` remains | 79 |
 | required verification failure | 74 |
-| task contract longer than 60 lines in either language | 84 |
+| task contract over 60 lines or 660 words in either language | 84 |
 | documentation exceeds its applicable ratio or test-only cap, or 200 lines per task | 84 |
 | per-run evidence, scores, digests, or model routing written under `doc/` | 79 |
 | volume and scope review skipped or its findings left unresolved | 79 |

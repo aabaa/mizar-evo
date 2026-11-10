@@ -248,7 +248,8 @@ fn documentation_volume_stays_within_baseline() {
         );
     }
 
-    // 2. Task contracts: new contracts stay at or below 60 lines per language.
+    // 2. Task contracts: new contracts stay at or below 60 lines and 660 words
+    //    per language.
     for (relative, document) in &documents {
         if !relative.starts_with("doc/design/task_contracts/") {
             continue;
@@ -261,6 +262,15 @@ fn documentation_volume_stays_within_baseline() {
             actual,
             DOC_VOLUME_CONTRACT_LINE_LIMIT,
             "lines; a task contract records decisions and boundaries only",
+            &mut violations,
+        );
+        check_doc_volume_ratchet(
+            &baseline,
+            "contract_words",
+            relative,
+            document.split_whitespace().count(),
+            DOC_VOLUME_CONTRACT_WORD_LIMIT,
+            "words; long lines do not evade the contract budget",
             &mut violations,
         );
     }
@@ -3433,9 +3443,12 @@ fn workspace_root() -> PathBuf {
 const DOC_VOLUME_BASELINE_PATH: &str = "tests/coverage/doc_volume_baseline.tsv";
 const DOC_VOLUME_PROTOCOL_PATH: &str = "doc/design/autonomous_crate_development.md";
 const DOC_VOLUME_CONTRACT_LINE_LIMIT: usize = 60;
-const DOC_VOLUME_KINDS: [&str; 4] = [
+/// Sixty lines of about eleven words; long lines cannot evade the line limit.
+const DOC_VOLUME_CONTRACT_WORD_LIMIT: usize = 660;
+const DOC_VOLUME_KINDS: [&str; 5] = [
     "ceremony_tokens",
     "contract_lines",
+    "contract_words",
     "contract_fanout",
     "fixture_constants",
 ];
