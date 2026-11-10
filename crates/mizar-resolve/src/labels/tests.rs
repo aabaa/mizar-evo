@@ -54,6 +54,15 @@ fn parsed_private_theorem_fixture(
             .unwrap()
             .as_nanos()
     ));
+    let mut suffix = 0_u64;
+    let root = loop {
+        let candidate = root.with_extension(suffix.to_string());
+        match std::fs::create_dir(&candidate) {
+            Ok(()) => break candidate,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => suffix += 1,
+            Err(error) => panic!("failed to reserve theorem fixture root: {error}"),
+        }
+    };
     let path = root.join("src/main.miz");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, text).unwrap();

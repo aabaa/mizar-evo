@@ -1,6 +1,6 @@
 # ソース atomic-formula transport
 
-atomic 式の range の入れ子は、所属式の集合オペランドに属する検査済みEquality/Inequality/Membership内包条件だけを許し、実際の直接atomまたはnormalな括弧・FormulaExpressionの完全な連鎖と最外の実効出現を保持する。
+atomic 式の range の入れ子は、所属式の集合オペランドに属する検査済みEquality/Inequality/Membership内包条件と、後述の限定された対のpredicate条件を許す。前者は実際の直接atomまたはnormalな括弧・FormulaExpressionの完全な連鎖と最外の実効出現を保持する。
 それ以外の重なりは拒否し、この受け渡しだけで条件の真偽を認定しない。
 
 > 正本は英語です。英語版:
@@ -9,7 +9,7 @@ atomic 式の range の入れ子は、所属式の集合オペランドに属す
 ## Original-source formula wrappers
 native固定結合headerの透過的なatomic括弧は、実等式をownerとする既存wrapper tableで保持し、実typed site・range・順序・lexical contextを保つ。scoped re-inferenceは行を保持してcontextを導き直す。compound括弧はcomposite ownerに残し、括弧でformula identityや真偽を追加しない。
 
-実在 [scoped Primary テスト](source_term.md) は元 source node と local collector provenance から独立した singleton predicate condition を構成し、direct Primary operand と未解決 candidate-signature request を保持する。Optional family dependency は渡さず、このテスト境界は Set/C2 統合や checked semantic result を追加しない。
+実在 [scoped Primary テスト](source_term.md) は元 source node、local collector provenance、完全な下位productから、後述のownership境界に従って独立および対のsingleton predicate conditionを保持する。
 
 ## スコープ
 
@@ -96,8 +96,18 @@ Normal recovery、Membership context と等しい direct parent を認証する�
 containment で隠せる。全 dependency row と右 operand の未解決 request 1件を保持し、
 equal-context 経路の規則は維持する。Installation は BindingEnv を持たず、不変 row、
 完全な lower fingerprint と物理 shape を再検査するが、新たな字句環境認証を主張しない。
-[scoped matrix](source_term.md) の predicate condition は Set dependency なしの独立 product
-のままであり、nested predicate Atomic integration、C2、runner 採用、semantic credit は保留する。
+bare Normal positive singleton binary predicate conditionも、先行Normal Membershipと
+実際のowner Comprehensionを指すBuiltinRightOperand edgeが同じtransactionにある場合だけ、
+nested ownershipを許す。Set出現は他のComprehension行を含まない独立したwrapperなしの
+Normal rootを要求し、disjoint rootの併存は許す。Set conditionの正確なrange/spellingと
+唯一のatom child、そのatomの唯一の実segment、順序付きleft TermExpression / actual head /
+right TermExpressionを認証する。各Normal expressionはPrimaryの正確なrangeと唯一の実Primary
+childを持つ。provenance、context、candidate、role、未解決requestのownershipは既存のAtomic
+validatorが保持する。buildとimmutable installationは既存context bridgeの下で完全な下位
+fingerprintと物理chainを再検査する。対のMembershipがない独立predicate-plus-Set、legacy、
+negative、chained、compound、wrapped predicate条件とnested/wrapped Comprehensionは除外する。
+C2、runner adoption、formation、capture、sethood、applicability、truth、acceptanceは保留し、
+requestは未回答のままとする。
 
 segment row が空の legacy predicate formula は ordinary head 1件と1件以上の
 authenticated candidate を要求し、candidate ごとに candidate-signature

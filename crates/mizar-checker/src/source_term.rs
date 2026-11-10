@@ -4661,7 +4661,177 @@ mod tests {
                 overlap.candidates = nested.candidates;
                 overlap.edges.extend(nested.edges);
                 overlap.requests.extend(nested.requests);
-                assert_eq!(build_outer(overlap), Err(SourceAtomicFormulaError::ReorderedFormula { formula: SourceAtomicFormulaId::new(1) }));
+                // EN13.4.2/EN14.2: transport the actual predicate guard without
+                // claiming applicability, sethood, formation or truth.
+                let combined = build_outer(overlap.clone()).expect("paired original predicate condition");
+                assert_eq!((combined.source_id(), combined.module_id(), combined.primary_term_fingerprint(), combined.set_term_fingerprint()), (ast.source_id, &input.module_id, handoff.debug_text().as_str(), Some(set.debug_text().as_str())));
+                assert!(combined.application_fingerprint().is_none() && combined.structure_fingerprint().is_none());
+                assert_eq!((combined.formulas().len(), combined.predicate_segments().len(), combined.predicate_heads().len(), combined.candidates().len(), combined.edges().len(), combined.requests().len()), (2, 1, 1, 1, 4, 2));
+                assert!(combined.wrappers().is_empty() && combined.type_sites().is_empty() && combined.attributes().is_empty());
+                assert!(membership.range().start < comprehension.range().start && comprehension.range().start < formula.range().start);
+                for ((id, row), expected) in combined.formulas().iter().zip(&overlap.formulas) {
+                    assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&expected.site, expected.source_range, id.index(), expected.context, expected.recovery, expected.spelling.as_str(), expected.kind));
+                }
+                let (id, row) = combined.predicate_segments().iter().next().unwrap();
+                assert_eq!((id, row.formula(), row.ordinal(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling()), (SourcePredicateSegmentId::new(0), SourceAtomicFormulaId::new(1), 0, &atomic_input.predicate_segments[0].site, segment.range(), context, SourceAtomicFormulaRecovery::Normal, atomic_input.predicate_segments[0].spelling.as_str()));
+                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &SourcePredicateSegmentPolarityInput::Positive, SourceAtomicEdgeId::new(2), SourceAtomicEdgeId::new(3)));
+                let (id, row) = combined.predicate_heads().iter().next().unwrap();
+                assert_eq!((id, row.formula(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling(), row.left_arity(), row.right_arity()), (SourcePredicateHeadId::new(0), SourceAtomicFormulaId::new(1), &atomic_input.predicate_heads[0].site, head.range(), context, SourceAtomicFormulaRecovery::Normal, head_text, 1, 1));
+                let (id, row) = combined.candidates().iter().next().unwrap();
+                assert_eq!((id, row.head(), row.ordinal(), row.symbol(), row.contribution()), (SourcePredicateCandidateId::new(0), SourcePredicateHeadId::new(0), 0, predicate.symbol(), predicate.contribution()));
+                for ((id, row), expected) in combined.edges().iter().zip(&overlap.edges) {
+                    assert_eq!((row.formula(), row.ordinal(), row.role(), row.target()), (expected.formula, id.index() % 2, expected.role, expected.target));
+                }
+                for ((id, row), expected) in combined.requests().iter().zip(&overlap.requests) {
+                    assert_eq!((row.formula(), row.ordinal(), row.kind(), row.edge(), row.candidate(), row.type_site(), row.attribute()), (SourceAtomicFormulaId::new(id.index()), 0, expected.kind, expected.edge, expected.candidate, expected.type_site, expected.attribute));
+                }
+                assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
+                assert_eq!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
+                assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &set_arena).is_err(), "isolated predicate plus overlapping Set has no paired Membership");
+                assert!(SourceAtomicFormulaProducer::build(overlap.clone(), &flat, &symbols, &handoff, None, None, Some(&set), &set_arena).is_err());
+                assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, None, &set_arena).is_err());
+                for mutation in 0..20 {
+                    let mut candidate = overlap.clone();
+                    match mutation {
+                        0 => candidate.predicate_segments.clear(),
+                        1 => candidate.predicate_segments.push(candidate.predicate_segments[0].clone()),
+                        2 => candidate.predicate_heads[0].left_arity = 2,
+                        3 => candidate.predicate_segments[0].head = SourcePredicateHeadId::new(1),
+                        4 => candidate.candidates[0].symbol = SymbolId::new(module("foreign"), LocalSymbolId::new("foreign"), FullyQualifiedName::new("foreign::predicate")),
+                        5 => candidate.requests[1].candidate = None,
+                        6 => candidate.formulas[1].context = outer_context,
+                        7 => candidate.formulas.swap(0, 1),
+                        8 => candidate.edges[1].role = SourceAtomicEdgeRole::BuiltinLeftOperand,
+                        9 => candidate.edges[1].target = SourceAtomicTermTarget::SetTerm(SourceSetTermId::new(comp_count)),
+                        10 => candidate.edges[2].target = candidate.edges[3].target,
+                        11 => candidate.edges.swap(2, 3),
+                        12 => candidate.requests[0].edge = Some(SourceAtomicEdgeId::new(2)),
+                        13 => { candidate.requests.pop(); }
+                        14 => candidate.source_id = other_source_id(),
+                        15 => candidate.formulas[1].recovery = SourceAtomicFormulaRecovery::Degraded,
+                        16 => candidate.predicate_segments[0].polarity = SourcePredicateSegmentPolarityInput::Negative {
+                            verb_site: candidate.predicate_heads[0].site.clone(), verb_range: head.range(), verb_spelling: "does".into(), verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                            not_site: candidate.predicate_heads[0].site.clone(), not_range: head.range(), not_spelling: "not".into(), not_recovery: SourceAtomicFormulaRecovery::Normal,
+                        },
+                        17 => { let mut segment = candidate.predicate_segments[0].clone(); segment.ordinal = 1; candidate.predicate_segments.push(segment); }
+                        18 => candidate.wrappers.push(SourceAtomicWrapperInput { formula: SourceAtomicFormulaId::new(1), ordinal: 0, site: set.conditions().iter().find(|(_, row)| row.term() == set_id).unwrap().1.condition_site().clone(), source_range: formula.range(), context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: format!("( {} )", atomic_input.formulas[0].spelling) }),
+                        _ => { candidate.edges[1].target = SourceAtomicTermTarget::SetTerm(SourceSetTermId::new((set_id.index() + 1) % comp_count)); if comp_count == 1 { continue; } }
+                    }
+                    assert!(build_outer(candidate).is_err(), "paired case {case} payload mutation {mutation}");
+                    assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
+                }
+                // Exercise the explicit unwrapped-root profile independently of
+                // the historical differing-context RHS bridge.
+                let mut same_context_primary = handoff.clone();
+                same_context_primary.terms.rows[left_primary.index()].context = context;
+                let mut wrapped_input = set_input.clone();
+                let mut wrapper_range = comprehension.range();
+                wrapper_range.start -= 1;
+                wrapper_range.end += 1;
+                let wrapper_site = node(resolved.resolved_node_for(rhs.id()).unwrap().index());
+                wrapped_input.wrappers.push(SourceSetWrapperInput { term: set_id, ordinal: 0, site: wrapper_site.clone(), source_range: wrapper_range, context, recovery: SourceSetTermRecovery::Normal, spelling: format!("( {} )", set_input.terms[set_id.index()].spelling) });
+                let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                nodes[wrapper_site.node().index()].kind = "source.term.set.parenthesized".into();
+                nodes[wrapper_site.node().index()].anchor = SourceAnchor::Range(wrapper_range);
+                let mut same_context_outer = outer_input.clone();
+                same_context_outer.formulas[0].context = context;
+                same_context_outer.formulas[0].source_range.end += 1;
+                same_context_outer.formulas[0].spelling = format!("{} in ( {} )", input.terms[left_primary.index()].spelling, set_input.terms[set_id.index()].spelling);
+                nodes[same_context_outer.formulas[0].site.node().index()].anchor = SourceAnchor::Range(same_context_outer.formulas[0].source_range);
+                let wrapped_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                let wrapped = SourceSetTermProducer::build(wrapped_input, &bindings, &same_context_primary, None, None, &wrapped_arena).expect("valid wrapped Set metadata control");
+                assert!(SourceAtomicFormulaProducer::build(same_context_outer.clone(), &bindings, &symbols, &same_context_primary, None, None, Some(&wrapped), &wrapped_arena).is_ok(), "historical equal-context outer route remains valid");
+                assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &same_context_primary, None, None, None, &wrapped_arena).is_ok());
+                let mut wrapped_overlap = overlap.clone();
+                wrapped_overlap.formulas[0] = same_context_outer.formulas[0].clone();
+                assert!(SourceAtomicFormulaProducer::build(wrapped_overlap, &bindings, &symbols, &same_context_primary, None, None, Some(&wrapped), &wrapped_arena).is_err(), "paired predicate rejects owning Set wrapper even with equal contexts");
+                if case == 19 {
+                    // Synthetic metadata is a refusal-only counterexample, not
+                    // a new genuine-source profile: put a child Comprehension
+                    // in the mapper while preserving the real predicate chain.
+                    assert_eq!(comp_count, 1);
+                    let SourceSetTarget::Primary(mapper) = set_input.edges[0].target else { panic!("actual mapper Primary"); };
+                    let mapper_row = handoff.terms().get(mapper).unwrap();
+                    let child_range = range(ast.source_id, comprehension.range().start + 1, set_input.generators[0].source_range.start);
+                    let generator_range = range(ast.source_id, mapper_row.source_range().end + 1, mapper_row.source_range().end + 2);
+                    let type_range = range(ast.source_id, generator_range.end + 1, generator_range.end + 4);
+                    assert!(child_range.start < mapper_row.source_range().start && mapper_row.source_range().end < generator_range.start && type_range.end < child_range.end);
+                    let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    let first = nodes.len();
+                    for (key, source_range) in [("source.term.set.comprehension", child_range), ("source.term.set.comprehension-generator", generator_range), ("source.term.set.target-type", type_range), ("source.term.set.target-type-head", type_range)] {
+                        nodes.push(TypedNode::new(key, SourceAnchor::Range(source_range)));
+                    }
+                    let nested_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                    let mut nested_set = set_input.clone();
+                    let child_spelling = format!("{{ {} where q is set }}", mapper_row.spelling());
+                    nested_set.terms.push(SourceSetTermInput { site: node(first), source_range: child_range, source_ordinal: 1, context, recovery: SourceSetTermRecovery::Normal, spelling: child_spelling.clone(), kind: SourceSetTermKind::Comprehension });
+                    nested_set.generators[0].type_site = SourceSetTypeSiteId::new(1);
+                    nested_set.generators.push(SourceSetGeneratorInput { term: SourceSetTermId::new(1), ordinal: 0, site: node(first + 1), source_range: generator_range, spelling: "q".into(), context, recovery: SourceSetTermRecovery::Normal, type_site: SourceSetTypeSiteId::new(0) });
+                    // Type rows follow source order independently of Set preorder.
+                    nested_set.type_sites.insert(0, SourceSetTypeSiteInput { owner: SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(1)), site: node(first + 2), source_range: type_range, spelling: "set".into(), head_site: node(first + 3), head_range: type_range, head_spelling: "set".into(), context, recovery: SourceSetTermRecovery::Normal, head: SourceSetTypeHead::BuiltinSet });
+                    nested_set.edges[0].target = SourceSetTarget::SetTerm(SourceSetTermId::new(1));
+                    nested_set.edges.push(SourceSetEdgeInput { term: SourceSetTermId::new(1), ordinal: 0, role: SourceSetEdgeRole::ComprehensionMapper, target: SourceSetTarget::Primary(mapper) });
+                    nested_set.requests[0].type_site = Some(SourceSetTypeSiteId::new(1));
+                    nested_set.requests.extend([
+                        SourceSetRequestInput { term: SourceSetTermId::new(1), ordinal: 0, kind: SourceSetRequestKind::GeneratorSethood, generator: Some(SourceSetGeneratorId::new(1)), type_site: Some(SourceSetTypeSiteId::new(0)) },
+                        SourceSetRequestInput { term: SourceSetTermId::new(1), ordinal: 1, kind: SourceSetRequestKind::ResultType, generator: None, type_site: None },
+                    ]);
+                    nested_set.terms[0].spelling = format!("{{ {child_spelling} where {} is set : {} }}", nested_set.generators[0].spelling, nested_set.conditions[0].spelling);
+                    let mut nested_outer = outer_input.clone();
+                    nested_outer.formulas[0].spelling = format!("{} in {}", input.terms[left_primary.index()].spelling, nested_set.terms[0].spelling);
+                    let nested_set = SourceSetTermProducer::build(nested_set, &bindings, &handoff, None, None, &nested_arena).expect("lower-valid synthetic mapper Comprehension");
+                    assert_eq!(nested_set.primary_term_fingerprint(), handoff.debug_text());
+                    assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &nested_arena).is_ok(), "isolated real predicate remains valid");
+                    assert!(SourceAtomicFormulaProducer::build(nested_outer.clone(), &bindings, &symbols, &handoff, None, None, Some(&nested_set), &nested_arena).is_ok(), "outer-only original-context RHS bridge remains valid");
+                    let mut nested_overlap = overlap.clone();
+                    nested_overlap.formulas[0] = nested_outer.formulas[0].clone();
+                    assert!(SourceAtomicFormulaProducer::build(nested_overlap, &bindings, &symbols, &handoff, None, None, Some(&nested_set), &nested_arena).is_err(), "paired predicate rejects contained Comprehension row");
+                    assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
+                }
+                let condition_node = set.conditions().iter().find(|(_, row)| row.term() == set_id).unwrap().1.condition_site().node();
+                let atom_node = atomic_input.formulas[0].site.node();
+                let segment_node = atomic_input.predicate_segments[0].site.node();
+                let head_node = atomic_input.predicate_heads[0].site.node();
+                let [left_node, right_node] = [left, right].map(|id| resolved.resolved_node_for(*id).unwrap());
+                for mutation in 0..20 {
+                    let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    match mutation {
+                        0 => nodes[condition_node.index()].children.clear(),
+                        1 => nodes[condition_node.index()].children.push(head_node),
+                        2 => nodes[condition_node.index()].children[0] = segment_node,
+                        3 => nodes[atom_node.index()].children.clear(),
+                        4 => nodes[atom_node.index()].children.push(head_node),
+                        5 => nodes[atom_node.index()].children[0] = head_node,
+                        6 => nodes[segment_node.index()].children.clear(),
+                        7 => nodes[segment_node.index()].children.push(head_node),
+                        8 => nodes[segment_node.index()].children.swap(0, 2),
+                        9 => nodes[segment_node.index()].children[1] = handoff.terms().get(operands[0]).unwrap().site().node(),
+                        10 => nodes[segment_node.index()].children[0] = handoff.terms().get(operands[0]).unwrap().site().node(),
+                        11 => nodes[left_node.index()].children.clear(),
+                        12 => nodes[right_node.index()].children.push(handoff.terms().get(operands[0]).unwrap().site().node()),
+                        13 => nodes[left_node.index()].children[0] = handoff.terms().get(operands[1]).unwrap().site().node(),
+                        14 => nodes[left_node.index()].anchor = SourceAnchor::Range(segment.range()),
+                        15 => nodes[right_node.index()].recovery = NodeRecoveryState::Recovered,
+                        16 => nodes[left_node.index()].kind = "ParenthesizedTerm".into(),
+                        17 => nodes[segment_node.index()].children[2] = node(left_node.index()).node(),
+                        18 => nodes[head_node.index()].recovery = NodeRecoveryState::Recovered,
+                        _ => nodes[condition_node.index()].recovery = NodeRecoveryState::Recovered,
+                    }
+                    let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                    if mutation < 18 {
+                        assert_eq!(SourceSetTermProducer::build(set_input.clone(), &bindings, &handoff, None, None, &candidate_arena), Ok(set.clone()), "new guard Set lower-success case {case} mutation {mutation}");
+                        let isolated = SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &candidate_arena);
+                        assert!(isolated.is_ok(), "new guard isolated Atomic lower-success case {case} mutation {mutation}: {isolated:?}");
+                    } else if mutation == 18 {
+                        assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &candidate_arena).is_err(), "earlier Atomic metadata refusal");
+                    } else {
+                        assert!(SourceSetTermProducer::build(set_input.clone(), &bindings, &handoff, None, None, &candidate_arena).is_err(), "earlier Set metadata refusal");
+                    }
+                    assert!(SourceAtomicFormulaProducer::build(overlap.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "paired physical case {case} mutation {mutation}");
+                    assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "paired physical replay case {case} mutation {mutation}");
+                    assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
+                    assert_eq!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
+                }
                 assert_eq!(build_outer(outer_input.clone()), Ok(outer.clone()));
                 assert_eq!(outer.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
                 assert_eq!((outer_input, outer, set.clone()), outer_pristine);

@@ -1,7 +1,7 @@
 # Source Atomic-Formula Transport
 
-Nested atomic ranges are admitted only for a membership operand's authenticated comprehension
-Equality/Inequality/Membership condition, preserving its actual direct atom or complete normal parenthesis/FormulaExpression chain and effective outer occurrence. Other overlap remains rejected;
+Nested atomic ranges are admitted for a membership operand's authenticated comprehension
+Equality/Inequality/Membership condition, preserving its actual direct atom or complete normal parenthesis/FormulaExpression chain and effective outer occurrence, and for the bounded paired predicate condition below. Other overlap remains rejected;
 this transport extension does not establish the condition's truth.
 
 > Canonical language: English. Japanese companion:
@@ -10,7 +10,7 @@ this transport extension does not establish the condition's truth.
 ## Original-source formula wrappers
 Native fixed-connective headers preserve each transparent atomic group in the existing wrapper table, owned by its actual equality with its real typed site, range, order and lexical context. Scoped re-inference retains these rows and rederives their contexts. Compound groups remain with the composite owner; grouping adds no formula identity or truth.
 
-The genuine [scoped Primary tests](source_term.md#scoped-primary-reference-tests) build isolated singleton predicate conditions from original source nodes and local collector provenance, with direct Primary operands and unresolved candidate-signature requests. Optional family dependencies remain absent; this test boundary adds no Set/C2 integration or checked semantic result.
+The genuine [scoped Primary tests](source_term.md#scoped-primary-reference-tests) retain isolated and paired singleton predicate conditions from original source nodes, local collector provenance and complete lower products under the ownership boundary below.
 
 ## Scope
 
@@ -102,9 +102,23 @@ validated condition may be hidden by nearest-family containment; all dependency
 rows and the single unresolved right-operand request remain intact. Equal-context
 routes retain their existing rules. Installation has no BindingEnv: it rechecks
 immutable rows, complete lower fingerprints and physical shape without claiming
-fresh lexical-environment authentication. The [scoped matrix](source_term.md#scoped-primary-reference-tests)
-keeps predicate conditions isolated without a Set dependency; nested predicate
-Atomic integration, C2, runner adoption and semantic credit remain deferred.
+fresh lexical-environment authentication.
+
+A bare Normal positive singleton binary predicate condition also admits nested
+ownership only with its earlier Normal Membership and BuiltinRightOperand edge
+to the exact owning Comprehension. That Set occurrence must be an independent
+unwrapped Normal root containing no other Comprehension row; disjoint roots may
+coexist. Authenticate the exact Set condition range/spelling and sole atom child,
+the atom's sole actual segment, and its ordered left TermExpression / actual
+head / right TermExpression children. Each Normal expression has the exact
+Primary range and sole actual Primary child. General Atomic validators retain
+provenance, context, candidate, role and unresolved-request ownership. Build and
+immutable installation recheck this physical chain with complete lower
+fingerprints under the existing context bridge above. Isolated predicate-plus-Set
+without the paired Membership, legacy, negative, chained, compound or wrapped
+predicate conditions and nested/wrapped Comprehensions remain excluded. C2,
+runner adoption, formation, capture, sethood, applicability, truth and acceptance
+remain deferred; requests remain unanswered.
 
 A legacy predicate formula with no segment rows requires one ordinary head,
 one or more authenticated candidates, and one candidate-signature request per

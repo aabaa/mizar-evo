@@ -1719,7 +1719,7 @@ fn validate_payload(
     validate_formulas(input, bindings, arena, &mut sites)?;
     let wrapper_groups = validate_wrappers(input, arena, &mut sites)?;
     let effective = effective_formula_occurrences(input, &wrapper_groups);
-    validate_formula_order(input, &effective, set_terms, arena)?;
+    validate_formula_order(input, &effective, primary_terms, set_terms, arena)?;
     validate_cross_family_ranges(
         input,
         &effective,
@@ -1826,6 +1826,7 @@ fn validate_cross_family_ranges(
                         input,
                         SourceAtomicFormulaId::new(formula_index),
                         outer,
+                        primary_terms,
                         set_terms,
                         id,
                         occurrence.range,
@@ -1840,10 +1841,12 @@ fn validate_cross_family_ranges(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: nested ownership compares exact Atomic, Primary and Set occurrences.
 fn is_authenticated_condition_container(
     input: &SourceAtomicFormulaHandoffInput,
     formula_id: SourceAtomicFormulaId,
     effective_formula_range: SourceRange,
+    primary_terms: &SourcePrimaryTermHandoff,
     set_terms: &SourceSetTermHandoff,
     set_term_id: SourceSetTermId,
     set_term_range: SourceRange,
@@ -1855,6 +1858,104 @@ fn is_authenticated_condition_container(
     let Some(set_term) = set_terms.terms().get(set_term_id) else {
         return false;
     };
+    if formula.kind == SourceAtomicFormulaKind::PredicateApplication {
+        // Only the paired bare singleton predicate extends the builtin route.
+        if formula.recovery != SourceAtomicFormulaRecovery::Normal
+            || formula.context != set_term.context()
+            || effective_formula_range != formula.source_range
+            || set_term.kind() != SourceSetTermKind::Comprehension
+            || set_term.recovery() != SourceSetTermRecovery::Normal
+            || !properly_contains(set_term_range, formula.source_range)
+            || !set_term_root_ids(set_terms).contains(&set_term_id)
+            || set_terms
+                .wrappers()
+                .iter()
+                .any(|(_, row)| row.term() == set_term_id)
+            || set_terms.terms().iter().any(|(id, row)| {
+                id != set_term_id
+                    && row.kind() == SourceSetTermKind::Comprehension
+                    && properly_contains(set_term_range, row.source_range())
+            })
+            || input.wrappers.iter().any(|row| row.formula == formula_id)
+            || !input.formulas[..formula_id.index()]
+                .iter()
+                .enumerate()
+                .any(|(index, outer)| {
+                    outer.kind == SourceAtomicFormulaKind::Membership
+                        && outer.recovery == SourceAtomicFormulaRecovery::Normal
+                        && properly_contains(outer.source_range, set_term_range)
+                        && input.edges.iter().any(|edge| {
+                            edge.formula == SourceAtomicFormulaId::new(index)
+                                && edge.role == SourceAtomicEdgeRole::BuiltinRightOperand
+                                && edge.target == SourceAtomicTermTarget::SetTerm(set_term_id)
+                        })
+                })
+        {
+            return false;
+        }
+        let mut segments = input
+            .predicate_segments
+            .iter()
+            .filter(|row| row.formula == formula_id);
+        let Some(segment) = segments.next() else {
+            return false;
+        };
+        if segments.next().is_some()
+            || segment.polarity != SourcePredicateSegmentPolarityInput::Positive
+            || segment.source_range != formula.source_range
+        {
+            return false;
+        }
+        let Some(head) = input.predicate_heads.get(segment.head.index()) else {
+            return false;
+        };
+        let Some(atom_node) = arena.node(formula.site.node()) else {
+            return false;
+        };
+        let Some(segment_node) = arena.node(segment.site.node()) else {
+            return false;
+        };
+        let [left, actual_head, right] = segment_node.children.as_slice() else {
+            return false;
+        };
+        if atom_node.children.as_slice() != [segment.site.node()]
+            || *actual_head != head.site.node()
+            || !set_terms.conditions().iter().any(|(_, condition)| {
+                condition.term() == set_term_id
+                    && condition.recovery() == SourceSetTermRecovery::Normal
+                    && condition.source_range() == formula.source_range
+                    && condition.spelling() == formula.spelling
+                    && condition.condition_site() != &formula.site
+                    && arena
+                        .node(condition.condition_site().node())
+                        .is_some_and(|node| node.children.as_slice() == [formula.site.node()])
+            })
+        {
+            return false;
+        }
+        for (expression, edge) in [(*left, segment.left_edge), (*right, segment.right_edge)] {
+            let Some(expression) = arena.node(expression) else {
+                return false;
+            };
+            let Some(edge) = input.edges.get(edge.index()) else {
+                return false;
+            };
+            let SourceAtomicTermTarget::Primary(id) = edge.target else {
+                return false;
+            };
+            let Some(primary) = primary_terms.terms().get(id) else {
+                return false;
+            };
+            if expression.kind.as_str() != "TermExpression"
+                || expression.recovery != NodeRecoveryState::Normal
+                || expression.anchor != SourceAnchor::Range(primary.source_range())
+                || expression.children.as_slice() != [primary.site().node()]
+            {
+                return false;
+            }
+        }
+        return true;
+    }
     let wrappers = input
         .wrappers
         .iter()
@@ -2065,6 +2166,7 @@ fn effective_formula_occurrences(
 fn validate_formula_order(
     input: &SourceAtomicFormulaHandoffInput,
     effective: &[EffectiveOccurrence],
+    primary_terms: &SourcePrimaryTermHandoff,
     set_terms: Option<&SourceSetTermHandoff>,
     arena: &TypedArena,
 ) -> Result<(), SourceAtomicFormulaError> {
@@ -2083,6 +2185,7 @@ fn validate_formula_order(
                                 input,
                                 SourceAtomicFormulaId::new(index),
                                 current.range,
+                                primary_terms,
                                 sets,
                                 id,
                                 set.source_range(),

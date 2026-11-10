@@ -640,6 +640,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Scoped predicate Atomic source oracle](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-ATOM-SOURCE.md); structural intake before Set/C2 integration.
     - [x] [Scoped Comprehension Set source oracle](../../task_contracts/en/CHECKER257C-SCOPED-COMPREHENSION-SET-SOURCE.md); independent structural lower before integration.
     - [x] [Scoped Membership Set contexts](../../task_contracts/en/CHECKER257C-SCOPED-MEMBERSHIP-SET-CONTEXTS.md); bounded outer operand before condition integration.
+    - [x] [Paired predicate condition atoms](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-CONDITION-ATOMS.md); Atomic condition ownership before C2 adoption.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,
       polarity-token, and shared-boundary transport.
       - [x] Freeze the syntax-free nine-table contract, exact consumer, tests,
