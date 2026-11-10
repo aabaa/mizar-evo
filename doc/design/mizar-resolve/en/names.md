@@ -24,6 +24,10 @@ it adds binding kinds, not formula or statement payloads.
 `SourceVariableScopeResolver::resolve_occurrences` retains existing binding/reference identities
 and declared generator types, admitting mapper-before-generator uses only within their comprehension.
 It makes no statement/thesis projection; legacy `resolve` keeps its existing profile.
+Both occurrence profiles admit normal reserved binary `[x,y]` applications with bare
+variable operands only in the nearest comprehension's mapper subtree. Operands retain
+ordinary Term roles; malformed/nonmapper applications and `resolve_proof_bindings` stay
+excluded. This acquires references only, without tuple typing or comprehension formation.
 
 Mathematical Binder heads in the occurrence-only theorem/lemma surface use the appended `SourceVariableBindingKind::FunctionBinder` and a body-local lexical boundary. Head tokens retain the incoming source scope; their declarations and the body use the new body scope. Preserve ordered real head tokens and fresh declaration identities; resolve all unambiguous admitted prior outer let/reserve types before simultaneous introduction, including transitive fresh-head inheritance in nesting. Body references select the nearest head while free outer references keep their actual winners.
 Preserve DefinitionBlock exclusion and existing Inline capture profiles. Unsupported algorithm capture/reconstruction and reflection positions receive no fresh-mode fallback. Occurrence receipts retain empty thesis/statements; legacy `resolve` refuses owned Binder terms instead of flattening their bodies. Certified carriers, expected-type-only inference, function formation and checker semantic credit remain separate.

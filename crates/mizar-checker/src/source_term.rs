@@ -3978,7 +3978,7 @@ mod tests {
             ("theorem T: for A being set holds A = A proof let A be set; thus A = A; end;", 0, 2, vec![0,0,1,1], Some(true)),
             ("theorem T: for A being set holds A = A proof let A be set; thus (A |-> A) = A; end;", 0, 3, vec![0,0,2,1], Some(true)),
             ("theorem T: for A being set holds A in { z where z is object : z in A } proof let A be set; thus A in { z where z is object : z in A }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
-            ("theorem T: for A being set holds A in { [z,w] where z is object, w is object : z in A & w in A };", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A in { [z,w] where z is object, w is object : z in A & w in A };", 1, 3, vec![0,1,2,1,0,2,0], Some(true)),
             ("theorem T: for A being set holds A in { { z where z is object : z in A } where z is object : z in A };", 2, 3, vec![0,1,1,0,2,0], Some(true)),
             ("\n:: mapper alpha/layout\ntheorem T: for parcel being\tset holds parcel in { needle where needle is object : needle in parcel } proof\nlet parcel be set; thus parcel in { needle where needle is object : needle in parcel }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
             ("reserve A for set; theorem T: for A holds A in { A where z is object : z in A };", 1, 0, vec![], None),
@@ -4059,10 +4059,6 @@ mod tests {
         let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
             SourceVariableScopeInput::new(&ast, &actual_module, &symbols),
         );
-        if case == 12 {
-            assert_eq!(scope, Err(mizar_resolve::names::SourceVariableScopeError::InvalidShape), "unsupported original tuple-mapper resolver profile");
-            continue;
-        }
         let scope = scope.unwrap_or_else(|error| panic!("case {case}: {error:?}"));
         let (scopes, parents) =
             mizar_resolve::symbols::source_proof_scope_maps(&resolved, &symbols, &scope)

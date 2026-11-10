@@ -12,6 +12,10 @@ Given/Consider の束縛と条件・子ブロック内の参照を所属ブロ�
 
 `SourceVariableScopeResolver::resolve_occurrences` は既存の束縛・参照 ID と生成変数の宣言型を保持し、
 生成変数より前の mapper 参照を同じ内包表記のスコープ内だけで解決する。文・thesis は構築せず、従来の `resolve` は不変。
+両 occurrence profile は、最も近い内包表記の mapper subtree 内に限り、裸の変数を2個持つ
+正常な予約記号 `[x,y]` の application を受け入れる。operand は通常の Term 参照のままとし、
+不正形・mapper 外の application と `resolve_proof_bindings` は対象外とする。
+参照の取得のみで、tuple の型検査や内包表記の形成判定は行わない。
 
 occurrence 専用の theorem/lemma 範囲にある数学的 Binder head は、末尾追加した `SourceVariableBindingKind::FunctionBinder` と body 内だけの lexical boundary を使う。head token 自体は入力側の source scope を保ち、宣言と body は新しい body scope を使う。実 head token の順序と fresh 宣言 identity を保ち、全 head の型を一意な先行する外側 let/reserve から取得してから同時に導入する。入れ子では fresh head の型を引き継ぎ、body 参照は最も近い head、自由参照は実際の外側 binding を選ぶ。
 DefinitionBlock 除外と既存 Inline capture profile を保つ。未対応の algorithm capture/reconstruction と reflection 位置を fresh mode へ切り替えない。occurrence receipt の thesis/statements は空のままとし、従来の `resolve` は所有範囲の Binder を body に平坦化せず拒否する。carrier の認証・期待型だけからの推論・関数形成・checker の意味上の credit は別段階とする。

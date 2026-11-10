@@ -6476,6 +6476,29 @@ impl<'a> VariableResolveState<'a> {
             if self.in_definition_block(view.id()) {
                 continue;
             }
+            if matches!(view.kind(), SurfaceNodeKind::ApplicationTerm)
+                && self.comprehension_scopes
+                && !self.proof_bindings
+                && self
+                    .comprehension_mapper_owner(view.id())
+                    .is_some_and(|owner| Some(owner) == self.enclosing_comprehension(view.id()))
+            {
+                let children = view.child_views().collect::<Vec<_>>();
+                if let [open, left, comma, right, close] = children.as_slice()
+                    && [(open, "["), (comma, ","), (close, "]")]
+                        .iter()
+                        .all(|(node, text)| {
+                            node.as_token().is_some_and(|token| {
+                                token.kind == SurfaceTokenKind::ReservedSymbol
+                                    && token.text.as_ref() == *text
+                            })
+                        })
+                    && exact_identifier_term_reference(*left).is_some()
+                    && exact_identifier_term_reference(*right).is_some()
+                {
+                    continue;
+                }
+            }
             let (kind, callee) = match view.kind() {
                 SurfaceNodeKind::ApplicationTerm => (
                     SourceVariableReferenceKind::InlineFunctor {

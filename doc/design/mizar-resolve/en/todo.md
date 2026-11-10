@@ -1,5 +1,7 @@
 # mizar-resolve TODO
 
+- [x] Task 257C prerequisite: [reserved bracket mapper leaves](../../task_contracts/en/RESOLVE257-BRACKET-MAPPER-REFERENCES.md).
+
 - [x] Task 257B prerequisite: [fresh mathematical Binder occurrences](../../task_contracts/en/RESOLVE257-FRESH-FUNCTION-BINDERS.md).
 
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).

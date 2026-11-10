@@ -416,6 +416,261 @@ fn proof_binding_source_ast(source: SourceId, text: &str) -> SurfaceAst {
 }
 
 #[test]
+fn bracket_mapper_source_controls_preserve_original_occurrences() {
+    let source = source_id();
+    let module = module_id("pkg", "bracket_mapper");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    // The bare mapper separates generator collection from bracket acquisition.
+    for (body, names, winners) in [
+        (
+            "z where z is object, w is object : z in A & w in A",
+            vec!["A", "z", "w"],
+            vec![0, 1, 1, 0, 2, 0],
+        ),
+        (
+            "[z,z] where z is object : z in A",
+            vec!["A", "z"],
+            vec![0, 1, 1, 1, 0],
+        ),
+        (
+            "[z,w] where z is object, w is object : z in A & w in A",
+            vec!["A", "z", "w"],
+            vec![0, 1, 2, 1, 0, 2, 0],
+        ),
+        (
+            "[z,z] where z is object, w is object : z in A",
+            vec!["A", "z", "w"],
+            vec![0, 1, 1, 1, 0],
+        ),
+    ] {
+        let text = format!("theorem T: for A being set holds A in {{ {body} }};");
+        let ast = proof_binding_source_ast(source, &text);
+        let original = ast.clone();
+        let scope = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .expect("source mapper variable occurrences");
+        assert_eq!(
+            scope
+                .bindings()
+                .iter()
+                .map(|binding| binding.spelling())
+                .collect::<Vec<_>>(),
+            names
+        );
+        assert_eq!(
+            scope
+                .references()
+                .iter()
+                .map(|reference| reference.binding().index())
+                .collect::<Vec<_>>(),
+            winners
+        );
+        // Source offsets and lexical paths are independent of resolver output.
+        let declarations = names
+            .iter()
+            .map(|name| {
+                text.find(&format!(
+                    "{name} {}",
+                    if *name == "A" { "being" } else { "is" }
+                ))
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        let mut uses = names
+            .iter()
+            .flat_map(|name| text.match_indices(name).map(|(offset, _)| offset))
+            .filter(|offset| {
+                !declarations.contains(offset)
+                    && text
+                        .as_bytes()
+                        .get(offset + 1)
+                        .is_none_or(|byte| !byte.is_ascii_alphanumeric())
+                    && offset
+                        .checked_sub(1)
+                        .and_then(|before| text.as_bytes().get(before))
+                        .is_none_or(|byte| !byte.is_ascii_alphanumeric())
+            })
+            .collect::<Vec<_>>();
+        uses.sort_unstable();
+        for (index, binding) in scope.bindings().iter().enumerate() {
+            assert_eq!(binding.id().index(), index);
+            assert_eq!(binding.ordinal(), index);
+            assert_eq!(
+                binding.range(),
+                range(source, declarations[index], declarations[index] + 1)
+            );
+            assert_eq!(
+                binding.scope().path(),
+                if index == 0 { &[0][..] } else { &[0, 0][..] }
+            );
+            assert_eq!(
+                binding.kind(),
+                if index == 0 {
+                    SourceVariableBindingKind::Quantifier
+                } else {
+                    SourceVariableBindingKind::ComprehensionGenerator
+                }
+            );
+            assert_eq!(
+                binding.declared_type().unwrap().radix(),
+                if index == 0 {
+                    SourceVariableTypeRadix::Set
+                } else {
+                    SourceVariableTypeRadix::Object
+                }
+            );
+        }
+        for (index, reference) in scope.references().iter().enumerate() {
+            assert_eq!(reference.id().index(), index);
+            assert_eq!(reference.ordinal(), index);
+            assert_eq!(
+                reference.range(),
+                range(source, uses[index], uses[index] + 1)
+            );
+            assert_eq!(reference.range(), ast.node(reference.node()).unwrap().range);
+            assert_eq!(
+                reference.scope().path(),
+                if index == 0 { &[0][..] } else { &[0, 0][..] }
+            );
+            assert_eq!(reference.kind(), SourceVariableReferenceKind::Term);
+        }
+        assert!(scope.thesis().is_none() && scope.statements().is_empty());
+        assert_eq!(
+            scope,
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &symbols
+            ))
+            .unwrap()
+        );
+        if body.starts_with('[') {
+            assert_eq!(
+                SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+                    &ast, &module, &symbols
+                )),
+                Err(SourceVariableScopeError::InvalidShape)
+            );
+            assert_eq!(
+                SourceVariableScopeResolver::resolve_proof_bindings(SourceVariableScopeInput::new(
+                    &ast, &module, &symbols
+                )),
+                Err(SourceVariableScopeError::InvalidShape)
+            );
+        }
+        assert_eq!(ast, original);
+    }
+}
+
+#[test]
+fn bracket_mapper_admission_preserves_application_and_operand_refusals() {
+    let source = source_id();
+    let module = module_id("pkg", "bracket_mapper");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    for formula in [
+        "[A,A] = A",
+        "A in { z where z is object : [z,z] = A }",
+        "A in { { z where z is object : [z,z] = A } where w is object : w in A }",
+        "A in { [z] where z is object : z in A }",
+        "A in { [z,z,z] where z is object : z in A }",
+        "A in { [[z,z],z] where z is object : z in A }",
+        "A in { [(z),z] where z is object : z in A }",
+        "A in { [z qua expr of object,z] where z is object : z in A }",
+        "A in { f(z) where z is object : z in A }",
+    ] {
+        let ast = proof_binding_source_ast(
+            source,
+            &format!("theorem T: for A being set holds {formula};"),
+        );
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+        ] {
+            assert_eq!(
+                resolve(SourceVariableScopeInput::new(&ast, &module, &symbols)),
+                Err(SourceVariableScopeError::InvalidShape),
+                "{formula}"
+            );
+        }
+    }
+    for (arity, error) in [
+        (1, None),
+        (2, Some(SourceVariableScopeError::ArityMismatch)),
+    ] {
+        let ast = source_variable_inline_functor_ast(source, arity);
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+        ] {
+            assert_eq!(
+                resolve(SourceVariableScopeInput::new(&ast, &module, &symbols)).err(),
+                error
+            );
+        }
+    }
+}
+
+#[test]
+fn bracket_mapper_requires_authentic_normal_delimiters() {
+    let (source, foreign) = distinct_source_ids();
+    let module = module_id("pkg", "bracket_mapper");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let original = proof_binding_source_ast(
+        source,
+        "theorem T: for A being set holds A in { [z,z] where z is object : z in A };",
+    );
+    for corruption in ["open", "close", "comma", "recovery", "source"] {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let mut nodes = Vec::new();
+        for view in original.node_views() {
+            let mut span = view.range();
+            let node = if let Some(token) = view.as_token() {
+                let (mut kind, mut text) = (token.kind, token.text.as_ref());
+                if (corruption == "open" && text == "[") || (corruption == "comma" && text == ",") {
+                    kind = SurfaceTokenKind::Identifier;
+                }
+                if corruption == "close" && text == "]" {
+                    text = ")";
+                }
+                if corruption == "source" && text == "[" {
+                    span.source_id = foreign;
+                }
+                if corruption == "recovery" && text == "]" {
+                    builder.add_recovered_token(kind, text, span)
+                } else {
+                    builder.add_token(kind, text, span)
+                }
+            } else {
+                builder.add_node(
+                    view.kind().clone(),
+                    span,
+                    view.children()
+                        .iter()
+                        .map(|child| nodes[child.index()])
+                        .collect(),
+                )
+            };
+            nodes.push(node);
+        }
+        let ast = builder.finish(Some(nodes[original.root().unwrap().index()]), None);
+        let expected = match corruption {
+            "recovery" => SourceVariableScopeError::RecoveredSyntax,
+            "source" => SourceVariableScopeError::SourceMismatch,
+            _ => SourceVariableScopeError::InvalidShape,
+        };
+        for resolve in [
+            SourceVariableScopeResolver::resolve_occurrences,
+            SourceVariableScopeResolver::resolve_proof_occurrences,
+        ] {
+            assert_eq!(
+                resolve(SourceVariableScopeInput::new(&ast, &module, &symbols)),
+                Err(expected),
+                "{corruption}"
+            );
+        }
+    }
+}
+
+#[test]
 fn proof_bindings_inline_captures_exclude_body_local_binders() {
     let source = source_id();
     let module = module_id("pkg", "inline_captures");

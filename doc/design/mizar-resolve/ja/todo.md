@@ -1,5 +1,7 @@
 # mizar-resolve TODO
 
+- [x] Task 257C prerequisite: [reserved bracket mapper leaves](../../task_contracts/ja/RESOLVE257-BRACKET-MAPPER-REFERENCES.md).
+
 - [x] Task 257B prerequisite: [fresh mathematical Binder occurrences](../../task_contracts/ja/RESOLVE257-FRESH-FUNCTION-BINDERS.md).
 
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
