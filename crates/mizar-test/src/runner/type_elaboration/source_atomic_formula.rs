@@ -1363,9 +1363,9 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 .ok_or_else(|| "membership operand disappeared".to_owned())?;
             match node.kind {
                 SurfaceNodeKind::TermReference => primary_target(&primary, node.range),
-                SurfaceNodeKind::SetEnumeration | SurfaceNodeKind::SetComprehension => {
-                    set_target(&set_handoff, node.range)
-                }
+                SurfaceNodeKind::SetEnumeration
+                | SurfaceNodeKind::SetComprehension
+                | SurfaceNodeKind::ParenthesizedTerm => set_target(&set_handoff, node.range),
                 _ => Err("membership operand has an unsupported term shape".to_owned()),
             }
         };
@@ -1940,7 +1940,12 @@ fn set_target(
         .terms()
         .iter()
         .find(|(id, term)| {
-            term.source_range() == range
+            (term.source_range() == range
+                || handoff.wrappers().iter().any(|(_, wrapper)| {
+                    wrapper.term() == *id
+                        && wrapper.ordinal() == 0
+                        && wrapper.source_range() == range
+                }))
                 && !handoff.edges().iter().any(
                     |(_, edge)| matches!(edge.target(), mizar_checker::source_set_term::SourceSetTarget::SetTerm(target) if target == *id),
                 )

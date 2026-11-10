@@ -3133,12 +3133,28 @@ pub(super) fn step5c7_set_output(
     )?;
     // Resolver-authenticated generators may occur in their own mapper.
     // The legacy transport selector deliberately excludes that family.
+    let parents = parent_indexes(ast);
     let mut roots = roots.to_vec();
     roots.sort_by_key(|root| ast.nodes()[*root].range.start);
     for root in roots {
         if extracted.terms.iter().any(|term| term.node == root) {
             continue;
         }
+        let mut slot = root;
+        while let Some(parent) = parents[slot] {
+            let node = &ast.nodes()[parent];
+            let transparent = match node.kind {
+                SurfaceNodeKind::TermExpression => direct_token_texts(ast, node).is_empty(),
+                SurfaceNodeKind::ParenthesizedTerm => direct_token_texts(ast, node) == ["(", ")"],
+                _ => false,
+            };
+            let children = structural_child_ids(ast, node);
+            if !transparent || children.len() != 1 || children[0].index() != slot {
+                break;
+            }
+            slot = parent;
+        }
+        let (_, wrappers) = peel_set_shells(ast, slot)?;
         if matches!(ast.nodes()[root].kind, SurfaceNodeKind::SetComprehension) {
             let term = SourceSetTermId::new(extracted.terms.len());
             extracted.terms.push(ExtractedTerm {
@@ -3146,6 +3162,14 @@ pub(super) fn step5c7_set_output(
                 kind: SourceSetTermKind::Comprehension,
                 recovery: SourceSetTermRecovery::Normal,
             });
+            for (ordinal, node) in wrappers.into_iter().enumerate() {
+                extracted.wrappers.push(ExtractedWrapper {
+                    term,
+                    ordinal,
+                    node,
+                    recovery: SourceSetTermRecovery::Normal,
+                });
+            }
             collect_comprehension(
                 ast,
                 &module,
@@ -3161,7 +3185,7 @@ pub(super) fn step5c7_set_output(
             collect_target(
                 ast,
                 &module,
-                root,
+                slot,
                 None,
                 None,
                 &BTreeSet::new(),

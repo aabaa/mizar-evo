@@ -1,7 +1,7 @@
 # Module: harness
 
 ## 内包表記の直接組み込み条件
-既存Step5C7 source intakeは、認証済み内包表記wrapperの直接Equality条件をMembershipとともに転送し、書かれた演算子から既存operand requestを生成する。同じnative Set intakeは再帰収集した各実rootを一度だけ保持し、既存generator groupとEnumeration sibling/child targetを再利用する。無関係なEquality intakeとMembershipの動作は維持する。C2/final関連付けmetadataはset-bound evidenceを与えず、別のmembership-proof checkerはEquality guardを引き続き拒否する。
+既存Step5C7 source intakeは、認証済み内包表記wrapperの直接Equality条件をMembershipとともに転送し、書かれた演算子から既存operand requestを生成する。同じnative Set intakeは再帰収集した各実rootを一度だけ保持し、既存generator groupとEnumeration sibling/child targetを再利用する。grouped Atomic Set operandはnative root収集で実際の透明shellを保持し、既存の最外effective Set occurrenceと対応する。native Comprehension mapperの受け入れ、共有callerのbare入力、proof規則を維持する。無関係なEquality intakeは維持する。C2/final関連付けmetadataはset-bound evidenceを与えず、別のmembership-proof checkerはEquality guardを引き続き拒否する。
 
 ## Native proof-local binding metadata
 

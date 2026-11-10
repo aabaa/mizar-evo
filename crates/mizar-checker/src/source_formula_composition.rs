@@ -1602,10 +1602,13 @@ fn validate_condition_transaction(
             || !applications.type_requests().is_empty()
             || set_terms.wrappers().iter().any(|(_, wrapper)| {
                 wrapper.recovery() != SourceSetTermRecovery::Normal
-                    || !set_terms
-                        .terms()
-                        .get(wrapper.term())
-                        .is_some_and(|term| term.kind() == SourceSetTermKind::Enumeration)
+                    || !set_terms.terms().get(wrapper.term()).is_some_and(|term| {
+                        term.kind() == SourceSetTermKind::Enumeration
+                            || (term.kind() == SourceSetTermKind::Comprehension
+                                && atomic_formulas.edges().iter().any(|(_, edge)| {
+                                    edge.target() == SourceAtomicTermTarget::SetTerm(wrapper.term())
+                                }))
+                    })
             })
             || set_terms.conditions().is_empty()
             || set_terms.terms().iter().any(|(_, term)| {

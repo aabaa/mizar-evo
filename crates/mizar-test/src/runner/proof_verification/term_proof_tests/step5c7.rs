@@ -193,7 +193,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         source_application::{
             SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer,
         },
-        source_atomic_formula::{SourceAtomicFormulaKind, SourceAtomicRequestKind},
+        source_atomic_formula::{
+            SourceAtomicEdgeRole, SourceAtomicFormulaKind, SourceAtomicRequestKind,
+            SourceAtomicTermTarget,
+        },
         source_formula_composition::{
             SourceConditionFormulaCompositionHandoffInput,
             SourceConditionFormulaCompositionProducer, SourceConditionFormulaEdgeInput,
@@ -255,6 +258,25 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         original.replace(set_literal, "{ { ({ x }) } where z is object : z in A }");
     let double_wrapped_mapper =
         original.replace(set_literal, "{ (({ x })) where z is object : z in A }");
+    let grouped_set = original.replace(set_literal, &format!("({set_literal})"));
+    let grouped_header = original.replacen(set_literal, &format!("({set_literal})"), 1);
+    let mut grouped_proof = original.clone();
+    let proof_set = grouped_proof.rfind(set_literal).unwrap();
+    grouped_proof.replace_range(
+        proof_set..proof_set + set_literal.len(),
+        &format!("({set_literal})"),
+    );
+    let double_grouped_set = original.replace(set_literal, &format!("(({set_literal}))"));
+    let grouped_layout = original.replace(set_literal, &format!("(  {set_literal}  )"));
+    let grouped_primary = original.replacen("st x in A holds", "st (x) in A holds", 1);
+    let grouped_condition = original.replace(": z in A", ": (z in A)");
+    let grouped_left = original.replace(
+        &format!("x in {set_literal}"),
+        &format!("({set_literal}) in A"),
+    );
+    let mut grouped_enumeration = original.clone();
+    let proof_set = grouped_enumeration.rfind(set_literal).unwrap();
+    grouped_enumeration.replace_range(proof_set..proof_set + set_literal.len(), "({ x })");
     let inner_comprehension = original.replace(
         set_literal,
         "{ { x where w is object } where z is object : z in A }",
@@ -340,6 +362,24 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             2,
             &["z in A"][..],
         ),
+        ("grouped set", grouped_set.clone(), 2, &["z in A"][..]),
+        ("grouped header", grouped_header, 2, &["z in A"][..]),
+        ("grouped proof", grouped_proof, 2, &["z in A"][..]),
+        ("double grouped set", double_grouped_set, 2, &["z in A"][..]),
+        (
+            "grouped alpha",
+            grouped_set.replace('z', "q"),
+            2,
+            &["q in A"][..],
+        ),
+        ("grouped layout", grouped_layout, 2, &["z in A"][..]),
+        ("grouped left", grouped_left, 2, &["z in A"][..]),
+        (
+            "grouped enumeration",
+            grouped_enumeration,
+            1,
+            &["z in A"][..],
+        ),
         (
             "inner comprehension boundary",
             inner_comprehension,
@@ -398,6 +438,14 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 | "wrapped element"
                 | "wrapped element layout"
                 | "double wrapped mapper"
+                | "grouped set"
+                | "grouped header"
+                | "grouped proof"
+                | "double grouped set"
+                | "grouped alpha"
+                | "grouped layout"
+                | "grouped left"
+                | "grouped enumeration"
                 | "inner comprehension boundary"
         ) {
             // Compare the lower Set rows with actual syntax, independently of C2.
@@ -431,6 +479,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 "enumeration tree" => (6, 2, 4),
                 "wrapped mapper" | "wrapped mapper alpha" | "double wrapped mapper" => (4, 2, 2),
                 "wrapped element" | "wrapped element layout" => (6, 2, 4),
+                "grouped enumeration" => (2, 1, 0),
+                "grouped set" | "grouped header" | "grouped proof" | "double grouped set"
+                | "grouped alpha" | "grouped layout" | "grouped left" => (2, 2, 0),
                 "inner comprehension boundary" => (4, 4, 2),
                 _ => unreachable!(),
             };
@@ -668,6 +719,14 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     | "wrapped element"
                     | "wrapped element layout"
                     | "double wrapped mapper"
+                    | "grouped set"
+                    | "grouped header"
+                    | "grouped proof"
+                    | "double grouped set"
+                    | "grouped alpha"
+                    | "grouped layout"
+                    | "grouped left"
+                    | "grouped enumeration"
             ) {
                 let written_wrappers = ast
                     .node_views()
@@ -678,10 +737,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                         )
                     })
                     .collect::<Vec<_>>();
-                let expected = if label == "double wrapped mapper" {
-                    4
-                } else {
-                    2
+                let expected = match label {
+                    "double wrapped mapper" | "double grouped set" => 4,
+                    "grouped header" | "grouped proof" | "grouped enumeration" => 1,
+                    _ => 2,
                 };
                 assert_eq!(
                     written_wrappers.len(),
@@ -690,15 +749,18 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 );
                 assert_eq!(sets.wrappers().len(), expected, "{label}: lower wrappers");
                 for (inner_id, term) in sets.terms().iter() {
-                    if term.kind() != SourceSetTermKind::Enumeration {
-                        continue;
-                    }
                     let mut physical = written_wrappers
                         .iter()
                         .filter_map(|view| {
                             let node = ast.node(view.id())?;
-                            (node.range.start < term.source_range().start
-                                && term.source_range().end < node.range.end)
+                            let nearest_core = written_sets
+                                .iter()
+                                .filter(|(_, core, _)| {
+                                    node.range.start < core.range.start
+                                        && core.range.end < node.range.end
+                                })
+                                .max_by_key(|(_, core, _)| core.range.end - core.range.start)?;
+                            (nearest_core.0.index() == term.site().node().index())
                                 .then_some((view.id(), node))
                         })
                         .collect::<Vec<_>>();
@@ -732,38 +794,92 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                         assert_eq!(wrapper.recovery(), SourceSetTermRecovery::Normal);
                         assert!(!node.recovered);
                     }
-                    if let Some((_, outermost)) = physical.first() {
-                        let (parent_site, _, parent_kind) = written_sets
+                    if let Some((outer_site, outermost)) = physical.first() {
+                        let parent = written_sets
                             .iter()
                             .filter(|(_, parent, _)| {
                                 parent.range.start < outermost.range.start
                                     && outermost.range.end < parent.range.end
                             })
-                            .min_by_key(|(_, parent, _)| parent.range.end - parent.range.start)
-                            .expect("wrapped Enumeration has a written Set parent");
-                        let parent_id = sets
-                            .terms()
-                            .iter()
-                            .find(|(_, row)| row.site().node().index() == parent_site.index())
-                            .unwrap()
-                            .0;
-                        let role = if *parent_kind == SourceSetTermKind::Comprehension {
-                            SourceSetEdgeRole::ComprehensionMapper
-                        } else {
-                            SourceSetEdgeRole::EnumerationElement
-                        };
-                        assert_eq!(
-                            sets.edges()
+                            .min_by_key(|(_, parent, _)| parent.range.end - parent.range.start);
+                        if let Some((parent_site, _, parent_kind)) = parent {
+                            let parent_id = sets
+                                .terms()
                                 .iter()
-                                .filter(|(_, edge)| {
-                                    edge.term() == parent_id
-                                        && edge.role() == role
-                                        && edge.target() == SourceSetTarget::SetTerm(inner_id)
+                                .find(|(_, row)| row.site().node().index() == parent_site.index())
+                                .unwrap()
+                                .0;
+                            let role = if *parent_kind == SourceSetTermKind::Comprehension {
+                                SourceSetEdgeRole::ComprehensionMapper
+                            } else {
+                                SourceSetEdgeRole::EnumerationElement
+                            };
+                            assert_eq!(
+                                sets.edges()
+                                    .iter()
+                                    .filter(|(_, edge)| {
+                                        edge.term() == parent_id
+                                            && edge.role() == role
+                                            && edge.target() == SourceSetTarget::SetTerm(inner_id)
+                                    })
+                                    .count(),
+                                1,
+                                "{label}: wrapped effective parent edge"
+                            );
+                        } else {
+                            let formula = ast
+                                .node_views()
+                                .find(|view| {
+                                    let node = ast.node(view.id()).unwrap();
+                                    matches!(
+                                        node.kind,
+                                        SurfaceNodeKind::BuiltinPredicateApplication
+                                    ) && node.children.iter().any(|operand| {
+                                        ast.node(*operand).unwrap().children.contains(outer_site)
+                                    })
                                 })
-                                .count(),
-                            1,
-                            "{label}: wrapped effective parent edge"
-                        );
+                                .expect("wrapped root has an actual Atomic parent");
+                            let written = ast.node(formula.id()).unwrap();
+                            let side = written
+                                .children
+                                .iter()
+                                .filter(|child| {
+                                    !matches!(
+                                        ast.node(**child).unwrap().kind,
+                                        SurfaceNodeKind::Token(_)
+                                    )
+                                })
+                                .position(|operand| {
+                                    ast.node(*operand).unwrap().children.contains(outer_site)
+                                })
+                                .expect("outermost Set shell is a direct Atomic operand");
+                            let formula_id = atomic
+                                .formulas()
+                                .iter()
+                                .find(|(_, row)| row.site().node().index() == formula.id().index())
+                                .unwrap()
+                                .0;
+                            let role = if side == 0 {
+                                SourceAtomicEdgeRole::BuiltinLeftOperand
+                            } else {
+                                SourceAtomicEdgeRole::BuiltinRightOperand
+                            };
+                            assert_eq!(
+                                atomic
+                                    .edges()
+                                    .iter()
+                                    .filter(|(_, edge)| {
+                                        edge.formula() == formula_id
+                                            && edge.ordinal() == side
+                                            && edge.role() == role
+                                            && edge.target()
+                                                == SourceAtomicTermTarget::SetTerm(inner_id)
+                                    })
+                                    .count(),
+                                1,
+                                "{label}: grouped effective Atomic operand"
+                            );
+                        }
                     }
                 }
             }
@@ -1066,6 +1182,14 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 | "wrapped mapper"
                 | "wrapped element"
                 | "double wrapped mapper"
+                | "grouped set"
+                | "grouped header"
+                | "grouped proof"
+                | "double grouped set"
+                | "grouped alpha"
+                | "grouped layout"
+                | "grouped left"
+                | "grouped enumeration"
         ) {
             use mizar_checker::source_set_term::SourceSetTermProducer;
             use mizar_resolve::{
@@ -1106,7 +1230,16 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     &symbols.env,
                 )
                 .is_ok(),
-                label == "original",
+                matches!(
+                    label,
+                    "original"
+                        | "grouped set"
+                        | "grouped header"
+                        | "grouped proof"
+                        | "double grouped set"
+                        | "grouped alpha"
+                        | "grouped layout"
+                ),
                 "{label}: wrong proof credit"
             );
         }
@@ -1217,6 +1350,49 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             foreign_lower = Some((primary.clone(), typed.nodes().clone()));
         }
         foreign_composition = Some(composition);
+    }
+    for (label, source) in [
+        ("grouped Primary", grouped_primary),
+        ("grouped condition", grouped_condition),
+    ] {
+        let ast = parse(&source);
+        let symbols = resolver_symbol_collection(root, case, &ast);
+        assert!(symbols.detail_keys.is_empty(), "{label}");
+        let scope = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &symbols.module, &symbols.env),
+        )
+        .unwrap();
+        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        if label == "grouped condition" {
+            let positions = source.match_indices("(z in A)").collect::<Vec<_>>();
+            assert_eq!(positions.len(), 2);
+            for (start, spelling) in positions {
+                let wrapper = ast
+                    .nodes()
+                    .iter()
+                    .find(|node| {
+                        matches!(node.kind, SurfaceNodeKind::FormulaExpression)
+                            && node.range.start == start
+                            && node.range.end == start + spelling.len()
+                    })
+                    .expect("actual grouped condition wrapper");
+                assert!(wrapper.children.iter().any(|child| matches!(
+                    ast.node(*child).unwrap().kind,
+                    SurfaceNodeKind::ParenthesizedFormula
+                )));
+            }
+        }
+        assert!(
+            super::super::super::type_elaboration::step5c7_membership_typed_ast(
+                &ast,
+                &symbols.module,
+                &symbols.env,
+                &scope,
+                &bindings,
+            )
+            .is_err(),
+            "{label}: unsupported lower input admitted"
+        );
     }
 }
 
