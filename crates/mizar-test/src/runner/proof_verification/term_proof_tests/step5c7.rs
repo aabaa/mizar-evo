@@ -710,7 +710,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             vec!["z in A"],
         ),
     ]);
-    // EN13.1.3/13.4 and EN14.2 permit bare Enumeration condition operands.
+    // EN13.1.3/13.4 and EN14.2 permit grouped Enumeration condition operands.
     cases.push((
         "primary condition Enumeration membership",
         original.replace(": z in A", ": (z) in { A }"),
@@ -753,6 +753,42 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             "primary condition Enumeration ne right proof",
             "primary condition Enumeration ne right",
             "z <> { A }",
+        ),
+        (
+            "primary condition Enumeration grouped in left header",
+            "primary condition Enumeration grouped in left proof",
+            "primary condition Enumeration grouped in left",
+            "(({ A })) in (z)",
+        ),
+        (
+            "primary condition Enumeration grouped in right header",
+            "primary condition Enumeration grouped in right proof",
+            "primary condition Enumeration grouped in right",
+            "(z) in (({ A }))",
+        ),
+        (
+            "primary condition Enumeration grouped eq left header",
+            "primary condition Enumeration grouped eq left proof",
+            "primary condition Enumeration grouped eq left",
+            "(({ A })) = (z)",
+        ),
+        (
+            "primary condition Enumeration grouped eq right header",
+            "primary condition Enumeration grouped eq right proof",
+            "primary condition Enumeration grouped eq right",
+            "(z) = (({ A }))",
+        ),
+        (
+            "primary condition Enumeration grouped ne left header",
+            "primary condition Enumeration grouped ne left proof",
+            "primary condition Enumeration grouped ne left",
+            "(({ A })) <> (z)",
+        ),
+        (
+            "primary condition Enumeration grouped ne right header",
+            "primary condition Enumeration grouped ne right proof",
+            "primary condition Enumeration grouped ne right",
+            "(z) <> (({ A }))",
         ),
     ] {
         cases.push((
@@ -822,6 +858,48 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             vec!["z in { A }"],
         ),
     ]);
+    for (label, condition) in [
+        (
+            "primary condition Enumeration grouped membership",
+            "(z) in ({ A })",
+        ),
+        (
+            "primary condition Enumeration grouped empty",
+            "(z) in (({ }))",
+        ),
+        (
+            "primary condition Enumeration grouped nested",
+            "z in (({ A , { ((x)) } , z }))",
+        ),
+        (
+            "primary condition Enumeration grouped both",
+            "({ (z) }) = (({ A }))",
+        ),
+        (
+            "primary condition Enumeration grouped alpha",
+            "((q) in (({ A })))",
+        ),
+        (
+            "primary condition Enumeration grouped layout",
+            "( z ) in ( ( {  A  } ) )",
+        ),
+        (
+            "primary condition Enumeration grouped depth",
+            "z in (((({ A }))))",
+        ),
+    ] {
+        let source = if label.ends_with("alpha") {
+            original.replace("z where z", "q where q")
+        } else {
+            original.clone()
+        };
+        cases.push((
+            label,
+            source.replace(": z in A", &format!(": {condition}")),
+            2,
+            vec![condition],
+        ));
+    }
     let mut foreign_lower = None;
     let mut foreign_composition: Option<
         mizar_checker::source_formula_composition::SourceConditionFormulaCompositionHandoff,
@@ -890,6 +968,19 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             let groups = ast
                 .node_views()
                 .filter(|view| matches!(view.kind(), SurfaceNodeKind::ParenthesizedTerm))
+                .filter(|view| {
+                    let mut node = ast.node(view.id()).unwrap();
+                    while matches!(
+                        node.kind,
+                        SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermExpression
+                    ) {
+                        let index =
+                            usize::from(matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm));
+                        assert_eq!(node.children.len(), if index == 1 { 3 } else { 1 });
+                        node = ast.node(node.children[index]).unwrap();
+                    }
+                    matches!(node.kind, SurfaceNodeKind::TermReference)
+                })
                 .filter(|view| {
                     ((label.starts_with("primary Set")
                         || label.starts_with("primary condition Enumeration"))
@@ -1064,8 +1155,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 "primary Set nested header" | "primary Set nested proof" => (4, 2, 2),
                 "primary Set enumeration sibling" => (2, 1, 0),
                 _ if label.starts_with("primary Set") => (2, 2, 0),
-                "primary condition Enumeration nested" => (6, 2, 2),
-                "primary condition Enumeration both" => (6, 2, 0),
+                "primary condition Enumeration nested"
+                | "primary condition Enumeration grouped nested" => (6, 2, 2),
+                "primary condition Enumeration both"
+                | "primary condition Enumeration grouped both" => (6, 2, 0),
                 "primary condition Enumeration condition-free sibling" => (3, 2, 0),
                 _ if label.starts_with("primary condition Enumeration")
                     && (label.ends_with("header") || label.ends_with("proof")) =>
@@ -1250,7 +1343,9 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             if label.starts_with("primary Set")
                 || label.starts_with("primary condition Enumeration")
             {
-                assert!(sets.wrappers().is_empty());
+                if label.starts_with("primary Set") {
+                    assert!(sets.wrappers().is_empty());
+                }
                 assert_eq!(
                     sets.requests().len(),
                     written_sets.len() + expected_generators
@@ -1416,7 +1511,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     | "grouped layout"
                     | "grouped left"
                     | "grouped enumeration"
-            ) {
+            ) || label.starts_with("primary condition Enumeration")
+            {
                 let written_wrappers = ast
                     .node_views()
                     .filter(|view| {
@@ -1425,8 +1521,29 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             SurfaceNodeKind::ParenthesizedTerm
                         )
                     })
+                    .filter(|view| {
+                        let mut node = ast.node(view.id()).unwrap();
+                        while matches!(
+                            node.kind,
+                            SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermExpression
+                        ) {
+                            let index = usize::from(matches!(
+                                node.kind,
+                                SurfaceNodeKind::ParenthesizedTerm
+                            ));
+                            assert_eq!(node.children.len(), if index == 1 { 3 } else { 1 });
+                            node = ast.node(node.children[index]).unwrap();
+                        }
+                        matches!(
+                            node.kind,
+                            SurfaceNodeKind::SetEnumeration | SurfaceNodeKind::SetComprehension
+                        )
+                    })
                     .collect::<Vec<_>>();
                 let expected = match label {
+                    _ if label.starts_with("primary condition Enumeration") => {
+                        written_wrappers.len()
+                    }
                     "double wrapped mapper" | "double grouped set" => 4,
                     "grouped header" | "grouped proof" | "grouped enumeration" => 1,
                     _ => 2,
@@ -1442,14 +1559,22 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                         .iter()
                         .filter_map(|view| {
                             let node = ast.node(view.id())?;
-                            let nearest_core = written_sets
-                                .iter()
-                                .filter(|(_, core, _)| {
-                                    node.range.start < core.range.start
-                                        && core.range.end < node.range.end
-                                })
-                                .max_by_key(|(_, core, _)| core.range.end - core.range.start)?;
-                            (nearest_core.0.index() == term.site().node().index())
+                            let mut core_site = view.id();
+                            let mut core = node;
+                            while matches!(
+                                core.kind,
+                                SurfaceNodeKind::ParenthesizedTerm
+                                    | SurfaceNodeKind::TermExpression
+                            ) {
+                                let index = usize::from(matches!(
+                                    core.kind,
+                                    SurfaceNodeKind::ParenthesizedTerm
+                                ));
+                                assert_eq!(core.children.len(), if index == 1 { 3 } else { 1 });
+                                core_site = core.children[index];
+                                core = ast.node(core_site).unwrap();
+                            }
+                            (core_site.index() == term.site().node().index())
                                 .then_some((view.id(), node))
                         })
                         .collect::<Vec<_>>();
@@ -1489,6 +1614,12 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             .filter(|(_, parent, _)| {
                                 parent.range.start < outermost.range.start
                                     && outermost.range.end < parent.range.end
+                                    && !parent.children.iter().any(|id| {
+                                        let slot = ast.node(*id).unwrap();
+                                        matches!(slot.kind, SurfaceNodeKind::FormulaExpression)
+                                            && slot.range.start <= outermost.range.start
+                                            && outermost.range.end <= slot.range.end
+                                    })
                             })
                             .min_by_key(|(_, parent, _)| parent.range.end - parent.range.start);
                         if let Some((parent_site, _, parent_kind)) = parent {
@@ -1840,8 +1971,19 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     let [root] = slot.children.as_slice() else {
                         panic!("{label}: condition operand has no sole bare root")
                     };
-                    let node = ast.node(*root).unwrap();
+                    let mut root = *root;
+                    let mut node = ast.node(root).unwrap();
                     assert_eq!(slot.range, node.range);
+                    while matches!(
+                        node.kind,
+                        SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermExpression
+                    ) {
+                        let index =
+                            usize::from(matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm));
+                        assert_eq!(node.children.len(), if index == 1 { 3 } else { 1 });
+                        root = node.children[index];
+                        node = ast.node(root).unwrap();
+                    }
                     if matches!(node.kind, SurfaceNodeKind::SetEnumeration) {
                         let (id, term) = sets
                             .terms()
@@ -1887,20 +2029,32 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     .iter()
                     .filter_map(|child| {
                         let node = ast.node(*child).unwrap();
-                        (!matches!(node.kind, SurfaceNodeKind::Token(_))).then_some(node.range)
+                        (!matches!(node.kind, SurfaceNodeKind::Token(_))).then_some(node)
                     })
                     .collect::<Vec<_>>();
                 assert_eq!(operands.len(), 2);
                 for (ordinal, operand) in operands.into_iter().enumerate() {
+                    let mut core_site = operand.children[0];
+                    while matches!(
+                        ast.node(core_site).unwrap().kind,
+                        SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermExpression
+                    ) {
+                        let node = ast.node(core_site).unwrap();
+                        let index =
+                            usize::from(matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm));
+                        core_site = node.children[index];
+                    }
                     let target = primary
                         .terms()
                         .iter()
-                        .find(|(_, term)| term.parent().is_none() && term.source_range() == operand)
+                        .find(|(_, term)| {
+                            term.parent().is_none() && term.source_range() == operand.range
+                        })
                         .map(|(id, _)| SourceAtomicTermTarget::Primary(id))
                         .or_else(|| {
                             sets.terms()
                                 .iter()
-                                .find(|(_, term)| term.source_range() == operand)
+                                .find(|(_, term)| term.site().node().index() == core_site.index())
                                 .map(|(id, _)| SourceAtomicTermTarget::SetTerm(id))
                         })
                         .expect("actual written operand root");
@@ -2280,17 +2434,33 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             "primary condition inequality"
                 | "primary Set elements"
                 | "primary condition Enumeration membership"
+                | "primary condition Enumeration grouped in right"
         ) {
             use mizar_checker::{
                 source_term::SourcePrimaryTermKind,
                 typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedAstParts},
             };
-            let (group_id, group) = primary
-                .terms()
-                .iter()
-                .find(|(_, term)| term.kind() == SourcePrimaryTermKind::Parenthesized)
-                .unwrap();
-            let shell = ast.nodes().get(group.site().node().index()).unwrap();
+            let grouped_set = label == "primary condition Enumeration grouped in right";
+            let (group_id, group_site) = if grouped_set {
+                (
+                    None,
+                    sets.wrappers()
+                        .iter()
+                        .find(|(_, row)| row.ordinal() == 0)
+                        .unwrap()
+                        .1
+                        .site()
+                        .node(),
+                )
+            } else {
+                let (id, group) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.kind() == SourcePrimaryTermKind::Parenthesized)
+                    .unwrap();
+                (Some(id), group.site().node())
+            };
+            let shell = ast.nodes().get(group_site.index()).unwrap();
             let bridge_id = shell
                 .children
                 .iter()
@@ -2303,7 +2473,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 })
                 .unwrap();
             let child = ast.node(bridge_id).unwrap().children[0];
-            let set_slot = if label == "primary condition Enumeration membership" {
+            let set_slot = if label == "primary condition Enumeration membership" || grouped_set {
                 let owner = atomic
                     .formulas()
                     .get(input.edges[0].formula)
@@ -2321,24 +2491,43 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 Some((owner, slots, 1))
             } else {
                 sets.edges().iter().find_map(|(_, edge)| {
-                    (edge.target() == SourceSetTarget::Primary(group_id)).then(|| {
-                        let owner = sets.terms().get(edge.term()).unwrap().site().node();
-                        let slots = ast.nodes()[owner.index()]
-                            .children
-                            .iter()
-                            .copied()
-                            .filter(|id| {
-                                matches!(
-                                    ast.node(*id).unwrap().kind,
-                                    SurfaceNodeKind::TermExpression
-                                )
-                            })
-                            .collect::<Vec<_>>();
-                        (owner, slots, edge.ordinal())
-                    })
+                    (group_id.is_some_and(|id| edge.target() == SourceSetTarget::Primary(id))).then(
+                        || {
+                            let owner = sets.terms().get(edge.term()).unwrap().site().node();
+                            let slots = ast.nodes()[owner.index()]
+                                .children
+                                .iter()
+                                .copied()
+                                .filter(|id| {
+                                    matches!(
+                                        ast.node(*id).unwrap().kind,
+                                        SurfaceNodeKind::TermExpression
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+                            (owner, slots, edge.ordinal())
+                        },
+                    )
                 })
             };
-            for mutation in 0..if set_slot.is_some() { 14 } else { 4 } {
+            let inner = ast.node(child).unwrap();
+            let inner_bridge = grouped_set.then(|| {
+                inner
+                    .children
+                    .iter()
+                    .copied()
+                    .find(|id| {
+                        matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression)
+                    })
+                    .unwrap()
+            });
+            for mutation in 0..if grouped_set {
+                33
+            } else if set_slot.is_some() {
+                14
+            } else {
+                4
+            } {
                 let mut nodes = typed
                     .nodes()
                     .iter()
@@ -2403,12 +2592,80 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             }
                             8 => nodes[slot].children = nodes[slots[0].index()].children.clone(),
                             9 => nodes[slot].children.clear(),
-                            10 => nodes[slot].children.push(group.site().node()),
+                            10 => nodes[slot].children.push(group_site),
                             11 => nodes[slot].recovery = NodeRecoveryState::Degraded,
                             12 => nodes[slot].anchor = nodes[slots[0].index()].anchor.clone(),
                             13 => nodes[slot].kind = nodes[owner_id].kind.clone(),
                             _ => unreachable!(),
                         }
+                    }
+                    14..=32 => {
+                        let outer = group_site.index();
+                        let bridge = bridge_id.index();
+                        let inner_id = child.index();
+                        let inner_bridge = inner_bridge.unwrap().index();
+                        let core = nodes[inner_bridge].children[0];
+                        match mutation {
+                            14 => {
+                                nodes[bridge].children = vec![
+                                    primary
+                                        .terms()
+                                        .iter()
+                                        .find(|(_, row)| {
+                                            row.kind() == SourcePrimaryTermKind::VariableReference
+                                                && sets.conditions().iter().any(|(_, condition)| {
+                                                    condition.source_range().start
+                                                        <= row.source_range().start
+                                                        && row.source_range().end
+                                                            <= condition.source_range().end
+                                                        && condition.source_range().start
+                                                            <= shell.range.start
+                                                        && shell.range.end
+                                                            <= condition.source_range().end
+                                                })
+                                        })
+                                        .unwrap()
+                                        .1
+                                        .site()
+                                        .node(),
+                                ]
+                            }
+                            15 => nodes[outer].children.swap(0, 2),
+                            16 => nodes[bridge].children = nodes[inner_bridge].children.clone(),
+                            17 => nodes[bridge].kind = nodes[outer].kind.clone(),
+                            18 => nodes[bridge].anchor = nodes[outer].anchor.clone(),
+                            19 => nodes[outer].kind = nodes[bridge].kind.clone(),
+                            20 => nodes[outer].recovery = NodeRecoveryState::Degraded,
+                            21 => nodes[outer].anchor = nodes[bridge].anchor.clone(),
+                            22 => nodes[shell.children[0].index()].children.push(core),
+                            23 => {
+                                nodes[shell.children[0].index()].anchor =
+                                    nodes[shell.children[2].index()].anchor.clone()
+                            }
+                            24 => nodes[inner_bridge].children.clear(),
+                            25 => nodes[inner_id].kind = nodes[bridge].kind.clone(),
+                            26 => nodes[inner_bridge].anchor = nodes[inner_id].anchor.clone(),
+                            27 => nodes[inner_id].recovery = NodeRecoveryState::Degraded,
+                            28 => {
+                                nodes[outer].children.remove(1);
+                            }
+                            29 => nodes[outer]
+                                .children
+                                .push(mizar_checker::typed_ast::TypedNodeId::new(bridge)),
+                            30 => {
+                                nodes[outer].children[1] =
+                                    mizar_checker::typed_ast::TypedNodeId::new(inner_bridge)
+                            }
+                            31 => {
+                                nodes[inner.children[2].index()].kind =
+                                    nodes[inner.children[0].index()].kind.clone()
+                            }
+                            32 => {
+                                nodes[shell.children[0].index()].recovery =
+                                    NodeRecoveryState::Degraded
+                            }
+                            _ => unreachable!(),
+                        };
                     }
                     _ => unreachable!(),
                 }
@@ -2423,7 +2680,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                         &changed,
                     )
                     .is_err(),
-                    "Primary source chain mutation {mutation} admitted by C2"
+                    "Primary/Set source chain mutation {mutation} admitted by C2"
                 );
                 let changed_typed = TypedAst::try_new(TypedAstParts {
                     source_id: typed.source_id(),
@@ -2445,16 +2702,24 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 .expect("standalone Primary retains metadata-only installation")
                 .with_source_application(application.clone())
                 .unwrap()
-                .with_source_set_term(sets.clone())
-                .unwrap()
-                .with_source_atomic_formula(atomic.clone())
-                .unwrap();
+                .with_source_set_term(sets.clone());
+                if grouped_set && matches!(mutation, 19 | 20 | 21 | 25 | 27) {
+                    assert!(
+                        changed_typed.is_err(),
+                        "Set wrapper metadata mutation {mutation} admitted by Set lower"
+                    );
+                    continue;
+                }
+                let changed_typed = changed_typed
+                    .unwrap_or_else(|error| panic!("source chain mutation {mutation}: {error:?}"))
+                    .with_source_atomic_formula(atomic.clone())
+                    .unwrap();
                 assert!(
                     changed_typed
                         .clone()
                         .with_source_condition_formula_composition(composition.clone())
                         .is_err(),
-                    "Primary source chain mutation {mutation} admitted by Typed C2 replay"
+                    "Primary/Set source chain mutation {mutation} admitted by Typed C2 replay"
                 );
                 assert!(
                     changed_typed
@@ -2465,7 +2730,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             assert_eq!(
                 build(input.clone()).unwrap(),
                 composition,
-                "Primary source-chain pristine replay"
+                "Primary/Set source-chain pristine replay"
             );
         }
         let installed = typed_with_application
@@ -2701,10 +2966,6 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     for (label, source) in [
         ("grouped Primary", grouped_primary),
         ("composite inequality", composite_inequality),
-        (
-            "wrapped condition Enumeration",
-            original.replace(": z in A", ": (z) in ({ A })"),
-        ),
         (
             "condition Comprehension operand",
             original.replace(": z in A", ": (z) in { A where w is object }"),

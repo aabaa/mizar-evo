@@ -2651,10 +2651,10 @@ fn validate_set_term_ownership(
             && (input.terms[index].kind != SourceSetTermKind::Enumeration
                 || parent
                     .is_none_or(|parent| input.terms[parent].context != input.terms[index].context)
-                || input
-                    .wrappers
-                    .iter()
-                    .any(|wrapper| wrapper.term == SourceSetTermId::new(index)))
+                || input.wrappers.iter().any(|wrapper| {
+                    wrapper.term == SourceSetTermId::new(index)
+                        && wrapper.recovery != SourceSetTermRecovery::Normal
+                }))
         {
             return Err(SourceSetTermError::InvalidTerm {
                 term: SourceSetTermId::new(index),
@@ -4854,6 +4854,52 @@ mod tests {
             validate_set_term_ownership(&foreign_context, &effective),
             Err(SourceSetTermError::InvalidTerm { term }) if term == SourceSetTermId::new(1)
         ));
+
+        let mut wrapped = fixture.input.clone();
+        let wrapper_range = range(source, 43, 48);
+        wrapped.terms[0].spelling = "{ x where candidate is set : x = ( { } ) }".into();
+        wrapped.conditions[0].source_range = range(source, 40, 48);
+        wrapped.conditions[0].spelling = "x = ( { } )".into();
+        wrapped.wrappers.push(SourceSetWrapperInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            site: node(2),
+            source_range: wrapper_range,
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: "( { } )".into(),
+        });
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[2] = TypedNode::new(
+            "source.term.set.parenthesized",
+            SourceAnchor::Range(wrapper_range),
+        )
+        .with_children(vec![node(10).node()]);
+        nodes[8].anchor = SourceAnchor::Range(wrapped.conditions[0].source_range);
+        nodes[9].anchor = SourceAnchor::Range(wrapped.conditions[0].source_range);
+        nodes[9].children = vec![node(1).node(), node(2).node()];
+        let arena = TypedArena::try_new(None, nodes.clone()).unwrap();
+        SourceSetTermProducer::build(
+            wrapped.clone(),
+            &fixture.bindings,
+            &fixture.primary,
+            None,
+            None,
+            &arena,
+        )
+        .expect("standalone Set retains wrapper metadata guarantee");
+        wrapped.wrappers[0].recovery = SourceSetTermRecovery::Degraded;
+        nodes[2].recovery = NodeRecoveryState::Degraded;
+        let arena = TypedArena::try_new(None, nodes).unwrap();
+        assert!(
+            matches!(SourceSetTermProducer::build(wrapped, &fixture.bindings, &fixture.primary,
+            None, None, &arena), Err(SourceSetTermError::InvalidTerm { term })
+                if term == SourceSetTermId::new(1))
+        );
     }
 
     #[test]

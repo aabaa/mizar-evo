@@ -1796,13 +1796,6 @@ fn validate_condition_transaction(
             }) else {
                 continue;
             };
-            if set_terms
-                .wrappers()
-                .iter()
-                .any(|(_, wrapper)| wrapper.term() == id)
-            {
-                return Err(invalid);
-            }
             let association = input
                 .edges
                 .iter()
@@ -1831,10 +1824,60 @@ fn validate_condition_transaction(
             let slot = slots
                 .get(operand.ordinal())
                 .ok_or_else(|| invalid.clone())?;
+            let mut effective_site = root.site().node();
+            let mut effective_range = root.source_range();
+            let wrappers = set_terms
+                .wrappers()
+                .iter()
+                .filter(|(_, wrapper)| wrapper.term() == id)
+                .collect::<Vec<_>>();
+            for (_, wrapper) in wrappers.into_iter().rev() {
+                let shell = arena
+                    .node(wrapper.site().node())
+                    .ok_or_else(|| invalid.clone())?;
+                let [open, bridge, close] = shell.children.as_slice() else {
+                    return Err(invalid);
+                };
+                let bridge = arena.node(*bridge).ok_or_else(|| invalid.clone())?;
+                if bridge.kind.as_str() != "TermExpression"
+                    || bridge.recovery != NodeRecoveryState::Normal
+                    || bridge.anchor != SourceAnchor::Range(effective_range)
+                    || bridge.children.as_slice() != [effective_site]
+                {
+                    return Err(invalid);
+                }
+                let range = wrapper.source_range();
+                for (site, kind, start, end) in [
+                    (
+                        *open,
+                        r#"Token(SurfaceToken { kind: ReservedSymbol, text: "(" })"#,
+                        range.start,
+                        range.start + 1,
+                    ),
+                    (
+                        *close,
+                        r#"Token(SurfaceToken { kind: ReservedSymbol, text: ")" })"#,
+                        range.end - 1,
+                        range.end,
+                    ),
+                ] {
+                    let token = arena.node(site).ok_or_else(|| invalid.clone())?;
+                    if token.kind.as_str() != kind
+                        || !token.children.is_empty()
+                        || token.recovery != NodeRecoveryState::Normal
+                        || !matches!(&token.anchor, SourceAnchor::Range(anchor)
+                            if anchor.source_id == range.source_id && anchor.start == start && anchor.end == end)
+                    {
+                        return Err(invalid);
+                    }
+                }
+                effective_site = wrapper.site().node();
+                effective_range = range;
+            }
             if slots.len() != 2
                 || slot.recovery != NodeRecoveryState::Normal
-                || slot.anchor != SourceAnchor::Range(root.source_range())
-                || slot.children.as_slice() != [root.site().node()]
+                || slot.anchor != SourceAnchor::Range(effective_range)
+                || slot.children.as_slice() != [effective_site]
             {
                 return Err(invalid);
             }
