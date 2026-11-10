@@ -37,7 +37,10 @@ line, state "no findings" explicitly, and report optional polish separately.
 Excess is a finding of the same rank as a gap. "No findings" means no
 unresolved blocking or high finding; medium findings are fixed or deferred with
 a reason. Repeat a review phase after fixes until it reports no findings or the
-user accepts a remaining issue.
+user accepts a remaining issue, with at most two finding-specific re-reviews
+per phase. After the second, the parent decides each remaining finding itself:
+fix it, defer it with a reason, or escalate it to the user. A further reviewer
+round is not the default.
 
 ## Authority Order
 
@@ -477,6 +480,16 @@ newly affected requirements. Any authority ambiguity,
 semantic choice, public-API expansion, lower-stage change, or soundness issue
 returns to the parent agent at the user's requested reasoning setting.
 
+The parent's context is re-sent with every request, so the parent keeps it
+small:
+
+- Locate with `rg -n` and read bounded line ranges. Never print a whole large
+  source, test, or log file; read logs through failure markers or `tail`.
+- Delegate broad inventories to a deterministic-inventory sub-agent that
+  returns conclusions, not file dumps.
+- Wait on a background long test with one blocking wait on its process, not
+  repeated log polling.
+
 ## Volume And Scope Review
 
 Every review sequence, full or light tier, includes one independent volume and
@@ -660,6 +673,14 @@ shape (same owner module and consumer, no exact-profile or baseline-row
 retirement, each under about thirty production lines) are not separate
 tasks: bundle three to five of them into one pattern-tier task with one
 review pair and one commit, and give each its own ledger row.
+
+Within a family that has a completed full-tier predecessor, the next slice is
+pattern tier by default. Declaring it full tier requires naming the specific
+pattern criterion above that it fails. Any of these qualifies: a new owner
+module, consumer, refusal class, public seam, or semantic credit, or a protected
+surface. Calling the slice an "extension", caution, or a large test plan does
+not qualify. Before starting a slice, compare the next open ledger candidates
+for identical shape and bundle them under the rule above.
 
 Pattern-tier requirements (all mandatory):
 
@@ -919,9 +940,16 @@ and effort without repeated confirmation, using these routes and
 
 Sub-agents escalate specification gaps, disputed semantics/findings, scope
 expansion, and lower-stage changes to the parent without unauthorized edits;
-they must not invent semantics or derive new test intent. Broaden routes or
-raise effort only after representative repository trials against one lower
-setting compare success, missed findings, repair loops, gate agreement,
+they must not invent semantics or derive new test intent.
+
+Sub-agent lifecycle: start each sub-agent from a fresh packet for one review
+phase or one implementation packet of one task. Close it once the parent has
+integrated its result, and never reuse it for a later task. Only the parent
+delegates; sub-agents do not spawn sub-agents. Replace a sub-agent that needs
+compaction with a fresh one holding a narrower packet.
+
+Broaden routes or raise effort only after representative repository trials
+against one lower setting compare success, missed findings, repair loops, gate agreement,
 tokens, latency, and cost. Do not routinely use `max`.
 
 If a model is unavailable, use the closest eligible route. Without model

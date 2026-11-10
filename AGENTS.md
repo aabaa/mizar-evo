@@ -65,7 +65,19 @@ For migrations, also read `doc/design/documentation_compaction_rules.md`.
 The parent owns orchestration, integration, final verification, staging, and
 committing. Follow [model routing](doc/design/autonomous_crate_development.md#delegation-and-model-routing)
 and give each sub-agent a self-contained [review packet](doc/design/autonomous_crate_development.md#economical-review-packets)
-with a clear write scope and no pre-stated conclusion.
+with a clear write scope and no pre-stated conclusion. Each sub-agent serves
+one review phase or implementation packet of one task: close it after
+integration, never reuse it for a later task, and never let it spawn its own
+sub-agents. Each review phase gets at most two re-reviews, after which the
+parent decides. Keep the parent context small: locate with `rg -n`, read
+bounded ranges, and never print whole large files or logs (protocol:
+"Economical Review Packets", "Sub-agent lifecycle").
+
+Run read-only commands such as `rg`, `sed`, `cat`, and `git diff/status/log`
+inside the sandbox. Request escalation only for a command that failed there for
+a permission reason, never preemptively. If the sandbox itself cannot start
+(for example `bwrap: loopback: Failed RTM_NEWADDR`), report it to the user
+once; do not treat escalating every command as normal operation.
 
 After each task commit, save a concise checkpoint: commit, uncommitted changes,
 next scope, authority/contract paths, unresolved issues, and verification state
