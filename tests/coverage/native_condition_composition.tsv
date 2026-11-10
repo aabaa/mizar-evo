@@ -9,3 +9,4 @@ set-operand-grouping	CHECKER257C-NATIVE-CONDITION-COMPOSITION	enumeration-wrappe
 inequality	CHECKER257C-NATIVE-CONDITION-COMPOSITION	set-operand-grouping	implemented	full-tier direct written Inequality authentication; no negation or proof credit
 grouped-conditions	CHECKER257C-NATIVE-CONDITION-COMPOSITION	inequality	implemented	full-tier actual transparent builtin-condition wrapper-chain authentication
 condition-primary-groups	CHECKER257C-NATIVE-CONDITION-COMPOSITION	grouped-conditions	implemented	full-tier sealed variable Primary groups in actual condition operand slots; C2 physical replay
+set-primary-groups	CHECKER257C-NATIVE-CONDITION-COMPOSITION	condition-primary-groups	implemented	full-tier actual mapper/Enumeration Primary root slots and physical C2 replay

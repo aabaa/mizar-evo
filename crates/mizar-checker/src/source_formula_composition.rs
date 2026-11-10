@@ -1724,16 +1724,60 @@ fn validate_condition_transaction(
                 let (_, child) = children.next().ok_or_else(|| invalid.clone())?;
                 if children.next().is_some()
                     || crate::source_term::validate_term_node(term, arena, Some(child)).is_err()
-                    || (term.parent().is_none()
-                        && !atomic_formulas.edges().iter().any(|(_, edge)| {
-                            edge.target() == SourceAtomicTermTarget::Primary(id)
-                                && input
-                                    .edges
-                                    .iter()
-                                    .any(|condition| condition.formula == edge.formula())
-                        }))
                 {
                     return Err(invalid);
+                }
+                if term.parent().is_none()
+                    && !atomic_formulas.edges().iter().any(|(_, edge)| {
+                        edge.target() == SourceAtomicTermTarget::Primary(id)
+                            && input
+                                .edges
+                                .iter()
+                                .any(|condition| condition.formula == edge.formula())
+                    })
+                {
+                    let (_, edge) = set_terms
+                        .edges()
+                        .iter()
+                        .find(|(_, edge)| edge.target() == SourceSetTarget::Primary(id))
+                        .ok_or_else(|| invalid.clone())?;
+                    let owner = set_terms
+                        .terms()
+                        .get(edge.term())
+                        .ok_or_else(|| invalid.clone())?;
+                    if !matches!(
+                        (owner.kind(), edge.role()),
+                        (
+                            SourceSetTermKind::Comprehension,
+                            SourceSetEdgeRole::ComprehensionMapper
+                        ) | (
+                            SourceSetTermKind::Enumeration,
+                            SourceSetEdgeRole::EnumerationElement
+                        )
+                    ) {
+                        return Err(invalid);
+                    }
+                    let slots = arena
+                        .node(owner.site().node())
+                        .ok_or_else(|| invalid.clone())?
+                        .children
+                        .iter()
+                        .filter_map(|id| arena.node(*id))
+                        .filter(|node| node.kind.as_str() == "TermExpression")
+                        .collect::<Vec<_>>();
+                    let slot = slots.get(edge.ordinal()).ok_or_else(|| invalid.clone())?;
+                    if slots.len()
+                        != set_terms
+                            .edges()
+                            .iter()
+                            .filter(|(_, row)| row.term() == edge.term())
+                            .count()
+                        || slot.recovery != NodeRecoveryState::Normal
+                        || slot.anchor != SourceAnchor::Range(term.source_range())
+                        || slot.children.as_slice() != [term.site().node()]
+                    {
+                        return Err(invalid);
+                    }
                 }
             }
         }

@@ -1866,12 +1866,22 @@ fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     if ast.nodes().iter().any(|node| node.recovered) {
         return Err("membership surface AST contains recovery".to_owned());
     }
-    let conditions = ast
+    let containers = ast
         .nodes()
         .iter()
-        .filter(|node| matches!(node.kind, SurfaceNodeKind::SetComprehension))
+        .filter(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::SetComprehension | SurfaceNodeKind::SetEnumeration
+            )
+        })
         .flat_map(|node| node.children.iter().filter_map(|child| ast.node(*child)))
-        .filter(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
+        .filter(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::FormulaExpression | SurfaceNodeKind::TermExpression
+            )
+        })
         .map(|node| node.range)
         .collect::<Vec<_>>();
     let mut nodes: Vec<_> = ast
@@ -1895,7 +1905,7 @@ fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
         .collect();
     for (index, node) in ast.nodes().iter().enumerate() {
         if !matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)
-            || !conditions
+            || !containers
                 .iter()
                 .any(|range| range.start <= node.range.start && node.range.end <= range.end)
         {
