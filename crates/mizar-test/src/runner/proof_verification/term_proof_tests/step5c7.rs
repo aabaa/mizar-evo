@@ -546,6 +546,87 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             vec!["(z in A)"],
         ),
     ]);
+    for (header_label, proof_label, both_label, grouped) in [
+        (
+            "primary condition left header",
+            "primary condition left proof",
+            "primary condition left",
+            "(z) in A",
+        ),
+        (
+            "primary condition right header",
+            "primary condition right proof",
+            "primary condition right",
+            "z in (A)",
+        ),
+        (
+            "primary condition inequality header",
+            "primary condition inequality proof",
+            "primary condition inequality",
+            "((z)) <> (A)",
+        ),
+        (
+            "primary condition equality header",
+            "primary condition equality proof",
+            "primary condition equality",
+            "(z) = (A)",
+        ),
+        (
+            "primary condition formula header",
+            "primary condition formula proof",
+            "primary condition formula",
+            "((z) in (A))",
+        ),
+    ] {
+        cases.push((
+            header_label,
+            original.replacen(": z in A", &format!(": {grouped}"), 1),
+            2,
+            vec![grouped, "z in A"],
+        ));
+        let mut proof = original.clone();
+        let last = proof.rfind(": z in A").unwrap();
+        proof.replace_range(last..last + ": z in A".len(), &format!(": {grouped}"));
+        cases.push((proof_label, proof, 2, vec!["z in A", grouped]));
+        cases.push((
+            both_label,
+            original.replace(": z in A", &format!(": {grouped}")),
+            2,
+            vec![grouped],
+        ));
+    }
+    cases.push((
+        "primary condition Set",
+        original
+            .replace(set_literal, &format!("({set_literal})"))
+            .replace(": z in A", ": (z) in A"),
+        2,
+        vec!["(z) in A"],
+    ));
+    cases.extend([
+        (
+            "primary condition alpha",
+            original
+                .replace(": z in A", ": ((q)) in (A)")
+                .replace("z where z", "q where q"),
+            2,
+            vec!["((q)) in (A)"],
+        ),
+        (
+            "primary condition layout",
+            original.replace(": z in A", ": (  z  ) in ( A )"),
+            2,
+            vec!["(  z  ) in ( A )"],
+        ),
+        (
+            "primary condition-free sibling",
+            original
+                .replacen(" : z in A", "", 1)
+                .replace(": z in A", ": (z) in A"),
+            1,
+            vec!["(z) in A"],
+        ),
+    ]);
     let mut foreign_lower = None;
     let mut foreign_composition: Option<
         mizar_checker::source_formula_composition::SourceConditionFormulaCompositionHandoff,
@@ -558,6 +639,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             || label.starts_with("grouped membership")
             || label.starts_with("nested ")
             || label == "outside grouped membership"
+            || label.starts_with("primary condition")
         {
             let frontend = super::super::super::formula_statement::step5c8_test_frontend(&source);
             assert!(
@@ -588,10 +670,126 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             &scope,
             &bindings,
         )
-        .unwrap();
+        .unwrap_or_else(|error| panic!("{label}: {error}"));
         let primary = typed.source_term().unwrap();
         let sets = typed.source_set_term().unwrap();
         let atomic = typed.source_atomic_formula().unwrap();
+        if label.starts_with("primary condition") {
+            use mizar_checker::source_term::{
+                SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole,
+                SourcePrimaryTermRole,
+            };
+            assert!(primary.numeric_type_requests().is_empty());
+            assert_eq!(primary.references().len(), scope.references().len());
+            for ((_, reference), actual) in primary.references().iter().zip(scope.references()) {
+                let leaf = primary.terms().get(reference.term()).unwrap();
+                assert_eq!(leaf.kind(), SourcePrimaryTermKind::VariableReference);
+                assert_eq!(leaf.site().node().index(), actual.node().index());
+                assert_eq!(leaf.source_range(), actual.range());
+                assert_eq!(leaf.spelling(), actual.spelling());
+                assert_eq!(reference.binding().index(), actual.binding().index());
+                assert_eq!(reference.lexical_scope(), Some(actual.scope()));
+                assert_eq!(reference.use_ordinal(), actual.ordinal());
+                assert_eq!(reference.role(), SourcePrimaryTermReferenceRole::Variable);
+            }
+            let groups = ast
+                .node_views()
+                .filter(|view| matches!(view.kind(), SurfaceNodeKind::ParenthesizedTerm))
+                .filter(|view| {
+                    condition_texts.iter().any(|text| {
+                        source.match_indices(*text).any(|(start, _)| {
+                            source[..start].trim_end().ends_with(':')
+                                && start <= view.range().start
+                                && view.range().end <= start + text.len()
+                        })
+                    })
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                primary.terms().len(),
+                scope.references().len() + groups.len()
+            );
+            for (id, term) in primary.terms().iter() {
+                assert_eq!(id.index(), term.source_ordinal());
+                assert_eq!(term.role(), SourcePrimaryTermRole::Value);
+                assert_eq!(term.recovery(), SourcePrimaryTermRecovery::Normal);
+                assert_eq!(
+                    term.context(),
+                    mizar_checker::binding_env::BindingContextId::new(0)
+                );
+                if let Some(parent) = term.parent() {
+                    assert!(parent.index() < id.index());
+                }
+            }
+            for group in groups {
+                let shell = ast.node(group.id()).unwrap();
+                assert!(!shell.recovered);
+                assert_eq!(
+                    shell
+                        .children
+                        .iter()
+                        .filter_map(|child| ast.node(*child).unwrap().token_text())
+                        .collect::<Vec<_>>(),
+                    ["(", ")"]
+                );
+                let bridges = shell
+                    .children
+                    .iter()
+                    .filter_map(|child| {
+                        let node = ast.node(*child).unwrap();
+                        (!matches!(node.kind, SurfaceNodeKind::Token(_))).then_some(node)
+                    })
+                    .collect::<Vec<_>>();
+                let [bridge] = bridges.as_slice() else {
+                    panic!("actual Primary sole expression bridge")
+                };
+                assert!(matches!(bridge.kind, SurfaceNodeKind::TermExpression));
+                assert!(!bridge.recovered);
+                let [child_id] = bridge.children.as_slice() else {
+                    panic!("actual Primary sole child")
+                };
+                let child = ast.node(*child_id).unwrap();
+                assert_eq!(bridge.range, child.range);
+                let (parent_id, parent) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site().node().index() == group.id().index())
+                    .expect("actual Primary parent row");
+                let (child_id, child_term) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site().node().index() == child_id.index())
+                    .expect("actual Primary child row");
+                assert_eq!(parent.kind(), SourcePrimaryTermKind::Parenthesized);
+                assert_eq!(parent.source_range(), shell.range);
+                assert_eq!(
+                    parent.spelling(),
+                    source[shell.range.start..shell.range.end]
+                        .replace('(', " ( ")
+                        .replace(')', " ) ")
+                        .split_whitespace()
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                );
+                assert_eq!(child_term.parent(), Some(parent_id));
+                assert!(parent_id.index() < child_id.index());
+                assert_eq!(child_term.context(), parent.context());
+                assert!(
+                    primary
+                        .references()
+                        .iter()
+                        .all(|(_, reference)| reference.term() != parent_id)
+                );
+                assert_eq!(
+                    primary
+                        .terms()
+                        .iter()
+                        .filter(|(_, term)| term.parent() == Some(parent_id))
+                        .count(),
+                    1
+                );
+            }
+        }
         if matches!(
             label,
             "multiple generators"
@@ -1263,8 +1461,12 @@ fn step5c7_native_condition_composition_replays_source_membership() {
             assert_eq!(condition.spelling(), canonical);
             assert_eq!(
                 atomic_row.spelling(),
-                condition_text
-                    .trim_matches(|ch: char| ch == '(' || ch == ')' || ch.is_whitespace())
+                source[formula.range.start..formula.range.end]
+                    .replace('(', " ( ")
+                    .replace(')', " ) ")
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
             );
             assert_eq!(atomic_row.recovery(), SourceAtomicFormulaRecovery::Normal);
             for (ordinal, shell_id) in shells.into_iter().enumerate() {
@@ -1304,6 +1506,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 || label.starts_with("grouped equality")
                 || label.starts_with("grouped membership")
                 || label.starts_with("nested ")
+                || label.starts_with("primary condition")
             {
                 let operands = formula
                     .children
@@ -1318,9 +1521,15 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                     let target = primary
                         .terms()
                         .iter()
-                        .find(|(_, term)| term.source_range() == operand)
-                        .expect("written inequality operand")
-                        .0;
+                        .find(|(_, term)| term.parent().is_none() && term.source_range() == operand)
+                        .map(|(id, _)| SourceAtomicTermTarget::Primary(id))
+                        .or_else(|| {
+                            sets.terms()
+                                .iter()
+                                .find(|(_, term)| term.source_range() == operand)
+                                .map(|(id, _)| SourceAtomicTermTarget::SetTerm(id))
+                        })
+                        .expect("actual written operand root");
                     let edge = atomic.edges().get(formula_edges[ordinal]).unwrap();
                     assert_eq!(edge.ordinal(), ordinal);
                     assert_eq!(
@@ -1331,7 +1540,7 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                             SourceAtomicEdgeRole::BuiltinRightOperand
                         }
                     );
-                    assert_eq!(edge.target(), SourceAtomicTermTarget::Primary(target));
+                    assert_eq!(edge.target(), target);
                 }
             }
             let formula_requests = atomic
@@ -1692,6 +1901,103 @@ fn step5c7_native_condition_composition_replays_source_membership() {
                 "source-chain pristine replay"
             );
         }
+        if label == "primary condition inequality" {
+            use mizar_checker::{
+                source_term::SourcePrimaryTermKind,
+                typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedAstParts},
+            };
+            let (_, group) = primary
+                .terms()
+                .iter()
+                .find(|(_, term)| term.kind() == SourcePrimaryTermKind::Parenthesized)
+                .unwrap();
+            let shell = ast.nodes().get(group.site().node().index()).unwrap();
+            let bridge_id = shell
+                .children
+                .iter()
+                .copied()
+                .find(|child| {
+                    matches!(
+                        ast.node(*child).unwrap().kind,
+                        SurfaceNodeKind::TermExpression
+                    )
+                })
+                .unwrap();
+            let child = ast.node(bridge_id).unwrap().children[0];
+            for mutation in 0..4 {
+                let mut nodes = typed
+                    .nodes()
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                match mutation {
+                    0 => nodes[bridge_id.index()].children.clear(),
+                    1 => nodes[bridge_id.index()]
+                        .children
+                        .push(mizar_checker::typed_ast::TypedNodeId::new(child.index())),
+                    2 => nodes[bridge_id.index()].recovery = NodeRecoveryState::Degraded,
+                    3 => {
+                        nodes[shell.children[2].index()].kind =
+                            nodes[shell.children[0].index()].kind.clone()
+                    }
+                    _ => unreachable!(),
+                }
+                let changed = TypedArena::try_new(typed.nodes().root(), nodes).unwrap();
+                assert!(
+                    SourceConditionFormulaCompositionProducer::build(
+                        input.clone(),
+                        primary,
+                        &application,
+                        sets,
+                        atomic,
+                        &changed,
+                    )
+                    .is_err(),
+                    "Primary source chain mutation {mutation} admitted by C2"
+                );
+                let changed_typed = TypedAst::try_new(TypedAstParts {
+                    source_id: typed.source_id(),
+                    module_id: typed.module_id().clone(),
+                    resolved_root: typed.resolved_root(),
+                    source_context: typed.source_context().cloned(),
+                    source_type: typed.source_type().cloned(),
+                    source_attribute: typed.source_attribute().cloned(),
+                    nodes: changed,
+                    contexts: typed.contexts().clone(),
+                    types: typed.types().clone(),
+                    facts: typed.facts().clone(),
+                    coercions: typed.coercions().clone(),
+                    initial_obligations: typed.initial_obligations().clone(),
+                    diagnostics: typed.diagnostics().clone(),
+                })
+                .unwrap()
+                .with_source_term(primary.clone())
+                .expect("standalone Primary retains metadata-only installation")
+                .with_source_application(application.clone())
+                .unwrap()
+                .with_source_set_term(sets.clone())
+                .unwrap()
+                .with_source_atomic_formula(atomic.clone())
+                .unwrap();
+                assert!(
+                    changed_typed
+                        .clone()
+                        .with_source_condition_formula_composition(composition.clone())
+                        .is_err(),
+                    "Primary source chain mutation {mutation} admitted by Typed C2 replay"
+                );
+                assert!(
+                    changed_typed
+                        .source_condition_formula_composition()
+                        .is_none()
+                );
+            }
+            assert_eq!(
+                build(input.clone()).unwrap(),
+                composition,
+                "Primary source-chain pristine replay"
+            );
+        }
         let installed = typed_with_application
             .clone()
             .with_source_condition_formula_composition(composition.clone())
@@ -1734,7 +2040,8 @@ fn step5c7_native_condition_composition_replays_source_membership() {
         assert!(final_ast.checked_formulas().is_empty());
         assert!(final_ast.statement_semantics().is_empty());
         assert!(final_ast.checked_proofs().is_empty());
-        if !expected_wrappers.is_empty()
+        if label.starts_with("primary condition")
+            || !expected_wrappers.is_empty()
             || matches!(
                 label,
                 "original"
@@ -1924,6 +2231,10 @@ fn step5c7_native_condition_composition_replays_source_membership() {
     for (label, source) in [
         ("grouped Primary", grouped_primary),
         ("composite inequality", composite_inequality),
+        (
+            "condition Set operand",
+            original.replace(": z in A", ": (z) in { A }"),
+        ),
     ] {
         let ast = parse(&source);
         let symbols = resolver_symbol_collection(root, case, &ast);

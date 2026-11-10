@@ -1582,16 +1582,28 @@ fn validate_condition_transaction(
     if !primary_terms.references().is_empty() {
         let invalid = SourceConditionFormulaCompositionError::DependencyMismatch;
         if !primary_terms.numeric_type_requests().is_empty()
-            || primary_terms.references().len() != primary_terms.terms().len()
+            || primary_terms.references().len()
+                != primary_terms
+                    .terms()
+                    .iter()
+                    .filter(|(_, term)| term.kind() == SourcePrimaryTermKind::VariableReference)
+                    .count()
+            || primary_terms.terms().iter().any(|(_, term)| {
+                !matches!(
+                    term.kind(),
+                    SourcePrimaryTermKind::VariableReference | SourcePrimaryTermKind::Parenthesized
+                ) || term.role() != SourcePrimaryTermRole::Value
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+            })
             || primary_terms
                 .terms()
                 .iter()
+                .filter(|(_, term)| term.kind() == SourcePrimaryTermKind::VariableReference)
                 .zip(primary_terms.references().iter())
                 .any(|((id, term), (_, reference))| {
                     term.kind() != SourcePrimaryTermKind::VariableReference
                         || term.role() != SourcePrimaryTermRole::Value
                         || term.recovery() != SourcePrimaryTermRecovery::Normal
-                        || term.parent().is_some()
                         || reference.term() != id
                         || reference.role() != SourcePrimaryTermReferenceRole::Variable
                 })
@@ -1692,6 +1704,37 @@ fn validate_condition_transaction(
                 return Err(SourceConditionFormulaCompositionError::InvalidEdge {
                     edge: SourceConditionFormulaEdgeId::new(condition_id.index()),
                 });
+            }
+        }
+        for (id, term) in primary_terms.terms().iter() {
+            if let Some(parent) = term.parent()
+                && (parent.index() >= id.index()
+                    || !primary_terms.terms().get(parent).is_some_and(|row| {
+                        row.kind() == SourcePrimaryTermKind::Parenthesized
+                            && row.context() == term.context()
+                    }))
+            {
+                return Err(invalid);
+            }
+            if term.kind() == SourcePrimaryTermKind::Parenthesized {
+                let mut children = primary_terms
+                    .terms()
+                    .iter()
+                    .filter(|(_, row)| row.parent() == Some(id));
+                let (_, child) = children.next().ok_or_else(|| invalid.clone())?;
+                if children.next().is_some()
+                    || crate::source_term::validate_term_node(term, arena, Some(child)).is_err()
+                    || (term.parent().is_none()
+                        && !atomic_formulas.edges().iter().any(|(_, edge)| {
+                            edge.target() == SourceAtomicTermTarget::Primary(id)
+                                && input
+                                    .edges
+                                    .iter()
+                                    .any(|condition| condition.formula == edge.formula())
+                        }))
+                {
+                    return Err(invalid);
+                }
             }
         }
         if atomic_formulas.wrappers().iter().any(|(_, wrapper)| {
@@ -13032,6 +13075,28 @@ pub(crate) mod tests {
             .find("source-condition-formula-composition-debug-v1")
             .expect("condition/formula debug");
         assert!(atomic < condition);
+
+        let mut stale = installed.clone();
+        let mut stale_composition = composition.clone();
+        stale_composition.primary_term_fingerprint.push('!');
+        stale.inject_source_condition_formula_composition_for_test(stale_composition);
+        assert_eq!(
+            ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: &stale,
+                cluster_facts: &cluster_facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &specificity,
+                overload_selection: &selection,
+                expressions: Vec::new(),
+                node_hints: Vec::new(),
+                statement_semantics: None,
+                statement_proofs: None,
+            })
+            .expect_err("final assembly must revalidate the installed C2 dependency"),
+            ResolvedTypedAstError::InvalidSourceConditionFormulaComposition
+        );
 
         let mut orphaned = installed;
         orphaned.remove_source_condition_formula_composition_for_test();

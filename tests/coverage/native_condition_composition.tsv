@@ -8,3 +8,4 @@ enumeration-wrappers	CHECKER257C-NATIVE-CONDITION-COMPOSITION	enumeration-mapper
 set-operand-grouping	CHECKER257C-NATIVE-CONDITION-COMPOSITION	enumeration-wrappers	implemented	actual grouped Atomic Set operands and effective-wrapper lookup
 inequality	CHECKER257C-NATIVE-CONDITION-COMPOSITION	set-operand-grouping	implemented	full-tier direct written Inequality authentication; no negation or proof credit
 grouped-conditions	CHECKER257C-NATIVE-CONDITION-COMPOSITION	inequality	implemented	full-tier actual transparent builtin-condition wrapper-chain authentication
+condition-primary-groups	CHECKER257C-NATIVE-CONDITION-COMPOSITION	grouped-conditions	implemented	full-tier sealed variable Primary groups in actual condition operand slots; C2 physical replay

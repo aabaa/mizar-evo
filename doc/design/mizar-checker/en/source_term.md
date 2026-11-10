@@ -1,8 +1,12 @@
 # Source Primary-Term Handoff
 
-`build_from_occurrences` authenticates complete primary-reference coverage against a sealed resolver
-scope and its module-context binding projection. It preserves lexical scope and source order;
-this separate entry does not weaken the legacy producer's declaration-point checks.
+`build_from_occurrences` authenticates complete variable-leaf reference coverage against a sealed resolver
+scope and its module-context binding projection. Normal Value parentheses retain their actual physical
+TermExpression/parenthesis chain, with references only on sealed leaves and Resolver clocks independent
+of expanded Primary IDs. The existing node validator also checks an optional authenticated child for
+construction and [native C2 replay](source_formula_composition.md#variable-reference-condition-associations).
+Generic producers and standalone Primary installation retain their node-level metadata guarantee;
+this entry does not weaken legacy declaration-point checks or create a source receipt.
 
 > Canonical language: English. Japanese companion:
 > [../ja/source_term.md](../ja/source_term.md).

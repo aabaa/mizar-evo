@@ -1389,6 +1389,13 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 .ok_or_else(|| "membership operand disappeared".to_owned())?;
             match node.kind {
                 SurfaceNodeKind::TermReference => primary_target(&primary, node.range),
+                SurfaceNodeKind::ParenthesizedTerm
+                    if primary.terms().iter().any(|(_, row)| {
+                        row.parent().is_none() && row.source_range() == node.range
+                    }) =>
+                {
+                    primary_target(&primary, node.range)
+                }
                 SurfaceNodeKind::SetEnumeration
                 | SurfaceNodeKind::SetComprehension
                 | SurfaceNodeKind::ParenthesizedTerm => set_target(&set_handoff, node.range),
@@ -1859,7 +1866,15 @@ fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     if ast.nodes().iter().any(|node| node.recovered) {
         return Err("membership surface AST contains recovery".to_owned());
     }
-    let nodes = ast
+    let conditions = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::SetComprehension))
+        .flat_map(|node| node.children.iter().filter_map(|child| ast.node(*child)))
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
+        .map(|node| node.range)
+        .collect::<Vec<_>>();
+    let mut nodes: Vec<_> = ast
         .nodes()
         .iter()
         .map(|node| {
@@ -1878,6 +1893,33 @@ fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
                 .with_recovery(NodeRecoveryState::Normal)
         })
         .collect();
+    for (index, node) in ast.nodes().iter().enumerate() {
+        if !matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)
+            || !conditions
+                .iter()
+                .any(|range| range.start <= node.range.start && node.range.end <= range.end)
+        {
+            continue;
+        }
+        let mut core = node;
+        while matches!(
+            core.kind,
+            SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermExpression
+        ) {
+            let children = structural_child_ids(ast, core);
+            let [child] = children.as_slice() else {
+                return Err("unsupported Primary grouping".into());
+            };
+            core = ast.node(*child).ok_or("missing grouped Primary child")?;
+        }
+        if matches!(core.kind, SurfaceNodeKind::TermReference) {
+            nodes[index].kind = "source.term.parenthesized".into();
+            for child in &node.children {
+                let row = ast.node(*child).ok_or("missing Primary group part")?;
+                nodes[child.index()].kind = format!("{:?}", row.kind).into();
+            }
+        }
+    }
     TypedArena::try_new(Some(TypedNodeId::new(root.index())), nodes)
         .map_err(|error| error.to_string())
 }
@@ -1917,20 +1959,59 @@ fn membership_primary_terms(
 ) -> Result<SourcePrimaryTermHandoff, String> {
     let mut terms = Vec::new();
     let mut references = Vec::new();
-    for (ordinal, reference) in scope.references().iter().enumerate() {
+    let parents = ast
+        .node_views()
+        .flat_map(|view| view.children().iter().map(move |child| (*child, view.id())))
+        .collect::<BTreeMap<_, _>>();
+    for reference in scope.references() {
+        let mut cursor = reference.node();
+        let mut groups = Vec::new();
+        while let Some(parent) = parents.get(&cursor) {
+            let node = ast.node(*parent).ok_or("missing Primary ancestor")?;
+            match node.kind {
+                SurfaceNodeKind::TermExpression => {}
+                SurfaceNodeKind::ParenthesizedTerm
+                    if arena
+                        .node(TypedNodeId::new(parent.index()))
+                        .is_some_and(|row| row.kind.as_str() == "source.term.parenthesized") =>
+                {
+                    groups.push(*parent)
+                }
+                _ => break,
+            }
+            cursor = *parent;
+        }
+        let mut parent = None;
+        for site in groups.into_iter().rev() {
+            let node = ast.node(site).ok_or("missing Primary shell")?;
+            let id = SourcePrimaryTermId::new(terms.len());
+            terms.push(SourcePrimaryTermInput {
+                site: surface_site(site),
+                source_range: node.range,
+                source_ordinal: id.index(),
+                context: BindingContextId::new(0),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: surface_text(ast, node),
+                kind: SourcePrimaryTermKind::Parenthesized,
+                role: SourcePrimaryTermRole::Value,
+                parent,
+            });
+            parent = Some(id);
+        }
+        let leaf = SourcePrimaryTermId::new(terms.len());
         terms.push(SourcePrimaryTermInput {
             site: surface_site(reference.node()),
             source_range: reference.range(),
-            source_ordinal: ordinal,
+            source_ordinal: leaf.index(),
             context: BindingContextId::new(0),
             recovery: SourcePrimaryTermRecovery::Normal,
             spelling: reference.spelling().to_owned(),
             kind: SourcePrimaryTermKind::VariableReference,
             role: SourcePrimaryTermRole::Value,
-            parent: None,
+            parent,
         });
         references.push(SourcePrimaryTermReferenceInput {
-            term: SourcePrimaryTermId::new(ordinal),
+            term: leaf,
             binding: BindingId::new(reference.binding().index()),
             role: SourcePrimaryTermReferenceRole::Variable,
         });
@@ -2080,4 +2161,316 @@ fn unique_direct_token(
             "Task256 expected one direct `{spelling}` source token"
         )),
     }
+}
+
+#[cfg(test)]
+#[test]
+fn condition_composition_rejects_genuine_outside_primary_group() {
+    use mizar_checker::{
+        source_application::{
+            SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer,
+        },
+        source_formula_composition::{
+            SourceConditionFormulaCompositionHandoffInput,
+            SourceConditionFormulaCompositionProducer, SourceConditionFormulaEdgeInput,
+        },
+        type_checker::SourceVariableSemanticsChecker,
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::NamespacePath,
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        symbols::SignatureProjectionExtractor,
+    };
+    let original = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../tests/miz/pass/terms/pass_proof_verification_term_comprehension_guarded_001.miz",
+    ))
+    .unwrap();
+    let text = original.replacen("st x in A holds", "st (x) in A holds", 1);
+    let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let module = ModuleId::new(
+        mizar_session::PackageId::new("formula-mutation"),
+        mizar_session::ModulePath::new("formula_mutation"),
+    );
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(collected.diagnostics().is_empty());
+    let symbols = collected.env();
+    let scope = SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+        &ast, &module, symbols,
+    ))
+    .unwrap();
+    let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+    let outside = ast
+        .node_views()
+        .find(|view| matches!(view.kind(), SurfaceNodeKind::ParenthesizedTerm))
+        .unwrap();
+    let group = ast.node(outside.id()).unwrap();
+    assert_eq!(&text[group.range.start..group.range.end], "(x)");
+    let bridges = structural_child_ids(&ast, group);
+    let [bridge_id] = bridges.as_slice() else {
+        panic!("outside Primary bridge")
+    };
+    let bridge = ast.node(*bridge_id).unwrap();
+    assert!(matches!(bridge.kind, SurfaceNodeKind::TermExpression));
+    let leaves = structural_child_ids(&ast, bridge);
+    let [leaf_id] = leaves.as_slice() else {
+        panic!("outside Primary leaf")
+    };
+    let outside_leaf = *leaf_id;
+    let mut nodes = membership_typed_arena(&ast)
+        .unwrap()
+        .iter()
+        .enumerate()
+        .map(|(index, (_, node))| {
+            let mut node = node.clone();
+            if group.children.iter().any(|child| child.index() == index) {
+                node.kind = format!("{:?}", ast.nodes()[index].kind).into();
+            }
+            node
+        })
+        .collect::<Vec<_>>();
+    nodes[outside.id().index()].kind = "source.term.parenthesized".into();
+    let arena =
+        TypedArena::try_new(ast.root().map(|id| TypedNodeId::new(id.index())), nodes).unwrap();
+    let mut terms = Vec::new();
+    let mut references = Vec::new();
+    let mut outside_root = None;
+    for actual in scope.references() {
+        let parent = if actual.node() == outside_leaf {
+            let parent = SourcePrimaryTermId::new(terms.len());
+            terms.push(SourcePrimaryTermInput {
+                site: surface_site(outside.id()),
+                source_range: group.range,
+                source_ordinal: terms.len(),
+                context: BindingContextId::new(0),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: "( x )".into(),
+                kind: SourcePrimaryTermKind::Parenthesized,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            });
+            outside_root = Some(parent);
+            Some(parent)
+        } else {
+            None
+        };
+        let term = SourcePrimaryTermId::new(terms.len());
+        terms.push(SourcePrimaryTermInput {
+            site: surface_site(actual.node()),
+            source_range: actual.range(),
+            source_ordinal: terms.len(),
+            context: BindingContextId::new(0),
+            recovery: SourcePrimaryTermRecovery::Normal,
+            spelling: actual.spelling().into(),
+            kind: SourcePrimaryTermKind::VariableReference,
+            role: SourcePrimaryTermRole::Value,
+            parent,
+        });
+        references.push(SourcePrimaryTermReferenceInput {
+            term,
+            binding: BindingId::new(actual.binding().index()),
+            role: SourcePrimaryTermReferenceRole::Variable,
+        });
+    }
+    let primary = SourcePrimaryTermProducer::build_from_occurrences(
+        SourcePrimaryTermHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            terms,
+            references,
+            numeric_type_requests: vec![],
+        },
+        &bindings,
+        &arena,
+        &scope,
+    )
+    .expect("genuine sealed outside Primary group");
+    let outside_root = outside_root.unwrap();
+    let roots = ast
+        .node_views()
+        .filter(|view| matches!(view.kind(), SurfaceNodeKind::SetComprehension))
+        .map(|view| view.id().index())
+        .collect::<Vec<_>>();
+    let set_output = step5c7_set_output(
+        &ast,
+        module.clone(),
+        bindings.clone(),
+        &roots,
+        SourceTermParts {
+            arena,
+            handoff: primary.clone(),
+        },
+    )
+    .expect("genuine Set lower with outside Primary metadata");
+    let sets = set_output.typed_ast.source_set_term().unwrap();
+    let restored = membership_restore_arena(&ast, set_output.typed_ast.nodes()).unwrap();
+    let mut nodes = restored
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let mut atoms = ast
+        .node_views()
+        .filter(|view| {
+            matches!(view.kind(), SurfaceNodeKind::BuiltinPredicateApplication)
+                && direct_token_texts(&ast, ast.node(view.id()).unwrap()) == ["in"]
+        })
+        .map(|view| view.id())
+        .collect::<Vec<_>>();
+    atoms.sort_by_key(|id| ast.node(*id).unwrap().range.start);
+    let mut formulas = Vec::new();
+    let mut edges = Vec::new();
+    let mut requests = Vec::new();
+    for (ordinal, id) in atoms.into_iter().enumerate() {
+        let node = ast.node(id).unwrap();
+        nodes[id.index()].kind = "source.formula.atomic.membership".into();
+        let formula = SourceAtomicFormulaId::new(ordinal);
+        formulas.push(SourceAtomicFormulaInput {
+            site: surface_site(id),
+            source_range: node.range,
+            source_ordinal: ordinal,
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: surface_text(&ast, node),
+            kind: SourceAtomicFormulaKind::Membership,
+        });
+        for (operand_ordinal, operand) in structural_child_ids(&ast, node).into_iter().enumerate() {
+            let children = structural_child_ids(&ast, ast.node(operand).unwrap());
+            let [child] = children.as_slice() else {
+                panic!("actual outside atom operand")
+            };
+            let child = ast.node(*child).unwrap();
+            let target = if matches!(
+                child.kind,
+                SurfaceNodeKind::TermReference | SurfaceNodeKind::ParenthesizedTerm
+            ) {
+                primary_target(&primary, child.range).unwrap()
+            } else {
+                set_target(sets, child.range).unwrap()
+            };
+            edges.push(edge(
+                formula,
+                operand_ordinal,
+                if operand_ordinal == 0 {
+                    SourceAtomicEdgeRole::BuiltinLeftOperand
+                } else {
+                    SourceAtomicEdgeRole::BuiltinRightOperand
+                },
+                target,
+            ));
+        }
+        requests.push(SourceAtomicRequestInput {
+            formula,
+            ordinal: 0,
+            kind: SourceAtomicRequestKind::OperandExpectedType,
+            edge: Some(SourceAtomicEdgeId::new(edges.len() - 1)),
+            candidate: None,
+            type_site: None,
+            attribute: None,
+        });
+    }
+    let arena = TypedArena::try_new(restored.root(), nodes).unwrap();
+    let atomic = SourceAtomicFormulaProducer::build(
+        SourceAtomicFormulaHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            formulas,
+            wrappers: vec![],
+            predicate_segments: vec![],
+            predicate_heads: vec![],
+            candidates: vec![],
+            type_sites: vec![],
+            attributes: vec![],
+            edges,
+            requests,
+        },
+        &bindings,
+        symbols,
+        &primary,
+        None,
+        None,
+        Some(sets),
+        &arena,
+    )
+    .expect("genuine outside grouped operand Atomic lower");
+    assert!(
+        atomic
+            .edges()
+            .iter()
+            .any(|(_, edge)| edge.target() == SourceAtomicTermTarget::Primary(outside_root))
+    );
+    let application = SourceFunctorApplicationProducer::build(
+        SourceFunctorApplicationHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            applications: vec![],
+            wrappers: vec![],
+            candidates: vec![],
+            arguments: vec![],
+            type_requests: vec![],
+        },
+        symbols,
+        &bindings,
+        &primary,
+        &arena,
+    )
+    .unwrap();
+    let edges = sets
+        .conditions()
+        .iter()
+        .map(|(id, condition)| {
+            let children = structural_child_ids(
+                &ast,
+                &ast.nodes()[condition.condition_site().node().index()],
+            );
+            let [atom] = children.as_slice() else {
+                panic!("actual bare condition atom")
+            };
+            let (formula, _) = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == atom.index())
+                .unwrap();
+            SourceConditionFormulaEdgeInput {
+                condition: id,
+                ordinal: condition.ordinal(),
+                formula,
+            }
+        })
+        .collect();
+    let input = SourceConditionFormulaCompositionHandoffInput {
+        source_id: ast.source_id,
+        module_id: module,
+        edges,
+    };
+    assert!(input.edges.iter().all(|edge| {
+        atomic
+            .edges()
+            .iter()
+            .filter(|(_, operand)| operand.formula() == edge.formula)
+            .all(|(_, operand)| operand.target() != SourceAtomicTermTarget::Primary(outside_root))
+    }));
+    assert!(
+        SourceConditionFormulaCompositionProducer::build(
+            input,
+            &primary,
+            &application,
+            sets,
+            &atomic,
+            &arena
+        )
+        .is_err(),
+        "outside grouped Primary root admitted by native C2"
+    );
 }

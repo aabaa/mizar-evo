@@ -216,7 +216,7 @@ impl SourcePrimaryTermHandoff {
             return Err(SourcePrimaryTermError::InvalidTransaction);
         }
         for (id, term) in self.terms.iter() {
-            validate_term_node(term, arena)
+            validate_term_node(term, arena, None)
                 .map_err(|()| SourcePrimaryTermError::InvalidTerm { term: id })?;
         }
         Ok(())
@@ -1683,12 +1683,28 @@ impl SourcePrimaryTermProducer {
         for (index, term) in terms.iter().enumerate() {
             if term.context != context_id
                 || term.recovery != SourcePrimaryTermRecovery::Normal
-                || term.kind != SourcePrimaryTermKind::VariableReference
+                || !matches!(
+                    term.kind,
+                    SourcePrimaryTermKind::VariableReference | SourcePrimaryTermKind::Parenthesized
+                )
                 || term.role != SourcePrimaryTermRole::Value
             {
                 return Err(SourcePrimaryTermError::InvalidTerm {
                     term: SourcePrimaryTermId::new(index),
                 });
+            }
+            if term.kind == SourcePrimaryTermKind::Parenthesized {
+                let child = terms
+                    .iter()
+                    .find(|child| child.parent == Some(SourcePrimaryTermId::new(index)))
+                    .ok_or(SourcePrimaryTermError::InvalidTerm {
+                        term: SourcePrimaryTermId::new(index),
+                    })?;
+                validate_term_node(term, arena, Some(child)).map_err(|()| {
+                    SourcePrimaryTermError::InvalidTerm {
+                        term: SourcePrimaryTermId::new(index),
+                    }
+                })?;
             }
         }
 
@@ -1777,7 +1793,7 @@ fn validate_terms(
             role: input.role,
             parent: input.parent,
         };
-        validate_term_node(&row, arena)
+        validate_term_node(&row, arena, None)
             .map_err(|()| SourcePrimaryTermError::InvalidTerm { term: id })?;
 
         if let Some(parent) = input.parent {
@@ -2058,7 +2074,11 @@ fn derive_reference_ordinals(
     Ok(ordinals)
 }
 
-fn validate_term_node(term: &SourcePrimaryTerm, arena: &TypedArena) -> Result<(), ()> {
+pub(crate) fn validate_term_node(
+    term: &SourcePrimaryTerm,
+    arena: &TypedArena,
+    authenticated_child: Option<&SourcePrimaryTerm>,
+) -> Result<(), ()> {
     let TypedSiteRef::Node(node_id) = &term.site else {
         return Err(());
     };
@@ -2070,6 +2090,53 @@ fn validate_term_node(term: &SourcePrimaryTerm, arena: &TypedArena) -> Result<()
         || !recovery_matches(term.recovery, node.recovery)
     {
         return Err(());
+    }
+    if let Some(child) = authenticated_child {
+        if term.kind != SourcePrimaryTermKind::Parenthesized
+            || term.recovery != SourcePrimaryTermRecovery::Normal
+            || child.recovery != SourcePrimaryTermRecovery::Normal
+            || child.context != term.context
+            || child.parent != Some(SourcePrimaryTermId::new(term.source_ordinal))
+            || !strictly_contains(term.source_range, child.source_range)
+            || term.spelling != format!("( {} )", child.spelling)
+        {
+            return Err(());
+        }
+        let [open, bridge, close] = node.children.as_slice() else {
+            return Err(());
+        };
+        let bridge = arena.node(*bridge).ok_or(())?;
+        if bridge.kind.as_str() != "TermExpression"
+            || bridge.recovery != NodeRecoveryState::Normal
+            || bridge.anchor != SourceAnchor::Range(child.source_range)
+            || bridge.children.as_slice() != [child.site.node()]
+        {
+            return Err(());
+        }
+        for (site, kind, start, end) in [
+            (
+                *open,
+                r#"Token(SurfaceToken { kind: ReservedSymbol, text: "(" })"#,
+                term.source_range.start,
+                term.source_range.start + 1,
+            ),
+            (
+                *close,
+                r#"Token(SurfaceToken { kind: ReservedSymbol, text: ")" })"#,
+                term.source_range.end - 1,
+                term.source_range.end,
+            ),
+        ] {
+            let token = arena.node(site).ok_or(())?;
+            if token.kind.as_str() != kind
+                || !token.children.is_empty()
+                || token.recovery != NodeRecoveryState::Normal
+                || !matches!(&token.anchor, SourceAnchor::Range(range)
+                    if range.source_id == term.source_range.source_id && range.start == start && range.end == end)
+            {
+                return Err(());
+            }
+        }
     }
     Ok(())
 }
@@ -3834,6 +3901,346 @@ mod tests {
             SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
             Err(SourcePrimaryTermError::InvalidTerm { .. })
         ));
+    }
+
+    #[test]
+    fn occurrence_builder_authenticates_genuine_parenthesized_variable_chains() {
+        use mizar_frontend::{
+            lexing::{ParserLexingPlan, TokenizeRequest, tokenize},
+            parsing::{MizarParserSeam, ParseRequest, ParserInputs, ParserSeam},
+            preprocess::preprocess,
+            source::{
+                FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit,
+            },
+            span_bridge::SpanBridge,
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector, env::NamespacePath,
+            resolved_ast::SurfaceResolvedArena, symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{DiskSourceLoader, Edition, SourceInput, SourceOriginInput};
+
+        let text = "reserve x,y for object; theorem Group: ((x)) = y;";
+        let directory =
+            std::env::temp_dir().join(format!("primary-group-owner-{}", std::process::id()));
+        std::fs::create_dir_all(directory.join("src")).unwrap();
+        let path = directory.join("src/main.miz");
+        std::fs::write(&path, text).unwrap();
+        let loaded = FrontendSourceLoader::new(DiskSourceLoader::new(&directory))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                        "mizar-session-build-snapshot-v1:{}",
+                        "38".repeat(32),
+                    ))
+                    .unwrap(),
+                    input: SourceInput {
+                        package_id: PackageId::new("pkg"),
+                        module_path: ModulePath::new("groups"),
+                        normalized_path: mizar_session::normalize_path(&directory, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::Disk { path },
+                    },
+                },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        std::fs::remove_dir_all(directory).unwrap();
+        let mut bridge = SpanBridge::new();
+        register_source_unit(&mut bridge, &loaded).unwrap();
+        let preprocessed = preprocess(&loaded, &mut bridge).unwrap();
+        assert!(preprocessed.diagnostics.is_empty());
+        assert!(preprocessed.import_stubs.is_empty());
+        let lexical = mizar_lexer::build_lexical_environment(&[], &[]).unwrap();
+        let tokens = tokenize(
+            TokenizeRequest::with_plan(
+                &preprocessed,
+                &lexical,
+                ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str()),
+            ),
+            &bridge,
+        )
+        .unwrap();
+        assert!(
+            tokens.diagnostics().is_empty(),
+            "{:?}",
+            tokens.diagnostics()
+        );
+        let parsed = MizarParserSeam.parse(ParseRequest::new(
+            &tokens,
+            ParserInputs::from_active_environment(loaded.edition, &lexical),
+        ));
+        assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+        let ast = parsed.ast.unwrap();
+        let actual_module = module("groups");
+        let shells = DeclarationShellCollector::new(&ast, &actual_module).collect();
+        let collected =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("groups"))
+                .collect(&actual_module);
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.into_env();
+        let scope = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &actual_module, &symbols),
+        )
+        .unwrap();
+        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        let resolved = SurfaceResolvedArena::lower(&ast, &actual_module).unwrap();
+        let nodes = resolved
+            .arena()
+            .iter()
+            .map(|(id, current)| {
+                let kind = match current.kind() {
+                    SurfaceNodeKind::TermReference => "source.term.variable-reference".to_owned(),
+                    SurfaceNodeKind::ParenthesizedTerm => "source.term.parenthesized".to_owned(),
+                    kind => format!("{kind:?}"),
+                };
+                TypedNode::new(kind, current.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        current
+                            .children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    )
+            })
+            .collect::<Vec<_>>();
+        let arena = TypedArena::try_new(
+            Some(TypedNodeId::new(resolved.arena().root().index())),
+            nodes,
+        )
+        .unwrap();
+        let mut sites = ast
+            .node_views()
+            .filter(|view| {
+                matches!(
+                    view.kind(),
+                    SurfaceNodeKind::ParenthesizedTerm | SurfaceNodeKind::TermReference
+                )
+            })
+            .collect::<Vec<_>>();
+        sites.sort_by_key(|view| (view.range().start, std::cmp::Reverse(view.range().end)));
+        let terms = sites
+            .iter()
+            .enumerate()
+            .map(|(index, view)| SourcePrimaryTermInput {
+                site: node(view.id().index()),
+                source_range: view.range(),
+                source_ordinal: index,
+                context: BindingContextId::new(0),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: text[view.range().start..view.range().end]
+                    .replace('(', " ( ")
+                    .replace(')', " ) ")
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+                kind: if matches!(view.kind(), SurfaceNodeKind::ParenthesizedTerm) {
+                    SourcePrimaryTermKind::Parenthesized
+                } else {
+                    SourcePrimaryTermKind::VariableReference
+                },
+                role: SourcePrimaryTermRole::Value,
+                parent: sites[..index]
+                    .iter()
+                    .rposition(|parent| {
+                        parent.range().start < view.range().start
+                            && view.range().end < parent.range().end
+                    })
+                    .map(SourcePrimaryTermId::new),
+            })
+            .collect::<Vec<_>>();
+        let references = scope
+            .references()
+            .iter()
+            .map(|actual| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(
+                    sites
+                        .iter()
+                        .position(|site| site.id() == actual.node())
+                        .unwrap(),
+                ),
+                binding: BindingId::new(actual.binding().index()),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
+            .collect();
+        let input = SourcePrimaryTermHandoffInput {
+            source_id: ast.source_id,
+            module_id: actual_module,
+            terms,
+            references,
+            numeric_type_requests: Vec::new(),
+        };
+        let pristine = (
+            input.clone(),
+            bindings.clone(),
+            arena.clone(),
+            scope.clone(),
+        );
+        let handoff = SourcePrimaryTermProducer::build_from_occurrences(
+            input.clone(),
+            &bindings,
+            &arena,
+            &scope,
+        )
+        .expect("genuine nested variable groups");
+        assert_eq!(
+            handoff
+                .terms()
+                .iter()
+                .map(|(_, term)| (term.spelling(), term.parent().map(|id| id.index())))
+                .collect::<Vec<_>>(),
+            [
+                ("( ( x ) )", None),
+                ("( x )", Some(0)),
+                ("x", Some(1)),
+                ("y", None)
+            ]
+        );
+        assert_eq!(
+            handoff
+                .references()
+                .iter()
+                .map(|(_, reference)| reference.term().index())
+                .collect::<Vec<_>>(),
+            [2, 3]
+        );
+        assert!(handoff.numeric_type_requests().is_empty());
+        for ((_, reference), actual) in handoff.references().iter().zip(scope.references()) {
+            let leaf = handoff.terms().get(reference.term()).unwrap();
+            assert_eq!(leaf.site().node().index(), actual.node().index());
+            assert_eq!(
+                arena
+                    .node(leaf.site().node())
+                    .unwrap()
+                    .resolved_node
+                    .unwrap()
+                    .index(),
+                actual.node().index()
+            );
+            assert_eq!(leaf.source_range(), actual.range());
+            assert_eq!(reference.binding().index(), actual.binding().index());
+            assert_eq!(reference.lexical_scope(), Some(actual.scope()));
+            assert_eq!(reference.use_ordinal(), actual.ordinal());
+        }
+        assert_eq!(
+            (&input, &bindings, &arena, &scope),
+            (&pristine.0, &pristine.1, &pristine.2, &pristine.3)
+        );
+
+        let outer = input.terms[0].site.node().index();
+        let inner = input.terms[1].site.node().index();
+        let leaf = input.terms[2].site.node().index();
+        let shell = arena.node(TypedNodeId::new(outer)).unwrap();
+        let open = shell.children[0].index();
+        let expression = shell.children[1].index();
+        let close = shell.children[2].index();
+        for mutation in [
+            "skip bridge",
+            "extra shell child",
+            "nonsole bridge",
+            "wrong bridge kind",
+            "bridge range",
+            "bridge recovery",
+            "wrong open text",
+            "wrong close text",
+            "wrong token kind",
+            "nonleaf punctuation",
+            "open anchor",
+            "close anchor",
+            "punctuation recovery",
+            "child substitution",
+            "parent recovery",
+            "missing parent",
+            "wrong parent",
+            "wrong context",
+            "wrong spelling",
+            "missing reference",
+            "extra reference",
+            "wrapper reference",
+            "rebound reference",
+            "foreign source",
+            "foreign module",
+            "foreign environment",
+            "foreign scope",
+        ] {
+            let mut changed = input.clone();
+            let mut nodes = arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            let mut environment = bindings.clone();
+            let mut resolver = scope.clone();
+            match mutation {
+                "skip bridge" => nodes[outer].children[1] = TypedNodeId::new(inner),
+                "extra shell child" => nodes[outer].children.push(TypedNodeId::new(open)),
+                "nonsole bridge" => nodes[expression].children.push(TypedNodeId::new(leaf)),
+                "wrong bridge kind" => nodes[expression].kind = "TermReference".into(),
+                "bridge range" => nodes[expression].anchor = nodes[outer].anchor.clone(),
+                "bridge recovery" => nodes[expression].recovery = NodeRecoveryState::Recovered,
+                "wrong open text" => {
+                    nodes[open].kind =
+                        r#"Token(SurfaceToken { kind: ReservedSymbol, text: "[" })"#.into()
+                }
+                "wrong close text" => nodes[close].kind = nodes[open].kind.clone(),
+                "wrong token kind" => {
+                    nodes[open].kind =
+                        r#"Token(SurfaceToken { kind: Identifier, text: "(" })"#.into()
+                }
+                "nonleaf punctuation" => nodes[open].children = nodes[leaf].children.clone(),
+                "open anchor" => nodes[open].anchor = nodes[close].anchor.clone(),
+                "close anchor" => nodes[close].anchor = nodes[open].anchor.clone(),
+                "punctuation recovery" => nodes[open].recovery = NodeRecoveryState::Recovered,
+                "child substitution" => nodes[expression].children = vec![TypedNodeId::new(leaf)],
+                "parent recovery" => nodes[outer].recovery = NodeRecoveryState::Recovered,
+                "missing parent" => changed.terms[1].parent = None,
+                "wrong parent" => changed.terms[2].parent = Some(SourcePrimaryTermId::new(0)),
+                "wrong context" => changed.terms[1].context = BindingContextId::new(1),
+                "wrong spelling" => changed.terms[0].spelling = "( x )".to_owned(),
+                "missing reference" => {
+                    changed.references.pop();
+                }
+                "extra reference" => changed.references.push(changed.references[0].clone()),
+                "wrapper reference" => changed.references[0].term = SourcePrimaryTermId::new(0),
+                "rebound reference" => {
+                    changed.references[0].binding = changed.references[1].binding
+                }
+                "foreign source" => changed.source_id = other_source_id(),
+                "foreign module" => changed.module_id = module("foreign"),
+                "foreign environment" => {
+                    environment
+                        .binding_mut_for_test(BindingId::new(0))
+                        .unwrap()
+                        .declaration_range
+                        .start += 1
+                }
+                "foreign scope" => {
+                    resolver = occurrence_fixture().0;
+                }
+                _ => unreachable!(),
+            }
+            let changed_arena = TypedArena::try_new(arena.root(), nodes).expect(mutation);
+            let error = SourcePrimaryTermProducer::build_from_occurrences(
+                changed,
+                &environment,
+                &changed_arena,
+                &resolver,
+            )
+            .unwrap_err();
+            assert!(
+                match mutation {
+                    "foreign source"
+                    | "foreign module"
+                    | "foreign environment"
+                    | "foreign scope" => error == SourcePrimaryTermError::InvalidTransaction,
+                    "missing reference" | "extra reference" | "wrapper reference"
+                    | "rebound reference" =>
+                        matches!(error, SourcePrimaryTermError::InvalidReference { .. }),
+                    _ => matches!(error, SourcePrimaryTermError::InvalidTerm { .. }),
+                },
+                "{mutation}: {error:?}"
+            );
+        }
     }
 
     #[test]

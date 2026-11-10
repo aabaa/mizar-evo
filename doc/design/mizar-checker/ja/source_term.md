@@ -1,7 +1,9 @@
 # Source primary-term handoff
 
-`build_from_occurrences` は resolver の検査済みスコープと module context への束縛射影を使い、primary 参照の完全な対応を検査する。
-元の lexical scope と出現順を保持し、従来の producer による宣言位置の検査は緩めない。
+`build_from_occurrences` はresolverの検査済みscopeとmodule contextへの束縛射影で全variable leaf参照を認証する。
+NormalなValue括弧は実際のTermExpression・括弧の連鎖を保持し、参照はsealed leafだけに属し、Resolver clockは展開されたPrimary IDと独立である。
+既存node validatorは構築時と[native C2再生](source_formula_composition.md#変数参照の条件式関連付け)で省略可能な認証対象childも検査する。
+Generic producerと単独のPrimary設置は従来のnode単位metadata保証を保ち、宣言位置検査を緩めたりsource receiptを作ったりしない。
 
 > canonical languageはEnglishである。
 > [English source_term.md](../en/source_term.md)
