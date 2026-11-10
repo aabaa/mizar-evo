@@ -106,7 +106,7 @@ childを持つ。provenance、context、candidate、role、未解決requestのow
 validatorが保持する。buildとimmutable installationは既存context bridgeの下で完全な下位
 fingerprintと物理chainを再検査する。対のMembershipがない独立predicate-plus-Set、legacy、
 negative、chained、compound、wrapped predicate条件とnested/wrapped Comprehensionは除外する。
-C2、runner adoption、formation、capture、sethood、applicability、truth、acceptanceは保留し、
+runner adoption、formation、capture、sethood、applicability、truth、acceptanceは保留し、
 requestは未回答のままとする。
 
 segment row が空の legacy predicate formula は ordinary head 1件と1件以上の

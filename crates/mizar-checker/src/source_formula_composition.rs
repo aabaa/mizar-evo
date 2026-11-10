@@ -1644,9 +1644,10 @@ fn validate_condition_transaction(
                 .wrappers()
                 .iter()
                 .any(|(_, wrapper)| wrapper.recovery() != SourceAtomicFormulaRecovery::Normal)
-            || !atomic_formulas.predicate_segments().is_empty()
-            || !atomic_formulas.predicate_heads().is_empty()
-            || !atomic_formulas.candidates().is_empty()
+            || atomic_formulas.formulas().iter().any(|(id, formula)| {
+                formula.kind() == SourceAtomicFormulaKind::PredicateApplication
+                    && !input.edges.iter().any(|edge| edge.formula == id)
+            })
             || !atomic_formulas.type_sites().is_empty()
             || !atomic_formulas.attributes().is_empty()
             || atomic_formulas.formulas().iter().any(|(_, formula)| {
@@ -1655,6 +1656,7 @@ fn validate_condition_transaction(
                     SourceAtomicFormulaKind::Equality
                         | SourceAtomicFormulaKind::Inequality
                         | SourceAtomicFormulaKind::Membership
+                        | SourceAtomicFormulaKind::PredicateApplication
                 ) || formula.recovery() != SourceAtomicFormulaRecovery::Normal
             })
             || atomic_formulas.edges().iter().any(|(_, edge)| {

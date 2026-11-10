@@ -116,7 +116,7 @@ provenance, context, candidate, role and unresolved-request ownership. Build and
 immutable installation recheck this physical chain with complete lower
 fingerprints under the existing context bridge above. Isolated predicate-plus-Set
 without the paired Membership, legacy, negative, chained, compound or wrapped
-predicate conditions and nested/wrapped Comprehensions remain excluded. C2,
+predicate conditions and nested/wrapped Comprehensions remain excluded;
 runner adoption, formation, capture, sethood, applicability, truth and acceptance
 remain deferred; requests remain unanswered.
 

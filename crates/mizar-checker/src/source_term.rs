@@ -4279,7 +4279,9 @@ mod tests {
         }
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
         if (19..=22).contains(&case) {
+            use crate::source_application::{SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer};
             use crate::source_atomic_formula::*;
+            use crate::source_formula_composition::*;
             use crate::source_set_term::*;
             use mizar_resolve::env::SymbolKind;
 
@@ -4443,7 +4445,14 @@ mod tests {
                 assert_eq!(build_set(set_input.clone()), Ok(set.clone()));
             }
             assert_eq!(SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(input.clone(), &bindings, &set_arena, &resolved, &symbols, &scope), Ok(primary_before.clone()));
-            for comprehension in comprehensions {
+            let mut aggregate_input = SourceAtomicFormulaHandoffInput {
+                source_id: ast.source_id, module_id: input.module_id.clone(),
+                formulas: Vec::new(), wrappers: Vec::new(), predicate_segments: Vec::new(),
+                predicate_heads: Vec::new(), candidates: Vec::new(), type_sites: Vec::new(),
+                attributes: Vec::new(), edges: Vec::new(), requests: Vec::new(),
+            };
+            let mut physical_mutations = Vec::new();
+            for (pair, comprehension) in comprehensions.iter().copied().enumerate() {
                 let conditions = comprehension.child_views().filter(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).collect::<Vec<_>>();
                 let [condition] = conditions.as_slice() else { panic!("one actual condition"); };
                 let [formula_id] = condition.children() else { panic!("direct condition atom"); };
@@ -4632,6 +4641,7 @@ mod tests {
                     let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
                     assert!(SourceAtomicFormulaProducer::build(outer_input.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "outer case {case} physical mutation {mutation}");
                     assert!(outer.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "outer case {case} physical replay mutation {mutation}");
+                    physical_mutations.push(candidate_arena);
                 }
                 for kind in [SourceAtomicFormulaKind::Equality, SourceAtomicFormulaKind::Inequality, SourceAtomicFormulaKind::PredicateApplication, SourceAtomicFormulaKind::TypeAssertion] {
                     let mut candidate = outer_input.clone();
@@ -4687,6 +4697,25 @@ mod tests {
                 }
                 assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
                 assert_eq!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
+                let mut reindexed = overlap.clone();
+                for (local, row) in reindexed.formulas.iter_mut().enumerate() { row.source_ordinal = 2 * pair + local; }
+                let segment_row = &mut reindexed.predicate_segments[0];
+                segment_row.formula = SourceAtomicFormulaId::new(2 * pair + 1);
+                segment_row.head = SourcePredicateHeadId::new(pair);
+                segment_row.left_edge = SourceAtomicEdgeId::new(4 * pair + 2);
+                segment_row.right_edge = SourceAtomicEdgeId::new(4 * pair + 3);
+                reindexed.predicate_heads[0].formula = SourceAtomicFormulaId::new(2 * pair + 1);
+                reindexed.candidates[0].head = SourcePredicateHeadId::new(pair);
+                for row in &mut reindexed.edges { row.formula = SourceAtomicFormulaId::new(2 * pair + row.formula.index()); }
+                for row in &mut reindexed.requests { row.formula = SourceAtomicFormulaId::new(2 * pair + row.formula.index()); }
+                reindexed.requests[0].edge = Some(SourceAtomicEdgeId::new(4 * pair + 1));
+                reindexed.requests[1].candidate = Some(SourcePredicateCandidateId::new(pair));
+                aggregate_input.formulas.extend(reindexed.formulas);
+                aggregate_input.predicate_segments.extend(reindexed.predicate_segments);
+                aggregate_input.predicate_heads.extend(reindexed.predicate_heads);
+                aggregate_input.candidates.extend(reindexed.candidates);
+                aggregate_input.edges.extend(reindexed.edges);
+                aggregate_input.requests.extend(reindexed.requests);
                 assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &set_arena).is_err(), "isolated predicate plus overlapping Set has no paired Membership");
                 assert!(SourceAtomicFormulaProducer::build(overlap.clone(), &flat, &symbols, &handoff, None, None, Some(&set), &set_arena).is_err());
                 assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, None, &set_arena).is_err());
@@ -4829,6 +4858,7 @@ mod tests {
                     }
                     assert!(SourceAtomicFormulaProducer::build(overlap.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "paired physical case {case} mutation {mutation}");
                     assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "paired physical replay case {case} mutation {mutation}");
+                    physical_mutations.push(candidate_arena);
                     assert_eq!(build_outer(overlap.clone()), Ok(combined.clone()));
                     assert_eq!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
                 }
@@ -4885,6 +4915,120 @@ mod tests {
                 assert_eq!(handoff, primary_before);
                 assert_eq!(consume(input.clone(), &bindings), Ok(primary_before.clone()));
             }
+            let application_input = SourceFunctorApplicationHandoffInput {
+                source_id: ast.source_id, module_id: input.module_id.clone(), applications: Vec::new(),
+                wrappers: Vec::new(), candidates: Vec::new(), arguments: Vec::new(), type_requests: Vec::new(),
+            };
+            let application = SourceFunctorApplicationProducer::build(application_input.clone(), &symbols, &bindings, &handoff, &set_arena).expect("genuine empty Application");
+            assert_eq!(SourceFunctorApplicationProducer::build(application_input.clone(), &symbols, &bindings, &handoff, &set_arena), Ok(application.clone()));
+            assert_eq!(application.primary_term_fingerprint(), handoff.debug_text());
+            assert!(application.applications().is_empty() && application.wrappers().is_empty() && application.candidates().is_empty() && application.arguments().is_empty() && application.type_requests().is_empty());
+            let build_aggregate = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, Some(&set), &set_arena);
+            let aggregate = build_aggregate(aggregate_input.clone()).expect("all original Membership/predicate pairs in source order");
+            assert_eq!((aggregate.formulas().len(), aggregate.predicate_segments().len(), aggregate.predicate_heads().len(), aggregate.candidates().len(), aggregate.edges().len(), aggregate.requests().len()), (2 * comp_count, comp_count, comp_count, comp_count, 4 * comp_count, 2 * comp_count));
+            assert!(aggregate.wrappers().is_empty() && aggregate.type_sites().is_empty() && aggregate.attributes().is_empty());
+            assert_eq!((aggregate.primary_term_fingerprint(), aggregate.set_term_fingerprint()), (handoff.debug_text().as_str(), Some(set.debug_text().as_str())));
+            assert!(aggregate.application_fingerprint().is_none() && aggregate.structure_fingerprint().is_none());
+            let mut condition_input = SourceConditionFormulaCompositionHandoffInput { source_id: ast.source_id, module_id: input.module_id.clone(), edges: Vec::new() };
+            for (pair, comprehension) in comprehensions.iter().enumerate() {
+                let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
+                let [atom] = condition.children() else { panic!("actual condition atom"); };
+                let atom = ast.node_view(*atom).unwrap();
+                let rhs = ast.node_view(*parents.get(&comprehension.id()).unwrap()).unwrap();
+                let membership = ast.node_view(*parents.get(&rhs.id()).unwrap()).unwrap();
+                assert_eq!(rhs.children(), &[comprehension.id()]);
+                assert_eq!(membership.children()[2], rhs.id());
+                let condition_id = SourceSetConditionId::new(pair);
+                let actual_condition = set.conditions().get(condition_id).unwrap();
+                assert_eq!((actual_condition.term(), actual_condition.condition_site(), actual_condition.ordinal()), (SourceSetTermId::new(pair), &node(resolved.resolved_node_for(condition.id()).unwrap().index()), 0));
+                for (local, actual, kind) in [(0, membership, SourceAtomicFormulaKind::Membership), (1, atom, SourceAtomicFormulaKind::PredicateApplication)] {
+                    let id = SourceAtomicFormulaId::new(2 * pair + local);
+                    let row = aggregate.formulas().get(id).unwrap();
+                    assert_eq!((row.source_ordinal(), row.site(), row.source_range(), row.context(), row.kind()), (id.index(), &node(resolved.resolved_node_for(actual.id()).unwrap().index()), actual.range(), expected_context(scopes.get(&actual.id()).unwrap()), kind));
+                    if id.index() > 0 { assert!(aggregate.formulas().get(SourceAtomicFormulaId::new(id.index() - 1)).unwrap().source_range().start < row.source_range().start); }
+                }
+                let predicate_id = SourceAtomicFormulaId::new(2 * pair + 1);
+                let segment = aggregate.predicate_segments().get(SourcePredicateSegmentId::new(pair)).unwrap();
+                assert_eq!((segment.formula(), segment.ordinal(), segment.head(), segment.left_edge(), segment.right_edge()), (predicate_id, 0, SourcePredicateHeadId::new(pair), SourceAtomicEdgeId::new(4 * pair + 2), SourceAtomicEdgeId::new(4 * pair + 3)));
+                assert_eq!(aggregate.predicate_heads().get(SourcePredicateHeadId::new(pair)).unwrap().formula(), predicate_id);
+                assert_eq!(aggregate.candidates().get(SourcePredicateCandidateId::new(pair)).unwrap().head(), SourcePredicateHeadId::new(pair));
+                for local in 0..4 {
+                    let edge = aggregate.edges().get(SourceAtomicEdgeId::new(4 * pair + local)).unwrap();
+                    assert_eq!((edge.formula(), edge.ordinal(), edge.target()), (SourceAtomicFormulaId::new(2 * pair + local / 2), local % 2, aggregate_input.edges[4 * pair + local].target));
+                }
+                for local in 0..2 {
+                    let request = aggregate.requests().get(SourceAtomicRequestId::new(2 * pair + local)).unwrap();
+                    assert_eq!((request.formula(), request.ordinal(), request.edge(), request.candidate()), (SourceAtomicFormulaId::new(2 * pair + local), 0, (local == 0).then_some(SourceAtomicEdgeId::new(4 * pair + 1)), (local == 1).then_some(SourcePredicateCandidateId::new(pair))));
+                }
+                condition_input.edges.push(SourceConditionFormulaEdgeInput { condition: condition_id, ordinal: 0, formula: predicate_id });
+            }
+            // C2 must fail only after every complete lower product replays successfully.
+            assert_eq!(handoff.validate_installation(ast.source_id, &input.module_id, &set_arena), Ok(()));
+            assert_eq!(application.validate_installation(ast.source_id, &input.module_id, &handoff), Ok(()));
+            assert_eq!(set.validate_installation(ast.source_id, &input.module_id, &handoff, Some(&application), None, &set_arena), Ok(()));
+            assert_eq!(aggregate.validate_installation(ast.source_id, &input.module_id, &handoff, Some(&application), None, Some(&set), &set_arena), Ok(()));
+            assert_eq!(build_aggregate(aggregate_input.clone()), Ok(aggregate.clone()));
+            let composition_pristine = (application_input.clone(), aggregate_input.clone(), condition_input.clone(), application.clone(), aggregate.clone(), set.clone(), handoff.clone(), set_arena.clone(), bindings.clone());
+            let build_condition = |candidate, arena: &TypedArena| SourceConditionFormulaCompositionProducer::build(candidate, &handoff, &application, &set, &aggregate, arena);
+            let composition = build_condition(condition_input.clone(), &set_arena).unwrap_or_else(|error| panic!("genuine complete scoped predicate C2 case {case}, all four lower replays passed: {error:?}"));
+            assert_eq!((composition.source_id(), composition.module_id()), (ast.source_id, &input.module_id));
+            assert_eq!((composition.primary_term_fingerprint(), composition.application_fingerprint(), composition.set_term_fingerprint(), composition.atomic_formula_fingerprint()), (handoff.debug_text().as_str(), application.debug_text().as_str(), set.debug_text().as_str(), aggregate.debug_text().as_str()));
+            assert_eq!(composition.edges().len(), comp_count);
+            for (id, edge) in composition.edges().iter() { assert_eq!((edge.condition(), edge.ordinal(), edge.formula()), (SourceSetConditionId::new(id.index()), 0, SourceAtomicFormulaId::new(2 * id.index() + 1))); }
+            assert_eq!(build_condition(condition_input.clone(), &set_arena), Ok(composition.clone()));
+            assert_eq!(composition.validate_installation(ast.source_id, &input.module_id, &handoff, &application, &set, &aggregate, &set_arena), Ok(()));
+            for mutation in 0..13 {
+                let mut candidate = condition_input.clone();
+                let expected = match mutation {
+                    0 => { candidate.edges.pop(); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    1 => { candidate.edges.clear(); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    2 => { candidate.edges.push(candidate.edges[0].clone()); SourceConditionFormulaCompositionError::InvalidAggregate }
+                    3 => { candidate.edges[0].condition = SourceSetConditionId::new(comp_count); SourceConditionFormulaCompositionError::InvalidEdge { edge: SourceConditionFormulaEdgeId::new(0) } }
+                    4 => { candidate.edges[0].ordinal = 1; SourceConditionFormulaCompositionError::InvalidEdge { edge: SourceConditionFormulaEdgeId::new(0) } }
+                    5 => { candidate.edges[0].formula = SourceAtomicFormulaId::new(0); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    6 => { candidate.edges[0].formula = SourceAtomicFormulaId::new(2 * comp_count); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    7 => { candidate.source_id = other_source_id(); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    8 => { candidate.module_id = module("foreign"); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    9 if comp_count > 1 => { candidate.edges[1] = candidate.edges[0].clone(); SourceConditionFormulaCompositionError::DependencyMismatch }
+                    10 if comp_count > 1 => { candidate.edges.swap(0, 1); SourceConditionFormulaCompositionError::InvalidEdge { edge: SourceConditionFormulaEdgeId::new(0) } }
+                    11 if comp_count > 1 => { candidate.edges[0].formula = SourceAtomicFormulaId::new(3); candidate.edges[1].formula = SourceAtomicFormulaId::new(1); SourceConditionFormulaCompositionError::InvalidEdge { edge: SourceConditionFormulaEdgeId::new(0) } }
+                    12 if comp_count > 1 => { candidate.edges[0].condition = SourceSetConditionId::new(1); SourceConditionFormulaCompositionError::InvalidEdge { edge: SourceConditionFormulaEdgeId::new(0) } }
+                    _ => continue,
+                };
+                assert_eq!(build_condition(candidate, &set_arena), Err(expected), "C2 case {case} mutation {mutation}");
+                assert_eq!((&application_input, &aggregate_input, &condition_input, &application, &aggregate, &set, &handoff, &set_arena, &bindings), (&composition_pristine.0, &composition_pristine.1, &composition_pristine.2, &composition_pristine.3, &composition_pristine.4, &composition_pristine.5, &composition_pristine.6, &composition_pristine.7, &composition_pristine.8));
+                assert_eq!(build_condition(condition_input.clone(), &set_arena), Ok(composition.clone()));
+                assert_eq!(composition.validate_installation(ast.source_id, &input.module_id, &handoff, &application, &set, &aggregate, &set_arena), Ok(()));
+            }
+            for candidate_arena in physical_mutations {
+                assert_eq!(build_condition(condition_input.clone(), &candidate_arena), Err(SourceConditionFormulaCompositionError::DependencyMismatch), "delegated lower physical replay");
+                assert_eq!(composition.validate_installation(ast.source_id, &input.module_id, &handoff, &application, &set, &aggregate, &candidate_arena), Err(SourceConditionFormulaCompositionError::DependencyMismatch));
+                assert_eq!((&application_input, &aggregate_input, &condition_input, &application, &aggregate, &set, &handoff, &set_arena, &bindings), (&composition_pristine.0, &composition_pristine.1, &composition_pristine.2, &composition_pristine.3, &composition_pristine.4, &composition_pristine.5, &composition_pristine.6, &composition_pristine.7, &composition_pristine.8));
+                assert_eq!(build_condition(condition_input.clone(), &set_arena), Ok(composition.clone()));
+                assert_eq!(composition.validate_installation(ast.source_id, &input.module_id, &handoff, &application, &set, &aggregate, &set_arena), Ok(()));
+            }
+            let base = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone()).with_source_term(handoff.clone()).unwrap();
+            for missing in [base.clone().with_source_application(application.clone()).unwrap(), base.clone().with_source_application(application.clone()).unwrap().with_source_set_term(set.clone()).unwrap(), base.clone().with_source_set_term(set.clone()).unwrap().with_source_atomic_formula(aggregate.clone()).unwrap()] {
+                assert!(matches!(missing.with_source_condition_formula_composition(composition.clone()), Err(TypedAstError::InvalidSourceConditionFormulaComposition)));
+            }
+            let mut installed = None;
+            for application_first in [true, false] {
+                let typed = if application_first { base.clone().with_source_application(application.clone()).unwrap().with_source_set_term(set.clone()).unwrap().with_source_atomic_formula(aggregate.clone()).unwrap() }
+                    else { base.clone().with_source_set_term(set.clone()).unwrap().with_source_atomic_formula(aggregate.clone()).unwrap().with_source_application(application.clone()).unwrap() }
+                    .with_source_condition_formula_composition(composition.clone()).expect("genuine C2 Typed installation");
+                assert_eq!((typed.source_term(), typed.source_application(), typed.source_set_term(), typed.source_atomic_formula(), typed.source_condition_formula_composition()), (Some(&handoff), Some(&application), Some(&set), Some(&aggregate), Some(&composition)));
+                assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty() && typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+                assert_eq!(typed.nodes(), &set_arena);
+                assert_eq!(typed.clone().debug_text(), typed.debug_text());
+                assert!(matches!(typed.clone().with_source_condition_formula_composition(composition.clone()), Err(TypedAstError::InvalidSourceConditionFormulaComposition)));
+                let final_ast = task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()).expect("genuine C2 final assembly");
+                assert_eq!((final_ast.source_term(), final_ast.source_application(), final_ast.source_set_term(), final_ast.source_atomic_formula(), final_ast.source_condition_formula_composition()), (Some(&handoff), Some(&application), Some(&set), Some(&aggregate), Some(&composition)));
+                assert_eq!(final_ast.clone().debug_text(), final_ast.debug_text());
+                assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast.clone()));
+                if let Some((previous, previous_final)) = &installed { assert_eq!((&typed, &final_ast), (previous, previous_final)); }
+                installed = Some((typed, final_ast));
+            }
+            assert_eq!((application_input, aggregate_input, condition_input, application, aggregate, set.clone(), handoff.clone(), set_arena.clone(), bindings.clone()), composition_pristine);
             assert_eq!((set_input, set_arena, bindings.clone(), handoff.clone()), set_pristine);
         }
         if case == 8 || case == 21 {
