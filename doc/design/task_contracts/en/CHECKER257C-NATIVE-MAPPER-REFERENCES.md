@@ -1,0 +1,17 @@
+# Task CHECKER257C-NATIVE-MAPPER-REFERENCES: authenticated mapper leaves
+Canonical language: English; [Japanese pointer](../ja/CHECKER257C-NATIVE-MAPPER-REFERENCES.md).
+Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md), [Task257C](../../mizar-checker/en/todo.md); existing scoped Primary consumer.
+Authority: [EN4.6](../../../spec/en/04.variables_and_constants.md#46-scoping-and-shadowing), [EN13.4.2–4](../../../spec/en/13.term_expression.md#1342-set-comprehension-fraenkel-operator).
+Full tier: changes the preceding lexical prefix's generator-mapper refusal/admission class. No identical-shape bundle.
+
+## Frozen boundary
+Extend only existing scoped Primary construction over genuine normal theorem/proof-Let Comprehension metadata. Acquire and compare the complete original BindingEnv with sealed resolver source/environment/scope authentication before accepting references. No new public seam, type, field or producer.
+Permit a generator reference written before its declaration only when the original sealed resolver reference selects that actual ComprehensionGenerator by identity and scope. Preserve every binding field, declaration clock, actual reference ordinal, node/site/range, context and complete occurrence census. Logical lookup visibility may be derived privately from that authenticated generator; it must not escape as a changed clock or broaden ordinary forward references.
+Keep all actual resolver winner/context/site checks and normal variable/value restrictions; reject missing, duplicate, reordered, rebound or foreign inputs. Generic and flat Primary entrypoints retain existing source-order refusal. Non-generator references, FunctionBinder profiles, unsupported source profiles and exact nested-Fraenkel products retain their prior boundaries.
+This is reference metadata only: no mapper formation, domain/sethood, type, capture result, Set/Atomic/C2, proof/Core/VC/publication/acceptance or coverage credit. No spec, MIZ, expectation or trace edits.
+
+## Tests and exit
+EN13.4's mapper examples and resolved-identity scoping require the existing genuine generator-mapper source case to become a scoped Primary positive; its former refusal was a documented extraction limit. Independent PRE authority/test-intent/trust review must confirm this correction before editing it. Retain the literal source and declaration/reference identities; obtain an intended runtime RED before production.
+Use existing owner test infrastructure and actual structural leaves. Add header/proof, multiple/nested or shadowed generators and alpha/layout cases where resolver admission is authentic; unsupported resolver profiles remain refusals. Assert preserved clocks, complete winners and replay, input purity, generic/flat refusal controls, and mutations targeting generator mapper site/context/binding/reference census. Reuse unchanged existing refusal matrices.
+Update only paired live [Primary](../../mizar-checker/en/source_term.md#original-source-theorem-scoped-primary-references)/[TypeChecker](../../mizar-checker/en/type_checker.md#original-source-theorem-binding-contexts) boundary paragraphs and checker plan/TODO links. Run independent POST precision/test sufficiency/trust/consistency, volume review, final full-tier gates/quality.
+Verification: fmt, all-target/all-feature Clippy -Dwarnings, both lint_policy, source_term and scoped-theorem owners, resolver/verifier standard, short CLI checks; full cargo test before shared push. Broader257C stays open.

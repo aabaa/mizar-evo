@@ -18,7 +18,10 @@ use crate::{
 };
 use mizar_lexer::is_identifier;
 use mizar_resolve::{
-    names::{LocalTermScope, ResolvedVariableScope, SourceVariableReferenceKind},
+    names::{
+        LocalTermScope, ResolvedVariableScope, SourceVariableBindingKind,
+        SourceVariableReferenceKind,
+    },
     resolved_ast::ModuleId,
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
@@ -1537,28 +1540,36 @@ impl SourcePrimaryTermProducer {
                 source, symbols, scope,
             )
             .map_err(|_| SourcePrimaryTermError::InvalidTransaction)?;
-        if binding_env != &authentic {
+        if input.source_id != binding_env.source_id()
+            || &input.module_id != binding_env.module_id()
+            || binding_env != &authentic
+        {
             return Err(SourcePrimaryTermError::InvalidTransaction);
         }
-        let mut handoff = Self::build_with_profile(
-            input,
+        let terms = validate_terms(input.source_id, &input.terms, binding_env, arena)?;
+        let mut ordinals = derive_reference_ordinals(
+            input.source_id,
+            &input.references,
+            &terms,
             binding_env,
-            arena,
             SourcePrimaryTermBindingProfile::ScopedTheoremOccurrences,
         )?;
-        for (id, term) in handoff.terms.iter() {
+        for (index, term) in terms.iter().enumerate() {
             if term.recovery != SourcePrimaryTermRecovery::Normal
                 || term.kind != SourcePrimaryTermKind::VariableReference
             {
-                return Err(SourcePrimaryTermError::InvalidTerm { term: id });
+                return Err(SourcePrimaryTermError::InvalidTerm {
+                    term: SourcePrimaryTermId::new(index),
+                });
             }
         }
         let mut matched = std::collections::BTreeSet::new();
-        for (index, reference) in handoff.references.rows.iter_mut().enumerate() {
+        let mut occurrences = Vec::with_capacity(input.references.len());
+        for (index, reference) in input.references.iter().enumerate() {
             let invalid = || SourcePrimaryTermError::InvalidReference {
                 reference: SourcePrimaryTermReferenceId::new(index),
             };
-            let term = handoff.terms.get(reference.term).ok_or_else(invalid)?;
+            let term = terms.get(reference.term.index()).ok_or_else(invalid)?;
             let resolved = arena
                 .node(term.site.node())
                 .and_then(|node| node.resolved_node)
@@ -1595,15 +1606,43 @@ impl SourcePrimaryTermProducer {
             {
                 return Err(invalid());
             }
-            reference.lexical_scope = Some(actual.scope().clone());
-            reference.use_ordinal = actual.ordinal();
+            if declaration.range().end > actual.range().start {
+                if declaration.kind() != SourceVariableBindingKind::ComprehensionGenerator {
+                    return Err(invalid());
+                }
+                // Logical visibility follows only this authenticated generator winner.
+                ordinals[index] = binding.visible_after_ordinal + 1;
+            }
+            occurrences.push(actual);
         }
         if matched.len() != scope.references().len() {
             return Err(SourcePrimaryTermError::InvalidReference {
-                reference: SourcePrimaryTermReferenceId::new(handoff.references.len()),
+                reference: SourcePrimaryTermReferenceId::new(input.references.len()),
             });
         }
-        Ok(handoff)
+        let mut references = validate_references(
+            &input.references,
+            &ordinals,
+            &terms,
+            binding_env,
+            SourcePrimaryTermBindingProfile::ScopedTheoremOccurrences,
+        )?;
+        validate_reference_cardinality(&terms, &references)?;
+        let numeric_type_requests =
+            validate_numeric_requests(&input.numeric_type_requests, &terms)?;
+        for (reference, actual) in references.iter_mut().zip(occurrences) {
+            reference.lexical_scope = Some(actual.scope().clone());
+            reference.use_ordinal = actual.ordinal();
+        }
+        Ok(SourcePrimaryTermHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            terms: SourcePrimaryTermTable { rows: terms },
+            references: SourcePrimaryTermReferenceTable { rows: references },
+            numeric_type_requests: SourceNumericTypeRequestTable {
+                rows: numeric_type_requests,
+            },
+        })
     }
 
     pub fn build(
@@ -1887,7 +1926,12 @@ fn validate_references(
         if binding != input.binding
             || binding_row.spelling != term.spelling
             || (binding_row.declaration_range.end > term.source_range.start
-                && binding_profile != SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary)
+                && !matches!(
+                    binding_profile,
+                    SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary
+                        // All scoped identities and the census were authenticated before lookup.
+                        | SourcePrimaryTermBindingProfile::ScopedTheoremOccurrences
+                ))
             || !valid_binding_role(binding_row.kind, input.role, binding_profile)
         {
             return Err(SourcePrimaryTermError::InvalidReference { reference: id });
@@ -3930,9 +3974,13 @@ mod tests {
             ("theorem T: for A being set holds A in { A where z is object : A = A };", 1, 2, vec![0,0,0,0], Some(true)),
             ("theorem T: for A being set holds A in { A where z is object : z in { A where z is object : z in A } };", 2, 3, vec![0,0,1,0,2,0], Some(true)),
             ("\n:: alpha/layout\ntheorem T: for parcel being\tset holds parcel in { parcel where needle is object : needle in parcel } proof\nlet parcel be set; thus parcel in { parcel where needle is object : needle in parcel }; end;", 2, 4, vec![0,0,1,0,2,2,3,2], Some(true)),
-            ("theorem T: for A being set holds A in { z where z is object : z in A };", 1, 2, vec![0,1,1,0], Some(false)),
+            ("theorem T: for A being set holds A in { z where z is object : z in A };", 1, 2, vec![0,1,1,0], Some(true)),
             ("theorem T: for A being set holds A = A proof let A be set; thus A = A; end;", 0, 2, vec![0,0,1,1], Some(true)),
             ("theorem T: for A being set holds A = A proof let A be set; thus (A |-> A) = A; end;", 0, 3, vec![0,0,2,1], Some(true)),
+            ("theorem T: for A being set holds A in { z where z is object : z in A } proof let A be set; thus A in { z where z is object : z in A }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
+            ("theorem T: for A being set holds A in { [z,w] where z is object, w is object : z in A & w in A };", 1, 0, vec![], None),
+            ("theorem T: for A being set holds A in { { z where z is object : z in A } where z is object : z in A };", 2, 3, vec![0,1,1,0,2,0], Some(true)),
+            ("\n:: mapper alpha/layout\ntheorem T: for parcel being\tset holds parcel in { needle where needle is object : needle in parcel } proof\nlet parcel be set; thus parcel in { needle where needle is object : needle in parcel }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
             ("reserve A for set; theorem T: for A holds A in { A where z is object : z in A };", 1, 0, vec![], None),
             ("theorem T: for A being set holds A = A proof let A be set; take A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
             ("theorem T: for A being set holds A = A proof let A be set; set B = A; thus A in { A where z is object : z in A }; end;", 1, 0, vec![], None),
@@ -4010,8 +4058,12 @@ mod tests {
         mizar_resolve::symbols::validate_source_symbol_env(&resolved, &symbols).unwrap();
         let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
             SourceVariableScopeInput::new(&ast, &actual_module, &symbols),
-        )
-        .unwrap();
+        );
+        if case == 12 {
+            assert_eq!(scope, Err(mizar_resolve::names::SourceVariableScopeError::InvalidShape), "unsupported original tuple-mapper resolver profile");
+            continue;
+        }
+        let scope = scope.unwrap_or_else(|error| panic!("case {case}: {error:?}"));
         let (scopes, parents) =
             mizar_resolve::symbols::source_proof_scope_maps(&resolved, &symbols, &scope)
                 .expect("original sealed lexical maps");
@@ -4165,15 +4217,6 @@ mod tests {
         let consume = |candidate, environment: &BindingEnv| SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(
             candidate, environment, &arena, &resolved, &symbols, &scope,
         );
-        if primary == Some(false) {
-            let mapper = scope.references().iter().find(|reference| {
-                scope.bindings()[reference.binding().index()].range().end > reference.range().start
-            }).expect("genuine generator mapper precedes its declaration");
-            assert_eq!(mapper.spelling(), "z");
-            assert!(matches!(consume(input.clone(), &bindings), Err(SourcePrimaryTermError::InvalidReference { .. })));
-            assert_eq!((&input, &bindings, &arena, &scope), (&pristine.0, &pristine.1, &pristine.2, &pristine.3));
-            continue;
-        }
         let handoff = consume(input.clone(), &bindings).expect("complete real scoped comprehension Primary consumer");
         assert_eq!(handoff.terms().len(), leaves.len());
         assert_eq!(handoff.references().len(), leaves.len());
@@ -4192,12 +4235,44 @@ mod tests {
             assert_eq!(term.context(), expected_context(actual.scope()));
             // Lookup uses written declaration events, independently of reference clocks.
             let declaration_clock = scope.bindings().iter().filter(|binding| binding.range().end <= actual.range().start).count();
-            assert_eq!(bindings.lookup(&BindingLookupSite::new(actual.spelling(), term.context(), Some(actual.scope().clone()), declaration_clock)), Ok(BindingLookupResult::Local(BindingId::new(actual.binding().index()))));
+            let declaration = &scope.bindings()[actual.binding().index()];
+            let lookup_clock = if declaration.range().end > actual.range().start {
+                assert_eq!(declaration.kind(), mizar_resolve::names::SourceVariableBindingKind::ComprehensionGenerator);
+                assert!(SourcePrimaryTermProducer::build(input.clone(), &bindings, &arena).is_err());
+                assert!(SourcePrimaryTermProducer::build_from_occurrences(input.clone(), &flat, &arena, &scope).is_err());
+                declaration.ordinal() + 1
+            } else { declaration_clock };
+            assert_eq!(bindings.lookup(&BindingLookupSite::new(actual.spelling(), term.context(), Some(actual.scope().clone()), lookup_clock)), Ok(BindingLookupResult::Local(BindingId::new(actual.binding().index()))));
             assert_eq!(reference.binding().index(), actual.binding().index());
             assert_eq!(reference.lexical_scope(), Some(actual.scope()));
             assert_eq!(reference.use_ordinal(), actual.ordinal());
         }
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
+        if case == 8 {
+            assert_eq!(input.terms[1].spelling, "z");
+            for mutation in 0..7 {
+                let mut candidate = input.clone();
+                match mutation {
+                    0 => candidate.terms[1].site = candidate.terms[2].site.clone(),
+                    1 => candidate.terms[1].context = candidate.terms[0].context,
+                    2 => candidate.references[1].binding = BindingId::new(0),
+                    3 => { candidate.references.remove(1); }
+                    4 => candidate.references.insert(1, candidate.references[1].clone()),
+                    5 => candidate.references.swap(1, 2),
+                    _ => candidate.terms[1].source_range = candidate.terms[2].source_range,
+                }
+                assert!(consume(candidate, &bindings).is_err(), "generator mapper mutation {mutation}");
+            }
+            for mutation in 0..2 {
+                let mut candidate = bindings.clone();
+                let generator = candidate.binding_mut_for_test(BindingId::new(1)).unwrap();
+                if mutation == 0 { generator.visible_after_ordinal += 1; }
+                else if let BinderIdentity::ResolverLocal { scope, .. } = &mut generator.identity {
+                    *scope = LocalTermScope::new(vec![999]);
+                }
+                assert_eq!(consume(input.clone(), &candidate), Err(SourcePrimaryTermError::InvalidTransaction));
+            }
+        }
         if case == 0 {
             for mutation in 0..9 {
                 let mut candidate = input.clone();
