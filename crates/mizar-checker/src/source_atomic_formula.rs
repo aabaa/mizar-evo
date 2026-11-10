@@ -1,7 +1,10 @@
 //! Syntax-free transport for source atomic-formula occurrences.
 
 use crate::{
-    binding_env::{BindingContextId, BindingEnv},
+    binding_env::{
+        BindingContextId, BindingContextLayer, BindingContextOwner, BindingContextRecovery,
+        BindingEnv,
+    },
     source_application::{
         SourceFunctorApplicationHandoff, SourceFunctorApplicationId, SourceFunctorArgumentTarget,
     },
@@ -1742,7 +1745,15 @@ fn validate_payload(
     }
     let type_by_formula = validate_type_sites(input, arena, &mut sites)?;
     let attribute_groups = validate_attributes(input, symbols, arena, &mut sites)?;
-    let edge_groups = validate_edges(input, primary_terms, applications, structures, set_terms)?;
+    let edge_groups = validate_edges(
+        input,
+        bindings,
+        primary_terms,
+        applications,
+        structures,
+        set_terms,
+        arena,
+    )?;
     validate_shapes(
         input,
         primary_terms,
@@ -2596,10 +2607,12 @@ struct TargetOccurrence {
 #[allow(clippy::too_many_arguments)] // Rationale: edge validation compares all four nearest-owner families explicitly.
 fn validate_edges(
     input: &SourceAtomicFormulaHandoffInput,
+    bindings: Option<&BindingEnv>,
     primary_terms: &SourcePrimaryTermHandoff,
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
 ) -> Result<Vec<Vec<usize>>, SourceAtomicFormulaError> {
     let groups = grouped_rows(
         input.formulas.len(),
@@ -2628,7 +2641,15 @@ fn validate_edges(
     for (formula_index, group) in groups.iter().enumerate() {
         let formula_id = SourceAtomicFormulaId::new(formula_index);
         let formula = &input.formulas[formula_index];
-        let expected = direct_targets(formula, primary_terms, applications, structures, set_terms)?;
+        let expected = direct_targets(
+            formula,
+            bindings,
+            primary_terms,
+            applications,
+            structures,
+            set_terms,
+            arena,
+        )?;
         if group.len() != expected.len() {
             return Err(SourceAtomicFormulaError::InvalidFormula {
                 formula: formula_id,
@@ -2674,11 +2695,10 @@ fn validate_edges(
                     .is_some_and(|roots| roots.contains(&term)),
             };
             if !root_is_valid
-                || occurrence.context != formula.context
                 || !properly_contains(formula.source_range, occurrence.range)
-                || expected
-                    .get(ordinal)
-                    .is_none_or(|row| row.target != edge.target)
+                || expected.get(ordinal).is_none_or(|row| {
+                    row.target != edge.target || row.context != occurrence.context
+                })
             {
                 return Err(SourceAtomicFormulaError::InvalidEdge { edge: id });
             }
@@ -2699,10 +2719,12 @@ fn validate_edges(
 #[allow(clippy::too_many_arguments)] // Rationale: direct-target partitioning must inspect every lower-family graph.
 fn direct_targets(
     formula: &SourceAtomicFormulaInput,
+    bindings: Option<&BindingEnv>,
     primary_terms: &SourcePrimaryTermHandoff,
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
 ) -> Result<Vec<TargetOccurrence>, SourceAtomicFormulaError> {
     let application_owned_primary = applications
         .map(application_primary_ids)
@@ -2714,6 +2736,64 @@ fn direct_targets(
     let set_owned_primary = set_terms.map(set_primary_ids).unwrap_or_default();
     let set_owned_application = set_terms.map(set_application_ids).unwrap_or_default();
     let set_owned_structure = set_terms.map(set_structure_ids).unwrap_or_default();
+    let mut membership_rhs = BTreeSet::new();
+    if formula.kind == SourceAtomicFormulaKind::Membership
+        && formula.recovery == SourceAtomicFormulaRecovery::Normal
+        && let Some(set_terms) = set_terms
+        && let Some(atom) = arena.node(formula.site.node())
+        && let [left, token, right] = atom.children.as_slice()
+        && let (Some(left), Some(token), Some(right)) =
+            (arena.node(*left), arena.node(*token), arena.node(*right))
+        && left.kind.as_str() == "TermExpression"
+        && right.kind.as_str() == "TermExpression"
+        && left.recovery == NodeRecoveryState::Normal
+        && right.recovery == NodeRecoveryState::Normal
+        && token.recovery == NodeRecoveryState::Normal
+        && token.kind.as_str() == r#"Token(SurfaceToken { kind: ReservedWord, text: "in" })"#
+        && token.children.is_empty()
+        && let (Some(left_range), Some(token_range), Some(right_range)) = (
+            source_range(&left.anchor),
+            source_range(&token.anchor),
+            source_range(&right.anchor),
+        )
+        && valid_range(formula.source_range.source_id, left_range)
+        && valid_range(formula.source_range.source_id, token_range)
+        && valid_range(formula.source_range.source_id, right_range)
+        && left_range.start == formula.source_range.start
+        && left_range.end <= token_range.start
+        && token_range.end - token_range.start == 2
+        && token_range.end <= right_range.start
+        && right_range.end == formula.source_range.end
+    {
+        for id in set_term_root_ids(set_terms) {
+            let row = set_terms.terms().get(id).expect("set root");
+            if row.context() != formula.context
+                && row.kind() == SourceSetTermKind::Comprehension
+                && row.recovery() == SourceSetTermRecovery::Normal
+                && row.source_range() == right_range
+                && right.children.as_slice() == [row.site().node()]
+                && !set_terms
+                    .wrappers()
+                    .iter()
+                    .any(|(_, wrapper)| wrapper.term() == id)
+                && bindings.is_none_or(|env| {
+                    env.contexts().get(row.context()).is_some_and(|context| {
+                        context.owner
+                            == BindingContextOwner::SourceComprehension {
+                                source_range: row.source_range(),
+                            }
+                            && context.layer == BindingContextLayer::Expression
+                            && context.recovery == BindingContextRecovery::Normal
+                            && context.parent == Some(formula.context)
+                    })
+                })
+            {
+                // Replay has no BindingEnv: immutable rows and lower fingerprints
+                // retain the initial lexical authentication; physical shape is rechecked.
+                membership_rhs.insert(id);
+            }
+        }
+    }
     let mut candidates = Vec::new();
 
     for (id, row) in primary_terms.terms().iter() {
@@ -2725,7 +2805,22 @@ fn direct_targets(
         {
             continue;
         }
-        if row.context() != formula.context {
+        let condition_context = set_terms.and_then(|sets| {
+            membership_rhs.iter().find_map(|id| {
+                sets.conditions()
+                    .iter()
+                    .any(|(_, condition)| {
+                        condition.term() == *id
+                            && condition.source_range().source_id == row.source_range().source_id
+                            && condition.source_range().start <= row.source_range().start
+                            && row.source_range().end <= condition.source_range().end
+                    })
+                    .then(|| sets.terms().get(*id).expect("set root").context())
+            })
+        });
+        if condition_context.is_some_and(|context| context != row.context())
+            || row.context() != formula.context && condition_context != Some(row.context())
+        {
             return Err(SourceAtomicFormulaError::PrimaryDependencyMismatch);
         }
         candidates.push(TargetOccurrence {
@@ -2780,7 +2875,7 @@ fn direct_targets(
             if !properly_contains(formula.source_range, occurrence.range) {
                 continue;
             }
-            if occurrence.context != formula.context {
+            if occurrence.context != formula.context && !membership_rhs.contains(&id) {
                 return Err(SourceAtomicFormulaError::SetTermDependencyMismatch);
             }
             candidates.push(TargetOccurrence {

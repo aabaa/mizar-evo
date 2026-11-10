@@ -82,10 +82,22 @@ expression/head、attribute occurrence/target、`non`、wrapper を所有する�
 
 各 direct written term slot は Task 252/253/254/255 の maximal root
 occurrence 1件へ対応する。descendant は nearest term family に残る。
-duplicate/overlap/partial/non-root/reverse-contained/cross-context target は
+duplicate/overlap/partial/non-root/reverse-contained/cross-context target は、以下の direct Membership RHS bridge を除き
 atomic に fail する。absent fingerprint の unrelated optional handoff は、
 その occurrence が全 formula/wrapper/direct-slot range と disjoint な場合だけ
 共存できる。
+
+Normal Membership は元の left TermExpression / reserved `in` / right
+TermExpression children を通じ、right expression の exact range と唯一の raw
+Set root を持つ bare Normal Comprehension を実際の inner context で参照できる。
+初期 build は BindingEnv の exact SourceComprehension owner/range、Expression layer、
+Normal recovery、Membership context と等しい direct parent を認証する。その root の
+検証済 condition 内で同じ inner context を持つ Primary leaf だけを nearest-family
+containment で隠せる。全 dependency row と右 operand の未解決 request 1件を保持し、
+equal-context 経路の規則は維持する。Installation は BindingEnv を持たず、不変 row、
+完全な lower fingerprint と物理 shape を再検査するが、新たな字句環境認証を主張しない。
+[scoped matrix](source_term.md) の predicate condition は Set dependency なしの独立 product
+のままであり、nested predicate Atomic integration、C2、runner 採用、semantic credit は保留する。
 
 segment row が空の legacy predicate formula は ordinary head 1件と1件以上の
 authenticated candidate を要求し、candidate ごとに candidate-signature

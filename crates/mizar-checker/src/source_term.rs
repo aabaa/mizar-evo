@@ -4376,6 +4376,15 @@ mod tests {
                     nodes[index].kind = key.into();
                 }
             }
+            for comprehension in &comprehensions {
+                let rhs = ast.node_view(*parents.get(&comprehension.id()).unwrap()).unwrap();
+                let membership = ast.node_view(*parents.get(&rhs.id()).unwrap()).unwrap();
+                assert_eq!(rhs.kind(), &SurfaceNodeKind::TermExpression);
+                assert_eq!(membership.kind(), &SurfaceNodeKind::BuiltinPredicateApplication);
+                let index = resolved.resolved_node_for(membership.id()).unwrap().index();
+                retagged.push(index);
+                nodes[index].kind = "source.formula.atomic.membership".into();
+            }
             let set_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
             let set = SourceSetTermProducer::build(set_input.clone(), &bindings, &handoff, None, None, &set_arena).unwrap_or_else(|error| panic!("genuine scoped Set case {case}: {error:?}"));
             assert_eq!(set.source_id(), ast.source_id);
@@ -4491,6 +4500,171 @@ mod tests {
                     }).collect(),
                     requests: vec![SourceAtomicRequestInput { formula: SourceAtomicFormulaId::new(0), ordinal: 0, kind: SourceAtomicRequestKind::PredicateCandidateSignature, edge: None, candidate: Some(SourcePredicateCandidateId::new(0)), type_site: None, attribute: None }],
                 };
+                let rhs = ast.node_view(*parents.get(&comprehension.id()).unwrap()).unwrap();
+                let membership = ast.node_view(*parents.get(&rhs.id()).unwrap()).unwrap();
+                let [lhs, token, actual_rhs] = membership.children() else { panic!("actual Membership children"); };
+                assert_eq!(*actual_rhs, rhs.id());
+                assert_eq!(rhs.children(), &[comprehension.id()]);
+                let lhs = ast.node_view(*lhs).unwrap();
+                let token = ast.node_view(*token).unwrap();
+                assert_eq!(lhs.kind(), &SurfaceNodeKind::TermExpression);
+                assert_eq!(&text[token.range().start..token.range().end], "in");
+                let [left_leaf] = lhs.children() else { panic!("bare original left Primary"); };
+                let left_primary = SourcePrimaryTermId::new(leaves.iter().position(|view| view.id() == *left_leaf).unwrap());
+                let outer_context = expected_context(scopes.get(&membership.id()).unwrap());
+                assert_ne!(outer_context, context);
+                assert_eq!(bindings.contexts().get(context).unwrap().parent, Some(outer_context));
+                let set_id = set.terms().iter().find(|(_, row)| row.site() == &node(resolved.resolved_node_for(comprehension.id()).unwrap().index())).unwrap().0;
+                let outer_input = SourceAtomicFormulaHandoffInput {
+                    source_id: ast.source_id, module_id: input.module_id.clone(),
+                    formulas: vec![SourceAtomicFormulaInput {
+                        site: node(resolved.resolved_node_for(membership.id()).unwrap().index()), source_range: membership.range(), source_ordinal: 0,
+                        context: outer_context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[membership.range().start..membership.range().end].to_owned(), kind: SourceAtomicFormulaKind::Membership,
+                    }],
+                    wrappers: Vec::new(), predicate_segments: Vec::new(), predicate_heads: Vec::new(), candidates: Vec::new(), type_sites: Vec::new(), attributes: Vec::new(),
+                    edges: vec![
+                        SourceAtomicEdgeInput { formula: SourceAtomicFormulaId::new(0), ordinal: 0, role: SourceAtomicEdgeRole::BuiltinLeftOperand, target: SourceAtomicTermTarget::Primary(left_primary) },
+                        SourceAtomicEdgeInput { formula: SourceAtomicFormulaId::new(0), ordinal: 1, role: SourceAtomicEdgeRole::BuiltinRightOperand, target: SourceAtomicTermTarget::SetTerm(set_id) },
+                    ],
+                    requests: vec![SourceAtomicRequestInput { formula: SourceAtomicFormulaId::new(0), ordinal: 0, kind: SourceAtomicRequestKind::OperandExpectedType, edge: Some(SourceAtomicEdgeId::new(1)), candidate: None, type_site: None, attribute: None }],
+                };
+                let outer = SourceAtomicFormulaProducer::build(outer_input.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &set_arena)
+                    .unwrap_or_else(|error| panic!("genuine original-source outer Membership case {case}: {error:?}"));
+                assert_eq!(outer.source_id(), ast.source_id);
+                assert_eq!(outer.module_id(), &input.module_id);
+                assert_eq!(outer.primary_term_fingerprint(), handoff.debug_text());
+                assert_eq!(outer.set_term_fingerprint(), Some(set.debug_text().as_str()));
+                assert!(outer.application_fingerprint().is_none() && outer.structure_fingerprint().is_none());
+                assert_eq!((outer.formulas().len(), outer.edges().len(), outer.requests().len()), (1, 2, 1));
+                assert!(outer.wrappers().is_empty() && outer.predicate_segments().is_empty() && outer.predicate_heads().is_empty() && outer.candidates().is_empty() && outer.type_sites().is_empty() && outer.attributes().is_empty());
+                let row = outer.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
+                assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&outer_input.formulas[0].site, membership.range(), 0, outer_context, SourceAtomicFormulaRecovery::Normal, outer_input.formulas[0].spelling.as_str(), SourceAtomicFormulaKind::Membership));
+                for ((id, row), expected) in outer.edges().iter().zip(&outer_input.edges) {
+                    assert_eq!((row.formula(), row.ordinal(), row.role(), row.target()), (SourceAtomicFormulaId::new(0), id.index(), expected.role, expected.target));
+                }
+                let row = outer.requests().get(SourceAtomicRequestId::new(0)).unwrap();
+                assert_eq!((row.formula(), row.ordinal(), row.kind(), row.edge(), row.candidate(), row.type_site(), row.attribute()), (SourceAtomicFormulaId::new(0), 0, SourceAtomicRequestKind::OperandExpectedType, Some(SourceAtomicEdgeId::new(1)), None, None, None));
+                let outer_pristine = (outer_input.clone(), outer.clone(), set.clone());
+                let build_outer = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, Some(&set), &set_arena);
+                assert_eq!(build_outer(outer_input.clone()), Ok(outer.clone()));
+                assert_eq!(outer.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
+                assert!(SourceAtomicFormulaProducer::build(outer_input.clone(), &flat, &symbols, &handoff, None, None, Some(&set), &set_arena).is_err());
+                for mutation in 0..12 {
+                    let mut candidate = outer_input.clone();
+                    match mutation {
+                        0 => candidate.formulas[0].context = context,
+                        1 => candidate.edges[1].target = SourceAtomicTermTarget::SetTerm(SourceSetTermId::new(comp_count)),
+                        2 => candidate.edges[1].target = SourceAtomicTermTarget::Primary(operands[0]),
+                        3 => candidate.edges[1].role = SourceAtomicEdgeRole::BuiltinLeftOperand,
+                        4 => candidate.edges.swap(0, 1),
+                        5 => { candidate.edges.pop(); }
+                        6 => candidate.requests[0].edge = Some(SourceAtomicEdgeId::new(0)),
+                        7 => candidate.requests[0].kind = SourceAtomicRequestKind::PredicateCandidateSignature,
+                        8 => candidate.requests.clear(),
+                        9 => candidate.source_id = other_source_id(),
+                        10 => candidate.formulas[0].site = atomic_input.formulas[0].site.clone(),
+                        _ => candidate.edges[1].target = SourceAtomicTermTarget::SetTerm(SourceSetTermId::new((set_id.index() + 1) % comp_count)),
+                    }
+                    if mutation == 11 && comp_count == 1 { continue; }
+                    assert!(build_outer(candidate).is_err(), "outer case {case} payload mutation {mutation}");
+                }
+                // Rebuild only structurally valid environments; these refusals reach
+                // the new owner/range/layer/recovery/direct-parent authentication.
+                for mutation in 0..6 {
+                    let mut contexts = BindingContextTable::new();
+                    for (id, original) in bindings.contexts().iter() {
+                        let mut draft = BindingContextDraft {
+                            owner: original.owner.clone(), parent: original.parent, layer: original.layer,
+                            lexical_scope: original.lexical_scope.clone(), bindings: original.bindings.clone(),
+                            visible_bindings: original.visible_bindings.clone(), recovery: original.recovery,
+                        };
+                        if id == context {
+                            match mutation {
+                                0 => draft.owner = BindingContextOwner::SourceFormula { source_range: comprehension.range() },
+                                1 => if let BindingContextOwner::SourceComprehension { source_range } = &mut draft.owner { source_range.start += 1; },
+                                2 => draft.layer = BindingContextLayer::Block,
+                                3 => draft.recovery = BindingContextRecovery::Recovered,
+                                4 => { draft.parent = Some(BindingContextId::new(0)); draft.visible_bindings = draft.bindings.clone(); }
+                                _ => { draft.parent = bindings.contexts().iter().find(|(_, row)| row.layer == BindingContextLayer::Declaration).map(|(id, _)| id); draft.visible_bindings = draft.bindings.clone(); }
+                            }
+                        }
+                        assert_eq!(contexts.insert(draft), id);
+                    }
+                    let environment = BindingEnv::try_new(BindingEnvParts {
+                        source_id: bindings.source_id(), module_id: bindings.module_id().clone(), contexts,
+                        bindings: bindings.bindings().clone(), diagnostics: bindings.diagnostics().clone(),
+                    }).expect("structurally valid outer context mutation");
+                    assert_eq!(SourceAtomicFormulaProducer::build(outer_input.clone(), &environment, &symbols, &handoff, None, None, Some(&set), &set_arena), Err(SourceAtomicFormulaError::PrimaryDependencyMismatch), "outer case {case} context mutation {mutation}");
+                }
+                for wrong_context in [outer_context, BindingContextId::new(1)] {
+                    let mut primary = handoff.clone();
+                    primary.terms.rows[operands[0].index()].context = wrong_context;
+                    assert!(SourceSetTermProducer::build(set_input.clone(), &bindings, &primary, None, None, &set_arena).is_err(), "Set already authenticates condition leaf contexts");
+                    assert!(SourceAtomicFormulaProducer::build(outer_input.clone(), &bindings, &symbols, &primary, None, None, Some(&set), &set_arena).is_err());
+                    assert!(outer.validate_installation(ast.source_id, &input.module_id, &primary, None, None, Some(&set), &set_arena).is_err());
+                }
+                assert!(SourceAtomicFormulaProducer::build(outer_input.clone(), &bindings, &symbols, &handoff, None, None, None, &set_arena).is_err());
+                for mutation in 0..17 {
+                    let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    let rhs_id = resolved.resolved_node_for(rhs.id()).unwrap().index();
+                    let lhs_id = resolved.resolved_node_for(lhs.id()).unwrap().index();
+                    let token_id = resolved.resolved_node_for(token.id()).unwrap().index();
+                    let formula_id = outer_input.formulas[0].site.node().index();
+                    match mutation {
+                        0 => nodes[rhs_id].children.clear(),
+                        1 => nodes[rhs_id].children.push(input.terms[left_primary.index()].site.node()),
+                        2 => nodes[formula_id].children[2] = input.terms[left_primary.index()].site.node(),
+                        3 => nodes[rhs_id].children[0] = input.terms[operands[0].index()].site.node(),
+                        4 => nodes[rhs_id].recovery = NodeRecoveryState::Recovered,
+                        5 => { let mut range = rhs.range(); range.start += 1; nodes[rhs_id].anchor = SourceAnchor::Range(range); }
+                        6 => nodes[token_id].kind = r#"Token(SurfaceToken { kind: Identifier, text: "in" })"#.into(),
+                        7 => nodes[token_id].children.push(input.terms[left_primary.index()].site.node()),
+                        8 => nodes[token_id].recovery = NodeRecoveryState::Recovered,
+                        9 => nodes[token_id].anchor = SourceAnchor::Range(lhs.range()),
+                        10 => nodes[set_input.terms[set_id.index()].site.node().index()].recovery = NodeRecoveryState::Recovered,
+                        11 => nodes[lhs_id].recovery = NodeRecoveryState::Recovered,
+                        12 => nodes[rhs_id].kind = "ParenthesizedTerm".into(),
+                        13 => { nodes[formula_id].children.remove(0); }
+                        14 => nodes[formula_id].children.swap(0, 2),
+                        15 => nodes[token_id].kind = r#"Token(SurfaceToken { kind: ReservedWord, text: "not" })"#.into(),
+                        _ => nodes[formula_id].children.push(input.terms[left_primary.index()].site.node()),
+                    };
+                    let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                    assert!(SourceAtomicFormulaProducer::build(outer_input.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "outer case {case} physical mutation {mutation}");
+                    assert!(outer.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "outer case {case} physical replay mutation {mutation}");
+                }
+                for kind in [SourceAtomicFormulaKind::Equality, SourceAtomicFormulaKind::Inequality, SourceAtomicFormulaKind::PredicateApplication, SourceAtomicFormulaKind::TypeAssertion] {
+                    let mut candidate = outer_input.clone();
+                    candidate.formulas[0].kind = kind;
+                    let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    nodes[candidate.formulas[0].site.node().index()].kind = match kind {
+                        SourceAtomicFormulaKind::Equality => "source.formula.atomic.equality",
+                        SourceAtomicFormulaKind::Inequality => "source.formula.atomic.inequality",
+                        SourceAtomicFormulaKind::PredicateApplication => "source.formula.atomic.predicate",
+                        _ => "source.formula.atomic.type-assertion",
+                    }.into();
+                    let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                    assert!(SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err());
+                }
+                let mut overlap = outer_input.clone();
+                let mut nested = atomic_input.clone();
+                nested.formulas[0].source_ordinal = 1;
+                nested.predicate_segments[0].formula = SourceAtomicFormulaId::new(1);
+                nested.predicate_segments[0].left_edge = SourceAtomicEdgeId::new(2);
+                nested.predicate_segments[0].right_edge = SourceAtomicEdgeId::new(3);
+                nested.predicate_heads[0].formula = SourceAtomicFormulaId::new(1);
+                for edge in &mut nested.edges { edge.formula = SourceAtomicFormulaId::new(1); }
+                nested.requests[0].formula = SourceAtomicFormulaId::new(1);
+                overlap.formulas.extend(nested.formulas);
+                overlap.predicate_segments = nested.predicate_segments;
+                overlap.predicate_heads = nested.predicate_heads;
+                overlap.candidates = nested.candidates;
+                overlap.edges.extend(nested.edges);
+                overlap.requests.extend(nested.requests);
+                assert_eq!(build_outer(overlap), Err(SourceAtomicFormulaError::ReorderedFormula { formula: SourceAtomicFormulaId::new(1) }));
+                assert_eq!(build_outer(outer_input.clone()), Ok(outer.clone()));
+                assert_eq!(outer.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &set_arena), Ok(()));
+                assert_eq!((outer_input, outer, set.clone()), outer_pristine);
                 let atomic_pristine = (atomic_input.clone(), atomic_arena.clone());
                 let build = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, None, &atomic_arena);
                 let atomic = build(atomic_input.clone()).unwrap_or_else(|error| panic!("genuine predicate condition case {case}: {error:?}"));

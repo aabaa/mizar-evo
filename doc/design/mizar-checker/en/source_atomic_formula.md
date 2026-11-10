@@ -88,9 +88,23 @@ sites, `non`, and transparent wrappers.
 Each direct written term slot resolves to exactly one maximal root occurrence
 from Task 252, 253, 254, or 255. Descendants remain with the nearest term
 family. Duplicate, overlapping, partial, non-root, reverse-contained, or
-cross-context targets fail atomically. An unrelated optional handoff may
+cross-context targets fail atomically, except the direct Membership RHS bridge below. An unrelated optional handoff may
 coexist with an absent fingerprint only when its occurrences are disjoint
 from all formula, wrapper, and direct-slot ranges.
+
+A Normal Membership may target a bare Normal Comprehension in its actual inner
+context only through its original left TermExpression / reserved `in` / right
+TermExpression children, with the right expression's exact range and sole raw
+Set root. Initial build authenticates the BindingEnv's exact SourceComprehension
+owner/range, Expression layer, Normal recovery and direct parent equal to the
+Membership context. Only same-inner-context Primary leaves in that root's
+validated condition may be hidden by nearest-family containment; all dependency
+rows and the single unresolved right-operand request remain intact. Equal-context
+routes retain their existing rules. Installation has no BindingEnv: it rechecks
+immutable rows, complete lower fingerprints and physical shape without claiming
+fresh lexical-environment authentication. The [scoped matrix](source_term.md#scoped-primary-reference-tests)
+keeps predicate conditions isolated without a Set dependency; nested predicate
+Atomic integration, C2, runner adoption and semantic credit remain deferred.
 
 A legacy predicate formula with no segment rows requires one ordinary head,
 one or more authenticated candidates, and one candidate-signature request per
