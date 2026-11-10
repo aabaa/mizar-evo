@@ -1,7 +1,7 @@
 # Source Atomic-Formula Transport
 
 Nested atomic ranges are admitted only for a membership operand's authenticated comprehension
-condition, preserving its direct-child anchor and ownership. Other overlap remains rejected;
+direct Equality/Inequality/Membership condition, preserving its direct-child anchor and ownership. Other overlap remains rejected;
 this transport extension does not establish the condition's truth.
 
 > Canonical language: English. Japanese companion:

@@ -1295,7 +1295,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         .ok_or_else(|| "membership set transaction produced no set handoff".to_owned())?
         .clone();
     let mut arena = membership_restore_arena(ast, set_output.typed_ast.nodes())?;
-    let equality_sites = set_handoff
+    let comparison_sites = set_handoff
         .conditions()
         .iter()
         .filter_map(|(_, condition)| {
@@ -1306,19 +1306,24 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             };
             let formula = ast.node(*child)?;
             (matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                && direct_token_texts(ast, formula) == ["="]
+                && matches!(direct_token_texts(ast, formula).as_slice(), [operator] if matches!(operator.as_str(), "=" | "<>"))
                 && formula.range == condition.source_range()
                 && surface_text(ast, formula) == condition.spelling())
             .then_some(child.index())
         })
         .collect::<Vec<_>>();
-    if !equality_sites.is_empty() {
+    if !comparison_sites.is_empty() {
         let mut nodes = arena
             .iter()
             .map(|(_, node)| node.clone())
             .collect::<Vec<_>>();
-        for site in &equality_sites {
-            nodes[*site].kind = "source.formula.atomic.equality".into();
+        for site in &comparison_sites {
+            nodes[*site].kind = if direct_token_texts(ast, &ast.nodes()[*site]) == ["<>"] {
+                "source.formula.atomic.inequality"
+            } else {
+                "source.formula.atomic.equality"
+            }
+            .into();
         }
         arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
     }
@@ -1328,7 +1333,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             let node = ast.node(view.id())?;
             (matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
                 && (direct_token_texts(ast, node) == ["in"]
-                    || equality_sites.contains(&view.id().index())))
+                    || comparison_sites.contains(&view.id().index())))
             .then_some(view.id())
         })
         .collect::<Vec<_>>();
@@ -1372,7 +1377,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         let left = target(*left)?;
         let right = target(*right)?;
         let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
-        let equality = equality_sites.contains(&formula_id.index());
+        let comparison = comparison_sites.contains(&formula_id.index());
         atomic_formulas.push(SourceAtomicFormulaInput {
             site: surface_site(formula_id),
             source_range: formula.range,
@@ -1380,7 +1385,9 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             context: BindingContextId::new(0),
             recovery: SourceAtomicFormulaRecovery::Normal,
             spelling: surface_text(ast, formula),
-            kind: if equality {
+            kind: if comparison && direct_token_texts(ast, formula) == ["<>"] {
+                SourceAtomicFormulaKind::Inequality
+            } else if comparison {
                 SourceAtomicFormulaKind::Equality
             } else {
                 SourceAtomicFormulaKind::Membership
@@ -1400,7 +1407,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 right,
             ),
         ]);
-        for (request_ordinal, edge_ordinal) in (if equality { 0..2 } else { 1..2 }).enumerate() {
+        for (request_ordinal, edge_ordinal) in (if comparison { 0..2 } else { 1..2 }).enumerate() {
             requests.push(SourceAtomicRequestInput {
                 formula: formula_key,
                 ordinal: request_ordinal,

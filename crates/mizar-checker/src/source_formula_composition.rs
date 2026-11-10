@@ -1637,7 +1637,9 @@ fn validate_condition_transaction(
             || atomic_formulas.formulas().iter().any(|(_, formula)| {
                 !matches!(
                     formula.kind(),
-                    SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Membership
+                    SourceAtomicFormulaKind::Equality
+                        | SourceAtomicFormulaKind::Inequality
+                        | SourceAtomicFormulaKind::Membership
                 ) || formula.recovery() != SourceAtomicFormulaRecovery::Normal
             })
             || atomic_formulas.edges().iter().any(|(_, edge)| {
@@ -1682,8 +1684,10 @@ fn validate_condition_transaction(
             }
         }
         if atomic_formulas.formulas().iter().any(|(id, formula)| {
-            formula.kind() == SourceAtomicFormulaKind::Equality
-                && !input.edges.iter().any(|edge| edge.formula == id)
+            matches!(
+                formula.kind(),
+                SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Inequality
+            ) && !input.edges.iter().any(|edge| edge.formula == id)
         }) {
             return Err(invalid);
         }

@@ -1842,7 +1842,9 @@ fn is_authenticated_condition_container(
     if set_term.kind() != SourceSetTermKind::Comprehension
         || !matches!(
             formula.kind,
-            SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Membership
+            SourceAtomicFormulaKind::Equality
+                | SourceAtomicFormulaKind::Inequality
+                | SourceAtomicFormulaKind::Membership
         )
         || formula.recovery != SourceAtomicFormulaRecovery::Normal
         || formula.context != set_term.context()
@@ -8796,6 +8798,168 @@ request#1 formula=0 ordinal=1 kind=operand-expected-type edge=1 candidate=- type
             .expect("valid set replay after rollback");
         assert_eq!(valid_after_atomic_failure, valid_after_set_failure);
         assert_eq!(atomic.set_term_fingerprint(), None);
+    }
+
+    #[test]
+    fn authenticated_inequality_condition_container_installs_and_replays_atomically() {
+        let mut options = ConditionContainerOptions::exact();
+        options.formula_kind = SourceAtomicFormulaKind::Inequality;
+        options.formula_range = (177, 183);
+        options.formula_spelling = "3 <> 4";
+        options.operand_ranges = [(177, 178), (182, 183)];
+        let mut fixture = condition_container_fixture(options);
+        fixture.set_input.terms[0].source_range = range(fixture.source, 139, 185);
+        fixture.set_input.terms[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : 3 <> 4 }".to_owned();
+        fixture.set_input.conditions[0].source_range = range(fixture.source, 177, 183);
+        fixture.set_input.conditions[0].spelling = "3 <> 4".to_owned();
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[11] = TypedNode::new(
+            "source.term.set.comprehension-condition",
+            SourceAnchor::Range(range(fixture.source, 177, 183)),
+        )
+        .with_children(vec![node(10).node()]);
+        nodes[12] = TypedNode::new(
+            "source.term.set.comprehension",
+            SourceAnchor::Range(range(fixture.source, 139, 185)),
+        )
+        .with_children(vec![
+            node(5).node(),
+            node(6).node(),
+            node(9).node(),
+            node(11).node(),
+        ]);
+        fixture.arena = TypedArena::try_new(None, nodes).expect("inequality condition arena");
+        let exact_arena = fixture.arena.clone();
+
+        let set_terms = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("exact inequality condition set");
+        let without_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("family-local exact inequality");
+        let with_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), Some(&set_terms))
+            .expect("authenticated inequality condition container");
+        assert_eq!(without_set, with_set);
+        assert_eq!(without_set.debug_text(), with_set.debug_text());
+        assert_eq!(with_set.set_term_fingerprint(), None);
+        assert_eq!(with_set.requests().len(), 2);
+
+        let set_then_atomic = fixture
+            .typed_ast()
+            .with_source_set_term(set_terms.clone())
+            .expect("inequality set-first install")
+            .with_source_atomic_formula(with_set.clone())
+            .expect("inequality atomic-after-set install");
+        let atomic_then_set = fixture
+            .typed_ast()
+            .with_source_atomic_formula(without_set.clone())
+            .expect("inequality atomic-first install")
+            .with_source_set_term(set_terms.clone())
+            .expect("inequality set-after-atomic install");
+        assert_eq!(set_then_atomic, atomic_then_set);
+        assert_eq!(set_then_atomic.debug_text(), atomic_then_set.debug_text());
+
+        let mut mismatched_input = fixture.set_input.clone();
+        mismatched_input.terms[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : 4 <> 3 }".to_owned();
+        mismatched_input.conditions[0].spelling = "4 <> 3".to_owned();
+        let mismatched_set = fixture
+            .build_set(mismatched_input)
+            .expect("mismatched inequality set remains family-local valid");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&mismatched_set))
+                .expect_err("mismatched set condition"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+        let mismatched_first = fixture
+            .typed_ast()
+            .with_source_set_term(mismatched_set.clone())
+            .expect("mismatched inequality set installs independently");
+        assert_eq!(
+            mismatched_first
+                .clone()
+                .with_source_atomic_formula(without_set.clone())
+                .expect_err("mismatched inequality relation must reject atom install"),
+            TypedAstError::InvalidSourceAtomicFormula
+        );
+        assert_eq!(mismatched_first.source_atomic_formula(), None);
+        let atomic_first = fixture
+            .typed_ast()
+            .with_source_atomic_formula(without_set.clone())
+            .expect("inequality atomic installs without set");
+        assert_eq!(
+            atomic_first
+                .clone()
+                .with_source_set_term(mismatched_set)
+                .expect_err("mismatched inequality relation must reject set install"),
+            TypedAstError::InvalidSourceSetTerm
+        );
+        assert_eq!(atomic_first.source_set_term(), None);
+
+        let mut non_direct_nodes = exact_arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        non_direct_nodes[11].children.clear();
+        fixture.arena = TypedArena::try_new(None, non_direct_nodes)
+            .expect("non-direct inequality condition arena");
+        let non_direct_set = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("non-direct set family");
+        fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("non-direct atomic family");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&non_direct_set))
+                .expect_err("non-direct inequality condition relation"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+        fixture.arena = exact_arena.clone();
+
+        let stale_set = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("inequality set before arena mutation");
+        let mut stale_nodes = exact_arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        stale_nodes[11].children.clear();
+        fixture.arena = TypedArena::try_new(None, stale_nodes).expect("stale inequality arena");
+        fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("stale relation remains family-local valid");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&stale_set))
+                .expect_err("stale inequality direct-child relation"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+        fixture.arena = exact_arena;
+
+        let replay_set = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("pristine inequality set replay");
+        let replay_atomic = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("pristine inequality atomic replay");
+        assert_eq!(
+            fixture
+                .typed_ast()
+                .with_source_set_term(replay_set)
+                .expect("pristine set replay install")
+                .with_source_atomic_formula(replay_atomic)
+                .expect("pristine atomic replay install"),
+            set_then_atomic,
+            "failed mismatch and relation checks must leave pristine replay available"
+        );
     }
 
     #[test]
