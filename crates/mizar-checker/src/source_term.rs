@@ -4278,6 +4278,148 @@ mod tests {
             assert_eq!(reference.use_ordinal(), actual.ordinal());
         }
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
+        if (19..=22).contains(&case) {
+            use crate::source_atomic_formula::*;
+            use mizar_resolve::env::SymbolKind;
+
+            let predicates = symbols.symbols().iter().filter(|entry| entry.kind() == SymbolKind::Predicate).collect::<Vec<_>>();
+            let [predicate] = predicates.as_slice() else { panic!("one original local binary predicate"); };
+            let declaration = ast.node_views().find(|view| view.kind() == &SurfaceNodeKind::PredicateDefinition).unwrap();
+            let pattern = declaration.child_views().find(|view| view.kind() == &SurfaceNodeKind::PredicatePattern).unwrap();
+            let pattern_text = pattern.child_views().map(|view| text[view.range().start..view.range().end].to_owned()).collect::<Vec<_>>();
+            assert_eq!(pattern_text.len(), 3);
+            assert_eq!(predicate.primary_spelling(), pattern_text.join(" "));
+            assert_eq!(predicate.notation_spelling(), Some(predicate.primary_spelling()));
+            assert_eq!(predicate.origin().anchor(), &SourceAnchor::Range(declaration.range()));
+            assert_eq!(predicate.origin().source_id(), ast.source_id);
+            assert_eq!(predicate.origin().module_id(), &input.module_id);
+            assert!(predicate.origin().import_edge().is_none() && !predicate.origin().is_recovered());
+            let definition = symbols.definitions().by_symbol(predicate.symbol()).unwrap();
+            assert_eq!(definition.kind(), DefinitionKind::Predicate);
+            assert_eq!(definition.origin(), predicate.origin());
+            assert_eq!(definition.contribution(), predicate.contribution());
+            assert_eq!(definition.notation_shape(), Some(predicate.primary_spelling()));
+            let contribution = symbols.contributions().get(predicate.contribution()).unwrap();
+            assert_eq!(contribution.kind(), &ContributionKind::LocalSource { source_id: ast.source_id });
+            assert_eq!(contribution.module(), &input.module_id);
+            assert!(contribution.effects().symbols().contains(predicate.symbol()));
+            assert!(contribution.effects().definitions().contains(&definition.id()));
+            let mut comprehensions = ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::SetComprehension).collect::<Vec<_>>();
+            comprehensions.sort_by_key(|view| view.range().start);
+            assert_eq!(ast.node_views().filter(|view| view.kind() == &SurfaceNodeKind::PredicateApplication && !in_definition(view.range())).count(), comp_count);
+            let primary_before = handoff.clone();
+            for comprehension in comprehensions {
+                let conditions = comprehension.child_views().filter(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).collect::<Vec<_>>();
+                let [condition] = conditions.as_slice() else { panic!("one actual condition"); };
+                let [formula_id] = condition.children() else { panic!("direct condition atom"); };
+                let formula = ast.node_view(*formula_id).unwrap();
+                assert_eq!(formula.kind(), &SurfaceNodeKind::PredicateApplication);
+                let [segment_id] = formula.children() else { panic!("singleton predicate condition"); };
+                let segment = ast.node_view(*segment_id).unwrap();
+                assert_eq!(segment.kind(), &SurfaceNodeKind::PredicateSegment);
+                let [left, head, right] = segment.children() else { panic!("positive binary segment"); };
+                let head = ast.node_view(*head).unwrap();
+                assert_eq!(head.kind(), &SurfaceNodeKind::PredicateHead);
+                let head_text = &text[head.range().start..head.range().end];
+                assert_eq!(head_text, pattern_text[1]);
+                assert!(declaration.range().end < formula.range().start);
+                let context = expected_context(scopes.get(&formula.id()).unwrap());
+                assert_eq!(bindings.contexts().get(context).unwrap().owner, BindingContextOwner::SourceComprehension { source_range: comprehension.range() });
+                let operands = [left, right].map(|expression| {
+                    let expression = ast.node_view(*expression).unwrap();
+                    assert_eq!(expression.kind(), &SurfaceNodeKind::TermExpression);
+                    let [leaf] = expression.children() else { panic!("direct Primary operand"); };
+                    let ordinal = leaves.iter().position(|view| view.id() == *leaf).unwrap();
+                    let term = handoff.terms().get(SourcePrimaryTermId::new(ordinal)).unwrap();
+                    assert_eq!(term.context(), context);
+                    assert_eq!(term.site(), &node(resolved.resolved_node_for(*leaf).unwrap().index()));
+                    assert_eq!(input.references[ordinal].binding.index(), winners[ordinal]);
+                    SourcePrimaryTermId::new(ordinal)
+                });
+                let mut nodes = arena.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+                for (view, key) in [(formula, "source.formula.atomic.predicate"), (segment, "source.formula.atomic.predicate-segment"), (head, "source.formula.atomic.predicate-head")] {
+                    nodes[resolved.resolved_node_for(view.id()).unwrap().index()].kind = key.into();
+                }
+                let atomic_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
+                for ((id, original), (_, actual)) in arena.iter().zip(atomic_arena.iter()) {
+                    let mut expected = original.clone();
+                    if [formula, segment, head].iter().any(|view| resolved.resolved_node_for(view.id()).unwrap().index() == id.index()) { expected.kind = actual.kind.clone(); }
+                    assert_eq!(actual, &expected, "only actual atom/segment/head keys are retagged");
+                    assert_eq!(actual.typing, TypingState::Unknown);
+                }
+                let atomic_input = SourceAtomicFormulaHandoffInput {
+                    source_id: ast.source_id, module_id: input.module_id.clone(),
+                    formulas: vec![SourceAtomicFormulaInput {
+                        site: node(resolved.resolved_node_for(formula.id()).unwrap().index()), source_range: formula.range(), source_ordinal: 0,
+                        context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[formula.range().start..formula.range().end].to_owned(), kind: SourceAtomicFormulaKind::PredicateApplication,
+                    }],
+                    wrappers: Vec::new(),
+                    predicate_segments: vec![SourcePredicateSegmentInput {
+                        formula: SourceAtomicFormulaId::new(0), ordinal: 0, site: node(resolved.resolved_node_for(segment.id()).unwrap().index()),
+                        source_range: segment.range(), context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[segment.range().start..segment.range().end].to_owned(),
+                        head: SourcePredicateHeadId::new(0), polarity: SourcePredicateSegmentPolarityInput::Positive,
+                        left_edge: SourceAtomicEdgeId::new(0), right_edge: SourceAtomicEdgeId::new(1),
+                    }],
+                    predicate_heads: vec![SourcePredicateHeadInput {
+                        formula: SourceAtomicFormulaId::new(0), site: node(resolved.resolved_node_for(head.id()).unwrap().index()), source_range: head.range(),
+                        context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: head_text.to_owned(), left_arity: 1, right_arity: 1,
+                    }],
+                    candidates: vec![SourcePredicateCandidateInput { head: SourcePredicateHeadId::new(0), ordinal: 0, symbol: predicate.symbol().clone(), contribution: predicate.contribution() }],
+                    type_sites: Vec::new(), attributes: Vec::new(),
+                    edges: operands.into_iter().enumerate().map(|(ordinal, id)| SourceAtomicEdgeInput {
+                        formula: SourceAtomicFormulaId::new(0), ordinal, role: if ordinal == 0 { SourceAtomicEdgeRole::PredicateLeftArgument } else { SourceAtomicEdgeRole::PredicateRightArgument }, target: SourceAtomicTermTarget::Primary(id),
+                    }).collect(),
+                    requests: vec![SourceAtomicRequestInput { formula: SourceAtomicFormulaId::new(0), ordinal: 0, kind: SourceAtomicRequestKind::PredicateCandidateSignature, edge: None, candidate: Some(SourcePredicateCandidateId::new(0)), type_site: None, attribute: None }],
+                };
+                let atomic_pristine = (atomic_input.clone(), atomic_arena.clone());
+                let build = |candidate| SourceAtomicFormulaProducer::build(candidate, &bindings, &symbols, &handoff, None, None, None, &atomic_arena);
+                let atomic = build(atomic_input.clone()).unwrap_or_else(|error| panic!("genuine predicate condition case {case}: {error:?}"));
+                assert_eq!(atomic.source_id(), ast.source_id);
+                assert_eq!(atomic.module_id(), &input.module_id);
+                assert_eq!(atomic.primary_term_fingerprint(), handoff.debug_text());
+                assert!(atomic.application_fingerprint().is_none() && atomic.structure_fingerprint().is_none() && atomic.set_term_fingerprint().is_none());
+                assert_eq!((atomic.formulas().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.edges().len(), atomic.requests().len()), (1, 1, 1, 1, 2, 1));
+                assert!(atomic.wrappers().is_empty() && atomic.type_sites().is_empty() && atomic.attributes().is_empty());
+                let row = atomic.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
+                assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&atomic_input.formulas[0].site, formula.range(), 0, context, SourceAtomicFormulaRecovery::Normal, atomic_input.formulas[0].spelling.as_str(), SourceAtomicFormulaKind::PredicateApplication));
+                let row = atomic.predicate_segments().get(SourcePredicateSegmentId::new(0)).unwrap();
+                assert_eq!((row.formula(), row.ordinal(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling()), (SourceAtomicFormulaId::new(0), 0, &atomic_input.predicate_segments[0].site, segment.range(), context, SourceAtomicFormulaRecovery::Normal, atomic_input.predicate_segments[0].spelling.as_str()));
+                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &SourcePredicateSegmentPolarityInput::Positive, SourceAtomicEdgeId::new(0), SourceAtomicEdgeId::new(1)));
+                let row = atomic.predicate_heads().get(SourcePredicateHeadId::new(0)).unwrap();
+                assert_eq!((row.formula(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling(), row.left_arity(), row.right_arity()), (SourceAtomicFormulaId::new(0), &atomic_input.predicate_heads[0].site, head.range(), context, SourceAtomicFormulaRecovery::Normal, head_text, 1, 1));
+                let row = atomic.candidates().get(SourcePredicateCandidateId::new(0)).unwrap();
+                assert_eq!((row.head(), row.ordinal(), row.symbol(), row.contribution()), (SourcePredicateHeadId::new(0), 0, predicate.symbol(), predicate.contribution()));
+                for ((id, row), expected) in atomic.edges().iter().zip(&atomic_input.edges) {
+                    assert_eq!((row.formula(), row.ordinal(), row.role(), row.target()), (expected.formula, id.index(), expected.role, SourceAtomicTermTarget::Primary(operands[id.index()])));
+                }
+                let row = atomic.requests().get(SourceAtomicRequestId::new(0)).unwrap();
+                assert_eq!((row.formula(), row.ordinal(), row.kind(), row.edge(), row.candidate(), row.type_site(), row.attribute()), (SourceAtomicFormulaId::new(0), 0, SourceAtomicRequestKind::PredicateCandidateSignature, None, Some(SourcePredicateCandidateId::new(0)), None, None));
+                // Allocate a missing ID only for refusal; the original collector stays authoritative.
+                let mut invalid_contributions = symbols.contributions().clone();
+                let missing_contribution = invalid_contributions.insert(input.module_id.clone(), contribution.kind().clone(), contribution.anchor().clone());
+                assert!(symbols.contributions().get(missing_contribution).is_none());
+                for mutation in 0..10 {
+                    let mut candidate = atomic_input.clone();
+                    match mutation {
+                        0 => candidate.candidates[0].symbol = SymbolId::new(module("foreign"), LocalSymbolId::new("foreign"), FullyQualifiedName::new("foreign::predicate")),
+                        1 => candidate.candidates[0].contribution = missing_contribution,
+                        2 => { candidate.formulas[0].context = BindingContextId::new(0); candidate.predicate_segments[0].context = BindingContextId::new(0); candidate.predicate_heads[0].context = BindingContextId::new(0); }
+                        3 => candidate.edges[0].target = candidate.edges[1].target,
+                        4 => candidate.edges.swap(0, 1),
+                        5 => candidate.source_id = other_source_id(),
+                        6 => candidate.formulas[0].site = input.terms[operands[0].index()].site.clone(),
+                        7 => candidate.predicate_heads[0].source_range = formula.range(),
+                        8 => candidate.predicate_segments[0].head = SourcePredicateHeadId::new(1),
+                        _ => candidate.requests.clear(),
+                    }
+                    assert!(build(candidate).is_err(), "genuine atom case {case} mutation {mutation}");
+                    assert_eq!(build(atomic_input.clone()), Ok(atomic.clone()));
+                }
+                assert_eq!((atomic_input, atomic_arena), atomic_pristine);
+                assert_eq!(handoff, primary_before);
+                assert_eq!(consume(input.clone(), &bindings), Ok(primary_before.clone()));
+            }
+        }
         if case == 8 || case == 21 {
             assert_eq!(input.terms[1].spelling, "z");
             for mutation in 0..7 {

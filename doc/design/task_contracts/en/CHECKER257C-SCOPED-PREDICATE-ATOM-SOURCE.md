@@ -1,0 +1,17 @@
+# Task CHECKER257C-SCOPED-PREDICATE-ATOM-SOURCE: genuine structural intake
+Canonical language: English; [Japanese pointer](../ja/CHECKER257C-SCOPED-PREDICATE-ATOM-SOURCE.md).
+Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md), [Task257C](../../mizar-checker/en/todo.md); consumer: existing Atomic build.
+Authority: [EN9.1](../../../spec/en/09.predicates.md#91-overview-and-syntax), [EN13.4.2](../../../spec/en/13.term_expression.md#1342-set-comprehension-fraenkel-operator), [EN4.6](../../../spec/en/04.variables_and_constants.md#46-scoping-and-shadowing).
+Full tier: adds an Atomic consumer to the scoped Primary family, failing the same-consumer pattern criterion. Classification: genuine-source test gap, no production behavior change.
+
+## Frozen boundary
+In existing source_term genuine context/Primary tests, derive structural singleton predicate-condition Atomic inputs from the admitted earlier simple local binary definition prefix and real scoped theorem/proof Primary. Use original Frontend/collector/Resolver source, existing SourceAtomicFormulaProducer::build, actual candidate/contribution/notation/declaration provenance and one unresolved PredicateCandidateSignature request per call.
+Retain each actual condition segment/head/formula site, exact range/spelling/order/context, direct Primary operand IDs and source winner. Retag only corresponding original typed metadata nodes, preserving resolved links, children and Unknown typing; no reconstructed source, synthetic collector authority or checked phase.
+No SourceSet dependency or Set/C2/actual runner integration claim. Preserve definition-body/formal exclusion, existing declarations/clocks, no inferred types/facts, type/domain/sethood/formation/capture/proof acceptance or coverage credit. Existing production builders and admission/refusal boundaries remain unchanged; no API/helper/type/field/production change.
+If genuine inputs reveal a prior production refusal, report its exact cause and return to parent scope review; do not weaken expectations or alter production under this test-only contract.
+Update only necessary paired [Primary test boundary](../../mizar-checker/en/source_term.md#scoped-primary-reference-tests), [Atomic test boundary](../../mizar-checker/en/source_atomic_formula.md) and owner links; broader257C remains open.
+
+## Tests and exit
+Independent PRE authority/test-intent/trust must confirm that existing Atomic contracts admit this structural intake. Reuse current header/proof/both and alpha/layout predicate-prefix source cases, original declaration/candidate provenance and structural occurrence oracle; do not duplicate the source pipeline.
+Assert complete predicate atom/segment/head/operand/request tables, actual contexts and source identity, deterministic replay/input purity, empty semantic products and unchanged scoped Primary rows. Mutate candidate/provenance/context/operand association/source/site while preserving pristine replay. Reuse existing generic candidate/default-deny and non-predicate controls instead of copying matrices.
+Independent POST precision/test-sufficiency/trust/EN-JA consistency, volume review and full-tier gates/quality. Verification: fmt, all-target/all-feature Clippy -Dwarnings, both lint_policy, source_term/Atomic owners, resolver/verifier standard and short CLI; full cargo test before shared push. Test-only derived-documentation cap60lines applies.

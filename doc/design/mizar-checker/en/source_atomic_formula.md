@@ -10,6 +10,8 @@ this transport extension does not establish the condition's truth.
 ## Original-source formula wrappers
 Native fixed-connective headers preserve each transparent atomic group in the existing wrapper table, owned by its actual equality with its real typed site, range, order and lexical context. Scoped re-inference retains these rows and rederives their contexts. Compound groups remain with the composite owner; grouping adds no formula identity or truth.
 
+The genuine [scoped Primary tests](source_term.md#scoped-primary-reference-tests) build isolated singleton predicate conditions from original source nodes and local collector provenance, with direct Primary operands and unresolved candidate-signature requests. Optional family dependencies remain absent; this test boundary adds no Set/C2 integration or checked semantic result.
+
 ## Scope
 
 Checker Task 256, extended by Task 257C1, owns a syntax-free immutable

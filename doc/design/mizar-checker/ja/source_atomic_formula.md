@@ -9,6 +9,8 @@ atomic 式の range の入れ子は、所属式の集合オペランドに属す
 ## Original-source formula wrappers
 native固定結合headerの透過的なatomic括弧は、実等式をownerとする既存wrapper tableで保持し、実typed site・range・順序・lexical contextを保つ。scoped re-inferenceは行を保持してcontextを導き直す。compound括弧はcomposite ownerに残し、括弧でformula identityや真偽を追加しない。
 
+実在 [scoped Primary テスト](source_term.md) は元 source node と local collector provenance から独立した singleton predicate condition を構成し、direct Primary operand と未解決 candidate-signature request を保持する。Optional family dependency は渡さず、このテスト境界は Set/C2 統合や checked semantic result を追加しない。
+
 ## スコープ
 
 Checker Task 256 は Task 257C1 により拡張され、ordinary predicate

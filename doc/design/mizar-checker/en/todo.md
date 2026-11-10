@@ -637,6 +637,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Native Comprehension lexical contexts](../../task_contracts/en/CHECKER257C-NATIVE-COMPREHENSION-CONTEXTS.md); authentic scoped BindingEnv/Primary prefix before predicate conditions.
     - [x] [Native mapper references](../../task_contracts/en/CHECKER257C-NATIVE-MAPPER-REFERENCES.md); authenticate generator mapper leaves before written declarations.
     - [x] [Predicate-definition lexical prefix](../../task_contracts/en/CHECKER257C-PREDICATE-PREFIX-CONTEXTS.md); coexistence before predicate Atomic/C2 intake.
+    - [x] [Scoped predicate Atomic source oracle](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-ATOM-SOURCE.md); structural intake before Set/C2 integration.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,
       polarity-token, and shared-boundary transport.
       - [x] Freeze the syntax-free nine-table contract, exact consumer, tests,
