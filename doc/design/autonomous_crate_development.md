@@ -27,8 +27,33 @@ expectation files, and traceability metadata.
    `doc/design/spec_coverage_audit.md` coverage, owner, or deferral changed.
    If nothing changed, leave it untouched and write no note.
 8. Run verification from `AGENTS.md` under [Verification Cadence](#verification-cadence).
-9. Commit when authorized by `AGENTS.md`. The next-task handoff, with its
-   recommended reasoning setting, goes in the final response only.
+9. Commit when authorized by `AGENTS.md`. The settings actually used and the
+   next-task handoff, with its recommended model and reasoning setting, go in
+   the final response only.
+
+## Dispatch Boundary
+
+An outer orchestrator (Muse, or the user acting in that role) dispatches one
+unit per run to the parent agent (Codex): a single task contract, which may
+bundle identical-shape slices. This section overrides every other clause of
+this protocol on task selection, continuation, push timing, and parent
+settings; `AGENTS.md` owns the dispatch fields and the final-response form.
+
+- The orchestrator owns task selection, cross-task sequencing, continuation,
+  and push timing, and carries the verification state (last full-success
+  revision, outstanding changed-task count) between runs. It requests a push
+  once per ten changed tasks, on the task whose full `cargo test` the
+  [Verification Cadence](#verification-cadence) requires.
+- The parent owns only the dispatched unit and remains "the parent" for
+  sub-agents, reviews, verification, and commits. It never selects another
+  task; it commits, reports, and ends the run.
+- The parent stops only when a
+  [stop condition](#autonomous-design-decisions-and-stop-conditions) applies or
+  the contract cannot be identified, and reports to the orchestrator instead
+  of moving to other work.
+- The dispatch's model and reasoning setting take precedence over the defaults
+  in [Delegation And Model Routing](#delegation-and-model-routing), whose table
+  governs only sub-agents inside the task.
 
 ## Review Standards
 
@@ -183,6 +208,8 @@ require at least one of the following:
 If a later milestone has unowned semantics but a safe derived prerequisite or
 documentation-only deferral decision is available, complete that bounded work
 and continue fresh inventory instead of stopping at the first design fork.
+Task sequencing and this continuation apply only inside the
+[dispatched unit](#dispatch-boundary); stop requests go to the orchestrator.
 
 ## Crate Kickoff
 
@@ -476,7 +503,8 @@ reviewers may expand to dependencies and authorities.
 Use a finding-specific follow-up after fixes, including the new diff and any
 newly affected requirements. Any authority ambiguity,
 semantic choice, public-API expansion, lower-stage change, or soundness issue
-returns to the parent agent at the user's requested reasoning setting.
+returns to the parent agent at the dispatch's or user's requested reasoning
+setting.
 
 The parent's context is re-sent with every request, so the parent keeps it
 small:
@@ -918,7 +946,8 @@ Open questions:
 
 ## Delegation And Model Routing
 
-Default parent: `gpt-6.1-sol`, `high`; explicit user settings take precedence.
+Default parent: `gpt-6.1-sol`, `high`; a dispatch's settings take precedence,
+then explicit user settings. The table below routes sub-agents inside a task.
 The parent retains authority interpretation, specification/test intent,
 soundness boundaries, public API ownership, semantic acceptance, and final
 scoring. Delegated analysis never transfers these decisions or relaxes gates.
@@ -951,8 +980,9 @@ If a model is unavailable, use the closest eligible route. Without model
 selection, retain the parent setting for authority/soundness decisions, use
 `high` for bounded implementation/review and `medium` or lower only for
 mechanical checks. All reviews, verification, and commit rules still apply.
-Record actual per-run routing in the final response (and commit body when
-relevant), never under `doc/`. Only this section may document durable routing
+Record actual per-run routing, and the model and effort recommended for the
+next task, in the final response (and commit body when relevant), never under
+`doc/`. Only this section may document durable routing
 policy under `doc/`, as an exception to generic documentation bans.
 
 ## PR Type Guidance
