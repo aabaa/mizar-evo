@@ -643,6 +643,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Paired predicate condition atoms](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-CONDITION-ATOMS.md); Atomic condition ownership before C2 adoption.
     - [x] [Scoped predicate condition composition](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-CONDITION-COMPOSITION.md); complete scoped C2 associations and Typed/final replay.
     - [x] [Negative singleton predicate conditions](../../task_contracts/en/CHECKER257C-SCOPED-NEGATIVE-PREDICATE-CONDITIONS.md); paired Atomic ownership and existing C2 replay; native runner adoption remains separate.
+    - [ ] [Native scoped predicate conditions](../../task_contracts/en/CHECKER257C-NATIVE-SCOPED-PREDICATE-CONDITIONS.md); contract frozen; scoped runner extraction and complete C2/Typed/final transport await implementation.
     - [x] **Task 257C1:** extend Task 256 with predicate-chain segment,
       polarity-token, and shared-boundary transport.
       - [x] Freeze the syntax-free nine-table contract, exact consumer, tests,
