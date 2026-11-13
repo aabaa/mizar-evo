@@ -1353,7 +1353,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             let formula = ast.node(cursor)?;
             ((matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
                 && matches!(direct_token_texts(ast, formula).as_slice(), [operator] if matches!(operator.as_str(), "=" | "<>" | "in")))
-                || scoped && wrappers.is_empty() && matches!(formula.kind, SurfaceNodeKind::PredicateApplication))
+                || scoped && matches!(formula.kind, SurfaceNodeKind::PredicateApplication))
             .then_some((cursor, wrappers))
         })
         .collect::<Vec<_>>();

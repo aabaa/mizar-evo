@@ -1859,10 +1859,9 @@ fn is_authenticated_condition_container(
         return false;
     };
     if formula.kind == SourceAtomicFormulaKind::PredicateApplication {
-        // Only a paired bare predicate authenticates nested condition ownership.
+        // Only a paired predicate authenticates nested condition ownership.
         if formula.recovery != SourceAtomicFormulaRecovery::Normal
             || formula.context != set_term.context()
-            || effective_formula_range != formula.source_range
             || set_term.kind() != SourceSetTermKind::Comprehension
             || set_term.recovery() != SourceSetTermRecovery::Normal
             || !properly_contains(set_term_range, formula.source_range)
@@ -1876,7 +1875,6 @@ fn is_authenticated_condition_container(
                     && row.kind() == SourceSetTermKind::Comprehension
                     && properly_contains(set_term_range, row.source_range())
             })
-            || input.wrappers.iter().any(|row| row.formula == formula_id)
             || !input.formulas[..formula_id.index()]
                 .iter()
                 .enumerate()
@@ -1900,19 +1898,7 @@ fn is_authenticated_condition_container(
         let Some(atom_node) = arena.node(formula.site.node()) else {
             return false;
         };
-        if atom_node.children.is_empty()
-            || atom_node.children.len() != segments.clone().count()
-            || !set_terms.conditions().iter().any(|(_, condition)| {
-                condition.term() == set_term_id
-                    && condition.recovery() == SourceSetTermRecovery::Normal
-                    && condition.source_range() == formula.source_range
-                    && condition.spelling() == formula.spelling
-                    && condition.condition_site() != &formula.site
-                    && arena
-                        .node(condition.condition_site().node())
-                        .is_some_and(|node| node.children.as_slice() == [formula.site.node()])
-            })
-        {
+        if atom_node.children.is_empty() || atom_node.children.len() != segments.clone().count() {
             return false;
         }
         let mut previous_right = None;
@@ -1997,7 +1983,6 @@ fn is_authenticated_condition_container(
             }
             previous_right = Some(segment.right_edge);
         }
-        return true;
     }
     let wrappers = input
         .wrappers
@@ -2023,6 +2008,7 @@ fn is_authenticated_condition_container(
             SourceAtomicFormulaKind::Equality
                 | SourceAtomicFormulaKind::Inequality
                 | SourceAtomicFormulaKind::Membership
+                | SourceAtomicFormulaKind::PredicateApplication
         )
         || formula.recovery != SourceAtomicFormulaRecovery::Normal
         || formula.context != set_term.context()
@@ -2093,7 +2079,8 @@ fn is_authenticated_condition_container(
                 .node(condition.condition_site().node())
                 .is_some_and(|node| {
                     node.children.contains(&outer_site.node())
-                        && (outer_site == &formula.site
+                        && (formula.kind != SourceAtomicFormulaKind::PredicateApplication
+                            && outer_site == &formula.site
                             || node.children.as_slice() == [outer_site.node()])
                 })
     })

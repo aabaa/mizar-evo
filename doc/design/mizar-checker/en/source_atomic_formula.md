@@ -104,13 +104,15 @@ routes retain their existing rules. Installation has no BindingEnv: it rechecks
 immutable rows, complete lower fingerprints and physical shape without claiming
 fresh lexical-environment authentication.
 
-A bare Normal binary predicate condition, singleton or chained, admits nested
+A Normal binary predicate condition, singleton or chained, admits nested
 ownership only with its earlier Normal Membership and BuiltinRightOperand edge
 to the exact owning Comprehension. That Set occurrence must be an independent
 unwrapped Normal root containing no other Comprehension row; disjoint roots may
-coexist. Authenticate the exact Set condition range/spelling and sole atom child,
-the atom's complete ordered segment children, and each actual head and right
-TermExpression. Only the first segment owns a written left TermExpression; later
+coexist. Authenticate the exact Set condition range/spelling and sole effective atom child,
+including each whole-condition Normal parenthesis/FormulaExpression bridge and
+its ordered punctuation, exact ranges and lexical context. Wrappers add no atom identity.
+Authenticate the atom's complete ordered segment children and each actual head
+and right TermExpression. Only the first segment owns a written left TermExpression; later
 segments inherit exactly the previous right edge and share one earlier local
 predicate identity. Negative segments own ordered
 verb / not children matching the recorded polarity sites. Existing segment/polarity validators retain token validation. Each Normal expression has the exact
@@ -118,8 +120,8 @@ Primary range and sole actual Primary child. General Atomic validators retain
 provenance, context, candidate, role and unresolved-request ownership. Build and
 immutable installation recheck this physical chain with complete lower
 fingerprints under the existing context bridge above. Isolated predicate-plus-Set
-without the paired Membership, legacy, compound or wrapped
-predicate conditions and nested/wrapped Comprehensions remain excluded;
+without the paired Membership, legacy, compound
+predicate conditions, grouped operands and nested/wrapped Comprehensions remain excluded;
 formation, capture, sethood, applicability, truth and acceptance
 remain deferred; requests remain unanswered.
 

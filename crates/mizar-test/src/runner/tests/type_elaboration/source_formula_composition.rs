@@ -4874,8 +4874,8 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         .enumerate()
         .find(|(_, case)| case.id.0 == TASK257C2_CASE)
         .unwrap();
-    let conditioned = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A does not likes z };";
-    let singleton = conditioned.replace("z likes A does not likes z", "z likes A");
+    let conditioned = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A does not likes z) };";
+    let singleton = conditioned.replace("(z likes A does not likes z)", "(z likes A)");
     let singleton_output = metamorphic_guard::with_source(case, &singleton, || {
         let singleton_frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
         assert!(singleton_frontend.diagnostics.is_empty());
@@ -5282,14 +5282,53 @@ fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
     };
     // Literal IDs follow written outer Membership/condition order. Each outer
     // Membership owns two edges before its condition's written operand edges.
-    let cases = [
+    let mut cases = vec![
         (single("z likes A likes z"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
+        (single("(z likes A)"), vec![], vec![], vec![0,1,1,0]),
+        (single("((z likes A))"), vec![], vec![], vec![0,1,1,0]),
+        (single("((((z likes A))))"), vec![], vec![], vec![0,1,1,0]),
+        (":: singleton alpha/layout\ndefinition\n let P,R be set; pred Renamed: P relates R means P = R; end;\n theorem RenamedTheorem: for B being set holds B in { item where item is set : (  :: inner comment\n item relates B  ) };\n".to_owned(), vec![], vec![], vec![0,1,1,0]),
+        (single("(z does not likes A)"), vec![], vec![], vec![0,1,1,0]),
+        (single("((z do not likes A))"), vec![], vec![], vec![0,1,1,0]),
+        (single("(z likes A likes z)"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : ((z likes A likes z)) }} proof let A,Q be set; thus A in {{ w where w is set : (w likes A likes w) }}; end;"), vec![(1,0,0,1,3),(3,0,2,3,8)], vec![], vec![0,1,1,0,1,2,4,4,2,4]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : (z likes A likes z) }} & A in {{ w where w is set : w does not likes A }};"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1,0,2,2,0]),
+        (":: alpha/layout\ndefinition\n let P,R be set;\n pred Renamed: P relates R means P = R;\n end;\n theorem RenamedTheorem: for B being set holds B in { item where item is set : ((item relates B relates item)) };\n".to_owned(), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : (  (z likes A likes z)  ) }};"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
         (single("z likes A does not likes z likes A"), vec![(1,0,0,1,3),(1,1,1,2,4)], vec![(1,0,1)], vec![0,1,1,0,1,0]),
         (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A does not likes z }} & A in {{ w where w is set : w do not likes A likes w }};"), vec![(1,0,0,1,3),(3,0,2,3,8)], vec![(1,0,1),(3,0,2)], vec![0,1,1,0,1,0,2,2,0,2]),
         (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A likes z }} proof let A,Q be set; thus A in {{ w where w is set : w likes A does not likes w }}; end;"), vec![(1,0,0,1,3),(3,0,2,3,8)], vec![(3,0,3)], vec![0,1,1,0,1,2,4,4,2,4]),
         (":: alpha/layout\ndefinition\n let P,R be set;\n pred Renamed: P relates R means P = R;\n end;\n theorem RenamedTheorem: for B being set holds B in { item where item is set : item relates B relates item };\n".to_owned(), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
         (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A likes z }} & A in {{ w where w is set : w does not likes A }};"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1,0,2,2,0]),
     ];
+    for (verb, depth, negative_segment) in [
+        ("does not", 1, 0),
+        ("does not", 1, 1),
+        ("does not", 1, 2),
+        ("does not", 2, 0),
+        ("does not", 2, 1),
+        ("does not", 2, 2),
+        ("do not", 1, 0),
+        ("do not", 1, 1),
+        ("do not", 1, 2),
+        ("do not", 2, 0),
+        ("do not", 2, 1),
+        ("do not", 2, 2),
+    ] {
+        let condition = match negative_segment {
+            0 => format!("z {verb} likes A likes z likes A"),
+            1 => format!("z likes A {verb} likes z likes A"),
+            2 => format!("z likes A likes z {verb} likes A"),
+            _ => unreachable!(),
+        };
+        let grouped = format!("{}{}{}", "(".repeat(depth), condition, ")".repeat(depth));
+        cases.push((
+            single(&grouped),
+            vec![(1,0,0,1,3),(1,1,1,2,4)],
+            vec![(1,0,negative_segment)],
+            vec![0,1,1,0,1,0],
+        ));
+    }
 
     for (case_index, (source, expected_pairs, expected_negative_segments, winners)) in
         cases.into_iter().enumerate()
@@ -5335,9 +5374,7 @@ fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
             let c2 = typed
                 .source_condition_formula_composition()
                 .expect("native C2 product");
-            let c3 = typed
-                .source_predicate_chain_composition()
-                .expect("native conditioned C3 product");
+            let c3 = typed.source_predicate_chain_composition();
             assert!(!primary.terms().is_empty(), "{label} Primary rows");
             assert!(
                 application.applications().is_empty(),
@@ -5371,23 +5408,68 @@ fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
                 "{label} complete C2 rows"
             );
             let actual_pairs = c3
-                .conjunctions()
+                .map(|c3| {
+                    c3.conjunctions()
+                        .iter()
+                        .map(|(_, row)| (
+                            row.formula().index(),
+                            row.ordinal(),
+                            row.left_segment().index(),
+                            row.right_segment().index(),
+                            row.boundary().index(),
+                        ))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let actual_negative_segments = c3
+                .map(|c3| {
+                    c3.negations()
+                        .iter()
+                        .map(|(_, row)| (row.formula().index(), row.ordinal(), row.segment().index()))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let expected_atomic_negatives = atomic
+                .formulas()
                 .iter()
-                .map(|(_, row)| {
-                    (
-                        row.formula().index(),
-                        row.ordinal(),
-                        row.left_segment().index(),
-                        row.right_segment().index(),
-                        row.boundary().index(),
-                    )
+                .flat_map(|(formula_id, formula)| {
+                    let site = ast
+                        .node_views()
+                        .find(|view| view.id().index() == formula.site().node().index())
+                        .expect("Atomic formula source view")
+                        .id();
+                    let root = ast
+                        .node(site)
+                        .expect("Atomic formula source node");
+                    let mut ordinal = 0;
+                    root.children.iter().filter_map(move |child| {
+                        let segment = ast.node(*child).unwrap();
+                        if segment.kind != mizar_syntax::SurfaceNodeKind::PredicateSegment {
+                            return None;
+                        }
+                        let is_negative = segment.children.iter().any(|token| {
+                            ast.node(*token)
+                                .unwrap()
+                                .token_text()
+                                .is_some_and(|text| text == "not")
+                        });
+                        let current = ordinal;
+                        ordinal += 1;
+                        is_negative.then_some((formula_id.index(), current))
+                    })
                 })
                 .collect::<Vec<_>>();
-            let actual_negative_segments = c3
-                .negations()
+            let actual_atomic_negatives = atomic
+                .predicate_segments()
                 .iter()
-                .map(|(_, row)| (row.formula().index(), row.ordinal(), row.segment().index()))
+                .filter(|(_, row)| matches!(
+                    row.polarity(),
+                    mizar_checker::source_atomic_formula::SourcePredicateSegmentPolarityInput::Negative { .. }
+                ))
+                .map(|(_, row)| (row.formula().index(), row.ordinal()))
                 .collect::<Vec<_>>();
+            assert_eq!(actual_atomic_negatives, expected_atomic_negatives, "{label} source-segment polarity census");
+            assert_eq!(c3.is_some(), !expected_pairs.is_empty(), "{label} C3 presence follows literal chain adjacencies");
             assert_eq!(
                 actual_pairs, expected_pairs,
                 "{label} ordered adjacent-segment rows"
@@ -5396,6 +5478,61 @@ fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
                 actual_negative_segments, expected_negative_segments,
                 "{label} negative-segment census"
             );
+
+            let mut expected_wrappers = Vec::new();
+            for (formula_id, formula) in atomic.formulas().iter() {
+                let mut cursor = ast
+                    .node_views()
+                    .find(|view| view.id().index() == formula.site().node().index())
+                    .expect("Atomic source formula site")
+                    .id();
+                let mut groups = Vec::new();
+                while let Some(parent) = ast
+                    .node_views()
+                    .find(|view| view.children().contains(&cursor))
+                {
+                    match parent.kind() {
+                        mizar_syntax::SurfaceNodeKind::FormulaExpression => {
+                            cursor = parent.id();
+                        }
+                        mizar_syntax::SurfaceNodeKind::ParenthesizedFormula => {
+                            groups.push(parent);
+                            cursor = parent.id();
+                        }
+                        _ => break,
+                    }
+                }
+                groups.reverse();
+                for (ordinal, group) in groups.into_iter().enumerate() {
+                    expected_wrappers.push((
+                        formula_id,
+                        ordinal,
+                        group.id().index(),
+                        group.range(),
+                        formula.context(),
+                        ast.token_views()
+                            .filter(|token| {
+                                group.range().start <= token.range().start
+                                    && token.range().end <= group.range().end
+                            })
+                            .map(|token| token.as_token().unwrap().text.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                    ));
+                }
+            }
+            assert_eq!(atomic.wrappers().len(), expected_wrappers.len(), "{label} complete Atomic wrapper census");
+            for ((_, wrapper), (formula_id, ordinal, site, range, context, spelling)) in
+                atomic.wrappers().iter().zip(expected_wrappers)
+            {
+                assert_eq!(wrapper.formula(), formula_id, "{label} wrapper formula");
+                assert_eq!(wrapper.ordinal(), ordinal, "{label} wrapper ordinal");
+                assert_eq!(wrapper.site().node().index(), site, "{label} wrapper source child");
+                assert_eq!(wrapper.source_range(), range, "{label} wrapper source range");
+                assert_eq!(wrapper.context(), context, "{label} wrapper context");
+                assert_eq!(wrapper.recovery(), mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal, "{label} wrapper recovery");
+                assert_eq!(wrapper.spelling(), spelling, "{label} wrapper spelling");
+            }
 
             assert!(typed.contexts().is_empty() && typed.types().is_empty());
             assert!(typed.facts().is_empty() && typed.coercions().is_empty());
@@ -5410,7 +5547,7 @@ fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
             );
             assert_eq!(
                 output.resolved.source_predicate_chain_composition(),
-                Some(c3)
+                c3
             );
             assert!(output.resolved.expr_metadata().is_empty());
             assert!(output.resolved.diagnostics().is_empty());

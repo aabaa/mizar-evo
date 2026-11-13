@@ -16,8 +16,8 @@ use mizar_checker::{
         SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
         SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
         SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
-        SourceAtomicTermTarget, SourcePredicateCandidateInput, SourcePredicateHeadInput,
-        SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
+        SourceAtomicTermTarget, SourceAtomicWrapperInput, SourcePredicateCandidateInput,
+        SourcePredicateHeadInput, SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
     source_composite_formula::{
         SourceBinderTypeHead, SourceBinderTypeSiteId, SourceBinderTypeSiteInput,
@@ -587,10 +587,7 @@ fn build_task_257c2_output(
         .ok_or_else(|| "Task257C2 lost Task255 handoff".to_owned())?;
     let (arena, application, atomic_input, composition_edges) =
         if let Some(atomic) = lower.source_atomic_formula() {
-            if !atomic.wrappers().is_empty()
-                || !atomic.type_sites().is_empty()
-                || !atomic.attributes().is_empty()
-            {
+            if !atomic.type_sites().is_empty() || !atomic.attributes().is_empty() {
                 return Err("Task257C2 scoped predicate profile changed".to_owned());
             }
             let arena = lower.nodes().clone();
@@ -626,7 +623,19 @@ fn build_task_257c2_output(
                         kind: row.kind(),
                     })
                     .collect(),
-                wrappers: Vec::new(),
+                wrappers: atomic
+                    .wrappers()
+                    .iter()
+                    .map(|(_, row)| SourceAtomicWrapperInput {
+                        formula: row.formula(),
+                        ordinal: row.ordinal(),
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().to_owned(),
+                    })
+                    .collect(),
                 predicate_segments: atomic
                     .predicate_segments()
                     .iter()
@@ -709,9 +718,19 @@ fn build_task_257c2_output(
                     let formulas = atomic
                         .formulas()
                         .iter()
-                        .filter(|(_, formula)| {
-                            formula.site().node().index() == child.index()
-                                && formula.source_range() == condition.source_range()
+                        .filter(|(id, formula)| {
+                            let outer = atomic.wrappers().iter().find(|(_, wrapper)| {
+                                wrapper.formula() == *id && wrapper.ordinal() == 0
+                            });
+                            let (site, range, spelling) = outer.map_or(
+                                (formula.site(), formula.source_range(), formula.spelling()),
+                                |(_, wrapper)| {
+                                    (wrapper.site(), wrapper.source_range(), wrapper.spelling())
+                                },
+                            );
+                            site.node().index() == child.index()
+                                && range == condition.source_range()
+                                && spelling == condition.spelling()
                         })
                         .map(|(id, _)| id)
                         .collect::<Vec<_>>();

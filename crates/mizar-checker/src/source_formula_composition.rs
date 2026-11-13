@@ -1194,7 +1194,15 @@ fn validate_predicate_chain_transaction(
                         || reference.term() != id
                         || reference.role() != SourcePrimaryTermReferenceRole::Variable
                 })
-            || !atomic_formulas.wrappers().is_empty()
+            || atomic_formulas.wrappers().iter().any(|(_, wrapper)| {
+                lower.is_none()
+                    || !atomic_formulas
+                        .formulas()
+                        .get(wrapper.formula())
+                        .is_some_and(|formula| {
+                            formula.kind() == SourceAtomicFormulaKind::PredicateApplication
+                        })
+            })
             || !atomic_formulas.type_sites().is_empty()
             || !atomic_formulas.attributes().is_empty()
             || atomic_formulas.formulas().iter().any(|(_, formula)| {

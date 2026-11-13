@@ -3964,6 +3964,7 @@ mod tests {
         };
         use mizar_session::{DiskSourceLoader, Edition, SourceInput, SourceOriginInput};
 
+        let mut grouped_corruptions_checked = false;
         let mut previous_chain_dependencies: Option<(
             crate::source_application::SourceFunctorApplicationHandoff,
             crate::source_set_term::SourceSetTermHandoff,
@@ -4028,6 +4029,24 @@ mod tests {
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z does not likes A likes z };", 1, 2, vec![0,1,1,0,1], Some(true)),
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A do not likes z };", 1, 2, vec![0,1,1,0,1], Some(true)),
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end;\n:: alpha/layout\ntheorem T: for parcel being\tset holds parcel in { point where point is set : point likes parcel likes point } & parcel in { needle where needle is set : needle does not likes parcel };", 2, 3, vec![0,1,1,0,1,0,2,2,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A) };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z likes A)) };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((((z likes A)))) };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z does not likes A) };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z do not likes A)) };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A likes z) };", 1, 2, vec![0,1,1,0,1], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z does not likes A likes z likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z does not likes A likes z likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z do not likes A likes z likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z do not likes A likes z likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A does not likes z likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z likes A does not likes z likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A do not likes z likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z likes A do not likes z likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A likes z does not likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z likes A likes z does not likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : (z likes A likes z do not likes A) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : ((z likes A likes z do not likes A)) };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
         ].into_iter().enumerate() {
         let directory = std::env::temp_dir().join(format!(
             "native-comprehension-contexts-{}-{case}",
@@ -4346,6 +4365,15 @@ mod tests {
             };
             let mut nodes = arena.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
             let mut retagged = Vec::new();
+            let canonical_spelling = |view: syntax::SurfaceNodeView<'_>| {
+                let mut leaves = ast.node_views().filter(|leaf| {
+                    leaf.children().is_empty()
+                        && view.range().start <= leaf.range().start
+                        && leaf.range().end <= view.range().end
+                }).collect::<Vec<_>>();
+                leaves.sort_by_key(|leaf| leaf.range().start);
+                leaves.into_iter().map(|leaf| text[leaf.range().start..leaf.range().end].to_owned()).collect::<Vec<_>>().join(" ")
+            };
             for (ordinal, comprehension) in comprehensions.iter().copied().enumerate() {
                 let term = SourceSetTermId::new(ordinal);
                 let generator_id = SourceSetGeneratorId::new(ordinal);
@@ -4377,10 +4405,10 @@ mod tests {
                 assert_eq!(handoff.references().get(SourcePrimaryTermReferenceId::new(mapper_primary.index())).unwrap().binding(), binding);
                 let spelling = |view: syntax::SurfaceNodeView<'_>| text[view.range().start..view.range().end].to_owned();
                 let site = |view: syntax::SurfaceNodeView<'_>| node(resolved.resolved_node_for(view.id()).unwrap().index());
-                set_input.terms.push(SourceSetTermInput { site: site(comprehension), source_range: comprehension.range(), source_ordinal: ordinal, context, recovery: SourceSetTermRecovery::Normal, spelling: spelling(comprehension), kind: SourceSetTermKind::Comprehension });
+                set_input.terms.push(SourceSetTermInput { site: site(comprehension), source_range: comprehension.range(), source_ordinal: ordinal, context, recovery: SourceSetTermRecovery::Normal, spelling: canonical_spelling(comprehension), kind: SourceSetTermKind::Comprehension });
                 set_input.generators.push(SourceSetGeneratorInput { term, ordinal: 0, site: site(identifier), source_range: identifier.range(), spelling: spelling(identifier), context, recovery: SourceSetTermRecovery::Normal, type_site: type_id });
                 set_input.type_sites.push(SourceSetTypeSiteInput { owner: SourceSetTypeOwner::Generator(generator_id), site: site(written_type), source_range: written_type.range(), spelling: spelling(written_type), head_site: site(type_head), head_range: type_head.range(), head_spelling: spelling(type_head), context, recovery: SourceSetTermRecovery::Normal, head: SourceSetTypeHead::BuiltinSet });
-                set_input.conditions.push(SourceSetConditionInput { term, ordinal: 0, colon_site: site(colon), colon_range: colon.range(), colon_spelling: spelling(colon), condition_site: site(condition), source_range: condition.range(), spelling: spelling(condition), recovery: SourceSetTermRecovery::Normal });
+                set_input.conditions.push(SourceSetConditionInput { term, ordinal: 0, colon_site: site(colon), colon_range: colon.range(), colon_spelling: spelling(colon), condition_site: site(condition), source_range: condition.range(), spelling: canonical_spelling(condition), recovery: SourceSetTermRecovery::Normal });
                 set_input.edges.push(SourceSetEdgeInput { term, ordinal: 0, role: SourceSetEdgeRole::ComprehensionMapper, target: SourceSetTarget::Primary(mapper_primary) });
                 set_input.requests.extend([
                     SourceSetRequestInput { term, ordinal: 0, kind: SourceSetRequestKind::GeneratorSethood, generator: Some(generator_id), type_site: Some(type_id) },
@@ -4394,6 +4422,7 @@ mod tests {
                 }
                 for view in ast.node_views().filter(|view| condition.range().start <= view.range().start && view.range().end <= condition.range().end) {
                     let key = match view.kind() {
+                        SurfaceNodeKind::ParenthesizedFormula => "source.formula.atomic.parenthesized",
                         SurfaceNodeKind::PredicateApplication => "source.formula.atomic.predicate",
                         SurfaceNodeKind::PredicateSegment => "source.formula.atomic.predicate-segment",
                         SurfaceNodeKind::PredicateHead => "source.formula.atomic.predicate-head",
@@ -4498,8 +4527,24 @@ mod tests {
             for (pair, comprehension) in comprehensions.iter().copied().enumerate() {
                 let conditions = comprehension.child_views().filter(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).collect::<Vec<_>>();
                 let [condition] = conditions.as_slice() else { panic!("one actual condition"); };
-                let [formula_id] = condition.children() else { panic!("direct condition atom"); };
-                let formula = ast.node_view(*formula_id).unwrap();
+                let mut formula = *condition;
+                let mut formula_wrappers = Vec::new();
+                loop {
+                    match formula.kind() {
+                        SurfaceNodeKind::FormulaExpression => {
+                            let [child] = formula.children() else { panic!("one actual formula child"); };
+                            formula = ast.node_view(*child).unwrap();
+                        }
+                        SurfaceNodeKind::ParenthesizedFormula => {
+                            let [open, child, close] = formula.children() else { panic!("actual transparent formula bridge"); };
+                            assert_eq!(&text[ast.node_view(*open).unwrap().range().start..ast.node_view(*open).unwrap().range().end], "(");
+                            assert_eq!(&text[ast.node_view(*close).unwrap().range().start..ast.node_view(*close).unwrap().range().end], ")");
+                            formula_wrappers.push(formula);
+                            formula = ast.node_view(*child).unwrap();
+                        }
+                        _ => break,
+                    }
+                }
                 assert_eq!(formula.kind(), &SurfaceNodeKind::PredicateApplication);
                 let segment_count = formula.children().len();
                 assert!(segment_count > 0);
@@ -4545,9 +4590,14 @@ mod tests {
                     source_id: ast.source_id, module_id: input.module_id.clone(),
                     formulas: vec![SourceAtomicFormulaInput {
                         site: node(resolved.resolved_node_for(formula.id()).unwrap().index()), source_range: formula.range(), source_ordinal: 0,
-                        context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[formula.range().start..formula.range().end].to_owned(), kind: SourceAtomicFormulaKind::PredicateApplication,
+                        context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: canonical_spelling(formula), kind: SourceAtomicFormulaKind::PredicateApplication,
                     }],
-                    wrappers: Vec::new(),
+                    wrappers: formula_wrappers.iter().enumerate().map(|(ordinal, wrapper)| SourceAtomicWrapperInput {
+                        formula: SourceAtomicFormulaId::new(0), ordinal,
+                        site: node(resolved.resolved_node_for(wrapper.id()).unwrap().index()),
+                        source_range: wrapper.range(), context, recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: canonical_spelling(*wrapper),
+                    }).collect(),
                     predicate_segments: vec![SourcePredicateSegmentInput {
                         formula: SourceAtomicFormulaId::new(0), ordinal: 0, site: node(resolved.resolved_node_for(segment.id()).unwrap().index()),
                         source_range: segment.range(), context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[segment.range().start..segment.range().end].to_owned(),
@@ -4600,6 +4650,16 @@ mod tests {
                 }
                 // All rows above come from actual written children, including shared boundaries.
                 let atomic_arena = set_arena.clone();
+                if !formula_wrappers.is_empty() {
+                    assert_eq!(atomic_input.wrappers.len(), formula_wrappers.len());
+                    for (ordinal, (actual, row)) in formula_wrappers.iter().zip(&atomic_input.wrappers).enumerate() {
+                        assert_eq!((row.formula, row.ordinal, &row.site, row.source_range, row.context, row.recovery, row.spelling.as_str()), (
+                            SourceAtomicFormulaId::new(0), ordinal,
+                            &node(resolved.resolved_node_for(actual.id()).unwrap().index()), actual.range(), context,
+                            SourceAtomicFormulaRecovery::Normal, canonical_spelling(*actual).as_str(),
+                        ));
+                    }
+                }
                 assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &set_arena).is_ok(), "genuine whole-chain isolated Atomic before paired ownership");
                 let rhs = ast.node_view(*parents.get(&comprehension.id()).unwrap()).unwrap();
                 let membership = ast.node_view(*parents.get(&rhs.id()).unwrap()).unwrap();
@@ -4620,7 +4680,7 @@ mod tests {
                     source_id: ast.source_id, module_id: input.module_id.clone(),
                     formulas: vec![SourceAtomicFormulaInput {
                         site: node(resolved.resolved_node_for(membership.id()).unwrap().index()), source_range: membership.range(), source_ordinal: 0,
-                        context: outer_context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[membership.range().start..membership.range().end].to_owned(), kind: SourceAtomicFormulaKind::Membership,
+                        context: outer_context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: canonical_spelling(membership), kind: SourceAtomicFormulaKind::Membership,
                     }],
                     wrappers: Vec::new(), predicate_segments: Vec::new(), predicate_heads: Vec::new(), candidates: Vec::new(), type_sites: Vec::new(), attributes: Vec::new(),
                     edges: vec![
@@ -4751,11 +4811,13 @@ mod tests {
                 let mut overlap = outer_input.clone();
                 let mut nested = atomic_input.clone();
                 nested.formulas[0].source_ordinal = 1;
+                for row in &mut nested.wrappers { row.formula = SourceAtomicFormulaId::new(1); }
                 for row in &mut nested.predicate_segments { row.formula = SourceAtomicFormulaId::new(1); row.left_edge = SourceAtomicEdgeId::new(row.left_edge.index() + 2); row.right_edge = SourceAtomicEdgeId::new(row.right_edge.index() + 2); }
                 for row in &mut nested.predicate_heads { row.formula = SourceAtomicFormulaId::new(1); }
                 for edge in &mut nested.edges { edge.formula = SourceAtomicFormulaId::new(1); }
                 for row in &mut nested.requests { row.formula = SourceAtomicFormulaId::new(1); }
                 overlap.formulas.extend(nested.formulas);
+                overlap.wrappers.extend(nested.wrappers);
                 overlap.predicate_segments = nested.predicate_segments;
                 overlap.predicate_heads = nested.predicate_heads;
                 overlap.candidates = nested.candidates;
@@ -4769,10 +4831,56 @@ mod tests {
                     assert!(paired.is_ok(), "genuine negative paired Atomic owner should authenticate actual condition children and polarity sites: {paired:?}");
                 }
                 let combined = paired.expect("paired original whole-chain predicate condition after genuine Frontend/Resolver/Primary/Set/isolated Atomic success");
+                if !grouped_corruptions_checked && formula_wrappers.len() > 1 && segment_count > 1 {
+                    grouped_corruptions_checked = true;
+                    let reject_wrapped_pair = |candidate, arena: &TypedArena| SourceAtomicFormulaProducer::build(
+                        candidate, &bindings, &symbols, &handoff, None, None, Some(&set), arena,
+                    );
+                    for mutation in 0..9 {
+                        let mut candidate = overlap.clone();
+                        let group = &mut candidate.wrappers;
+                        match mutation {
+                            0 => group.clear(),
+                            1 => {
+                                let mut extra = group[0].clone();
+                                extra.ordinal = group.len();
+                                group.push(extra);
+                            }
+                            2 => { let duplicate = group[0].clone(); group.push(duplicate); }
+                            3 if group.len() > 1 => group.swap(0, 1),
+                            3 => group[0].ordinal += 1,
+                            4 => group[0].spelling.replace_range(..1, "["),
+                            5 => group[0].source_range.start += 1,
+                            6 => group[0].context = BindingContextId::new(0),
+                            7 => group[0].site = node(usize::MAX),
+                            _ => group[0].recovery = SourceAtomicFormulaRecovery::Degraded,
+                        }
+                        assert!(reject_wrapped_pair(candidate, &set_arena).is_err(), "paired grouped wrapper row mutation {case}/{mutation}");
+                    }
+                    let wrapper_node = overlap.wrappers[0].site.node();
+                    let condition_node = set.conditions().get(SourceSetConditionId::new(set_id.index())).unwrap().condition_site().node();
+                    for mutation in 0..10 {
+                        let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                        match mutation {
+                            0 => nodes[condition_node.index()].children.clear(),
+                            1 => nodes[condition_node.index()].children[0] = atomic_input.formulas[0].site.node(),
+                            2 => nodes[condition_node.index()].children.push(atomic_input.formulas[0].site.node()),
+                            3 => nodes[wrapper_node.index()].children.clear(),
+                            4 => nodes[wrapper_node.index()].children.push(atomic_input.predicate_heads[0].site.node()),
+                            5 => nodes[wrapper_node.index()].children[1] = atomic_input.predicate_heads[0].site.node(),
+                            6 => nodes[wrapper_node.index()].children.swap(0, 2),
+                            7 => nodes[wrapper_node.index()].kind = "ParenthesizedFormula".into(),
+                            8 => nodes[wrapper_node.index()].recovery = NodeRecoveryState::Recovered,
+                            _ => nodes[wrapper_node.index()].anchor = SourceAnchor::Range(formula.range()),
+                        }
+                        let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                        assert!(reject_wrapped_pair(overlap.clone(), &candidate_arena).is_err(), "paired grouped bridge mutation {case}/{mutation}");
+                    }
+                }
                 assert_eq!((combined.source_id(), combined.module_id(), combined.primary_term_fingerprint(), combined.set_term_fingerprint()), (ast.source_id, &input.module_id, handoff.debug_text().as_str(), Some(set.debug_text().as_str())));
                 assert!(combined.application_fingerprint().is_none() && combined.structure_fingerprint().is_none());
-                assert_eq!((combined.formulas().len(), combined.predicate_segments().len(), combined.predicate_heads().len(), combined.candidates().len(), combined.edges().len(), combined.requests().len()), (2, segment_count, segment_count, segment_count, segment_count + 3, segment_count + 1));
-                assert!(combined.wrappers().is_empty() && combined.type_sites().is_empty() && combined.attributes().is_empty());
+                assert_eq!((combined.formulas().len(), combined.wrappers().len(), combined.predicate_segments().len(), combined.predicate_heads().len(), combined.candidates().len(), combined.edges().len(), combined.requests().len()), (2, formula_wrappers.len(), segment_count, segment_count, segment_count, segment_count + 3, segment_count + 1));
+                assert!(combined.type_sites().is_empty() && combined.attributes().is_empty());
                 assert!(membership.range().start < comprehension.range().start && comprehension.range().start < formula.range().start);
                 for ((id, row), expected) in combined.formulas().iter().zip(&overlap.formulas) {
                     assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&expected.site, expected.source_range, id.index(), expected.context, expected.recovery, expected.spelling.as_str(), expected.kind));
@@ -4802,6 +4910,7 @@ mod tests {
                     row.left_edge = SourceAtomicEdgeId::new(edge_base + row.left_edge.index());
                     row.right_edge = SourceAtomicEdgeId::new(edge_base + row.right_edge.index());
                 }
+                for row in &mut reindexed.wrappers { row.formula = SourceAtomicFormulaId::new(2 * pair + 1); }
                 for row in &mut reindexed.predicate_heads { row.formula = SourceAtomicFormulaId::new(2 * pair + 1); }
                 for row in &mut reindexed.candidates { row.head = SourcePredicateHeadId::new(segment_base + row.head.index()); }
                 for row in &mut reindexed.edges { row.formula = SourceAtomicFormulaId::new(2 * pair + row.formula.index()); }
@@ -4811,6 +4920,7 @@ mod tests {
                     row.candidate = row.candidate.map(|id| SourcePredicateCandidateId::new(segment_base + id.index()));
                 }
                 aggregate_input.formulas.extend(reindexed.formulas);
+                aggregate_input.wrappers.extend(reindexed.wrappers);
                 aggregate_input.predicate_segments.extend(reindexed.predicate_segments);
                 aggregate_input.predicate_heads.extend(reindexed.predicate_heads);
                 aggregate_input.candidates.extend(reindexed.candidates);
@@ -5107,8 +5217,8 @@ mod tests {
                 assert_eq!(atomic.module_id(), &input.module_id);
                 assert_eq!(atomic.primary_term_fingerprint(), handoff.debug_text());
                 assert!(atomic.application_fingerprint().is_none() && atomic.structure_fingerprint().is_none() && atomic.set_term_fingerprint().is_none());
-                assert_eq!((atomic.formulas().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.edges().len(), atomic.requests().len()), (1, segment_count, segment_count, segment_count, segment_count + 1, segment_count));
-                assert!(atomic.wrappers().is_empty() && atomic.type_sites().is_empty() && atomic.attributes().is_empty());
+                assert_eq!((atomic.formulas().len(), atomic.wrappers().len(), atomic.predicate_segments().len(), atomic.predicate_heads().len(), atomic.candidates().len(), atomic.edges().len(), atomic.requests().len()), (1, formula_wrappers.len(), segment_count, segment_count, segment_count, segment_count + 1, segment_count));
+                assert!(atomic.type_sites().is_empty() && atomic.attributes().is_empty());
                 let row = atomic.formulas().get(SourceAtomicFormulaId::new(0)).unwrap();
                 assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&atomic_input.formulas[0].site, formula.range(), 0, context, SourceAtomicFormulaRecovery::Normal, atomic_input.formulas[0].spelling.as_str(), SourceAtomicFormulaKind::PredicateApplication));
                 let row = atomic.predicate_segments().get(SourcePredicateSegmentId::new(0)).unwrap();
@@ -5185,17 +5295,31 @@ mod tests {
             let aggregate = build_aggregate(aggregate_input.clone()).expect("all original Membership/predicate pairs in source order");
             let total_segments = comprehensions.iter().map(|comprehension| {
                 let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
-                ast.node_view(condition.children()[0]).unwrap().children().len()
+                let mut actual = condition;
+                loop {
+                    match actual.kind() {
+                        SurfaceNodeKind::FormulaExpression => actual = ast.node_view(actual.children()[0]).unwrap(),
+                        SurfaceNodeKind::ParenthesizedFormula => actual = ast.node_view(actual.children()[1]).unwrap(),
+                        _ => break,
+                    }
+                }
+                actual.children().len()
             }).sum::<usize>();
-            assert_eq!((aggregate.formulas().len(), aggregate.predicate_segments().len(), aggregate.predicate_heads().len(), aggregate.candidates().len(), aggregate.edges().len(), aggregate.requests().len()), (2 * comp_count, total_segments, total_segments, total_segments, total_segments + 3 * comp_count, total_segments + comp_count));
-            assert!(aggregate.wrappers().is_empty() && aggregate.type_sites().is_empty() && aggregate.attributes().is_empty());
+            assert_eq!((aggregate.formulas().len(), aggregate.wrappers().len(), aggregate.predicate_segments().len(), aggregate.predicate_heads().len(), aggregate.candidates().len(), aggregate.edges().len(), aggregate.requests().len()), (2 * comp_count, aggregate_input.wrappers.len(), total_segments, total_segments, total_segments, total_segments + 3 * comp_count, total_segments + comp_count));
+            assert!(aggregate.type_sites().is_empty() && aggregate.attributes().is_empty());
             assert_eq!((aggregate.primary_term_fingerprint(), aggregate.set_term_fingerprint()), (handoff.debug_text().as_str(), Some(set.debug_text().as_str())));
             assert!(aggregate.application_fingerprint().is_none() && aggregate.structure_fingerprint().is_none());
             let mut condition_input = SourceConditionFormulaCompositionHandoffInput { source_id: ast.source_id, module_id: input.module_id.clone(), edges: Vec::new() };
             for (pair, comprehension) in comprehensions.iter().enumerate() {
                 let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
-                let [atom] = condition.children() else { panic!("actual condition atom"); };
-                let atom = ast.node_view(*atom).unwrap();
+                let mut atom = condition;
+                loop {
+                    match atom.kind() {
+                        SurfaceNodeKind::FormulaExpression => atom = ast.node_view(atom.children()[0]).unwrap(),
+                        SurfaceNodeKind::ParenthesizedFormula => atom = ast.node_view(atom.children()[1]).unwrap(),
+                        _ => break,
+                    }
+                }
                 let rhs = ast.node_view(*parents.get(&comprehension.id()).unwrap()).unwrap();
                 let membership = ast.node_view(*parents.get(&rhs.id()).unwrap()).unwrap();
                 assert_eq!(rhs.children(), &[comprehension.id()]);
@@ -5212,7 +5336,15 @@ mod tests {
                 let predicate_id = SourceAtomicFormulaId::new(2 * pair + 1);
                 let segment_base = comprehensions[..pair].iter().map(|comprehension| {
                     let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
-                    ast.node_view(condition.children()[0]).unwrap().children().len()
+                    let mut actual = condition;
+                    loop {
+                        match actual.kind() {
+                            SurfaceNodeKind::FormulaExpression => actual = ast.node_view(actual.children()[0]).unwrap(),
+                            SurfaceNodeKind::ParenthesizedFormula => actual = ast.node_view(actual.children()[1]).unwrap(),
+                            _ => break,
+                        }
+                    }
+                    actual.children().len()
                 }).sum::<usize>();
                 let edge_base = segment_base + 3 * pair;
                 let request_base = segment_base + pair;
@@ -5250,7 +5382,19 @@ mod tests {
                 || text.contains("holds A in { z where z is set : z likes A do not likes z };")
                 || text.contains("holds A in { z where z is set : z likes A does not likes z likes A };")
                 || text.contains("proof let A be set; thus A in { z where z is set : z do not likes A likes z does not likes A }; end;")
-                || text.contains("for parcel being\tset holds parcel in { point where point is set : point likes parcel likes point } & parcel in { needle where needle is set : needle does not likes parcel };");
+                || text.contains("for parcel being\tset holds parcel in { point where point is set : point likes parcel likes point } & parcel in { needle where needle is set : needle does not likes parcel };")
+                || comprehensions.iter().any(|comprehension| {
+                    let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
+                    let mut actual = condition;
+                    loop {
+                        match actual.kind() {
+                            SurfaceNodeKind::FormulaExpression => actual = ast.node_view(actual.children()[0]).unwrap(),
+                            SurfaceNodeKind::ParenthesizedFormula => actual = ast.node_view(actual.children()[1]).unwrap(),
+                            _ => break,
+                        }
+                    }
+                    actual.kind() == &SurfaceNodeKind::PredicateApplication && actual.children().len() > 1
+                });
             if c3_matrix_case {
                 let mut chain_input = SourcePredicateChainCompositionHandoffInput {
                     source_id: ast.source_id,
@@ -5261,8 +5405,14 @@ mod tests {
                 let mut segment_base = 0;
                 for (pair, comprehension) in comprehensions.iter().enumerate() {
                     let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
-                    let [atom] = condition.children() else { panic!("actual condition atom"); };
-                    let atom = ast.node_view(*atom).unwrap();
+                    let mut atom = condition;
+                    loop {
+                        match atom.kind() {
+                            SurfaceNodeKind::FormulaExpression => atom = ast.node_view(atom.children()[0]).unwrap(),
+                            SurfaceNodeKind::ParenthesizedFormula => atom = ast.node_view(atom.children()[1]).unwrap(),
+                            _ => break,
+                        }
+                    }
                     let segments = atom.children().iter().map(|id| ast.node_view(*id).unwrap()).collect::<Vec<_>>();
                     let formula = SourceAtomicFormulaId::new(2 * pair + 1);
                     for ordinal in 0..segments.len().saturating_sub(1) {
@@ -5364,6 +5514,17 @@ mod tests {
                 assert_eq!(final_ast.clone(), final_ast);
                 assert_eq!(final_ast.clone().debug_text(), final_ast.debug_text());
                 assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast.clone()));
+
+                let set_first = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
+                    .with_source_term(handoff.clone()).unwrap()
+                    .with_source_set_term(set.clone()).unwrap()
+                    .with_source_atomic_formula(aggregate.clone()).unwrap()
+                    .with_source_application(application.clone()).unwrap()
+                    .with_source_condition_formula_composition(composition.clone()).unwrap()
+                    .with_source_predicate_chain_composition(chain.clone()).unwrap();
+                assert_eq!(set_first, typed, "both lower orders retain conditioned C2/C3, case {case}");
+                assert_eq!(task269gcu_resolved_result_with_inputs(&set_first, Vec::new(), Vec::new()), Ok(final_ast.clone()),
+                    "both lower orders replay conditioned C2/C3, case {case}");
 
                 let mut injected_without_c2 = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
                     .with_source_term(handoff.clone()).unwrap()

@@ -1465,10 +1465,96 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
             } else {
                 source.replace(": z likes A", ": (z likes A)")
             };
-            reject_profile(grouped_condition, "grouped condition");
+            if case_index == 0 {
+                let grouped_frontend =
+                    super::super::super::formula_statement::step5c8_test_frontend(
+                        &grouped_condition,
+                    );
+                assert!(
+                    grouped_frontend.diagnostics.is_empty(),
+                    "grouped condition frontend"
+                );
+                let grouped_ast = grouped_frontend.ast.unwrap();
+                let grouped_symbols = resolver_symbol_collection(root, case, &grouped_ast);
+                assert!(
+                    grouped_symbols.detail_keys.is_empty(),
+                    "grouped condition resolver"
+                );
+                let grouped_output = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(
+                    &grouped_ast,
+                    grouped_symbols.module.clone(),
+                    &grouped_symbols.env,
+                    &grouped_condition,
+                )
+                .expect("grouped singleton native C2 selector")
+                .expect("grouped singleton native C2 route");
+                assert_eq!(
+                    grouped_output
+                        .typed_ast
+                        .source_condition_formula_composition()
+                        .unwrap()
+                        .edges()
+                        .len(),
+                    1,
+                    "grouped singleton keeps one whole-condition C2 association"
+                );
+                assert_eq!(
+                    grouped_output
+                        .typed_ast
+                        .source_atomic_formula()
+                        .unwrap()
+                        .wrappers()
+                        .len(),
+                    1,
+                    "grouped singleton retains its Atomic wrapper"
+                );
+                assert!(
+                    grouped_output
+                        .typed_ast
+                        .source_predicate_chain_composition()
+                        .is_none(),
+                    "grouped singleton has no C3"
+                );
+                let grouped_replay = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(
+                    &grouped_ast,
+                    grouped_symbols.module,
+                    &grouped_symbols.env,
+                    &grouped_condition,
+                )
+                .unwrap()
+                .unwrap();
+                assert_eq!(grouped_replay.typed_ast, grouped_output.typed_ast);
+                assert_eq!(grouped_replay.resolved, grouped_output.resolved);
+            }
             reject_profile(
                 source.replace(": z likes A", ": z likes A & z likes A"),
                 "compound condition",
+            );
+            if case_index == 0 {
+                let wrapped_compound = source.replace(": z likes A", ": (z likes A & A likes z)");
+                let wrapped_compound_frontend =
+                    super::super::super::formula_statement::step5c8_test_frontend(
+                        &wrapped_compound,
+                    );
+                assert!(
+                    wrapped_compound_frontend.diagnostics.is_empty(),
+                    "wrapped compound condition frontend"
+                );
+                reject_profile(wrapped_compound, "wrapped compound condition");
+                let wrapped_formula_negation = source.replace(": z likes A", ": (not z likes A)");
+                let wrapped_formula_negation_frontend =
+                    super::super::super::formula_statement::step5c8_test_frontend(
+                        &wrapped_formula_negation,
+                    );
+                assert!(
+                    wrapped_formula_negation_frontend.diagnostics.is_empty(),
+                    "wrapped formula-level negation frontend"
+                );
+                reject_profile(wrapped_formula_negation, "wrapped formula-level negation");
+            }
+            reject_profile(
+                source.replace(": z likes A", ": (z) likes A"),
+                "grouped predicate operand",
             );
             let wrapped_source = if source.contains(": z likes A likes z") {
                 source.replace(

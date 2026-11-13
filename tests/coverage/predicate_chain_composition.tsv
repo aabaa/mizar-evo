@@ -4,4 +4,4 @@ whole-chain-c2	Task257C	Task257C3	implemented	7e93e5dfc whole-chain predicate co
 conditioned-chain-c3	Task257C	standalone-c3/whole-chain-c2	implemented	CHECKER257C-CONDITIONED-CHAIN-C3-ROWS; C2 receipt retained without co-installation
 c2-c3-co-installation	Task257C	conditioned-chain-c3	implemented	CHECKER257C-C2-C3-COINSTALLATION; C2-first exact receipt co-installation
 native-c2-c3-co-installation	Task257C	c2-c3-co-installation/whole-chain-c2	implemented	CHECKER257C-NATIVE-C2-C3-COINSTALLATION; native acquisition of matching conditioned rows
-grouped-predicate-conditions	Task257C	native-c2-c3-co-installation	frozen	CHECKER257C-GROUPED-PREDICATE-CONDITIONS; transparent whole-condition wrappers only; implementation pending
+grouped-predicate-conditions	Task257C	native-c2-c3-co-installation	implemented	CHECKER257C-GROUPED-PREDICATE-CONDITIONS; transparent whole-condition wrappers only
