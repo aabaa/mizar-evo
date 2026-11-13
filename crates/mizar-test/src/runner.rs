@@ -1797,10 +1797,11 @@ fn step5c11_registration_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
 }
 
-const STEP5C13_OVERLOAD_IDS: [&str; 3] = [
+const STEP5C13_OVERLOAD_IDS: [&str; 4] = [
     "pass_advanced_semantics_overload_distinct_loci_001",
     "fail_advanced_semantics_overload_ambiguous_candidates_001",
     "pass_advanced_semantics_ordinary_root_001",
+    "pass_advanced_semantics_redefinition_pending_001",
 ];
 
 const INLINE_CLOSURE_REQUEST_ID: &str = "pass_advanced_semantics_inline_closure_requests_001";
@@ -2811,7 +2812,10 @@ fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
 
 fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
     let negative = case.id.0 == STEP5C13_OVERLOAD_IDS[1];
-    let id = STEP5C13_OVERLOAD_IDS[if case.id.0 == STEP5C13_OVERLOAD_IDS[2] {
+    let pending = case.id.0 == STEP5C13_OVERLOAD_IDS[3];
+    let id = STEP5C13_OVERLOAD_IDS[if pending {
+        3
+    } else if case.id.0 == STEP5C13_OVERLOAD_IDS[2] {
         2
     } else {
         usize::from(negative)
@@ -2820,7 +2824,12 @@ fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
     let path = format!("tests/miz/{directory}/overload/{id}.miz");
     case.id.0 == id
         && case.expectation.schema_version == 1
-        && case.expectation.domain == "overload.resolution"
+        && case.expectation.domain
+            == if pending {
+                "redefinition.pending"
+            } else {
+                "overload.resolution"
+            }
         && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.spec_refs.len() == 1
         && case.expectation.spec_refs[0].0
@@ -2863,6 +2872,165 @@ fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.declaration_symbol_payloads.is_empty()
         && case.expectation.snapshots.is_none()
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
+fn source_pending_redefinition(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<mizar_checker::resolved_typed_ast::ResolvedTypedAst, String> {
+    use mizar_checker::{
+        overload_resolution::{
+            CandidateOrigin, CoherenceStatus, ExposedResultSource, OverloadResultStatus,
+        },
+        source_redefinition::{SourceOrdinaryRootHandoff, SourceRedefinitionHandoff},
+        type_checker::TypeHeadRef,
+        typed_ast::InitialObligationStatus,
+    };
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use std::sync::Arc;
+    let invalid = || "source.redefinition.invalid_pending_case".to_owned();
+    if !output.diagnostics.is_empty() {
+        return Err(invalid());
+    }
+    let ast = output.ast.ok_or_else(invalid)?;
+    let resolver = resolver_symbol_collection(root, case, &ast);
+    if !resolver.detail_keys.is_empty() {
+        return Err(invalid());
+    }
+    let original = Arc::new(type_elaboration::source_syntax_receiver(
+        &ast,
+        &resolver.module,
+    )?);
+    let native =
+        Arc::new(SurfaceResolvedArena::lower(&ast, &resolver.module).map_err(|_| invalid())?);
+    let roots = Arc::new(SourceOrdinaryRootHandoff::build(
+        Arc::clone(&original),
+        native,
+        Arc::new(resolver.env),
+    )?);
+    let handoff = SourceRedefinitionHandoff::build(roots)?;
+    let installed = original
+        .as_ref()
+        .clone()
+        .with_source_redefinition(handoff.clone())
+        .map_err(|_| invalid())?;
+    let final_ast = type_elaboration::assemble_empty_resolved_typed_ast(&installed, Vec::new())?;
+    let input = handoff.input();
+    let [(symbol, ordinary, owner, obligation)] = input.targets.as_slice() else {
+        return Err(invalid());
+    };
+    let [(intent_symbol, intent_owner, Some(label))] = input.coherence_intents.as_slice() else {
+        return Err(invalid());
+    };
+    let [candidate] = input.refinements.as_slice() else {
+        return Err(invalid());
+    };
+    let (_, result) = handoff
+        .selection()
+        .results()
+        .iter()
+        .next()
+        .ok_or_else(invalid)?;
+    let OverloadResultStatus::Resolved {
+        root: selected,
+        refinements,
+        exposed_result: Some(exposed),
+        inserted_views,
+    } = &result.status
+    else {
+        return Err(invalid());
+    };
+    let selected = handoff
+        .roots()
+        .specificity()
+        .candidates()
+        .get(*selected)
+        .ok_or_else(invalid)?;
+    let rows = installed
+        .source_node_entries()
+        .ok_or_else(invalid)?
+        .collect::<Vec<_>>();
+    let row_for = |site: &mizar_checker::typed_ast::TypedSiteRef| {
+        installed
+            .nodes()
+            .node(site.node())
+            .and_then(|node| node.resolved_node)
+            .and_then(|id| rows.iter().copied().find(|row| row.site() == id))
+    };
+    let coherence = row_for(owner).ok_or_else(invalid)?;
+    let label = row_for(label).ok_or_else(invalid)?;
+    let root_site = handoff
+        .roots()
+        .roots()
+        .find(|(root, _, _, _, _)| *root == ordinary)
+        .map(|(_, site, _, _, _)| site)
+        .ok_or_else(invalid)?;
+    let root_row = row_for(root_site).ok_or_else(invalid)?;
+    let root_label = rows
+        .iter()
+        .find(|row| row.parent() == Some(root_row.site()) && row.child_ordinal() == 1)
+        .ok_or_else(invalid)?;
+    let request = installed
+        .initial_obligations()
+        .get(*obligation)
+        .ok_or_else(invalid)?;
+    let normalization = handoff.roots().normalization().normalized_types();
+    if installed.source_redefinition() != Some(&handoff)
+        || final_ast.source_redefinition() != Some(&handoff)
+        || !input.relations.is_empty()
+        || input.target_diagnostics.as_slice() != [(owner.clone(), ordinary.clone())]
+        || input.coherence_inputs.as_slice() != [(*obligation, CoherenceStatus::Pending)]
+        || intent_symbol != symbol
+        || intent_owner != owner
+        || label.spelling() != root_label.spelling()
+        || label.parent() != Some(coherence.site())
+        || request.owner != *owner
+        || request.status != InitialObligationStatus::Pending
+        || request.source_range != coherence.range()
+        || candidate.symbol != *symbol
+        || candidate.ordinary_root != *ordinary
+        || candidate.site != selected.site_key
+        || candidate.origin
+            != (CandidateOrigin::Redefinition {
+                refined: ordinary.clone(),
+            })
+        || candidate.coherence != Some(CoherenceStatus::Pending)
+        || candidate.parameters.len() != 1
+        || normalization
+            .get(candidate.parameters[0])
+            .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinSet)
+        || candidate
+            .result
+            .and_then(|id| normalization.get(id))
+            .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinSet)
+        || selected.symbol != *ordinary
+        || selected.ordinary_root != *ordinary
+        || selected.origin != CandidateOrigin::Ordinary
+        || exposed.result != selected.result
+        || exposed
+            .result
+            .and_then(|id| normalization.get(id))
+            .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinObject)
+        || exposed.source != ExposedResultSource::SelectedRoot
+        || !exposed.evidence.is_empty()
+        || !refinements.is_empty()
+        || !inserted_views.is_empty()
+        || handoff.roots().collection().sites().len() != 1
+        || handoff.roots().collection().candidates().len() != 1
+        || handoff.selection().results().len() != 1
+        || !handoff.selection().diagnostics().is_empty()
+        || !installed.facts().is_empty()
+        || !installed.coercions().is_empty()
+        || installed.initial_obligations().len() != 1
+        || !final_ast.resolved_overloads().is_empty()
+        || !final_ast.checked_proofs().is_empty()
+        || !final_ast.checked_proof_nodes().is_empty()
+        || !final_ast.checked_terminal_goals().is_empty()
+    {
+        return Err(invalid());
+    }
+    Ok(final_ast)
 }
 
 fn source_ordinary_root(
@@ -3416,6 +3584,8 @@ fn run_advanced_semantics_case(
             source_inline_closure_requests(root, case, output).map(|_| Vec::new())
         } else if case.id.0 == STEP5C13_OVERLOAD_IDS[2] {
             source_ordinary_root(root,case,output).map(|_|Vec::new())
+        } else if case.id.0 == STEP5C13_OVERLOAD_IDS[3] {
+            source_pending_redefinition(root,case,output).map(|_|Vec::new())
         } else if step5c13_overload_admitted(root, case) {
             let (source,nodes,symbols)=source_registration_inputs(root,case,output)?;
             let database=if case.id.0==STEP5C13_OVERLOAD_IDS[1] {

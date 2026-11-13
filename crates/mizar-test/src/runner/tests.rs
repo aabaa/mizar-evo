@@ -12677,3 +12677,228 @@ fn task279b_invalid_explicit_labels_never_fall_back_to_an_eligible_omitted_root(
         println!("Task279B {id}/missing label refused at recovered frontend; no ordinary-root or target causality claimed");
     }
 }
+
+#[test]
+fn task279_remainder_frontend_prerequisites() {
+    use mizar_syntax::SurfaceNodeKind as K;
+
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    for (id, source_id, alias) in [
+        (
+            "pass_type_elaboration_redefinition_intrinsic_attribute_001",
+            "pass_type_elaboration_redefinition_intrinsic_attribute_001",
+            "  synonym rmarked_alias for rmarked;",
+        ),
+        (
+            "pass_type_elaboration_redefinition_intrinsic_predicate_001",
+            "pass_type_elaboration_redefinition_intrinsic_predicate_001",
+            "  antonym x neqv y for x eqv y;",
+        ),
+    ] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let source = std::fs::read_to_string(&case.source_path).unwrap();
+        let source = source.replacen("\nend;\ndefinition\n", &format!("\n{alias}\nend;\ndefinition\n"), 1);
+        let (original, _, _) = task279a_intrinsic_source_inputs(case, &source);
+        let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+        assert_eq!(rows.iter().filter(|row| row.kind() == &K::NotationAlias).count(), 1, "{source_id}");
+        assert_eq!(rows.iter().filter(|row| matches!(row.kind(), K::AttributeDefinition | K::PredicateDefinition)).count(), 1, "{source_id}");
+        assert_eq!(rows.iter().filter(|row| matches!(row.kind(), K::AttributeRedefinition | K::PredicateRedefinition)).count(), 1, "{source_id}");
+    }
+
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_redefinition_intrinsic_functor_001")
+        .unwrap();
+    let source = std::fs::read_to_string(
+        config.workspace_root.join("tests/miz/pass/overload/pass_advanced_semantics_redefinition_pending_001.miz"),
+    )
+    .unwrap();
+    let (original, _, _) = task279a_intrinsic_source_inputs(case, &source);
+    let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+    for (kind, expected) in [
+        (K::FunctorDefinition, 1),
+        (K::FunctorRedefinition, 1),
+        (K::CoherenceCondition, 1),
+        (K::ReserveItem, 1),
+        (K::ReserveSegment, 1),
+        (K::TheoremItem, 1),
+        (K::BuiltinPredicateApplication, 1),
+    ] {
+        assert_eq!(rows.iter().filter(|row| row.kind() == &kind).count(), expected, "{kind:?}");
+    }
+    let call = rows.iter().find(|row| matches!(row.kind(), K::PrefixExpression(_))).unwrap();
+    assert_eq!(call.spelling(), "ident ( x )");
+    assert!(rows.iter().any(|row| matches!(row.kind(), K::Token(token) if token.kind == mizar_syntax::SurfaceTokenKind::UserSymbol && token.text.as_ref() == "ident")));
+    assert!(rows.iter().any(|row| row.kind() == &K::TermExpression && row.spelling() == "ident ( x )"));
+}
+
+#[test]
+fn task279_remainder_positive_source_inputs_transport_only_pending_redefinition() {
+    use std::sync::Arc;
+    use mizar_checker::{
+        overload_resolution::{CandidateOrigin, CoherenceStatus, ExposedResultSource, OverloadResultStatus},
+        source_redefinition::{SourceOrdinaryRootHandoff, SourceRedefinitionHandoff, SourceRedefinitionInput},
+        typed_ast::{InitialObligationStatus, TypedSiteRef},
+    };
+    use mizar_resolve::env::RelationKind;
+    use mizar_syntax::{SurfaceNodeKind as K, SurfaceTokenKind as TK};
+
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let typed_site = |original: &mizar_checker::typed_ast::TypedAst, row: &mizar_checker::typed_ast::SourceNode| {
+        TypedSiteRef::Node(original.nodes().iter().find(|(_, node)| node.resolved_node == Some(row.site())).unwrap().0)
+    };
+    let prepare = |case: &crate::harness::TestCase, source: &str| {
+        let (original, native, symbols) = task279a_intrinsic_source_inputs(case, source);
+        let roots = Arc::new(SourceOrdinaryRootHandoff::build(Arc::clone(&original), native, symbols).unwrap_or_else(|error| panic!("{}: {error}", case.id.0)));
+        let input = SourceRedefinitionInput::from_source(&roots).unwrap();
+        let handoff = SourceRedefinitionHandoff::build_with_input(Arc::clone(&roots), input.clone()).unwrap();
+        (original, roots, input, handoff)
+    };
+
+    // EN06.7 / EN11.1 and EN09.6 / EN11.1: aliases follow the ordinary root
+    // in its block, and their relation payload binds to that actual root.
+    for (id, alias, relation) in [
+        ("pass_type_elaboration_redefinition_intrinsic_attribute_001", "  synonym rmarked_alias for rmarked;", RelationKind::Synonym),
+        ("pass_type_elaboration_redefinition_intrinsic_predicate_001", "  antonym x neqv y for x eqv y;", RelationKind::Antonym),
+    ] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let base = std::fs::read_to_string(&case.source_path).unwrap();
+        let source = base.replacen("\nend;\ndefinition\n", &format!("\n{alias}\nend;\ndefinition\n"), 1);
+        let (original, roots, input, handoff) = prepare(case, &source);
+        let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+        let alias_row = rows.iter().find(|row| row.kind() == &K::NotationAlias).unwrap();
+        let refined_row = rows.iter().find(|row| matches!(row.kind(), K::AttributeRedefinition | K::PredicateRedefinition)).unwrap();
+        let (ordinary, _, _, _, _) = roots.roots().next().unwrap();
+        assert_eq!(input.relations, [(typed_site(&original, alias_row), relation, ordinary.clone())]);
+        let ordinary_row = rows.iter().find(|row| matches!(row.kind(), K::AttributeDefinition | K::PredicateDefinition)).unwrap();
+        assert_eq!(alias_row.parent(), ordinary_row.parent());
+        assert!(ordinary_row.range().end < alias_row.range().start);
+        assert!(input.coherence_inputs.iter().all(|(_, status)| *status == CoherenceStatus::Pending));
+        assert!(input.refinements.is_empty());
+        let installed = original.as_ref().clone().with_source_redefinition(handoff.clone()).unwrap();
+        let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&installed, Vec::new()).unwrap();
+        assert_eq!(installed.nodes().node(typed_site(&original, refined_row).node()).unwrap().resolved_node, Some(refined_row.site()));
+        assert_eq!(installed.source_node_entries().unwrap().find(|row| row.site() == refined_row.site()).unwrap().kind(),
+            if relation == RelationKind::Synonym { &K::AttributeRedefinition } else { &K::PredicateRedefinition });
+        assert!(resolved.nodes().iter().any(|(_, node)| node.typed_node == typed_site(&original, refined_row).node()));
+        assert_eq!(installed.source_redefinition(), Some(&handoff));
+        assert_eq!(resolved.source_redefinition(), Some(&handoff));
+        assert!(installed.facts().is_empty() && installed.coercions().is_empty());
+    }
+
+    // EN10.7 / EN19.5: written label intent and omitted-target intent are
+    // preserved as source sites; both keep the obligation and input Pending.
+    for (id, label) in [
+        ("pass_type_elaboration_redefinition_explicit_attribute_001", Some("ABase")),
+        ("pass_type_elaboration_redefinition_explicit_predicate_001", Some("PRight")),
+        ("pass_type_elaboration_redefinition_explicit_functor_001", Some("FBase")),
+        ("pass_type_elaboration_redefinition_intrinsic_attribute_001", None),
+        ("pass_type_elaboration_redefinition_intrinsic_predicate_001", None),
+        ("pass_type_elaboration_redefinition_intrinsic_functor_001", None),
+    ] {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+        let source = std::fs::read_to_string(&case.source_path).unwrap();
+        let (original, roots, input, handoff) = prepare(case, &source);
+        let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+        let coherence = rows.iter().find(|row| row.kind() == &K::CoherenceCondition).unwrap();
+        let [(_, ordinary, target_site, obligation)] = input.targets.as_slice() else { panic!("one authenticated target") };
+        assert_eq!(input.target_diagnostics, [(target_site.clone(), ordinary.clone())]);
+        assert_eq!(input.coherence_inputs, [(*obligation, CoherenceStatus::Pending)]);
+        assert_eq!(input.coherence_intents.len(), 1);
+        let (intent_symbol, intent_site, intent_label) = &input.coherence_intents[0];
+        assert_eq!(intent_site, target_site);
+        assert_eq!(*intent_symbol, input.targets[0].0);
+        assert_eq!(rows.iter().find(|row| typed_site(&original, row) == target_site.clone()).unwrap().kind(), &K::CoherenceCondition);
+        assert_eq!(handoff.roots(), roots.as_ref());
+        assert_eq!(handoff.input(), &input);
+        let installed = original.as_ref().clone().with_source_redefinition(handoff.clone()).unwrap();
+        let target = installed.initial_obligations().get(*obligation).unwrap();
+        assert_eq!(target.status, InitialObligationStatus::Pending);
+        assert_eq!(target.source_range, coherence.range());
+        if let Some(expected) = label {
+            let label_site = intent_label.as_ref().expect("explicit written label site");
+            let row = rows.iter().find(|row| typed_site(&original, row) == *label_site).unwrap();
+            assert!(matches!(row.kind(), K::Token(token) if token.kind == TK::Identifier && token.text.as_ref() == expected));
+            assert_eq!(row.parent(), Some(coherence.site()));
+        } else {
+            assert!(intent_label.is_none(), "omitted target remains explicit in the input as None");
+        }
+        assert!(input.refinements.is_empty());
+        assert!(handoff.selection().results().is_empty());
+    }
+
+    // A real ordinary functor call authenticates a Pending refinement at the
+    // selection intake, but does not activate it or expose refinement credit.
+    let case = plan.cases.iter().find(|case| case.id.0 == "pass_advanced_semantics_redefinition_pending_001").unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    let (original, roots, input, handoff) = prepare(case, &source);
+    assert_eq!(roots.collection().sites().len(), 1);
+    assert_eq!(roots.collection().candidates().len(), 1);
+    assert_eq!(input.refinements.len(), 1);
+    let candidate = &input.refinements[0];
+    assert_eq!(candidate.coherence, Some(CoherenceStatus::Pending));
+    assert_eq!(candidate.origin, CandidateOrigin::Redefinition { refined: candidate.ordinary_root.clone() });
+    assert_eq!(candidate.symbol, input.targets[0].0);
+    assert_eq!(candidate.ordinary_root, input.targets[0].1);
+    let rows = original.source_node_entries().unwrap().collect::<Vec<_>>();
+    let declaration = rows.iter().find(|row| row.kind() == &K::FunctorRedefinition).unwrap();
+    let block = rows.iter().find(|row| Some(row.site()) == declaration.parent()).unwrap();
+    let guards = rows.iter().filter(|row| row.kind() == &K::TypeExpression
+        && block.range().start < row.range().start && row.range().end < declaration.range().start).collect::<Vec<_>>();
+    let [guard] = guards.as_slice() else { panic!("one actual redefinition guard") };
+    let returned = rows.iter().find(|row| row.kind() == &K::TypeExpression && row.parent() == Some(declaration.site())).unwrap();
+    for (source, actual) in [(*guard, candidate.parameters[0]), (returned, candidate.result.unwrap())] {
+        let entries = roots.normalization().type_entries().iter().filter(|(_, entry)| entry.owner == typed_site(&original, source)).collect::<Vec<_>>();
+        let [(_, entry)] = entries.as_slice() else { panic!("one source-owned normalized type") };
+        assert_eq!(entry.actual, mizar_checker::typed_ast::TypeEntryActual::Known(actual));
+    }
+    let (_, result) = handoff.selection().results().iter().next().unwrap();
+    let OverloadResultStatus::Resolved { root, refinements, exposed_result: Some(exposed), inserted_views } = &result.status else {
+        panic!("ordinary root resolves with Pending candidate withheld")
+    };
+    let selected = roots.specificity().candidates().get(*root).unwrap();
+    assert_eq!(selected.symbol, candidate.ordinary_root);
+    assert_eq!(selected.origin, CandidateOrigin::Ordinary);
+    assert!(refinements.is_empty() && inserted_views.is_empty());
+    assert_eq!(exposed.source, ExposedResultSource::SelectedRoot);
+    assert!(exposed.evidence.is_empty());
+    assert!(handoff.selection().inserted_views().is_empty());
+    let installed = original.as_ref().clone().with_source_redefinition(handoff.clone()).unwrap();
+    let refined_row = original.source_node_entries().unwrap().find(|row| row.kind() == &K::FunctorRedefinition).unwrap();
+    let refined_site = typed_site(&original, refined_row);
+    assert_eq!(installed.nodes().node(refined_site.node()).unwrap().resolved_node, Some(refined_row.site()));
+    assert_eq!(installed.source_node_entries().unwrap().find(|row| row.site() == refined_row.site()).unwrap().kind(), &K::FunctorRedefinition);
+    let resolved = super::type_elaboration::assemble_empty_resolved_typed_ast(&installed, Vec::new()).unwrap();
+    assert!(resolved.nodes().iter().any(|(_, node)| node.typed_node == refined_site.node()));
+    assert_eq!(resolved.source_redefinition(), Some(&handoff));
+    assert!(resolved.resolved_overloads().is_empty() && resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_proof_nodes().is_empty() && resolved.checked_terminal_goals().is_empty());
+    assert!(installed.facts().is_empty() && installed.coercions().is_empty());
+}
+
+#[test]
+fn task279_remainder_real_advanced_semantics_case_is_stable_and_metadata_bound() {
+    let config = step5c11_config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let id = "pass_advanced_semantics_redefinition_pending_001";
+    let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+    assert!(super::step5c13_overload_admitted(&config.workspace_root, case));
+
+    let first = super::run_advanced_semantics_case(&config.workspace_root, case, 0);
+    let second = super::run_advanced_semantics_case(&config.workspace_root, case, 0);
+    assert_eq!(first.status, super::TypeElaborationCaseStatus::Passed, "{:?}", first.actual_detail_keys);
+    assert_eq!(first.status, second.status);
+    assert_eq!(first.actual_detail_keys, second.actual_detail_keys);
+    assert_eq!(first.snapshot_failure, second.snapshot_failure);
+    assert!(first.actual_detail_keys.is_empty() && first.snapshot_failure.is_none());
+
+    let mut counterfeit = case.clone();
+    counterfeit.expectation.domain = "redefinition.intrinsic.functor".into();
+    assert!(!super::step5c13_overload_admitted(&config.workspace_root, &counterfeit));
+    let rejected = super::run_advanced_semantics_case(&config.workspace_root, &counterfeit, 0);
+    assert_eq!(rejected.status, super::TypeElaborationCaseStatus::Failed);
+    assert!(rejected.actual_detail_keys.iter().any(|key| key == "advanced_semantics.invalid_prepared_case"));
+}

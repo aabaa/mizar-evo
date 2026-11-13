@@ -2681,14 +2681,16 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             .source_redefinition()
             .cloned()
             .map(Box::new);
-        if let Some(handoff) = &source_redefinition {
-            if !source_nested_fraenkel_capture_identity_inputs_are_syntax_only(&self.inputs) {
-                return Err(ResolvedTypedAstError::InvalidSourceRedefinition);
-            }
-            handoff
-                .validate_installation(self.inputs.typed_ast)
-                .map_err(|_| ResolvedTypedAstError::InvalidSourceRedefinition)?;
+        if source_redefinition.is_some()
+            && !source_nested_fraenkel_capture_identity_inputs_are_syntax_only(&self.inputs)
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceRedefinition);
         }
+        SourceRedefinitionHandoff::validate_installation(
+            self.inputs.typed_ast,
+            self.inputs.overload_selection,
+        )
+        .map_err(|_| ResolvedTypedAstError::InvalidSourceRedefinition)?;
         let source_registration = self
             .inputs
             .typed_ast

@@ -1,13 +1,11 @@
 //! Source-authenticated declaration roots and pending redefinition targets.
 
-use crate::{
-    binding_env::*, overload_resolution::CandidateDeclarationKind, type_checker::*, typed_ast::*,
-};
+use crate::{binding_env::*, overload_resolution::*, type_checker::*, typed_ast::*};
 use SurfaceNodeKind as K;
 use SurfaceTokenKind as T;
 use mizar_resolve::{
     declarations::DeclarationShellKind,
-    env::{DefinitionKind, SymbolEnv, SymbolKind},
+    env::{DefinitionKind, RelationKind, SymbolEnv, SymbolKind},
     names::{LocalTermScope, resolve_template_formal},
     resolved_ast::{SurfaceResolvedArena, SymbolId},
     symbols::{source_declaration_shells, validate_source_symbol_env},
@@ -156,6 +154,12 @@ fn coherence(rows: &[SourceNode], row: &SourceNode) -> Result<(), String> {
     if !token(word, "coherence") || !token(semi, ";") || proof.kind() != &K::ProofBlock {
         return Err(invalid());
     }
+    thesis_proof(rows, proof)
+}
+fn thesis_proof(rows: &[SourceNode], proof: &SourceNode) -> Result<(), String> {
+    if proof.kind() != &K::ProofBlock {
+        return Err(invalid());
+    }
     let parts = children(rows, proof)?;
     let [word, claim, end] = parts.as_slice() else {
         return Err(invalid());
@@ -187,8 +191,15 @@ fn roles<'a>(
     block: &'a SourceNode,
 ) -> Result<Roles<'a>, String> {
     let frame = children(rows, block)?;
-    let [word, parameters @ .., decl, end, semi] = frame.as_slice() else {
+    let [word, content @ .., end, semi] = frame.as_slice() else {
         return Err(invalid());
+    };
+    let (parameters, decl, alias) = match content {
+        [parameters @ .., decl, alias] if alias.kind() == &K::NotationAlias => {
+            (parameters, *decl, true)
+        }
+        [parameters @ .., decl] => (parameters, *decl, false),
+        _ => return Err(invalid()),
     };
     if block.kind() != &K::DefinitionBlockItem
         || parameters.is_empty()
@@ -242,6 +253,9 @@ fn roles<'a>(
         K::FunctorRedefinition => (CandidateDeclarationKind::Functor, true, "func"),
         _ => return Err(invalid()),
     };
+    if alias && redefined {
+        return Err(invalid());
+    }
     let parts = children(rows, decl)?;
     let skip = usize::from(redefined);
     if redefined && !token(parts.first().ok_or_else(invalid)?, "redefine") {
@@ -277,7 +291,7 @@ fn roles<'a>(
         _ => return Err(invalid()),
     };
     Ok((
-        block, *decl, formals, guards, ret, body, kind, redefined, notation,
+        block, decl, formals, guards, ret, body, kind, redefined, notation,
     ))
 }
 fn intake(roots: &SourceOrdinaryRootHandoff) -> Result<Vec<Roles<'_>>, String> {
@@ -299,6 +313,13 @@ fn intake(roots: &SourceOrdinaryRootHandoff) -> Result<Vec<Roles<'_>>, String> {
     }
     let mut result = Vec::new();
     let mut labels = BTreeSet::new();
+    let mut blocks = blocks.as_slice();
+    if let [declarations @ .., reserve, theorem] = blocks
+        && reserve.kind() == &K::ReserveItem
+        && theorem.kind() == &K::TheoremItem
+    {
+        blocks = declarations;
+    }
     for block in blocks {
         let declaration = roles(roots, rows, block)?;
         let label = children(rows, declaration.1)?[1 + usize::from(declaration.7)].spelling();
@@ -326,6 +347,164 @@ fn intake(roots: &SourceOrdinaryRootHandoff) -> Result<Vec<Roles<'_>>, String> {
         return Err(invalid());
     }
     Ok(result)
+}
+
+// The only admitted application is the final reflexive equality over a reserved
+// Object. Its proof is syntax-checked but supplies no semantic evidence.
+fn application(original: &TypedAst) -> Result<Option<[&SourceNode; 4]>, String> {
+    let rows = original.source_nodes().ok_or_else(invalid)?;
+    let units = rows
+        .iter()
+        .find(|r| r.kind() == &K::ItemList)
+        .ok_or_else(invalid)?;
+    let items = children(rows, units)?;
+    if items
+        .last()
+        .is_some_and(|row| row.kind() == &K::DefinitionBlockItem)
+    {
+        return Ok(None);
+    }
+    let [_, .., reserve, theorem] = items.as_slice() else {
+        return Err(invalid());
+    };
+    if reserve.kind() != &K::ReserveItem || theorem.kind() != &K::TheoremItem {
+        return Err(invalid());
+    }
+    let reserve_parts = children(rows, reserve)?;
+    let [word, segment, semi] = reserve_parts.as_slice() else {
+        return Err(invalid());
+    };
+    if !token(word, "reserve") || !token(semi, ";") || segment.kind() != &K::ReserveSegment {
+        return Err(invalid());
+    }
+    let segment_parts = children(rows, segment)?;
+    let [variable, for_word, ty] = segment_parts.as_slice() else {
+        return Err(invalid());
+    };
+    if !matches!(variable.kind(), K::Token(t) if t.kind == T::Identifier)
+        || !token(for_word, "for")
+        || !token(
+            only(rows, only(rows, ty, &K::TypeExpression)?, &K::TypeHead)?,
+            "object",
+        )
+    {
+        return Err(invalid());
+    }
+    let theorem_parts = children(rows, theorem)?;
+    let [word, label, colon, formula, proof, semi] = theorem_parts.as_slice() else {
+        return Err(invalid());
+    };
+    if !token(word, "theorem")
+        || !matches!(label.kind(), K::Token(t) if t.kind == T::Identifier)
+        || !token(colon, ":")
+        || !token(semi, ";")
+    {
+        return Err(invalid());
+    }
+    thesis_proof(rows, proof)?;
+    let equality = only(rows, formula, &K::FormulaExpression)?;
+    if equality.kind() != &K::BuiltinPredicateApplication {
+        return Err(invalid());
+    }
+    let equation = children(rows, equality)?;
+    let [left, equals, right] = equation.as_slice() else {
+        return Err(invalid());
+    };
+    if !token(equals, "=") {
+        return Err(invalid());
+    }
+    let prefix = only(rows, left, &K::TermExpression)?;
+    let K::PrefixExpression(operator) = prefix.kind() else {
+        return Err(invalid());
+    };
+    let call = children(rows, prefix)?;
+    let [head, parenthesized] = call.as_slice() else {
+        return Err(invalid());
+    };
+    if !name(head)
+        || operator.spelling.as_ref() != head.spelling()
+        || parenthesized.kind() != &K::ParenthesizedTerm
+    {
+        return Err(invalid());
+    }
+    let argument = children(rows, parenthesized)?;
+    let [open, argument, close] = argument.as_slice() else {
+        return Err(invalid());
+    };
+    if !token(open, "(") || !token(close, ")") {
+        return Err(invalid());
+    }
+    for term in [*argument, *right] {
+        let reference = only(rows, term, &K::TermExpression)?;
+        let word = only(rows, reference, &K::TermReference)?;
+        if !matches!(word.kind(), K::Token(t) if t.kind == T::Identifier)
+            || word.spelling() != variable.spelling()
+        {
+            return Err(invalid());
+        }
+    }
+    Ok(Some([ty, left, argument, head]))
+}
+
+fn relations(
+    roots: &SourceOrdinaryRootHandoff,
+) -> Result<Vec<(TypedSiteRef, RelationKind, SymbolId)>, String> {
+    let rows = roots.original.source_nodes().ok_or_else(invalid)?;
+    let mut out = Vec::new();
+    for d in intake(roots)? {
+        let block = children(rows, d.0)?;
+        let Some(alias) = block.iter().find(|row| row.kind() == &K::NotationAlias) else {
+            continue;
+        };
+        let parts = children(rows, alias)?;
+        let [word, alternate, for_word, original, semi] = parts.as_slice() else {
+            return Err(invalid());
+        };
+        if !token(for_word, "for")
+            || !token(semi, ";")
+            || alternate.kind() != &K::NotationPattern
+            || original.kind() != &K::NotationPattern
+        {
+            return Err(invalid());
+        }
+        let alternate = children(rows, alternate)?;
+        let original = children(rows, original)?;
+        let kind = match (&d.6, alternate.as_slice(), original.as_slice()) {
+            (CandidateDeclarationKind::Attribute, [alias], [base])
+                if token(word, "synonym")
+                    && matches!(alias.kind(), K::Token(t) if t.kind == T::Identifier)
+                    && name(base)
+                    && alias.spelling() != base.spelling()
+                    && base.spelling() == d.8 =>
+            {
+                RelationKind::Synonym
+            }
+            (CandidateDeclarationKind::Predicate, [a, alias, b], [x, base, y])
+                if token(word, "antonym")
+                    && name(alias)
+                    && name(base)
+                    && alias.spelling() != base.spelling()
+                    && base.spelling() == d.8 =>
+            {
+                for (locus, formal) in [a, b, x, y]
+                    .into_iter()
+                    .zip([d.2[0], d.2[1], d.2[0], d.2[1]])
+                {
+                    if resolve_template_formal(&roots.native, locus.site())? != formal.site() {
+                        return Err(invalid());
+                    }
+                }
+                RelationKind::Antonym
+            }
+            _ => return Err(invalid()),
+        };
+        out.push((
+            site(&roots.original, alias)?,
+            kind,
+            symbol(roots, d.1, d.6, false)?,
+        ));
+    }
+    Ok(out)
 }
 fn symbol(
     roots: &SourceOrdinaryRootHandoff,
@@ -404,6 +583,10 @@ pub struct SourceOrdinaryRootHandoff {
     symbols: Arc<SymbolEnv>,
     normalization: TypeNormalizationOutput,
     roots: Vec<Root>,
+    collection: OverloadCollectionOutput,
+    expansion: TemplateExpansionOutput,
+    viability: CandidateViabilityOutput,
+    specificity: SpecificityGraphOutput,
 }
 impl SourceOrdinaryRootHandoff {
     pub fn build(
@@ -416,19 +599,22 @@ impl SourceOrdinaryRootHandoff {
             return Err(invalid());
         }
         let normalization = TypeNormalizer::default().normalize(&symbols, []);
+        let collection = OverloadCollectionOutput::collect([], []);
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(&expansion, []);
+        let specificity = SpecificityGraphOutput::build(&viability, []);
         let mut out = Self {
             original,
             native,
             symbols,
             normalization,
             roots: Vec::new(),
+            collection,
+            expansion,
+            viability,
+            specificity,
         };
         let declarations = intake(&out)?;
-        if out.symbols.symbols().len() != declarations.len()
-            || out.symbols.definitions().len() != declarations.len()
-        {
-            return Err(invalid());
-        }
         let rows = out.original.source_nodes().ok_or_else(invalid)?;
         let mut inputs = Vec::new();
         for d in &declarations {
@@ -445,6 +631,10 @@ impl SourceOrdinaryRootHandoff {
             if let Some(ret) = d.4 {
                 inputs.push(builtin(rows, &out.original, ret)?);
             }
+        }
+        let application = application(&out.original)?;
+        if let Some([ty, ..]) = application {
+            inputs.push(builtin(rows, &out.original, ty)?);
         }
         if inputs.len()
             != rows
@@ -510,7 +700,87 @@ impl SourceOrdinaryRootHandoff {
         if roots.is_empty() {
             return Err(invalid());
         }
+        let Some([ty, call, argument, head]) = application else {
+            out.roots = roots;
+            return Ok(out);
+        };
+        let actual = normalized(&out, ty)?;
+        let matches = roots
+            .iter()
+            .filter(|root| {
+                root.2 == CandidateDeclarationKind::Functor
+                    && root.3 == [actual]
+                    && declarations.iter().any(|d| {
+                        !d.7 && d.8 == head.spelling()
+                            && site(&out.original, d.1).ok().as_ref() == Some(&root.1)
+                    })
+            })
+            .collect::<Vec<_>>();
+        let [root] = matches.as_slice() else {
+            return Err(invalid());
+        };
+        let declaration = declarations
+            .iter()
+            .find(|d| site(&out.original, d.1).ok().as_ref() == Some(&root.1))
+            .ok_or_else(invalid)?;
+        let key = OverloadSiteKey::new(format!("source.redefinition.call:{}", call.site().index()));
+        let collection = OverloadCollectionOutput::collect(
+            [OverloadSiteInput {
+                key: key.clone(),
+                owner: site(&out.original, call)?,
+                source_range: call.range(),
+                kind: OverloadSiteKind::FunctorApplication,
+                name: OverloadNameKey::new(head.spelling()),
+                arguments: vec![site(&out.original, argument)?],
+                expected: None,
+                source_qua: vec![],
+                recovery: OverloadSiteRecovery::Normal,
+            }],
+            [OverloadCandidateInput {
+                site: key,
+                symbol: root.0.clone(),
+                ordinary_root: root.0.clone(),
+                declaration_kind: root.2.clone(),
+                parameters: root.3.clone(),
+                result: root.4,
+                origin: CandidateOrigin::Ordinary,
+                template: None,
+                coherence: None,
+                provenance: CandidateProvenance {
+                    stable_key: CandidateProvenanceKey::new(format!(
+                        "source.ordinary:{}",
+                        declaration.1.site().index()
+                    )),
+                    source_range: Some(declaration.1.range()),
+                    scope: CandidateScope::Local,
+                    declaration_order: declaration.1.preorder_ordinal(),
+                },
+            }],
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(
+            &expansion,
+            expansion
+                .candidates()
+                .iter()
+                .map(|(candidate, _)| CandidateViabilityInput {
+                    candidate,
+                    arguments: vec![ArgumentViabilityEvidence::Exact { actual }],
+                }),
+        );
+        let specificity = SpecificityGraphOutput::build(&viability, []);
+        if !collection.diagnostics().is_empty()
+            || !expansion.diagnostics().is_empty()
+            || !viability.diagnostics().is_empty()
+            || !specificity.diagnostics().is_empty()
+        {
+            return Err(invalid());
+        }
         out.roots = roots;
+        out.collection = collection;
+        out.expansion = expansion;
+        out.viability = viability;
+        out.specificity = specificity;
         Ok(out)
     }
     pub fn roots(
@@ -530,6 +800,18 @@ impl SourceOrdinaryRootHandoff {
     }
     pub const fn normalization(&self) -> &TypeNormalizationOutput {
         &self.normalization
+    }
+    pub const fn collection(&self) -> &OverloadCollectionOutput {
+        &self.collection
+    }
+    pub const fn expansion(&self) -> &TemplateExpansionOutput {
+        &self.expansion
+    }
+    pub const fn viability(&self) -> &CandidateViabilityOutput {
+        &self.viability
+    }
+    pub const fn specificity(&self) -> &SpecificityGraphOutput {
+        &self.specificity
     }
 }
 fn target(roots: &SourceOrdinaryRootHandoff, d: &Roles<'_>) -> Result<SymbolId, String> {
@@ -657,16 +939,43 @@ fn source_functor_redefinition_roles<'a>(
     Ok((p[7], Some(p[5]), head.spelling().to_owned()))
 }
 
+/// Ordered source-derived intake; caller values are checked by fresh derivation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceRedefinitionInput {
+    pub relations: Vec<(TypedSiteRef, RelationKind, SymbolId)>,
+    pub coherence_intents: Vec<(SymbolId, TypedSiteRef, Option<TypedSiteRef>)>,
+    pub targets: Vec<(SymbolId, SymbolId, TypedSiteRef, InitialObligationId)>,
+    pub target_diagnostics: Vec<(TypedSiteRef, SymbolId)>,
+    pub refinements: Vec<OverloadCandidateInput>,
+    pub coherence_inputs: Vec<(InitialObligationId, CoherenceStatus)>,
+}
+impl SourceRedefinitionInput {
+    pub fn from_source(roots: &SourceOrdinaryRootHandoff) -> Result<Self, String> {
+        Ok(SourceRedefinitionHandoff::build(Arc::new(roots.clone()))?.input)
+    }
+}
+
 /// Immutable typed root/target association and pending coherence transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceRedefinitionHandoff {
     roots: Arc<SourceOrdinaryRootHandoff>,
     binding_env: BindingEnv,
     inference: TermFormulaInferenceOutput,
-    targets: Vec<(SymbolId, SymbolId, TypedSiteRef, InitialObligationId)>,
     obligations: InitialObligationTable,
+    input: SourceRedefinitionInput,
+    selection: OverloadSelectionOutput,
 }
 impl SourceRedefinitionHandoff {
+    pub fn build_with_input(
+        roots: Arc<SourceOrdinaryRootHandoff>,
+        input: SourceRedefinitionInput,
+    ) -> Result<Self, String> {
+        let expected = Self::build(roots)?;
+        if input != expected.input {
+            return Err(invalid());
+        }
+        Ok(expected)
+    }
     pub fn build(roots: Arc<SourceOrdinaryRootHandoff>) -> Result<Self, String> {
         if *roots
             != SourceOrdinaryRootHandoff::build(
@@ -696,7 +1005,16 @@ impl SourceRedefinitionHandoff {
         let mut formulas = Vec::new();
         let mut obligations = InitialObligationTable::new();
         let mut targets = Vec::new();
+        let mut coherence_intents = Vec::new();
+        let mut declaration_sites = BTreeSet::new();
         for d in &declarations {
+            let mut pending = vec![d.0];
+            while let Some(row) = pending.pop() {
+                if !declaration_sites.insert(row.site()) {
+                    return Err(invalid());
+                }
+                pending.extend(children(rows, row)?);
+            }
             let shell = shells
                 .declarations()
                 .iter()
@@ -816,6 +1134,16 @@ impl SourceRedefinitionHandoff {
                     site(&roots.original, clause)?,
                     id,
                 ));
+                let parts = children(rows, clause)?;
+                coherence_intents.push((
+                    targets.last().ok_or_else(invalid)?.0.clone(),
+                    site(&roots.original, clause)?,
+                    if parts.len() == 5 {
+                        Some(site(&roots.original, parts[2])?)
+                    } else {
+                        None
+                    },
+                ));
             }
         }
         let env = BindingEnv::try_new(BindingEnvParts {
@@ -826,16 +1154,27 @@ impl SourceRedefinitionHandoff {
             diagnostics: Default::default(),
         })
         .map_err(|_| invalid())?;
-        if terms.len()
+        if terms
+            .iter()
+            .map(|term| term.site.clone())
+            .collect::<BTreeSet<_>>()
             != rows
                 .iter()
-                .filter(|r| r.kind() == &K::TermExpression)
-                .count()
-            || formulas.len()
+                .filter(|r| r.kind() == &K::TermExpression && declaration_sites.contains(&r.site()))
+                .map(|r| site(&roots.original, r))
+                .collect::<Result<BTreeSet<_>, _>>()?
+            || formulas
+                .iter()
+                .map(|formula| formula.site.clone())
+                .collect::<BTreeSet<_>>()
                 != rows
                     .iter()
-                    .filter(|r| r.kind() == &K::BuiltinPredicateApplication)
-                    .count()
+                    .filter(|r| {
+                        r.kind() == &K::BuiltinPredicateApplication
+                            && declaration_sites.contains(&r.site())
+                    })
+                    .map(|r| site(&roots.original, r))
+                    .collect::<Result<BTreeSet<_>, _>>()?
         {
             return Err(invalid());
         }
@@ -854,21 +1193,123 @@ impl SourceRedefinitionHandoff {
         {
             return Err(invalid());
         }
+        let mut refinements = Vec::new();
+        for target in &targets {
+            let declaration = declarations
+                .iter()
+                .find(|d| {
+                    d.7 && symbol(&roots, d.1, d.6.clone(), true).ok().as_ref() == Some(&target.0)
+                })
+                .ok_or_else(invalid)?;
+            for (_, call) in roots.collection.sites().iter() {
+                if !roots.collection.candidates().iter().any(|(_, candidate)| {
+                    candidate.site == call.id && candidate.ordinary_root == target.1
+                }) {
+                    continue;
+                }
+                refinements.push(OverloadCandidateInput {
+                    site: call.key.clone(),
+                    symbol: target.0.clone(),
+                    ordinary_root: target.1.clone(),
+                    declaration_kind: declaration.6.clone(),
+                    parameters: declaration
+                        .3
+                        .iter()
+                        .map(|r| normalized(&roots, r))
+                        .collect::<Result<Vec<_>, _>>()?,
+                    result: declaration.4.map(|r| normalized(&roots, r)).transpose()?,
+                    origin: CandidateOrigin::Redefinition {
+                        refined: target.1.clone(),
+                    },
+                    template: None,
+                    coherence: Some(CoherenceStatus::Pending),
+                    provenance: CandidateProvenance {
+                        stable_key: CandidateProvenanceKey::new(format!(
+                            "source.redefinition:{}",
+                            declaration.1.site().index()
+                        )),
+                        source_range: Some(declaration.1.range()),
+                        scope: CandidateScope::Local,
+                        declaration_order: declaration.1.preorder_ordinal(),
+                    },
+                });
+            }
+        }
+        let input = SourceRedefinitionInput {
+            relations: relations(&roots)?,
+            coherence_intents,
+            target_diagnostics: targets.iter().map(|t| (t.2.clone(), t.1.clone())).collect(),
+            coherence_inputs: targets
+                .iter()
+                .map(|t| (t.3, CoherenceStatus::Pending))
+                .collect(),
+            targets,
+            refinements,
+        };
+        // Pending requests reach this intake but do not enter the active set.
+        // The sealed ordinary graph is reused without rerunning candidate stages.
+        if input
+            .refinements
+            .iter()
+            .any(|candidate| candidate.coherence != Some(CoherenceStatus::Pending))
+        {
+            return Err(invalid());
+        }
+        let selection = OverloadSelectionOutput::resolve(
+            &roots.specificity,
+            roots
+                .collection
+                .sites()
+                .iter()
+                .map(|(site, _)| {
+                    let ordinary = roots
+                        .collection
+                        .candidates()
+                        .iter()
+                        .find(|(_, candidate)| candidate.site == site)
+                        .map(|(_, candidate)| candidate)
+                        .ok_or_else(invalid)?;
+                    Ok(OverloadSiteResolutionInput {
+                        site,
+                        refinements: vec![],
+                        inserted_views: vec![],
+                        refinement_join: RefinementJoinPayload {
+                            status: RefinementJoinStatus::Compatible,
+                            exposed_result: Some(ExposedResultPayload {
+                                result: ordinary.result,
+                                source: ExposedResultSource::SelectedRoot,
+                                evidence: vec![],
+                            }),
+                        },
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
+        );
+        if !selection.diagnostics().is_empty() {
+            return Err(invalid());
+        }
         Ok(Self {
+            input,
+            selection,
             roots,
             binding_env: env,
             inference,
-            targets,
             obligations,
         })
     }
     pub fn roots(&self) -> &SourceOrdinaryRootHandoff {
         &self.roots
     }
+    pub const fn input(&self) -> &SourceRedefinitionInput {
+        &self.input
+    }
+    pub const fn selection(&self) -> &OverloadSelectionOutput {
+        &self.selection
+    }
     pub fn targets(
         &self,
     ) -> impl Iterator<Item = (&SymbolId, &SymbolId, &TypedSiteRef, InitialObligationId)> {
-        self.targets.iter().map(|r| (&r.0, &r.1, &r.2, r.3))
+        self.input.targets.iter().map(|r| (&r.0, &r.1, &r.2, r.3))
     }
     pub const fn binding_env(&self) -> &BindingEnv {
         &self.binding_env
@@ -888,6 +1329,7 @@ impl SourceRedefinitionHandoff {
         let mut local = LocalTypeContextTable::new();
         let mut local_ids = BTreeMap::new();
         let mut block_context = BTreeMap::new();
+        let mut module_context = None;
         for (id, context) in self.binding_env.contexts().iter() {
             let (owner, layer) = match context.owner {
                 BindingContextOwner::Module => (
@@ -934,6 +1376,9 @@ impl SourceRedefinitionHandoff {
                 visible_facts: vec![],
                 recovery: ContextRecoveryState::Normal,
             });
+            if context.owner == BindingContextOwner::Module {
+                module_context = Some(local_id);
+            }
             local_ids.insert(id, local_id);
         }
         let mut types = roots.normalization.type_entries().clone();
@@ -986,14 +1431,19 @@ impl SourceRedefinitionHandoff {
                 .ok_or_else(invalid)?
                 .resolved_node
                 .ok_or_else(invalid)?;
-            while !block_context.contains_key(&source) {
-                source = rows
+            node.links.context = Some(loop {
+                if let Some(context) = block_context.get(&source) {
+                    break *context;
+                }
+                let row = rows
                     .iter()
                     .find(|r| r.site() == source)
-                    .and_then(SourceNode::parent)
                     .ok_or_else(invalid)?;
-            }
-            node.links.context = Some(block_context[&source]);
+                let Some(parent) = row.parent() else {
+                    break module_context.ok_or_else(invalid)?;
+                };
+                source = parent;
+            });
             node.typing = TypingState::Successful;
         }
         for (id, obligation) in obligations.iter() {
@@ -1025,13 +1475,39 @@ impl SourceRedefinitionHandoff {
             .map_err(|_| invalid())?;
         Ok(ast)
     }
-    pub(crate) fn validate_installation(&self, ast: &TypedAst) -> Result<(), String> {
-        let expected = self
+    pub(crate) fn validate_installation(
+        ast: &TypedAst,
+        selection: &OverloadSelectionOutput,
+    ) -> Result<(), String> {
+        let Some(handoff) = ast.source_redefinition() else {
+            if ast.source_node_entries().is_some_and(|mut rows| {
+                rows.any(|row| {
+                    matches!(
+                        row.kind(),
+                        K::AttributeRedefinition
+                            | K::PredicateRedefinition
+                            | K::FunctorRedefinition
+                    )
+                })
+            }) && selection.results().iter().any(|(_, result)| {
+                matches!(
+                    result.status,
+                    OverloadResultStatus::Resolved {
+                        exposed_result: Some(_),
+                        ..
+                    }
+                )
+            }) {
+                return Err(invalid());
+            }
+            return Ok(());
+        };
+        let expected = handoff
             .roots
             .original
             .as_ref()
             .clone()
-            .with_source_redefinition(self.clone())
+            .with_source_redefinition(handoff.clone())
             .map_err(|_| invalid())?;
         if *ast != expected {
             return Err(invalid());
@@ -1045,7 +1521,6 @@ mod tests {
     use super::*;
     use crate::{
         cluster_trace::ClusterFactTable,
-        overload_resolution::*,
         resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
     };
     use mizar_frontend::{
@@ -1083,21 +1558,34 @@ mod tests {
             "predicate" => "predicates",
             _ => "functors",
         };
-        let family = if variant == 3 {
+        let family = if matches!(variant, 3 | 6) {
             "explicit"
         } else {
             "intrinsic"
         };
-        let source = root.join(format!(
-            "tests/miz/pass/{directory}/pass_type_elaboration_redefinition_{family}_{form}_001.miz"
+        let source = if variant == 5 {
+            root.join(
+                "tests/miz/pass/overload/pass_advanced_semantics_redefinition_pending_001.miz",
+            )
+        } else {
+            root.join(format!(
+                "tests/miz/pass/{directory}/pass_type_elaboration_redefinition_{family}_{form}_001.miz"
+            ))
+        };
+        static FIXTURE_ID: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let fixture_id = FIXTURE_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "checker279-private-{}-{form}-{fixture_id}",
+            std::process::id()
         ));
-        let root =
-            std::env::temp_dir().join(format!("checker279-private-{}-{form}", std::process::id()));
         std::fs::create_dir_all(root.join("src")).unwrap();
         let path = root.join("src/fixture.miz");
         let mut text = std::fs::read_to_string(source).unwrap();
         if variant == 2 {
             text = text.replace("Refined", "Base");
+        }
+        if variant == 6 {
+            text = text.replace("coherence with PRight", "coherence");
         }
         if variant == 1 {
             let (first, tail) = text.split_once("end;").unwrap();
@@ -1235,8 +1723,8 @@ mod tests {
                 let mut bad = valid.clone();
                 let roots = Arc::make_mut(&mut bad.roots);
                 match fault {
-                    0 => roots.roots[0].0 = valid.targets[0].0.clone(),
-                    1 => roots.roots[0].1 = valid.targets[0].2.clone(),
+                    0 => roots.roots[0].0 = valid.input.targets[0].0.clone(),
+                    1 => roots.roots[0].1 = valid.input.targets[0].2.clone(),
                     2 => roots.roots[0].2 = CandidateDeclarationKind::Mode,
                     3 => roots.roots[0].3.clear(),
                     4 => roots.roots[0].4 = roots.roots[0].3.first().copied(),
@@ -1258,11 +1746,11 @@ mod tests {
             for fault in 0..6 {
                 let mut bad = valid.clone();
                 match fault {
-                    0 => bad.targets[0].1 = bad.targets[0].0.clone(),
-                    1 => bad.targets[0].2 = bad.roots.roots[0].1.clone(),
-                    2 => bad.targets[0].3 = InitialObligationId::new(1),
+                    0 => bad.input.targets[0].1 = bad.input.targets[0].0.clone(),
+                    1 => bad.input.targets[0].2 = bad.roots.roots[0].1.clone(),
+                    2 => bad.input.targets[0].3 = InitialObligationId::new(1),
                     3 => {
-                        bad.targets.push(bad.targets[0].clone());
+                        bad.input.targets.push(bad.input.targets[0].clone());
                     }
                     4 => {
                         let b = bad
@@ -1483,7 +1971,7 @@ mod tests {
             }
             if form == "predicate" {
                 assert_eq!(explicit.roots.roots.len(), 2);
-                assert_eq!(explicit.targets[0].1, explicit.roots.roots[1].0);
+                assert_eq!(explicit.input.targets[0].1, explicit.roots.roots[1].0);
                 for root in &explicit.roots.roots {
                     let heads = root
                         .3
@@ -1505,7 +1993,7 @@ mod tests {
                     );
                 }
                 let mut bad = explicit.clone();
-                bad.targets[0].1 = explicit.roots.roots[0].0.clone();
+                bad.input.targets[0].1 = explicit.roots.roots[0].0.clone();
                 let base = explicit.roots.original.as_ref();
                 assert!(base.clone().with_source_redefinition(bad.clone()).is_err());
                 let mut forged = base.clone().with_source_redefinition(explicit).unwrap();
@@ -1542,5 +2030,190 @@ mod tests {
             Arc::make_mut(&mut bad.roots).original = foreign.roots.original.clone();
             reject(bad);
         }
+    }
+
+    #[test]
+    fn task279_refuses_ambiguous_or_unbound_source_targets() {
+        assert!(fixture("predicate", 6).is_err());
+
+        let explicit = fixture("predicate", 3).unwrap();
+        assert_eq!(explicit.roots.roots.len(), 2);
+        let mut ambiguous = explicit.input().clone();
+        let chosen = ambiguous.targets[0].1.clone();
+        let competing = explicit
+            .roots
+            .roots
+            .iter()
+            .map(|root| &root.0)
+            .find(|root| **root != chosen)
+            .unwrap()
+            .clone();
+        ambiguous.targets[0].1 = competing;
+        assert!(
+            SourceRedefinitionHandoff::build_with_input(
+                Arc::new(explicit.roots().clone()),
+                ambiguous
+            )
+            .is_err()
+        );
+
+        let valid = fixture("functor", 5).unwrap();
+        let reject = |input| {
+            assert!(
+                SourceRedefinitionHandoff::build_with_input(Arc::new(valid.roots().clone()), input)
+                    .is_err()
+            );
+        };
+        let mut missing_target = valid.input().clone();
+        missing_target.targets.clear();
+        reject(missing_target);
+        let foreign = fixture("attribute", 0).unwrap();
+        let mut missing_root = valid.input().clone();
+        missing_root.targets[0].1 = foreign.roots.roots[0].0.clone();
+        reject(missing_root);
+        let mut missing_anchor = valid.input().clone();
+        missing_anchor.targets[0].2 =
+            TypedSiteRef::Node(valid.roots.original.nodes().root().unwrap());
+        reject(missing_anchor);
+    }
+
+    #[test]
+    fn task279_refuses_fabricated_input_and_unbound_refinement() {
+        let valid = fixture("functor", 5).unwrap();
+        let reject = |input| {
+            assert!(
+                SourceRedefinitionHandoff::build_with_input(Arc::new(valid.roots().clone()), input)
+                    .is_err()
+            );
+        };
+
+        let mut accepted = valid.input().clone();
+        accepted.coherence_inputs[0].1 = CoherenceStatus::Accepted;
+        reject(accepted);
+
+        let mut alias_semantics = valid.input().clone();
+        alias_semantics.relations.push((
+            alias_semantics.targets[0].2.clone(),
+            RelationKind::Redefinition,
+            alias_semantics.targets[0].1.clone(),
+        ));
+        reject(alias_semantics);
+
+        assert!(!valid.input().refinements.is_empty());
+        for corrupt in 0..5 {
+            let mut bad = valid.input().clone();
+            let candidate = &mut bad.refinements[0];
+            match corrupt {
+                0 => candidate.coherence = Some(CoherenceStatus::Accepted),
+                1 => candidate.origin = CandidateOrigin::Ordinary,
+                2 => candidate.result = None,
+                3 => {
+                    candidate.ordinary_root =
+                        fixture("attribute", 0).unwrap().input.targets[0].1.clone()
+                }
+                _ => candidate.provenance.source_range = None,
+            }
+            reject(bad);
+        }
+
+        let mut unbound_refinement = valid.input().clone();
+        unbound_refinement.targets.clear();
+        reject(unbound_refinement);
+
+        let mut missing_intent_label = valid.input().clone();
+        assert!(missing_intent_label.coherence_intents[0].2.is_some());
+        missing_intent_label.coherence_intents[0].2 = None;
+        reject(missing_intent_label);
+
+        let mut wrong_diagnostic_anchor = valid.input().clone();
+        wrong_diagnostic_anchor.target_diagnostics[0].0 =
+            TypedSiteRef::Node(valid.roots.original.nodes().root().unwrap());
+        reject(wrong_diagnostic_anchor);
+    }
+
+    #[test]
+    fn task279_refuses_duplicate_targets_and_reordered_source_roots() {
+        let valid = fixture("predicate", 3).unwrap();
+        let mut duplicate = valid.input().clone();
+        duplicate.targets.push(duplicate.targets[0].clone());
+        assert!(
+            SourceRedefinitionHandoff::build_with_input(Arc::new(valid.roots().clone()), duplicate)
+                .is_err()
+        );
+
+        let mut reordered = valid.roots().clone();
+        assert!(reordered.roots.len() > 1);
+        reordered.roots.swap(0, 1);
+        assert!(SourceRedefinitionHandoff::build(Arc::new(reordered)).is_err());
+    }
+
+    #[test]
+    fn task279_refuses_exposed_application_views_without_the_sealed_handoff() {
+        let valid = fixture("functor", 5).unwrap();
+        let roots = valid.roots();
+        let facts = ClusterFactTable::new();
+        let resolved = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: roots.original.as_ref(),
+            cluster_facts: &facts,
+            overload_collection: roots.collection(),
+            template_expansion: roots.expansion(),
+            viability: roots.viability(),
+            specificity: roots.specificity(),
+            overload_selection: valid.selection(),
+            expressions: vec![],
+            node_hints: vec![],
+            statement_semantics: None,
+            statement_proofs: None,
+        });
+        assert!(resolved.is_err());
+
+        let mut foreign_selection = valid.clone();
+        foreign_selection.selection = OverloadSelectionOutput::resolve(roots.specificity(), []);
+        assert!(foreign_selection.install(roots.original.as_ref()).is_err());
+
+        let installed = roots
+            .original
+            .as_ref()
+            .clone()
+            .with_source_redefinition(valid.clone())
+            .unwrap();
+        let resolved = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: &installed,
+            cluster_facts: &facts,
+            overload_collection: roots.collection(),
+            template_expansion: roots.expansion(),
+            viability: roots.viability(),
+            specificity: roots.specificity(),
+            overload_selection: valid.selection(),
+            expressions: vec![],
+            node_hints: vec![],
+            statement_semantics: None,
+            statement_proofs: None,
+        });
+        assert!(resolved.is_err());
+
+        assert!(
+            roots
+                .specificity()
+                .graphs()
+                .iter()
+                .all(|(_, graph)| graph.comparisons.is_empty() && graph.edges.is_empty())
+        );
+
+        let mut forged_obligation = valid.clone();
+        let mut obligations = InitialObligationTable::new();
+        for (_, obligation) in forged_obligation.obligations.iter() {
+            obligations.insert(InitialObligationDraft {
+                kind: obligation.kind,
+                owner: obligation.owner.clone(),
+                source_range: obligation.source_range,
+                assumptions: obligation.assumptions.clone(),
+                goal: obligation.goal.clone(),
+                provenance: obligation.provenance.clone(),
+                status: InitialObligationStatus::Blocked,
+            });
+        }
+        forged_obligation.obligations = obligations;
+        assert!(forged_obligation.install(roots.original.as_ref()).is_err());
     }
 }

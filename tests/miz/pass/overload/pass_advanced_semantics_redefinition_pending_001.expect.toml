@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_redefinition_pending_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "redefinition.pending"
+source = "pass_advanced_semantics_redefinition_pending_001.miz"
+expected_outcome = "pass"
+expected_phase = "overload_resolution"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.19.overload.resolution.distinct_loci"]
+notes = "Task279 real application input and sealed source transport only. The theorem proof remains unchecked; coherence and refinement remain Pending."

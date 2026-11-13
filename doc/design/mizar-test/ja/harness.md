@@ -172,6 +172,9 @@ pathは追加しない。
 ## Intrinsic redefinition targets
 
 intrinsic redefinition の type-elaboration Case は、両 AST container の source 所有 ordinary root・typed target・Pending request を観測し、active refinement を生成しない。
+MT10-AS の Pending 再定義 Case は、実 functor application、明示 target intent、diagnostic anchor、
+Pending refinement/coherence 入力、封印された ordinary 公開結果も観測する。既存 overload の
+identity/metadata 検査で admission を認証し、proof 受理と alias 実行は保留する。
 
 > Canonical language: English. English canonical version: [../en/harness.md](../en/harness.md).
 

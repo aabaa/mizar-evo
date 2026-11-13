@@ -199,6 +199,10 @@ diagnostic vocabulary, or production harness path is introduced.
 ## Intrinsic redefinition targets
 
 Intrinsic redefinition type-elaboration Cases inspect source-owned ordinary roots, typed targets and Pending requests in both AST containers; they produce no active refinement.
+The MT10-AS pending-redefinition Case additionally inspects the actual functor
+application, written target intent, diagnostic anchor, Pending refinement/coherence
+input and sealed ordinary exposed result. Admission uses the existing overload
+identity/metadata checks; proof acceptance and alias execution remain deferred.
 
 > Canonical language: English. Japanese companion: [../ja/harness.md](../ja/harness.md).
 

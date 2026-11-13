@@ -1,0 +1,13 @@
+:: EN10 10.7 / EN19 19.5: explicit local target plus a final ordinary application.
+definition
+  let x be object;
+  func FBase: ident x -> object equals x;
+end;
+definition
+  let x be set;
+  redefine func FRefined: ident x -> set equals x;
+  coherence with FBase proof thus thesis; end;
+end;
+
+reserve x for object;
+theorem FUse: ident(x) = x proof thus thesis; end;

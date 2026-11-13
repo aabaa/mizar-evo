@@ -39,7 +39,7 @@ remain spec-reserved; this transfer activates no runner or semantic credit. Veri
 
 ## Intrinsic redefinition targets
 
-The [source redefinition owner](./mizar-checker/en/source_redefinition.md) covers declaration-owned ordinary roots and inferred or explicit local target/Pending-coherence transport through real type-elaboration consumers.
+The [source redefinition owner](./mizar-checker/en/source_redefinition.md) covers declaration-owned ordinary roots, inferred or explicit local targets, notation relation and Pending coherence/refinement transport, with a sealed ordinary exposed result consumed by MT10-AS. Alias execution, coherence acceptance and active refinement remain deferred.
 Accepted coherence/refinement and broader redefinition, notation and template overload transport remain outside this bounded coverage.
 
 ## Guarded functor definiens

@@ -1,6 +1,6 @@
 # Task CHECKER279-REDEFINITION-REMAINDER: source redefinition transport
 Canonical language: English; [Japanese pointer](../ja/CHECKER279-REDEFINITION-REMAINDER.md).
-Status: frozen. Tier: full; further Task279 slice fails the new-public-seam pattern criterion.
+Status: complete. Tier: full; further Task279 slice fails the new-public-seam pattern criterion.
 Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumer: [runner plan](../../mizar-test/en/00.crate_plan.md), real MT10-AS Task10 Case.
 API/invariants: [source redefinition](../../mizar-checker/en/source_redefinition.md); consumer boundary: [harness](../../mizar-test/en/harness.md).
 Authority: EN [06.7](../../../spec/en/06.attributes.md#67-redefinition), [09.6–9.7](../../../spec/en/09.predicates.md#96-predicate-redefinition), [10.7–10.8](../../../spec/en/10.functors.md#107-functor-redefinition), [11.1](../../../spec/en/11.symbol_management.md#111-synonyms-and-antonyms), [19.5](../../../spec/en/19.overload_resolution.md#195-symbol-redefinition-redefine).

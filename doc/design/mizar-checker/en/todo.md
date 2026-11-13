@@ -795,7 +795,7 @@ unchecked row below is one future nonempty logical task and one commit.
   scheme/theorem roles remain outside this executable task under external Gate
   S1, and Task 49 remains gated on S1.
 - [x] **Task 278:** [ordinary/template overload input-to-selection producer](../../task_contracts/en/CHECKER278-OVERLOAD-SELECTION.md).
-- [ ] **Task 279:** [redefinition/notation target/coherence/refinement producer](../../task_contracts/en/CHECKER279-REDEFINITION-REMAINDER.md);
+- [x] **Task 279:** [redefinition/notation target/coherence/refinement producer](../../task_contracts/en/CHECKER279-REDEFINITION-REMAINDER.md);
   consumes Task 278 ordinary-root results without a dependency cycle. Ships
   the Task 285 element rules blocked on it (AttributeRedefinition,
   FunctorRedefinition) with the producer.
