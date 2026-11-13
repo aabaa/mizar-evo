@@ -45,6 +45,7 @@ deferred or external follow-ups listed below.
 `src/lib.rs` exports exactly these mizar-atp-owned modules:
 
 - `backend`
+- `instance_finder`
 - `portfolio`
 - `problem`
 - `property_encoding`
@@ -55,6 +56,7 @@ deferred or external follow-ups listed below.
 The corresponding source paths are:
 
 - `crates/mizar-atp/src/backend.rs`
+- `crates/mizar-atp/src/instance_finder.rs`
 - `crates/mizar-atp/src/portfolio.rs`
 - `crates/mizar-atp/src/problem.rs`
 - `crates/mizar-atp/src/property_encoding.rs`
@@ -108,7 +110,21 @@ Public entry functions: no module-level entry; inherent AtpProblem queries are o
 | Backend-neutral `AtpProblem` records declarations, axioms, conjecture, target binding, symbol map, provenance, properties, diagnostics, and `Unsat` polarity without embedding backend proofs or SAT clauses. | `AtpProblemParts`, `AtpProblem::try_new`, canonical identity/debug helpers. | problem module tests for construction, deterministic identity, debug rendering, expected-result restriction, prohibited trusted material, and validation rejection. | Implemented for explicit ATP problem payloads. |
 | Logic profiles and formula trees preserve unsupported features as fail-closed profile errors rather than silently re-profiling. | `LogicProfile`, profile validation, formula/type-context validation helpers. | unsupported-profile, symbol-reference, missing-payload, and source/provenance rejection tests. | Implemented. |
 | Public enums are downstream forward-compatible. | `#[non_exhaustive]` on public enums. | `atp_public_enums_are_non_exhaustive_and_documented`. | Guarded by task 22. |
-| Observed ground input terms remain borrowed, complete and untrusted without new term generation. | AtpProblem::observed_ground_terms. | Fixed structural/borrow/empty/native-input and genuine source input-preservation families. | Implemented raw input query only; full ATP30 remains open. |
+| Observed ground input terms remain borrowed, complete and untrusted without new term generation. | AtpProblem::observed_ground_terms. | Fixed structural/borrow/empty/native-input and genuine source input-preservation families. | Implemented input query; consumed by the backend-free finder. |
+
+### `instance_finder`
+
+Source path: `crates/mizar-atp/src/instance_finder.rs`. Spec:
+[instance_finder.md](./instance_finder.md).
+
+Public entry function: `find_instance_evidence`; the candidate evidence type is
+re-exported as `CandidateKernelEvidence` from `BackendCandidateEvidence`.
+
+The finder searches only the encoded problem's local premises, under the
+provided limits, and returns optional candidate evidence. Backend used-premise
+reports are advisory input; the finder is also backend-free when no report is
+provided. The function does not treat backend traces or reports as trusted and
+checks candidate evidence with the kernel; proof-status acceptance remains with consumers.
 
 ### `translator`
 
@@ -233,8 +249,8 @@ Public entry functions:
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Existing genuine source candidates are screened with explicit bounded admission counts and one untrusted SAT query. | [backend owner](./backend.md#source-candidate-sat-screening). | `source_candidate_sat_screen_*` and exact static service/API inventories. | Implemented bounded query only; fresh acceptance and full ATP30 remain open. |
-| Existing source-observed ground choices are paired by original VC producer references with original parsed Kernel terms. | [backend owner](./backend.md#source-ground-term-correspondence); source query. | `source_ground_term_correspondence_*` and exact backend static seam inventories. | Implemented existing-term association only; full ATP30 remains open. |
+| Existing genuine source candidates are screened with explicit bounded admission counts and one untrusted SAT query. | [backend owner](./backend.md#source-candidate-sat-screening). | `source_candidate_sat_screen_*` and exact static service/API inventories. | Implemented bounded query only; fresh acceptance remains consumer-owned. |
+| Existing source-observed ground choices are paired by original VC producer references with original parsed Kernel terms. | [backend owner](./backend.md#source-ground-term-correspondence); source query. | `source_ground_term_correspondence_*` and exact backend static seam inventories. | Implemented existing-term association only; generic source extraction remains deferred. |
 | The generic backend runner uses deterministic command fingerprints, explicit stdin/private-file input delivery, version probes, resource limits, timeout/cancellation/crash handling, stream capture, and private temp cleanup. | `run_backend`, `BackendRunInput`, `BackendRunResult`, command/resource/capture helpers. | command fingerprint, stdin/private-file, version probe, timeout/cancellation/crash, drain-safe capture, temp cleanup, and unsupported-limit tests. | Implemented for generic direct-spawn and mock backend routes. |
 | `Proved` is candidate-evidence-only and requires matching `Unsat` plus formula/substitution candidate payload; backend proof method, resolution trace, backend log, unsat core, and SMT proof object are never trusted. | `classify_backend_observation`, `BackendCandidateEvidence`, `BackendCandidatePayload`, status validation. | mock proved, prohibited payload, counterexample/unknown/error, truncation, and metadata mismatch tests. | Implemented for mock classification; real extraction remains external. |
 | Stable run metadata is reproducibility metadata and stays outside trusted acceptance and candidate hashes. | `BackendRunMetadata`, `BackendRunResult::metadata`. | task-19 metadata projection tests. | Implemented. |

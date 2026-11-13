@@ -1,10 +1,10 @@
 # Task ATPK-INSTANCE-FINDER: untrusted instance finder for kernel evidence
 Canonical language: English; [Japanese pointer](../ja/ATPK-INSTANCE-FINDER.md).
-Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [kernel plan](../../mizar-kernel/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: ATPK-KERNEL-EQUALITY-INSTANCES for equality names; the backend runner for used-premise reports (optional: the finder also runs without a backend).
-Readiness: Backend-free design may start with named equality evidence available; implementation needs frozen structured extraction, transport and deterministic search limits. Backend-assisted integration also needs real advisory output extraction.
+Status: complete. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [kernel plan](../../mizar-kernel/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
+Dependencies: structured source substitutions, encoded-problem producer, local evidence wire, observed ground terms, PROOF-INSTANCE-SEARCH-LIMITS and ATPK-KERNEL-EQUALITY-INSTANCES. Backend advisory extraction remains optional and deferred.
+Readiness: Backend-free core implemented through the [finder API](../../mizar-atp/en/instance_finder.md). Backend-assisted integration still needs real advisory output extraction.
 Authority: specification §21.7.1-§21.7.5; [architecture 10](../../architecture/en/10.atp_backend_integration.md#evidence-extraction-by-instance-finding); [translator](../../mizar-atp/en/translator.md).
-Gap: `external_dependency_gap`; no producer turns a proved problem into formula/substitution evidence (mizar-atp task 15 deferral).
+Gap: backend-free core resolved; real backend extraction and portfolio execution remain deferred (task 15 and Step 7 item 1).
 
 ## Scope
 

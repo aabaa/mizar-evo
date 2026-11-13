@@ -789,10 +789,10 @@ permit; each source-integration slice waits for its actual upstream outputs.
    (IV-004), using the [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
    (atp 30). Equality slices require the [kernel equality instances](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
    (kernel 36).
-   Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; candidate extraction and backend execution remain open.
+   Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; the backend-free finder core is complete, while real backend extraction and execution remain open.
    [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
-   [Observed ground input terms](./task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md) are implemented as borrowed existing data only; instance search and evidence production remain open.
-   [Explicit policy limits](./task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md) are implemented as configuration only; finder counting/enforcement and full search remain open.
+   [Observed ground input terms](./task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md) supply the backend-free finder core without unbounded term generation.
+   [Explicit policy limits](./task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md) configure the backend-free finder’s counting/enforcement; backend-assisted search remains open.
    [Source term correspondence](./task_contracts/en/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md) is implemented for existing observed choices; general mapping/extraction/search remains open.
    [Bounded source candidate SAT screening](./task_contracts/en/ATP-SOURCE-CANDIDATE-SAT-SCREEN.md) is implemented as an explicit-limit untrusted query; general search and fresh acceptance remain open.
    [Bounded structured source substitutions](./task_contracts/en/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md) implement the existing-factory extraction prerequisite; full finder/search and acceptance remain open.

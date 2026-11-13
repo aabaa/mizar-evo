@@ -2082,3 +2082,827 @@ fn vc_provenance(key: &str) -> VcProvenance {
 fn fingerprint(algorithm_id: u8, digest: &[u8]) -> KernelEvidenceFingerprint {
     KernelEvidenceFingerprint::new(algorithm_id, digest.to_vec()).expect("fingerprint")
 }
+
+#[test]
+fn instance_finder_emits_kernel_accepted_evidence_for_fol_and_both_formats() {
+    use crate::{backend::EncodedBackendProblem, instance_finder::find_instance_evidence};
+    use mizar_kernel::formula_evidence::Formula;
+
+    let x = AtpTerm::Variable("x".into());
+    let a = AtpTerm::Function {
+        function: "a".into(),
+        arguments: Vec::new(),
+    };
+    let p_x = AtpFormulaTree::Atom(AtpAtom::new("p", vec![x.clone()]));
+    let q_x = AtpFormulaTree::Atom(AtpAtom::new("q", vec![x]));
+    let p_a = AtpFormulaTree::Atom(AtpAtom::new("p", vec![a.clone()]));
+    let q_a = AtpFormulaTree::Atom(AtpAtom::new("q", vec![a]));
+    let premise_tree = AtpFormulaTree::Forall {
+        binders: vec![AtpBinder::new("x", None)],
+        body: Box::new(AtpFormulaTree::Implies(Box::new(p_x), Box::new(q_x))),
+    };
+    let premise_formula = kernel_or(vec![
+        Formula::Not(Box::new(kernel_atom(1, vec![kernel_var(1)]))),
+        kernel_atom(2, vec![kernel_var(1)]),
+    ]);
+    let second_formula = kernel_atom(1, vec![kernel_const(4)]);
+    let goal_formula = kernel_atom(2, vec![kernel_const(4)]);
+    let (problem, handoff) = finder_problem(
+        (premise_tree, premise_formula),
+        Some((p_a, second_formula)),
+        (q_a, goal_formula),
+        vec![
+            finder_symbol(0, 1, 1),
+            finder_symbol(1, 1, 2),
+            finder_symbol(2, 2, 4),
+        ],
+        vec![1],
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+            declaration_projection("x", "x", AtpDeclarationKind::GeneratedBinder, 0),
+        ],
+    );
+    let tptp = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).expect("TPTP");
+    let smt_problem = reprofile_finder_problem(&problem, ConcreteFormat::SmtLib);
+    let smt = EncodedBackendProblem::encode(&smt_problem, ConcreteFormat::SmtLib).expect("SMT");
+    let first = find_instance_evidence(&problem, &tptp, &handoff, Some([1, 2, 0, 2]), None)
+        .expect("TPTP search")
+        .expect("TPTP evidence");
+    let second = find_instance_evidence(&smt_problem, &smt, &handoff, Some([1, 2, 0, 2]), None)
+        .expect("SMT search")
+        .expect("SMT evidence");
+    assert_eq!(first.payload(), second.payload());
+    assert_eq!(first.formula_label_refs(), tptp.formula_labels());
+    assert_eq!(second.formula_label_refs(), smt.formula_labels());
+    assert_kernel_accepts_instance_candidate(&first, &handoff);
+    assert_kernel_accepts_instance_candidate(&second, &handoff);
+    let repeated = find_instance_evidence(&problem, &tptp, &handoff, Some([1, 2, 0, 2]), None)
+        .expect("repeated search")
+        .expect("repeated evidence");
+    assert_eq!(first, repeated);
+
+    let selected_labels = [
+        format!("ax_{}", problem.axioms()[0].id().index()),
+        format!("ax_{}", problem.axioms()[1].id().index()),
+    ];
+    let reported = find_instance_evidence(
+        &problem,
+        &tptp,
+        &handoff,
+        Some([1, 2, 0, 2]),
+        Some(&selected_labels),
+    )
+    .expect("valid premise report")
+    .expect("reported premises prove goal");
+    assert_eq!(reported.formula_label_refs(), tptp.formula_labels());
+    assert_kernel_accepts_instance_candidate(&reported, &handoff);
+    let only_ground_fact = [selected_labels[1].clone()];
+    assert!(
+        find_instance_evidence(
+            &problem,
+            &tptp,
+            &handoff,
+            Some([1, 2, 0, 2]),
+            Some(&only_ground_fact),
+        )
+        .expect("report omits universal premise")
+        .is_none()
+    );
+}
+
+#[test]
+fn instance_finder_limits_stale_inputs_and_premise_reports_fail_closed() {
+    use crate::{backend::EncodedBackendProblem, instance_finder::find_instance_evidence};
+    let a = AtpTerm::Function {
+        function: "a".into(),
+        arguments: Vec::new(),
+    };
+    let p = AtpFormulaTree::Atom(AtpAtom::new("p", vec![a.clone()]));
+    let pa = kernel_atom(1, vec![kernel_const(4)]);
+    let (problem, handoff) = finder_problem(
+        (p.clone(), pa.clone()),
+        Some((p.clone(), pa.clone())),
+        (p, pa),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 2, 4)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+        ],
+    );
+    let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).expect("encode");
+
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, None, None)
+            .expect("unconfigured")
+            .is_none()
+    );
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, Some([0, 2, 0, 1]), None)
+            .expect("ground-term limit")
+            .is_none()
+    );
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, Some([1, 1, 0, 1]), None)
+            .expect("premise-instance limit")
+            .is_none()
+    );
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, Some([1, 2, 0, 0]), None)
+            .expect("SAT-check limit")
+            .is_none()
+    );
+    let exact = find_instance_evidence(&problem, &encoded, &handoff, Some([1, 2, 0, 1]), None)
+        .expect("exact bounds")
+        .expect("exact bounds include the proof");
+    assert_kernel_accepts_instance_candidate(&exact, &handoff);
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, Some([0, 0, 0, 0]), None)
+            .expect("literal zero")
+            .is_none()
+    );
+
+    let quantified = AtpFormulaTree::Forall {
+        binders: vec![AtpBinder::new("x", None)],
+        body: Box::new(AtpFormulaTree::Atom(AtpAtom::new(
+            "p",
+            vec![AtpTerm::Variable("x".into())],
+        ))),
+    };
+    let (no_terms_problem, no_terms_handoff) = finder_problem(
+        (quantified, kernel_atom(1, vec![kernel_var(1)])),
+        None,
+        (
+            AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new())),
+            kernel_atom(2, Vec::new()),
+        ),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        vec![1],
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("x", "x", AtpDeclarationKind::GeneratedBinder, 0),
+        ],
+    );
+    let no_terms_encoded = EncodedBackendProblem::encode(&no_terms_problem, ConcreteFormat::Tptp)
+        .expect("ground-free encoded problem");
+    assert!(
+        find_instance_evidence(
+            &no_terms_problem,
+            &no_terms_encoded,
+            &no_terms_handoff,
+            Some([10, 10, 10, 10]),
+            None,
+        )
+        .expect("no observed ground terms")
+        .is_none()
+    );
+
+    let stale_problem = finder_problem(
+        (
+            AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())),
+            kernel_atom(1, Vec::new()),
+        ),
+        None,
+        (
+            AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new())),
+            kernel_atom(2, Vec::new()),
+        ),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let stale_encoded = EncodedBackendProblem::encode(&stale_problem.0, ConcreteFormat::Tptp)
+        .expect("stale problem encoding");
+    assert!(
+        find_instance_evidence(&problem, &stale_encoded, &handoff, Some([0, 2, 0, 1]), None)
+            .is_err()
+    );
+    assert!(
+        find_instance_evidence(
+            &problem,
+            &encoded,
+            &stale_problem.1,
+            Some([0, 2, 0, 1]),
+            None
+        )
+        .is_err()
+    );
+
+    let mut mismatched_parts = AtpProblemParts {
+        vc_id: problem.vc_id(),
+        target_binding: problem.target_binding().clone(),
+        logic_profile: problem.logic_profile().clone(),
+        expected_result: problem.expected_result(),
+        declarations: problem.declarations().to_vec(),
+        axioms: problem.axioms().to_vec(),
+        conjecture: problem.conjecture().clone(),
+        type_context: problem.type_context().clone(),
+        properties: problem.properties().to_vec(),
+        symbol_map: problem.symbol_map().to_vec(),
+        provenance: problem.provenance().to_vec(),
+        diagnostics: problem.diagnostics().to_vec(),
+    };
+    let guard = &problem.type_context().guards()[0];
+    mismatched_parts.type_context = AtpTypeContext::new(vec![AtpTypeGuard::new(
+        guard.id(),
+        AtpFormulaTree::True,
+        guard.provenance(),
+    )]);
+    let mismatched_guard_problem = AtpProblem::try_new(mismatched_parts).expect("mutated guard");
+    let mismatched_guard_encoded =
+        EncodedBackendProblem::encode(&mismatched_guard_problem, ConcreteFormat::Tptp)
+            .expect("mutated guard encoding");
+    assert!(
+        find_instance_evidence(
+            &mismatched_guard_problem,
+            &mismatched_guard_encoded,
+            &handoff,
+            Some([1, 2, 0, 1]),
+            None,
+        )
+        .is_err()
+    );
+
+    let forged = ["ax_99".to_owned(), "goal:1".to_owned()];
+    assert!(
+        find_instance_evidence(
+            &problem,
+            &encoded,
+            &handoff,
+            Some([0, 2, 0, 1]),
+            Some(&forged),
+        )
+        .is_err()
+    );
+    let subset = ["ax_0".to_owned()];
+    let subset_candidate = find_instance_evidence(
+        &problem,
+        &encoded,
+        &handoff,
+        Some([1, 1, 0, 1]),
+        Some(&subset),
+    )
+    .expect("valid premise subset")
+    .expect("valid subset proves goal");
+    assert_eq!(
+        subset_candidate.formula_label_refs(),
+        encoded.formula_labels()
+    );
+    assert_kernel_accepts_instance_candidate(&subset_candidate, &handoff);
+
+    let false_goal = AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new()));
+    let (satisfiable_problem, satisfiable_handoff) = finder_problem(
+        (
+            AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())),
+            kernel_atom(1, Vec::new()),
+        ),
+        None,
+        (false_goal, kernel_atom(2, Vec::new())),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let satisfiable_encoded =
+        EncodedBackendProblem::encode(&satisfiable_problem, ConcreteFormat::Tptp).expect("encode");
+    assert!(
+        find_instance_evidence(
+            &satisfiable_problem,
+            &satisfiable_encoded,
+            &satisfiable_handoff,
+            Some([0, 1, 0, 1]),
+            None,
+        )
+        .expect("satisfiable instance problem")
+        .is_none()
+    );
+}
+
+#[test]
+fn instance_finder_uses_equality_names_for_symmetry_transitivity_and_congruence() {
+    use crate::instance_finder::find_instance_evidence;
+    use mizar_kernel::clause::Term;
+
+    let a = AtpTerm::Function {
+        function: "a".into(),
+        arguments: Vec::new(),
+    };
+    let b = AtpTerm::Function {
+        function: "b".into(),
+        arguments: Vec::new(),
+    };
+    let c = AtpTerm::Function {
+        function: "c".into(),
+        arguments: Vec::new(),
+    };
+    let fa = AtpTerm::Function {
+        function: "f".into(),
+        arguments: vec![a.clone()],
+    };
+    let fb = AtpTerm::Function {
+        function: "f".into(),
+        arguments: vec![b.clone()],
+    };
+    let local_tree = AtpFormulaTree::Equality {
+        left: b.clone(),
+        right: a.clone(),
+    };
+    let second_tree = AtpFormulaTree::Equality {
+        left: c.clone(),
+        right: fa,
+    };
+    let goal_tree = AtpFormulaTree::Equality { left: fb, right: c };
+    let equality = |left, right| {
+        mizar_kernel::formula_evidence::Formula::Atom(mizar_kernel::clause::Atom::new(
+            mizar_kernel::clause::SymbolKey::new(mizar_kernel::clause::SymbolKind::Equality, 3),
+            vec![left, right],
+        ))
+    };
+    let function = |id, argument| Term::Application {
+        symbol: mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::FunctorPredicate,
+            id,
+        ),
+        arguments: vec![argument],
+    };
+    let const_ = |id| Term::Application {
+        symbol: mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::FunctorPredicate,
+            id,
+        ),
+        arguments: Vec::new(),
+    };
+    let (problem, handoff) = finder_problem(
+        (local_tree, equality(const_(5), const_(4))),
+        Some((second_tree, equality(const_(7), function(6, const_(4))))),
+        (goal_tree, equality(function(6, const_(5)), const_(7))),
+        vec![
+            finder_symbol(0, 2, 4),
+            finder_symbol(1, 2, 5),
+            finder_symbol(2, 2, 6),
+            finder_symbol(3, 2, 7),
+            finder_symbol(4, 3, 3),
+        ],
+        Vec::new(),
+        vec![
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+            declaration_projection("b", "b", AtpDeclarationKind::Function, 0),
+            declaration_projection("c", "c", AtpDeclarationKind::Function, 0),
+            declaration_projection("f", "f", AtpDeclarationKind::Function, 1),
+        ],
+    );
+    let encoded = crate::backend::EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp)
+        .expect("equality problem encoding");
+    assert!(
+        find_instance_evidence(&problem, &encoded, &handoff, Some([5, 2, 0, 100]), None)
+            .expect("no equality candidates allowed")
+            .is_none()
+    );
+    let candidate = find_instance_evidence(
+        &problem,
+        &encoded,
+        &handoff,
+        Some([5, 2, 1_000, 1_000]),
+        None,
+    )
+    .expect("equality search")
+    .expect("congruence evidence");
+    assert_kernel_accepts_instance_candidate(&candidate, &handoff);
+    let crate::backend::BackendCandidatePayload::FormulaSubstitutionBytes(bytes) =
+        candidate.payload()
+    else {
+        panic!("expected formula evidence");
+    };
+    let parsed = mizar_kernel::formula_evidence::parse_formula_evidence(
+        bytes,
+        &finder_parse_context(&handoff),
+    )
+    .expect("parse equality evidence");
+    let names = u64::try_from(parsed.equality_instances().len()).expect("name count");
+    assert!(names > 0);
+    let exact = find_instance_evidence(
+        &problem,
+        &encoded,
+        &handoff,
+        Some([5, 2, names, names + 1]),
+        None,
+    )
+    .expect("exact equality/SAT bounds")
+    .expect("exact bounds retain the proof");
+    assert_eq!(candidate, exact);
+    for limits in [[5, 2, names - 1, names + 1], [5, 2, names, names]] {
+        assert!(
+            find_instance_evidence(&problem, &encoded, &handoff, Some(limits), None)
+                .expect("one fewer equality name or SAT query")
+                .is_none()
+        );
+    }
+}
+
+fn finder_symbol(
+    entry_id: u32,
+    kind_tag: u8,
+    symbol_id: u32,
+) -> mizar_vc::kernel_evidence_handoff::KernelManifestEntry {
+    mizar_vc::kernel_evidence_handoff::KernelManifestEntry {
+        entry_id,
+        payload: [vec![kind_tag], symbol_id.to_be_bytes().to_vec()].concat(),
+    }
+}
+
+fn finder_problem(
+    local: (AtpFormulaTree, mizar_kernel::formula_evidence::Formula),
+    generated: Option<(AtpFormulaTree, mizar_kernel::formula_evidence::Formula)>,
+    goal: (AtpFormulaTree, mizar_kernel::formula_evidence::Formula),
+    symbols: Vec<mizar_vc::kernel_evidence_handoff::KernelManifestEntry>,
+    variables: Vec<u32>,
+    declarations: Vec<AtpDeclarationProjection>,
+) -> (AtpProblem, VcKernelEvidenceHandoff) {
+    let (local_tree, local_formula) = local;
+    let (goal_tree, goal_formula) = goal;
+    use mizar_vc::kernel_evidence_handoff::{
+        KernelEvidenceProfile, KernelFormulaPayload, KernelFormulaProjection, KernelGoalPolarity,
+        KernelManifestEntry, build_kernel_evidence_handoff,
+    };
+    use mizar_vc::vc_ir::PremiseRef;
+
+    let set = fixture_set_with(
+        VcStatus::NeedsAtp,
+        "instance-finder",
+        if generated.is_some() {
+            vec![
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+                PremiseRef::GeneratedFact {
+                    formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
+                },
+            ]
+        } else {
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))]
+        },
+        None,
+    );
+    let generated_formula = generated
+        .as_ref()
+        .map(|(_, formula)| formula)
+        .unwrap_or(&local_formula);
+    let kernel_formulas = [&local_formula, &goal_formula, generated_formula];
+    let provenance_payloads = [
+        b"local-instance-premise".as_slice(),
+        b"goal-instance".as_slice(),
+        b"generated-instance-premise".as_slice(),
+    ];
+    let formula_payloads = kernel_formulas
+        .iter()
+        .enumerate()
+        .map(|(index, formula)| KernelFormulaPayload {
+            formula_ref: VcFormulaRef::Generated(VcGeneratedFormulaId::new(index)),
+            projection: KernelFormulaProjection {
+                formula_fingerprint: KernelEvidenceFingerprint::new(
+                    KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                    formula.canonical_hash_input().expect("canonical formula"),
+                )
+                .expect("formula fingerprint"),
+                formula_bytes: finder_formula_wire(formula),
+                provenance_payload: provenance_payloads[index].to_vec(),
+            },
+        })
+        .collect::<Vec<_>>();
+    let variable_manifest = variables
+        .iter()
+        .enumerate()
+        .map(|(index, id)| KernelManifestEntry {
+            entry_id: index as u32,
+            payload: id.to_be_bytes().to_vec(),
+        })
+        .collect::<Vec<_>>();
+    let handoff = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set: &set,
+        vc: VcId::new(0),
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &symbols,
+        variable_manifest: &variable_manifest,
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .expect("valid kernel handoff");
+    let projection = |target, formula, source, identity: &str, index: usize| {
+        formula_projection(
+            target,
+            formula,
+            source,
+            identity,
+            format!("atp-provenance:{identity}"),
+            &formula_payloads[index]
+                .projection
+                .formula_fingerprint
+                .digest,
+            &formula_payloads[index].projection.provenance_payload,
+        )
+    };
+    let mut input = basic_problem_input(&set, &handoff);
+    input.logic_profile = profile(SoftTypeStrategy::GuardPredicates);
+    input.soft_type_projections = vec![soft_guard("finder-premise", local_tree.clone())];
+    input.declaration_projections = declarations;
+    input.formula_projections = vec![
+        projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(0),
+            )),
+            local_tree,
+            AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("local-context:1")),
+            "local-context:1",
+            0,
+        ),
+        projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(1),
+            )),
+            goal_tree,
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("goal:1")),
+            "goal:1",
+            1,
+        ),
+    ];
+    if let Some((tree, _)) = generated {
+        input.formula_projections.push(projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(2),
+            )),
+            tree,
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("generated:3")),
+            "generated:3",
+            2,
+        ));
+    }
+    let translated = translate_problem(input).expect("ATP problem translation");
+    (
+        reprofile_finder_problem(&translated, ConcreteFormat::Tptp),
+        handoff,
+    )
+}
+
+fn reprofile_finder_problem(problem: &AtpProblem, format: ConcreteFormat) -> AtpProblem {
+    let profile = LogicProfile::try_new(
+        match format {
+            ConcreteFormat::Tptp => "finder-fof",
+            ConcreteFormat::SmtLib => "finder-smt",
+        },
+        match format {
+            ConcreteFormat::Tptp => LogicFragment::Fof,
+            ConcreteFormat::SmtLib => LogicFragment::SmtLibUninterpreted,
+        },
+        EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder,
+        SoftTypeStrategy::GuardPredicates,
+        NativePropertySupport::Unsupported,
+        BTreeSet::from([format]),
+    )
+    .expect("backend profile");
+    AtpProblem::try_new(AtpProblemParts {
+        vc_id: problem.vc_id(),
+        target_binding: problem.target_binding().clone(),
+        logic_profile: profile,
+        expected_result: problem.expected_result(),
+        declarations: problem.declarations().to_vec(),
+        axioms: problem.axioms().to_vec(),
+        conjecture: problem.conjecture().clone(),
+        type_context: problem.type_context().clone(),
+        properties: problem.properties().to_vec(),
+        symbol_map: problem.symbol_map().to_vec(),
+        provenance: problem.provenance().to_vec(),
+        diagnostics: problem.diagnostics().to_vec(),
+    })
+    .expect("reprofiled backend problem")
+}
+
+fn finder_formula_wire(formula: &mizar_kernel::formula_evidence::Formula) -> Vec<u8> {
+    use mizar_kernel::{clause::Term, formula_evidence::Formula};
+    fn u32_bytes(value: u32, out: &mut Vec<u8>) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+    fn term_wire(term: &Term, out: &mut Vec<u8>) {
+        match term {
+            Term::Variable(id) => {
+                out.push(1);
+                u32_bytes(id.0, out);
+            }
+            Term::Application { symbol, arguments } => {
+                out.push(2);
+                out.push(match symbol.kind {
+                    mizar_kernel::clause::SymbolKind::Predicate => 1,
+                    mizar_kernel::clause::SymbolKind::FunctorPredicate => 2,
+                    mizar_kernel::clause::SymbolKind::Equality => 3,
+                    mizar_kernel::clause::SymbolKind::BuiltinRelation => 4,
+                    _ => unreachable!(),
+                });
+                u32_bytes(symbol.id.0, out);
+                u32_bytes(arguments.len() as u32, out);
+                for argument in arguments {
+                    term_wire(argument, out);
+                }
+            }
+            _ => panic!("fixture terms are variables or applications"),
+        }
+    }
+    fn write(formula: &Formula, out: &mut Vec<u8>) {
+        match formula {
+            Formula::Atom(atom) => {
+                out.push(1);
+                out.push(match atom.symbol.kind {
+                    mizar_kernel::clause::SymbolKind::Predicate => 1,
+                    mizar_kernel::clause::SymbolKind::FunctorPredicate => 2,
+                    mizar_kernel::clause::SymbolKind::Equality => 3,
+                    mizar_kernel::clause::SymbolKind::BuiltinRelation => 4,
+                    _ => unreachable!(),
+                });
+                u32_bytes(atom.symbol.id.0, out);
+                u32_bytes(atom.arity, out);
+                u32_bytes(atom.arguments.len() as u32, out);
+                for argument in &atom.arguments {
+                    term_wire(argument, out);
+                }
+            }
+            Formula::Not(child) => {
+                out.push(2);
+                write(child, out);
+            }
+            Formula::And(children) | Formula::Or(children) => {
+                out.push(if matches!(formula, Formula::And(_)) {
+                    3
+                } else {
+                    4
+                });
+                u32_bytes(children.len() as u32, out);
+                for child in children {
+                    write(child, out);
+                }
+            }
+            _ => panic!("fixture formula is supported"),
+        }
+    }
+    let mut out = Vec::new();
+    write(formula, &mut out);
+    out
+}
+
+fn kernel_atom(
+    symbol_id: u32,
+    arguments: Vec<mizar_kernel::clause::Term>,
+) -> mizar_kernel::formula_evidence::Formula {
+    mizar_kernel::formula_evidence::Formula::Atom(mizar_kernel::clause::Atom::new(
+        mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::Predicate,
+            symbol_id,
+        ),
+        arguments,
+    ))
+}
+
+fn kernel_var(id: u32) -> mizar_kernel::clause::Term {
+    mizar_kernel::clause::Term::Variable(mizar_kernel::clause::VariableId(id))
+}
+
+fn kernel_const(id: u32) -> mizar_kernel::clause::Term {
+    mizar_kernel::clause::Term::Application {
+        symbol: mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::FunctorPredicate,
+            id,
+        ),
+        arguments: Vec::new(),
+    }
+}
+
+fn kernel_or(
+    children: Vec<mizar_kernel::formula_evidence::Formula>,
+) -> mizar_kernel::formula_evidence::Formula {
+    mizar_kernel::formula_evidence::Formula::Or(children)
+}
+
+fn finder_parse_context(
+    handoff: &VcKernelEvidenceHandoff,
+) -> mizar_kernel::formula_evidence::FormulaEvidenceParseContext {
+    let target = handoff.canonical_evidence().target_vc();
+    let profile = handoff.canonical_evidence().kernel_profile();
+    let policy = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Reject
+        }
+        KernelClauseTautologyPolicy::Marker => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Marker
+        }
+        _ => unreachable!(),
+    };
+    let mut context = mizar_kernel::formula_evidence::FormulaEvidenceParseContext::v1(
+        mizar_kernel::certificate_parser::Fingerprint::new(
+            target.algorithm_id,
+            target.digest.clone(),
+        ),
+        mizar_kernel::certificate_parser::KernelProfileRecord::v1(profile.profile_id, policy),
+    );
+    context.accepted_schema_versions.insert(2);
+    context
+}
+
+fn assert_kernel_accepts_instance_candidate(
+    candidate: &crate::instance_finder::CandidateKernelEvidence,
+    handoff: &VcKernelEvidenceHandoff,
+) {
+    use crate::backend::BackendCandidatePayload;
+    use mizar_kernel::{
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
+            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
+            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
+        },
+        formula_evidence::parse_formula_evidence,
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::KernelContextIdentitySource as VcSource, vc_ir::VcFormulaRef,
+    };
+
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+        panic!("candidate payload is not formula substitution evidence")
+    };
+    let parsed =
+        parse_formula_evidence(bytes, &finder_parse_context(handoff)).expect("parse candidate");
+    let envelope = handoff.canonical_evidence();
+    let target = TargetVcFingerprint::new(
+        envelope.target_vc().algorithm_id,
+        envelope.target_vc().digest.clone(),
+    );
+    let entries = handoff
+        .context_identity()
+        .entries()
+        .iter()
+        .map(|entry| {
+            let source = match entry.source() {
+                VcSource::LocalHypothesis { local_context_id } => {
+                    KernelContextIdentitySource::LocalHypothesis { local_context_id }
+                }
+                VcSource::CitedPremise { local_context_id } => {
+                    KernelContextIdentitySource::CitedPremise { local_context_id }
+                }
+                VcSource::GeneratedVcFact { vc_fact_id } => {
+                    KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
+                }
+                _ => panic!("unsupported test source"),
+            };
+            let producer = match entry.producer_formula_ref() {
+                VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                VcFormulaRef::Generated(id) => {
+                    KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index()))
+                }
+                _ => panic!("unsupported producer ref"),
+            };
+            KernelContextIdentityEntry::new(
+                source,
+                entry.formula_id(),
+                mizar_kernel::certificate_parser::Fingerprint::new(
+                    entry.formula_fingerprint().algorithm_id,
+                    entry.formula_fingerprint().digest.clone(),
+                ),
+                producer,
+            )
+        })
+        .collect();
+    let context = FormulaEvidenceContext::with_context_identity(
+        Some(handoff.context_identity_hash().as_bytes().to_vec()),
+        Vec::new(),
+        Vec::new(),
+        Some(KernelContextIdentityPayload::new(
+            target.clone(),
+            handoff.canonical_hash(),
+            handoff.context_identity_hash(),
+            entries,
+        )),
+        ImportedFactContextLimits::default(),
+    )
+    .expect("formula context");
+    let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+        target_vc_fingerprint: &target,
+        evidence: &parsed,
+        formula_context: Some(&context),
+        check_kind: KernelEvidenceCheckKind::ProofObligation,
+        policy: KernelCheckPolicy::default(),
+        limits: KernelEvidenceCheckLimits::default(),
+    });
+    assert_eq!(
+        checked.status(),
+        mizar_kernel::checker::KernelCheckStatus::Accepted,
+        "{checked:?}"
+    );
+}

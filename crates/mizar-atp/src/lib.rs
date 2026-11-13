@@ -4,12 +4,13 @@
 //! into backend-neutral ATP problems, running untrusted backends, and
 //! collecting formula/substitution evidence candidates for `mizar-kernel`.
 //!
-//! This crate does not accept proofs, select trusted winners, call the kernel
-//! as proof authority, or expose backend proof methods as trusted material.
+//! This crate does not accept proofs, select trusted winners, publish trusted
+//! proof status, or expose backend proof methods as trusted material.
 
 #![forbid(unsafe_code)]
 
 pub mod backend;
+pub mod instance_finder;
 pub mod portfolio;
 pub mod problem;
 pub mod property_encoding;

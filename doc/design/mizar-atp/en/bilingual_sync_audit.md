@@ -49,6 +49,7 @@ behavior is the classified external/deferred work already recorded in
 |---|---|---|
 | `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 29, hard gates, and verification expectations. | Synchronized. |
 | `crate_exit_report.md` | Task ledger through task 29, hard gates, quality score 94/100, score breakdown, review results, ATP-CLOSEOUT gaps, task-29 verification, unrun proof/cache/extraction command rationale, and next-phase handoff. | Synchronized. |
+| `instance_finder.md` | Backend-free deterministic search, explicit policy bounds, local provenance binding, kernel screening and deferred backend/publication paths. | Synchronized. |
 | `problem.md` | Backend-neutral `AtpProblem` data shape, logic profiles, formula/provenance/type-guard ownership, deterministic identity, prohibited trusted material, planned tests, and public enum inventory. | Synchronized. |
 | `translator.md` | Explicit `VcIr` / kernel-handoff projection inputs, declaration/formula materialization, fail-closed unsupported premise classes, task-29 F1/F2/F6 consumer boundary, proof-hint non-pruning, deterministic ordering, planned tests, and public enum inventory. | Synchronized. |
 | `property_encoding.md` | Axiom-form property projection, generated binder rows, provenance and symbol-map requirements, native-declaration deferral, planned tests, and public enum inventory. | Synchronized. |

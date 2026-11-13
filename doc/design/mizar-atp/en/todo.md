@@ -682,10 +682,9 @@ candidate evidence through the kernel-owned schema and must not weaken it.
       exists yet, so this task deliberately adds no fake payload,
       placeholder runner, expectation rebaseline, kernel call, proof policy,
       witness/cache output, or trusted backend material.
-30. **Untrusted instance finder.** [ ]
-    - Local candidate transport prerequisite: [VC62](../../task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md); extraction/search remain open.
-    - Policy settings prerequisite: [Proof36](../../task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md); search/counting/enforcement remain open.
-    - Produces kernel evidence from proved problems (closes the task-15 extraction deferral). Contract: [ATPK-INSTANCE-FINDER](../../task_contracts/en/ATPK-INSTANCE-FINDER.md).
+30. **Untrusted instance finder core.** [x]
+    - [Backend-free finder](./instance_finder.md) searches actual encoded premises under explicit policy limits and returns only kernel-checked candidates. Contract: [ATPK-INSTANCE-FINDER](../../task_contracts/en/ATPK-INSTANCE-FINDER.md).
+    - Real backend extraction and portfolio execution remain Step 7 item 1 work; task-29 joint fixtures stay rejecting until source-derived extraction exists.
 31. **Deterministic premise ranking.** [ ]
     - `symbol-overlap-v1` for pruning, suggestions, and unresolved citations (spec §22.4.4). Contract: [ATPK-PREMISE-RANKING](../../task_contracts/en/ATPK-PREMISE-RANKING.md).
 32. **Counterexample search on open statements.** [ ]

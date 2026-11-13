@@ -43,6 +43,7 @@ module の top-level public item、public entry function、paired module specifi
 `src/lib.rs` は次の mizar-atp-owned module だけを export する:
 
 - `backend`
+- `instance_finder`
 - `portfolio`
 - `problem`
 - `property_encoding`
@@ -53,6 +54,7 @@ module の top-level public item、public entry function、paired module specifi
 対応する source path:
 
 - `crates/mizar-atp/src/backend.rs`
+- `crates/mizar-atp/src/instance_finder.rs`
 - `crates/mizar-atp/src/portfolio.rs`
 - `crates/mizar-atp/src/problem.rs`
 - `crates/mizar-atp/src/property_encoding.rs`
@@ -106,7 +108,20 @@ Public entry functions: module-level entry はなく、AtpProblem の inherent q
 | Backend-neutral `AtpProblem` は declaration、axiom、conjecture、target binding、symbol map、provenance、property、diagnostic、`Unsat` polarity を記録し、backend proof や SAT clause を埋め込まない。 | `AtpProblemParts`、`AtpProblem::try_new`、canonical identity/debug helper。 | construction、deterministic identity、debug rendering、expected-result restriction、prohibited trusted material、validation rejection の problem module tests。 | explicit ATP problem payload 向けに実装済み。 |
 | Logic profile と formula tree は unsupported feature を silent re-profile せず、fail-closed profile error として保持する。 | `LogicProfile`、profile validation、formula/type-context validation helper。 | unsupported-profile、symbol-reference、missing-payload、source/provenance rejection tests。 | 実装済み。 |
 | Public enum は downstream forward-compatible である。 | public enum の `#[non_exhaustive]`。 | `atp_public_enums_are_non_exhaustive_and_documented`。 | task 22 で guard 済み。 |
-| 観測 ground input term は参照のまま完全に保ち、新 term 生成や信頼を加えない。 | AtpProblem::observed_ground_terms。 | 構造/参照/空/native-input の定数と実 source 入力保持系列。 | raw input query だけを実装し、完全 ATP30 は未完了。 |
+| 観測 ground input term は参照のまま完全に保ち、新 term 生成や信頼を加えない。 | AtpProblem::observed_ground_terms。 | 構造/参照/空/native-input の定数と実 source 入力保持系列。 | input query を実装し、backend-free finder が利用する。 |
+
+### `instance_finder`
+
+Source path: `crates/mizar-atp/src/instance_finder.rs`。Spec:
+[instance_finder.md](./instance_finder.md)。
+
+Public entry function: `find_instance_evidence`。Candidate evidence type は
+`BackendCandidateEvidence` から `CandidateKernelEvidence` として re-export する。
+
+Finder は encoded problem の local premise だけを、指定 limit 内で検索し、optional
+candidate evidence を返す。Backend used-premise report は advisory input であり、report
+なしの backend-free 実行も可能。Backend trace や report を trusted として扱わず、finder
+は出力前に Kernel で候補を検査する。証明状態の受理は consumer の責務である。
 
 ### `translator`
 
@@ -231,8 +246,8 @@ Public entry functions:
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
-| 元の実 source candidate を明示 admission count と一回の untrusted SAT query で検査する。 | [backend owner](./backend.md#source-candidate-sat-screening)。 | `source_candidate_sat_screen_*` と正確な service/API inventory。 | 限定 query だけを実装。fresh 受理と全 ATP30 は未完了。 |
-| 既存 source 観測 ground choice を元 VC producer ref により元 parsed Kernel 項へ対応させる。 | [backend owner](./backend.md#source-ground-term-correspondence)、source query。 | `source_ground_term_correspondence_*` と正確な backend static seam inventory。 | 既存項の対応だけを実装。全 ATP30 は未完了。 |
+| 元の実 source candidate を明示 admission count と一回の untrusted SAT query で検査する。 | [backend owner](./backend.md#source-candidate-sat-screening)。 | `source_candidate_sat_screen_*` と正確な service/API inventory。 | 限定 query だけを実装。fresh 受理は consumer の責務である。 |
+| 既存 source 観測 ground choice を元 VC producer ref により元 parsed Kernel 項へ対応させる。 | [backend owner](./backend.md#source-ground-term-correspondence)、source query。 | `source_ground_term_correspondence_*` と正確な backend static seam inventory。 | 既存項の対応だけを実装。一般 source extraction は deferred のままとする。 |
 | Generic backend runner は deterministic command fingerprint、explicit stdin/private-file input delivery、version probe、resource limit、timeout/cancellation/crash handling、stream capture、private temp cleanup を使う。 | `run_backend`、`BackendRunInput`、`BackendRunResult`、command/resource/capture helper。 | command fingerprint、stdin/private-file、version probe、timeout/cancellation/crash、drain-safe capture、temp cleanup、unsupported-limit tests。 | generic direct-spawn と mock backend route 向けに実装済み。 |
 | `Proved` は candidate-evidence-only であり、matching `Unsat` と formula/substitution candidate payload を要求する。backend proof method、resolution trace、backend log、unsat core、SMT proof object は trusted ではない。 | `classify_backend_observation`、`BackendCandidateEvidence`、`BackendCandidatePayload`、status validation。 | mock proved、prohibited payload、counterexample/unknown/error、truncation、metadata mismatch tests。 | mock classification 向けに実装済み。real extraction は external のまま。 |
 | Stable run metadata は reproducibility metadata であり、trusted acceptance と candidate hash の外に残る。 | `BackendRunMetadata`、`BackendRunResult::metadata`。 | task-19 metadata projection tests。 | 実装済み。 |

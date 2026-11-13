@@ -119,12 +119,13 @@ fn atp_lib_exposes_only_spec_backed_modules() {
 //! into backend-neutral ATP problems, running untrusted backends, and
 //! collecting formula/substitution evidence candidates for `mizar-kernel`.
 //!
-//! This crate does not accept proofs, select trusted winners, call the kernel
-//! as proof authority, or expose backend proof methods as trusted material.
+//! This crate does not accept proofs, select trusted winners, publish trusted
+//! proof status, or expose backend proof methods as trusted material.
 
 #![forbid(unsafe_code)]
 
 pub mod backend;
+pub mod instance_finder;
 pub mod portfolio;
 pub mod problem;
 pub mod property_encoding;
@@ -153,6 +154,7 @@ pub mod translator;
         [
             "src/backend/tests.rs",
             "src/backend.rs",
+            "src/instance_finder.rs",
             "src/lib.rs",
             "src/portfolio/tests.rs",
             "src/portfolio.rs",
@@ -187,6 +189,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "Cargo.toml",
             "src/backend.rs",
             "src/backend/tests.rs",
+            "src/instance_finder.rs",
             "src/lib.rs",
             "src/portfolio.rs",
             "src/portfolio/tests.rs",
@@ -1564,6 +1567,7 @@ fn atp_public_enums_are_non_exhaustive_and_documented() {
 fn atp_source_spec_audit_covers_public_modules_and_deferred_gaps() {
     let modules = [
         "backend",
+        "instance_finder",
         "portfolio",
         "problem",
         "property_encoding",
@@ -1716,6 +1720,7 @@ fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
         "backend.md",
         "bilingual_sync_audit.md",
         "crate_exit_report.md",
+        "instance_finder.md",
         "module_boundary_audit.md",
         "portfolio.md",
         "problem.md",
